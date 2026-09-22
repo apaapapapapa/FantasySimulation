@@ -9,6 +9,7 @@ export const PhysicalVectorSchema = z.strictObject({
   z: z.number().min(-2000).max(2000),
 });
 export const ResourceStateSchema = z.strictObject({ hp: count, mp: count, shield: count });
+export type ResourceState = z.infer<typeof ResourceStateSchema>;
 export const EventSchema = z.strictObject({
   schemaVersion: z.literal(1),
   id: IdSchema,

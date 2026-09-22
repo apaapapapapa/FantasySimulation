@@ -3,6 +3,7 @@ import { assertJson, canonicalJson, contentHash } from './canonical.ts';
 import { actorSeed, nextRandom } from './random.ts';
 import {
   BodySchema,
+  ScenarioSchema,
   ConditionSchema,
   DirectionSchema,
   Vec3Schema,
@@ -58,6 +59,37 @@ describe('bounded 3D definitions', () => {
     expect(() => assertJson({ f: () => 1 })).toThrow('plain JSON');
     expect(() => assertJson('x'.repeat(1_400_000))).toThrow('budget');
     expect(() => assertJson([1, 2, 3], 2)).toThrow('budget');
+  });
+  it('rejects duplicate geometric navigation nodes and nodes outside the arena', () => {
+    const scenario = {
+      name: 'test',
+      bounds: { min: { x: -1000, y: 0, z: -1000 }, max: { x: 1000, y: 2000, z: 1000 } },
+      obstacles: [],
+      navigation: {
+        version: 'support-graph-v1',
+        nodes: [{ id: 'a', mode: 'ground', position: { x: 0, y: 902, z: 0 } }],
+        edges: [],
+      },
+    };
+    expect(ScenarioSchema.safeParse(scenario).success).toBe(true);
+    expect(
+      ScenarioSchema.safeParse({
+        ...scenario,
+        navigation: {
+          ...scenario.navigation,
+          nodes: [...scenario.navigation.nodes, { ...scenario.navigation.nodes[0], id: 'b' }],
+        },
+      }).success,
+    ).toBe(false);
+    expect(
+      ScenarioSchema.safeParse({
+        ...scenario,
+        navigation: {
+          ...scenario.navigation,
+          nodes: [{ ...scenario.navigation.nodes[0], position: { x: 1001, y: 902, z: 0 } }],
+        },
+      }).success,
+    ).toBe(false);
   });
   it('keeps integer vector differences and squared lengths safely representable', () => {
     const worstSquaredDistance = 3 * (2 * 1_000_000) ** 2;

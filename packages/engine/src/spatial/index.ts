@@ -9,3 +9,4 @@ export {
   type MotionIntent,
   type MovedActor,
 } from './movement.ts';
+export * from './navigation.ts';
