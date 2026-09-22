@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { readBoundedJson as readJson } from './files.ts';
 import { assessReport, record, sha } from './report.ts';
 import type { Check, Report } from './report.ts';
 import {
@@ -142,14 +143,6 @@ export async function completeOne(
     'ISSUE_COMPLETION_NOT_PERSISTED',
   );
   return 'UPDATED_AND_CLOSED';
-}
-
-function readJson(path: string): unknown {
-  requireCompletion(
-    statSync(path).isFile() && statSync(path).size <= 8 * 1024 * 1024,
-    'INVALID_FILE',
-  );
-  return JSON.parse(readFileSync(path, 'utf8')) as unknown;
 }
 
 export async function completeIssues(evidenceDirectory: string, apply: boolean) {

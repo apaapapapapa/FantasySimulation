@@ -161,3 +161,36 @@ it('enforces external SDK, server and Rapier boundaries using resolved library m
     expect(result.publicGraph.summary.violations.map((v) => v.rule.name)).toContain(rule);
   }
 });
+
+it('checks ambient declarations and the approved Vite reference without allowing extra boundary leaks', async () => {
+  const f = fixture({
+    'apps/web/src/vite-env.d.ts':
+      '/// <reference types="vite-plus/client" />\nimport type {S} from "../../api/src/store.ts"; export type Leaked=S;',
+    'apps/web/src/a.ts': 'export const value=1;',
+    'apps/api/src/store.ts': 'export interface S {id:string}',
+  });
+  const result = await architecture(f.root, f.paths);
+  expect(result.publicGraph.summary.violations.map((v) => v.rule.name)).toContain('web-is-client');
+  expect(
+    result.runtimeGraph.modules.find((m) => m.source === 'apps/web/src/vite-env.d.ts')
+      ?.dependencies,
+  ).toEqual([]);
+});
+it('confines core crypto to the dedicated hashing adapter', async () => {
+  const f = fixture({
+    'packages/engine/src/arbitrary.ts':
+      "import {randomBytes} from 'node:crypto'; export const random=randomBytes;",
+  });
+  const result = await architecture(f.root, f.paths);
+  expect(result.publicGraph.summary.violations.map((v) => v.rule.name)).toContain(
+    'engine-hash-boundary',
+  );
+});
+
+it('permits the dedicated pure hashing adapter without allowing all node builtins', async () => {
+  const f = fixture({
+    'packages/engine/src/hashing.ts':
+      "import {createHash} from 'node:crypto'; export const hash=(s:string)=>createHash('sha256').update(s).digest('hex');",
+  });
+  expect((await architecture(f.root, f.paths)).publicGraph.summary.violations).toEqual([]);
+});

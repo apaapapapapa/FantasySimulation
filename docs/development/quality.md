@@ -24,12 +24,17 @@ Public edges enforce domain/engine/API/web boundaries; runtime edges enforce cyc
 Type-only edges cannot conceal a domain-to-server dependency, but a legitimate reverse
 physics type reference is not a runtime cycle. Rapier is allowed only in
 `packages/engine/src/spatial/physics.ts`. Browser/domain code cannot depend on platform
-builtins. Application modules cannot import development harness scripts.
+builtins. Application modules cannot import development harness scripts. Core crypto is limited
+to `packages/engine/src/hashing.ts`, a reserved dedicated adapter; current runtime
+source uses no core crypto (only test fixtures do). The separate determinism guard
+constrains any adapter to static named `createHash`, not entropy or namespace access.
 
 The root native TypeScript project is canonical. Unsupported export maps, nonliteral module
 expressions, import-equals, unaccounted triple-slash dependencies, unsafe paths and syntax
-errors fail rather than silently dropping edges. Source declarations/tests are not runtime
-entrypoints; imported files still must resolve. Generated projections are removed even on
+errors fail rather than silently dropping edges. Declarations participate in the public graph; their edges do not enter the runtime
+graph. Only the exact `vite-plus/client` type reference in `apps/web/src/vite-env.d.ts`
+is an approved compiler ambient reference; additional imports in that file are still
+checked. Tests are not runtime entrypoints; imported files still must resolve. Generated projections are removed even on
 failure. Dependency packages are not executed by this check. Changing the native TS API or
 workspace resolution requires the guard fixtures to pass, not a loose-parser fallback.
 
