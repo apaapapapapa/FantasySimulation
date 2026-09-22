@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, rename, rm, open } from 'node:fs/promises';
+import { mkdir, rename, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   canonicalJson,
@@ -14,7 +14,12 @@ import {
   type ReplayManifest,
   type ReplayCheckpoint,
 } from '@fantasy/domain/spatial';
-import { replayDirectory, writeCompressed, syncDirectory } from './replay-files.ts';
+import {
+  replayDirectory,
+  writeCompressed,
+  syncDirectory,
+  writeDurableFile,
+} from './replay-files.ts';
 import { recordEvents, verifyReplayDirectory } from './replay-reader.ts';
 
 type Identity = { id: string; attemptId: string; simulationHash: string; input: unknown };
@@ -139,13 +144,7 @@ export class ReplayWriter {
       chunks: this.chunks,
     });
     await verifyReplayDirectory(this.directory, manifest);
-    const handle = await open(join(this.directory, 'manifest.json'), 'wx');
-    try {
-      await handle.writeFile(canonicalJson(manifest));
-      await handle.sync();
-    } finally {
-      await handle.close();
-    }
+    await writeDurableFile(join(this.directory, 'manifest.json'), canonicalJson(manifest));
     await syncDirectory(this.directory);
     await rename(this.directory, replayDirectory(this.root, this.identity.id));
     await syncDirectory(this.root);
