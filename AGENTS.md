@@ -18,6 +18,16 @@
 5. Run `vp run verify` (or `pnpm verify`) before committing. Verify startup when changing build or runtime configuration.
 6. Keep commands and limitations in the README accurate.
 7. Use Conventional Commits for commits and PR titles (`feat`, `fix`, `perf`, `docs`, `chore`, etc.). Preserve the intended title and any `BREAKING CHANGE:` footer in the final squash commit. `main` releases automatically after both CI platforms pass; do not manually bump package versions or create release tags.
+8. Use the existing source harness and finish Issue bookkeeping. Follow the Issue completion protocol below; a chat summary or merged PR alone is not completion.
+
+## Issue completion protocol
+
+- Read the live Issue body and discussion; check its full scope, acceptance criteria, linked PRs, sub-Issues and external setup. Keep partial progress and remaining work accurate in the Issue.
+- In the final PR, generate a draft with `node scripts/harness.ts issue-plan <number>`, then add `.github/issue-completions/<number>.json` with the reviewed body hash/timestamp, summary, every acceptance item's evidence and all related PR numbers including the final PR. Declare `complete: true` and `remainingWork: []` only when the entire Issue is done. Never waive an external setting or unchecked requirement just because code is merged.
+- Use `Refs #number` rather than `Closes`, `Fixes` or `Resolves` in PR/commit messages. The Issue must not close before post-merge main CI succeeds. Partial PRs must not contain a completion declaration.
+- After merging, confirm both main CI and the dedicated `Issue completion` workflow. The harness updates the checklist and completion evidence and closes the Issue as `completed`; confirm the live Issue state before telling the user it is complete.
+- On failures, missing permissions, changed requirements or incomplete work, leave the Issue open, record the blocker and repair/retry. Do not bypass the harness with a manual close. Respect intentionally reopened Issues and do not reclose them with old evidence.
+- See [docs/issue-completion.md](docs/issue-completion.md) for declaration, retry and evidence details.
 
 ## Simulation invariants
 
