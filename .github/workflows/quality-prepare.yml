@@ -1,0 +1,77 @@
+name: Prepare quality guard source
+on:
+  push:
+    branches: [automation/h3-quality-preparation]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          cache: false
+          run-install: false
+      - name: Prepare exact development dependency and existing verify integration
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const p=JSON.parse(readFileSync('package.json','utf8'));
+          p.devDependencies['dependency-cruiser']='18.1.0';
+          p.scripts['check:quality']='node scripts/quality.ts';
+          if(!p.scripts.verify.includes('vp run engine:check'))throw Error('Unknown verify entrypoint');
+          p.scripts.verify=p.scripts.verify.replace('vp run engine:check','vp run engine:check && vp run check:quality');
+          writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+          NODE
+          vp install --no-frozen-lockfile
+          vp fmt scripts/quality.ts scripts/quality docs/development/quality.md package.json
+          node scripts/engine-identity.ts --write
+          vp check
+          vp run typecheck
+          vp run check:quality
+          vp test run scripts/quality
+      - name: Export reviewed source allowlist
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+          const paths=['scripts/quality.ts','scripts/quality/ast.ts','scripts/quality/architecture.ts','scripts/quality/determinism.ts','scripts/quality/architecture.test.ts','docs/development/quality.md','package.json','pnpm-lock.yaml','packages/engine/src/spatial/implementation.json'];
+          mkdirSync('prepared');writeFileSync('prepared/tree.json',JSON.stringify({sourceSha:process.env.GITHUB_SHA,tree:paths.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))}));
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: h3-quality-source
+          path: prepared/tree.json
+          retention-days: 1
+          if-no-files-found: error
+  emit:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: h3-quality-source
+          path: prepared
+      - name: Publish only unreferenced non-workflow source objects
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const allowed=['scripts/quality.ts','scripts/quality/ast.ts','scripts/quality/architecture.ts','scripts/quality/determinism.ts','scripts/quality/architecture.test.ts','docs/development/quality.md','package.json','pnpm-lock.yaml','packages/engine/src/spatial/implementation.json'];
+          const v=JSON.parse(readFileSync('prepared/tree.json','utf8'));
+          if(v.sourceSha!==process.env.GITHUB_SHA||v.tree.length!==allowed.length||new Set(v.tree.map(x=>x.path)).size!==allowed.length)throw Error('Invalid source');
+          for(const x of v.tree)if(!allowed.includes(x.path)||x.mode!=='100644'||x.type!=='blob'||typeof x.content!=='string'||x.content.length>300000||Object.keys(x).sort().join(',')!=='content,mode,path,type')throw Error('Invalid entry');
+          writeFileSync('request.json',JSON.stringify({base_tree:'181f739c2f92188e5fbd602de5961fa31dce2e4b',tree:v.tree}));
+          NODE
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input request.json --jq .sha
