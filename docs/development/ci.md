@@ -43,3 +43,7 @@ Local tests: `vp test run scripts/ci`. Source/config changes use the source harn
 split of expensive tests requires measured runner time and coverage. CI overhead may initially
 rise for source changes because planning and evidence gating add safety checks; no speed
 improvement is claimed without data.
+
+The lightweight docs plan also runs on both Linux and Windows. The aggregate requires both
+`ci-evidence:docs-ubuntu-latest` and `ci-evidence:docs-windows-latest`; one successful
+platform cannot substitute for the other. Dependency policy is a required report item.

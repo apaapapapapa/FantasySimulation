@@ -51,7 +51,12 @@ jobs:
   docs:
     needs: changes
     if: needs.changes.outputs.full == 'false'
-    runs-on: ubuntu-latest
+    name: Docs (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -71,7 +76,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: harness-docs
+          name: harness-docs-${{ matrix.os }}
           path: .generated/harness/docs/
           if-no-files-found: error
           retention-days: 7
@@ -136,8 +141,13 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: always() && needs.changes.outputs.full == 'false'
         with:
-          name: harness-docs
-          path: .generated/harness/ci/evidence/docs/docs
+          name: harness-docs-ubuntu-latest
+          path: .generated/harness/ci/evidence/docs-ubuntu-latest/docs
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: always() && needs.changes.outputs.full == 'false'
+        with:
+          name: harness-docs-windows-latest
+          path: .generated/harness/ci/evidence/docs-windows-latest/docs
       - name: Require dependency policy
         if: always()
         shell: bash

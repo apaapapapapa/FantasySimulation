@@ -18,6 +18,7 @@ export function assessGate(
   const expected = {
     changes: 'success',
     security: 'success',
+    'dependency-policy': 'success',
     verify: plan.full ? 'success' : 'skipped',
     docs: plan.full ? 'skipped' : 'success',
   };
@@ -29,7 +30,7 @@ export function assessGate(
       reason: `Expected ${result}; observed ${typeof results[job] === 'string' ? results[job] : 'missing/invalid'}`,
       evidence,
     });
-  for (const key of plan.full ? osNames : ['docs']) {
+  for (const key of plan.full ? osNames : osNames.map((os) => `docs-${os}`)) {
     let status: Check['status'] = 'unknown',
       reason = 'Missing or invalid evidence';
     try {
@@ -86,10 +87,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       throw new Error('Plan belongs to a different run source');
     const results = record(JSON.parse(process.env.CI_RESULTS ?? '{}') as unknown),
       reports: Record<string, unknown> = {};
-    for (const name of plan.full ? osNames : ['docs']) {
+    for (const name of plan.full ? osNames : osNames.map((os) => `docs-${os}`)) {
       try {
         reports[name] = json(
-          `.generated/harness/ci/evidence/${name}/${name === 'docs' ? 'docs' : 'source'}/report.json`,
+          `.generated/harness/ci/evidence/${name}/${name.startsWith('docs-') ? 'docs' : 'source'}/report.json`,
         );
       } catch {
         reports[name] = null;

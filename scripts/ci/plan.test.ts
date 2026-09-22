@@ -66,7 +66,13 @@ describe('conservative CI planning', () => {
 });
 describe('fail-closed CI gate', () => {
   const plan = classify(info, 'pull_request', ['apps/web/a.ts']);
-  const results = { changes: 'success', security: 'success', verify: 'success', docs: 'skipped' };
+  const results = {
+    changes: 'success',
+    security: 'success',
+    'dependency-policy': 'success',
+    verify: 'success',
+    docs: 'skipped',
+  };
   const reports = {
     'ubuntu-latest': evidence(['source-clean', 'source-verify']),
     'windows-latest': evidence(['source-clean', 'source-verify']),
@@ -91,11 +97,24 @@ describe('fail-closed CI gate', () => {
   });
   it('permits planned skip only with passing lightweight evidence', () => {
     const docs = classify(info, 'pull_request', ['README.md']),
-      observed = { changes: 'success', security: 'success', verify: 'skipped', docs: 'success' };
+      observed = {
+        changes: 'success',
+        security: 'success',
+        'dependency-policy': 'success',
+        verify: 'skipped',
+        docs: 'success',
+      };
     expect(
-      assessGate(docs, observed, { docs: evidence(['docs:diff', 'docs:links']) }).exitCode,
+      assessGate(docs, observed, {
+        'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']),
+        'docs-windows-latest': evidence(['docs:diff', 'docs:links']),
+      }).exitCode,
     ).toBe(0);
     expect(assessGate(docs, observed, {}).exitCode).toBe(2);
+    expect(
+      assessGate(docs, observed, { 'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']) })
+        .exitCode,
+    ).toBe(2);
     expect(assessGate(docs, { ...observed, docs: 'skipped' }, {}).exitCode).toBe(1);
   });
 });
