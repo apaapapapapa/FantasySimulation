@@ -93,7 +93,7 @@ export function steerPolicy(
     decision.goal && options.canMove
       ? navigator.find(
           view.self.position,
-          decision.goal,
+          options.flight ? decision.goal : navigator.groundGoal(decision.goal),
           options.flight,
           options.maxPathNodes,
           view.self.actor.policy.jumpWhenBlocked,

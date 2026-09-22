@@ -1,4 +1,4 @@
-# spatial-v1.9: 公開入力と実行manifest
+# spatial-v1.10: 公開入力と実行manifest
 
 3D-02で固定する公開契約。実際に受理する項目は`packages/domain/src/spatial`のstrict Zod
 schemaを正本とする。3D-03〜07で実行系を追加し、3D-08でAPIへ接続する。
@@ -288,3 +288,15 @@ explosionRadiusMm>0なら接触時点で球形範囲に一度だけ作用し、�
 初期表示に空の飛翔体集合を置き、各区間にspawn/位置・速度更新/接触時刻付きremoveと実際の分割軌跡を
 記録する。接触後の存在しない軌道を補間しない。projectile-spawn→接触→hit→effect/removeの原因を残す。
 entityIdの追加と飛翔体記録に合わせ、近接fixtureの内容hashもspatial-v1.9で更新する。
+
+## 地上方針の空中目標とサンプル（spatial-v1.10）
+
+地上方針が観測/記憶した空中の目標へ近づく場合、移動目標をその真下で最初に身体を支える
+地形面へ投影する。身体sweepで静的なmovement地形を調べ、内部重なりや許容傾斜外なら投影しない。
+既に支持される橋上の目標は高さを保持する。graphの明示的なedge/goalを別の階層へ書き換えず、
+相手の未観測の現在位置も使わない。飛行権限は状態だけで決まり、投影が飛行を与えることはない。
+この行動判断の変更をspatial-v1.10とする。平地の既存固定hashは変更しない。
+
+10体のデータ構成、柱の迂回、飛行主体の上空射撃をheadless fixtureで確認する。
+参加者/revisionの列挙順を逆転してもevent/trajectory/TS stateは一致する。
+このfixtureは勝率の評価やP3の保存込み性能の合格証拠ではない。
