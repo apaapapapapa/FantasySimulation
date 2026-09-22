@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -10,6 +10,7 @@ import {
   type Ruleset,
 } from '@fantasy/domain';
 import { repositoryRoot } from './config.ts';
+import { migrate } from './migrations.ts';
 
 function jsonValue(value: unknown): unknown {
   if (typeof value !== 'string') throw new Error('Invalid JSON in database.');
@@ -94,39 +95,6 @@ export function openStore(filename: string) {
         .all()
         .map((row) => BattleRecordSchema.parse(jsonValue(row.record_json))),
   };
-}
-
-function migrate(db: DatabaseSync) {
-  db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
-    name TEXT PRIMARY KEY, checksum TEXT NOT NULL
-  ) STRICT`);
-  const directory = join(repositoryRoot, 'db/migrations');
-  db.exec('BEGIN IMMEDIATE');
-  try {
-    for (const name of readdirSync(directory)
-      .filter((file) => /^\d{3}_[a-z0-9_-]+\.sql$/.test(file))
-      .sort()) {
-      const sql = readFileSync(join(directory, name), 'utf8');
-      const checksum = createHash('sha256').update(sql).digest('hex');
-      const previous = db
-        .prepare('SELECT checksum FROM schema_migrations WHERE name = ?')
-        .get(name);
-      if (previous) {
-        if (previous.checksum !== checksum)
-          throw new Error(`Applied migration was modified: ${name}`);
-        continue;
-      }
-      db.exec(sql);
-      db.prepare('INSERT INTO schema_migrations (name, checksum) VALUES (?, ?)').run(
-        name,
-        checksum,
-      );
-    }
-    db.exec('COMMIT');
-  } catch (error) {
-    db.exec('ROLLBACK');
-    throw error;
-  }
 }
 
 export function readSampleCharacters(): Character[] {
