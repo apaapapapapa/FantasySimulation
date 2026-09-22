@@ -50,6 +50,7 @@ export class Journal {
       sequence: index,
       actorId: null,
       targetId: null,
+      entityId: null,
       parentEventId: null,
       causes: [],
       abilityId: null,
