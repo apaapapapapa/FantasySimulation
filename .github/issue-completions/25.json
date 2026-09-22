@@ -6,7 +6,7 @@
   "complete": true,
   "summary": "Issueの完了記録をレビュー対象にし、main CIと受入証跡の確認後にチェックリスト・検証記録の更新とcompletedクローズを行うハーネスを導入。",
   "remainingWork": [],
-  "pullRequests": [29],
+  "pullRequests": [29, 34],
   "acceptance": [
     {
       "task": "完了宣言・受入項目の証跡・残件なしを記録したレビュー対象ファイルからIssueを完了処理する。",
@@ -34,7 +34,7 @@
     },
     {
       "task": "回帰テストとAGENTS.md・運用手順を追加し、既存ハーネスと両OSの検証を維持する。",
-      "evidence": "AGENTS.md and docs/issue-completion.md define mandatory completion bookkeeping; the existing verify and source harness run all regression tests."
+      "evidence": "AGENTS.md and docs/issue-completion.md define mandatory completion bookkeeping. Existing verify/source harness runs all regressions, including bounded input rejection before API access."
     }
   ]
 }
