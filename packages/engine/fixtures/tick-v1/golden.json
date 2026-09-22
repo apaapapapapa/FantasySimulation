@@ -8,7 +8,7 @@
       "engine": {
         "id": "tick-v1",
         "version": "0.2.0",
-        "implementationDigest": "sha256:87c1b9714b5018d9ce0d9f56b124bbab6a3482d4eea88cc44588c7a207760275"
+        "implementationDigest": "sha256:077b85529d82cd2f396e7fafa66bd4c8a5ecba35d57d6e0d0a687c8bc7e13564"
       },
       "random": {
         "algorithm": "xorshift32-13-17-5-v1",
@@ -171,9 +171,9 @@
       }
     },
     "expected": {
-      "simulationHash": "sha256:b9ba94ae8129a7bf50bc08bfd5cf35c2d12ca64130e80832c90271bd9dc0607e",
+      "simulationHash": "sha256:c124521f5506198cb866a47b9e4f347d6937fe5bb43a4a1b895fb291fff014b4",
       "eventsHash": "sha256:3ab13e0f19d97dc9cd2102df43cbe259002501a7d5a32f2548475c4cd525abd2",
-      "resultHash": "sha256:a1a30e52e73e675400cd4472c663f014419526e9afa03eb7219fb671ea0632a5",
+      "resultHash": "sha256:a339a4818ab9f713ad2b834dc620c2fe442c9f70e6f2a46171a6e785c2e47539",
       "outcome": {
         "kind": "draw",
         "reason": "simultaneous-defeat"
@@ -205,7 +205,7 @@
       "engine": {
         "id": "tick-v1",
         "version": "0.2.0",
-        "implementationDigest": "sha256:87c1b9714b5018d9ce0d9f56b124bbab6a3482d4eea88cc44588c7a207760275"
+        "implementationDigest": "sha256:077b85529d82cd2f396e7fafa66bd4c8a5ecba35d57d6e0d0a687c8bc7e13564"
       },
       "random": {
         "algorithm": "xorshift32-13-17-5-v1",
@@ -365,9 +365,9 @@
       }
     },
     "expected": {
-      "simulationHash": "sha256:6e440df4f7ef9a5c7b8f92d4641626ed6fcef62227b473d1270a9662a1083572",
+      "simulationHash": "sha256:acd6208c7686e6faf7821d5235f1d5075368090b036042db916a869e61f6965b",
       "eventsHash": "sha256:49433c6fd1e16d7ea803410bb657aa20fd26c3abf4074a97a7b936edfeb3ca61",
-      "resultHash": "sha256:920230995965baba00f6439e2de0ad5c5234b1fbe3b7005e55a01d4b20f959a6",
+      "resultHash": "sha256:7930adada14da7501d8902bc29fe2aa74b8493cf1d222930cc11e85466144214",
       "outcome": {
         "kind": "draw",
         "reason": "time-limit"
@@ -399,7 +399,7 @@
       "engine": {
         "id": "tick-v1",
         "version": "0.2.0",
-        "implementationDigest": "sha256:87c1b9714b5018d9ce0d9f56b124bbab6a3482d4eea88cc44588c7a207760275"
+        "implementationDigest": "sha256:077b85529d82cd2f396e7fafa66bd4c8a5ecba35d57d6e0d0a687c8bc7e13564"
       },
       "random": {
         "algorithm": "xorshift32-13-17-5-v1",
@@ -562,9 +562,9 @@
       }
     },
     "expected": {
-      "simulationHash": "sha256:fb1670b54a0c7ae6bcbd4c5e2ae736c70f31067bc09bc2da17ed04ccb25e2e34",
+      "simulationHash": "sha256:c8aa4aec116c650e7f1e7551926bfa7a1a4f22223cc0f229af37103ad1f58f4f",
       "eventsHash": "sha256:f5e9e86b851af37fe4d404bfe3147a95a36f99c6f22e96c1366d3f09009426c3",
-      "resultHash": "sha256:eca571ab5ced87faef2b954d466ca2e367cbfa45c13a85f84c853e40e87cd2fd",
+      "resultHash": "sha256:8656a3c5c13ca6bf5f1282bc2bc20b189e1257137386b75224452adc00b08f49",
       "outcome": {
         "kind": "win",
         "winner": "left",
@@ -597,7 +597,7 @@
       "engine": {
         "id": "tick-v1",
         "version": "0.2.0",
-        "implementationDigest": "sha256:87c1b9714b5018d9ce0d9f56b124bbab6a3482d4eea88cc44588c7a207760275"
+        "implementationDigest": "sha256:077b85529d82cd2f396e7fafa66bd4c8a5ecba35d57d6e0d0a687c8bc7e13564"
       },
       "random": {
         "algorithm": "xorshift32-13-17-5-v1",
@@ -756,9 +756,9 @@
       }
     },
     "expected": {
-      "simulationHash": "sha256:60c801a47b4dedc59545cdc339985cab0b2f4f9bc842a1ec634e939bcabfad25",
+      "simulationHash": "sha256:105818baa2f01e4fe184939c5128daee9c8ada2636a5fd0f009c8430adf1e94f",
       "eventsHash": "sha256:d4e9b5a0ad6c36ea99303ce2091b8d641463cf3561e09ccf9562c23b6a7ef1ee",
-      "resultHash": "sha256:9e40c2d16c6a65961ec48f991206a0fc0527b392c9388fb47748d8812108456b",
+      "resultHash": "sha256:109bd37606ab5d2bcaaa50ac58113bd5153116782148648039b2bc1bda54ba69",
       "outcome": {
         "kind": "unresolved",
         "diagnostics": [

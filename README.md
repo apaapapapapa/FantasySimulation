@@ -101,6 +101,45 @@ vp run --filter @fantasy/web preview
 APIは起動時にルートの`db/migrations`と`data/characters`を参照するため、リポジトリ内で実行してください。
 外部への公開・デプロイ設定は、この初期環境には含めていません。
 
+## 自動リリース
+
+`main`へのpush後、GitHub ActionsのLinux・Windows両方の検証が成功すると、
+semantic-releaseが前回のリリース以降のコミットを解析します。
+リリース対象の変更があれば、`vX.Y.Z`タグと変更履歴付きの
+[GitHub Release](https://github.com/apaapapapapa/FantasySimulation/releases)を作成します。
+PRの検証ではリリースしません。`main`の実行中のリリースは、後続のpushで中断しません。
+
+コミットとPRタイトルは[Conventional Commits](https://www.conventionalcommits.org/ja/v1.0.0/)形式にします。
+
+| コミット例                                             | 次のバージョン                    |
+| ------------------------------------------------------ | --------------------------------- |
+| `fix: 同時撃破時の判定を修正`                          | パッチ（例: `1.0.0` → `1.0.1`）   |
+| `perf(engine): 対戦ログ生成を高速化`                   | パッチ                            |
+| `feat: ランキングを追加`                               | マイナー（例: `1.0.0` → `1.1.0`） |
+| `feat(api)!: 対戦APIの入力形式を変更`                  | メジャー（例: `1.0.0` → `2.0.0`） |
+| `docs:` / `chore:` / `ci:` / `test:` / `refactor:`など | 単独ではリリースしない            |
+
+破壊的変更は、種類にかかわらず`!`または本文の`BREAKING CHANGE: 説明`で示します。
+複数の変更がある場合は最も大きい更新幅を採用します。
+Squash mergeでは、最終コミットのタイトルと破壊的変更の本文を確認してください。
+PRタイトルだけを整えても、最終コミットに残らなければ解析されません。
+
+過去のリリースタグがない場合、初回のリリース対象変更から`v1.0.0`を作成します。
+アプリ全体の公開版はGitタグとGitHub Releasesで管理し、`package.json`の開発用バージョンは自動更新しません。
+対戦の`rulesVersion`・`engineVersion`・実装digestは別の識別情報であり、従来どおり明示的に管理します。
+この処理はnpmへの公開、Web/APIのデプロイ、リポジトリへの変更履歴コミットは行いません。
+
+通常は追加のSecret設定は不要です。リリースジョブに限って`contents: write`を付与し、
+GitHub Actions標準の`GITHUB_TOKEN`を使います。Issue/PRへの自動コメントとラベル変更は無効にしています。
+ブランチ・タグの保護ルールを追加する場合は、Actionsによる`v*`タグ作成との整合性を確認してください。
+
+リリースの再試行は、Actions → CI → Run workflowで`main`を選びます。両OSの検証から実行します。
+ローカルで解析結果を確認する場合は、書き込み権限を確認できる`GITHUB_TOKEN`を環境変数に設定し、
+最新の`main`とタグを取得した上で`pnpm release:dry-run`を実行してください。
+dry-runでも認証・push権限は検証しますが、タグとReleaseは作成しません。
+タグ作成後・Release作成前に失敗した場合、再実行だけではReleaseが復元されないことがあります。
+その場合はCIログとタグのコミットを確認し、該当タグのGitHub Releaseを補完してください。
+
 ## キャラクターを追加する
 
 画面の「設定を追加・更新」でサンプルJSONを編集し、「JSONを検証して保存」を押します。
