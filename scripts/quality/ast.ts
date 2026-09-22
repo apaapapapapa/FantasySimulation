@@ -1,4 +1,5 @@
 import { API } from 'typescript/unstable/sync';
+import type { Checker } from 'typescript/unstable/sync';
 import {
   isImportDeclaration,
   isExportDeclaration,
@@ -28,7 +29,7 @@ export function walk(node: Node, visit: (node: Node) => void): void {
 export function withSources<T>(
   root: string,
   paths: string[],
-  use: (sources: Map<string, SourceFile>, options: Record<string, unknown>) => T,
+  use: (sources: Map<string, SourceFile>, options: Record<string, unknown>, checker: Checker) => T,
 ): T {
   if (!paths.length || paths.length > 10000 || new Set(paths).size !== paths.length)
     throw Error('Invalid source coverage');
@@ -63,7 +64,11 @@ export function withSources<T>(
           throw Error(`Invalid source syntax: ${path}`);
         sources.set(path, file);
       }
-      return use(sources, project.compilerOptions as unknown as Record<string, unknown>);
+      return use(
+        sources,
+        project.compilerOptions as unknown as Record<string, unknown>,
+        project.checker,
+      );
     } finally {
       snapshot.dispose();
     }

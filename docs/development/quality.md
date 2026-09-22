@@ -42,6 +42,43 @@ Tracked first-party JS/config files are rejected. Generated artifacts, dependenc
 build output are excluded; a `.js` specifier inside TypeScript is not a JS file addition.
 There is no broad vendored-skill exception or blanket lint suppression.
 
+## Engine determinism
+
+The native TS7 AST independently checks engine runtime source, including aliases and
+computed access. `Math.random`, ambient clocks, network APIs, database/I/O imports,
+process/environment access, dynamic code and unreviewed dependencies are rejected.
+Use direct statically named deterministic Math members. Local engine inputs and
+ordinary `self` properties are distinguished from ambient browser globals. Ambient
+value references use a reviewed pure-global allowlist, not an incomplete list of
+browser APIs to deny. `import.meta` is explicitly refused; type positions are not
+runtime access. Unsupported `.mts`/`.cts` files (including their declarations) are
+rejected as tracked source rather than silently omitted.
+
+The sole core-module exception is a static named `createHash` import from `node:crypto`
+(aliasing that import is allowed). Namespace/default imports, entropy functions,
+crypto reexports and dynamic crypto access are refused. Hashes are computed from
+explicit inputs. Existing versioned PRNG and the Rapier physics adapter remain valid;
+WASM preparation stays in its reviewed physics boundary. Dependency graphs alone do
+not prove determinism, and this conservative AST policy is not a mathematical proof.
+
+## SQLite migration generations
+
+The existing API migration runner is shared from `apps/api/src/migrations.ts` by
+startup, development reset and the disposable guard. `quality:migrations` compares
+with `MIGRATION_BASE_SHA` supplied by the exact CI plan (or local merge-base with
+origin/main); missing baseline evidence fails closed. Existing SQL in a generation
+is append-only, and applied receipts must be an unchanged prefix with exact checksums.
+The runner initializes and reinitializes a temporary DB and checks integrity; tests
+also cover failing SQL rollback, missing/modified receipts and unsupported DBs.
+Verification never opens DATABASE_PATH or a user DB.
+
+`db/schema.json` plus a new reviewed ADR permits a new generation, SQL replacement
+and fresh initialization without retaining obsolete engine/DB compatibility fixtures.
+The first generation declaration still protects previous SQL. Ordinary startup never
+resets data. `db:reset` requires explicit generation confirmation and a new destination;
+its exclusive file creation refuses an existing file before SQLite can open it.
+See [the schema decision](../adr/0003-schema-generations.md).
+
 ## Change workflow
 
 Use `vp test run scripts/quality` for meaningful positive and negative fixtures. CI uses

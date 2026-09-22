@@ -1,12 +1,20 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { checkMigrations } from './quality/migrations.ts';
 import { architecture } from './quality/architecture.ts';
-import { firstPartyJavaScript } from './quality/files.ts';
+import { firstPartyJavaScript, unsupportedTypeScriptModules } from './quality/files.ts';
+import { withSources } from './quality/ast.ts';
+import { determinism } from './quality/determinism.ts';
 import { assessReport } from './harness/report.ts';
 import type { Check, Report } from './harness/report.ts';
 import { sourceIdentity } from './harness/source.ts';
 
-const required = ['quality:typescript', 'quality:architecture'];
+const required = [
+  'quality:typescript',
+  'quality:architecture',
+  'quality:determinism',
+  'quality:migrations',
+];
 const startedAt = new Date().toISOString();
 const checks: Check[] = [];
 const details: Record<string, unknown> = {};
@@ -45,15 +53,28 @@ try {
     }
   };
   await run('quality:typescript', () =>
-    firstPartyJavaScript(paths).map((path) => ({
+    [...firstPartyJavaScript(paths), ...unsupportedTypeScriptModules(paths)].map((path) => ({
       path,
-      correction: 'Use strict TypeScript for first-party source and configuration.',
+      correction:
+        'Use strict .ts/.tsx source; .mts/.cts module variants are unsupported by this workspace guard.',
     })),
   );
   await run('quality:architecture', async () => {
     const graph = await architecture(root, paths);
     return [...graph.publicGraph.summary.violations, ...graph.runtimeGraph.summary.violations];
   });
+  await run('quality:determinism', () =>
+    withSources(
+      root,
+      paths.filter(
+        (path) =>
+          /^packages\/engine\/src\/.*\.tsx?$/.test(path) && !/\.(?:test|d)\.tsx?$/.test(path),
+      ),
+      (files, _options, checker) =>
+        [...files].flatMap(([path, file]) => determinism(path, file, checker)),
+    ),
+  );
+  await run('quality:migrations', () => checkMigrations(root));
   writeFileSync(`${directory}/findings.json`, JSON.stringify({ ...info, details }, null, 2) + '\n');
   const report: Report = {
     ...info,
