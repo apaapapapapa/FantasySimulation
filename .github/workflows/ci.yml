@@ -1,19 +1,14 @@
 name: CI
-
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
-
 permissions:
   contents: read
-
 concurrency:
   group: ci-${{ github.ref }}
-  # A main release must finish once it has pushed a tag.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   security:
     name: Security
@@ -21,8 +16,64 @@ jobs:
     permissions:
       contents: read
       security-events: write
-
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      full: ${{ steps.plan.outputs.full }}
+      baseline: ${{ steps.plan.outputs.baseline }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - name: Plan verification from the exact tested tree
+        id: plan
+        shell: bash
+        run: |
+          mkdir -p .generated/harness/ci
+          vp exec node scripts/ci/plan.ts .generated/harness/ci/plan.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ci-plan
+          path: .generated/harness/ci/plan.json
+          if-no-files-found: error
+          retention-days: 7
+  docs:
+    needs: changes
+    if: needs.changes.outputs.full == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ci-plan
+          path: .generated/harness/ci
+      - run: vp exec node scripts/ci/docs.ts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: harness-docs
+          path: .generated/harness/docs/
+          if-no-files-found: error
+          retention-days: 7
   verify:
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
     name: Verify (${{ matrix.os }})
     strategy:
       fail-fast: false
@@ -31,31 +82,77 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
-        with:
-          node-version-file: .node-version
-          cache: true
-          run-install: false
-      - run: vp install --frozen-lockfile
+      - uses: ./.github/actions/setup-project
       - name: Read-only verification with source-bound evidence
+        env:
+          MIGRATION_BASE_SHA: ${{ needs.changes.outputs.baseline }}
         run: vp exec node scripts/harness.ts source .generated/harness/source
       - name: Preserve source evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: harness-${{ matrix.os }}
           path: .generated/harness/
           retention-days: 7
           if-no-files-found: error
           include-hidden-files: true
-
+  ci-gate:
+    name: ci-gate
+    needs: [changes, verify, docs, security]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ci-plan
+          path: .generated/harness/ci
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: always() && needs.changes.outputs.full == 'true'
+        with:
+          name: harness-ubuntu-latest
+          path: .generated/harness/ci/evidence/ubuntu-latest
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: always() && needs.changes.outputs.full == 'true'
+        with:
+          name: harness-windows-latest
+          path: .generated/harness/ci/evidence/windows-latest
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: always() && needs.changes.outputs.full == 'false'
+        with:
+          name: harness-docs
+          path: .generated/harness/ci/evidence/docs/docs
+      - name: Bind expected jobs and evidence to the CI plan
+        if: always()
+        env:
+          CI_RESULTS: ${{ toJSON(needs) }}
+        shell: bash
+        run: |
+          export CI_RESULTS="$(node --input-type=module -e 'const x=JSON.parse(process.env.CI_RESULTS);console.log(JSON.stringify(Object.fromEntries(Object.entries(x).map(([k,v])=>[k,v.result]))))')"
+          vp exec node scripts/ci/gate.ts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: ci-gate
+          path: .generated/harness/ci/
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
   release:
     name: Release
-    needs: [verify, security]
+    needs: [verify, ci-gate, security]
     if: >-
       github.repository == 'apaapapapapa/FantasySimulation' &&
       github.ref == 'refs/heads/main' &&
@@ -65,16 +162,11 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
-        with:
-          node-version-file: .node-version
-          cache: true
-          run-install: false
-      - run: vp install --frozen-lockfile
+      - uses: ./.github/actions/setup-project
       - name: Publish version tag and GitHub release
         run: vp exec semantic-release
         env:

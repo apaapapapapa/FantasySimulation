@@ -1,0 +1,61 @@
+name: Prepare H2 reviewed source tree
+on:
+  push:
+    branches: [automation/h2-source-preparation]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+      - run: vp install --frozen-lockfile
+      - run: vp fmt scripts/ci .github/workflows/ci.yml .github/actions/setup-project/action.yml docs/development/ci.md
+      - run: vp check && vp run typecheck && vp test run scripts/ci
+      - name: Export allowlisted source entries
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+          const paths=['scripts/ci/plan.ts','scripts/ci/gate.ts','scripts/ci/docs.ts','scripts/ci/plan.test.ts','.github/actions/setup-project/action.yml','.github/workflows/ci.yml','docs/development/ci.md'];
+          mkdirSync('stage-output');
+          writeFileSync('stage-output/tree.json',JSON.stringify({sourceSha:process.env.GITHUB_SHA,tree:paths.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))}));
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: h2-tree
+          path: stage-output/tree.json
+          retention-days: 1
+          if-no-files-found: error
+  emit:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: h2-tree
+          path: prepared
+      - name: Create unreferenced tree; never change refs or execute artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const allowed=['scripts/ci/plan.ts','scripts/ci/gate.ts','scripts/ci/docs.ts','scripts/ci/plan.test.ts','.github/actions/setup-project/action.yml','.github/workflows/ci.yml','docs/development/ci.md'];
+          const value=JSON.parse(readFileSync('prepared/tree.json','utf8'));
+          if(value.sourceSha!==process.env.GITHUB_SHA||value.tree.length!==allowed.length||new Set(value.tree.map(v=>v.path)).size!==allowed.length)throw Error('Invalid source');
+          for(const v of value.tree)if(!allowed.includes(v.path)||v.mode!=='100644'||v.type!=='blob'||typeof v.content!=='string'||v.content.length>100000||Object.keys(v).sort().join(',')!=='content,mode,path,type')throw Error('Invalid entry');
+          writeFileSync('request.json',JSON.stringify({base_tree:'c869cc3a15853ce8ea4ccd81df20cb53b7087e8e',tree:value.tree}));
+          NODE
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input request.json --jq .sha
