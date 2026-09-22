@@ -6,10 +6,10 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { afterEach, describe, expect, it } from 'vite-plus/test';
-import { BattleRecordSchema, CharacterSchema } from '@fantasy/domain';
-import { DEFAULT_RULESET, simulateBattle } from '@fantasy/engine';
+import { canonicalJson, RevisionSchema } from '@fantasy/domain/spatial';
+import { catalogManifest, prepareBattle, reference } from '@fantasy/engine/spatial';
 import { repositoryRoot } from './config.ts';
-import { openStore, readSampleCharacters } from './store.ts';
+import { openStore, readSampleRevisions } from './store.ts';
 
 const migrationsFolder = join(repositoryRoot, 'db/drizzle');
 const kit = join(repositoryRoot, 'node_modules/drizzle-kit/bin.cjs');
@@ -65,63 +65,86 @@ function temporaryKitConfig(directory: string) {
   return config;
 }
 
-describe('Drizzle Kit and ORM migration integration', () => {
-  it('builds STRICT tables with JSON checks, foreign keys and the descending history index', () => {
-    const sqlite = new Database(':memory:');
+const legacyFixture = () =>
+  readFileSync(join(repositoryRoot, 'apps/api/test-fixtures/spatial-v1.sql'), 'utf8');
+function failingMigrations() {
+  const copy = join(temporary(), 'migrations');
+  cpSync(migrationsFolder, copy, { recursive: true });
+  const initial = readdirSync(copy)
+    .filter((name) => name.endsWith('.sql'))
+    .sort()[0];
+  if (!initial) throw new Error('Missing generated migration');
+  const path = join(copy, initial);
+  writeFileSync(
+    path,
+    readFileSync(path, 'utf8') +
+      '\n--> statement-breakpoint\nCREATE TABLE rollback_probe(id INTEGER);\n--> statement-breakpoint\nINSERT INTO deliberately_missing_table VALUES(1);\n',
+  );
+  return copy;
+}
+
+describe('Drizzle Kit and spatial persistence integration', () => {
+  it('builds STRICT tables, JSON and kind checks, composite keys and immutable triggers', () => {
+    const db = new Database(':memory:');
     try {
-      sqlite.pragma('foreign_keys = ON');
-      migrate(drizzle(sqlite), { migrationsFolder });
-      const tables = sqlite
-        .prepare<[], { name: string; strict: number }>('PRAGMA table_list')
-        .all();
-      for (const name of ['characters', 'rulesets', 'battles'])
+      migrate(drizzle(db), { migrationsFolder });
+      const tables = db.prepare<[], { name: string; strict: number }>('PRAGMA table_list').all();
+      for (const name of ['published_revisions', 'definition_drafts', 'battle_specs'])
         expect(tables.find((table) => table.name === name)?.strict).toBe(1);
       expect(
-        tables.some((table) => ['schema_generation', 'schema_migrations'].includes(table.name)),
+        tables.some((table) =>
+          ['schema_generation', 'schema_migrations', 'characters', 'rulesets', 'battles'].includes(
+            table.name,
+          ),
+        ),
       ).toBe(false);
+      const insert = db.prepare('INSERT INTO published_revisions VALUES(?,?,?,?,?,?)');
+      expect(() => insert.run('invalid', 'id', 1, 'hash', '{}', 'now')).toThrow(
+        /CHECK constraint failed/,
+      );
+      expect(() => insert.run('policy', 'id', 0, 'hash', '{}', 'now')).toThrow(
+        /CHECK constraint failed/,
+      );
+      expect(() => insert.run('policy', 'id', 1, 'hash', '{', 'now')).toThrow(
+        /CHECK constraint failed/,
+      );
+      expect(() => insert.run('policy', null, 1, 'hash', '{}', 'now')).toThrow(
+        /NOT NULL constraint failed/,
+      );
+      expect(() => insert.run('policy', 'id', 1, 'hash', Buffer.from('{}'), 'now')).toThrow(
+        /cannot store BLOB value in TEXT column/,
+      );
+      insert.run('policy', 'id', 1, 'hash', '{}', 'now');
+      expect(() => insert.run('policy', 'id', 1, 'hash', '{}', 'now')).toThrow(
+        /UNIQUE constraint failed/,
+      );
+      expect(() => db.prepare('UPDATE published_revisions SET revision=2').run()).toThrow(
+        /immutable/,
+      );
+      expect(() => db.prepare('DELETE FROM published_revisions').run()).toThrow(
+        /cannot be deleted/,
+      );
       expect(() =>
-        sqlite.prepare('INSERT INTO characters VALUES (?, ?, ?)').run('invalid', '{', 'now'),
-      ).toThrow(/CHECK constraint failed/);
-      expect(() =>
-        sqlite.prepare('INSERT INTO characters VALUES (?, ?, ?)').run(null, '{}', 'now'),
+        db.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run(null, '{}', 'now'),
       ).toThrow(/NOT NULL constraint failed/);
       expect(() =>
-        sqlite
-          .prepare('INSERT INTO characters VALUES (?, ?, ?)')
-          .run('blob', Buffer.from('{}'), 'now'),
-      ).toThrow(/cannot store BLOB value in TEXT column/);
-      expect(() =>
-        sqlite.prepare('INSERT INTO rulesets VALUES (?, ?)').run('invalid', '{'),
+        db.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run('hash', '{', 'now'),
       ).toThrow(/CHECK constraint failed/);
-      expect(() =>
-        sqlite
-          .prepare('INSERT INTO battles VALUES (?, ?, ?, ?)')
-          .run('invalid', 'missing', '{}', 'now'),
-      ).toThrow(/FOREIGN KEY constraint failed/);
-      sqlite.prepare('INSERT INTO rulesets VALUES (?, ?)').run('test', '{}');
-      expect(() =>
-        sqlite
-          .prepare('INSERT INTO battles VALUES (?, ?, ?, ?)')
-          .run('invalid', 'test', '{', 'now'),
-      ).toThrow(/CHECK constraint failed/);
-      const index = sqlite
-        .prepare<[], { name: string | null; desc: number; key: number }>(
-          "PRAGMA index_xinfo('battles_created_at')",
-        )
-        .all();
-      expect(
-        index.filter((column) => column.key === 1).map(({ name, desc }) => ({ name, desc })),
-      ).toEqual([
-        { name: 'created_at', desc: 1 },
-        { name: 'id', desc: 1 },
-      ]);
-      expect(sqlite.pragma('integrity_check', { simple: true })).toBe('ok');
+      db.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run('hash', '{}', 'now');
+      expect(() => db.prepare("UPDATE battle_specs SET manifest_json='{}'").run()).toThrow(
+        /immutable/,
+      );
+      expect(() => db.prepare('DELETE FROM battle_specs').run()).toThrow(/cannot be deleted/);
+      expect(db.prepare("SELECT name FROM sqlite_schema WHERE type='trigger'").all()).toHaveLength(
+        4,
+      );
+      expect(db.pragma('integrity_check', { simple: true })).toBe('ok');
     } finally {
-      sqlite.close();
+      db.close();
     }
   });
 
-  it('shares the official history between Kit, startup and repeated execution', () => {
+  it('shares official history between Kit, startup and repeated execution', async () => {
     const filename = join(temporary(), 'fresh.sqlite');
     runKit(['migrate'], filename);
     const first = new Database(filename);
@@ -130,7 +153,8 @@ describe('Drizzle Kit and ORM migration integration', () => {
     expect(before.length).toBeGreaterThan(0);
     const store = openStore(filename);
     try {
-      store.seedCharacters(readSampleCharacters());
+      await store.seedRevisions(readSampleRevisions());
+      expect(store.listRevisions('character').items).toHaveLength(10);
     } finally {
       store.close();
     }
@@ -138,119 +162,120 @@ describe('Drizzle Kit and ORM migration integration', () => {
     const second = new Database(filename);
     try {
       expect(receipts(second)).toEqual(before);
-      expect(second.prepare('SELECT id FROM characters').all()).toHaveLength(2);
     } finally {
       second.close();
     }
   }, 90000);
 
-  it('adopts the real previous schema without changing edited characters, rules or battle snapshots', () => {
+  it('adopts existing spatial revisions, edited drafts and immutable specifications without changing rows', async () => {
     const filename = join(temporary(), 'legacy.sqlite');
-    const sqlite = new Database(filename);
-    const left = CharacterSchema.parse(readSampleCharacters()[0]);
-    const right = CharacterSchema.parse(readSampleCharacters()[1]);
-    const edited = { ...left, name: '移行前の編集を保持' };
-    const record = BattleRecordSchema.parse({
-      id: '3d1c7b4a-01f7-4b3c-9c87-947e9dfc4fd2',
-      createdAt: '2026-09-22T00:00:00.000Z',
-      participants: [left, right],
-      result: simulateBattle(left, right),
-    });
+    const db = new Database(filename);
+    const revisions = readSampleRevisions().map((r) => RevisionSchema.parse(r));
+    const character = revisions.find((r) => r.kind === 'character' && r.id === 'swordsman');
+    if (!character) throw new Error('Missing sample character');
+    const battle = await prepareBattle(await catalogManifest());
+    const definition = { ...character.definition, name: '移行前の編集を保持' };
+    const id = '3d1c7b4a-01f7-4b3c-9c87-947e9dfc4fd2';
+    const now = '2026-09-22T00:00:00.000Z';
     try {
-      sqlite.exec(
-        readFileSync(join(repositoryRoot, 'apps/api/test-fixtures/local-v1.sql'), 'utf8'),
+      db.exec(legacyFixture());
+      for (const r of revisions)
+        db.prepare('INSERT INTO published_revisions VALUES(?,?,?,?,?,?)').run(
+          r.kind,
+          r.id,
+          r.revision,
+          r.contentHash,
+          canonicalJson(r),
+          now,
+        );
+      db.prepare('INSERT INTO definition_drafts VALUES(?,?,?,?,?,?,?,?,?)').run(
+        id,
+        character.kind,
+        character.id,
+        3,
+        canonicalJson(definition),
+        null,
+        now,
+        now,
+        canonicalJson(reference(character)),
       );
-      sqlite
-        .prepare('INSERT INTO characters VALUES (?, ?, ?)')
-        .run(edited.id, JSON.stringify(edited), record.createdAt);
-      sqlite
-        .prepare('INSERT INTO rulesets VALUES (?, ?)')
-        .run(DEFAULT_RULESET.version, JSON.stringify(DEFAULT_RULESET));
-      sqlite
-        .prepare('INSERT INTO battles VALUES (?, ?, ?, ?)')
-        .run(record.id, DEFAULT_RULESET.version, JSON.stringify(record), record.createdAt);
+      db.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run(
+        battle.simulationHash,
+        canonicalJson(battle.manifest),
+        now,
+      );
     } finally {
-      sqlite.close();
+      db.close();
     }
     runKit(['migrate'], filename);
     const store = openStore(filename);
     try {
-      store.seedCharacters(readSampleCharacters());
-      expect(store.getCharacter(edited.id)).toEqual(edited);
-      expect(store.listBattles()).toEqual([record]);
-      expect(() => store.registerRuleset(DEFAULT_RULESET)).not.toThrow();
-      expect(() => store.registerRuleset({ ...DEFAULT_RULESET, maxRounds: 2 })).toThrow(
-        'version bump',
-      );
+      await store.seedRevisions(readSampleRevisions());
+      expect(store.getRevision('character', character.id, character.revision)).toEqual(character);
+      expect(store.getDraft(id)).toMatchObject({
+        id,
+        definition,
+        base: reference(character),
+        version: 3,
+        published: null,
+      });
+      expect(store.getSpec(battle.simulationHash)).toEqual({
+        simulationHash: battle.simulationHash,
+        manifest: battle.manifest,
+      });
+      expect(
+        store.db
+          .prepare(
+            "SELECT name FROM sqlite_schema WHERE name IN ('schema_generation','schema_migrations')",
+          )
+          .all(),
+      ).toEqual([]);
+      expect(
+        store.db
+          .prepare(
+            'SELECT revision_json FROM published_revisions WHERE kind=? AND definition_id=? AND revision=?',
+          )
+          .get(character.kind, character.id, character.revision),
+      ).toEqual({ revision_json: canonicalJson(character) });
+      expect(store.db.pragma('integrity_check', { simple: true })).toBe('ok');
     } finally {
       store.close();
     }
-    const check = new Database(filename);
-    try {
-      expect(
-        check.prepare('SELECT definition FROM characters WHERE id = ?').get(edited.id),
-      ).toEqual({ definition: JSON.stringify(edited) });
-      expect(
-        check
-          .prepare(
-            "SELECT name FROM sqlite_schema WHERE name IN ('schema_generation', 'schema_migrations')",
-          )
-          .all(),
-      ).toEqual([]);
-      expect(check.pragma('foreign_key_check')).toEqual([]);
-      expect(check.pragma('integrity_check', { simple: true })).toBe('ok');
-    } finally {
-      check.close();
-    }
   }, 90000);
 
-  it('rolls back failed migration DDL and receipts using the official migrator', () => {
-    const copy = join(temporary(), 'migrations');
-    cpSync(migrationsFolder, copy, { recursive: true });
-    const initial = readdirSync(copy)
-      .filter((name) => name.endsWith('.sql'))
-      .sort()[0];
-    if (!initial) throw new Error('Missing generated migration');
-    const file = join(copy, initial);
-    writeFileSync(
-      file,
-      readFileSync(file, 'utf8') +
-        '\n--> statement-breakpoint\nCREATE TABLE rollback_probe (id INTEGER);\n--> statement-breakpoint\nINSERT INTO deliberately_missing_table VALUES (1);\n',
-    );
-    const sqlite = new Database(':memory:');
+  it('rolls back failed initial migration DDL and official receipts', () => {
+    const db = new Database(':memory:');
     try {
-      expect(() => migrate(drizzle(sqlite), { migrationsFolder: copy })).toThrow();
+      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow();
       expect(
-        sqlite
+        db
           .prepare(
-            "SELECT name FROM sqlite_schema WHERE name IN ('characters', 'rulesets', 'battles', 'rollback_probe')",
+            "SELECT name FROM sqlite_schema WHERE name IN ('published_revisions','definition_drafts','battle_specs','rollback_probe')",
           )
           .all(),
       ).toEqual([]);
-      expect(receipts(sqlite)).toEqual([]);
+      expect(receipts(db)).toEqual([]);
     } finally {
-      sqlite.close();
+      db.close();
     }
   });
 
-  it('does not drop legacy receipts or data if adoption fails', () => {
-    const sqlite = new Database(':memory:');
+  it('restores existing data and old receipts if the adoption transaction fails', () => {
+    const db = new Database(':memory:');
     try {
-      sqlite.exec(
-        readFileSync(join(repositoryRoot, 'apps/api/test-fixtures/local-v1.sql'), 'utf8'),
-      );
-      sqlite.exec(
-        'DROP INDEX battles_created_at; ALTER TABLE battles RENAME COLUMN created_at TO unexpected_column;',
-      );
-      sqlite.prepare('INSERT INTO characters VALUES (?, ?, ?)').run('preserved', '{}', 'now');
-      expect(() => migrate(drizzle(sqlite), { migrationsFolder })).toThrow();
-      expect(sqlite.prepare('SELECT id FROM characters').all()).toEqual([{ id: 'preserved' }]);
-      expect(sqlite.prepare('SELECT name FROM schema_migrations').all()).toEqual([
-        { name: '001_initial.sql' },
+      db.exec(legacyFixture());
+      db.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run('keep', '{}', 'before');
+      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow();
+      expect(db.prepare('SELECT simulation_hash FROM battle_specs').all()).toEqual([
+        { simulation_hash: 'keep' },
       ]);
-      expect(receipts(sqlite)).toEqual([]);
+      expect(db.prepare('SELECT name FROM schema_migrations ORDER BY name').all()).toEqual([
+        { name: '002_spatial_revisions.sql' },
+        { name: '003_draft_base.sql' },
+      ]);
+      expect(receipts(db)).toEqual([]);
     } finally {
-      sqlite.close();
+      db.close();
     }
   });
 
@@ -263,7 +288,7 @@ describe('Drizzle Kit and ORM migration integration', () => {
     try {
       const db = drizzle(sqlite);
       migrate(db, { migrationsFolder: output });
-      sqlite.prepare('INSERT INTO characters VALUES (?, ?, ?)').run('existing', '{}', 'before');
+      sqlite.prepare('INSERT INTO battle_specs VALUES (?, ?, ?)').run('existing', '{}', 'before');
       const before = receipts(sqlite);
       const files = new Set(readdirSync(output));
       const config = temporaryKitConfig(directory);
@@ -280,17 +305,16 @@ describe('Drizzle Kit and ORM migration integration', () => {
       if (!migration) throw new Error('Kit did not generate an incremental migration');
       writeFileSync(
         join(output, migration),
-        'ALTER TABLE characters ADD COLUMN migration_probe TEXT;\n',
+        'ALTER TABLE definition_drafts ADD COLUMN migration_probe TEXT;\n',
       );
       migrate(db, { migrationsFolder: output });
+      expect(sqlite.prepare('SELECT migration_probe FROM definition_drafts').all()).toEqual([]);
       const after = receipts(sqlite);
       expect(after).toHaveLength(before.length + 1);
       expect(after.slice(0, before.length)).toEqual(before);
       expect(
-        sqlite.prepare('SELECT id, definition, updated_at, migration_probe FROM characters').all(),
-      ).toEqual([
-        { id: 'existing', definition: '{}', updated_at: 'before', migration_probe: null },
-      ]);
+        sqlite.prepare('SELECT simulation_hash, manifest_json, created_at FROM battle_specs').all(),
+      ).toEqual([{ simulation_hash: 'existing', manifest_json: '{}', created_at: 'before' }]);
       migrate(db, { migrationsFolder: output });
       expect(receipts(sqlite)).toEqual(after);
     } finally {

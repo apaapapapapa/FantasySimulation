@@ -66,12 +66,12 @@ not prove determinism, and this conservative AST policy is not a mathematical pr
 Drizzle Kit generates and checks `db/drizzle`. The API directly calls the official
 Drizzle ORM migrator with the same SQL, journal and `__drizzle_migrations` table as
 the Kit CLI. There is no application-owned runner, generation declaration, checksum
-ledger, SQL parser or reset implementation. See [ADR 0004](../adr/0004-drizzle-kit.md).
+ledger, SQL parser or reset implementation. See [ADR 0005](../adr/0005-drizzle-kit.md).
 
 `quality:migrations` runs the actual `drizzle-kit check` command and retains failures
 in the ordinary quality report. Real integration tests in `apps/api/src/drizzle.test.ts`
 verify fresh SQLite initialization, Kit/startup reexecution, legacy data adoption,
-failure rollback, STRICT/JSON/foreign-key constraints and descending history indexes.
+failure rollback, STRICT/JSON/kind/JSON constraints, composite keys and immutable triggers.
 They run Kit generate against a disposable copy of the snapshots to detect uncommitted
 schema changes. Existing API persistence and restart tests continue to run.
 

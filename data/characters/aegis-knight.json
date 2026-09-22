@@ -1,9 +1,0 @@
-{
-  "schemaVersion": 1,
-  "id": "aegis-knight",
-  "name": "蒼盾の騎士",
-  "description": "堅い守りと物理耐性を備える、開発用のサンプルキャラクター。",
-  "stats": { "maxHp": 120, "attack": 20, "defense": 12, "speed": 8 },
-  "actions": [{ "kind": "weapon", "name": "蒼銀の剣", "category": "sword", "power": 10 }],
-  "abilities": [{ "kind": "resistance", "name": "堅牢", "damageType": "physical", "percent": 20 }]
-}
