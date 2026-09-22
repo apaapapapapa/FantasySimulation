@@ -31,9 +31,7 @@ export function securityInputs(run: SecurityRun) {
 function passingCounts(checkId: string, counts: Record<string, unknown>): boolean {
   switch (checkId) {
     case 'secret-canary':
-      return (
-        counts.scenarios === 4
-      );
+      return counts.scenarios === 4;
     case 'secret-scan':
       return (
         typeof counts.detected === 'number' &&
