@@ -29,7 +29,9 @@ jobs:
           python - <<'PY'
           import subprocess
           conflicts = subprocess.check_output(['git','diff','--name-only','--diff-filter=U'],text=True).splitlines()
-          remove = {'apps/api/src/database-cli.ts','apps/api/src/migrations.test.ts','db/schema.json','scripts/quality/migrations.ts','scripts/quality/migrations.test.ts','apps/api/test-fixtures/local-v1.sql'}
+          # Git infers a directory rename from the old SQL fixture. The current
+          # 002/003 SQL is preserved as one explicit fixture by the source script.
+          remove = {'apps/api/src/database-cli.ts','apps/api/src/migrations.test.ts','db/schema.json','scripts/quality/migrations.ts','scripts/quality/migrations.test.ts','apps/api/test-fixtures/local-v1.sql','apps/api/test-fixtures/002_spatial_revisions.sql','apps/api/test-fixtures/003_draft_base.sql'}
           current = {'AGENTS.md','README.md','apps/api/src/store.ts','package.json','packages/engine/src/spatial/implementation.json'}
           allowed = remove | current
           if set(conflicts) - allowed:
