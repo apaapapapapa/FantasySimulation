@@ -206,7 +206,7 @@ export function issueTasks(body: string): { line: number; task: string }[] {
 
 function markdown(value: string): string {
   return value
-    .replace(/[&<>@`\[\]*_]/g, (char) => `&#${char.charCodeAt(0)};`)
+    .replace(/[&<>@`[\]*_]/g, (char) => `&#${char.charCodeAt(0)};`)
     .replace(/\r?\n/g, ' ');
 }
 

@@ -246,7 +246,9 @@ describe('Drizzle Kit and spatial persistence integration', () => {
   it('rolls back failed initial migration DDL and official receipts', () => {
     const db = new Database(':memory:');
     try {
-      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow();
+      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow(
+        /Failed to run the query '[\s\S]*INSERT INTO deliberately_missing_table VALUES\(1\);/,
+      );
       expect(
         db
           .prepare(
@@ -265,7 +267,9 @@ describe('Drizzle Kit and spatial persistence integration', () => {
     try {
       db.exec(legacyFixture());
       db.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run('keep', '{}', 'before');
-      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow();
+      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow(
+        /Failed to run the query '[\s\S]*INSERT INTO deliberately_missing_table VALUES\(1\);/,
+      );
       expect(db.prepare('SELECT simulation_hash FROM battle_specs').all()).toEqual([
         { simulation_hash: 'keep' },
       ]);

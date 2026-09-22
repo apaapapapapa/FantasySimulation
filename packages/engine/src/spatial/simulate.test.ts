@@ -91,22 +91,27 @@ describe('fixed-step battle stream', () => {
       physicsStateHash: 'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976',
     });
     expect(finalActors(run.records).map((a) => a.resources.hp)).toEqual([0, 0]);
-    for (const record of run.records) {
+    for (const record of run.records)
       expect(StreamRecordSchema.safeParse(record).success).toBe(true);
-      if (record.kind === 'interval')
-        for (const path of record.paths) {
-          expect(path.segments[0]!.from).toBe(0);
-          expect(path.segments.at(-1)!.to).toBe(1);
-          for (let i = 1; i < path.segments.length; i++)
-            expect(path.segments[i]!.start).toEqual(path.segments[i - 1]!.end);
-        }
+    const intervals = run.records.filter((record) => record.kind === 'interval');
+    expect(intervals.length).toBeGreaterThan(0);
+    const paths = intervals.flatMap((record) => record.paths);
+    expect(paths.length).toBeGreaterThan(0);
+    for (const path of paths) {
+      expect(path.segments.length).toBeGreaterThan(0);
+      expect(path.segments[0]!.from).toBe(0);
+      expect(path.segments.at(-1)!.to).toBe(1);
+      for (let i = 1; i < path.segments.length; i++)
+        expect(path.segments[i]!.start).toEqual(path.segments[i - 1]!.end);
     }
     const log = events(run.records);
+    expect(log.length).toBeGreaterThan(0);
+    expect(log.some((event) => event.parentEventId !== null)).toBe(true);
     expect(log.map((e) => e.sequence)).toEqual(log.map((_, i) => i));
     const seen = new Set<string>();
     for (const event of log) {
-      if (event.parentEventId) expect(seen.has(event.parentEventId)).toBe(true);
-      for (const cause of event.causes) expect(seen.has(cause)).toBe(true);
+      const parents = event.parentEventId === null ? [] : [event.parentEventId];
+      for (const cause of [...parents, ...event.causes]) expect(seen.has(cause)).toBe(true);
       seen.add(event.id);
     }
     expect(input).toEqual(copy);

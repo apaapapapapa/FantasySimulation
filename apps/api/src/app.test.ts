@@ -137,7 +137,7 @@ describe('3D revision API and Drizzle persistence', () => {
         }),
       ),
     );
-    expect(responses.map((r) => r.statusCode).sort()).toEqual([201, 409]);
+    expect(responses.map((r) => r.statusCode).sort((a, b) => a - b)).toEqual([201, 409]);
     const published = PublishResponseSchema.parse(
       responses.find((r) => r.statusCode === 201)!.json(),
     );
