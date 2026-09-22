@@ -10,6 +10,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  dependency-policy:
+    name: Dependency policy
+    uses: ./.github/workflows/dependency-policy.yml
+
   security:
     name: Security
     uses: ./.github/workflows/security.yml
@@ -102,7 +106,7 @@ jobs:
           include-hidden-files: true
   ci-gate:
     name: ci-gate
-    needs: [changes, verify, docs, security]
+    needs: [changes, verify, docs, security, dependency-policy]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -134,6 +138,12 @@ jobs:
         with:
           name: harness-docs
           path: .generated/harness/ci/evidence/docs/docs
+      - name: Require dependency policy
+        if: always()
+        shell: bash
+        env:
+          DEPENDENCY_RESULT: ${{ needs.dependency-policy.result }}
+        run: test "$DEPENDENCY_RESULT" = success
       - name: Bind expected jobs and evidence to the CI plan
         if: always()
         env:
@@ -152,7 +162,7 @@ jobs:
           include-hidden-files: true
   release:
     name: Release
-    needs: [verify, ci-gate, security]
+    needs: [verify, ci-gate, security, dependency-policy]
     if: >-
       github.repository == 'apaapapapapa/FantasySimulation' &&
       github.ref == 'refs/heads/main' &&
