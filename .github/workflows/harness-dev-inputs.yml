@@ -15,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
         with:
@@ -25,6 +26,11 @@ jobs:
         run: vp run harness github-snapshot apaapapapapa/FantasySimulation 13 .generated/harness/live-probe
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Preserve the exact source for offline validation
+        if: always()
+        run: |
+          mkdir -p .generated/harness/live-probe
+          git bundle create .generated/harness/live-probe/source.bundle HEAD
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
