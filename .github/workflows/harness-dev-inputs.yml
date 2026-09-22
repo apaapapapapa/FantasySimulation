@@ -7,36 +7,49 @@ permissions:
   contents: read
 
 jobs:
-  inputs:
-    if: github.repository == 'apaapapapapa/FantasySimulation' && github.head_ref == 'feat/h1-delivery-evidence' && github.event.pull_request.head.repo.full_name == github.repository
+  lock-blob:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.head_ref == 'feat/h1-delivery-evidence' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.draft && github.actor == 'apaapapapapa'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 5
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
-        with:
-          node-version-file: .node-version
-          cache: true
-          run-install: false
-      - run: vp install --frozen-lockfile
-      - name: Capture the resolved pinned runtime for local validation
+      - name: Prepare the two declared development dependency entries
         shell: bash
         run: |
           set -euo pipefail
-          out=.generated/harness/dev-inputs
-          mkdir -p "$out"
-          cp -L "$(vp exec node -p process.execPath)" "$out/node"
-          git rev-parse HEAD > "$out/source-sha.txt"
-          "$out/node" --version > "$out/node-version.txt"
-          sha256sum "$out/node" > "$out/checksums.txt"
-          git diff --exit-code
+          mkdir -p .generated/harness/lock-blob
+          python3 - <<'PY'
+          import json, pathlib, hashlib
+          path = pathlib.Path('pnpm-lock.yaml')
+          text = path.read_text()
+          old = '  .:\n    devDependencies:\n'
+          new = old + "      '@octokit/core':\n        specifier: 7.0.8\n        version: 7.0.8\n      '@octokit/plugin-paginate-rest':\n        specifier: 14.0.0\n        version: 14.0.0(@octokit/core@7.0.8)\n"
+          assert text.count(old) == 1
+          assert "'@octokit/core@7.0.8':" in text
+          assert "'@octokit/plugin-paginate-rest@14.0.0(@octokit/core@7.0.8)':" in text
+          assert new not in text
+          text = text.replace(old, new, 1)
+          out = pathlib.Path('.generated/harness/lock-blob')
+          (out / 'request.json').write_text(json.dumps({'content': text, 'encoding': 'utf-8'}))
+          (out / 'content-sha256.txt').write_text(hashlib.sha256(text.encode()).hexdigest() + '\n')
+          PY
+      - name: Store only an unreferenced Git blob for connector commit assembly
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/blobs" --input .generated/harness/lock-blob/request.json --jq .sha > .generated/harness/lock-blob/blob-sha.txt
+          rm .generated/harness/lock-blob/request.json
+          cat .generated/harness/lock-blob/blob-sha.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: harness-resolved-node
-          path: .generated/harness/dev-inputs/
+          name: harness-lock-blob
+          path: .generated/harness/lock-blob/
           retention-days: 1
-          compression-level: 6
           if-no-files-found: error
