@@ -69,7 +69,10 @@ function resultRule(
   return rule;
 }
 
-export function codeqlOutcome(value: unknown): Outcome {
+export function codeqlOutcome(
+  value: unknown,
+  blockingLocation?: (rule: string, path: string, line: number) => void,
+): Outcome {
   const report = object(value);
   requireCondition(report.version === '2.1.0', 'UNSUPPORTED_SARIF_VERSION');
   const runs = array(report.runs);
@@ -115,7 +118,21 @@ export function codeqlOutcome(value: unknown): Outcome {
         );
         const score = Number(severity);
         requireCondition(score >= 0 && score <= 10, 'INVALID_CODEQL_SECURITY_SCORE');
-        if (score >= 7) blocking += 1;
+        if (score >= 7) {
+          blocking += 1;
+          if (blockingLocation) {
+            const locations = Array.isArray(result.locations) ? result.locations : [];
+            for (const entry of locations.slice(0, 10)) {
+              const location = object(object(entry).physicalLocation);
+              const path = text(object(location.artifactLocation).uri);
+              const line = count(object(location.region).startLine);
+              const id = text(rule.id);
+              // Print only bounded identifiers and locations, never source snippets or messages.
+              if (/^[a-zA-Z0-9_./-]{1,200}$/.test(id) && /^[a-zA-Z0-9_./-]{1,300}$/.test(path))
+                blockingLocation(id, path, line);
+            }
+          }
+        }
       } else if (Array.isArray(properties.tags) && properties.tags.includes('security')) {
         requireCondition(false, 'CODEQL_SECURITY_SEVERITY_MISSING');
       }
@@ -135,7 +152,10 @@ function evaluate(): Outcome {
   const files = readdirSync(directory).filter((name) => name.endsWith('.sarif'));
   requireCondition(files.length === 1, 'EXPECTED_ONE_JAVASCRIPT_SARIF');
   const filename = text(files[0]);
-  return codeqlOutcome(JSON.parse(readFileSync(join(directory, filename), 'utf8')) as unknown);
+  return codeqlOutcome(
+    JSON.parse(readFileSync(join(directory, filename), 'utf8')) as unknown,
+    (rule, path, line) => console.log(`CodeQL blocking finding: ${rule} at ${path}:${line}`),
+  );
 }
 
 if (isMain(import.meta.url)) main('codeql-severity', evaluate);
