@@ -6,7 +6,7 @@
   "complete": true,
   "summary": "Issueの完了記録をレビュー対象にし、main CIと受入証跡の確認後にチェックリスト・検証記録の更新とcompletedクローズを行うハーネスを導入。",
   "remainingWork": [],
-  "pullRequests": [29, 34],
+  "pullRequests": [29, 34, 39],
   "acceptance": [
     {
       "task": "完了宣言・受入項目の証跡・残件なしを記録したレビュー対象ファイルからIssueを完了処理する。",
@@ -14,7 +14,7 @@
     },
     {
       "task": "同一リポジトリのmain成功CI、Linux/Windowsのsource証跡、関連PRのmainマージを確認する。",
-      "evidence": "issue-completion-api.ts validates live main CI, every required job, both source-runner reports and merged PR ancestry before any write."
+      "evidence": "issue-completion-api.ts validates live main CI, every required job including Release, both source-runner reports and merged PR ancestry before any write."
     },
     {
       "task": "Issue本文のチェックリストと実装・PR・main SHA・CIの記録を更新し、completedとしてクローズする。",
@@ -22,7 +22,7 @@
     },
     {
       "task": "未完了項目、外部設定の残件、CI失敗・skip・証跡欠落、Issue本文の変更ではクローズしない。",
-      "evidence": "Regression tests reject incomplete declarations, stale or missing evidence, failed or skipped jobs, changed Issues and open sub-Issues."
+      "evidence": "Regression tests reject incomplete declarations, stale or missing evidence, failed or skipped required jobs, changed Issues and open sub-Issues."
     },
     {
       "task": "再実行は重複更新せず、人手で再オープンされたIssueを勝手に閉じ直さない。",
@@ -34,7 +34,7 @@
     },
     {
       "task": "回帰テストとAGENTS.md・運用手順を追加し、既存ハーネスと両OSの検証を維持する。",
-      "evidence": "AGENTS.md and docs/issue-completion.md define mandatory completion bookkeeping. Existing verify/source harness runs all regressions, including bounded input rejection before API access."
+      "evidence": "AGENTS.md and docs/issue-completion.md define mandatory completion bookkeeping. Existing verify/source harness runs all regressions, including bounded input rejection and Release gating."
     }
   ]
 }

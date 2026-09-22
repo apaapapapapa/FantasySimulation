@@ -74,7 +74,9 @@ it('rejects unsupported databases without deleting their data', () => {
     const db = new DatabaseSync(target());
     try {
       if (legacy)
-        db.exec("CREATE TABLE valuable(value TEXT); INSERT INTO valuable VALUES ('keep');");
+        db.exec(
+          "CREATE TABLE sqlitevaluable(value TEXT); INSERT INTO sqlitevaluable VALUES ('keep');",
+        );
       else {
         migrate(db);
         db.exec("UPDATE schema_generation SET generation='other-v2'");
@@ -82,7 +84,7 @@ it('rejects unsupported databases without deleting their data', () => {
       const before = db.prepare('SELECT name FROM sqlite_schema ORDER BY name').all();
       expect(() => migrate(db)).toThrow(/Unsupported database/);
       expect(db.prepare('SELECT name FROM sqlite_schema ORDER BY name').all()).toEqual(before);
-      if (legacy) expect(db.prepare('SELECT value FROM valuable').get()?.value).toBe('keep');
+      if (legacy) expect(db.prepare('SELECT value FROM sqlitevaluable').get()?.value).toBe('keep');
     } finally {
       db.close();
     }

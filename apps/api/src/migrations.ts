@@ -47,7 +47,7 @@ export function migrate(db: DatabaseSync, set = readMigrationSet()): void {
   db.exec('BEGIN IMMEDIATE');
   try {
     const tables = db
-      .prepare("SELECT name FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%'")
+      .prepare("SELECT name FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*'")
       .all();
     if (!tables.length) {
       db.exec(`CREATE TABLE schema_generation (id INTEGER PRIMARY KEY CHECK (id = 1), generation TEXT NOT NULL) STRICT;
