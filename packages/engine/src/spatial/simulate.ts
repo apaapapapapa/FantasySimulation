@@ -31,13 +31,10 @@ import { displayChanges, Journal, recordBytes } from './journal.ts';
 import { mul, sub, ZERO } from './math.ts';
 import { initialMotion, moveActors } from './movement.ts';
 import { Navigator } from './navigation.ts';
-import {
-  bodyPoint,
-  conditionMatches,
-  emptyMemory,
-  perceive,
-  type DecisionView,
-} from './perception.ts';
+import { knownTerrainWorld } from './known-terrain.ts';
+import { selfView } from './self-view.ts';
+import { initialDecisionRandom } from './decision-random.ts';
+import { bodyPoint, conditionMatches, emptyMemory, perceive } from './perception.ts';
 import { SpatialBudgetError } from './physics.ts';
 import { choosePolicy, steerPolicy } from './policy.ts';
 import type { PreparedBattle } from './prepare.ts';
@@ -54,14 +51,6 @@ export type SimulationEnd = {
   stats: BattleResult['stats'];
 };
 const actorId = (a: ActorState) => a.motion.actor.participant.actorId;
-const viewOf = (a: ActorState, step: number): DecisionView => ({
-  self: a.motion,
-  resources: a.resources,
-  memory: a.memory,
-  statusIds: a.statuses
-    .filter((s) => s.startStep <= step && step < s.endStep)
-    .map((s) => s.revision.id),
-});
 const verdict = (actors: ActorState[]): Outcome | null => {
   const alive = actors.filter((a) => a.resources.hp > 0);
   return alive.length === 0
@@ -144,6 +133,7 @@ export function* simulate(
         used: {},
         cooldowns: {},
         random: actor.participant.rngSeed,
+        decisionRandom: initialDecisionRandom(actor.participant.rngSeed),
       }));
     const navigators = new Map(
       actors.map((a) => [
@@ -174,7 +164,7 @@ export function* simulate(
             const startup = actor.motion.actor.abilities.filter(
               (a) =>
                 a.definition.trigger === 'battle-start' &&
-                conditionMatches(a.definition.condition, viewOf(actor, step)),
+                conditionMatches(a.definition.condition, selfView(actor, step, battle.rules.ai!)),
             );
             const hp = startup.reduce((n, a) => n + a.definition.costs.hp, 0),
               mp = startup.reduce((n, a) => n + a.definition.costs.mp, 0);
@@ -219,7 +209,7 @@ export function* simulate(
               effects.push(...effectsOf(actor, ability, actorId(actor), launch.id, step));
             }
           }
-          commitEffects(next, effects, battle, journal, step, step, 'boundary', budget);
+          commitEffects(next, effects, battle, journal, step, step, 'boundary', budget, world);
         }
         const periodic: PendingEffect[] = [];
         for (const actor of next) {
@@ -255,7 +245,7 @@ export function* simulate(
             });
         }
         if (periodic.length)
-          commitEffects(next, periodic, battle, journal, step, step, 'boundary', budget);
+          commitEffects(next, periodic, battle, journal, step, step, 'boundary', budget, world);
         const changes = displayChanges(
           before,
           next.map((a) => displayActor(a, step)),
@@ -297,13 +287,25 @@ export function* simulate(
             world,
             actor.motion,
             enemy.motion,
-            projectiles,
+            projectiles.map((p) => ({
+              ...p,
+              radiusMm:
+                p.ability.definition.attack.kind === 'projectile'
+                  ? p.ability.definition.attack.radiusMm
+                  : 0,
+            })),
             step,
             actor.memory,
+            {
+              resources: enemy.resources,
+              action: displayActor(enemy, step).action?.phase ?? 'idle',
+            },
+            battle.scenario.terrainKnowledge ?? 'observed',
+            battle.rules.ai!,
           );
           if (actor.action && actor.action.recoveryUntil <= step) actor.action = null;
           const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
-          const view = viewOf(actor, step);
+          const view = selfView(actor, step, battle.rules.ai!);
           const ready = new Set(
             actor.motion.actor.abilities
               .filter(
@@ -311,7 +313,24 @@ export function* simulate(
               )
               .map((a) => a.id),
           );
-          if (aiBoundary) actor.decision = choosePolicy(view, ready, stats.flight);
+          if (actor.memory.learned.length || actor.memory.expired.length)
+            journal.emit({
+              kind: 'knowledge',
+              step,
+              phase: 'declaration',
+              actorId: actorId(actor),
+              ruleId: 'ai.observation',
+              cognition: {
+                kind: 'knowledge',
+                perspective: 'subjective',
+                learned: actor.memory.learned.map((e) => ({
+                  ...e,
+                  ability: { ...e.ability },
+                  range: e.range ? { ...e.range } : null,
+                })),
+                expired: [...actor.memory.expired],
+              },
+            });
           const canMove =
             !stats.rooted &&
             !(
@@ -320,17 +339,57 @@ export function* simulate(
               actor.action.ability.definition.movementWhileCasting === 'stop'
             );
           if (aiBoundary || actor.intent.flight !== stats.flight) {
-            if (!aiBoundary) actor.decision = choosePolicy(view, new Set(), stats.flight);
-            const steering = steerPolicy(view, actor.decision, navigators.get(actorId(actor))!, {
-              flight: stats.flight,
-              canMove,
-              speedBps: stats.speedBps,
-              maxPathNodes: budget.maxPathNodes,
-            });
-            pathNodes += steering.navigation?.visited ?? 0;
-            if (steering.navigation?.kind === 'budget-exceeded')
-              throw new SpatialBudgetError('path-nodes');
-            actor.intent = steering.intent;
+            const knownWorld =
+              battle.scenario.terrainKnowledge === 'surveyed'
+                ? null
+                : knownTerrainWorld(actor.memory.terrain);
+            if (knownWorld) knownWorld.castLimit = Math.max(0, world.castLimit - world.casts);
+            try {
+              const navigator = knownWorld
+                ? new Navigator(
+                    knownWorld,
+                    actor.motion.actor,
+                    {
+                      ...battle.scenario,
+                      obstacles: [],
+                      navigation: { version: 'support-graph-v1', nodes: [], edges: [] },
+                    },
+                    battle.rules,
+                    true,
+                  )
+                : navigators.get(actorId(actor))!;
+              actor.decision = choosePolicy(
+                view,
+                aiBoundary ? ready : new Set(),
+                stats.flight,
+                actor.decisionRandom,
+                (from, to) => navigator.knownClearance(from, to),
+              );
+              actor.decisionRandom = actor.decision.random!;
+              journal.emit({
+                kind: 'decision',
+                step,
+                phase: 'declaration',
+                actorId: actorId(actor),
+                ruleId: 'ai.observed-utility',
+                cognition: actor.decision.cognition!,
+              });
+              const steering = steerPolicy(view, actor.decision, navigator, {
+                flight: stats.flight,
+                canMove,
+                speedBps: stats.speedBps,
+                maxPathNodes: budget.maxPathNodes,
+              });
+              pathNodes += steering.navigation?.visited ?? 0;
+              if (steering.navigation?.kind === 'budget-exceeded')
+                throw new SpatialBudgetError('path-nodes');
+              actor.intent = steering.intent;
+            } finally {
+              if (knownWorld) {
+                world.casts += knownWorld.casts;
+                knownWorld.free();
+              }
+            }
           }
           actor.intent = {
             ...actor.intent,
@@ -340,7 +399,7 @@ export function* simulate(
           };
         }
         for (const actor of next) {
-          const view = viewOf(actor, step);
+          const view = selfView(actor, step, battle.rules.ai!);
           if (aiBoundary && step >= actor.readyAt && actor.decision.abilityId) {
             const ability = actor.motion.actor.abilities.find(
               (a) => a.id === actor.decision.abilityId,
@@ -353,7 +412,11 @@ export function* simulate(
             );
             if (clock) {
               const payment = payCost(definition, actor.resources, actor.used[ability.id] ?? 0);
-              if (!inObservedRange(definition, view) || !payment.ok) {
+              if (
+                !inObservedRange(definition, view) ||
+                !payment.ok ||
+                (view.silenced && definition.costs.mp > 0)
+              ) {
                 actor.readyAt =
                   step +
                   Math.max(
@@ -418,8 +481,9 @@ export function* simulate(
           action.released = true;
           const definition = action.ability.definition;
           if (
-            !inObservedRange(definition, viewOf(actor, step)) ||
-            !conditionMatches(definition.condition, viewOf(actor, step))
+            !inObservedRange(definition, selfView(actor, step, battle.rules.ai!)) ||
+            !conditionMatches(definition.condition, selfView(actor, step, battle.rules.ai!)) ||
+            (selfView(actor, step, battle.rules.ai!).silenced && definition.costs.mp > 0)
           ) {
             journal.emit({
               kind: 'fizzle',
@@ -647,7 +711,7 @@ export function* simulate(
               });
           }
         }
-        commitEffects(next, effects, battle, journal, step, step + 1, 'resolution', budget);
+        commitEffects(next, effects, battle, journal, step, step + 1, 'resolution', budget, world);
         const record: StreamRecord = {
           kind: 'interval',
           schemaVersion: 1,

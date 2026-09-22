@@ -10,6 +10,7 @@ import { battleSpecs, definitionDrafts, publishedRevisions } from './db/schema.t
 import {
   canonicalJson,
   contentHash,
+  CURRENT_ENGINE_VERSION,
   DraftInputSchema,
   DraftSchema,
   ManifestSchema,
@@ -382,7 +383,8 @@ export class Store {
       schemaVersion: 3,
       eventSchemaVersion: 1,
       replaySchemaVersion: 1,
-      engineVersion: 'spatial-v1.10',
+      engineVersion: CURRENT_ENGINE_VERSION,
+      aiProfile: 'observed-utility-v1',
       implementationDigest: implementation.digest,
       physicsProfileHash: await contentHash(profile),
       physicsProfile: profile,

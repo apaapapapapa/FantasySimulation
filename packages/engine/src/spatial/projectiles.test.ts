@@ -68,9 +68,9 @@ describe('projectiles, curved sweeps and explosions', () => {
     expect(run.result.outcome).toEqual({ kind: 'draw', reason: 'mutual-defeat' });
     expect(run.result.steps).toBe(6);
     expect(run.result).toMatchObject({
-      eventHash: 'sha256:2281ff96786b6617ca5a4f096044166a09ca70fa2f402f203dde2af0542380bb',
+      eventHash: 'sha256:ec4003f7cc18a2c85f827acaaca421b71b2e2e6be08e5dc775167e02a75abe74',
       trajectoryHash: 'sha256:ca3d805e79f7e5614123f61c2c2467d27b90fb3ba571193340ff7916d23af738',
-      tsStateHash: 'sha256:f993a82b5f35eff3f9d71dd59751191c1d441864e11a935f789804ed903092f9',
+      tsStateHash: 'sha256:72f1812258099bb662be92b828f05e007f0bcd20ed204799ecc0a8cd88cda811',
       physicsStateHash: 'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976',
     });
     expect(run.result.stats.peakProjectiles).toBe(2);
@@ -301,6 +301,7 @@ describe('projectiles, curved sweeps and explosions', () => {
         'id',
         'ownerId',
         'position',
+        'radiusMm',
         'velocity',
       ]);
     } finally {

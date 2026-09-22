@@ -7,6 +7,7 @@ import {
   ExpectedVersionSchema,
   IdSchema,
   parseJson,
+  CURRENT_ENGINE_VERSION,
 } from '@fantasy/domain/spatial';
 import { StoreError, type Store } from './store.ts';
 import type { BattleRuntime } from './battle-runtime.ts';
@@ -54,7 +55,7 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
   });
   app.get('/api/health', async () => ({
     status: 'ok',
-    engineVersion: 'spatial-v1.10',
+    engineVersion: CURRENT_ENGINE_VERSION,
     migrationTool: 'drizzle',
   }));
   for (const [path, kind] of [

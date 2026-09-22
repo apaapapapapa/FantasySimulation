@@ -51,7 +51,7 @@ APIと画面の両方を起動するコマンドは**`vp run dev`**です。
 `pnpm install --frozen-lockfile` → `pnpm dev`で同じ環境を起動できます。
 各スクリプトはプロジェクト内のVite+を使います。
 
-初回起動時にDBを作成し、マイグレーションとサンプル10体の登録を行います。
+初回起動時にDBを作成し、マイグレーションとサンプル13体の登録を行います。
 通常の開発に別のDBサーバーやDockerは不要です。SQLiteドライバーのネイティブビルドが必要な環境ではPythonとC++ビルドツールを用意してください。
 DBスキーマ・変更履歴はDrizzleへ統一しました。既存の最新`spatial-v1`（旧002・003適用済み）のrevision・下書き・BattleSpecは保持し、旧管理テーブルのみ削除します。
 既存DBはバックアップし、APIを停止して`vp run db:migrate`を実行してください。
@@ -211,7 +211,7 @@ Drizzleが過去SQLの実行時改変検出を保証するわけではありま�
 `pnpm demo:spatial archer guardian flat` のように2体と戦場を指定できます。
 画面・DBなしで同じmanifest/seedの対戦を再現します。
 
-`data/spatial/catalog.json` は10体と能力・装備・方針・状態・戦場・ルールの40revisionです。
+`data/spatial/catalog.json` は13体と能力・装備・方針・状態・戦場・ルールの52revisionです。
 剣士、槍兵、重装騎士、弓使い、魔法弓使い、炎術師、氷術師、雷術師、飛行術師、治癒剣士を
 同じ型付き部品で構成しています。キャラクターごとの実行分岐はありません。
 `pnpm catalog:spatial` で生成元との一致を確認し、変更時は
@@ -299,3 +299,21 @@ vp run batch check .generated/batch-plan.json path/to/index.json .generated/batc
 配布ビルドでは`node apps/api/dist/batch.mjs`を使用できます。
 出力の`.work/`はローカルDB/作業記録です。必要ディスク容量は最終出力上限＋作業replay上限＋256 MiB。
 [計画・保存・再開の契約](docs/adr/0008-headless-batch.md)を参照してください。
+
+## 観測・経験に基づくAI（P2/P3）
+
+`spatial-v1.11` は `observed-utility-v1` を manifest と rules revision に固定します。
+条件を満たす行動を自己のHP/MP・使用回数・cooldown・phase・既知の射程で絞り、
+遅延した外観・傷・行動・命中反応から評価し、seed付きの重み付き抽選を行います。
+相手の内部HP/MP・耐性・未使用能力を通常AIへ渡しません。限定鑑定は実際に発動し、
+遮蔽・対抗・遅延・有効期限を通った一項目だけを知識へ渡します。
+
+水で消せる燃焼は自己水魔法の評価を上げます。短期撃破の根拠があれば燃焼中にも攻撃します。
+`water-observer`、`fire-seer`、`ember-duelist` は共通の能力部品で構成した追加例です。
+回避方向は行動種別の後に抽選し、実際の移動と連続衝突で成否を判定します。
+シナリオで `terrainKnowledge: surveyed` と明示した場合だけ完全な地形を事前知識として使用し、
+それ以外は観測した小さな面の記憶だけを経路・回避判定へ渡します。
+
+本人の `decision` / `knowledge` イベントは全知の結果イベントと分けて保存し、
+候補の整数重み/合計（選択確率）、成功・撃破の推定、除外理由、知識の期限、乱数用途を記録します。
+画面での説明表示はP4です。[数式・境界・fixture更新の根拠](docs/adr/0009-observed-ai.md)を参照してください。

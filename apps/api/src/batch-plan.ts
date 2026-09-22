@@ -4,6 +4,7 @@ import {
   BatchPlanBodySchema,
   BatchPlanSchema,
   ExecutionSourceSchema,
+  CURRENT_ENGINE_VERSION,
   canonicalJson,
   compareIds,
   contentHash,
@@ -55,7 +56,7 @@ export async function createBatchPlan(input: unknown, source: ExecutionSource): 
     const body = parseJson(BatchPlanBodySchema, {
       schemaVersion: 1,
       source,
-      engineVersion: 'spatial-v1.10',
+      engineVersion: CURRENT_ENGINE_VERSION,
       implementationDigest: implementation.digest,
       revisions: data.revisions.sort((a, b) =>
         compareIds(`${a.kind}:${a.id}:${a.revision}`, `${b.kind}:${b.id}:${b.revision}`),

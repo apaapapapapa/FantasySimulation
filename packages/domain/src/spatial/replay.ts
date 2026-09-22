@@ -26,6 +26,7 @@ const RecordedRevisionSchema = z.union([
 export const RecordedManifestSchema = z.strictObject({
   ...ManifestSchema.shape,
   engineVersion: IdSchema,
+  aiProfile: ManifestSchema.shape.aiProfile.optional(),
   revisions: z.array(RecordedRevisionSchema).min(4).max(256),
 });
 export type RecordedManifest = z.infer<typeof RecordedManifestSchema>;

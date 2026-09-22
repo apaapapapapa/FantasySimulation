@@ -183,7 +183,8 @@ export function effectiveStats(
     actor.character.stats.defense + actor.equipment.reduce((n, e) => n + e.defenseBonus, 0);
   let speedBps = 10000,
     flight = false,
-    rooted = false;
+    rooted = false,
+    silenced = false;
   for (const status of statuses)
     if (status.startStep <= step && step < status.endStep) {
       const modifiers = status.revision.definition.modifiers;
@@ -192,6 +193,7 @@ export function effectiveStats(
       speedBps += (modifiers.speedBps - 10000) * status.stacks;
       flight ||= modifiers.flight;
       rooted ||= modifiers.rooted;
+      silenced ||= modifiers.silenced ?? false;
     }
   return {
     attack: Math.max(0, attack),
@@ -199,5 +201,6 @@ export function effectiveStats(
     speedBps: Math.max(0, Math.min(30000, speedBps)),
     flight,
     rooted,
+    silenced,
   };
 }

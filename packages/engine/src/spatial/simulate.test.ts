@@ -84,10 +84,10 @@ describe('fixed-step battle stream', () => {
     expect(run.result.outcome).toEqual({ kind: 'draw', reason: 'mutual-defeat' });
     expect(run.result.steps).toBeLessThan(500);
     expect(run.result).toMatchObject({
-      steps: 161,
-      eventHash: 'sha256:0e02f14f0aeb0d77325f905d766123cced8ad6618bafcbe4a5e9aba9f3d63369',
-      trajectoryHash: 'sha256:d1e12aec07acae9c98f6b6112f90b2b9cbd02b75f71a2bdf86ef687ea2f8d03f',
-      tsStateHash: 'sha256:984a42f1668429ec51ab574bda8f3720e4224428e815011db29acc1901098dcc',
+      steps: 151,
+      eventHash: 'sha256:c33c626706ecfc300ab2b12d210ff98ed0f0610e917aa99a93976ba7a25d72bb',
+      trajectoryHash: 'sha256:350ceaea42b58f4b944d21f43adff6ac951da8a1ceebb84a36614792f4b6b689',
+      tsStateHash: 'sha256:04897634a27969f45d79a99be5d152dabb811f157c42fea5b6dc7e598f61d3ad',
       physicsStateHash: 'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976',
     });
     expect(finalActors(run.records).map((a) => a.resources.hp)).toEqual([0, 0]);
@@ -105,6 +105,17 @@ describe('fixed-step battle stream', () => {
         expect(path.segments[i]!.start).toEqual(path.segments[i - 1]!.end);
     }
     const log = events(run.records);
+    // In-range declaration at 55, five cast steps, two active steps and twenty recovery steps.
+    // AI boundaries at multiples of five produce the next declaration at 85 (then 115, 145).
+    expect(
+      log.filter((e) => e.kind === 'damage' && e.actorId === 'left').map((e) => [e.step, e.amount]),
+    ).toEqual([
+      [61, 25],
+      [91, 25],
+      [121, 25],
+      [151, 25],
+    ]);
+    expect(log.filter((e) => e.kind === 'fizzle')).toHaveLength(0);
     expect(log.length).toBeGreaterThan(0);
     expect(log.some((event) => event.parentEventId !== null)).toBe(true);
     expect(log.map((e) => e.sequence)).toEqual(log.map((_, i) => i));
@@ -132,6 +143,7 @@ describe('fixed-step battle stream', () => {
   it('allows an immediate committed heal to offset an HP cost that consumed the last HP', async () => {
     const input = await fixture(1, {
       ability: {
+        trigger: 'battle-start',
         target: 'self',
         attack: { kind: 'direct' },
         castSteps: 0,
@@ -159,7 +171,7 @@ describe('fixed-step battle stream', () => {
       castSteps: 0,
       recoverySteps: 1,
       cooldownSteps: 20,
-      effects: [{ kind: 'heal' as const, amount: 1 }],
+      effects: [{ kind: 'shield' as const, amount: 1 }],
     };
     const failed = await runBattle(
       await fixture(1, {
@@ -171,7 +183,14 @@ describe('fixed-step battle stream', () => {
       finalActors(failed.records).every((a) => a.resources.hp === 100 && a.resources.mp === 100),
     ).toBe(true);
     expect(events(failed.records).filter((e) => e.kind === 'cost')).toHaveLength(0);
-    expect(events(failed.records).some((e) => e.reason === 'insufficient-mp')).toBe(true);
+    expect(
+      events(failed.records).some(
+        (e) =>
+          e.cognition?.kind === 'decision' &&
+          e.cognition.excluded.some((c) => c.reason === 'insufficient-mp'),
+      ),
+    ).toBe(true);
+    expect(events(failed.records).filter((e) => e.kind === 'fizzle')).toHaveLength(0);
     const limited = await runBattle(
       await fixture(50, {
         ability: { ...base, costs: { hp: 0, mp: 1, uses: 2 } },
@@ -254,19 +273,20 @@ describe('fixed-step battle stream', () => {
   it('resolves the last allowed interval, checks simultaneous defeat before timeout, and starts nothing at the end boundary', async () => {
     const options = {
       ability: {
-        target: 'self' as const,
-        attack: { kind: 'direct' as const },
+        target: 'enemy' as const,
+        attack: { kind: 'hitscan' as const, radiusMm: 100 },
+        rangeMm: 20000,
         castSteps: 0,
         recoverySteps: 1,
         effects: [
-          { kind: 'damage' as const, amount: 100, attackScaleBps: 0, element: 'physical' as const },
+          { kind: 'damage' as const, amount: 105, attackScaleBps: 0, element: 'physical' as const },
         ],
       },
       policy: { movement: 'hold' as const },
     };
     const before = await runBattle(await fixture(5, options));
     expect(before.result.outcome).toEqual({ kind: 'draw', reason: 'time-limit' });
-    expect(finalActors(before.records)[0]!.resources.hp).toBe(5);
+    expect(finalActors(before.records)[0]!.resources.hp).toBe(100);
     const final = await runBattle(await fixture(6, options));
     expect(final.result.outcome).toEqual({ kind: 'draw', reason: 'mutual-defeat' });
     expect(final.result.steps).toBe(6);
