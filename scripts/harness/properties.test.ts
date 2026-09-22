@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, expect, it } from 'vite-plus/test';
 import fc from 'fast-check';
-import { contentHash, type Definition } from '../../packages/domain/src/spatial/index.ts';
+import {
+  actorSeed,
+  contentHash,
+  type Definition,
+} from '../../packages/domain/src/spatial/index.ts';
 import {
   prepareBattle,
   sampleManifest,
@@ -105,8 +109,13 @@ describe('bounded generated battle invariants', { timeout: 45000 }, () => {
   });
 
   it('exchanges actor IDs slots positions facings and owned random streams independently of hash equality', async () => {
-    const manifest = await combatManifest(100, {
-      ability: { attack: { kind: 'hitscan', radiusMm: 100 }, rangeMm: 20000, castSteps: 0 },
+    const manifest = await combatManifest(1000, {
+      ability: {
+        attack: { kind: 'hitscan', radiusMm: 100 },
+        rangeMm: 20000,
+        castSteps: 0,
+        aimErrorMilliDegrees: 5000,
+      },
       policy: { movement: 'hold' },
     });
     const original = manifest.revisions.find((r) => r.kind === 'character')!;
@@ -146,6 +155,17 @@ describe('bounded generated battle invariants', { timeout: 45000 }, () => {
         }))
         .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
     assert.deepEqual(damage(swapped, true), damage(first, false));
+    const wrong = structuredClone(changed);
+    wrong.participants.forEach((actor, index) => {
+      actor.rngStream = index as 0 | 1;
+      actor.rngSeed = actorSeed(wrong.seed, actor.rngStream);
+    });
+    const misassigned = await runBattle(wrong);
+    assert.notDeepEqual(
+      damage(misassigned, true),
+      damage(first, false),
+      'Slot-owned streams must change observed random-dependent attacks',
+    );
     await checkProperty(
       'fixed-battle-enumeration',
       file,
