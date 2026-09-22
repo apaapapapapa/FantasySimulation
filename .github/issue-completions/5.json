@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "issue": 5,
+  "issueBodySha256": "e18446aea77954758dacb35500e6b7936d310262ca64d4647050b0e65c074355",
+  "issueUpdatedAt": "2026-09-22T15:54:33Z",
+  "complete": true,
+  "summary": "既存verifyをSHA・実コマンド・ログへ結び付けるsource/report、読み取り専用Octokit collector、PR/main・review・releaseの検証契約と開発skillを導入。Linux/Windowsと実GitHub収集で検証済み。",
+  "remainingWork": [],
+  "pullRequests": [13, 22, 32, 33, 38, 39, 41],
+  "acceptance": [
+    {
+      "task": "`scripts/harness/`と薄いCLIを開発用として追加。実行時appから参照させない",
+      "evidence": "PR #13/#22: scripts/harness.ts dispatches development-only producers; PR #33 architecture fixtures prohibit app-runtime imports of harness/SDK code."
+    },
+    {
+      "task": "schemaVersion、source/candidate SHA、nullable baseline、検証区間、check ID/status/理由/証跡を持つ共通reportを移植",
+      "evidence": "scripts/harness/report.ts validates schemaVersion, full source/candidate/base/test-merge SHAs, time interval, required check IDs and evidence references."
+    },
+    {
+      "task": "`pass / fail / unknown / skipped`、exit 0=必須合格、1=失敗、2=不完全/不正を維持。必須IDを観測結果に束縛し、未報告checkをunknownにする",
+      "evidence": "report.test.ts verifies pass/fail/unknown/skipped and exits 0/1/2; missing, duplicate or required-skipped checks cannot become success."
+    },
+    {
+      "task": "既存`vp run verify`のread-only実行、終了code、実コマンド、ログ、追跡ファイルのclean状態をcollectorで記録。任意JSONのpassだけでは検証済みとしない",
+      "evidence": "source.ts executes exactly vp run verify on committed clean source and records command.json, verify.log and before/after state; process.ts bounds execution and filters secrets."
+    },
+    {
+      "task": "PR head、PR test merge SHAとそのbase、実際のmain merge SHAを区別する。`github.sha`やrunのhead SHAを無条件で同一視しない",
+      "evidence": "sourceIdentity and github-collect.ts inspect actual test-merge parents and distinguish candidate, tested base and main merge SHA; stale/mismatched identity fixtures reject invalid evidence."
+    },
+    {
+      "task": "GitHub collectorでPR情報、対象SHAのCI/check/status、最新attempt、review、会話とinline threadの全ページを読み、収集前後のhead/merge状態を照合",
+      "evidence": "PR #22 pins Octokit core 7.0.8/paginate-rest 14.0.0. REST, threads and nested comments are fully paged under 200-request/16MiB/120s limits with zero retries; identities/latest attempts are reread."
+    },
+    {
+      "task": "completion targetを`pr`と`merge`中心にする。PRには対象headの検証とreview、mergeには実merge SHAのmain/push CIを要求。既存releaseの結果は別項目として表示",
+      "evidence": "delivery.ts separates pr and merge targets. Read-only run 35748030310 validated PR #32 and its exact main merge add96f130290988753e8abcbab40d1ab96e9c489 against both OS plans/gates/receipts."
+    },
+    {
+      "task": "リリース不要のcommitとsemantic-release失敗を区別する。新しいrelease workflowやtag発行処理は追加しない",
+      "evidence": "Release is separately assessed from the existing job, not tag existence. PR #39 corrects Docs-skip propagation; main run 35748416057 confirms Release success without adding a publisher or manual version bump."
+    },
+    {
+      "task": "認証済み`gh`がない環境ではGitHub connectorの読取結果を同じ検証schemaへ取り込める手順を記載。証跡が足りなければ不完全とし、架空の成功receiptを作らない",
+      "evidence": ".github/harness/README.md documents authenticated connector fallback into the same DeliverySnapshot contract; unavailable pages, identities or reviews remain incomplete."
+    },
+    {
+      "task": "`.github/harness/README.md`、`.agents/skills/fantasy-delivery/SKILL.md`、`AGENTS.md`へ、baseline/受入条件→適用するrunner→review→許可されたdeliveryの流れを記載",
+      "evidence": "PR #38 adds fantasy-delivery SKILL.md and AGENTS/README guidance for baseline, acceptance, runner, real review, existing user authorization, main CI and associated-Issue completion."
+    },
+    {
+      "task": "正常、失敗、必須欠落、必須skip、重複check ID、不正SHA、stale SHA、壊れた時刻/URIで期待した判定・終了codeになる",
+      "evidence": "report.test.ts and source.test.ts cover failures, missing/skipped/duplicate checks, invalid/stale SHAs, malformed timestamps/URIs, dirty/changed source and bounded execution."
+    },
+    {
+      "task": "古い成功runより新しい失敗/実行中attemptがある場合、成功としない",
+      "evidence": "github/delivery fixtures select latest runs and attempts; earlier success cannot override a later failing, pending or changed run."
+    },
+    {
+      "task": "review threadが2ページ以上、途中欠落、未解決、changes requested、承認必須未達、収集中head更新を正しく扱う",
+      "evidence": "github-collect/delivery fixtures cover nested multipage and missing data, rate limits/partial errors, unresolved threads, changes requested, stale/required approval and head mutation."
+    },
+    {
+      "task": "PRがgreenでもmain CIがpending/失敗ならmerge delivery未完了。tagがないだけでrelease失敗と決め付けない",
+      "evidence": "delivery.test.ts keeps pending/failed main incomplete despite PR success. Live probe returned exit 2 without review coverage and independently reported skipped Release as unknown."
+    },
+    {
+      "task": "Linux/Windowsでreportとsource runnerが動き、`vp run verify`が合格する。ネットワーク失敗のcollector試験はfixtureで再現する",
+      "evidence": "All report/source/transport fixtures run in the pinned Linux/Windows verify. Real collector run 35748030310 additionally exercises the current H1/H2 integration without network-dependent unit tests."
+    },
+    {
+      "task": "証跡artifactは対象SHA、producer、元ログへ辿れ、secretやローカルDBを含まない",
+      "evidence": "Source artifacts retain producer/SHA, actual command/log references; collector logs have digests. Artifact paths exclude DBs/secrets; PR #32 fixes descriptor-bound bounded evidence reads."
+    }
+  ]
+}

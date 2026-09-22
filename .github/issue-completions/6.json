@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "issue": 6,
+  "issueBodySha256": "7e73aae770f10b0235eb6a2ac5b01f37279efa93e2bbb8b1c5b30905dfee0b91",
+  "issueUpdatedAt": "2026-09-22T11:23:30Z",
+  "complete": true,
+  "summary": "保守的な差分分類、両OSのdocs/full検証、証跡を照合するci-gate、依存キャッシュと全job/stepの計測を既存CIに統合。mainのRelease前提も修正済み。required-checkの管理設定は権限がなく未適用・未確認として、Issueの指定どおり明記。",
+  "remainingWork": [],
+  "pullRequests": [22, 23, 32, 38, 39, 41],
+  "acceptance": [
+    {
+      "task": "まず現行CIのjob/step所要時間、待ち時間、cache hitを記録する。未計測の短縮率を目標達成と記載しない",
+      "evidence": "docs/development/ci-measurements.json retains all counted jobs/steps, run/attempt/SHAs, queue/elapsed times and cache observations; ci.md states sample limitations without claiming speedup."
+    },
+    {
+      "task": "変更分類をTypeScriptの検証可能な判定へ整理。NUL区切りの差分、削除、rename、空差分を扱う",
+      "evidence": "scripts/ci/plan.ts uses NUL-delimited no-renames Git diff; plan.test.ts covers source rename/deletion, empty/unknown and known wording changes."
+    },
+    {
+      "task": "PRは検証対象treeと対応するbase、pushはevent.beforeを根拠にする。baseline不明・取得失敗・想定外eventは全検査へ倒す",
+      "evidence": "collectPlan validates actual synthetic merge parents or push event.before; unavailable baselines and unexpected events conservatively choose full verification."
+    },
+    {
+      "task": "PRの文言だけのMarkdown変更は軽量な差分・参照先チェックにする。ただし`AGENTS.md`、`.agents/**`、harness/CI手順、`docs/rules/**`等の判定・権限に関わる文書は無条件の省略対象にしない",
+      "evidence": "wordingOnly only permits known nonempty wording PRs. AGENTS, .agents, rules/ADRs/development/configuration/harness paths require full CI; lightweight docs checks run on both OS."
+    },
+    {
+      "task": "app/domain/engine/data/db、lockfile、workspace、tsconfig、Vite設定、scripts、workflow/action変更は必要な全検査を実行。初期はworkspace単位の過度な省略をしない",
+      "evidence": "Application/domain/engine/data/database, manifests/lockfiles/toolchain and workflow paths select both existing Verify jobs without workspace-specific omissions."
+    },
+    {
+      "task": "main pushとworkflow_dispatchは両OSの既存verify相当を必ず実行する。差分最適化は初期はPR中心とし、releaseの安全性を優先",
+      "evidence": "Main push and workflow_dispatch always select full Linux/Windows verification; optimization remains PR-only and is tested in classification/gate fixtures."
+    },
+    {
+      "task": "`if: always()`の安定した`ci-gate`等を設け、予定job一覧と結果を照合。必要jobの欠落/failure/cancelled/想定外skipを失敗扱いにする。docs-onlyの計画済みskipだけ理由付きで許可",
+      "evidence": "ci-gate uses always() and compares planned jobs plus actual SHA-bound reports; missing, failed, cancelled or unplanned skipped work blocks it. Docs probe attempt 1 failed as required; its rerun passed."
+    },
+    {
+      "task": "既存releaseはこの合格と両OS検証を確認したmainだけで実行。PRでreleaseしない。mainの進行中releaseを新pushでcancelしない",
+      "evidence": "PR #39 Release requires explicit success of verify, ci-gate, security and dependency-policy plus main/event/repository constraints. Main concurrency preserves active releases; run 35748416057 Release passed."
+    },
+    {
+      "task": "setupは移植先の`setup-vp`と`vp install --frozen-lockfile`を正とし、必要な共通化だけ行う。Node 22/npmへのpinや`vp migrate`による自動変更は移植しない",
+      "evidence": "setup-project retains pinned setup-vp and frozen vp install with Node 24.19.0/pnpm 11.19.0/TS7/Vite+; no alternate toolchain or automatic migration command was introduced."
+    },
+    {
+      "task": "キャッシュキーにOS/arch、Node、package-manager、lockfileと設定のidentityを含める。まず依存キャッシュのみ。再現性/負荷試験の結果をtask cacheで省略しない",
+      "evidence": "Only dependency content is cached by exact OS/arch/runtime/manager/manifest/lock/config identity. No fallback/task-result/physics cache or PR save into main caches is used."
+    },
+    {
+      "task": "PRの生成物をreleaseが信頼して再利用する経路を作らない。秘密やDBをcache/artifactへ入れない",
+      "evidence": "Release checks out main and does not execute PR artifacts. Dependency caches and scoped source/plan/gate evidence exclude production secrets and local DBs."
+    },
+    {
+      "task": "report/失敗ログ/summaryを必要な範囲で`always()`保存。必須の証跡が存在しなければ不完全とする",
+      "evidence": "Source/setup/plan/gate evidence and failure logs have always() preservation; missing, invalid or foreign-attempt evidence remains incomplete/failed."
+    },
+    {
+      "task": "docs-only、source-only、data/fixture、migration、harness/AGENTS、lockfile、削除/rename、空差分、未知baseの分類fixtureがある",
+      "evidence": "plan.test.ts covers docs, source, data/fixture, migration, harness/AGENTS, lockfile, rename/deletion, empty and unknown-baseline classification."
+    },
+    {
+      "task": "予定jobが失敗・中止・消失・想定外skipしたfixtureでは集約gateが失敗する",
+      "evidence": "Gate fixtures reject failure, cancellation, disappearance, duplicate/missing reports and unexpected skips; both docs platforms are mandatory when planned."
+    },
+    {
+      "task": "PRはread-onlyで動作し、forkでもsecretなしの基本CIが成立する",
+      "evidence": "Basic PR CI requires no production secrets and uses read access; existing security-result registration stays narrowly scoped. The type/engine/SQLite/test/build path is available without privileged credentials."
+    },
+    {
+      "task": "Linux/Windowsの必要な検査とdigest検証を実行し、`vp run verify`の意味を変えない",
+      "evidence": "Canonical vp run verify is preserved on both OS, including digest/type/test/build coverage; quality guards are added to the same source-bound runner."
+    },
+    {
+      "task": "mainで両OSの検証が失敗したらreleaseへ進まない。不要なversion bumpや二重releaseがない",
+      "evidence": "scripts/security/ci-release.test.ts validates workflow gating; failed platforms/gates cannot release. Existing semantic-release alone decides whether a version is needed."
+    },
+    {
+      "task": "source/変更分類/CI設定の証跡を#5のreportへ結び付ける",
+      "evidence": "H1 collector binds H2 plan/gate/report producer/source/head/base/run-attempt and exact planned skips; live read-only run 35748030310 verifies the integrated PR/main path."
+    },
+    {
+      "task": "導入前後の実測時間、runner分、cache hitを記録する。初期のshard追加は実測に基づく別PRにする",
+      "evidence": "All structured inputs reproduce 11.45/5.23 total runner minutes and 1.63/1.47 Verify-only minutes, plus docs retries and cache status. No sharding or causal speedup is claimed; admin application of required-check settings is explicitly unconfirmed as this Issue permits."
+    }
+  ]
+}
