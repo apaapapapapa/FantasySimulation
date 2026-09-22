@@ -175,6 +175,8 @@ export const AbilitySchema = z
     effects: z.array(EffectSchema).min(1).max(16),
   })
   .superRefine((ability, ctx) => {
+    if (ability.target === 'self' && ability.attack.kind !== 'direct')
+      ctx.addIssue({ code: 'custom', message: 'Self effects require direct targeting' });
     if (ability.attack.kind === 'direct' && ability.target !== 'self')
       ctx.addIssue({
         code: 'custom',
@@ -320,7 +322,7 @@ export const ScenarioSchema = z
   });
 export const RulesetSchema = z.strictObject({
   name: z.string().min(1).max(100),
-  rulesVersion: z.literal('spatial-v1.7'),
+  rulesVersion: z.literal('spatial-v1.8'),
   stepMs: z.literal(20),
   maxSteps: positive(6_000),
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),
@@ -385,7 +387,7 @@ export const ManifestSchema = z
     schemaVersion: z.literal(3),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
-    engineVersion: z.literal('spatial-v1.7'),
+    engineVersion: z.literal('spatial-v1.8'),
     implementationDigest: HashSchema,
     physicsProfileHash: HashSchema,
     physicsProfile: PhysicsProfileSchema,
@@ -415,6 +417,7 @@ export type Manifest = z.infer<typeof ManifestSchema>;
 export const BudgetSchema = z.strictObject({
   maxEvents: positive(1_000_000),
   maxBytes: positive(256_000_000),
+  maxFrameBytes: positive(4_000_000),
   maxCasts: positive(10_000_000),
   maxCandidates: positive(10_000_000),
   maxPathNodes: positive(100_000),
@@ -428,6 +431,7 @@ export type Budget = z.infer<typeof BudgetSchema>;
 export const DEFAULT_BUDGET: Readonly<Budget> = Object.freeze({
   maxEvents: 50_000,
   maxBytes: 16_000_000,
+  maxFrameBytes: 512_000,
   maxCasts: 1_000_000,
   maxCandidates: 1_000_000,
   maxPathNodes: 4_096,

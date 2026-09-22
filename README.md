@@ -5,6 +5,8 @@
 P2〜P3はIssue #1の3D設計へ移行中です。旧実装の互換維持は行いません。
 [計算基盤ADR](./docs/adr/0002-spatial-engine.md)に対象範囲・数値条件・性能目標を記録しています。
 `vp run bench:spatial`でRapier試作の6000step計測、`vp test`で固定hashと幾何境界を検証できます。
+`node scripts/spatial-demo.ts`で新しい3D近接対戦を画面・DBなしで実行できます。
+この段階の対戦ループは近接/即時射撃/自己効果までで、飛翔体とAPIの置換は後続の実装です。
 
 ## 技術構成
 
