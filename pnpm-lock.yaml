@@ -86,6 +86,9 @@ importers:
 
   packages/engine:
     dependencies:
+      '@dimforge/rapier3d-compat':
+        specifier: 0.20.0
+        version: 0.20.0
       '@fantasy/domain':
         specifier: workspace:*
         version: link:../domain
@@ -122,6 +125,9 @@ packages:
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
+
+  '@dimforge/rapier3d-compat@0.20.0':
+    resolution: {integrity: sha512-X4W9pJBdGRX5CO3c/gUNjBFEFG2fn4nYxp9k8STdBDaLa0/w5XTW2ArpayS+9jGFojTi3uFSOWAElCd4rkpekA==}
 
   '@esbuild/aix-ppc64@0.28.2':
     resolution: {integrity: sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ==}
@@ -2730,6 +2736,8 @@ snapshots:
 
   '@colors/colors@1.5.0':
     optional: true
+
+  '@dimforge/rapier3d-compat@0.20.0': {}
 
   '@esbuild/aix-ppc64@0.28.2':
     optional: true

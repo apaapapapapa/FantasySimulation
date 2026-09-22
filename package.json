@@ -25,7 +25,9 @@
     "security:secrets": "node scripts/security/secrets.ts",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run",
-    "verify": "vp check && vp run typecheck && vp run engine:check && vp run security:test && vp test && vp run build"
+    "verify": "vp check && vp run typecheck && vp run engine:check && vp run security:test && vp test && vp run build",
+    "bench:spatial": "node scripts/spatial-benchmark.ts",
+    "fixtures:spatial": "node scripts/spatial-fixtures.ts --write"
   },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "13.0.1",
