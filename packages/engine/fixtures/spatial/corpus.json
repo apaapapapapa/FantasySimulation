@@ -1,0 +1,649 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "engineVersion": "spatial-v1.10",
+    "rulesVersion": "spatial-v1.10",
+    "manifestSchemaVersion": 3,
+    "eventSchemaVersion": 1,
+    "replaySchemaVersion": 1,
+    "prng": "xorshift32-v1",
+    "seedDerivation": "actor-stream-v1",
+    "physicsProfileHash": "sha256:fec78a239c989b1345919bad1e4188561054dffae03303ac338d739c3e40df98",
+    "wasmHash": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+    "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+  },
+  "tests": {
+    "melee-golden": {
+      "file": "packages/engine/src/spatial/simulate.test.ts",
+      "name": "fixed-step battle stream runs a symmetric melee battle, preserves the input, and emits sufficient validated display deltas"
+    },
+    "battle-repeat-enumeration": {
+      "file": "packages/engine/src/spatial/simulate.test.ts",
+      "name": "fixed-step battle stream repeats event/state/physics hashes and preserves combat under participant and revision enumeration changes"
+    },
+    "startup-order-independence": {
+      "file": "packages/engine/src/spatial/simulate.test.ts",
+      "name": "fixed-step battle stream resolves startup status/periodic effects before the first interval without dependence on actor order"
+    },
+    "unresolved-status-conflict": {
+      "file": "packages/engine/src/spatial/simulate.test.ts",
+      "name": "fixed-step battle stream does not invent a priority for conflicting accepted status definitions or retain partial costs"
+    },
+    "budget-retry": {
+      "file": "packages/engine/src/spatial/simulate.test.ts",
+      "name": "fixed-step battle stream rolls back a budget-exhausted interval and retries the same simulation hash with a larger attempt budget"
+    },
+    "last-interval-simultaneous-defeat": {
+      "file": "packages/engine/src/spatial/simulate.test.ts",
+      "name": "fixed-step battle stream resolves the last allowed interval, checks simultaneous defeat before timeout, and starts nothing at the end boundary"
+    },
+    "integrated-attack-occlusion": {
+      "file": "packages/engine/src/spatial/simulate.test.ts",
+      "name": "fixed-step battle stream uses attack occlusion independently from visibility in the integrated hitscan loop"
+    },
+    "time-limit-not-host-timeout": {
+      "file": "packages/engine/src/spatial/simulate.test.ts",
+      "name": "fixed-step battle stream completes all 6000 intervals with zero action speed and does not turn game time into a host timeout"
+    },
+    "projectile-golden": {
+      "file": "packages/engine/src/spatial/projectiles.test.ts",
+      "name": "projectiles, curved sweeps and explosions hits once per projectile at high speed and records spawn, clipped path, impact and removal"
+    },
+    "projectile-thin-wall": {
+      "file": "packages/engine/src/spatial/projectiles.test.ts",
+      "name": "projectiles, curved sweeps and explosions stops both fast shots at a 2mm transparent wall without applying body damage"
+    },
+    "projectile-relative-sweep": {
+      "file": "packages/engine/src/spatial/projectiles.test.ts",
+      "name": "projectiles, curved sweeps and explosions sweeps against the target motion through the interval rather than its final position"
+    },
+    "curve-budget": {
+      "file": "packages/engine/src/spatial/projectiles.test.ts",
+      "name": "projectiles, curved sweeps and explosions bounds parabolic chord error, enforces subdivision budgets, and preserves the path with a larger budget"
+    },
+    "homing-observation": {
+      "file": "packages/engine/src/spatial/projectiles.test.ts",
+      "name": "projectiles, curved sweeps and explosions limits homing turn and only uses delivered owner observations; lost visibility continues ballistically"
+    },
+    "explosion-occlusion": {
+      "file": "packages/engine/src/spatial/projectiles.test.ts",
+      "name": "projectiles, curved sweeps and explosions applies spherical body intersection, partial wall coverage and distance attenuation"
+    },
+    "projectile-pool-truncation": {
+      "file": "packages/engine/src/spatial/projectiles.test.ts",
+      "name": "projectiles, curved sweeps and explosions expires only after its last interval and truncates simultaneous spawns atomically when the pool is full"
+    },
+    "projectile-private-state": {
+      "file": "packages/engine/src/spatial/projectiles.test.ts",
+      "name": "projectiles, curved sweeps and explosions does not leak private projectile state through a structural observation input"
+    },
+    "catalog-pillar-enumeration": {
+      "file": "packages/engine/src/spatial/catalog.test.ts",
+      "name": "data-composed 3D sample catalog routes a ground fighter around a pillar while a flying caster shoots from above, independent of enumeration"
+    },
+    "probe-open": {
+      "file": "packages/engine/src/spatial/probe.test.ts",
+      "name": "reproduces the full 6000-step 'open' geometry fixture on both CI platforms"
+    },
+    "probe-dense": {
+      "file": "packages/engine/src/spatial/probe.test.ts",
+      "name": "reproduces the full 6000-step 'dense' geometry fixture on both CI platforms"
+    },
+    "physics-repeat": {
+      "file": "packages/engine/src/spatial/physics.test.ts",
+      "name": "3D-01 physics feasibility repeats TS trajectories and Rapier snapshot bytes with stable construction order"
+    },
+    "physics-same-contact-time": {
+      "file": "packages/engine/src/spatial/physics.test.ts",
+      "name": "3D-01 physics feasibility stops both approaching bodies at the same contact time and permits separation"
+    },
+    "physics-wall-body-tie": {
+      "file": "packages/engine/src/spatial/physics.test.ts",
+      "name": "3D-01 physics feasibility blocks a non-piercing attack when wall and body contacts tie within the fixed tolerance"
+    },
+    "physics-fast-thin": {
+      "file": "packages/engine/src/spatial/physics.test.ts",
+      "name": "3D-01 physics feasibility sweeps fast projectiles against moving bodies and thin walls"
+    },
+    "physics-slid-chord": {
+      "file": "packages/engine/src/spatial/physics.test.ts",
+      "name": "3D-01 physics feasibility checks relative contact along the slid path, including a collision missed by its chord"
+    },
+    "fixed-trigonometry": {
+      "file": "packages/engine/src/spatial/physics.test.ts",
+      "name": "deterministic numeric profile uses fixed trigonometry and a bounded turn without runtime sin/cos"
+    },
+    "numeric-encoding": {
+      "file": "packages/engine/src/spatial/physics.test.ts",
+      "name": "deterministic numeric profile encodes binary64 in network byte order with explicit zero and non-finite rules"
+    },
+    "movement-golden": {
+      "file": "packages/engine/src/spatial/movement.test.ts",
+      "name": "simultaneous fixed-step locomotion treats 20ms as a deterministic interval independent of input identity order"
+    },
+    "movement-reversed-enumeration": {
+      "file": "packages/engine/src/spatial/movement.test.ts",
+      "name": "simultaneous fixed-step locomotion stops both actors symmetrically and gives the same result under reversed enumeration"
+    },
+    "navigation-enumeration": {
+      "file": "packages/engine/src/spatial/navigation.test.ts",
+      "name": "bounded body-aware support graphs uses direct travel first, then detours around a solid obstruction independently of node enumeration"
+    },
+    "perception-delay": {
+      "file": "packages/engine/src/spatial/perception.test.ts",
+      "name": "legal observations and conditional policies delays observations by the declared reaction interval and snapshots positions before mutation"
+    },
+    "perception-flags": {
+      "file": "packages/engine/src/spatial/perception.test.ts",
+      "name": "legal observations and conditional policies enforces range, field of view and vision flags independently of attack flags"
+    },
+    "perception-memory": {
+      "file": "packages/engine/src/spatial/perception.test.ts",
+      "name": "legal observations and conditional policies uses last-seen memory without learning a hidden current position, then expires it"
+    },
+    "perception-priorities": {
+      "file": "packages/engine/src/spatial/perception.test.ts",
+      "name": "legal observations and conditional policies honors declared conditional priorities, readiness and configured flight altitude"
+    },
+    "perception-projectile-enumeration": {
+      "file": "packages/engine/src/spatial/perception.test.ts",
+      "name": "legal observations and conditional policies does not give equidistant projectile enumeration a steering priority"
+    },
+    "perception-observed-projectiles": {
+      "file": "packages/engine/src/spatial/perception.test.ts",
+      "name": "legal observations and conditional policies only exposes observed enemy projectiles and evaluates bounded ASTs against self resources"
+    },
+    "attack-observed-range": {
+      "file": "packages/engine/src/spatial/attacks.test.ts",
+      "name": "action clocks and attack geometry checks range and forward orientation against the immutable observation, not a hidden live position"
+    },
+    "attack-thin-wall": {
+      "file": "packages/engine/src/spatial/attacks.test.ts",
+      "name": "action clocks and attack geometry stops an instantaneous thick shot at a thin transparent wall before the target"
+    },
+    "attack-muzzle-wall": {
+      "file": "packages/engine/src/spatial/attacks.test.ts",
+      "name": "action clocks and attack geometry blocks a muzzle offset across a wall even when the outgoing ray starts beyond it"
+    },
+    "attack-moving-target": {
+      "file": "packages/engine/src/spatial/attacks.test.ts",
+      "name": "action clocks and attack geometry detects a moving target crossing a thrust between endpoints and retains every body slide segment"
+    },
+    "terrain-transparent-wall": {
+      "file": "packages/engine/src/spatial/terrain.test.ts",
+      "name": "3D static world lets vision cross a transparent wall while blocking bodies and attacks"
+    },
+    "terrain-muzzle-visibility": {
+      "file": "packages/engine/src/spatial/terrain.test.ts",
+      "name": "3D static world distinguishes eye visibility from a blocked lower muzzle"
+    },
+    "effects-order-free-shield": {
+      "file": "packages/engine/src/spatial/effects.test.ts",
+      "name": "simultaneous effects applies defense, resistance and a shared shield without allocating remainders by order"
+    },
+    "effects-simultaneous-lethal": {
+      "file": "packages/engine/src/spatial/effects.test.ts",
+      "name": "simultaneous effects combines shields granted in the same interval and preserves simultaneous lethal effects"
+    },
+    "status-budget-retry": {
+      "file": "packages/engine/src/spatial/effects.test.ts",
+      "name": "status lifetime and stacking reports status budget exhaustion and succeeds with larger attempt limits without changing definitions"
+    },
+    "status-unresolved": {
+      "file": "packages/engine/src/spatial/effects.test.ts",
+      "name": "status lifetime and stacking reports conflicting accepted definitions as unresolved and leaves both inputs untouched"
+    },
+    "prepare-revision-set": {
+      "file": "packages/engine/src/spatial/prepare.test.ts",
+      "name": "immutable spatial manifest resolution pins all identities, resolves types, preserves the caller and normalizes only revision sets"
+    },
+    "canonical-ordered-arrays": {
+      "file": "packages/domain/src/spatial/contracts.test.ts",
+      "name": "canonicalizes keys without erasing ordered arrays and uses a stable UTF-8 SHA-256 contract"
+    }
+  },
+  "entries": [
+    {
+      "id": "sample-symmetric-melee",
+      "purpose": "対称な近接戦の同時致死（固定digestは既存テストが検証）",
+      "recipe": {
+        "kind": "sample",
+        "maxSteps": 500
+      },
+      "oracles": ["melee-golden"],
+      "identity": {
+        "inputHash": "sha256:2e9c5b0f1dc79e87101134e00c56ab95a385774244348e2a3fbf88db8bb107c6",
+        "seed": 42,
+        "scenario": {
+          "id": "flat",
+          "revision": 1,
+          "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+        },
+        "ruleset": {
+          "id": "standard",
+          "revision": 1,
+          "contentHash": "sha256:ef158bc4107c83f975cd6f6a53da85ef8d6c0bdbb03acfa3f07c74f66d64bdfb"
+        },
+        "participants": [
+          {
+            "actorId": "left",
+            "character": {
+              "id": "fighter",
+              "revision": 1,
+              "contentHash": "sha256:ebbe155ca929a6cec92029c97a7f35c0194299342407b971b2582d2672009d6d"
+            }
+          },
+          {
+            "actorId": "right",
+            "character": {
+              "id": "fighter",
+              "revision": 1,
+              "contentHash": "sha256:ebbe155ca929a6cec92029c97a7f35c0194299342407b971b2582d2672009d6d"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "catalog-swordsman-sky-mage-pillars",
+      "purpose": "柱の迂回、魔法飛行、上空からの誘導弾と観測",
+      "recipe": {
+        "kind": "catalog",
+        "left": "swordsman",
+        "right": "sky-mage",
+        "scenario": "pillars",
+        "maxSteps": 6000,
+        "seed": 42
+      },
+      "oracles": ["catalog-pillar-enumeration"],
+      "identity": {
+        "inputHash": "sha256:4e97ad4432ef1b6e7b4b41706e9fcc252b76ee12863759df211a811a256b264e",
+        "seed": 42,
+        "scenario": {
+          "id": "pillars",
+          "revision": 1,
+          "contentHash": "sha256:3c846f9dd90660266784e51c3303bc0faaa95367a6a26c3689a9cb3c526de898"
+        },
+        "ruleset": {
+          "id": "standard",
+          "revision": 1,
+          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+        },
+        "participants": [
+          {
+            "actorId": "left",
+            "character": {
+              "id": "swordsman",
+              "revision": 1,
+              "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e"
+            }
+          },
+          {
+            "actorId": "right",
+            "character": {
+              "id": "sky-mage",
+              "revision": 1,
+              "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "catalog-fire-mage-healer-flat",
+      "purpose": "炎上の継続ダメージ・解除・回復とMPコスト",
+      "recipe": {
+        "kind": "catalog",
+        "left": "fire-mage",
+        "right": "healer",
+        "scenario": "flat",
+        "maxSteps": 6000,
+        "seed": 42
+      },
+      "oracles": [],
+      "identity": {
+        "inputHash": "sha256:525803385e673eb3764f6801574e0796e94fdbaff12df00911bb5b8090e7af37",
+        "seed": 42,
+        "scenario": {
+          "id": "flat",
+          "revision": 1,
+          "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+        },
+        "ruleset": {
+          "id": "standard",
+          "revision": 1,
+          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+        },
+        "participants": [
+          {
+            "actorId": "left",
+            "character": {
+              "id": "fire-mage",
+              "revision": 1,
+              "contentHash": "sha256:92d6fdbe4449a4cf2df33bc96903f689d77ebe9aa5273b478a3caf88f5fca5b7"
+            }
+          },
+          {
+            "actorId": "right",
+            "character": {
+              "id": "healer",
+              "revision": 1,
+              "contentHash": "sha256:8cc1e799233de3462c00fda0b19421f6b6a8714776a82c47b65a6a0e46a0a33d"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "catalog-archer-guardian-flat",
+      "purpose": "重力付きの矢、装備、盾の構え",
+      "recipe": {
+        "kind": "catalog",
+        "left": "archer",
+        "right": "guardian",
+        "scenario": "flat",
+        "maxSteps": 6000,
+        "seed": 42
+      },
+      "oracles": [],
+      "identity": {
+        "inputHash": "sha256:2deb5cfc0518f378ec39ffb5f4185104302e69c23a0a181f46e858b6a723d3e5",
+        "seed": 42,
+        "scenario": {
+          "id": "flat",
+          "revision": 1,
+          "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+        },
+        "ruleset": {
+          "id": "standard",
+          "revision": 1,
+          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+        },
+        "participants": [
+          {
+            "actorId": "left",
+            "character": {
+              "id": "archer",
+              "revision": 1,
+              "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc"
+            }
+          },
+          {
+            "actorId": "right",
+            "character": {
+              "id": "guardian",
+              "revision": 1,
+              "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "catalog-storm-mage-ice-mage-flat",
+      "purpose": "即時射撃と属性耐性",
+      "recipe": {
+        "kind": "catalog",
+        "left": "storm-mage",
+        "right": "ice-mage",
+        "scenario": "flat",
+        "maxSteps": 6000,
+        "seed": 42
+      },
+      "oracles": [],
+      "identity": {
+        "inputHash": "sha256:3f7df307f60db20015b856faf49c381940ff33d7744f78728c9a6cc3847f8779",
+        "seed": 42,
+        "scenario": {
+          "id": "flat",
+          "revision": 1,
+          "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+        },
+        "ruleset": {
+          "id": "standard",
+          "revision": 1,
+          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+        },
+        "participants": [
+          {
+            "actorId": "left",
+            "character": {
+              "id": "storm-mage",
+              "revision": 1,
+              "contentHash": "sha256:a9d96cf5dfad37749f6ab4b757a55c872459698647054856a49444778b99a489"
+            }
+          },
+          {
+            "actorId": "right",
+            "character": {
+              "id": "ice-mage",
+              "revision": 1,
+              "contentHash": "sha256:229c51fbb2b38b2cd3c66f571dad8fd7f26d6f7e9fbcba00913bdb110e16cbd4"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "catalog-lancer-swordsman-pillars",
+      "purpose": "視線が遮られたまま6000区間を解決する時間切れdraw",
+      "recipe": {
+        "kind": "catalog",
+        "left": "lancer",
+        "right": "swordsman",
+        "scenario": "pillars",
+        "maxSteps": 6000,
+        "seed": 42
+      },
+      "oracles": [],
+      "identity": {
+        "inputHash": "sha256:8a14e7df95d59a392ba8f67ddad3f98ac0daa2fe941e5ceb96848a842205e239",
+        "seed": 42,
+        "scenario": {
+          "id": "pillars",
+          "revision": 1,
+          "contentHash": "sha256:3c846f9dd90660266784e51c3303bc0faaa95367a6a26c3689a9cb3c526de898"
+        },
+        "ruleset": {
+          "id": "standard",
+          "revision": 1,
+          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+        },
+        "participants": [
+          {
+            "actorId": "left",
+            "character": {
+              "id": "lancer",
+              "revision": 1,
+              "contentHash": "sha256:66182d21f131993513596e85ab55858f95bc379c690de511307d2056f9d00e88"
+            }
+          },
+          {
+            "actorId": "right",
+            "character": {
+              "id": "swordsman",
+              "revision": 1,
+              "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "categories": [
+    {
+      "id": "repeatability",
+      "title": "同一入力の反復でresult/event/state/物理digestが一致",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["battle-repeat-enumeration", "physics-repeat", "projectile-golden"]
+    },
+    {
+      "id": "fixed-digests",
+      "title": "固定入力の期待digest",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["melee-golden", "projectile-golden", "movement-golden", "probe-open", "probe-dense"]
+    },
+    {
+      "id": "enumeration-order",
+      "title": "意味を持たない列挙順を変えても判定が不変",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "battle-repeat-enumeration",
+        "catalog-pillar-enumeration",
+        "movement-reversed-enumeration",
+        "navigation-enumeration",
+        "perception-projectile-enumeration",
+        "startup-order-independence",
+        "effects-order-free-shield"
+      ]
+    },
+    {
+      "id": "ordered-arrays",
+      "title": "意味を持つ配列順の保持",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["canonical-ordered-arrays", "prepare-revision-set", "perception-priorities"]
+    },
+    {
+      "id": "simultaneous-defeat",
+      "title": "同時致死",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "melee-golden",
+        "last-interval-simultaneous-defeat",
+        "effects-simultaneous-lethal",
+        "projectile-golden"
+      ]
+    },
+    {
+      "id": "body-contact",
+      "title": "同時移動と身体接触",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["physics-same-contact-time", "movement-reversed-enumeration"]
+    },
+    {
+      "id": "occlusion",
+      "title": "遮蔽",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "terrain-transparent-wall",
+        "terrain-muzzle-visibility",
+        "attack-muzzle-wall",
+        "integrated-attack-occlusion",
+        "explosion-occlusion",
+        "physics-wall-body-tie",
+        "perception-flags"
+      ]
+    },
+    {
+      "id": "thin-wall",
+      "title": "薄い壁",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["attack-thin-wall", "projectile-thin-wall", "physics-fast-thin"]
+    },
+    {
+      "id": "high-speed",
+      "title": "高速移動と動く対象との連続衝突",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "projectile-golden",
+        "projectile-relative-sweep",
+        "physics-fast-thin",
+        "physics-slid-chord",
+        "attack-moving-target"
+      ]
+    },
+    {
+      "id": "observation",
+      "title": "観測制約",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "perception-delay",
+        "perception-memory",
+        "perception-observed-projectiles",
+        "attack-observed-range",
+        "homing-observation",
+        "projectile-private-state"
+      ]
+    },
+    {
+      "id": "outcome-kinds",
+      "title": "win/draw/unresolved/truncatedの区別とゲーム内時間切れ",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "melee-golden",
+        "unresolved-status-conflict",
+        "status-unresolved",
+        "budget-retry",
+        "projectile-pool-truncation",
+        "time-limit-not-host-timeout"
+      ]
+    },
+    {
+      "id": "budget-retry",
+      "title": "予算増加での再試行（打切りと完走を決定性違反にしない）",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["budget-retry", "status-budget-retry", "curve-budget"]
+    },
+    {
+      "id": "numeric-profile",
+      "title": "数値encodingと固定三角関数",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["numeric-encoding", "fixed-trigonometry"]
+    },
+    {
+      "id": "cross-os-digests",
+      "title": "同一入力の出力digestをLinux/Windowsのartifactで突合",
+      "state": "planned",
+      "owner": "#9 小PR 2",
+      "tests": []
+    },
+    {
+      "id": "fairness-exchange",
+      "title": "主体・位置・向き・乱数対応を明示した左右交換の公平性",
+      "state": "planned",
+      "owner": "#9 小PR 2",
+      "tests": []
+    },
+    {
+      "id": "worker-order",
+      "title": "Worker数・投入順を変えたdigest比較",
+      "state": "planned",
+      "owner": "#1 P3（Worker pool未実装）",
+      "tests": []
+    },
+    {
+      "id": "job-outcomes",
+      "title": "job failed/cancelledとホストtimeoutを勝敗・drawへ変換しない",
+      "state": "planned",
+      "owner": "#1 P3（job/attempt未実装）",
+      "tests": []
+    },
+    {
+      "id": "load-budget",
+      "title": "計算量・ログ容量の計測と上限、同一runnerでのpaired比較",
+      "state": "planned",
+      "owner": "#9 小PR 3",
+      "tests": []
+    },
+    {
+      "id": "baseline-regression",
+      "title": "固定baseline/candidate SHAの比較と回帰証跡",
+      "state": "planned",
+      "owner": "#9 小PR 3",
+      "tests": []
+    }
+  ]
+}

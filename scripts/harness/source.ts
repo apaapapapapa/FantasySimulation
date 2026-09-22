@@ -22,7 +22,8 @@ export function git(root: string, args: string[]): string {
     stdio: ['ignore', 'pipe', 'pipe'],
   }).trimEnd();
 }
-export function artifactDirectory(root: string, relative: string): string {
+/** Resolve a .generated/harness path without following symlinked components. */
+export function evidencePath(root: string, relative: string): string {
   if (
     !/^\.generated\/harness\/[\w.-]+(?:\/[\w.-]+)*$/.test(relative) ||
     relative.split('/').some((part) => part === '.' || part === '..')
@@ -34,6 +35,10 @@ export function artifactDirectory(root: string, relative: string): string {
     if (existsSync(directory) && lstatSync(directory).isSymbolicLink())
       throw new Error('Evidence directories cannot contain symlinks');
   }
+  return directory;
+}
+export function artifactDirectory(root: string, relative: string): string {
+  const directory = evidencePath(root, relative);
   if (existsSync(directory)) throw new Error('Evidence directory already exists');
   mkdirSync(directory, { recursive: true });
   return directory;
@@ -59,16 +64,20 @@ export function sourceIdentity(root: string, env: NodeJS.ProcessEnv = process.en
   }
   return identity({ sourceSha, candidateSha, baselineSha, testMergeSha });
 }
+export function repositoryRoot(input: string): string {
+  const root = realpathSync.native(input);
+  // Git may return an 8.3 TEMP path on Windows; compare canonical filesystem paths.
+  if (realpathSync.native(git(root, ['rev-parse', '--show-toplevel'])) !== root)
+    throw new Error('Run from the repository root');
+  return root;
+}
 export async function collectSource(
-  root: string,
+  input: string,
   relative: string,
   run: typeof runCommand = runCommand,
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  root = realpathSync.native(root);
-  // Git may return an 8.3 TEMP path on Windows; compare canonical filesystem paths.
-  if (realpathSync.native(git(root, ['rev-parse', '--show-toplevel'])) !== root)
-    throw new Error('Run from the repository root');
+  const root = repositoryRoot(input);
   const info = sourceIdentity(root, env);
   const { sourceSha } = info;
   const startedAt = new Date().toISOString();

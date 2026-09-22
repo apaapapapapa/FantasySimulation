@@ -54,6 +54,7 @@ Explanation-only and read-only review requests retain their requested scope.
 - Any decision-affecting change requires a rules-version bump. The 3D replacement intentionally removes pre-3D runtime/API/schema compatibility (Issue #1). New replays use immutable saved display records, not historical engine execution (Issue #10). Do not add an old-engine registry or silently upgrade old databases.
 - Do not assert universal victory or create arbitrary precedence for contradictory abilities without defining the rules.
 - If randomness is added, require and persist a seed plus its PRNG algorithm/version.
+- `packages/engine/fixtures/spatial/corpus.json` pins fixed battle inputs and maps existing determinism tests (`vp run check:corpus`, part of `verify`). When an input or mapped test changes intentionally, update it in the same reviewed PR with the reason; never regenerate it from candidate output or mark planned coverage as done.
 
 ## Data and toolchain
 

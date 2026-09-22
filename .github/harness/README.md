@@ -38,6 +38,38 @@ artifact; Linux and Windows CI preserve it through the normal source harness.
 No parallel workflow, exemption baseline or auto-refactoring loop is used.
 See [duplication policy and workflow](../../docs/development/duplication.md).
 
+## Regression corpus (H5, Issue #9 step 1)
+
+`vp run verify` runs `vp run check:corpus` after the test suite. It is read-only and
+writes its evidence only to `.generated/harness/corpus/`, which is removed before each
+run and kept with the normal source artifact. `packages/engine/fixtures/spatial/corpus.json` defines:
+
+- the engine contract of the fixed inputs (engine/rules/schema versions, PRNG and seed
+  derivation, physics profile, WASM and angle-table hashes) and each fixed input's
+  recipe, seed, scenario/ruleset/character references and input hash. The input hash
+  is the normalized manifest without `implementationDigest`, so a reviewed restamp does
+  not change the corpus, while data, rules, WASM or table changes do;
+- the existing determinism/regression tests, mapped to Issue #1 fixture categories such
+  as simultaneous defeat, occlusion, thin walls, high speed and observation limits;
+- planned categories (cross-OS digest comparison, fairness exchange, Worker order, job
+  outcomes, load/budget and baseline regression) with their owning Issue or step.
+
+`corpus:engine-identity` executes the existing `engine:check`. `corpus:tests` executes
+only the mapped existing test files through the project-local Vite+ with the Vitest JSON
+reporter; it does not copy their assertions. `corpus:identity` rebuilds every fixed input
+through the engine's own builders and compares it with the pinned identity and contract.
+`corpus:repeat` executes each input twice through the real engine and compares result,
+event, trajectory, TS state and physics digests. `coverage:<category>` passes only when
+all mapped tests passed; planned categories stay `unknown` and are not counted as covered.
+Missing, renamed or skipped tests are `unknown`, failures are `fail` (exit 2 and 1).
+
+`results.json` retains the corpus file hash, engine identity, platform, Node version,
+command results and both runs' digests for later cross-OS and baseline comparison.
+When a fixed input or mapped test changes intentionally, update the corpus file in the
+same reviewed PR and state why. Never regenerate it from candidate output to pass. The
+recorded digests are observations, not new expected values; expected outputs remain in
+the owning tests. Performance measurement is not part of this step.
+
 ## GitHub collection and delivery
 
 Supply `GH_TOKEN` through the environment, never a command argument or committed file.
