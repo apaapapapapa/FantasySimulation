@@ -320,7 +320,7 @@ export const ScenarioSchema = z
   });
 export const RulesetSchema = z.strictObject({
   name: z.string().min(1).max(100),
-  rulesVersion: z.literal('spatial-v1.5'),
+  rulesVersion: z.literal('spatial-v1.6'),
   stepMs: z.literal(20),
   maxSteps: positive(6_000),
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),
@@ -385,7 +385,7 @@ export const ManifestSchema = z
     schemaVersion: z.literal(3),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
-    engineVersion: z.literal('spatial-v1.5'),
+    engineVersion: z.literal('spatial-v1.6'),
     implementationDigest: HashSchema,
     physicsProfileHash: HashSchema,
     physicsProfile: PhysicsProfileSchema,
@@ -421,6 +421,8 @@ export const BudgetSchema = z.strictObject({
   maxProjectiles: positive(256),
   maxMoveSegments: positive(64),
   maxCurveSegments: positive(256),
+  maxStatusTypes: positive(256),
+  maxStatusCauses: positive(65_536),
 });
 export type Budget = z.infer<typeof BudgetSchema>;
 export const DEFAULT_BUDGET: Readonly<Budget> = Object.freeze({
@@ -432,6 +434,8 @@ export const DEFAULT_BUDGET: Readonly<Budget> = Object.freeze({
   maxProjectiles: 64,
   maxMoveSegments: 8,
   maxCurveSegments: 64,
+  maxStatusTypes: 64,
+  maxStatusCauses: 2_048,
 });
 export function parseJson<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
   assertJson(input);

@@ -52,7 +52,7 @@ export const OutcomeSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('unresolved'),
     ruleId: IdSchema,
-    revisions: z.array(IdSchema).max(64),
+    revisions: z.array(IdSchema).max(256),
     reason: z.string().max(500),
   }),
   z.strictObject({ kind: z.literal('truncated'), resource: IdSchema, reason: z.string().max(500) }),
