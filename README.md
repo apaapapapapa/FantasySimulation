@@ -239,3 +239,17 @@ PRの成功、mainの成功、release結果、Issue完了はそれぞれ確認�
 ソース・テストの重複は `vp run check:quality` の `quality:duplication` で検査します。
 新規の未ステージファイルも対象です。指摘箇所を共通化し、期待値は各テストに残します。
 [重複防止の方針・共通fixture・検査範囲](docs/development/duplication.md)を参照してください。
+
+### Persistent job ownership
+
+`JobStore` persists queued jobs, token-fenced attempts, immutable results and replay references
+using Drizzle. Claims, lease renewal/recovery, cancellation and completion use short SQLite
+immediate transactions. A 10-second lease expires into a fresh attempt, up to three attempts;
+ordinary failure, cancellation and truncation can be retried explicitly with an expected
+attempt number and a new budget. Previous attempt budgets and results remain recorded.
+
+Idempotency belongs to a client/endpoint scope and request hash, separately from simulation
+identity. Only definitive win/draw results with a ready artifact qualify for cache reuse.
+Disagreeing definitive results quarantine both artifacts. The initial admission limit is
+128 outstanding jobs and 16 GiB of stored replay data, reserving room for admitted work.
+This persistence layer does not start Workers or expose execution endpoints yet.

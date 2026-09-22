@@ -89,7 +89,15 @@ describe('Drizzle Kit and spatial persistence integration', () => {
     try {
       migrate(drizzle(db), { migrationsFolder });
       const tables = db.prepare<[], { name: string; strict: number }>('PRAGMA table_list').all();
-      for (const name of ['published_revisions', 'definition_drafts', 'battle_specs'])
+      for (const name of [
+        'published_revisions',
+        'definition_drafts',
+        'battle_specs',
+        'simulation_jobs',
+        'simulation_attempts',
+        'battle_results',
+        'replay_artifacts',
+      ])
         expect(tables.find((table) => table.name === name)?.strict).toBe(1);
       expect(
         tables.some((table) =>
@@ -136,7 +144,7 @@ describe('Drizzle Kit and spatial persistence integration', () => {
       );
       expect(() => db.prepare('DELETE FROM battle_specs').run()).toThrow(/cannot be deleted/);
       expect(db.prepare("SELECT name FROM sqlite_schema WHERE type='trigger'").all()).toHaveLength(
-        4,
+        6,
       );
       expect(db.pragma('integrity_check', { simple: true })).toBe('ok');
     } finally {
