@@ -1,7 +1,6 @@
 """Reproducible decimal Taylor series, round-half-even to 1e-9, no runtime trig."""
 from decimal import Decimal, localcontext, ROUND_HALF_EVEN
 from pathlib import Path
-import json
 
 with localcontext() as ctx:
     ctx.prec = 80
@@ -17,4 +16,14 @@ with localcontext() as ctx:
         values.append(int((total * 1_000_000_000).to_integral_value(rounding=ROUND_HALF_EVEN)))
     output = Path(__file__).resolve().parents[1] / 'packages/engine/src/spatial/sine-table.json'
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(values, indent=2) + '\n')
+    # Match the pinned formatter's 100-column numeric-array representation, including LF on Windows.
+    lines = ['[']
+    line = ' '
+    for index, value in enumerate(values):
+        token = str(value) + (',' if index < len(values) - 1 else '')
+        if len(line) + 1 + len(token) > 100:
+            lines.append(line)
+            line = ' '
+        line += ' ' + token
+    lines.extend([line, ']'])
+    output.write_bytes(('\n'.join(lines) + '\n').encode('utf-8'))

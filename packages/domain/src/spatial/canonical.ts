@@ -56,3 +56,17 @@ export async function hashBytes(bytes: Uint8Array): Promise<string> {
 export const contentHash = (value: unknown) =>
   hashBytes(new TextEncoder().encode(canonicalJson(value)));
 export const compareIds = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+export type DeepReadonly<T> = T extends object
+  ? { readonly [K in keyof T]: DeepReadonly<T[K]> }
+  : T;
+export function deepFreeze<T>(value: T): DeepReadonly<T> {
+  const seen = new WeakSet<object>();
+  function visit(input: unknown) {
+    if (input === null || typeof input !== 'object' || seen.has(input)) return;
+    seen.add(input);
+    for (const child of Object.values(input)) visit(child);
+    Object.freeze(input);
+  }
+  visit(value);
+  return value as DeepReadonly<T>;
+}

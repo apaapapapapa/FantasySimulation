@@ -1,4 +1,4 @@
-# spatial-v1.0: 公開入力と実行manifest
+# spatial-v1.1: 公開入力と実行manifest
 
 3D-02で固定する公開契約。実際に受理する項目は`packages/domain/src/spatial`のstrict Zod
 schemaを正本とする。3D-03〜07で実行系を追加し、3D-08でAPIへ接続する。
