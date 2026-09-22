@@ -174,6 +174,11 @@ jobs:
     name: Release
     needs: [verify, ci-gate, security, dependency-policy]
     if: >-
+      always() && !cancelled() &&
+      needs.verify.result == 'success' &&
+      needs['ci-gate'].result == 'success' &&
+      needs.security.result == 'success' &&
+      needs['dependency-policy'].result == 'success' &&
       github.repository == 'apaapapapapa/FantasySimulation' &&
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
