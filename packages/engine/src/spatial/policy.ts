@@ -61,7 +61,11 @@ export function choosePolicy(
     const projectile = projectiles[0];
     if (projectile) {
       let sideways = unit(cross(projectile.velocity, { x: 0, y: 1, z: 0 }));
-      if (length(sideways) < 1e-12) sideways = unit(sub(view.self.position, projectile.position));
+      const away = sub(view.self.position, projectile.position);
+      if (length(sideways) < 1e-12) {
+        sideways = unit({ ...away, y: 0 });
+        if (length(sideways) < 1e-12) sideways = right;
+      } else if (dot(sideways, away) < 0) sideways = mul(sideways, -1);
       goal = add(
         view.self.position,
         mul(

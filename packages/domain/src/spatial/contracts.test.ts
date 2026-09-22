@@ -91,6 +91,31 @@ describe('bounded 3D definitions', () => {
       }).success,
     ).toBe(false);
   });
+  it('rejects mixed-layer and incompatible-mode navigation edges before execution', () => {
+    for (const from of ['ground', 'air'] as const)
+      for (const to of ['ground', 'air'] as const)
+        for (const mode of ['walk', 'jump', 'fly'] as const) {
+          const scenario = {
+            name: 'test',
+            bounds: { min: { x: -1000, y: 0, z: -1000 }, max: { x: 1000, y: 2000, z: 1000 } },
+            obstacles: [],
+            navigation: {
+              version: 'support-graph-v1',
+              nodes: [
+                { id: 'a', mode: from, position: { x: -500, y: 902, z: 0 } },
+                { id: 'b', mode: to, position: { x: 500, y: 902, z: 0 } },
+              ],
+              edges: [
+                { from: 'a', to: 'b', mode, widthMm: 1000, headroomMm: 2000, bidirectional: true },
+              ],
+            },
+          };
+          const required = mode === 'fly' ? 'air' : 'ground';
+          expect(ScenarioSchema.safeParse(scenario).success).toBe(
+            from === required && to === required,
+          );
+        }
+  });
   it('keeps integer vector differences and squared lengths safely representable', () => {
     const worstSquaredDistance = 3 * (2 * 1_000_000) ** 2;
     const worstDirectionDot = 3 * 1_000_000 ** 2;

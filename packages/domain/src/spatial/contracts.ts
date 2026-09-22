@@ -304,9 +304,19 @@ export const ScenarioSchema = z
       )
         ctx.addIssue({ code: 'custom', message: 'Navigation position outside arena' });
     }
-    for (const edge of scenario.navigation.edges)
+    const nodeModes = new Map(scenario.navigation.nodes.map((node) => [node.id, node.mode]));
+    for (const edge of scenario.navigation.edges) {
       if (!nodes.has(edge.from) || !nodes.has(edge.to) || edge.from === edge.to)
         ctx.addIssue({ code: 'custom', message: 'Invalid navigation edge reference' });
+      else {
+        const requiredMode = edge.mode === 'fly' ? 'air' : 'ground';
+        if (nodeModes.get(edge.from) !== requiredMode || nodeModes.get(edge.to) !== requiredMode)
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Navigation edge mode must match both endpoint layers',
+          });
+      }
+    }
   });
 export const RulesetSchema = z.strictObject({
   name: z.string().min(1).max(100),

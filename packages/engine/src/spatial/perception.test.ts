@@ -192,6 +192,64 @@ describe('legal observations and conditional policies', () => {
       world.free();
     }
   });
+  it('evades away from either side of an incoming projectile path and sidesteps vertical fire', async () => {
+    const { world, left } = await setup();
+    try {
+      const self = {
+        ...left,
+        actor: { ...left.actor, policy: { ...left.actor.policy, movement: 'evade' as const } },
+      };
+      for (const z of [-1, 1]) {
+        const memory = {
+          ...emptyMemory(),
+          observation: {
+            sampledAt: 0,
+            availableAt: 5,
+            enemy: null,
+            projectiles: [
+              {
+                id: 'arrow',
+                ownerId: 'right',
+                position: { x: 0, y: 1, z },
+                velocity: { x: -10, y: 0, z: 0 },
+              },
+            ],
+          },
+        };
+        const decision = choosePolicy(
+          { self, memory, resources: { hp: 100, mp: 0, shield: 0 }, statusIds: [] },
+          new Set(),
+          false,
+        );
+        expect((decision.goal!.z - self.position.z) * z).toBeLessThan(0);
+      }
+      const memory = {
+        ...emptyMemory(),
+        observation: {
+          sampledAt: 0,
+          availableAt: 5,
+          enemy: null,
+          projectiles: [
+            {
+              id: 'vertical',
+              ownerId: 'right',
+              position: { ...left.position, y: 5 },
+              velocity: { x: 0, y: -10, z: 0 },
+            },
+          ],
+        },
+      };
+      const goal = choosePolicy(
+        { self, memory, resources: { hp: 100, mp: 0, shield: 0 }, statusIds: [] },
+        new Set(),
+        false,
+      ).goal!;
+      expect(goal.y).toBe(self.position.y);
+      expect(Math.hypot(goal.x - self.position.x, goal.z - self.position.z)).toBeGreaterThan(0);
+    } finally {
+      world.free();
+    }
+  });
   it('only exposes observed enemy projectiles and evaluates bounded ASTs against self resources', async () => {
     const { world, left, right } = await setup();
     try {
