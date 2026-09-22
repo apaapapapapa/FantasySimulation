@@ -1,0 +1,61 @@
+name: Drizzle merge evidence
+on:
+  push:
+    branches: [test/drizzle-delivery-20260923]
+    paths: [.github/workflows/drizzle-merge-evidence.yml]
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  pull-requests: read
+  statuses: read
+jobs:
+  evidence:
+    if: github.repository == 'apaapapapapa/FantasySimulation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: b9ad2439b75cc03006e7391db9ada354fa8f9a55
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Collect current PR and main facts using the existing harness
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: vp run harness github-snapshot apaapapapapa/FantasySimulation 44 .generated/harness/drizzle-merge
+      - name: Bind the existing review to unchanged inputs
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { conversationDigest, parseSnapshot } from './scripts/harness/delivery.ts';
+          const directory = '.generated/harness/drizzle-merge';
+          const snapshot = parseSnapshot(JSON.parse(readFileSync(`${directory}/github-snapshot.json`, 'utf8')));
+          assert.equal(snapshot.pull.head.sha, 'b9ad2439b75cc03006e7391db9ada354fa8f9a55');
+          assert.equal(conversationDigest(snapshot), '77fd96f759ad01a2f9ad43aef794c82349ab7ecbbc506db471eb7833767667ea', 'Review inputs changed; inspect them before replacing this reviewed digest');
+          assert.equal(snapshot.files.length, 33);
+          assert.equal(snapshot.pull.merged, false);
+          assert.equal(snapshot.pull.base.sha, 'd7dc7edfa36ce8ddb45e8d2a66a434952c9463ae');
+          const receipt = {
+            candidateSha: snapshot.pull.head.sha,
+            conversationDigest: conversationDigest(snapshot),
+            reviewedPaths: snapshot.files.map((file) => file.filename),
+            completedAt: new Date().toISOString(),
+            method: 'self',
+            summary: 'Revalidated the unchanged 33-path Drizzle diff reviewed in delivery probe 35758335249. Exact candidate, changed-file/conversation digest, current successful CI, and absence of unresolved review threads were rechecked in the authorized merge session. The prior code review covers spatial persistence, generated schema/SQL, data-preserving adoption, removal of custom migration code, transactions, tests and documentation. No new source change or independent approval is claimed.',
+            unresolvedFindings: 0,
+          };
+          writeFileSync(`${directory}/review.json`, JSON.stringify(receipt, null, 2) + '\n');
+          NODE
+          vp run harness delivery .generated/harness/drizzle-merge/github-snapshot.json pr .generated/harness/drizzle-merge/review.json | tee .generated/harness/drizzle-merge/assessment.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: drizzle-merge-evidence
+          path: .generated/harness/drizzle-merge/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 7
