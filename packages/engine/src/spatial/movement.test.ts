@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
-import type { Definition, Manifest } from '@fantasy/domain/spatial';
+import { contentHash, type Definition, type Manifest } from '@fantasy/domain/spatial';
 import { encodeNumericState, mul, ZERO } from './math.ts';
 import { initializePhysics } from './physics.ts';
 import { prepareBattle, reference, sealRevision } from './prepare.ts';
@@ -88,6 +88,18 @@ describe('simultaneous fixed-step locomotion', () => {
     const states = await run(false),
       reversed = await run(true);
     expect(encodeNumericState(states)).toEqual(encodeNumericState(reversed));
+    expect(
+      await contentHash(
+        encodeNumericState(
+          states.map(({ position, velocity, facing, grounded }) => ({
+            position,
+            velocity,
+            facing,
+            grounded,
+          })),
+        ),
+      ),
+    ).toBe('sha256:437f934a76642a564dfd2d92a1ac35dbc3564ce28f3475032f56c4e25bcd67e6');
     expect(states[0]!.position.x).toBeCloseTo(-states[1]!.position.x, 3);
     expect(states[1]!.position.x - states[0]!.position.x).toBeCloseTo(0.6, 3);
   });
@@ -264,6 +276,80 @@ describe('simultaneous fixed-step locomotion', () => {
       expect(() =>
         moveActors(world, [state], new Map([['left', intent()]]), battle.rules, 0),
       ).toThrow('movement-segments');
+    } finally {
+      world.free();
+    }
+  });
+  it('does not ground or land a capsule within the support look-ahead before actual contact', async () => {
+    const { world, battle } = await scene([], (input) => {
+      input.participants[0].position.y = 907;
+    });
+    try {
+      const rules = { ...battle.rules, gravityMmPerSecond2: 0, fallSafeSpeedMmPerSecond: 0 };
+      const state = initialMotion(world, battle.actors[0]);
+      expect(state.grounded).toBe(false);
+      const hovering = moveActors(
+        world,
+        [state],
+        new Map([['left', { ...intent({ ...ZERO }), jump: true }]]),
+        rules,
+      )[0]!;
+      expect(hovering.state.position.y).toBe(0.907);
+      expect(hovering.state.grounded).toBe(false);
+      expect(hovering.landed).toBe(false);
+      expect(hovering.fallDamage).toBe(0);
+      const falling = moveActors(
+        world,
+        [{ ...state, velocity: { x: 0, y: -0.5, z: 0 } }],
+        new Map([['left', intent({ ...ZERO })]]),
+        rules,
+      )[0]!;
+      expect(falling.state.position.y).toBeCloseTo(0.902, 12);
+      expect(falling.landed).toBe(true);
+      expect(falling.fallDamage).toBeGreaterThan(0);
+    } finally {
+      world.free();
+    }
+  });
+  it('clears both velocities at contact exactly on the interval boundary and immediately permits separation', async () => {
+    const { world, battle } = await scene([], (input) => {
+      input.participants[0].position.x = -305;
+      input.participants[1].position.x = 305;
+    });
+    try {
+      const states = battle.actors.map((actor) =>
+        initialMotion(world, {
+          ...actor,
+          character: {
+            ...actor.character,
+            movement: { ...actor.character.movement, accelerationMmPerSecond2: 12500 },
+          },
+        }),
+      );
+      const contact = moveActors(
+        world,
+        states,
+        new Map([
+          ['left', intent()],
+          ['right', intent({ x: -1, y: 0, z: 0 })],
+        ]),
+        battle.rules,
+      );
+      for (const result of contact) {
+        expect(result.contactTime).toBeCloseTo(1, 10);
+        expect(result.state.velocity).toEqual(ZERO);
+      }
+      const separated = moveActors(
+        world,
+        contact.map((r) => r.state),
+        new Map([
+          ['left', intent({ x: -1, y: 0, z: 0 })],
+          ['right', intent()],
+        ]),
+        battle.rules,
+      );
+      expect(separated[0]!.state.position.x).toBeLessThan(contact[0]!.state.position.x);
+      expect(separated[1]!.state.position.x).toBeGreaterThan(contact[1]!.state.position.x);
     } finally {
       world.free();
     }
