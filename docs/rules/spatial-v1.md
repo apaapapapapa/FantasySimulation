@@ -1,4 +1,4 @@
-# spatial-v1.1: 公開入力と実行manifest
+# spatial-v1.2: 公開入力と実行manifest
 
 3D-02で固定する公開契約。実際に受理する項目は`packages/domain/src/spatial`のstrict Zod
 schemaを正本とする。3D-03〜07で実行系を追加し、3D-08でAPIへ接続する。
@@ -79,3 +79,22 @@ streamも一緒に交換する。seed0は固定の非零初期値へ写す。PRN
 event/result schemaは新形式のみを定義する。win/draw/unresolved/truncatedを区別し、
 event hash、表示軌跡hash、TS state hash、Rapier snapshot hashを別々に持つ。
 ホストfailed/cancelledはjob/attemptの状態であり、勝敗やdrawへ変換しない。
+
+## 静的戦場と初期配置（3D-03）
+
+boxはyaw/slopeを固定sin表から正規化quaternionへ変換し、pillarは円柱として生成する。
+地形queryではmovement/vision/attackを別々に指定する。目のLOSが通ることは、
+より低い銃口や矢の発射点から攻撃が通ることを意味しない。
+
+scenario.boundsから6枚のsolid境界を生成する。これは移動/視線/攻撃の壁であり、
+場外を敗北とする新ルールではない。`boundary.{x,y,z}.{min,max}`は予約ID。
+橋の上下面、床、天井は別の高さにある体積として残し、高さを単一の地表値へ潰さない。
+
+spawnは身体全体のboundsと地形、相手身体との重なりを検証する。Rapier 0.20.0の
+capsule/cuboid contact queryは対称軸上の薄い離隔を誤ってpenetrationと返すfixtureが
+あるため、初期重なりはsegment/OBBの区分二次距離と直立円柱との距離で検証する。
+微小な位置ずらしや乱数による回避は行わない。
+
+地形へのsweepはRapierを使い、boxの面内部と確認できる接触ではその面の法線へ
+戻す。これは床面での数値的な横方向の揺れを抑える処理であり、edge/cornerの法線は
+保持する。2mmのskinは貫通判定の代替ではない。worldの所有者は成功/例外どちらでもfreeする。
