@@ -86,7 +86,7 @@ export async function sampleManifest(maxSteps = 6000): Promise<Manifest> {
   });
   const ruleset = await sealRevision('ruleset', 'standard', 1, {
     name: '標準3D',
-    rulesVersion: 'spatial-v1.6',
+    rulesVersion: 'spatial-v1.7',
     stepMs: 20,
     maxSteps,
     gravityMmPerSecond2: -9807,
@@ -101,7 +101,7 @@ export async function sampleManifest(maxSteps = 6000): Promise<Manifest> {
     schemaVersion: 3,
     eventSchemaVersion: 1,
     replaySchemaVersion: 1,
-    engineVersion: 'spatial-v1.6',
+    engineVersion: 'spatial-v1.7',
     implementationDigest: implementation.digest,
     physicsProfileHash: await contentHash(profile),
     physicsProfile: PhysicsProfileSchema.parse(profile),

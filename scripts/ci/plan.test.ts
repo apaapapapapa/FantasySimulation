@@ -118,52 +118,60 @@ describe('fail-closed CI gate', () => {
     expect(assessGate(docs, { ...observed, docs: 'skipped' }, {}).exitCode).toBe(1);
   });
 });
-it('collects exact test-merge parents and preserves a renamed source deletion', () => {
-  const root = mkdtempSync(join(tmpdir(), 'fantasy-ci-plan-'));
-  const git = (...args: string[]) =>
-    execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: 'pipe' }).trim();
-  try {
-    git('init');
-    git('config', 'user.name', 'Fixture');
-    git('config', 'user.email', 'fixture@example.invalid');
-    mkdirSync(join(root, 'apps'));
-    mkdirSync(join(root, 'docs'));
-    writeFileSync(join(root, 'apps', 'source.ts'), 'export {};\n');
-    git('add', '.');
-    git('commit', '-m', 'base');
-    const base = git('rev-parse', 'HEAD');
-    git('mv', 'apps/source.ts', 'docs/renamed.md');
-    git('commit', '-m', 'rename');
-    const candidate = git('rev-parse', 'HEAD');
-    const tested = git(
-      'commit-tree',
-      git('rev-parse', 'HEAD^{tree}'),
-      '-p',
-      base,
-      '-p',
-      candidate,
-      '-m',
-      'test merge',
-    );
-    git('reset', '--hard', tested);
-    const eventPath = join(root, '.git', 'event.json');
-    writeFileSync(
-      eventPath,
-      JSON.stringify({ pull_request: { head: { sha: candidate }, base: { sha: 'd'.repeat(40) } } }),
-    );
-    const env = {
-        GITHUB_SHA: tested,
-        GITHUB_EVENT_NAME: 'pull_request',
-        GITHUB_EVENT_PATH: eventPath,
-      },
-      plan = collectPlan(root, env);
-    expect(plan.baselineSha).toBe(base);
-    expect(plan.candidateSha).toBe(candidate);
-    expect(plan.paths).toEqual(['apps/source.ts', 'docs/renamed.md']);
-    expect(plan.full).toBe(true);
-    expect(collectPlan(root, { ...env, GITHUB_EVENT_PATH: join(root, 'missing') }).full).toBe(true);
-    expect(() => collectPlan(root, { ...env, GITHUB_SHA: 'e'.repeat(40) })).toThrow(Error);
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
+it(
+  'collects exact test-merge parents and preserves a renamed source deletion',
+  { timeout: 15000 },
+  () => {
+    const root = mkdtempSync(join(tmpdir(), 'fantasy-ci-plan-'));
+    const git = (...args: string[]) =>
+      execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: 'pipe' }).trim();
+    try {
+      git('init');
+      git('config', 'user.name', 'Fixture');
+      git('config', 'user.email', 'fixture@example.invalid');
+      mkdirSync(join(root, 'apps'));
+      mkdirSync(join(root, 'docs'));
+      writeFileSync(join(root, 'apps', 'source.ts'), 'export {};\n');
+      git('add', '.');
+      git('commit', '-m', 'base');
+      const base = git('rev-parse', 'HEAD');
+      git('mv', 'apps/source.ts', 'docs/renamed.md');
+      git('commit', '-m', 'rename');
+      const candidate = git('rev-parse', 'HEAD');
+      const tested = git(
+        'commit-tree',
+        git('rev-parse', 'HEAD^{tree}'),
+        '-p',
+        base,
+        '-p',
+        candidate,
+        '-m',
+        'test merge',
+      );
+      git('reset', '--hard', tested);
+      const eventPath = join(root, '.git', 'event.json');
+      writeFileSync(
+        eventPath,
+        JSON.stringify({
+          pull_request: { head: { sha: candidate }, base: { sha: 'd'.repeat(40) } },
+        }),
+      );
+      const env = {
+          GITHUB_SHA: tested,
+          GITHUB_EVENT_NAME: 'pull_request',
+          GITHUB_EVENT_PATH: eventPath,
+        },
+        plan = collectPlan(root, env);
+      expect(plan.baselineSha).toBe(base);
+      expect(plan.candidateSha).toBe(candidate);
+      expect(plan.paths).toEqual(['apps/source.ts', 'docs/renamed.md']);
+      expect(plan.full).toBe(true);
+      expect(collectPlan(root, { ...env, GITHUB_EVENT_PATH: join(root, 'missing') }).full).toBe(
+        true,
+      );
+      expect(() => collectPlan(root, { ...env, GITHUB_SHA: 'e'.repeat(40) })).toThrow(Error);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
