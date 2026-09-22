@@ -29,7 +29,8 @@
     "bench:spatial": "node scripts/spatial-benchmark.ts",
     "fixtures:spatial": "node scripts/spatial-fixtures.ts --write",
     "harness": "node scripts/harness.ts",
-    "check:quality": "node scripts/quality.ts"
+    "check:quality": "node scripts/quality.ts",
+    "db:reset": "vp run --filter @fantasy/api db:reset"
   },
   "devDependencies": {
     "@octokit/core": "7.0.8",

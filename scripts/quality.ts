@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { checkMigrations } from './quality/migrations.ts';
 import { architecture } from './quality/architecture.ts';
 import { firstPartyJavaScript, unsupportedTypeScriptModules } from './quality/files.ts';
 import { withSources } from './quality/ast.ts';
@@ -8,7 +9,12 @@ import { assessReport } from './harness/report.ts';
 import type { Check, Report } from './harness/report.ts';
 import { sourceIdentity } from './harness/source.ts';
 
-const required = ['quality:typescript', 'quality:architecture', 'quality:determinism'];
+const required = [
+  'quality:typescript',
+  'quality:architecture',
+  'quality:determinism',
+  'quality:migrations',
+];
 const startedAt = new Date().toISOString();
 const checks: Check[] = [];
 const details: Record<string, unknown> = {};
@@ -68,6 +74,7 @@ try {
         [...files].flatMap(([path, file]) => determinism(path, file, checker)),
     ),
   );
+  await run('quality:migrations', () => checkMigrations(root));
   writeFileSync(`${directory}/findings.json`, JSON.stringify({ ...info, details }, null, 2) + '\n');
   const report: Report = {
     ...info,

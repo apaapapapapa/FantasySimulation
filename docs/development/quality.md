@@ -61,6 +61,24 @@ explicit inputs. Existing versioned PRNG and the Rapier physics adapter remain v
 WASM preparation stays in its reviewed physics boundary. Dependency graphs alone do
 not prove determinism, and this conservative AST policy is not a mathematical proof.
 
+## SQLite migration generations
+
+The existing API migration runner is shared from `apps/api/src/migrations.ts` by
+startup, development reset and the disposable guard. `quality:migrations` compares
+with `MIGRATION_BASE_SHA` supplied by the exact CI plan (or local merge-base with
+origin/main); missing baseline evidence fails closed. Existing SQL in a generation
+is append-only, and applied receipts must be an unchanged prefix with exact checksums.
+The runner initializes and reinitializes a temporary DB and checks integrity; tests
+also cover failing SQL rollback, missing/modified receipts and unsupported DBs.
+Verification never opens DATABASE_PATH or a user DB.
+
+`db/schema.json` plus a new reviewed ADR permits a new generation, SQL replacement
+and fresh initialization without retaining obsolete engine/DB compatibility fixtures.
+The first generation declaration still protects previous SQL. Ordinary startup never
+resets data. `db:reset` requires explicit generation confirmation and a new destination;
+its exclusive file creation refuses an existing file before SQLite can open it.
+See [the schema decision](../adr/0003-schema-generations.md).
+
 ## Change workflow
 
 Use `vp test run scripts/quality` for meaningful positive and negative fixtures. CI uses
