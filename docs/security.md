@@ -57,30 +57,90 @@ There is no directory-wide, rule-wide or automatic exception mechanism.
 The reviewer field is an audit record, not proof of a GitHub approval: require
 an independent human review of the exception PR and do not self-approve it.
 
-## Evidence and repository settings
+## Common evidence and the mandatory CI gate
 
-Sanitized JSON receipts identify the checked Git SHA, PR head/base where known,
-run ID, attempt, timestamp, status and counts. PR test-merge SHA is deliberately
-not relabelled as the PR head. Receipts appear in the step summary and the
-`security-secrets-<run>-<attempt>` artifact (14-day retention).
-A missing receipt upload fails the job. Setup failures can have no receipt;
-the aggregate `security-gate` still fails because the required job did not pass.
+H4's sanitized receipts retain the `fantasy-security-h4` producer. They are
+inputs, not substitutes for the H1 common report. `scripts/security/evidence.ts`
+converts them to that schema using the existing report assessor. The aggregate
+`scripts/ci/gate.ts` requires every check below, on full and wording-only PRs:
 
-Main release requires both platform verification and the security workflow.
-Required checks must additionally be configured in repository branch rules;
-a workflow dependency alone does not prevent an administrator from merging.
-Require `Security / security-gate` (use the exact name shown by the first run)
-and both existing `Verify (...)` checks, and protect workflow/policy changes
-with review. Do not remove old required checks before confirming the new names.
+| Common check ID | Receipt artifact prefix | Required receipt |
+| --- | --- | --- |
+| `security:secret-canary` | `security-secrets` | `secret-canary.json` |
+| `security:secret-scan` | `security-secrets` | `secret-scan.json` |
+| `security:codeql-severity` | `security-codeql` | `codeql-severity.json` |
+| `security:dependency-audit` | `security-audit` | `dependency-audit.json` |
+| `security:renovate-configuration` | `security-renovate` | `renovate-configuration.json` |
+| `security:toolchain-ubuntu-latest` | `security-toolchain-ubuntu-latest` | `toolchain-policy.json` |
+| `security:toolchain-windows-latest` | `security-toolchain-windows-latest` | `toolchain-policy.json` |
 
-At implementation baseline `92df8bbbe5b33d36fc5047c5f31843f8dbbc83de`,
-the repository is public. The connected integration returned HTTP 403 for
-branch-protection reads. Branch protection is therefore **unverified**, not
-installed or confirmed by this change. No repository administration was changed.
+Each artifact name ends with `-<runId>-<runAttempt>`. CI downloads only that
+run and attempt and keeps artifact directories separate, so the two platform
+receipts cannot overwrite each other. Receipts must match the exact tested
+source SHA, PR head, baseline, run and attempt, producer and check ID. PR
+source SHA remains the test-merge SHA, not the PR head. Invalid timestamps,
+future completion times, missing/invalid counts, inconsistent success claims,
+unexpected states and missing evidence remain incomplete. Verified findings
+remain failures. No detector output or arbitrary receipt error string is echoed
+by the adapter.
 
-H1 (#5) report schema and H2 (#6) aggregate CI gate were not present on that
-baseline. H4 receipts are a separate, explicitly named producer, not invented
-H1 receipts. When those features land, register all required H4 checks and bind
-these receipts to the actual tested SHA; do not treat missing evidence as green.
-CodeQL/dependency audit and Renovate activation are separate follow-up PRs for
-#8. Keep the Issue open until their runtime and external setup criteria are met.
+The official Renovate validator still runs with its existing exact pin and
+`--strict`. Its observed step outcome produces a receipt even after a failure;
+skipped, cancelled and missing execution never produce a passing receipt.
+The adapter also verifies positive canary, CodeQL rule and toolchain coverage
+and the absence of blocking/high/critical findings where appropriate.
+
+`ci-gate` retains these files in its existing artifact (7 days):
+
+- `plan.json`: the exact source/head/base and planned full or docs execution.
+- `security.json`: the common H4 report, including each original receipt URI.
+- `gate.json`: job outcomes, both platform reports and all required H4 checks.
+- `security-evidence/`: the original sanitized receipts, grouped by artifact.
+
+The original security artifacts remain available for 14 days. Setup failure
+can prevent receipt creation; missing uploads or receipt files still block the
+aggregate gate. To recover a failed attempt, use **Re-run all jobs** so every
+required receipt is regenerated for the new attempt. Do not copy old receipts,
+restamp their identities or use a gate-only rerun as substitute evidence.
+
+## Repository protection and external acceptance
+
+Workflow dependencies prevent the release job from proceeding after failed or
+incomplete security checks. They do not independently restrict manual merges.
+Configure an active rule for `main` requiring the exact observed `ci-gate` check,
+plus the security/dependency gates as defense in depth, from the expected GitHub
+Actions producer. Require review for workflow and policy changes, dismiss stale
+approval after changes and prevent direct/force-push bypass as appropriate.
+Do not remove existing required checks before confirming their replacements.
+See GitHub's [protected branch documentation](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches).
+
+At the 2026-09-23 inspection baseline
+`1ebd0b11a039e5b448d35ace669f66b66266db3d`, the branch API reported
+`protected: false`, protection disabled and no required status-check contexts.
+This change does not enable repository administration settings. Detailed
+settings and enforcement must be verified by an administrator; do not label
+this repository protected based solely on successful CI.
+
+Remaining operational acceptance for Issue #8:
+
+1. Authorize the existing Mend Renovate GitHub App for FantasySimulation.
+   Verify its onboarding/dashboard and actual bot activity; a valid
+   `renovate.json` alone is not activation. Do not introduce another update bot.
+2. Approve one suitable update from its Dependency Dashboard. Confirm the real
+   bot PR has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
+   correct lockfile. Preserve manual review, including vulnerability updates.
+   Run both OS verification and all security evidence; do not manufacture a
+   bot-authored PR to claim acceptance. See the official
+   [Renovate configuration reference](https://docs.renovatebot.com/configuration-options/).
+3. On an actual Rapier/WASM update, review physics version, WASM hash, engine
+   digest and deterministic fixtures. Existing engine tests passing without a
+   dependency update do not prove this upgrade path.
+4. Configure and verify the `main` protection/review requirements above.
+5. Exercise an actual fork PR without project secrets. Keep `pull_request`,
+   read-only basic validation and the restricted CodeQL publication permission;
+   document any GitHub permission or approval limitation. Do not replace this
+   with privileged `pull_request_target` execution or mark a skipped upload green.
+
+Keep #8 open until external setup and actual update/fork acceptance are evidenced.
+The Issue-completion declaration must not waive these items merely because the
+code-side integration is merged.
