@@ -1,0 +1,78 @@
+name: Dependency policy
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: '15 20 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  configuration:
+    name: Renovate configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      RENOVATE_VALIDATOR_VERSION: 44.106.0
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
+        with:
+          node-version-file: .node-version
+          run-install: false
+      - name: Validate with the pinned official Renovate validator
+        run: >-
+          pnpm --package="renovate@$RENOVATE_VALIDATOR_VERSION" dlx
+          renovate-config-validator --strict renovate.json5
+
+  toolchain:
+    name: Toolchain policy (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
+        with:
+          node-version-file: .node-version
+          run-install: false
+      - name: Version coupling and no-automerge regression tests
+        run: node --test scripts/security/toolchain.test.ts
+      - name: Check actual repository pins and bot policy
+        run: node scripts/security/toolchain.ts
+        env:
+          H4_REPORT_DIR: ${{ runner.temp }}/h4-toolchain
+          H4_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          H4_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+      - name: Upload sanitized toolchain receipt
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: security-toolchain-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/h4-toolchain/*.json
+          if-no-files-found: error
+          retention-days: 14
+
+  gate:
+    name: dependency-policy-gate
+    needs: [configuration, toolchain]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require validator and both toolchain platforms
+        env:
+          CONFIGURATION_RESULT: ${{ needs.configuration.result }}
+          TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}
+        run: |
+          test "$CONFIGURATION_RESULT" = success
+          test "$TOOLCHAIN_RESULT" = success

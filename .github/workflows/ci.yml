@@ -22,6 +22,10 @@ jobs:
       contents: read
       security-events: write
 
+  dependency-policy:
+    name: Dependency policy
+    uses: ./.github/workflows/dependency-policy.yml
+
   verify:
     name: Verify (${{ matrix.os }})
     strategy:
@@ -55,7 +59,7 @@ jobs:
 
   release:
     name: Release
-    needs: [verify, security]
+    needs: [verify, security, dependency-policy]
     if: >-
       github.repository == 'apaapapapapa/FantasySimulation' &&
       github.ref == 'refs/heads/main' &&
