@@ -1,0 +1,132 @@
+name: H4 operational acceptance
+on:
+  push:
+    branches: [test/h4-operational-acceptance-20260923]
+permissions: {}
+jobs:
+  dispatch:
+    name: Dispatch existing main security workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: 14c006eb16a231c99938e570f89c541864ee4ef3
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Dispatch only the two existing workflows on unchanged main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { Octokit } from '@octokit/core';
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          const client = new Octokit({ auth: process.env.GH_TOKEN, request: { timeout: 20000 } });
+          const repository = { owner: 'apaapapapapa', repo: 'FantasySimulation' };
+          const sourceSha = '14c006eb16a231c99938e570f89c541864ee4ef3';
+          const report = { producer: 'h4-operational-probe', sourceSha, runId: process.env.GITHUB_RUN_ID, startedAt: new Date().toISOString(), event: 'workflow_dispatch', scheduledAcceptance: false, workflows: [] };
+          for (const workflow_id of ['security.yml', 'dependency-policy.yml']) {
+            const result = { workflow: workflow_id, status: 'unknown' };
+            try {
+              const branch = await client.request('GET /repos/{owner}/{repo}/branches/{branch}', { ...repository, branch: 'main' });
+              if (branch.data.commit.sha !== sourceSha) throw new Error('MAIN_CHANGED');
+              const workflow = await client.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}', { ...repository, workflow_id });
+              result.workflowId = workflow.data.id;
+              result.state = workflow.data.state;
+              if (workflow.data.state !== 'active') throw new Error('WORKFLOW_NOT_ACTIVE');
+              const response = await client.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches', { ...repository, workflow_id, ref: 'main' });
+              result.httpStatus = response.status;
+              result.status = response.status === 204 ? 'dispatched-not-yet-verified' : 'unknown';
+            } catch (error) {
+              result.httpStatus = typeof error.status === 'number' ? error.status : null;
+              result.status = 'unknown';
+              process.exitCode = 2;
+            }
+            report.workflows.push(result);
+          }
+          report.finishedAt = new Date().toISOString();
+          mkdirSync('.generated/h4-operations', { recursive: true });
+          writeFileSync('.generated/h4-operations/dispatch.json', JSON.stringify(report, null, 2) + '\n');
+          console.log(JSON.stringify(report));
+          NODE
+      - name: Preserve dispatch evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: h4-dispatch-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/h4-operations/dispatch.json
+          if-no-files-found: error
+          retention-days: 7
+  inspect:
+    name: Read main CodeQL analysis metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      security-events: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: 14c006eb16a231c99938e570f89c541864ee4ef3
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Collect bounded metadata and counts without source snippets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { Octokit } from '@octokit/core';
+          import { paginateRest } from '@octokit/plugin-paginate-rest';
+          import { mkdirSync, writeFileSync } from 'node:fs';
+          const Client = Octokit.plugin(paginateRest);
+          const client = new Client({ auth: process.env.GH_TOKEN, request: { timeout: 20000 } });
+          const repository = { owner: 'apaapapapapa', repo: 'FantasySimulation', ref: 'refs/heads/main', per_page: 100 };
+          const sourceSha = '14c006eb16a231c99938e570f89c541864ee4ef3';
+          const report = { producer: 'h4-operational-probe', sourceSha, runId: process.env.GITHUB_RUN_ID, startedAt: new Date().toISOString(), status: 'unknown', administrationChanged: false, rawFindingsPublished: false };
+          async function collect(route, extra = {}) {
+            const values = [];
+            let pages = 0;
+            for await (const response of client.paginate.iterator(route, { ...repository, ...extra })) {
+              if (++pages > 10) throw new Error('PAGE_BUDGET');
+              values.push(...response.data);
+            }
+            return values;
+          }
+          try {
+            const analyses = await collect('GET /repos/{owner}/{repo}/code-scanning/analyses');
+            const current = analyses.filter((item) => item.commit_sha === sourceSha && item.tool?.name === 'CodeQL');
+            report.analyses = current.map((item) => ({ id: item.id, ref: item.ref, commitSha: item.commit_sha, createdAt: item.created_at, category: item.category, toolName: item.tool.name, toolVersion: item.tool.version, resultsCount: item.results_count, rulesCount: item.rules_count, hasError: Boolean(item.error), hasWarning: Boolean(item.warning), analysisKey: item.analysis_key }));
+            const alerts = await collect('GET /repos/{owner}/{repo}/code-scanning/alerts', { state: 'open' });
+            report.openAlerts = alerts.length;
+            report.openAlertSeverityCounts = {};
+            for (const alert of alerts) {
+              const raw = alert.rule?.security_severity_level;
+              const severity = ['critical', 'high', 'medium', 'low'].includes(raw) ? raw : 'other';
+              report.openAlertSeverityCounts[severity] = (report.openAlertSeverityCounts[severity] ?? 0) + 1;
+            }
+            report.paginationComplete = true;
+            report.status = current.length > 0 && current.every((item) => !item.error) ? 'metadata-confirmed' : 'unknown';
+            if (report.status === 'unknown') process.exitCode = 2;
+          } catch (error) {
+            report.httpStatus = typeof error.status === 'number' ? error.status : null;
+            report.status = 'unknown';
+            process.exitCode = 2;
+          }
+          report.finishedAt = new Date().toISOString();
+          mkdirSync('.generated/h4-operations', { recursive: true });
+          writeFileSync('.generated/h4-operations/code-scanning.json', JSON.stringify(report, null, 2) + '\n');
+          console.log(JSON.stringify(report));
+          NODE
+      - name: Preserve sanitized metadata
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: h4-code-scanning-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/h4-operations/code-scanning.json
+          if-no-files-found: error
+          retention-days: 7
