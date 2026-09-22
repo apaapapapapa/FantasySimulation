@@ -1,0 +1,52 @@
+name: Harness dependency preparation
+
+on:
+  push:
+    branches: [automation/harness-bootstrap-20260922]
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          cache: false
+          run-install: false
+      - run: vp install --frozen-lockfile
+      # Preparation only: this branch is never merged and does not replace CI validation.
+      - name: Resolve exact development dependencies
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const file = JSON.parse(readFileSync('package.json', 'utf8'));
+          Object.assign(file.devDependencies, { '@octokit/core': '7.0.8', 'dependency-cruiser': '18.1.0', zod: '4.6.5' });
+          writeFileSync('package.json', JSON.stringify(file, null, 2) + '\n');
+          NODE
+          vp install --no-frozen-lockfile
+      - name: Prepare offline development workspace without credentials
+        shell: bash
+        run: |
+          mkdir -p preparation/bin
+          git archive HEAD | gzip > preparation/source.tar.gz
+          cp package.json pnpm-lock.yaml preparation/
+          cp "$(vp env exec node -p process.execPath | tail -n 1)" preparation/bin/node
+          cp -L "$(command -v vp)" preparation/bin/vp
+          tar -czf preparation/dependencies.tar.gz node_modules apps/api/node_modules apps/web/node_modules packages/domain/node_modules packages/engine/node_modules
+          node --version > preparation/runtime.txt
+          git rev-parse HEAD > preparation/source-sha.txt
+          sha256sum preparation/*.tar.gz preparation/bin/* > preparation/SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: harness-preparation
+          path: preparation/
+          retention-days: 1
+          if-no-files-found: error
