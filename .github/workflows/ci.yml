@@ -15,6 +15,10 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  dependency-policy:
+    name: Dependency policy
+    uses: ./.github/workflows/dependency-policy.yml
+
   security:
     name: Security
     uses: ./.github/workflows/security.yml
@@ -55,7 +59,7 @@ jobs:
 
   release:
     name: Release
-    needs: [verify, security]
+    needs: [verify, security, dependency-policy]
     if: >-
       github.repository == 'apaapapapapa/FantasySimulation' &&
       github.ref == 'refs/heads/main' &&

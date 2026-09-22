@@ -1,0 +1,89 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices"],
+  "enabledManagers": ["npm", "github-actions", "nodenv", "custom.regex"],
+  "timezone": "Asia/Tokyo",
+  "schedule": ["before 8am on monday"],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 3,
+  "dependencyDashboard": true,
+  "dependencyDashboardApproval": true,
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "automerge": false,
+  "platformAutomerge": false,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "automerge": false,
+    "dependencyDashboardApproval": false,
+    "schedule": ["at any time"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": false,
+    "dependencyDashboardApproval": true
+  },
+  "packageRules": [
+    {
+      "description": "Never automatically merge any manager or update type.",
+      "matchPackageNames": ["*"],
+      "automerge": false
+    },
+    {
+      "description": "Review Vite+, its alias, peer override and Vitest as one tested unit.",
+      "matchPackageNames": [
+        "vite-plus",
+        "vite",
+        "vitest",
+        "@voidzero-dev/vite-plus-core",
+        "@voidzero-dev/vite-plus-test"
+      ],
+      "groupName": "Vite+ and bundled test toolchain",
+      "groupSlug": "vite-plus-toolchain",
+      "separateMajorMinor": false,
+      "rangeStrategy": "pin",
+      "dependencyDashboardApproval": true,
+      "automerge": false
+    },
+    {
+      "description": "Keep runtime and package-manager changes reviewable together.",
+      "matchPackageNames": ["node", "pnpm", "@types/node"],
+      "groupName": "Node and pnpm toolchain",
+      "groupSlug": "node-pnpm-toolchain",
+      "dependencyDashboardApproval": true,
+      "automerge": false
+    },
+    {
+      "description": "Future physics/WASM updates require identity and determinism evidence, even patches.",
+      "matchPackageNames": ["@dimforge/rapier*", "/rapier/i"],
+      "groupName": "Physics engine and WASM",
+      "dependencyDashboardApproval": true,
+      "automerge": false
+    },
+    {
+      "description": "Pin all GitHub Actions to full commit digests.",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true,
+      "automerge": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Keep the Vite peer override coupled to the official Vite+ alias.",
+      "managerFilePatterns": ["/^pnpm-workspace\\.yaml$/"],
+      "matchStrings": ["allowedVersions:\\s+vite: (?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "@voidzero-dev/vite-plus-core",
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "Review updates of the exact configuration validator version.",
+      "managerFilePatterns": ["/^\\.github/workflows/dependency-policy\\.yml$/"],
+      "matchStrings": ["RENOVATE_VALIDATOR_VERSION: (?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "depNameTemplate": "renovate",
+      "datasourceTemplate": "npm"
+    }
+  ]
+}

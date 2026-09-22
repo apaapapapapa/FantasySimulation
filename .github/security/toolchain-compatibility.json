@@ -1,0 +1,6 @@
+{
+  "vitePlus": "0.3.3",
+  "vitest": "4.1.11",
+  "evidence": "Vite+ v0.3.3 packages/cli/package.json imports catalog Vitest; upstream pnpm-workspace.yaml pins vitest and @vitest/* to 4.1.11. Revalidate the pair and both-platform CI on every update.",
+  "upstream": "https://github.com/voidzero-dev/vite-plus/blob/v0.3.3/pnpm-workspace.yaml"
+}
