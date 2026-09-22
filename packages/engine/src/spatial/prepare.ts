@@ -1,5 +1,7 @@
 import {
   contentHash,
+  deepFreeze,
+  type DeepReadonly,
   actorSeed,
   ManifestSchema,
   parseJson,
@@ -15,21 +17,21 @@ import implementation from './implementation.json' with { type: 'json' };
 import profile from './profile.json' with { type: 'json' };
 
 export { implementation, profile };
-export type ResolvedActor = {
+export type ResolvedActor = DeepReadonly<{
   participant: Manifest['participants'][number];
   character: Definition<'character'>;
   abilities: Extract<Revision, { kind: 'ability' }>[];
   equipment: Definition<'equipment'>[];
   policy: Definition<'policy'>;
-};
-export type PreparedBattle = {
+}>;
+export type PreparedBattle = DeepReadonly<{
   manifest: Manifest;
   simulationHash: string;
   rules: Definition<'ruleset'>;
   scenario: Definition<'scenario'>;
   actors: [ResolvedActor, ResolvedActor];
   statuses: Extract<Revision, { kind: 'status' }>[];
-};
+}>;
 export const revisionHash = (revision: Pick<Revision, 'kind' | 'schemaVersion' | 'definition'>) =>
   contentHash({
     kind: revision.kind,
@@ -42,15 +44,17 @@ export async function sealRevision<K extends DefinitionKind>(
   revision: number,
   definition: Definition<K>,
 ): Promise<Extract<Revision, { kind: K }>> {
-  const contentHash = await revisionHash({ kind, schemaVersion: 1, definition });
-  return parseJson(RevisionSchema, {
+  // Zod clones and validates before yielding control; hash and returned data share this snapshot.
+  const snapshot = parseJson(RevisionSchema, {
     kind,
     id,
     revision,
     schemaVersion: 1,
-    contentHash,
+    contentHash: `sha256:${'0'.repeat(64)}`,
     definition,
-  }) as Extract<Revision, { kind: K }>;
+  });
+  snapshot.contentHash = await revisionHash(snapshot);
+  return snapshot as Extract<Revision, { kind: K }>;
 }
 export const reference = (revision: Revision): RevisionRef => ({
   id: revision.id,
@@ -152,12 +156,12 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
   manifest.revisions.sort((a, b) =>
     compareIds(`${a.kind}:${a.id}:${a.revision}`, `${b.kind}:${b.id}:${b.revision}`),
   );
-  return {
+  return deepFreeze({
     manifest,
     simulationHash: await contentHash(manifest),
     actors,
     scenario,
     rules: get('ruleset', manifest.ruleset).definition,
     statuses: manifest.revisions.filter((r) => r.kind === 'status'),
-  };
+  });
 }

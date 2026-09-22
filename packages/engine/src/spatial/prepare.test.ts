@@ -1,9 +1,47 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { contentHash, type Revision } from '@fantasy/domain/spatial';
 import { sampleManifest } from './sample.ts';
-import { prepareBattle, reference, sealRevision } from './prepare.ts';
+import { prepareBattle, reference, revisionHash, sealRevision } from './prepare.ts';
 
 describe('immutable spatial manifest resolution', () => {
+  it('seals the validated snapshot even when the caller edits its definition during hashing', async () => {
+    const manifest = await sampleManifest();
+    const definition = structuredClone(
+      manifest.revisions.find((r) => r.kind === 'character')!.definition,
+    );
+    const original = structuredClone(definition);
+    const pending = sealRevision('character', 'racing-editor', 1, definition);
+    definition.stats.hp = 999;
+    definition.abilities[0]!.revision = 999;
+    definition.originalText = 'edited after invocation';
+    const revision = await pending;
+    expect(revision.definition).toEqual(original);
+    expect(revision.contentHash).toBe(await revisionHash(revision));
+  });
+  it('freezes the complete prepared object and resolved aliases at runtime and in its public type', async () => {
+    const prepared = await prepareBattle(await sampleManifest());
+    expect(prepared.actors[0].character).toBe(
+      prepared.manifest.revisions.find((r) => r.kind === 'character')!.definition,
+    );
+    expect(() => {
+      // @ts-expect-error Decision input is deeply readonly.
+      prepared.actors[0].character.stats.hp = 1;
+    }).toThrow(TypeError);
+    expect(() => {
+      // @ts-expect-error Ordered nested arrays are readonly too.
+      prepared.actors[0].policy.priorities.pop();
+    }).toThrow(TypeError);
+    expect(() => {
+      // @ts-expect-error Manifest revisions cannot change after hashing.
+      prepared.manifest.revisions.pop();
+    }).toThrow(TypeError);
+    expect(() => {
+      // @ts-expect-error The rules alias is also readonly.
+      prepared.rules.maxSteps = 1;
+    }).toThrow(TypeError);
+    expect(Object.isFrozen(prepared.actors)).toBe(true);
+    expect(Object.isFrozen(prepared.statuses)).toBe(true);
+  });
   it('pins all identities, resolves types, preserves the caller and normalizes only revision sets', async () => {
     const input = await sampleManifest();
     const before = structuredClone(input);
