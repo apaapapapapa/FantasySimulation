@@ -1,0 +1,5 @@
+name: FantasySimulation workspace
+paths:
+  - apps
+  - packages
+  - scripts

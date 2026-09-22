@@ -18,6 +18,9 @@ jobs:
   security:
     name: Security
     uses: ./.github/workflows/security.yml
+    permissions:
+      contents: read
+      security-events: write
 
   verify:
     name: Verify (${{ matrix.os }})
