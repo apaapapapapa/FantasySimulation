@@ -25,22 +25,27 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 2
+          persist-credentials: false
       - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
         with:
           node-version-file: .node-version
           cache: true
           run-install: false
       - run: vp install --frozen-lockfile
-      - name: Format, lint and type-aware checks
-        run: vp check
-      - name: TypeScript compiler
-        run: vp run typecheck
-      - name: Engine implementation identity
-        run: vp run engine:check
-      - name: Engine and SQLite integration tests
-        run: vp test
-      - name: Build web and API
-        run: vp run build
+      - name: Verify source and collect commit-bound evidence
+        run: vp run harness source ci-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+        env:
+          HARNESS_CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Preserve verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-evidence-${{ matrix.os }}
+          path: .generated/harness/
+          retention-days: 14
+          if-no-files-found: error
 
   release:
     name: Release

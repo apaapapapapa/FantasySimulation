@@ -14,6 +14,8 @@
     "format": "vp fmt",
     "test": "vp test",
     "test:watch": "vp test watch",
+    "test:harness": "node --test scripts/harness/*.test.ts",
+    "harness": "node scripts/harness.ts",
     "build": "vp run -r build",
     "db:migrate": "vp run --filter @fantasy/api db:migrate",
     "db:seed": "vp run --filter @fantasy/api db:seed",
@@ -23,7 +25,7 @@
     "demo:tick": "node scripts/tick-demo.ts",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run",
-    "verify": "vp check && vp run typecheck && vp run engine:check && vp test && vp run build",
+    "verify": "vp check && vp run typecheck && vp run engine:check && vp test && vp run test:harness && vp run build",
     "bench:spatial": "node scripts/spatial-benchmark.ts",
     "fixtures:spatial": "node scripts/spatial-fixtures.ts --write"
   },

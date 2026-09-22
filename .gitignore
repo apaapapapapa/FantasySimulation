@@ -5,6 +5,7 @@ coverage/
 .vite-plus/
 .vp/
 .cache/
+.generated/
 *.tsbuildinfo
 *.log
 .env
