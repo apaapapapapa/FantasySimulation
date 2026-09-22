@@ -3,6 +3,8 @@ import { describe, it } from 'vite-plus/test';
 import { assessDelivery, conversationDigest, parseSnapshot, VERIFY_JOBS } from './delivery.ts';
 import type { DeliverySnapshot, RunEvidence } from './delivery.ts';
 import type { Report } from './report.ts';
+import { assessGate } from '../ci/gate.ts';
+import { classify } from '../ci/plan.ts';
 const HEAD = 'a'.repeat(40);
 const BASE = 'b'.repeat(40);
 const TESTED = 'c'.repeat(40);
@@ -213,5 +215,105 @@ describe('delivery evidence', () => {
     assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
     change(value.reviews[0], 'commit_id', HEAD);
     assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+  });
+});
+
+function plannedFixture(full: boolean) {
+  const value = fixture();
+  const run = value.prRun!;
+  const plan = classify(sourceReport(), 'pull_request', [
+    full ? 'apps/web/source.ts' : 'README.md',
+  ]);
+  const reports: Record<string, Report> = {};
+  for (const [index, os] of ['ubuntu-latest', 'windows-latest'].entries()) {
+    const report = sourceReport();
+    if (!full) {
+      report.producer = 'docs-check';
+      report.checks[0]!.id = 'docs:diff';
+      report.checks[1]!.id = 'docs:links';
+      change(run.jobs[index], 'name', `Docs (${os})`);
+    }
+    run.sources[index]!.report = report;
+    reports[full ? os : `docs-${os}`] = report;
+  }
+  const results = {
+    changes: 'success',
+    security: 'success',
+    'dependency-policy': 'success',
+    verify: full ? 'success' : 'skipped',
+    docs: full ? 'skipped' : 'success',
+  };
+  for (const [index, name] of ['changes', 'ci-gate'].entries())
+    run.jobs.push({
+      id: 3 + index,
+      name,
+      run_id: 10,
+      run_attempt: 1,
+      status: 'completed',
+      conclusion: 'success',
+    });
+  run.plan = { jobId: 3, value: plan, logDigest: 'e'.repeat(64) };
+  run.gate = {
+    jobId: 4,
+    report: assessGate(plan, results, reports).report,
+    logDigest: 'e'.repeat(64),
+  };
+  const skipped = full ? 'Docs (${{ matrix.os }})' : 'Verify (${{ matrix.os }})';
+  run.jobs.push({
+    id: 5,
+    name: skipped,
+    run_id: 10,
+    run_attempt: 1,
+    status: 'completed',
+    conclusion: 'skipped',
+  });
+  value.checks.push({ id: 5, name: skipped, status: 'completed', conclusion: 'skipped' });
+  return value;
+}
+describe('delivery with differential CI', () => {
+  it('accepts full and wording plans only with both OS receipts and the aggregate', () => {
+    for (const full of [true, false]) {
+      const value = plannedFixture(full);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+      value.prRun!.sources.pop();
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    }
+  });
+  it('rejects missing, stale, failing and foreign-attempt plan/gate receipts', () => {
+    for (const mutate of [
+      (v: DeliverySnapshot) => {
+        delete v.prRun!.plan;
+      },
+      (v: DeliverySnapshot) => {
+        delete v.prRun!.gate;
+      },
+      (v: DeliverySnapshot) => {
+        change(v.prRun!.plan!.value, 'candidateSha', BASE);
+      },
+      (v: DeliverySnapshot) => {
+        change(v.prRun!.gate!.report, 'candidateSha', BASE);
+      },
+      (v: DeliverySnapshot) => {
+        change(v.prRun!.jobs[3], 'run_attempt', 2);
+      },
+      (v: DeliverySnapshot) => {
+        change(v.prRun!.gate!, 'logDigest', 'invalid');
+      },
+      (v: DeliverySnapshot) => {
+        change((v.prRun!.gate!.report as Report).checks[0], 'status', 'fail');
+      },
+    ]) {
+      const value = plannedFixture(false);
+      mutate(value);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    }
+  });
+  it('never allows an unrelated skipped check or a main docs-only plan', () => {
+    const value = plannedFixture(false);
+    value.checks.push({ name: 'Security', status: 'completed', conclusion: 'skipped' });
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    const merged = fixture(true);
+    merged.mainRun = plannedFixture(false).prRun;
+    assert.equal(assessDelivery(merged, 'merge', receipt(merged)).exitCode, 2);
   });
 });

@@ -3,9 +3,10 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseReport, record, sha, text } from './report.ts';
 import { artifactDirectory } from './source.ts';
-import { newestRun, natural, objects, repositoryName, VERIFY_JOBS } from './delivery.ts';
+import { newestRun, natural, objects, repositoryName, VERIFY_JOBS, DOCS_JOBS } from './delivery.ts';
 import type { DeliverySnapshot, RunEvidence } from './delivery.ts';
 import type { Gateway } from './github.ts';
+import { parsePlan } from '../ci/plan.ts';
 
 const COMMENT_FIELDS =
   'nodes { id databaseId body url updatedAt author { login } } pageInfo { endCursor hasNextPage }';
@@ -130,6 +131,19 @@ export async function collectThreads(
   throw new Error('Incomplete review threads');
 }
 export function sourceFromLog(value: unknown) {
+  const parsed = markerFromLog(value, 'FANTASY_SOURCE_REPORT');
+  return { report: parseReport(parsed.value), logDigest: parsed.logDigest };
+}
+export function markerFromLog(value: unknown, marker: string) {
+  if (
+    ![
+      'FANTASY_SOURCE_REPORT',
+      'FANTASY_DOCS_REPORT',
+      'FANTASY_CI_PLAN',
+      'FANTASY_CI_GATE',
+    ].includes(marker)
+  )
+    throw new Error('Unknown evidence marker');
   const content =
     typeof value === 'string'
       ? value
@@ -142,11 +156,11 @@ export function sourceFromLog(value: unknown) {
     throw new Error('Invalid or excessive job log');
   const markers = content
     .split('\n')
-    .map((line) => /FANTASY_SOURCE_REPORT=(\{.*\})\s*$/.exec(line)?.[1])
+    .map((line) => new RegExp(`${marker}=(\\{.*\\})\\s*$`).exec(line)?.[1])
     .filter((line): line is string => line !== undefined);
   if (markers.length !== 1) throw new Error('Source report marker missing or ambiguous');
   return {
-    report: parseReport(JSON.parse(markers[0]!) as unknown),
+    value: JSON.parse(markers[0]!) as unknown,
     logDigest: createHash('sha256').update(content).digest('hex'),
   };
 }
@@ -162,17 +176,54 @@ async function collectRun(
   const jobs = await collectPages(gateway, `${prefix}/actions/runs/${id}/attempts/${attempt}/jobs`);
   const sources: RunEvidence['sources'] = [];
   const commits: Record<string, unknown> = {};
+  let plan: RunEvidence['plan'];
+  let gate: RunEvidence['gate'];
   for (const job of objects(jobs)) {
-    if (!VERIFY_JOBS.some((name) => name === job.name) || job.status !== 'completed') continue;
+    if (job.status !== 'completed' || job.conclusion === 'skipped') continue;
+    if (job.name === 'changes' || job.name === 'ci-gate') {
+      const parsed = markerFromLog(
+        await gateway.get(`${prefix}/actions/jobs/${natural(job.id)}/logs`),
+        job.name === 'changes' ? 'FANTASY_CI_PLAN' : 'FANTASY_CI_GATE',
+      );
+      if (job.name === 'changes') {
+        if (plan) throw new Error('Duplicate plan job');
+        plan = {
+          jobId: natural(job.id),
+          value: parsePlan(parsed.value),
+          logDigest: parsed.logDigest,
+        };
+      } else {
+        if (gate) throw new Error('Duplicate gate job');
+        gate = {
+          jobId: natural(job.id),
+          report: parseReport(parsed.value),
+          logDigest: parsed.logDigest,
+        };
+      }
+      continue;
+    }
+    if (![...VERIFY_JOBS, ...DOCS_JOBS].some((name) => name === job.name)) continue;
     const jobId = natural(job.id);
-    const parsed = sourceFromLog(await gateway.get(`${prefix}/actions/jobs/${jobId}/logs`));
+    const marker = markerFromLog(
+      await gateway.get(`${prefix}/actions/jobs/${jobId}/logs`),
+      DOCS_JOBS.some((name) => name === job.name) ? 'FANTASY_DOCS_REPORT' : 'FANTASY_SOURCE_REPORT',
+    );
+    const parsed = { report: parseReport(marker.value), logDigest: marker.logDigest };
     sources.push({ jobId, ...parsed });
     const commit = parsed.report.sourceSha;
     if (!(commit in commits))
       commits[commit] = await gateway.get(`${prefix}/commits/${sha(commit)}`);
   }
   const after = await gateway.get(`${prefix}/actions/runs/${id}`);
-  return { before, after, jobs, sources, commits };
+  return {
+    before,
+    after,
+    jobs,
+    sources,
+    commits,
+    ...(plan ? { plan } : {}),
+    ...(gate ? { gate } : {}),
+  };
 }
 /** Collecting a snapshot is not approval, merge, release, or successful delivery. */
 async function collectSnapshotBody(

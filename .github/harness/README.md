@@ -40,7 +40,7 @@ vp run harness delivery .generated/harness/pr-22-1/github-snapshot.json pr .gene
 
 The collector reads all conversation, review, file and inline-thread pages, including
 **every nested thread comment page**. It verifies latest run/attempt-specific jobs,
-extracts each OS source report from the authoritative GitHub log, checks test-merge
+extracts each OS source/docs report and CI plan/gate from authoritative GitHub logs, checks test-merge
 parents and rereads PR/run identities. After merge it separately collects main push
 CI. Snapshots retain source reports and full downloaded-log SHA-256; CI artifacts
 retain underlying source-command evidence. Discussion bodies may be sensitive; do
@@ -77,6 +77,12 @@ current head. A timeout alone never means review completion.
 review resolution/coverage/approval and no adverse or pending observed checks.
 `delivery ... merge` additionally requires actual main merge and its main push CI.
 Release evaluation is a separate reported check; no new tag alone is not failure.
+For differential CI, the plan, aggregate and both OS reports must agree on source,
+head, base and run attempt. Wording-only PRs require both docs reports; only the exact
+planned skipped job observed in that successful run is allowed. Missing plans/gates,
+unexpected skips and main docs shortcuts stay incomplete. Pre-plan historical runs
+still require both full source reports.
+
 Deployment and production effectiveness are outside this harness. Recollect before
 an authorized merge: snapshots describe collection time, not future repository state.
 

@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
-import { collectPages, collectSnapshot, collectThreads, sourceFromLog } from './github-collect.ts';
+import {
+  collectPages,
+  collectSnapshot,
+  collectThreads,
+  sourceFromLog,
+  markerFromLog,
+} from './github-collect.ts';
 import type { Gateway, Page } from './github.ts';
 import type { Report } from './report.ts';
 
@@ -156,4 +162,13 @@ describe('complete, bounded collection', () => {
     assert.throws(() => sourceFromLog(line + line));
     assert.throws(() => sourceFromLog('FANTASY_SOURCE_REPORT={"bad":true}'));
   });
+});
+
+it('parses CI markers separately and rejects duplicates, missing or unknown marker names', () => {
+  const value = { sourceSha: 'a'.repeat(40), full: false };
+  const line = `2026-01-01T00:00:00Z FANTASY_CI_PLAN=${JSON.stringify(value)}\n`;
+  assert.deepEqual(markerFromLog(line, 'FANTASY_CI_PLAN').value, value);
+  assert.throws(() => markerFromLog(line, 'FANTASY_CI_GATE'));
+  assert.throws(() => markerFromLog(line + line, 'FANTASY_CI_PLAN'));
+  assert.throws(() => markerFromLog(line, '.*'));
 });

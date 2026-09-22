@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto';
 import { assessReport, identity, parseReport, record, sha, text, timestamp } from './report.ts';
 import type { Check, Identity, Report } from './report.ts';
+import { parsePlan } from '../ci/plan.ts';
+import type { Plan } from '../ci/plan.ts';
 
 export const VERIFY_JOBS = ['Verify (ubuntu-latest)', 'Verify (windows-latest)'] as const;
+export const DOCS_JOBS = ['Docs (ubuntu-latest)', 'Docs (windows-latest)'] as const;
 export type DeliveryTarget = 'pr' | 'merge';
 export interface RunEvidence {
   before: unknown;
@@ -10,6 +13,8 @@ export interface RunEvidence {
   jobs: unknown[];
   sources: { jobId: number; report: unknown; logDigest: string }[];
   commits: Record<string, unknown>;
+  plan?: { jobId: number; value: unknown; logDigest: string };
+  gate?: { jobId: number; report: unknown; logDigest: string };
 }
 export interface DeliverySnapshot {
   schemaVersion: 1;
@@ -221,8 +226,61 @@ export function validateRun(
   if (after.status !== 'completed' || after.conclusion !== 'success')
     return { status: 'unknown', reason: 'CI not completed successfully' };
   const jobs = objects(evidence.jobs);
+  let plan: Plan | null = null;
+  const planned = jobs.some((job) => job.name === 'changes' || job.name === 'ci-gate');
+  if (planned) {
+    if (!evidence.plan || !evidence.gate)
+      return { status: 'unknown', reason: 'CI plan or aggregate evidence missing' };
+    plan = parsePlan(evidence.plan.value);
+    const gate = parseReport(evidence.gate.report);
+    const ids = ['changes', 'security', 'dependency-policy', 'verify', 'docs'].map(
+      (name) => `ci-job:${name}`,
+    );
+    ids.push(
+      ...(plan.full
+        ? ['ubuntu-latest', 'windows-latest']
+        : ['docs-ubuntu-latest', 'docs-windows-latest']
+      ).map((name) => `ci-evidence:${name}`),
+    );
+    for (const [name, receipt] of [
+      ['changes', evidence.plan],
+      ['ci-gate', evidence.gate],
+    ] as const) {
+      const matched = jobs.filter((job) => job.name === name);
+      const job = matched[0];
+      if (
+        matched.length !== 1 ||
+        !job ||
+        job.id !== receipt.jobId ||
+        job.run_id !== before.id ||
+        job.run_attempt !== before.run_attempt ||
+        job.status !== 'completed' ||
+        job.conclusion !== 'success' ||
+        !/^[a-f0-9]{64}$/.test(receipt.logDigest)
+      )
+        return {
+          status: 'unknown',
+          reason: 'CI plan/gate belongs to an incomplete or different attempt',
+        };
+    }
+    if (
+      plan.candidateSha !== candidate ||
+      plan.event !== (main ? 'push' : 'pull_request') ||
+      (main && !plan.full) ||
+      gate.producer !== 'ci-gate' ||
+      gate.sourceSha !== plan.sourceSha ||
+      gate.candidateSha !== plan.candidateSha ||
+      gate.testMergeSha !== plan.testMergeSha ||
+      gate.baselineSha !== plan.baselineSha ||
+      assessReport(gate, ids).exitCode !== 0
+    )
+      return {
+        status: 'unknown',
+        reason: 'CI plan/gate does not authorize this revision and job coverage',
+      };
+  }
   let testedSource: string | null = null;
-  for (const name of VERIFY_JOBS) {
+  for (const name of plan?.full === false ? DOCS_JOBS : VERIFY_JOBS) {
     const matching = jobs.filter((job) => job.name === name);
     if (matching.length !== 1) return { status: 'unknown', reason: `Missing or ambiguous ${name}` };
     const job = matching[0]!;
@@ -240,8 +298,22 @@ export function validateRun(
     if (testedSource !== null && testedSource !== source.sourceSha)
       return { status: 'unknown', reason: 'OS jobs tested different source commits' };
     testedSource = source.sourceSha;
-    if (assessReport(source, ['source-clean', 'source-verify']).exitCode !== 0)
+    if (
+      !/^[a-f0-9]{64}$/.test(sources[0]!.logDigest) ||
+      source.producer !== (plan?.full === false ? 'docs-check' : 'source-runner') ||
+      assessReport(
+        source,
+        plan?.full === false ? ['docs:diff', 'docs:links'] : ['source-clean', 'source-verify'],
+      ).exitCode !== 0
+    )
       return { status: 'unknown', reason: 'Source receipt incomplete or failed' };
+    if (
+      plan &&
+      (source.sourceSha !== plan.sourceSha ||
+        source.testMergeSha !== plan.testMergeSha ||
+        (source.testMergeSha !== null && source.baselineSha !== plan.baselineSha))
+    )
+      return { status: 'unknown', reason: 'OS receipt and CI plan disagree' };
     if (source.candidateSha !== candidate)
       return { status: 'unknown', reason: 'Source receipt has stale candidate' };
     if (main) {
@@ -263,7 +335,7 @@ export function validateRun(
   }
   return {
     status: 'pass',
-    reason: 'Latest CI and both OS source receipts match the evaluated revision',
+    reason: 'Latest CI and both OS planned receipts match the evaluated revision',
   };
 }
 export function assessDelivery(
@@ -343,6 +415,16 @@ export function assessDelivery(
   const adverseStatus = [...latest.values()].some(
     (status) => status.state === 'failure' || status.state === 'error',
   );
+  const plannedSkips = new Set<string>();
+  if (pr.status === 'pass' && snapshot.prRun?.plan) {
+    const plan = parsePlan(snapshot.prRun.plan.value);
+    const names: readonly string[] = plan.full
+      ? [...DOCS_JOBS, 'Docs (${{ matrix.os }})']
+      : [...VERIFY_JOBS, 'Verify (${{ matrix.os }})'];
+    for (const job of objects(snapshot.prRun.jobs))
+      if (names.includes(String(job.name)) && job.conclusion === 'skipped')
+        plannedSkips.add(String(job.name));
+  }
   const adverseCheck = objects(snapshot.checks).some((check) =>
     ['failure', 'timed_out', 'cancelled', 'action_required'].includes(String(check.conclusion)),
   );
@@ -353,7 +435,10 @@ export function assessDelivery(
       : [...latest.values()].some((status) => status.state !== 'success') ||
           objects(snapshot.checks).some(
             (check) =>
-              !(check.name === 'Release' && check.conclusion === 'skipped') &&
+              !(
+                check.conclusion === 'skipped' &&
+                (check.name === 'Release' || plannedSkips.has(String(check.name)))
+              ) &&
               (check.status !== 'completed' ||
                 !['success', 'neutral'].includes(String(check.conclusion))),
           )
