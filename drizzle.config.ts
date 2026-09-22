@@ -14,7 +14,8 @@ mkdirSync(dirname(databasePath), { recursive: true });
 
 export default defineConfig({
   dialect: 'sqlite',
-  schema: resolve('apps/api/src/db/schema.ts'),
-  out: resolve('db/drizzle'),
+  schema: './apps/api/src/db/schema.ts',
+  // Kit 0.31 prefixes snapshot reads with ./, so out must remain relative.
+  out: './db/drizzle',
   dbCredentials: { url: databasePath },
 });
