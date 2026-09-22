@@ -1,0 +1,19 @@
+{
+  "id": "spatial-v1",
+  "rapier": "0.20.0",
+  "axis": "right-handed-Y-up",
+  "inputUnits": "integer-mm-ms",
+  "stepMs": 20,
+  "aiMs": 100,
+  "maxSteps": 6000,
+  "gravityMmPerSecond2": -9807,
+  "skinMm": 2,
+  "contactTimeEpsilon": 1e-6,
+  "maxMoveSegments": 8,
+  "floatEncoding": "IEEE754-binary64-big-endian-hex-negative-zero-normalized",
+  "physicsConversion": "TS-binary64-metres-to-Rapier-binary32-at-each-WASM-call",
+  "trigonometry": "quarter-sine-1-degree-linear-1e9-v1",
+  "creationOrder": "ascending-ASCII-id",
+  "simultaneousObstacleContact": "wall-first-within-epsilon",
+  "actorCollision": "binary64-analytic-upright-capsule-sweep-v1"
+}
