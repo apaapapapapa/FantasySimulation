@@ -85,7 +85,10 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
     kill = 0,
     efficiency = 10000,
     confidence = 10000,
-    exploration = 0;
+    exploration = 0,
+    totalPower = 0,
+    totalExpected = 0,
+    confidencePower = 0;
   const evidence: string[] = [],
     reasons: string[] = [];
   for (const effect of d.effects) {
@@ -97,39 +100,10 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
         );
       const known = efficacy(view, effect.element, base),
         expected = (base * known.bps) / 10000;
-      const motion = target ? length(target.velocity) : 0;
-      success = clampBps(
-        8500 -
-          d.aimErrorMilliDegrees / 10 -
-          motion * 150 -
-          (view.memory.observation?.enemy ? 0 : 2500),
-      );
-      const healthFraction =
-        target?.wounds === 'critical'
-          ? 0.25
-          : target?.wounds === 'severe'
-            ? 0.5
-            : target?.wounds === 'hurt'
-              ? 0.85
-              : 1;
-      const certainty = known.confidence / 10000;
-      kill = clampBps(
-        success *
-          Math.min(1, expected / Math.max(1, rules.healthPrior * healthFraction)) *
-          (0.1 + 0.9 * certainty),
-      );
-      efficiency = known.bps;
-      confidence = known.confidence;
+      totalPower += base;
+      totalExpected += expected;
+      confidencePower += base * known.confidence;
       evidence.push(...known.evidence);
-      exploration +=
-        (rules.explorationWeight * (1 - certainty) * (1 - burnRisk) * weights.explorationBps) /
-        10000;
-      utility +=
-        (((rules.actionWeight * Math.min(8, expected / 25) * success) / 10000 / (1 + 3 * burnRisk) +
-          ((rules.killWeight * kill) / 10000) * (1 - beforeHitRisk) ** 2) *
-          weights.attackBps) /
-        10000;
-      reasons.push('own-power/coarse-impact/visible-wounds; kill is an estimate');
     } else if (effect.kind === 'water' && d.target === 'self' && view.waterExtinguishable) {
       utility +=
         ((rules.actionWeight + rules.riskWeight * (0.65 + 2 * burnRisk)) * weights.survivalBps) /
@@ -143,7 +117,7 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
           weights.survivalBps) /
         10000;
       reasons.push('self-perceived wounds');
-    } else if (effect.kind === 'shield') {
+    } else if (effect.kind === 'shield' && d.target === 'self') {
       utility +=
         rules.actionWeight *
         Math.min(2, effect.amount / Math.max(1, view.resources.shield + 10)) *
@@ -163,6 +137,40 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
       utility += rules.actionWeight;
       reasons.push('known status effect');
     }
+  }
+  if (totalPower > 0) {
+    const expected = totalExpected;
+    efficiency = Math.round((totalExpected / totalPower) * 10000);
+    confidence = clampBps(confidencePower / totalPower);
+    const motion = target ? length(target.velocity) : 0;
+    success = clampBps(
+      8500 -
+        d.aimErrorMilliDegrees / 10 -
+        motion * 150 -
+        (view.memory.observation?.enemy ? 0 : 2500),
+    );
+    const healthFraction =
+      target?.wounds === 'critical'
+        ? 0.25
+        : target?.wounds === 'severe'
+          ? 0.5
+          : target?.wounds === 'hurt'
+            ? 0.85
+            : 1;
+    const certainty = confidence / 10000;
+    kill = clampBps(
+      success *
+        Math.min(1, expected / Math.max(1, rules.healthPrior * healthFraction)) *
+        (0.1 + 0.9 * certainty),
+    );
+    exploration +=
+      (rules.explorationWeight * (1 - certainty) * (1 - burnRisk) * weights.explorationBps) / 10000;
+    utility +=
+      (((rules.actionWeight * Math.min(8, expected / 25) * success) / 10000 / (1 + 3 * burnRisk) +
+        ((rules.killWeight * kill) / 10000) * (1 - beforeHitRisk) ** 2) *
+        weights.attackBps) /
+      10000;
+    reasons.push('own-power/coarse-impact/visible-wounds; kill is an estimate');
   }
   const weight = boundedWeight(
     ((utility + exploration) * (1 - 0.6 * exposure)) /

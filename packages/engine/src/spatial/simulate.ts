@@ -26,7 +26,7 @@ import {
   type MeleeState,
   type AbilityRevision,
 } from './combat-state.ts';
-import { commitEffects, type PendingEffect } from './combat-effects.ts';
+import { commitEffects, contactObservation, type PendingEffect } from './combat-effects.ts';
 import { displayChanges, Journal, recordBytes } from './journal.ts';
 import { mul, sub, ZERO } from './math.ts';
 import { initialMotion, moveActors } from './movement.ts';
@@ -556,7 +556,14 @@ export function* simulate(
                 reason: contact.kind,
               });
               if (contact.kind === 'body')
-                effects.push(...effectsOf(actor, action.ability, actorId(enemy), hit.id, step));
+                effects.push(
+                  ...effectsOf(actor, action.ability, actorId(enemy), hit.id, step).map(
+                    (effect) => ({
+                      ...effect,
+                      observation: { self: actor.motion, target: enemy.motion },
+                    }),
+                  ),
+                );
             }
           } else if (definition.attack.kind === 'melee') {
             attacks.push({
@@ -671,6 +678,12 @@ export function* simulate(
                   attack: attack.attack,
                   parentEventId: hit.id,
                   abilityId: attack.ability.id,
+                  observation: contactObservation(
+                    moved,
+                    next.find((a) => actorId(a) === attack.actorId)!.motion,
+                    next.find((a) => actorId(a) !== attack.actorId)!.motion,
+                    contact.time,
+                  ),
                 });
             }
           }

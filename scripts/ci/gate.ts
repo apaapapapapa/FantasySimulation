@@ -2,6 +2,9 @@ import { readBoundedJson } from '../harness/files.ts';
 import { appendFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { compareCorpus } from '../harness/corpus-compare.ts';
 import { assessReport, record } from '../harness/report.ts';
 import type { Check, Report } from '../harness/report.ts';
 import { SOURCE_CHECKS } from '../harness/source.ts';
@@ -13,6 +16,7 @@ export function assessGate(
   plan: Plan,
   results: Record<string, unknown>,
   reports: Record<string, unknown>,
+  corpus?: { definition: unknown; sha256: string; artifacts: Record<string, unknown> },
 ) {
   plan = parsePlan(plan);
   const evidence = [{ uri: '.generated/harness/ci/plan.json', sourceSha: plan.sourceSha }];
@@ -70,6 +74,10 @@ export function assessGate(
     checks.push({ id: `ci-evidence:${key}`, required: true, status, reason, evidence });
   }
   const at = new Date().toISOString();
+  if (plan.full)
+    checks.push(
+      compareCorpus(plan, corpus?.definition, corpus?.sha256 ?? '', corpus?.artifacts ?? {}),
+    );
   const report: Report = {
     schemaVersion: 1,
     producer: 'ci-gate',
@@ -108,7 +116,27 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     } catch {
       reports.security = null;
     }
-    const assessment = assessGate(plan, results, reports);
+    const artifacts: Record<string, unknown> = {};
+    for (const [os, platform] of [
+      ['ubuntu-latest', 'linux'],
+      ['windows-latest', 'win32'],
+    ] as const) {
+      try {
+        const directory = `.generated/harness/ci/evidence/${os}/corpus`;
+        artifacts[platform] = {
+          results: json(`${directory}/results.json`),
+          report: json(`${directory}/report.json`),
+        };
+      } catch {
+        /* Missing artifacts remain unknown, including a missing operating system. */
+      }
+    }
+    const bytes = readFileSync('packages/engine/fixtures/spatial/corpus.json');
+    const assessment = assessGate(plan, results, reports, {
+      definition: JSON.parse(bytes.toString('utf8')) as unknown,
+      sha256: createHash('sha256').update(bytes).digest('hex'),
+      artifacts,
+    });
     writeFileSync(
       '.generated/harness/ci/gate.json',
       JSON.stringify(assessment.report, null, 2) + '\n',

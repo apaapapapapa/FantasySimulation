@@ -4,7 +4,8 @@ import type { ActorState } from './combat-state.ts';
 import type { PreparedBattle } from './prepare.ts';
 import type { Journal } from './journal.ts';
 import { observeImpact, observeReveal, rememberExperience } from './perception.ts';
-import type { SpatialWorld } from './physics.ts';
+import { at, type SpatialWorld } from './physics.ts';
+import type { MotionState, MovedActor } from './movement.ts';
 const effectEventKinds = {
   damage: 'damage',
   heal: 'heal',
@@ -23,7 +24,25 @@ export type PendingEffect = {
   abilityId: string | null;
   causes?: readonly string[];
   scaleBps?: number;
+  observation?: { self: MotionState; target: MotionState };
 };
+/** Keep the contact geometry even though simultaneous effects commit after movement. */
+export function contactObservation(
+  moved: readonly MovedActor[],
+  self: MotionState,
+  target: MotionState,
+  time: number,
+): NonNullable<PendingEffect['observation']> {
+  const motion = (initial: MotionState) => {
+    const actor = moved.find(
+      (a) => a.state.actor.participant.actorId === initial.actor.participant.actorId,
+    );
+    if (!actor) throw new Error('Missing contact participant');
+    // Rotation is committed at the interval boundary; never borrow its future facing.
+    return { ...initial, position: at(actor.trace, time) };
+  };
+  return { self: motion(self), target: motion(target) };
+}
 /** Emit causal applications, then commit every target from the same defense/status snapshot. */
 export function commitEffects(
   actors: ActorState[],
@@ -77,6 +96,7 @@ export function commitEffects(
       const observer = actors.find((a) => a.motion.actor.participant.actorId === app.actorId);
       const ability = observer?.motion.actor.abilities.find((a) => a.id === app.abilityId);
       if (observer && ability && observer !== actor) {
+        const geometry = app.observation ?? { self: observer.motion, target: actor.motion };
         const ref = {
           id: ability.id,
           revision: ability.revision,
@@ -86,8 +106,8 @@ export function commitEffects(
           app.effect.kind === 'reveal'
             ? observeReveal(
                 world,
-                observer.motion,
-                actor.motion,
+                geometry.self,
+                geometry.target,
                 app.effect,
                 ref,
                 app.id,
@@ -96,8 +116,8 @@ export function commitEffects(
             : app.effect.kind === 'damage' && detail
               ? observeImpact(
                   world,
-                  observer.motion,
-                  actor.motion,
+                  geometry.self,
+                  geometry.target,
                   {
                     ability: ref,
                     eventId: app.id,

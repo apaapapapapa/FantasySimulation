@@ -119,6 +119,73 @@ describe('observed utility distributions', () => {
       f.world.free();
     }
   });
+  it('does not reward shielding an opponent and still permits self protection', async () => {
+    const f = await aiFixture({
+      abilities: [
+        { target: 'enemy', effects: [{ kind: 'shield', amount: 100 }] },
+        { target: 'self', attack: { kind: 'direct' }, effects: [{ kind: 'shield', amount: 100 }] },
+      ],
+    });
+    try {
+      expect(assessAbility(f.view, f.abilities[0]!).weight).toBe(0);
+      expect(assessAbility(f.view, f.abilities[1]!).weight).toBeGreaterThan(0);
+      const decision = choosePolicy(f.view, new Set(f.abilities.map((a) => a.id)), false);
+      expect(decision.abilityId).toBe('choice-1');
+      expect(decision.cognition!.excluded).toContainEqual({
+        abilityId: 'choice-0',
+        reason: 'no estimated benefit',
+      });
+    } finally {
+      f.world.free();
+    }
+  });
+  it('estimates a compound attack from all damage effects instead of the last effect', async () => {
+    const f = await aiFixture({
+      abilities: [
+        {
+          effects: [
+            { kind: 'damage', amount: 25, attackScaleBps: 0, element: 'fire' },
+            { kind: 'damage', amount: 25, attackScaleBps: 0, element: 'ice' },
+          ],
+        },
+      ],
+    });
+    try {
+      const ability = f.abilities[0]!;
+      const view = {
+        ...f.view,
+        memory: {
+          ...f.view.memory,
+          knowledge: [
+            impactEvidence(ability, { range: { low: 10, high: 15 } }),
+            impactEvidence(ability, {
+              eventId: 'observed.ice',
+              element: 'ice',
+              range: { low: 20, high: 30 },
+            }),
+          ],
+        },
+      };
+      const assessment = assessAbility(view, ability);
+      // 12.5 + 25 estimated damage, 25% confidence and 85% success against the 200 HP prior.
+      expect(assessment).toMatchObject({ killBps: 518, efficacyBps: 7500, confidenceBps: 2500 });
+      const reversed = assessAbility(view, {
+        ...ability,
+        definition: {
+          ...ability.definition,
+          effects: [...ability.definition.effects].reverse(),
+        },
+      });
+      expect([
+        reversed.weight,
+        reversed.killBps,
+        reversed.efficacyBps,
+        reversed.confidenceBps,
+      ]).toEqual([assessment.weight, 518, 7500, 2500]);
+    } finally {
+      f.world.free();
+    }
+  });
   it('excludes every self-known failure before a draw and preserves alternatives and enumeration invariance', async () => {
     const f = await aiFixture();
     try {

@@ -1,6 +1,6 @@
 import type { Budget, DisplayPath, ProjectileChanges } from '@fantasy/domain/spatial';
 import type { ActorState } from './combat-state.ts';
-import type { PendingEffect } from './combat-effects.ts';
+import { contactObservation, type PendingEffect } from './combat-effects.ts';
 import type { Journal } from './journal.ts';
 import type { MovedActor } from './movement.ts';
 import type { PreparedBattle } from './prepare.ts';
@@ -102,6 +102,12 @@ export function stepProjectiles(
             parentEventId: hit.id,
             abilityId: projectile.ability.id,
             scaleBps,
+            observation: contactObservation(
+              moved,
+              owner.motion,
+              actors.find((a) => a.motion.actor.participant.actorId === targetId)!.motion,
+              contact.time,
+            ),
           });
       }
       changes.remove.push({ id: projectile.id, subtimeMicros, reason: contact.kind });

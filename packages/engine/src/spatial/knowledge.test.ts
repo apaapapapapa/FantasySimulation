@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { AI_RULES, ExperienceSchema } from '@fantasy/domain/spatial';
-import { initializePhysics, SpatialWorld } from './physics.ts';
+import { initializePhysics, SpatialWorld, straight } from './physics.ts';
 import {
   emptyMemory,
   observeImpact,
@@ -12,6 +12,7 @@ import { choosePolicy } from './policy.ts';
 import { aiFixture, impactEvidence } from '../../test-support/ai.ts';
 import { knownTerrainWorld } from './known-terrain.ts';
 import { Navigator } from './navigation.ts';
+import { contactObservation } from './combat-effects.ts';
 
 beforeAll(initializePhysics);
 describe('private delayed bounded cognition', () => {
@@ -202,6 +203,51 @@ describe('private delayed bounded cognition', () => {
       f.world.free();
     }
   });
+  it.each([
+    { from: 2, to: 0, visible: true },
+    { from: 0, to: 2, visible: false },
+  ])(
+    'samples impact visibility at contact when cover changes from $from to $to',
+    async ({ from, to, visible }) => {
+      const f = await aiFixture();
+      const wall = new SpatialWorld([
+        {
+          id: 'vision-only',
+          position: { x: 0, y: 1, z: 0 },
+          halfExtents: { x: 0.1, y: 2, z: 0.75 },
+          blocks: { movement: false, vision: true, attack: false },
+        },
+      ]);
+      try {
+        const moved = [f.self, f.enemy].map((motion) => ({
+          state: { ...motion, position: { ...motion.position, z: to } },
+          trace: straight({ ...motion.position, z: from }, { ...motion.position, z: to }),
+          landed: false,
+          fallDamage: 0,
+          contactTime: undefined,
+        }));
+        const contact = contactObservation(moved, f.self, f.enemy, 0.25);
+        const detail = {
+          ability: f.abilities[0]!,
+          eventId: 'contact.1',
+          element: 'fire' as const,
+          basePower: 25,
+          impact: 17,
+          shield: false,
+          partial: false,
+        };
+        expect(observeImpact(wall, contact.self, contact.target, detail, 1) !== null).toBe(visible);
+        // The final positions give the opposite answer; they cannot substitute for contact geometry.
+        expect(observeImpact(wall, moved[0]!.state, moved[1]!.state, detail, 1) !== null).toBe(
+          !visible,
+        );
+        expect(contact.self.position.z).toBe(from + (to - from) * 0.25);
+      } finally {
+        wall.free();
+        f.world.free();
+      }
+    },
+  );
   it('bounds independent FIFO histories and logs capacity eviction as expiration', async () => {
     const f = await aiFixture();
     try {

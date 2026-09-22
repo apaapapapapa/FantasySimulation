@@ -74,7 +74,8 @@ action=100、dodge=600。policyのattack/survival/exploration係数の既定は�
   exposure = min(1,脅威×所要時間/horizon)を見積もる。
 - weight = clamp(round((utility+探索値) × (1-.6×exposure) /
   (1+所要時間/horizon) / (1+costBps/5000)), 0, 1000000)。
-  複数効果のutilityは加算、0weightは選ばない。最大32能力+dodgeで計算量を制限する。
+  敵向けdamageの推定威力を合算し、確信度は既知基礎威力で加重平均する。
+  攻撃評価と探索値は一能力につき一度計算し、自己支援効果のutilityを加算する。0weightは選ばない。最大32能力+dodgeで計算量を制限する。
   選択確率は整数weight/totalWeight。成功・撃破・生存推定とは別の量として記録する。
 
 基準fixture（assessment.test.ts）は自己HP100/MP100、burn20、威力25、未知/unhurtの敵、
@@ -117,3 +118,11 @@ candidateの出力から期待値を一括生成していない。
 5step終了時は両者生存、最後の区間を含む6step終了で同時敗北を確認する。
 柱の列挙順試験は完全な6000step対戦を2回保持するためhost timeoutだけ15秒にする。
 時間/メモリの性能受入は別の実測reportで判定し、このtimeoutを性能達成の根拠にはしない。
+
+PR #56の固定fast-check依存と両OS/Worker/fairness試験を統合した。実装digestは新しいAIと
+root依存/lockfileを合わせて明示的にstampする。コーパスは両方の試験対応を保持し、
+既存6件とAI追加1件の合計7入力を同じ両OS/Worker比較へ渡す。
+
+レビューで敵向けshieldを自己保護と評価する分岐を除去し、接触時刻の軌跡位置・区間開始時の
+向きで経験の視認判定を行うよう修正した。複数damage効果の撃破推定は合計推定威力を使い、
+最後の効果による上書きを避ける。既存の単一damage基準値と保存済みreplayは維持する。
