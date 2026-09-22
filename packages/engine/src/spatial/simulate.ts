@@ -6,6 +6,7 @@ import {
   type Outcome,
   type StreamRecord,
   type BattleResult,
+  type ProjectileDisplay,
 } from '@fantasy/domain/spatial';
 import {
   actionClock,
@@ -27,7 +28,7 @@ import {
 } from './combat-state.ts';
 import { commitEffects, type PendingEffect } from './combat-effects.ts';
 import { displayChanges, Journal, recordBytes } from './journal.ts';
-import { sub, ZERO } from './math.ts';
+import { mul, sub, ZERO } from './math.ts';
 import { initialMotion, moveActors } from './movement.ts';
 import { Navigator } from './navigation.ts';
 import {
@@ -42,6 +43,8 @@ import { choosePolicy, steerPolicy } from './policy.ts';
 import type { PreparedBattle } from './prepare.ts';
 import { effectiveStats, statusBoundary, UnresolvedRuleError } from './status.ts';
 import { createBattleWorld } from './terrain.ts';
+import { displayProjectile, type ProjectileState } from './projectiles.ts';
+import { stepProjectiles } from './projectile-step.ts';
 
 export type SimulationEnd = {
   steps: number;
@@ -90,12 +93,6 @@ export function* simulate(
   inputBudget: Budget = DEFAULT_BUDGET,
 ): Generator<StreamRecord, SimulationEnd> {
   const budget = BudgetSchema.parse(inputBudget);
-  if (
-    battle.actors.some((a) =>
-      a.abilities.some((ability) => ability.definition.attack.kind === 'projectile'),
-    )
-  )
-    throw new Error('Projectile execution is added by 3D-07');
   // Validate geometry before counting execution work. Invalid spawn is input failure, not a rule outcome.
   const world = createBattleWorld(battle);
   let step = 0,
@@ -103,10 +100,12 @@ export function* simulate(
     bytes = 0,
     serial = 0,
     candidates = 0,
-    pathNodes = 0;
+    pathNodes = 0,
+    peakProjectiles = 0;
   let outcome: Outcome | null = null;
   let actors: ActorState[] = [];
   let melees: MeleeState[] = [];
+  let projectiles: ProjectileState[] = [];
   try {
     actors = [...battle.actors]
       .sort((a, b) => compareIds(a.participant.actorId, b.participant.actorId))
@@ -146,7 +145,7 @@ export function* simulate(
       kind: 'initial',
       schemaVersion: 1,
       step: 0,
-      state: { actors: actors.map((a) => displayActor(a, 0)) },
+      state: { actors: actors.map((a) => displayActor(a, 0)), projectiles: [] },
     };
     // Initial/terminal control envelopes are bounded separately from game records (32 KiB reserve).
     const controlBytes = recordBytes(initial);
@@ -283,13 +282,22 @@ export function* simulate(
         const next = actors.map(cloneActor),
           attacks = melees.map((m) => ({ ...m }));
         let nextSerial = serial;
+        const bullets = [...projectiles],
+          spawns: ProjectileDisplay[] = [];
         const journal = new Journal(sequence, bytes, budget),
           effects: PendingEffect[] = [];
         const aiBoundary = step % (battle.manifest.physicsProfile.aiMs / battle.rules.stepMs) === 0;
         // Observe and choose before either participant pays or declares anything.
         for (const actor of next) {
           const enemy = actors.find((a) => actorId(a) !== actorId(actor))!;
-          actor.memory = perceive(world, actor.motion, enemy.motion, [], step, actor.memory);
+          actor.memory = perceive(
+            world,
+            actor.motion,
+            enemy.motion,
+            projectiles,
+            step,
+            actor.memory,
+          );
           if (actor.action && actor.action.recoveryUntil <= step) actor.action = null;
           const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
           const view = viewOf(actor, step);
@@ -494,6 +502,48 @@ export function* simulate(
                 attack: effectiveStats(actor.motion.actor, actor.statuses, step).attack,
                 hits: 0,
               });
+          } else if (definition.attack.kind === 'projectile') {
+            if (muzzleBlocked(world, actor.motion))
+              journal.emit({
+                kind: 'fizzle',
+                step,
+                phase: 'launch',
+                actorId: actorId(actor),
+                abilityId: action.ability.id,
+                parentEventId: launch.id,
+                ruleId: 'projectile.muzzle-blocked',
+              });
+            else {
+              const target = actor.memory.observation?.enemy ?? actor.memory.lastSeen;
+              const projectile: ProjectileState = {
+                id: `projectile.${action.id}`,
+                ownerId: actorId(actor),
+                ability: action.ability,
+                cause: launch.id,
+                launchStep: step,
+                position: bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
+                velocity: mul(aim.direction, definition.attack.speedMmPerSecond / 1000),
+                attack: effectiveStats(actor.motion.actor, actor.statuses, step).attack,
+                target: target ? { ...target.position } : null,
+              };
+              const spawn = journal.emit({
+                kind: 'projectile-spawn',
+                step,
+                phase: 'launch',
+                entityId: projectile.id,
+                actorId: projectile.ownerId,
+                abilityId: action.ability.id,
+                parentEventId: launch.id,
+                ruleId: 'projectile.spawn',
+                point: projectile.position,
+              });
+              projectile.cause = spawn.id;
+              bullets.push(projectile);
+              peakProjectiles = Math.max(peakProjectiles, bullets.length);
+              if (bullets.length > budget.maxProjectiles)
+                throw new SpatialBudgetError('projectiles');
+              spawns.push(displayProjectile(projectile));
+            }
           }
         }
         const moved = moveActors(
@@ -504,6 +554,20 @@ export function* simulate(
           budget.maxMoveSegments,
         );
         const surviving: MeleeState[] = [];
+        const projectileStep = stepProjectiles(
+          bullets,
+          next,
+          moved,
+          world,
+          battle,
+          budget,
+          journal,
+          step,
+          () => {
+            if (++candidates > budget.maxCandidates) throw new SpatialBudgetError('candidates');
+          },
+        );
+        effects.push(...projectileStep.effects);
         for (const attack of attacks) {
           const shape = attack.ability.definition.attack;
           if (shape.kind !== 'melee') throw new Error('Invalid active melee');
@@ -595,10 +659,14 @@ export function* simulate(
           schemaVersion: 1,
           fromStep: step,
           toStep: step + 1,
-          paths: moved.map((m) => ({
-            entityId: m.state.actor.participant.actorId,
-            segments: m.trace,
-          })),
+          paths: [
+            ...moved.map((m) => ({
+              entityId: m.state.actor.participant.actorId,
+              segments: m.trace,
+            })),
+            ...projectileStep.paths,
+          ],
+          projectiles: { ...projectileStep.changes, spawn: spawns },
           changes: displayChanges(
             before,
             next.map((a) => displayActor(a, step + 1)),
@@ -608,6 +676,7 @@ export function* simulate(
         const committed = journal.finish(record);
         actors = next;
         melees = surviving;
+        projectiles = projectileStep.alive;
         serial = nextSerial;
         step++;
         bytes += committed.bytes;
@@ -671,6 +740,14 @@ export function* simulate(
           },
         })),
         serial,
+        projectiles: projectiles.map((p) => ({
+          ...p,
+          ability: {
+            id: p.ability.id,
+            revision: p.ability.revision,
+            contentHash: p.ability.contentHash,
+          },
+        })),
       },
       physicsState: world.world.takeSnapshot(),
       stats: {
@@ -679,7 +756,7 @@ export function* simulate(
         casts: world.casts,
         candidates,
         pathNodes,
-        peakProjectiles: 0,
+        peakProjectiles,
       },
     };
   } finally {

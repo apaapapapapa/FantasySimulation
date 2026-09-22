@@ -122,9 +122,9 @@ describe('fixed-step battle stream', () => {
     expect(run.result.steps).toBeLessThan(500);
     expect(run.result).toMatchObject({
       steps: 161,
-      eventHash: 'sha256:25f5eb1149412c1932ba80533a7d02a4efbff2e9f471b044cb10e8923b3980bc',
-      trajectoryHash: 'sha256:1e3547f4f14ce934db94c041e3c991a3e37d9739b968b2053f9e9fb725356cbc',
-      tsStateHash: 'sha256:bde951d0edac59e12ccbff7558fc45600a7a8cbcb0bf5333fe44ef54c1dde9a4',
+      eventHash: 'sha256:0e02f14f0aeb0d77325f905d766123cced8ad6618bafcbe4a5e9aba9f3d63369',
+      trajectoryHash: 'sha256:d1e12aec07acae9c98f6b6112f90b2b9cbd02b75f71a2bdf86ef687ea2f8d03f',
+      tsStateHash: 'sha256:984a42f1668429ec51ab574bda8f3720e4224428e815011db29acc1901098dcc',
       physicsStateHash: 'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976',
     });
     expect(finalActors(run.records).map((a) => a.resources.hp)).toEqual([0, 0]);

@@ -322,7 +322,7 @@ export const ScenarioSchema = z
   });
 export const RulesetSchema = z.strictObject({
   name: z.string().min(1).max(100),
-  rulesVersion: z.literal('spatial-v1.8'),
+  rulesVersion: z.literal('spatial-v1.9'),
   stepMs: z.literal(20),
   maxSteps: positive(6_000),
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),
@@ -356,7 +356,10 @@ export type Revision = z.infer<typeof RevisionSchema>;
 export type DefinitionKind = Revision['kind'];
 export type Definition<K extends DefinitionKind> = Extract<Revision, { kind: K }>['definition'];
 export const ParticipantSchema = z.strictObject({
-  actorId: IdSchema,
+  actorId: IdSchema.refine(
+    (id) => !id.startsWith('projectile.'),
+    'Reserved projectile entity namespace',
+  ),
   character: RefSchema,
   position: Vec3Schema,
   facing: DirectionSchema,
@@ -387,7 +390,7 @@ export const ManifestSchema = z
     schemaVersion: z.literal(3),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
-    engineVersion: z.literal('spatial-v1.8'),
+    engineVersion: z.literal('spatial-v1.9'),
     implementationDigest: HashSchema,
     physicsProfileHash: HashSchema,
     physicsProfile: PhysicsProfileSchema,
