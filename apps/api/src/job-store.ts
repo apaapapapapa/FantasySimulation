@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, eq, gt, lte, inArray, count, sum } from 'drizzle-orm';
+import { and, asc, eq, gt, lte, inArray, notInArray, count, sum } from 'drizzle-orm';
 import {
   BudgetSchema,
   ResultSchema,
@@ -8,7 +8,13 @@ import {
   type Budget,
   type BattleResult,
 } from '@fantasy/domain/spatial';
-import { battleResults, replayArtifacts, simulationAttempts, simulationJobs } from './db/schema.ts';
+import {
+  attemptMetrics,
+  battleResults,
+  replayArtifacts,
+  simulationAttempts,
+  simulationJobs,
+} from './db/schema.ts';
 import { Store, StoreError, jsonValue } from './store.ts';
 import { sha256 } from './replay-files.ts';
 
@@ -31,6 +37,49 @@ export class JobStore {
     readonly store: Store,
     readonly limits: { [K in keyof typeof JOB_LIMITS]: number } = JOB_LIMITS,
   ) {}
+  request(clientId: string, key: string) {
+    return this.store.orm
+      .select()
+      .from(simulationJobs)
+      .where(and(eq(simulationJobs.clientId, clientId), eq(simulationJobs.idempotencyKey, key)))
+      .get();
+  }
+  canonicalRecord(simulationHash: string) {
+    return this.store.orm
+      .select()
+      .from(battleResults)
+      .where(eq(battleResults.canonicalHash, simulationHash))
+      .get();
+  }
+  progress(claim: Claim, progressStep: number, metrics?: unknown) {
+    const owned = this.store.orm
+      .select()
+      .from(simulationAttempts)
+      .where(
+        and(
+          eq(simulationAttempts.id, claim.attempt.id),
+          eq(simulationAttempts.token, claim.attempt.token),
+        ),
+      )
+      .get();
+    if (!owned) throw new Error('Unknown attempt token');
+    const data = {
+      progressStep,
+      ...(metrics === undefined ? {} : { metricsJson: canonicalJson(metrics) }),
+    };
+    this.store.orm
+      .insert(attemptMetrics)
+      .values({ attemptId: claim.attempt.id, ...data })
+      .onConflictDoUpdate({ target: attemptMetrics.attemptId, set: data })
+      .run();
+  }
+  metrics(attemptId: string) {
+    return this.store.orm
+      .select()
+      .from(attemptMetrics)
+      .where(eq(attemptMetrics.attemptId, attemptId))
+      .get();
+  }
   get(id: string) {
     return this.store.orm.select().from(simulationJobs).where(eq(simulationJobs.id, id)).get();
   }
@@ -65,13 +114,6 @@ export class JobStore {
       .orderBy(asc(battleResults.createdAt), asc(battleResults.id))
       .limit(1)
       .get()?.result;
-  }
-  canonicalRecord(simulationHash: string) {
-    return this.store.orm
-      .select()
-      .from(battleResults)
-      .where(eq(battleResults.canonicalHash, simulationHash))
-      .get();
   }
   markArtifact(id: string, state: 'missing' | 'corrupt') {
     this.store.orm
@@ -171,12 +213,21 @@ export class JobStore {
       return this.get(id)!;
     });
   }
-  claim(now = Date.now(), leaseMs = JOB_LIMITS.leaseMs): Claim | null {
+  claim(
+    now = Date.now(),
+    leaseMs = JOB_LIMITS.leaseMs,
+    excludedJobIds: string[] = [],
+  ): Claim | null {
     return this.store.transaction(() => {
       const job = this.store.orm
         .select()
         .from(simulationJobs)
-        .where(eq(simulationJobs.state, 'queued'))
+        .where(
+          and(
+            eq(simulationJobs.state, 'queued'),
+            excludedJobIds.length ? notInArray(simulationJobs.id, excludedJobIds) : undefined,
+          ),
+        )
         .orderBy(asc(simulationJobs.createdAt), asc(simulationJobs.id))
         .limit(1)
         .get();

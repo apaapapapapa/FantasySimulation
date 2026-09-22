@@ -97,6 +97,8 @@ describe('Drizzle Kit and spatial persistence integration', () => {
         'simulation_attempts',
         'battle_results',
         'replay_artifacts',
+        'attempt_metrics',
+        'runtime_owner',
       ])
         expect(tables.find((table) => table.name === name)?.strict).toBe(1);
       expect(

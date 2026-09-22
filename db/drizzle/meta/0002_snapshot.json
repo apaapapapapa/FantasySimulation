@@ -1,0 +1,769 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "81cee0bc-e805-4032-875b-6d05a062cf1b",
+  "prevId": "85ace126-059d-4e42-b706-dbe74af76957",
+  "tables": {
+    "attempt_metrics": {
+      "name": "attempt_metrics",
+      "columns": {
+        "attempt_id": {
+          "name": "attempt_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "progress_step": {
+          "name": "progress_step",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "metrics_json": {
+          "name": "metrics_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "attempt_metrics_attempt_id_simulation_attempts_id_fk": {
+          "name": "attempt_metrics_attempt_id_simulation_attempts_id_fk",
+          "tableFrom": "attempt_metrics",
+          "tableTo": "simulation_attempts",
+          "columnsFrom": ["attempt_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "attempt_progress": {
+          "name": "attempt_progress",
+          "value": "\"attempt_metrics\".\"progress_step\" BETWEEN 0 AND 6000"
+        },
+        "attempt_metrics_json": {
+          "name": "attempt_metrics_json",
+          "value": "\"attempt_metrics\".\"metrics_json\" IS NULL OR json_valid(\"attempt_metrics\".\"metrics_json\")"
+        }
+      }
+    },
+    "battle_results": {
+      "name": "battle_results",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "simulation_hash": {
+          "name": "simulation_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "canonical_hash": {
+          "name": "canonical_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "attempt_id": {
+          "name": "attempt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "result_hash": {
+          "name": "result_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "result_json": {
+          "name": "result_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "replay_id": {
+          "name": "replay_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "result_canonical": {
+          "name": "result_canonical",
+          "columns": ["canonical_hash"],
+          "isUnique": true
+        },
+        "result_attempt": {
+          "name": "result_attempt",
+          "columns": ["attempt_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "battle_results_simulation_hash_battle_specs_simulation_hash_fk": {
+          "name": "battle_results_simulation_hash_battle_specs_simulation_hash_fk",
+          "tableFrom": "battle_results",
+          "tableTo": "battle_specs",
+          "columnsFrom": ["simulation_hash"],
+          "columnsTo": ["simulation_hash"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "battle_results_attempt_id_simulation_attempts_id_fk": {
+          "name": "battle_results_attempt_id_simulation_attempts_id_fk",
+          "tableFrom": "battle_results",
+          "tableTo": "simulation_attempts",
+          "columnsFrom": ["attempt_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "result_json": {
+          "name": "result_json",
+          "value": "json_valid(\"battle_results\".\"result_json\")"
+        }
+      }
+    },
+    "battle_specs": {
+      "name": "battle_specs",
+      "columns": {
+        "simulation_hash": {
+          "name": "simulation_hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "manifest_json": {
+          "name": "manifest_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "battle_specs_valid_json": {
+          "name": "battle_specs_valid_json",
+          "value": "json_valid(\"battle_specs\".\"manifest_json\")"
+        }
+      }
+    },
+    "definition_drafts": {
+      "name": "definition_drafts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_id": {
+          "name": "definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_json": {
+          "name": "definition_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "published_json": {
+          "name": "published_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "base_revision_json": {
+          "name": "base_revision_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "definition_drafts_kind": {
+          "name": "definition_drafts_kind",
+          "value": "\"definition_drafts\".\"kind\" IN ('character','ability','equipment','policy','status','ruleset','scenario')"
+        },
+        "definition_drafts_positive_version": {
+          "name": "definition_drafts_positive_version",
+          "value": "\"definition_drafts\".\"version\" > 0"
+        },
+        "definition_drafts_valid_json": {
+          "name": "definition_drafts_valid_json",
+          "value": "json_valid(\"definition_drafts\".\"definition_json\")"
+        },
+        "definition_drafts_valid_published": {
+          "name": "definition_drafts_valid_published",
+          "value": "\"definition_drafts\".\"published_json\" IS NULL OR json_valid(\"definition_drafts\".\"published_json\")"
+        },
+        "definition_drafts_valid_base": {
+          "name": "definition_drafts_valid_base",
+          "value": "\"definition_drafts\".\"base_revision_json\" IS NULL OR json_valid(\"definition_drafts\".\"base_revision_json\")"
+        }
+      }
+    },
+    "published_revisions": {
+      "name": "published_revisions",
+      "columns": {
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_id": {
+          "name": "definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revision_json": {
+          "name": "revision_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "published_revisions_kind_definition_id_revision_pk": {
+          "columns": ["kind", "definition_id", "revision"],
+          "name": "published_revisions_kind_definition_id_revision_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "published_revisions_kind": {
+          "name": "published_revisions_kind",
+          "value": "\"published_revisions\".\"kind\" IN ('character','ability','equipment','policy','status','ruleset','scenario')"
+        },
+        "published_revisions_positive_revision": {
+          "name": "published_revisions_positive_revision",
+          "value": "\"published_revisions\".\"revision\" > 0"
+        },
+        "published_revisions_valid_json": {
+          "name": "published_revisions_valid_json",
+          "value": "json_valid(\"published_revisions\".\"revision_json\")"
+        }
+      }
+    },
+    "replay_artifacts": {
+      "name": "replay_artifacts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attempt_id": {
+          "name": "attempt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "manifest_checksum": {
+          "name": "manifest_checksum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bytes": {
+          "name": "bytes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "artifact_attempt": {
+          "name": "artifact_attempt",
+          "columns": ["attempt_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "replay_artifacts_attempt_id_simulation_attempts_id_fk": {
+          "name": "replay_artifacts_attempt_id_simulation_attempts_id_fk",
+          "tableFrom": "replay_artifacts",
+          "tableTo": "simulation_attempts",
+          "columnsFrom": ["attempt_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "artifact_state": {
+          "name": "artifact_state",
+          "value": "\"replay_artifacts\".\"state\" IN ('ready','missing','corrupt','quarantined')"
+        },
+        "artifact_bytes": {
+          "name": "artifact_bytes",
+          "value": "\"replay_artifacts\".\"bytes\" > 0 AND \"replay_artifacts\".\"bytes\" <= 20971520"
+        }
+      }
+    },
+    "runtime_owner": {
+      "name": "runtime_owner",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "store_id": {
+          "name": "store_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "artifact_root": {
+          "name": "artifact_root",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hostname": {
+          "name": "hostname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pid": {
+          "name": "pid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "runtime_singleton": {
+          "name": "runtime_singleton",
+          "value": "\"runtime_owner\".\"id\" = 1"
+        }
+      }
+    },
+    "simulation_attempts": {
+      "name": "simulation_attempts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "budget_json": {
+          "name": "budget_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lease_until": {
+          "name": "lease_until",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "finished_at": {
+          "name": "finished_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "replay_id": {
+          "name": "replay_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "attempt_number": {
+          "name": "attempt_number",
+          "columns": ["job_id", "number"],
+          "isUnique": true
+        },
+        "attempt_token": {
+          "name": "attempt_token",
+          "columns": ["token"],
+          "isUnique": true
+        },
+        "attempt_lease": {
+          "name": "attempt_lease",
+          "columns": ["state", "lease_until"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "simulation_attempts_job_id_simulation_jobs_id_fk": {
+          "name": "simulation_attempts_job_id_simulation_jobs_id_fk",
+          "tableFrom": "simulation_attempts",
+          "tableTo": "simulation_jobs",
+          "columnsFrom": ["job_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "attempt_state": {
+          "name": "attempt_state",
+          "value": "\"simulation_attempts\".\"state\" IN ('running','completed','failed','cancelled','expired','conflict')"
+        },
+        "attempt_budget_json": {
+          "name": "attempt_budget_json",
+          "value": "json_valid(\"simulation_attempts\".\"budget_json\")"
+        }
+      }
+    },
+    "simulation_jobs": {
+      "name": "simulation_jobs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "simulation_hash": {
+          "name": "simulation_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "budget_json": {
+          "name": "budget_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attempts": {
+          "name": "attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "max_attempts": {
+          "name": "max_attempts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "current_attempt_id": {
+          "name": "current_attempt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "result_id": {
+          "name": "result_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "job_idempotency": {
+          "name": "job_idempotency",
+          "columns": ["client_id", "idempotency_key"],
+          "isUnique": true
+        },
+        "job_queue": {
+          "name": "job_queue",
+          "columns": ["state", "created_at", "id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "simulation_jobs_simulation_hash_battle_specs_simulation_hash_fk": {
+          "name": "simulation_jobs_simulation_hash_battle_specs_simulation_hash_fk",
+          "tableFrom": "simulation_jobs",
+          "tableTo": "battle_specs",
+          "columnsFrom": ["simulation_hash"],
+          "columnsTo": ["simulation_hash"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "job_state": {
+          "name": "job_state",
+          "value": "\"simulation_jobs\".\"state\" IN ('queued','running','completed','failed','cancelled')"
+        },
+        "job_attempt_limit": {
+          "name": "job_attempt_limit",
+          "value": "\"simulation_jobs\".\"attempts\" >= 0 AND \"simulation_jobs\".\"attempts\" <= \"simulation_jobs\".\"max_attempts\" AND \"simulation_jobs\".\"max_attempts\" BETWEEN 1 AND 3"
+        },
+        "job_budget_json": {
+          "name": "job_budget_json",
+          "value": "json_valid(\"simulation_jobs\".\"budget_json\")"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

@@ -9,6 +9,8 @@ import {
   parseJson,
 } from '@fantasy/domain/spatial';
 import { StoreError, type Store } from './store.ts';
+import type { BattleRuntime } from './battle-runtime.ts';
+import { addJobRoutes } from './job-routes.ts';
 
 const idParams = z.strictObject({ id: IdSchema });
 const pageQuery = z.strictObject({
@@ -28,9 +30,12 @@ function body<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
     );
   }
 }
-export function createApp(store: Store, logger = false) {
+export function createApp(store: Store, logger = false, runtime?: BattleRuntime) {
   const app = Fastify({ logger, bodyLimit: 512 * 1024 });
-  app.addHook('onClose', async () => store.close());
+  app.addHook('onClose', async () => {
+    await runtime?.close();
+    store.close();
+  });
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof StoreError)
       return reply.code(error.statusCode).send({ error: error.message });
@@ -107,5 +112,6 @@ export function createApp(store: Store, logger = false) {
       input = body(ExpectedVersionSchema, request.body);
     return reply.code(201).send(await store.publishDraft(id, input.expectedVersion));
   });
+  if (runtime) addJobRoutes(app, runtime);
   return app;
 }
