@@ -1,6 +1,12 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import { capsuleOverlapsObstacle, faceNormal } from './geometry.ts';
-import { add, dot, IDENTITY, length, lerp, mul, sub, ZERO, type Vec3 } from './math.ts';
+import {
+  capsuleOverlapsObstacle,
+  capsuleObstacleContact,
+  faceNormal,
+  planarContactTime,
+  rotate,
+} from './geometry.ts';
+import { add, dot, IDENTITY, length, lerp, mul, sub, unit, ZERO, type Vec3 } from './math.ts';
 
 let ready: Promise<void> | undefined;
 export async function initializePhysics(): Promise<void> {
@@ -18,6 +24,7 @@ export type Obstacle = {
   blocks: { movement: boolean; vision: boolean; attack: boolean };
 };
 export type Layer = keyof Obstacle['blocks'];
+type SweepHit = { time_of_impact: number; normal1: Vec3; obstacleId: string };
 export const COLLISION_SKIN = 0.002;
 export const CONTACT_TOLERANCE = 1e-6;
 export function firstImpact(wall: number | undefined, body: number | undefined) {
@@ -261,24 +268,85 @@ export class SpatialWorld {
       )
     )
       return null;
-    const hit = this.world.castShape(
-      start,
-      IDENTITY,
-      velocity,
-      shape,
-      skin,
-      maxTime,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      (collider) => this.materials.get(collider.handle)?.blocks[layer] === true,
-    );
-    if (hit)
-      hit.normal1 = faceNormal(this.materials.get(hit.collider.handle)!, hit.witness1, hit.normal1);
-    return hit;
+    const ignored = new Set<number>();
+    let best: SweepHit | null = null;
+    const body = capsuleDimensions(shape);
+    if (layer === 'movement' && body && shapeExtent) {
+      for (const obstacle of this.materials.values()) {
+        if (!obstacle.blocks[layer] || obstacle.kind === 'pillar') continue;
+        const radius = obstacle.rotation ? length(obstacle.halfExtents) : 0;
+        const half = radius ? { x: radius, y: radius, z: radius } : obstacle.halfExtents;
+        if (
+          !possiblyTouches(
+            sub(start, obstacle.position),
+            velocity,
+            add(add(half, shapeExtent), { x: skin, y: skin, z: skin }),
+            maxTime,
+          )
+        )
+          continue;
+        for (const axis of ['x', 'y', 'z'] as const)
+          for (const sign of [-1, 1]) {
+            const local = { x: 0, y: 0, z: 0, [axis]: sign };
+            const normal = obstacle.rotation ? rotate(local, obstacle.rotation) : local;
+            const time = planarContactTime(obstacle, normal, start, velocity, body, skin);
+            if (time !== undefined && time <= maxTime && (!best || time < best.time_of_impact))
+              best = { time_of_impact: time, normal1: normal, obstacleId: obstacle.id };
+          }
+      }
+    }
+    for (let pass = 0; pass <= this.materials.size; pass++) {
+      if (pass > 0) this.count();
+      const hit = this.world.castShape(
+        start,
+        IDENTITY,
+        velocity,
+        shape,
+        skin,
+        best ? Math.min(maxTime, best.time_of_impact) : maxTime,
+        layer === 'attack',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        (collider) =>
+          !ignored.has(collider.handle) &&
+          this.materials.get(collider.handle)?.blocks[layer] === true,
+      );
+      if (!hit) return best;
+      const obstacle = this.materials.get(hit.collider.handle)!;
+      hit.normal1 = faceNormal(obstacle, hit.witness1, hit.normal1);
+      if (layer === 'movement' && body) {
+        const contact = capsuleObstacleContact(
+          add(start, mul(velocity, hit.time_of_impact)),
+          body,
+          obstacle,
+        );
+        if (contact.normal) hit.normal1 = contact.normal;
+      }
+      if (layer !== 'movement')
+        return {
+          time_of_impact: hit.time_of_impact,
+          normal1: hit.normal1,
+          obstacleId: obstacle.id,
+        };
+      if (dot(velocity, hit.normal1) < -1e-10 || length(velocity) < 1e-12) {
+        const refined =
+          body && planarContactTime(obstacle, hit.normal1, start, velocity, body, skin);
+        if (refined !== undefined) hit.time_of_impact = refined;
+        if (hit.time_of_impact <= maxTime && (!best || hit.time_of_impact < best.time_of_impact))
+          best = {
+            time_of_impact: hit.time_of_impact,
+            normal1: hit.normal1,
+            obstacleId: obstacle.id,
+          };
+      }
+      // A tangent/separating convex collider cannot block this straight segment. Search beyond it.
+      ignored.add(hit.collider.handle);
+    }
+    return best;
   }
+
   raycast(start: Vec3, end: Vec3, layer: Layer) {
     this.count();
     const hit = this.world.castRayAndGetNormal(
@@ -328,7 +396,7 @@ export class SpatialWorld {
     return blocked;
   }
   /** Move-and-slide with retained contact times and segments, unlike an endpoint-only controller. */
-  trace(start: Vec3, requested: Vec3, body: Capsule, maxSegments = 8): Trace {
+  trace(start: Vec3, requested: Vec3, body: Capsule, maxSegments = 8, minGroundY = 0): Trace {
     const shape = capsuleShape(body);
     const trace: Trace = [];
     let position = start,
@@ -350,7 +418,11 @@ export class SpatialWorld {
       // World shape-cast normals are transformed by Rapier to world coordinates.
       const normal = hit.normal1;
       const into = dot(velocity, normal);
-      const slid = sub(velocity, mul(normal, Math.min(0, into)));
+      let slid = sub(velocity, mul(normal, Math.min(0, into)));
+      if (normal.y > 0 && normal.y < minGroundY && slid.y > Math.max(0, velocity.y)) {
+        const wallNormal = unit({ x: normal.x, y: 0, z: normal.z });
+        slid = sub(velocity, mul(wallNormal, Math.min(0, dot(velocity, wallNormal))));
+      }
       if (length(sub(slid, velocity)) < 1e-10) {
         trace.push({ start: position, end: position, from: time, to: 1 });
         return trace;
