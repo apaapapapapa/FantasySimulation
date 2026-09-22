@@ -3,7 +3,8 @@ import { availableParallelism } from 'node:os';
 import { readFile, writeFile, readdir, rm, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { contentHash } from '@fantasy/domain/spatial';
+import { contentHash, SpecInputSchema } from '@fantasy/domain/spatial';
+import { sealRevision, reference } from '@fantasy/engine/spatial';
 import { createBatchPlan, shardSlots, validateBatchPlan } from './batch-plan.ts';
 import { runBatch, reconcileBatch } from './batch-runner.ts';
 import { BattleBundles } from './battle-bundle.ts';
@@ -12,6 +13,68 @@ import { withReplayDirectory } from '../test-support/replays.ts';
 import { publishImmutableFile } from './replay-files.ts';
 
 describe('immutable headless plans and portable result bundles', () => {
+  it('accepts a combined revision set above one manifest limit without expanding a single match', async () => {
+    const input = await batchInput(1),
+      leaf = input.revisions.find((r) => r.kind === 'ability')!;
+    const extra = Array.from({ length: 257 - input.revisions.length }, (_, i) => ({
+      ...leaf,
+      id: `unused-${i}`,
+    }));
+    const plan = await createBatchPlan(
+      { ...input, revisions: [...input.revisions, ...extra] },
+      batchSource,
+    );
+    expect(plan.revisions).toHaveLength(257);
+    expect(plan.slots).toHaveLength(1);
+  });
+  it('loads exact newer and older pinned revisions across plans and rejects immutable content conflicts', async () => {
+    await withReplayDirectory(async (root) => {
+      const first = await batchInput(1),
+        character = first.revisions.find((r) => r.kind === 'character')!;
+      const changed = await sealRevision('character', character.id, 2, {
+        ...character.definition,
+        name: 'revision two',
+      });
+      const next = {
+        ...first,
+        revisions: first.revisions.map((r) => (r === character ? changed : r)),
+        matches: first.matches.map((m) => ({
+          ...m,
+          spec: SpecInputSchema.parse({
+            ...m.spec,
+            participants: m.spec.participants.map((p) =>
+              p.character.id === character.id ? { ...p, character: reference(changed) } : p,
+            ),
+          }),
+        })),
+      };
+      const newer = await createBatchPlan(next, batchSource),
+        older = await createBatchPlan(first, batchSource);
+      expect((await runBatch(newer, root, batchSource)).index.complete).toBe(true);
+      expect((await runBatch(older, root, batchSource)).index.complete).toBe(true);
+      expect((await runBatch(newer, root, batchSource)).index.slots[0]!.reused).toBe(true);
+      const conflict = await sealRevision('character', character.id, 2, {
+        ...changed.definition,
+        name: 'conflict',
+      });
+      const bad = {
+        ...next,
+        revisions: next.revisions.map((r) => (r === changed ? conflict : r)),
+        matches: next.matches.map((m) => ({
+          ...m,
+          spec: SpecInputSchema.parse({
+            ...m.spec,
+            participants: m.spec.participants.map((p) =>
+              p.character.id === character.id ? { ...p, character: reference(conflict) } : p,
+            ),
+          }),
+        })),
+      };
+      await expect(
+        runBatch(await createBatchPlan(bad, batchSource), root, batchSource),
+      ).rejects.toThrow(/Pinned revision conflicts/);
+    });
+  }, 20_000);
   it('fixes revision/seed/source identities and rejects duplicate, altered and oversized plans', async () => {
     const input = await batchInput(),
       plan = await createBatchPlan(input, batchSource);

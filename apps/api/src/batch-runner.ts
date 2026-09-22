@@ -54,7 +54,7 @@ export async function runBatch(
     const pages = Math.floor((64 * 1024 ** 2) / pageSize);
     if (Number(store.db.pragma(`max_page_count = ${pages}`, { simple: true })) > pages)
       throw new Error('Batch database exceeds the 64 MiB metadata limit');
-    await store.seedRevisions(plan.revisions);
+    await store.loadPinnedRevisions(plan.revisions);
     runtime = await BattleRuntime.open(store, join(root, '.work', 'replays'), {
       workers,
       storageBytes: plan.maxWorkBytes,

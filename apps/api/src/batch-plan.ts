@@ -41,7 +41,7 @@ export async function createBatchPlan(input: unknown, source: ExecutionSource): 
       throw new Error('Planned storage estimate exceeds local work capacity; split the plan');
     if (new Set(data.matches.map((m) => m.key)).size !== data.matches.length)
       throw new Error('Duplicate planned match key');
-    await store.seedRevisions(data.revisions);
+    await store.loadPinnedRevisions(data.revisions);
     const slots: BatchPlan['slots'] = [];
     for (const match of data.matches) {
       const battle = await store.prepareSpec(match.spec);
