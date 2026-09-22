@@ -9,6 +9,8 @@ import {
   symlinkSync,
   existsSync,
   lstatSync,
+  realpathSync,
+  readdirSync,
 } from 'node:fs';
 import { dirname, join, resolve, relative, sep } from 'node:path';
 import { withSources, importEdges } from './ast.ts';
@@ -148,12 +150,24 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         /^(apps|packages)\/[^/]+\/package\.json$/.test(path),
       )) {
         const modules = join(root, dirname(path), 'node_modules');
-        if (existsSync(modules))
-          symlinkSync(
-            modules,
-            join(projection, dirname(path), 'node_modules'),
-            process.platform === 'win32' ? 'junction' : 'dir',
-          );
+        if (existsSync(modules)) {
+          // Link resolved package roots individually. A junction of node_modules leaves
+          // pnpm's relative package links anchored to the projection on Windows.
+          for (const entry of readdirSync(modules).filter((name) => !name.startsWith('.'))) {
+            const names = entry.startsWith('@')
+              ? readdirSync(join(modules, entry)).map((name) => `${entry}/${name}`)
+              : [entry];
+            for (const name of names) {
+              const destination = join(projection, dirname(path), 'node_modules', name);
+              mkdirSync(dirname(destination), { recursive: true });
+              symlinkSync(
+                realpathSync(join(modules, name)),
+                destination,
+                process.platform === 'win32' ? 'junction' : 'dir',
+              );
+            }
+          }
+        }
       }
       const aliases: Record<string, string> = {};
       for (const path of paths.filter((path) => /^packages\/[^/]+\/package\.json$/.test(path))) {
@@ -203,7 +217,7 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         sources,
         {
           baseDir: projection,
-          // Keep projected junction paths stable on Windows; workspace aliases are explicit.
+          // Keep resolved package-root links stable; workspace aliases are explicit.
           preserveSymlinks: true,
           tsConfig: { fileName: config },
           parser: 'acorn',
