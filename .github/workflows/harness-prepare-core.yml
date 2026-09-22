@@ -1,0 +1,81 @@
+name: Prepare harness core tree
+on:
+  push:
+    branches: [automation/h1-core-files]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - name: Prepare exact existing Zod dependency and command entrypoints
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const p = JSON.parse(readFileSync('package.json','utf8'));
+          p.devDependencies.zod='4.6.5'; p.scripts.harness='node scripts/harness.ts';
+          writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+          const config=readFileSync('vite.config.ts','utf8');
+          if (!config.includes("'apps/api/**/*.test.ts'")) throw Error('Unexpected test config');
+          writeFileSync('vite.config.ts',config.replace("'apps/api/**/*.test.ts'","'apps/api/**/*.test.ts', 'scripts/**/*.test.ts'"));
+          writeFileSync('.gitignore',readFileSync('.gitignore','utf8')+'\n.generated/\n');
+          const agents=readFileSync('AGENTS.md','utf8');
+          writeFileSync('AGENTS.md',agents+'\n## Development evidence\n\nBefore editing, record the baseline SHA, changed boundary and acceptance criteria. Use focused tests while editing. For a finished committed candidate run `node scripts/harness.ts source .generated/harness/<fresh-attempt> <baseline-sha>` once in the pinned environment. Follow `.github/harness/README.md`; missing checks stay incomplete. Audits and Issue-only tasks do not authorize implementation or merge.\n');
+          NODE
+          vp install --no-frozen-lockfile
+          vp fmt scripts/harness.ts scripts/harness .github/harness/README.md AGENTS.md package.json vite.config.ts
+          node scripts/engine-identity.ts --write
+          vp check
+          vp run typecheck
+          vp run engine:check
+          vp test run scripts/harness
+      - name: Export source entries without credentials or preparation workflow
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+          const paths=['.github/harness/README.md','.gitignore','AGENTS.md','package.json','packages/engine/src/spatial/implementation.json','pnpm-lock.yaml','scripts/harness.ts','scripts/harness/artifacts.ts','scripts/harness/report.test.ts','scripts/harness/report.ts','scripts/harness/source.test.ts','scripts/harness/source.ts','vite.config.ts'];
+          mkdirSync('stage-output');
+          writeFileSync('stage-output/tree.json',JSON.stringify({sourceSha:process.env.GITHUB_SHA,tree:paths.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))}));
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: core-tree
+          path: stage-output/tree.json
+          retention-days: 1
+          if-no-files-found: error
+  emit:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: core-tree
+          path: prepared
+      - name: Create unreferenced source tree only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const allowed=['.github/harness/README.md','.gitignore','AGENTS.md','package.json','packages/engine/src/spatial/implementation.json','pnpm-lock.yaml','scripts/harness.ts','scripts/harness/artifacts.ts','scripts/harness/report.test.ts','scripts/harness/report.ts','scripts/harness/source.test.ts','scripts/harness/source.ts','vite.config.ts'];
+          const value=JSON.parse(readFileSync('prepared/tree.json','utf8'));
+          if(value.sourceSha!==process.env.GITHUB_SHA||value.tree.length!==allowed.length||new Set(value.tree.map(v=>v.path)).size!==allowed.length)throw Error('Invalid source');
+          for(const v of value.tree)if(!allowed.includes(v.path)||v.mode!=='100644'||v.type!=='blob'||typeof v.content!=='string'||v.content.length>300000||Object.keys(v).sort().join(',')!=='content,mode,path,type')throw Error('Invalid entry');
+          writeFileSync('request.json',JSON.stringify({base_tree:'65f92c81a66e214317874168c755f4c2e3d082cc',tree:value.tree}));
+          NODE
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input request.json --jq .sha
