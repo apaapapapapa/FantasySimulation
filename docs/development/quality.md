@@ -37,6 +37,21 @@ Tracked first-party JS/config files are rejected. Generated artifacts, dependenc
 build output are excluded; a `.js` specifier inside TypeScript is not a JS file addition.
 There is no broad vendored-skill exception or blanket lint suppression.
 
+## Engine determinism
+
+The native TS7 AST independently checks engine runtime source, including aliases and
+computed access. `Math.random`, ambient clocks, network APIs, database/I/O imports,
+process/environment access, dynamic code and unreviewed dependencies are rejected.
+Use direct statically named deterministic Math members. Local engine inputs and
+ordinary `self` properties are distinguished from ambient browser globals.
+
+The sole core-module exception is a static named `createHash` import from `node:crypto`
+(aliasing that import is allowed). Namespace/default imports, entropy functions,
+crypto reexports and dynamic crypto access are refused. Hashes are computed from
+explicit inputs. Existing versioned PRNG and the Rapier physics adapter remain valid;
+WASM preparation stays in its reviewed physics boundary. Dependency graphs alone do
+not prove determinism, and this conservative AST policy is not a mathematical proof.
+
 ## Change workflow
 
 Use `vp test run scripts/quality` for meaningful positive and negative fixtures. CI uses

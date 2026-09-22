@@ -2,11 +2,13 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { architecture } from './quality/architecture.ts';
 import { firstPartyJavaScript } from './quality/files.ts';
+import { withSources } from './quality/ast.ts';
+import { determinism } from './quality/determinism.ts';
 import { assessReport } from './harness/report.ts';
 import type { Check, Report } from './harness/report.ts';
 import { sourceIdentity } from './harness/source.ts';
 
-const required = ['quality:typescript', 'quality:architecture'];
+const required = ['quality:typescript', 'quality:architecture', 'quality:determinism'];
 const startedAt = new Date().toISOString();
 const checks: Check[] = [];
 const details: Record<string, unknown> = {};
@@ -54,6 +56,17 @@ try {
     const graph = await architecture(root, paths);
     return [...graph.publicGraph.summary.violations, ...graph.runtimeGraph.summary.violations];
   });
+  await run('quality:determinism', () =>
+    withSources(
+      root,
+      paths.filter(
+        (path) =>
+          /^packages\/engine\/src\/.*\.tsx?$/.test(path) && !/\.(?:test|d)\.tsx?$/.test(path),
+      ),
+      (files, _options, checker) =>
+        [...files].flatMap(([path, file]) => determinism(path, file, checker)),
+    ),
+  );
   writeFileSync(`${directory}/findings.json`, JSON.stringify({ ...info, details }, null, 2) + '\n');
   const report: Report = {
     ...info,
