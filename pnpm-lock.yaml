@@ -12,6 +12,12 @@ importers:
 
   .:
     devDependencies:
+      '@octokit/core':
+        specifier: 7.0.8
+        version: 7.0.8
+      '@octokit/plugin-paginate-rest':
+        specifier: 14.0.0
+        version: 14.0.0(@octokit/core@7.0.8)
       '@semantic-release/commit-analyzer':
         specifier: 13.0.1
         version: 13.0.1(semantic-release@25.0.9(supports-color@7.2.0)(typescript@7.0.2))(supports-color@7.2.0)

@@ -27,9 +27,12 @@
     "release:dry-run": "semantic-release --dry-run",
     "verify": "vp check && vp run typecheck && vp run engine:check && vp run security:test && vp test && vp run build",
     "bench:spatial": "node scripts/spatial-benchmark.ts",
-    "fixtures:spatial": "node scripts/spatial-fixtures.ts --write"
+    "fixtures:spatial": "node scripts/spatial-fixtures.ts --write",
+    "harness": "node scripts/harness.ts"
   },
   "devDependencies": {
+    "@octokit/core": "7.0.8",
+    "@octokit/plugin-paginate-rest": "14.0.0",
     "@semantic-release/commit-analyzer": "13.0.1",
     "@semantic-release/github": "12.0.9",
     "@semantic-release/release-notes-generator": "14.1.1",
