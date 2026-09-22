@@ -13,6 +13,7 @@ import {
   text,
 } from './common.ts';
 import type { Outcome } from './common.ts';
+import { parseExceptionTime } from './exception-time.ts';
 
 type Finding = { id: string; rule: string; locationId: string; line: number };
 
@@ -27,8 +28,8 @@ export function exceptions(value: unknown, now = Date.now()): Set<string> {
       /^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}$/.test(text(entry.reviewer)),
       'EXCEPTION_REVIEWER_REQUIRED',
     );
-    const reviewed = Date.parse(text(entry.reviewedAt));
-    const expires = Date.parse(text(entry.expiresAt));
+    const reviewed = parseExceptionTime(entry.reviewedAt);
+    const expires = parseExceptionTime(entry.expiresAt);
     requireCondition(
       Number.isFinite(reviewed) && Number.isFinite(expires),
       'INVALID_EXCEPTION_DATE',

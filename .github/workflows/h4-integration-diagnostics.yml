@@ -1,0 +1,39 @@
+name: H4 integration diagnostics
+
+on:
+  push:
+    branches: [feat/h4-secret-scan]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
+        with:
+          node-version-file: .node-version
+          run-install: false
+      - run: vp install --frozen-lockfile
+      - run: vp fmt scripts/security package.json
+      - name: Recompute identity for reviewed development script changes
+        run: vp run engine:stamp
+      - name: Require unchanged spatial behavior fixtures
+        run: node scripts/spatial-fixtures.ts
+      - run: vp run verify
+      - name: Capture reviewed source and generated identity without pushing
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: h4-integration-${{ github.sha }}
+          path: |
+            scripts/security/*.ts
+            package.json
+            packages/engine/src/spatial/implementation.json
+          if-no-files-found: error
+          retention-days: 1
