@@ -1,13 +1,9 @@
-import { readFileSync, statSync } from 'node:fs';
+import { readBoundedJson } from './harness/files.ts';
 import { assessReport } from './harness/report.ts';
 import { collectSource } from './harness/source.ts';
 
-function json(path: string): unknown {
-  if (statSync(path).size > 32 * 1024 * 1024) throw new Error('Input exceeds size budget');
-  const bytes = readFileSync(path);
-  if (bytes.length > 32 * 1024 * 1024) throw new Error('Input exceeds size budget');
-  return JSON.parse(bytes.toString('utf8')) as unknown;
-}
+const json = (path: string) => readBoundedJson(path, 32 * 1024 * 1024);
+
 try {
   const [command, input, ...args] = process.argv.slice(2);
   if (!input) throw new Error('Harness input is required');
@@ -41,7 +37,16 @@ try {
     let result;
     if (command === 'source' && args.length === 0)
       result = await collectSource(process.cwd(), input);
-    else if (command === 'report') result = assessReport(json(input), args);
+    else if (command === 'issue-plan' && args.length === 0) {
+      const { completionDraft } = await import('./harness/issue-completion-api.ts');
+      result = { report: await completionDraft(Number(input)), exitCode: 0 };
+    } else if (
+      command === 'issue-complete' &&
+      (args.length === 0 || (args.length === 1 && args[0] === '--apply'))
+    ) {
+      const { completeIssues } = await import('./harness/issue-completion-api.ts');
+      result = await completeIssues(input, args[0] === '--apply');
+    } else if (command === 'report') result = assessReport(json(input), args);
     else if (command === 'delivery') {
       const [target, receipt, ...extra] = args;
       if ((target !== 'pr' && target !== 'merge') || extra.length)

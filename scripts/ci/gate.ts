@@ -1,4 +1,5 @@
-import { appendFileSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readBoundedJson } from '../harness/files.ts';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assessReport, record } from '../harness/report.ts';
@@ -76,10 +77,8 @@ export function assessGate(
     checks.map((check) => check.id),
   );
 }
-function json(path: string): unknown {
-  if (statSync(path).size > 8 * 1024 * 1024) throw new Error('Artifact exceeds budget');
-  return JSON.parse(readFileSync(path, 'utf8')) as unknown;
-}
+const json = readBoundedJson;
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const plan = parsePlan(json('.generated/harness/ci/plan.json'));

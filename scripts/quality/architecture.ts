@@ -203,6 +203,8 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         sources,
         {
           baseDir: projection,
+          // Keep projected junction paths stable on Windows; workspace aliases are explicit.
+          preserveSymlinks: true,
           tsConfig: { fileName: config },
           parser: 'acorn',
           moduleSystems: ['es6'],

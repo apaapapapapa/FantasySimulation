@@ -1,5 +1,6 @@
+import { readBoundedJson } from '../harness/files.ts';
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { identity, record, sha } from '../harness/report.ts';
@@ -90,9 +91,8 @@ export function collectPlan(root: string, env: NodeJS.ProcessEnv): Plan {
     testMergeSha: string | null = null;
   try {
     const eventPath = env.GITHUB_EVENT_PATH;
-    if (!eventPath || statSync(eventPath).size > 2 * 1024 * 1024)
-      throw new Error('Missing/bounded event');
-    const payload = record(JSON.parse(readFileSync(eventPath, 'utf8')) as unknown);
+    if (!eventPath) throw new Error('Missing/bounded event');
+    const payload = record(readBoundedJson(eventPath, 2 * 1024 * 1024));
     if (event === 'pull_request') {
       candidateSha = sha(record(record(payload.pull_request).head).sha);
       const parents = git(root, ['show', '-s', '--format=%P', 'HEAD']).trim().split(' ');

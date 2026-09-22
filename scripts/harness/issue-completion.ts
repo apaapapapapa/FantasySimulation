@@ -1,0 +1,255 @@
+import { createHash } from 'node:crypto';
+import { assessReport, record, sha, text, timestamp } from './report.ts';
+
+export const repository = 'apaapapapapa/FantasySimulation';
+export const completionMarker = '<!-- harness:issue-completed:v1 -->';
+export const requiredJobs = [
+  'changes',
+  'ci-gate',
+  'Verify (ubuntu-latest)',
+  'Verify (windows-latest)',
+  'Security / Secret scan',
+  'Security / Dependency audit',
+  'Security / CodeQL and severity policy',
+  'Security / security-gate',
+  'Dependency policy / Renovate configuration',
+  'Dependency policy / Toolchain policy (ubuntu-latest)',
+  'Dependency policy / Toolchain policy (windows-latest)',
+  'Dependency policy / dependency-policy-gate',
+  'Release',
+];
+
+export interface Completion {
+  schemaVersion: 1;
+  issue: number;
+  issueBodySha256: string;
+  issueUpdatedAt: string;
+  complete: true;
+  summary: string;
+  remainingWork: string[];
+  pullRequests: number[];
+  acceptance: { task: string; evidence: string }[];
+}
+
+export function requireCompletion(value: unknown, code: string): asserts value {
+  if (!value) throw new Error(code);
+}
+
+export function positiveInteger(value: unknown): number {
+  requireCompletion(Number.isSafeInteger(value) && Number(value) > 0, 'INVALID_NUMBER');
+  return Number(value);
+}
+
+export function bodyDigest(body: string): string {
+  return createHash('sha256').update(body).digest('hex');
+}
+
+export function parseCompletion(value: unknown): Completion {
+  const obj = record(value);
+  requireCompletion(obj.schemaVersion === 1 && obj.complete === true, 'INCOMPLETE_DECLARATION');
+  requireCompletion(
+    Array.isArray(obj.remainingWork) && obj.remainingWork.length === 0,
+    'REMAINING_WORK',
+  );
+  requireCompletion(
+    Array.isArray(obj.pullRequests) && obj.pullRequests.length > 0 && obj.pullRequests.length <= 20,
+    'PULL_REQUESTS_REQUIRED',
+  );
+  const pullRequests = obj.pullRequests.map(positiveInteger);
+  requireCompletion(new Set(pullRequests).size === pullRequests.length, 'DUPLICATE_PR');
+  const issueBodySha256 = text(obj.issueBodySha256);
+  requireCompletion(/^[a-f0-9]{64}$/.test(issueBodySha256), 'INVALID_BODY_DIGEST');
+  timestamp(obj.issueUpdatedAt);
+  requireCompletion(
+    Array.isArray(obj.acceptance) && obj.acceptance.length > 0 && obj.acceptance.length <= 500,
+    'ACCEPTANCE_REQUIRED',
+  );
+  const acceptance = obj.acceptance.map((item: unknown) => {
+    const entry = record(item);
+    const task = text(entry.task).trim();
+    const evidence = text(entry.evidence).trim();
+    requireCompletion(
+      task.length <= 2000 && evidence.length >= 10 && evidence.length <= 2000,
+      'INVALID_ACCEPTANCE',
+    );
+    return { task, evidence };
+  });
+  requireCompletion(
+    new Set(acceptance.map((entry) => entry.task)).size === acceptance.length,
+    'DUPLICATE_ACCEPTANCE',
+  );
+  const summary = text(obj.summary).trim();
+  requireCompletion(summary.length <= 2000, 'SUMMARY_TOO_LONG');
+  return {
+    schemaVersion: 1,
+    issue: positiveInteger(obj.issue),
+    issueBodySha256,
+    issueUpdatedAt: text(obj.issueUpdatedAt),
+    complete: true,
+    summary,
+    remainingWork: [],
+    pullRequests,
+    acceptance,
+  };
+}
+
+export function validateRun(value: unknown, expectedSha: string, expectedAttempt: number): number {
+  const run = record(value);
+  requireCompletion(
+    run.name === 'CI' &&
+      run.path === '.github/workflows/ci.yml' &&
+      run.head_branch === 'main' &&
+      (run.event === 'push' || run.event === 'workflow_dispatch') &&
+      run.status === 'completed' &&
+      run.conclusion === 'success' &&
+      run.head_sha === sha(expectedSha) &&
+      run.run_attempt === expectedAttempt &&
+      record(run.repository).full_name === repository &&
+      record(run.head_repository).full_name === repository,
+    'UNTRUSTED_OR_UNSUCCESSFUL_MAIN_RUN',
+  );
+  return positiveInteger(run.id);
+}
+
+export function validateJobs(values: unknown[]): void {
+  const jobs = values.map(record);
+  requireCompletion(new Set(jobs.map((job) => job.name)).size === jobs.length, 'DUPLICATE_JOB');
+  for (const name of requiredJobs) {
+    const matching = jobs.filter((job) => job.name === name);
+    requireCompletion(matching.length === 1, 'MISSING_OR_DUPLICATE_REQUIRED_JOB');
+    requireCompletion(matching[0]!.conclusion === 'success', 'FAILED_OR_SKIPPED_JOB');
+  }
+  // Main always runs full verification. GitHub skips docs before expanding its matrix.
+  // Only that exact job may be skipped; planner, aggregate gate and source proofs stay mandatory.
+  requireCompletion(
+    jobs.every(
+      (job) =>
+        job.status === 'completed' &&
+        (job.conclusion === 'success' ||
+          (job.name === 'Docs (${{ matrix.os }})' && job.conclusion === 'skipped')),
+    ),
+    'FAILED_OR_SKIPPED_JOB',
+  );
+}
+
+export function validateSource(value: unknown, commandValue: unknown, sourceSha: string): void {
+  const result = assessReport(value, ['source-clean', 'source-verify']);
+  const report = result.report;
+  requireCompletion(
+    result.exitCode === 0 &&
+      report.producer === 'source-runner' &&
+      report.sourceSha === sourceSha &&
+      report.candidateSha === sourceSha &&
+      report.testMergeSha === null,
+    'INVALID_SOURCE_EVIDENCE',
+  );
+  const command = record(commandValue);
+  requireCompletion(
+    command.sourceSha === sourceSha &&
+      JSON.stringify(command.command) === JSON.stringify(['vp', 'run', 'verify']) &&
+      command.exitCode === 0 &&
+      command.signal === null &&
+      command.bounded === false &&
+      command.cleanBefore === true &&
+      command.cleanAfter === true,
+    'INVALID_VERIFY_COMMAND',
+  );
+}
+
+// Ignore fenced examples and strip comments without losing adjacent visible tasks.
+export function issueTasks(body: string): { line: number; task: string }[] {
+  const tasks: { line: number; task: string }[] = [];
+  const pattern = /^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+)\[[ xX]\]\s+(.+)$/;
+  let fence = '';
+  let comment = false;
+  for (const [line, raw] of body.split('\n').entries()) {
+    const original = raw.replace(/\r$/, '');
+    if (fence) {
+      const closing = /^\s*(`{3,}|~{3,})\s*$/.exec(original.replace(/^(\s*>\s*)+/, ''))?.[1];
+      if (closing && closing[0] === fence[0] && closing.length >= fence.length) fence = '';
+      continue;
+    }
+    let value = '';
+    let offset = 0;
+    while (offset < original.length) {
+      if (comment) {
+        const end = original.indexOf('-->', offset);
+        if (end < 0) break;
+        comment = false;
+        offset = end + 3;
+      } else {
+        const begin = original.indexOf('<!--', offset);
+        if (begin < 0) {
+          value += original.slice(offset);
+          break;
+        }
+        value += original.slice(offset, begin);
+        comment = true;
+        offset = begin + 4;
+      }
+    }
+    const delimiter = /^\s*(`{3,}|~{3,})/.exec(value.replace(/^(\s*>\s*)+/, ''))?.[1];
+    if (delimiter) {
+      fence = delimiter;
+      continue;
+    }
+    const match = pattern.exec(value);
+    if (match?.[2]) {
+      // A comment before/splitting the checkbox makes a minimal raw edit ambiguous.
+      requireCompletion(pattern.test(original), 'UNSUPPORTED_ISSUE_TASK_MARKUP');
+      tasks.push({ line, task: match[2].trim() });
+    }
+  }
+  requireCompletion(!fence && !comment, 'UNTERMINATED_ISSUE_MARKUP');
+  return tasks;
+}
+
+function markdown(value: string): string {
+  return value
+    .replace(/[&<>@`\[\]*_]/g, (char) => `&#${char.charCodeAt(0)};`)
+    .replace(/\r?\n/g, ' ');
+}
+
+export function completedBody(
+  plan: Completion,
+  body: string,
+  sourceSha: string,
+  runId: number,
+): string {
+  const tasks = issueTasks(body);
+  const expected = new Set(plan.acceptance.map((entry) => entry.task));
+  requireCompletion(
+    new Set(tasks.map((entry) => entry.task)).size === tasks.length,
+    'AMBIGUOUS_ISSUE_TASKS',
+  );
+  if (tasks.length > 0)
+    requireCompletion(
+      tasks.length === expected.size && tasks.every((entry) => expected.has(entry.task)),
+      'UNCOVERED_ISSUE_TASKS',
+    );
+  const lines = body.split('\n');
+  for (const task of tasks)
+    lines[task.line] = lines[task.line]!.replace(
+      /^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+)\[[ xX]\]/,
+      '$1[x]',
+    );
+  const url = `https://github.com/${repository}`;
+  const receipt = [
+    completionMarker,
+    '## ハーネスによる完了記録',
+    '',
+    markdown(plan.summary),
+    '',
+    `- main: ${url}/commit/${sha(sourceSha)}`,
+    `- 検証: ${url}/actions/runs/${positiveInteger(runId)}`,
+    `- 関連PR: ${plan.pullRequests.map((number) => `${url}/pull/${number}`).join(', ')}`,
+    '- 残件: なし（完了宣言をレビュー済み）',
+    '',
+    ...plan.acceptance.map(
+      (entry) => `- [x] ${markdown(entry.task)} — ${markdown(entry.evidence)}`,
+    ),
+  ].join('\n');
+  const updated = `${lines.join('\n').trimEnd()}\n\n${receipt}\n`;
+  requireCompletion(updated.length <= 60000, 'ISSUE_BODY_TOO_LARGE');
+  return updated;
+}
