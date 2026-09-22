@@ -1,0 +1,16 @@
+packages:
+  - apps/*
+  - packages/*
+
+overrides:
+  vite: npm:@voidzero-dev/vite-plus-core@0.3.3
+  vitest: 4.1.11
+
+# The official Vite+ alias uses 0.3.3 while exposing the Vite 8 API.
+peerDependencyRules:
+  allowedVersions:
+    vite: 0.3.3
+
+allowBuilds:
+  esbuild: true
+  vite-plus: true

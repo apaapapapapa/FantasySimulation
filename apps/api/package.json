@@ -1,0 +1,22 @@
+{
+  "name": "@fantasy/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../../.env --import tsx --watch src/index.ts",
+    "build": "vp pack",
+    "start": "node --env-file-if-exists=../../.env dist/index.mjs",
+    "db:migrate": "node --env-file-if-exists=../../.env --import tsx src/database-cli.ts migrate",
+    "db:seed": "node --env-file-if-exists=../../.env --import tsx src/database-cli.ts seed"
+  },
+  "dependencies": {
+    "@fantasy/domain": "workspace:*",
+    "@fantasy/engine": "workspace:*",
+    "fastify": "5.12.5",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}
