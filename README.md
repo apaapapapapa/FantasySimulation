@@ -213,3 +213,12 @@ Node.js 24の`node:sqlite`は実験的APIの警告が表示される場合があ
 - [Vite+ / Monorepo](https://viteplus.dev/guide/monorepo)
 - [Vite+ / Project-local CLI](https://viteplus.dev/guide/local-cli)
 - [Vite+ / CI](https://viteplus.dev/guide/ci)
+
+## 開発ハーネス
+
+実装・修正・PR完了は [fantasy-delivery skill](.agents/skills/fantasy-delivery/SKILL.md)
+と [開発ルール](AGENTS.md)に従います。`vp run harness source .generated/harness/source-1`
+は、cleanなcommitに対して既存の`vp run verify`を実行し、SHA・実行command・結果を保存します。
+[証跡の収集とレビュー](.github/harness/README.md)、[CI計画と実測](docs/development/ci.md)、
+[Issue完了手順](docs/issue-completion.md)を参照してください。
+PRの成功、mainの成功、release結果、Issue完了はそれぞれ確認します。

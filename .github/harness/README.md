@@ -1,7 +1,11 @@
 # Development evidence harness
 
-Development-only runners connect existing verification tools with GitHub facts. They
-never merge, write to GitHub, start repair loops, or deploy. Application runtime code
+The source and delivery collectors connect existing verification tools with GitHub facts.
+They are read-only: they never merge, write to GitHub, start repair loops, or deploy.
+The separately scoped Issue completion command writes only after verified main CI;
+see [its protocol](../../docs/issue-completion.md).
+Apply the repository [fantasy-delivery skill](../../.agents/skills/fantasy-delivery/SKILL.md)
+for implementation through Issue completion. Application runtime code
 must not import `scripts/harness`.
 
 ## Source verification
