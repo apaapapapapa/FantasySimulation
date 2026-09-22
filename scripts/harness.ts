@@ -1,13 +1,9 @@
-import { readFileSync, statSync } from 'node:fs';
+import { readBoundedJson } from './harness/files.ts';
 import { assessReport } from './harness/report.ts';
 import { collectSource } from './harness/source.ts';
 
-function json(path: string): unknown {
-  if (statSync(path).size > 32 * 1024 * 1024) throw new Error('Input exceeds size budget');
-  const bytes = readFileSync(path);
-  if (bytes.length > 32 * 1024 * 1024) throw new Error('Input exceeds size budget');
-  return JSON.parse(bytes.toString('utf8')) as unknown;
-}
+const json = (path: string) => readBoundedJson(path, 32 * 1024 * 1024);
+
 try {
   const [command, input, ...args] = process.argv.slice(2);
   if (!input) throw new Error('Harness input is required');
