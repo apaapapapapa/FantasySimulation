@@ -13,7 +13,11 @@
     "build": "vp run -r build",
     "db:migrate": "vp run --filter @fantasy/api db:migrate",
     "db:seed": "vp run --filter @fantasy/api db:seed",
-    "verify": "vp check && vp run typecheck && vp test && vp run build"
+    "engine:stamp": "node scripts/engine-identity.ts --write",
+    "engine:check": "node scripts/engine-identity.ts",
+    "fixtures:tick": "node scripts/tick-fixtures.ts --write",
+    "demo:tick": "node scripts/tick-demo.ts",
+    "verify": "vp check && vp run typecheck && vp run engine:check && vp test && vp run build"
   },
   "devDependencies": {
     "@types/node": "24.13.6",

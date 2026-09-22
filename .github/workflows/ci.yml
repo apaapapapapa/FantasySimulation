@@ -34,6 +34,8 @@ jobs:
         run: vp check
       - name: TypeScript compiler
         run: vp run typecheck
+      - name: Engine implementation identity
+        run: vp run engine:check
       - name: Engine and SQLite integration tests
         run: vp test
       - name: Build web and API
