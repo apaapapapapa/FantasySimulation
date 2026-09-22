@@ -1,0 +1,23 @@
+name: Duplication audit export
+on:
+  push:
+    branches: [refactor/duplication-guard]
+    paths: [.github/workflows/duplication-audit-export.yml]
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - name: Export tracked source only
+        run: git archive --format=tar HEAD > source.tar
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: duplication-audit-source
+          path: source.tar
+          retention-days: 1
+          if-no-files-found: error
