@@ -1,0 +1,217 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'vite-plus/test';
+import { assessDelivery, conversationDigest, parseSnapshot, VERIFY_JOBS } from './delivery.ts';
+import type { DeliverySnapshot, RunEvidence } from './delivery.ts';
+import type { Report } from './report.ts';
+const HEAD = 'a'.repeat(40);
+const BASE = 'b'.repeat(40);
+const TESTED = 'c'.repeat(40);
+const MERGED = 'd'.repeat(40);
+const AT = '2026-01-01T00:00:00Z';
+export function sourceReport(main = false): Report {
+  const sourceSha = main ? MERGED : TESTED;
+  return {
+    schemaVersion: 1,
+    producer: 'source-runner',
+    sourceSha,
+    candidateSha: main ? MERGED : HEAD,
+    baselineSha: main ? null : BASE,
+    testMergeSha: main ? null : TESTED,
+    startedAt: AT,
+    finishedAt: AT,
+    checks: ['source-clean', 'source-verify'].map((id) => ({
+      id,
+      required: true,
+      status: 'pass',
+      reason: 'fixture',
+      evidence: [{ uri: '.generated/harness/source/report.json', sourceSha }],
+    })),
+  };
+}
+function evidence(main = false): RunEvidence {
+  const run = {
+    id: main ? 20 : 10,
+    head_sha: main ? MERGED : HEAD,
+    run_attempt: 1,
+    event: main ? 'push' : 'pull_request',
+    head_branch: main ? 'main' : 'feature',
+    path: '.github/workflows/ci.yml',
+    status: 'completed',
+    conclusion: 'success',
+  };
+  return {
+    before: structuredClone(run),
+    after: structuredClone(run),
+    jobs: VERIFY_JOBS.map((name, index) => ({
+      id: index + 1,
+      name,
+      run_id: run.id,
+      run_attempt: 1,
+      status: 'completed',
+      conclusion: 'success',
+    })),
+    sources: VERIFY_JOBS.map((_, index) => ({
+      jobId: index + 1,
+      report: sourceReport(main),
+      logDigest: 'e'.repeat(64),
+    })),
+    commits: { [TESTED]: { sha: TESTED, parents: [{ sha: BASE }, { sha: HEAD }] } },
+  };
+}
+export function fixture(merged = false): DeliverySnapshot {
+  const pull = {
+    number: 13,
+    updated_at: AT,
+    state: merged ? 'closed' : 'open',
+    merged,
+    merge_commit_sha: merged ? MERGED : TESTED,
+    head: { sha: HEAD, ref: 'feature' },
+    base: { sha: BASE, ref: 'main', repo: { full_name: 'owner/repo' } },
+    changed_files: 1,
+  };
+  const prRun = evidence();
+  const mainRun = merged ? evidence(true) : null;
+  return {
+    schemaVersion: 1,
+    repository: 'owner/repo',
+    number: 13,
+    startedAt: AT,
+    finishedAt: AT,
+    pull: structuredClone(pull),
+    pullAfter: structuredClone(pull),
+    comments: [],
+    reviews: [],
+    threads: [],
+    files: [{ filename: 'scripts/example.ts' }],
+    reviewDecision: null,
+    prRuns: [structuredClone(prRun.before)],
+    prRunsAfter: [structuredClone(prRun.before)],
+    mainRuns: mainRun ? [structuredClone(mainRun.before)] : [],
+    mainRunsAfter: mainRun ? [structuredClone(mainRun.before)] : [],
+    prRun,
+    mainRun,
+    checks: [],
+    statuses: [],
+    errors: [],
+  };
+}
+function receipt(snapshot: DeliverySnapshot) {
+  return {
+    candidateSha: HEAD,
+    conversationDigest: conversationDigest(snapshot),
+    reviewedPaths: ['scripts/example.ts'],
+    completedAt: AT,
+    method: 'self',
+    summary: 'Reviewed fixture paths and complete conversation.',
+    unresolvedFindings: 0,
+  };
+}
+function change(obj: unknown, key: string, value: unknown) {
+  (obj as Record<string, unknown>)[key] = value;
+}
+describe('delivery evidence', () => {
+  it('separates collection, review coverage and PR completion', () => {
+    const value = fixture();
+    assert.equal(assessDelivery(value, 'pr').exitCode, 2);
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+    assert.equal(assessDelivery(value, 'merge', receipt(value)).exitCode, 2);
+  });
+  it('requires main push CI for the real merge and does not infer release from tags', () => {
+    const value = fixture(true);
+    const result = assessDelivery(value, 'merge', receipt(value));
+    assert.equal(result.exitCode, 0);
+    assert.equal(result.report.checks.find((check) => check.id === 'release')?.status, 'unknown');
+    change(value.mainRun!.after, 'status', 'in_progress');
+    assert.equal(assessDelivery(value, 'merge', receipt(value)).exitCode, 2);
+    change(value.mainRun!.after, 'conclusion', 'failure');
+    assert.equal(assessDelivery(value, 'merge', receipt(value)).exitCode, 1);
+  });
+  it('rejects a newer run or changed retry instead of reusing old green evidence', () => {
+    for (const field of ['id', 'run_attempt']) {
+      const value = fixture();
+      change(value.prRunsAfter[0], field, 99);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    }
+  });
+  it('requires each OS, correct attempt and the same actual test source', () => {
+    const value = fixture();
+    value.prRun!.sources.pop();
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    const retry = fixture();
+    change(retry.prRun!.jobs[1], 'run_attempt', 2);
+    assert.equal(assessDelivery(retry, 'pr', receipt(retry)).exitCode, 2);
+    const other = fixture();
+    change(other.prRun!.sources[1]!.report, 'candidateSha', BASE);
+    assert.equal(assessDelivery(other, 'pr', receipt(other)).exitCode, 2);
+  });
+  it('rejects unrelated test-merge parents and stale base/head', () => {
+    const value = fixture();
+    change(value.prRun!.commits[TESTED], 'parents', [{ sha: HEAD }, { sha: BASE }]);
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    const stale = fixture();
+    change((stale.pull as { base: unknown }).base, 'sha', MERGED);
+    assert.equal(assessDelivery(stale, 'pr', receipt(stale)).exitCode, 2);
+    const racing = fixture();
+    change((racing.pullAfter as { head: unknown }).head, 'sha', MERGED);
+    assert.equal(assessDelivery(racing, 'pr', receipt(racing)).exitCode, 2);
+  });
+  it('keeps unresolved/outdated threads and required approval blocking', () => {
+    const value = fixture();
+    value.threads.push({ id: 'thread', isResolved: false, isOutdated: true, comments: [] });
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 1);
+    value.threads = [];
+    value.reviewDecision = 'REVIEW_REQUIRED';
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    value.reviewDecision = 'CHANGES_REQUESTED';
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 1);
+  });
+  it('does not erase a requested change merely because branch protection is absent', () => {
+    const value = fixture();
+    value.reviews.push({ id: 1, state: 'CHANGES_REQUESTED', user: { login: 'reviewer' } });
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 1);
+    value.reviews.push({ id: 2, state: 'APPROVED', user: { login: 'reviewer' } });
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+  });
+  it('invalidates receipts on conversation or changed path changes', () => {
+    const value = fixture();
+    const old = receipt(value);
+    value.comments.push({ id: 1, body: 'new finding' });
+    assert.equal(assessDelivery(value, 'pr', old).exitCode, 2);
+    assert.equal(assessDelivery(value, 'pr', { ...receipt(value), reviewedPaths: [] }).exitCode, 2);
+  });
+  it('missing collection and unexpected failed checks cannot pass', () => {
+    const value = fixture();
+    value.errors.push('incomplete:review-threads');
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    value.errors = [];
+    value.checks.push({ conclusion: 'failure' });
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 1);
+  });
+  it('uses the latest status for each context and rejects malformed snapshots', () => {
+    const value = fixture();
+    value.statuses.push(
+      { id: 1, context: 'lint', state: 'failure' },
+      { id: 2, context: 'lint', state: 'success' },
+    );
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+    assert.throws(() => parseSnapshot({ ...value, comments: undefined }));
+    assert.throws(() => parseSnapshot({ ...value, repository: '../../elsewhere' }));
+  });
+  it('keeps other pending checks incomplete and reuses only unchanged review inputs', () => {
+    const value = fixture();
+    const reviewed = receipt(value);
+    value.startedAt = '2026-01-02T00:00:00Z';
+    value.finishedAt = value.startedAt;
+    assert.equal(assessDelivery(value, 'pr', reviewed).exitCode, 0);
+    value.checks.push({ name: 'Security', status: 'in_progress', conclusion: null });
+    assert.equal(assessDelivery(value, 'pr', reviewed).exitCode, 2);
+  });
+  it('does not accept an old-head approval as current external approval', () => {
+    const value = fixture();
+    value.reviewDecision = 'APPROVED';
+    value.reviews.push({ id: 1, state: 'APPROVED', user: { login: 'reviewer' }, commit_id: BASE });
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    change(value.reviews[0], 'commit_id', HEAD);
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+  });
+});
