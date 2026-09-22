@@ -89,7 +89,8 @@ export function renovateOutcome(value: unknown): Outcome {
 function evaluate(): Outcome {
   requireCondition(!existsSync('.github/dependabot.yml'), 'DUPLICATE_DEPENDENCY_BOT_CONFIG');
   requireCondition(!existsSync('.github/dependabot.yaml'), 'DUPLICATE_DEPENDENCY_BOT_CONFIG');
-  renovateOutcome(JSON.parse(readFileSync('renovate.json5', 'utf8')) as unknown);
+  requireCondition(!existsSync('renovate.json5'), 'DUPLICATE_RENOVATE_CONFIG');
+  renovateOutcome(JSON.parse(readFileSync('renovate.json', 'utf8')) as unknown);
   const node = readFileSync('.node-version', 'utf8').trim();
   requireCondition(process.versions.node === node, 'NODE_RUNTIME_PIN_MISMATCH');
   return toolchainOutcome(

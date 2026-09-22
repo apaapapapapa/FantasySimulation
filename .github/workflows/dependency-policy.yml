@@ -27,7 +27,7 @@ jobs:
       - name: Validate with the pinned official Renovate validator
         run: >-
           pnpm --package="renovate@$RENOVATE_VALIDATOR_VERSION" dlx
-          renovate-config-validator --strict renovate.json5
+          renovate-config-validator --strict renovate.json
 
   toolchain:
     name: Toolchain policy (${{ matrix.os }})
@@ -46,7 +46,7 @@ jobs:
           node-version-file: .node-version
           run-install: false
       - name: Version coupling and no-automerge regression tests
-        run: node --test scripts/security/toolchain.test.ts
+        run: node --test scripts/security/toolchain.test.ts scripts/security/renovate-file.test.ts
       - name: Check actual repository pins and bot policy
         run: node scripts/security/toolchain.ts
         env:
