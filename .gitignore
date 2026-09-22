@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.vite-plus/
+.vp/
+.cache/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example
+data/*.sqlite*
+data/*.db*
+.DS_Store
