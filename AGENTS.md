@@ -25,7 +25,7 @@
 - Extend discriminated unions and exhaustive switches together.
 - Preserve input character definitions. Record snapshots alongside results.
 - Every simulation must have a finite termination condition and an explicit draw outcome.
-- Any decision-affecting change requires a rules-version bump. Versioned historical code is necessary for historical replays.
+- Any decision-affecting change requires a rules-version bump. The 3D replacement intentionally removes pre-3D runtime/API/schema compatibility (Issue #1). New replays use immutable saved display records, not historical engine execution (Issue #10). Do not add an old-engine registry or silently upgrade old databases.
 - Do not assert universal victory or create arbitrary precedence for contradictory abilities without defining the rules.
 - If randomness is added, require and persist a seed plus its PRNG algorithm/version.
 
