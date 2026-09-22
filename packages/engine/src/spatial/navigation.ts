@@ -122,7 +122,13 @@ export class Navigator {
         ? this.jump(from, to)
         : this.walk(from, to);
   }
-  find(start: Vec3, goal: Vec3, flight: boolean, maxNodes: number): NavigationResult {
+  find(
+    start: Vec3,
+    goal: Vec3,
+    flight: boolean,
+    maxNodes: number,
+    allowJump = true,
+  ): NavigationResult {
     const mode = flight ? 'fly' : 'walk';
     if (this.traversable(start, goal, mode))
       return { kind: 'path', waypoints: [{ position: { ...goal }, mode }], visited: 0 };
@@ -192,7 +198,8 @@ export class Navigator {
           !next ||
           !points.has(next) ||
           closed.has(next) ||
-          (flight ? edge.mode !== 'fly' : edge.mode === 'fly')
+          (flight ? edge.mode !== 'fly' : edge.mode === 'fly') ||
+          (edge.mode === 'jump' && !allowJump)
         )
           continue;
         if (
