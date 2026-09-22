@@ -1,23 +1,61 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { assessReport } from './harness/report.ts';
 import { collectSource } from './harness/source.ts';
 
+function json(path: string): unknown {
+  if (statSync(path).size > 32 * 1024 * 1024) throw new Error('Input exceeds size budget');
+  const bytes = readFileSync(path);
+  if (bytes.length > 32 * 1024 * 1024) throw new Error('Input exceeds size budget');
+  return JSON.parse(bytes.toString('utf8')) as unknown;
+}
 try {
-  const [command, input, ...required] = process.argv.slice(2);
-  if (!input)
-    throw new Error('Usage: harness source <fresh-output> | report <file> <required-check>...');
-  let result;
-  if (command === 'source' && required.length === 0)
-    result = await collectSource(process.cwd(), input);
-  else if (command === 'report') {
-    const data = readFileSync(input);
-    if (data.length > 8 * 1024 * 1024) throw new Error('Report exceeds size budget');
-    result = assessReport(JSON.parse(data.toString('utf8')) as unknown, required);
-  } else throw new Error('Unknown command or unexpected arguments');
-  console.log(JSON.stringify(result.report, null, 2));
-  if (command === 'source') console.log(`FANTASY_SOURCE_REPORT=${JSON.stringify(result.report)}`);
-  process.exitCode = result.exitCode;
-} catch (error) {
-  console.error(error instanceof Error ? error.message : 'Invalid harness input');
+  const [command, input, ...args] = process.argv.slice(2);
+  if (!input) throw new Error('Harness input is required');
+  if (command === 'github-snapshot') {
+    const [number, directory, ...extra] = args;
+    if (!number || !/^[1-9]\d*$/.test(number) || !directory || extra.length)
+      throw new Error('Invalid collection arguments');
+    const { createGateway } = await import('./harness/github.ts');
+    const { collectSnapshot, saveSnapshot } = await import('./harness/github-collect.ts');
+    const { conversationDigest } = await import('./harness/delivery.ts');
+    const snapshot = await collectSnapshot(
+      createGateway(process.env.GH_TOKEN ?? ''),
+      input,
+      Number(number),
+    );
+    saveSnapshot(process.cwd(), directory, snapshot);
+    console.log(
+      JSON.stringify(
+        {
+          snapshot: `${directory}/github-snapshot.json`,
+          conversationDigest: conversationDigest(snapshot),
+          collectionErrors: snapshot.errors,
+          deliveryAssessed: false,
+        },
+        null,
+        2,
+      ),
+    );
+    process.exitCode = snapshot.errors.length ? 2 : 0;
+  } else {
+    let result;
+    if (command === 'source' && args.length === 0)
+      result = await collectSource(process.cwd(), input);
+    else if (command === 'report') result = assessReport(json(input), args);
+    else if (command === 'delivery') {
+      const [target, receipt, ...extra] = args;
+      if ((target !== 'pr' && target !== 'merge') || extra.length)
+        throw new Error('Invalid delivery arguments');
+      const { assessDelivery } = await import('./harness/delivery.ts');
+      result = assessDelivery(json(input), target, receipt ? json(receipt) : null);
+    } else throw new Error('Unknown command or unexpected arguments');
+    console.log(JSON.stringify(result.report, null, 2));
+    if (command === 'source') console.log(`FANTASY_SOURCE_REPORT=${JSON.stringify(result.report)}`);
+    process.exitCode = result.exitCode;
+  }
+} catch {
+  console.error(
+    'Harness input or collection failed; evidence is incomplete. See .github/harness/README.md.',
+  );
   process.exitCode = 2;
 }

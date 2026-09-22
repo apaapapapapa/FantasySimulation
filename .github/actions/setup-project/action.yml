@@ -1,0 +1,43 @@
+name: Locked project environment
+description: Pinned Node/Vite+/pnpm with dependency-only caching; never caches verification results
+outputs:
+  cache-hit:
+    value: ${{ steps.dependencies.outputs.cache-hit }}
+    description: Exact dependency cache hit; an empty value means unknown
+runs:
+  using: composite
+  steps:
+    - id: clock
+      shell: bash
+      run: echo "started=$(node -p 'new Date().toISOString()')" >> "$GITHUB_OUTPUT"
+    - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+      with:
+        node-version-file: .node-version
+        cache: false
+        run-install: false
+    - uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
+      id: dependencies
+      with:
+        path: .generated/pm-store
+        key: fantasy-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'apps/*/package.json', 'packages/*/package.json', 'tsconfig.json', 'vite.config.ts', '.github/actions/setup-project/action.yml') }}
+    - id: install
+      shell: bash
+      run: vp install --frozen-lockfile -- --store-dir .generated/pm-store
+    - name: Record environment setup observations
+      if: always()
+      shell: bash
+      env:
+        SETUP_STARTED: ${{ steps.clock.outputs.started }}
+        CACHE_HIT: ${{ steps.dependencies.outputs.cache-hit }}
+        INSTALL_RESULT: ${{ steps.install.outcome }}
+      run: |
+        node --input-type=module <<'NODE'
+        import {mkdirSync,writeFileSync} from 'node:fs';
+        mkdirSync('.generated/harness/metrics',{recursive:true});
+        writeFileSync('.generated/harness/metrics/setup.json',JSON.stringify({sourceSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,runAttempt:process.env.GITHUB_RUN_ATTEMPT,node:process.version,os:process.platform,arch:process.arch,startedAt:process.env.SETUP_STARTED,finishedAt:new Date().toISOString(),installResult:process.env.INSTALL_RESULT,cacheHit:process.env.CACHE_HIT==='true'?true:process.env.CACHE_HIT==='false'?false:null,cachePolicy:'dependency-store-only; exact runtime/manager/manifest/lock/config key; no fallback'},null,2)+'\n');
+        NODE
+    - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25
+      if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.dependencies.outputs.cache-hit != 'true'
+      with:
+        path: .generated/pm-store
+        key: ${{ steps.dependencies.outputs.cache-primary-key }}
