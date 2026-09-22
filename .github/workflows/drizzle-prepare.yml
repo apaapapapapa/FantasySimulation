@@ -27,8 +27,17 @@ jobs:
           node-version-file: .node-version
           run-install: false
           cache: false
-      - name: Apply the reviewed source changes
-        run: python .github/drizzle-prepare.py source
+      - name: Apply the reviewed source changes and current CI path coverage
+        run: |
+          python .github/drizzle-prepare.py source
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/ci/plan.test.ts')
+          text = p.read_text()
+          old = "      'db/migrations/001.sql',"
+          assert text.count(old) == 1
+          p.write_text(text.replace(old, "      'db/drizzle/0000_initial.sql',\n      'db/drizzle/meta/0000_snapshot.json',\n      'drizzle.config.ts',\n      'apps/api/src/db/schema.ts',"))
+          PY
       - name: Resolve the pinned dependency changes
         run: vp install --no-frozen-lockfile
       - name: Generate actual Drizzle SQL and snapshots
