@@ -1,0 +1,64 @@
+name: Prepare Drizzle migration
+on:
+  push:
+    branches: [codex/drizzle-kit-complete-20260923]
+    paths:
+      - .github/drizzle-prepare.py
+      - .github/workflows/drizzle-prepare.yml
+permissions:
+  contents: read
+concurrency:
+  group: drizzle-prepare-20260923
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/codex/drizzle-kit-complete-20260923'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          ref: codex/drizzle-kit-complete-20260923
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - name: Apply the reviewed source changes
+        run: python .github/drizzle-prepare.py source
+      - name: Resolve the pinned dependency changes
+        run: vp install --no-frozen-lockfile
+      - name: Generate actual Drizzle SQL and snapshots
+        run: vp exec drizzle-kit generate --name=adopt_existing_sqlite
+      - name: Reviewable initial adoption and STRICT SQL amendment
+        run: python .github/drizzle-prepare.py finalize-sql
+      - name: Format and commit generated artifacts without retaining this preparation workflow
+        shell: bash
+        run: |
+          vp fmt
+          git rm .github/drizzle-prepare.py .github/workflows/drizzle-prepare.yml
+          vp exec node scripts/engine-identity.ts --write
+          git add -A
+          git diff --cached --stat
+          git diff --cached -- db/drizzle package.json apps/api/package.json packages/engine/src/identity.ts
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat(db)!: replace custom migrations and persistence with Drizzle' -m 'BREAKING CHANGE: Drizzle owns database history; custom schema generations and db:reset are removed. Existing local-v1 rows are retained by the official adoption migration.'
+          git push origin HEAD:refs/heads/codex/drizzle-kit-complete-20260923
+      - name: Verify the clean generated commit with the existing source harness
+        run: vp exec node scripts/harness.ts source .generated/harness/drizzle-preparation
+      - name: Record remaining legacy references for review
+        if: always()
+        shell: bash
+        run: git grep -n -E 'schema_generation|schema_migrations|readMigrationSet|resetDevelopmentDatabase|db/migrations|db/schema.json|node:sqlite|MIGRATION_BASE_SHA' -- ':!pnpm-lock.yaml' || true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: drizzle-preparation-evidence
+          path: .generated/harness/
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 7
