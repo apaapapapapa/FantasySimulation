@@ -1,0 +1,29 @@
+name: Prepare exact harness workspace
+on:
+  push:
+    branches: [automation/harness-workspace-20260922]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: 23a3fdfdbb47bc181400852b6e68664b348df184
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Export exact Git history without configuration or credentials
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/harness-workspace"
+          git bundle create "$RUNNER_TEMP/harness-workspace/repository.bundle" HEAD
+          git rev-parse HEAD > "$RUNNER_TEMP/harness-workspace/source-sha.txt"
+          sha256sum "$RUNNER_TEMP/harness-workspace/repository.bundle"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: exact-harness-workspace
+          path: ${{ runner.temp }}/harness-workspace/
+          retention-days: 1
+          if-no-files-found: error
