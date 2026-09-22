@@ -41,7 +41,7 @@ await test('Node and package-manager versions require exact compatible pins', ()
 });
 
 await test('Renovate config has no automatic merge path', () => {
-  const config: unknown = JSON.parse(readFileSync('renovate.json5', 'utf8'));
+  const config: unknown = JSON.parse(readFileSync('renovate.json', 'utf8'));
   assert.equal(renovateOutcome(config).status, 'pass');
   for (const changed of [
     { ...object(config), automerge: true },
