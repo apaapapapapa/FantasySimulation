@@ -1,10 +1,10 @@
 import { createApp } from './app.ts';
 import { readConfig } from './config.ts';
-import { openStore, readSampleCharacters } from './store.ts';
+import { openStore, readSampleRevisions } from './store.ts';
 
 const config = readConfig();
 const store = openStore(config.databasePath);
-store.seedCharacters(readSampleCharacters());
+await store.seedRevisions(readSampleRevisions());
 const app = createApp(store, true);
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

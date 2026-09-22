@@ -1,12 +1,12 @@
 # FantasySimulation
 
 キャラクターの設定を追加し、仮想対戦とランキングへ発展させるための開発基盤です。
-現在は、JSON編集 → 検証 → SQLite保存 → サンプル対戦 → 履歴表示まで動作します。
+3D対戦エンジンと不変revision・下書きAPIを利用できます。ジョブ・ログ保存はP3で追加中です。
 P2〜P3はIssue #1の3D設計へ移行中です。旧実装の互換維持は行いません。
 [計算基盤ADR](./docs/adr/0002-spatial-engine.md)に対象範囲・数値条件・性能目標を記録しています。
 `vp run bench:spatial`でRapier試作の6000step計測、`vp test`で固定hashと幾何境界を検証できます。
-`node scripts/spatial-demo.ts`で新しい3D近接対戦を画面・DBなしで実行できます。
-近接・即時射撃・飛翔体/誘導/爆発・状態効果に対応しています。APIと保存の置換は3D-08で接続します。
+`pnpm demo:spatial`で剣士と飛行術師の3D対戦を画面・DBなしで実行できます。
+近接・即時射撃・飛翔体/誘導/爆発・状態効果に対応しています。公開revisionと下書きは新しいDB世代へ保存します。
 
 ## 技術構成
 
@@ -18,7 +18,7 @@ P2〜P3はIssue #1の3D設計へ移行中です。旧実装の互換維持は行
 | 対戦エンジン     | TypeScriptの純粋関数                | `packages/engine`     |
 | 共通型・JSON検証 | TypeScript / Zod 4                  | `packages/domain`     |
 | データベース     | SQLite / Node.js標準の`node:sqlite` | `data/fantasy.sqlite` |
-| サンプル設定     | JSON                                | `data/characters`     |
+| サンプル設定     | JSON                                | `data/spatial`        |
 | DB変更履歴       | SQLマイグレーション                 | `db/migrations`       |
 | 将来の分析       | 必要になった段階でPythonを追加      | `analysis`            |
 
@@ -51,12 +51,12 @@ APIと画面の両方を起動するコマンドは**`vp run dev`**です。
 `pnpm install --frozen-lockfile` → `pnpm dev`で同じ環境を起動できます。
 各スクリプトはプロジェクト内のVite+を使います。
 
-初回起動時にDBを作成し、マイグレーションとサンプル2人の登録を行います。
+初回起動時にDBを作成し、マイグレーションとサンプル10体の登録を行います。
 通常の開発に別のDBサーバーやDocker、Pythonのインストールは不要です。
 現在のDB世代は`db/schema.json`に宣言します。世代情報がない旧DBや別世代のDBは起動時に拒否します。
-開発用には`vp run db:reset ./data/fantasy-new.sqlite --confirm-generation local-v1`で
+開発用には`vp run db:reset ./data/fantasy-new.sqlite --confirm-generation spatial-v1`で
 新しいファイルを作り、`DATABASE_PATH`を切り替えてください。既存ファイルは置換しません。
-[DB世代とresetの方針](docs/adr/0003-schema-generations.md)を参照してください。
+[3Dの保存世代とreset](docs/adr/0004-spatial-persistence.md)を参照してください。
 
 ## 設定
 
@@ -77,22 +77,22 @@ DATABASE_PATH=./data/fantasy.sqlite
 
 すべてリポジトリのルートで実行します。ローカルCLIの場合、先頭の`vp`を`pnpm exec vp`に置き換えられます。
 
-| コマンド                                                   | 内容                                                         |
-| ---------------------------------------------------------- | ------------------------------------------------------------ |
-| `vp run dev`                                               | 画面とAPIを並行起動、コード変更を反映                        |
-| `vp check`                                                 | フォーマット、lint、型を使った静的検査                       |
-| `vp run typecheck`                                         | TypeScriptコンパイラによる全ソースの検査                     |
-| `vp fmt`                                                   | フォーマット修正                                             |
-| `vp test`                                                  | 共通スキーマ、エンジン、API・SQLite結合テスト                |
-| `vp test watch`                                            | テストの継続実行                                             |
-| `vp run build`                                             | 画面とAPIのビルド                                            |
-| `vp run verify`                                            | チェック・型検査・テスト・ビルドを一括実行                   |
-| `vp run db:migrate`                                        | SQLマイグレーションを適用                                    |
-| `vp run check:quality`                                     | 依存方向・決定性・ソース形式・migration安全性を検査          |
-| `vp run db:reset <new-file> --confirm-generation local-v1` | 既存DBを残して新しい開発用DBを初期化                         |
-| `vp run db:seed`                                           | JSONサンプルの未登録IDのみ追加                               |
-| `vp run demo:tick`                                         | 新tickエンジンの固定manifestを実行し、結果・ログ・hashを表示 |
-| `vp run engine:check`                                      | エンジン実装digestと現在のソースの整合性を検査               |
+| コマンド                                                     | 内容                                                |
+| ------------------------------------------------------------ | --------------------------------------------------- |
+| `vp run dev`                                                 | 画面とAPIを並行起動、コード変更を反映               |
+| `vp check`                                                   | フォーマット、lint、型を使った静的検査              |
+| `vp run typecheck`                                           | TypeScriptコンパイラによる全ソースの検査            |
+| `vp fmt`                                                     | フォーマット修正                                    |
+| `vp test`                                                    | 共通スキーマ、エンジン、API・SQLite結合テスト       |
+| `vp test watch`                                              | テストの継続実行                                    |
+| `vp run build`                                               | 画面とAPIのビルド                                   |
+| `vp run verify`                                              | チェック・型検査・テスト・ビルドを一括実行          |
+| `vp run db:migrate`                                          | SQLマイグレーションを適用                           |
+| `vp run check:quality`                                       | 依存方向・決定性・ソース形式・migration安全性を検査 |
+| `vp run db:reset <new-file> --confirm-generation spatial-v1` | 既存DBを残して新しい開発用DBを初期化                |
+| `vp run db:seed`                                             | JSONサンプルの未登録IDのみ追加                      |
+| `vp run demo:spatial`                                        | 3Dサンプル対戦の結果・hashを表示                    |
+| `vp run engine:check`                                        | エンジン実装digestと現在のソースの整合性を検査      |
 
 `pnpm check`、`pnpm test`、`pnpm build`、`pnpm verify`も利用できます。
 GitHub ActionsはLinux・Windowsで固定バージョンの依存関係をインストールし、同じ検証を実行します。
@@ -108,7 +108,7 @@ vp run --filter @fantasy/web preview
 ```
 
 プレビュー画面は<http://127.0.0.1:4173>です。
-APIは起動時にルートの`db/migrations`と`data/characters`を参照するため、リポジトリ内で実行してください。
+APIは起動時にルートの`db/migrations`と`data/spatial`を参照するため、リポジトリ内で実行してください。
 外部への公開・デプロイ設定は、この初期環境には含めていません。
 
 ## 自動リリース
@@ -150,60 +150,28 @@ dry-runでも認証・push権限は検証しますが、タグとReleaseは作�
 タグ作成後・Release作成前に失敗した場合、再実行だけではReleaseが復元されないことがあります。
 その場合はCIログとタグのコミットを確認し、該当タグのGitHub Releaseを補完してください。
 
-## キャラクターを追加する
+## 下書きと公開revision
 
-画面の「設定を追加・更新」でサンプルJSONを編集し、「JSONを検証して保存」を押します。
-新しい`id`なら追加、既存の`id`なら更新です。JSONの型や未対応の能力は保存時に検証します。
-IDには英小文字・数字・ハイフンが使えます。定義の正本は`packages/domain/src/index.ts`です。
+公開済みの設定は上書き・削除できません。`GET /api/characters/{id}`等で取得し、
+`POST /api/drafts` に `{kind, definitionId, definition}` を送って編集します。
+`PATCH` は `{expectedVersion, definition}`、`publish` は `{expectedVersion}` を要求し、
+古い版による編集・二重公開は409です。未完成の下書きは保存できますが、公開時は型・参照を検証します。
+公開に成功すると不変の新revisionと更新後の下書きが返ります。
 
-ファイルとして共有する初期データは`data/characters/*.json`に追加して、`vp run db:seed`を実行します。
-シードは既存IDを上書きしません。JSONファイルを変更しても、登録済みキャラクターには自動反映されません。
-登録済みデータの更新には画面または`POST /api/characters`を使います。
+| API                                         | 用途                                               |
+| ------------------------------------------- | -------------------------------------------------- |
+| `GET /api/health`                           | 起動・DB世代確認                                   |
+| `GET /api/characters`                       | 最新revisionの一覧。`limit`最大100、`cursor`で続き |
+| `GET /api/characters/{id}?revision=1`       | 指定revision。省略時は最新                         |
+| `GET /api/rulesets`、`GET /api/scenarios`   | ルール・戦場revision一覧                           |
+| `GET /api/revisions/{kind}/{id}/{revision}` | 能力・装備・状態・方針を含む固定revision取得       |
+| `POST /api/drafts`、`GET /api/drafts/{id}`  | 下書き作成・取得                                   |
+| `PATCH /api/drafts/{id}`                    | 競合検出付きの編集                                 |
+| `POST /api/drafts/{id}/validate`            | 公開可能な構造・参照の検証                         |
+| `POST /api/drafts/{id}/publish`             | 検証済みsnapshotの新revision公開                   |
 
-| API                    | 用途                                                     |
-| ---------------------- | -------------------------------------------------------- |
-| `GET /api/health`      | 起動確認                                                 |
-| `GET /api/rules`       | 現在のルール設定                                         |
-| `GET /api/characters`  | キャラクター一覧                                         |
-| `POST /api/characters` | キャラクターJSONの追加・更新                             |
-| `POST /api/battles`    | `{"leftId":"aegis-knight","rightId":"ember-mage"}`で対戦 |
-| `GET /api/battles`     | 直近50件の対戦履歴（DBにはそれ以前の履歴も保持）         |
-
-## 試験ルール v0.1.0
-
-- 1対1で速度の高い順に行動。同速ならIDの文字列順で決め、左右の選択順に依存しません。
-- 武器は物理、魔術は魔法ダメージとして扱います。武器種・魔術属性は設定に保持しますが、属性相性は未実装です。
-- 基礎ダメージは`max(0, 攻撃 + 行動の威力 - 防御)`。対応する耐性を適用し、小数点以下を切り捨てます。
-- 同種の耐性は最大値を採用。与ダメージが最大になる行動を選び、同値ならJSONの記載順を使います。
-- HPが0になると即終了。両者が生存したラウンドの終わりに再生量の合計を回復し、最大HPを超えません。
-- 100ラウンドを超える戦闘は引き分け。同じ入力とルール版なら同じ結果になり、乱数はまだ使いません。
-
-これは開発基盤の動作確認用ルールです。時間停止・因果操作などの特殊能力の衝突判定、
-MPやクールダウン、総当たりやランキング、複数条件による統計評価は今後実装します。
-「どの相手にも必ず勝つ」といった設定の優先順位も、今後ルールとして明示する必要があります。
-
-対戦履歴には両者のキャラクター定義のスナップショット、行動ログ、ルール版を保存します。
-キャラクターを更新しても過去の履歴は変わりません。
-この節は置換前の開発用機能です。新実行系ではルール版と実装digestを固定し、
-保存済みの表示記録から再生します。旧版の実行コードは維持しません。
-
-## 新対戦エンジン P1
-
-`@fantasy/domain/tick-v1`と`@fantasy/engine/tick-v1`に新しい入力契約とエンジンを追加しています。
-manifest schema 2、rules / engine `tick-v1 / 0.2.0`として識別します。
-
-- 整数tickでdamage / heal / waitを同時解決。HP・MPコスト、速度、耐性、初期シールドを扱います。
-- `win / draw / unresolved / truncated`を区別し、状態差分と判定理由を記録します。
-- 解決済みrevision・seed・PRNG版・実装digestをmanifestへ固定し、入力・イベント・結果をSHA-256で検証します。
-- Golden fixture、境界値、主体と位置を交換した対称性、計算打切りからの再試行をテストします。
-- `vp run verify`とLinux / Windows CIで、実装digestの整合性も検査します。
-
-`vp run demo:tick`だけで新対戦を再現できます。詳細は[ルール・入力・hash仕様](./docs/rules/tick-v1.md)と
-[JSON fixture](./packages/engine/fixtures/tick-v1/golden.json)を参照してください。
-
-現在のUIと`POST /api/battles`は引き続き`basic-v1 / 0.1.0`で同期対戦します。
-新エンジンへの接続、revisionのDB保存、非同期ジョブはP3・P4で追加します。
-能力合成・状態効果・射程・移動・条件付き方針はP2以降です。
+現行仕様は[3Dルール](docs/rules/spatial-v1.md)を参照してください。
+初期画面は接続状態を表示します。編集・対戦・観戦の画面はP4で追加します。
 
 ## データとマイグレーション
 
@@ -233,7 +201,7 @@ Node.js 24の`node:sqlite`は実験的APIの警告が表示される場合があ
 同じ型付き部品で構成しています。キャラクターごとの実行分岐はありません。
 `pnpm catalog:spatial` で生成元との一致を確認し、変更時は
 `pnpm catalog:spatial --write` の差分をレビューしてください。
-公開後の編集は新revisionにします。P3でこの新形式をDBのシードへ接続します。
+公開後の編集は新revisionにします。起動時・`db:seed`で未登録のIDをDBへ追加します。
 
 戦場は `flat` と `pillars`。manifestには選択した参加者と戦場から辿れるrevisionだけを含めるため、
 無関係なキャラクターの追加が既存対戦のhashを変えることはありません。
