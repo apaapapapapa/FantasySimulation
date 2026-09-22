@@ -23,16 +23,21 @@ function temporary() {
   directories.push(directory);
   return directory;
 }
-function runKit(args: string[], filename: string) {
+function runKit(args: string[], filename: string, cwd = repositoryRoot) {
   const result = spawnSync(process.execPath, [kit, ...args], {
-    cwd: repositoryRoot,
+    cwd,
     encoding: 'utf8',
     timeout: 60000,
     env: { ...process.env, DATABASE_PATH: filename },
   });
   if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(result.stdout + result.stderr);
+  const output = result.stdout + result.stderr;
+  // Kit can report some generation failures with exit 0. A no-diff assertion
+  // alone would incorrectly pass when snapshot loading never succeeded.
+  if (result.status !== 0 || /Error:|ENOENT|malformed|unsupported version/.test(output))
+    throw new Error(output);
   expect(result.status).toBe(0);
+  return output;
 }
 function receipts(db: Database.Database) {
   return db.prepare('SELECT * FROM __drizzle_migrations ORDER BY id').all();
@@ -45,6 +50,19 @@ function contents(directory: string) {
       return [path.slice(directory.length), readFileSync(path, 'utf8')];
     })
     .sort(([a], [b]) => String(a).localeCompare(String(b)));
+}
+
+function temporaryKitConfig(directory: string) {
+  const config = join(directory, 'drizzle.config.ts');
+  writeFileSync(
+    config,
+    `export default ${JSON.stringify({
+      dialect: 'sqlite',
+      schema: resolve(repositoryRoot, 'apps/api/src/db/schema.ts').replaceAll('\\', '/'),
+      out: './drizzle',
+    })};\n`,
+  );
+  return config;
 }
 
 describe('Drizzle Kit and ORM migration integration', () => {
@@ -63,29 +81,29 @@ describe('Drizzle Kit and ORM migration integration', () => {
       ).toBe(false);
       expect(() =>
         sqlite.prepare('INSERT INTO characters VALUES (?, ?, ?)').run('invalid', '{', 'now'),
-      ).toThrow();
+      ).toThrow(/CHECK constraint failed/);
       expect(() =>
         sqlite.prepare('INSERT INTO characters VALUES (?, ?, ?)').run(null, '{}', 'now'),
-      ).toThrow();
+      ).toThrow(/NOT NULL constraint failed/);
       expect(() =>
         sqlite
           .prepare('INSERT INTO characters VALUES (?, ?, ?)')
           .run('blob', Buffer.from('{}'), 'now'),
-      ).toThrow();
+      ).toThrow(/cannot store BLOB value in TEXT column/);
       expect(() =>
         sqlite.prepare('INSERT INTO rulesets VALUES (?, ?)').run('invalid', '{'),
-      ).toThrow();
+      ).toThrow(/CHECK constraint failed/);
       expect(() =>
         sqlite
           .prepare('INSERT INTO battles VALUES (?, ?, ?, ?)')
           .run('invalid', 'missing', '{}', 'now'),
-      ).toThrow();
+      ).toThrow(/FOREIGN KEY constraint failed/);
       sqlite.prepare('INSERT INTO rulesets VALUES (?, ?)').run('test', '{}');
       expect(() =>
         sqlite
           .prepare('INSERT INTO battles VALUES (?, ?, ?, ?)')
           .run('invalid', 'test', '{', 'now'),
-      ).toThrow();
+      ).toThrow(/CHECK constraint failed/);
       const index = sqlite
         .prepare<[], { name: string | null; desc: number; key: number }>(
           "PRAGMA index_xinfo('battles_created_at')",
@@ -248,16 +266,12 @@ describe('Drizzle Kit and ORM migration integration', () => {
       sqlite.prepare('INSERT INTO characters VALUES (?, ?, ?)').run('existing', '{}', 'before');
       const before = receipts(sqlite);
       const files = new Set(readdirSync(output));
-      const config = join(directory, 'drizzle.config.ts');
-      writeFileSync(
-        config,
-        `export default ${JSON.stringify({
-          dialect: 'sqlite',
-          schema: resolve(repositoryRoot, 'apps/api/src/db/schema.ts'),
-          out: output,
-        })};\n`,
+      const config = temporaryKitConfig(directory);
+      runKit(
+        ['generate', '--custom', '--name=incremental_probe', `--config=${config}`],
+        filename,
+        directory,
       );
-      runKit(['generate', '--custom', '--name=incremental_probe', `--config=${config}`], filename);
       const generated = readdirSync(output).filter(
         (name) => name.endsWith('.sql') && !files.has(name),
       );
@@ -289,16 +303,13 @@ describe('Drizzle Kit and ORM migration integration', () => {
     const output = join(directory, 'drizzle');
     cpSync(migrationsFolder, output, { recursive: true });
     const before = contents(output);
-    const config = join(directory, 'drizzle.config.ts');
-    writeFileSync(
-      config,
-      `export default ${JSON.stringify({
-        dialect: 'sqlite',
-        schema: resolve(repositoryRoot, 'apps/api/src/db/schema.ts'),
-        out: output,
-      })};\n`,
+    const config = temporaryKitConfig(directory);
+    const result = runKit(
+      ['generate', `--config=${config}`],
+      join(directory, 'unused.sqlite'),
+      directory,
     );
-    runKit(['generate', `--config=${config}`], join(directory, 'unused.sqlite'));
+    expect(result).toContain('No schema changes');
     expect(contents(output)).toEqual(before);
   }, 90000);
 
