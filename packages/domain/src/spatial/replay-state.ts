@@ -181,14 +181,24 @@ export class ReplayState {
           'status reference/time',
         );
       }
-      if (actor.action)
+      if (actor.action) {
+        const action = actor.action;
+        const ability = definition.abilities.find((a) => a.id === action.abilityId);
+        const activeSteps =
+          ability?.definition.attack.kind === 'melee' ? ability.definition.attack.activeSteps : 1;
         requireReplay(
-          definition.abilities.some((a) => a.id === actor.action!.abilityId) &&
-            actor.action.startedAt <= step &&
-            actor.action.startedAt <= actor.action.launchAt &&
-            actor.action.launchAt <= actor.action.recoveryUntil,
+          !!ability &&
+            action.startedAt <= step &&
+            action.startedAt <= action.launchAt &&
+            action.launchAt < action.recoveryUntil &&
+            step < action.recoveryUntil &&
+            (step < action.launchAt
+              ? action.phase === 'cast'
+              : action.phase !== 'cast' &&
+                (action.phase !== 'active' || step < action.launchAt + activeSteps)),
           'action reference/time',
         );
+      }
     }
     const ids = new Set(state.actors.map((a) => a.id));
     for (const p of state.projectiles) {
@@ -270,7 +280,13 @@ export class ReplayState {
       if (e.entityId !== null) requireReplay(entities.has(e.entityId), 'event entity reference');
       if (e.abilityId !== null)
         requireReplay(
-          this.context.manifest.revisions.some((r) => r.kind === 'ability' && r.id === e.abilityId),
+          e.actorId === null
+            ? this.context.manifest.revisions.some(
+                (r) => r.kind === 'ability' && r.id === e.abilityId,
+              )
+            : this.context.actors
+                .find((a) => a.participant.actorId === e.actorId)!
+                .abilities.some((a) => a.id === e.abilityId),
           'event ability reference',
         );
     }

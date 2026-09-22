@@ -147,6 +147,7 @@ export const ReplayManifestSchema = z
         chunk.checkpoint !== i ||
         chunk.fromStep !== previousStep ||
         chunk.toStep < chunk.fromStep ||
+        chunk.toStep - chunk.fromStep > manifest.profile.maxCheckpointSteps ||
         !checkpoint ||
         checkpoint.index !== i ||
         checkpoint.nextRecord !== nextRecord ||

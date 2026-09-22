@@ -14,6 +14,36 @@ const savedManifest = async (...args: Parameters<typeof catalogManifest>) =>
   structuredClone((await prepareBattle(await catalogManifest(...args))).manifest) as Manifest;
 
 describe('engine-independent recorded display restoration', () => {
+  it('rejects attributing another actor’s ability to the event actor', async () => {
+    const input = await savedManifest('swordsman', 'sky-mage', 'pillars', 10);
+    const { result, records } = await runBattle(input);
+    const context = await replayContext(input, result.simulationHash);
+    const replay = new ReplayState(context);
+    for (const record of records) {
+      if ('events' in record) {
+        const foreign = record.events.find(
+          (e) =>
+            e.abilityId !== null &&
+            context.actors.some(
+              (a) =>
+                a.participant.actorId !== e.actorId &&
+                !a.abilities.some((ability) => ability.id === e.abilityId),
+            ),
+        );
+        if (foreign) {
+          const broken = structuredClone(record);
+          const event = broken.events.find((e) => e.id === foreign.id)!;
+          event.actorId = context.actors.find(
+            (a) => a.participant.actorId !== foreign.actorId,
+          )!.participant.actorId;
+          expect(() => replay.apply(broken)).toThrow(/ability reference/);
+          return;
+        }
+      }
+      replay.apply(record);
+    }
+    throw new Error('Missing asymmetric ability fixture');
+  });
   it.each([
     ['swordsman', 'sky-mage', 'pillars'],
     ['archer', 'guardian', 'flat'],

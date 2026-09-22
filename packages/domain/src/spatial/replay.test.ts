@@ -12,6 +12,24 @@ import { replayContext, ReplayState } from './replay-state.ts';
 import { StreamRecordSchema } from './stream.ts';
 
 describe('saved replay schema v1 (no engine or physics import)', () => {
+  it('rejects expired actions and phases inconsistent with the recorded clock', async () => {
+    const context = await replayContext(fixture.input, fixture.result.simulationHash);
+    const replay = new ReplayState(context);
+    for (const record of fixture.records) {
+      replay.apply(record);
+      const checkpoint = replay.checkpoint();
+      const actor = checkpoint.state?.actors.find((a) => a.action !== null);
+      if (!actor?.action) continue;
+      actor.action.recoveryUntil = checkpoint.step;
+      expect(() => new ReplayState(context, checkpoint)).toThrow(/action reference/);
+      actor.action.recoveryUntil = 6001;
+      actor.action.launchAt = checkpoint.step + 1;
+      actor.action.phase = 'active';
+      expect(() => new ReplayState(context, checkpoint)).toThrow(/action reference/);
+      return;
+    }
+    throw new Error('Missing action fixture');
+  });
   it('reads fixed saved bytes, hashes and simultaneous defeat after the generator has stopped', async () => {
     const result = ResultSchema.parse(fixture.result),
       records = fixture.records.map((r) => StreamRecordSchema.parse(r));
@@ -106,6 +124,28 @@ describe('saved replay schema v1 (no engine or physics import)', () => {
       chunks: [],
     };
     expect(ReplayManifestSchema.parse(diagnostic).end.kind).toBe('failed');
+    const ref = { bytes: 1, rawBytes: 1, checksum: result.eventHash, index: 0 };
+    const chunked = {
+      ...diagnostic,
+      lastVerifiedStep: 250,
+      records: 1,
+      chunks: [
+        {
+          ...ref,
+          file: 'chunk-00000.ndjson.gz',
+          firstRecord: 0,
+          records: 1,
+          fromStep: 0,
+          toStep: 250,
+          checkpoint: 0,
+        },
+      ],
+      checkpoints: [{ ...ref, file: 'checkpoint-00000.json.gz', step: 0, nextRecord: 0 }],
+    };
+    expect(ReplayManifestSchema.parse(chunked).lastVerifiedStep).toBe(250);
+    chunked.chunks[0]!.toStep = 251;
+    chunked.lastVerifiedStep = 251;
+    expect(() => ReplayManifestSchema.parse(chunked)).toThrow(/chunk/);
     expect(() => ReplayManifestSchema.parse({ ...diagnostic, schemaVersion: 2 })).toThrow();
     expect(() => ReplayManifestSchema.parse({ ...diagnostic, resultId: 'result-1' })).toThrow();
     expect(() =>
