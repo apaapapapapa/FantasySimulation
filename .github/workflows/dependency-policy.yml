@@ -25,9 +25,26 @@ jobs:
           node-version-file: .node-version
           run-install: false
       - name: Validate with the pinned official Renovate validator
+        id: validator
         run: >-
           pnpm --package="renovate@$RENOVATE_VALIDATOR_VERSION" dlx
           renovate-config-validator --strict renovate.json
+      - name: Record the actual validator outcome
+        if: always()
+        run: node scripts/security/validator.ts
+        env:
+          H4_VALIDATOR_OUTCOME: ${{ steps.validator.outcome }}
+          H4_REPORT_DIR: ${{ runner.temp }}/h4-renovate
+          H4_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          H4_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+      - name: Upload sanitized validator receipt
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: security-renovate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/h4-renovate/*.json
+          if-no-files-found: error
+          retention-days: 14
 
   toolchain:
     name: Toolchain policy (${{ matrix.os }})

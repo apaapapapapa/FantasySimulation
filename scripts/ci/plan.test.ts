@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { classify, collectPlan, parsePlan, wordingOnly } from './plan.ts';
 import { assessGate } from './gate.ts';
+import { SECURITY_CHECKS } from '../security/evidence.ts';
 import type { Identity, Report } from '../harness/report.ts';
 const info: Identity = {
   sourceSha: 'a'.repeat(40),
@@ -12,7 +13,7 @@ const info: Identity = {
   baselineSha: 'c'.repeat(40),
   testMergeSha: 'a'.repeat(40),
 };
-function evidence(ids: string[]): Report {
+function evidence(ids: readonly string[]): Report {
   return {
     ...info,
     schemaVersion: 1,
@@ -76,9 +77,11 @@ describe('fail-closed CI gate', () => {
     verify: 'success',
     docs: 'skipped',
   };
+  const security = { ...evidence(SECURITY_CHECKS), producer: 'security-evidence' };
   const reports = {
     'ubuntu-latest': evidence(['source-clean', 'source-verify']),
     'windows-latest': evidence(['source-clean', 'source-verify']),
+    security,
   };
   it('requires both operating systems and exact source identities', () => {
     expect(assessGate(plan, results, reports).exitCode).toBe(0);
@@ -98,7 +101,30 @@ describe('fail-closed CI gate', () => {
     expect(assessGate(plan, { ...results, changes: 'failure' }, reports).exitCode).toBe(1);
     expect(assessGate(plan, { ...results, security: 'skipped' }, reports).exitCode).toBe(1);
   });
-  it('permits planned skip only with passing lightweight evidence', () => {
+  it('requires each H4 check even when every security job reports success', () => {
+    expect(assessGate(plan, results, { ...reports, security: null }).exitCode).toBe(2);
+    for (const id of SECURITY_CHECKS) {
+      const missing = { ...security, checks: security.checks.filter((check) => check.id !== id) };
+      expect(assessGate(plan, results, { ...reports, security: missing }).exitCode).toBe(2);
+      const failed = {
+        ...security,
+        checks: security.checks.map((check) =>
+          check.id === id ? { ...check, status: 'fail' } : check,
+        ),
+      };
+      expect(assessGate(plan, results, { ...reports, security: failed }).exitCode).toBe(1);
+    }
+    for (const changed of [
+      { ...security, sourceSha: 'd'.repeat(40), testMergeSha: 'd'.repeat(40) },
+      { ...security, baselineSha: 'd'.repeat(40) },
+      { ...security, producer: 'untrusted-producer' },
+    ])
+      expect(assessGate(plan, results, { ...reports, security: changed }).exitCode).toBe(2);
+    const gate = assessGate(plan, results, reports).report;
+    for (const id of SECURITY_CHECKS)
+      expect(gate.checks.find((check) => check.id === id)?.status).toBe('pass');
+  });
+  it('permits planned skip only with passing lightweight and security evidence', () => {
     const docs = classify(info, 'pull_request', ['README.md']),
       observed = {
         changes: 'success',
@@ -107,12 +133,13 @@ describe('fail-closed CI gate', () => {
         verify: 'skipped',
         docs: 'success',
       };
-    expect(
-      assessGate(docs, observed, {
-        'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']),
-        'docs-windows-latest': evidence(['docs:diff', 'docs:links']),
-      }).exitCode,
-    ).toBe(0);
+    const docReports = {
+      'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']),
+      'docs-windows-latest': evidence(['docs:diff', 'docs:links']),
+      security,
+    };
+    expect(assessGate(docs, observed, docReports).exitCode).toBe(0);
+    expect(assessGate(docs, observed, { ...docReports, security: null }).exitCode).toBe(2);
     expect(assessGate(docs, observed, {}).exitCode).toBe(2);
     expect(
       assessGate(docs, observed, { 'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']) })

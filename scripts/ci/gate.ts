@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { assessReport, record } from '../harness/report.ts';
 import type { Check, Report } from '../harness/report.ts';
 import { SOURCE_CHECKS } from '../harness/source.ts';
+import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { parsePlan } from './plan.ts';
 import type { Plan } from './plan.ts';
 const osNames = ['ubuntu-latest', 'windows-latest'] as const;
@@ -31,20 +32,27 @@ export function assessGate(
       reason: `Expected ${result}; observed ${typeof results[job] === 'string' ? results[job] : 'missing/invalid'}`,
       evidence,
     });
-  for (const key of plan.full ? osNames : osNames.map((os) => `docs-${os}`)) {
+  const platforms = plan.full ? osNames : osNames.map((os) => `docs-${os}`);
+  for (const key of [...platforms, 'security']) {
     let status: Check['status'] = 'unknown',
       reason = 'Missing or invalid evidence';
     try {
       const assessed = assessReport(
         reports[key],
-        plan.full ? SOURCE_CHECKS : ['docs:diff', 'docs:links'],
+        key === 'security'
+          ? SECURITY_CHECKS
+          : plan.full
+            ? SOURCE_CHECKS
+            : ['docs:diff', 'docs:links'],
       );
       const report = assessed.report;
       const matches =
         report.sourceSha === plan.sourceSha &&
         report.candidateSha === plan.candidateSha &&
         report.testMergeSha === plan.testMergeSha &&
-        (!plan.testMergeSha || report.baselineSha === plan.baselineSha);
+        (!plan.testMergeSha || report.baselineSha === plan.baselineSha) &&
+        (key !== 'security' ||
+          (report.producer === 'security-evidence' && report.baselineSha === plan.baselineSha));
       status = !matches
         ? 'unknown'
         : assessed.exitCode === 0
@@ -55,6 +63,7 @@ export function assessGate(
       reason = matches
         ? `Bound ${key} report; exit=${assessed.exitCode}`
         : 'Evidence identity does not match planned source/head/base';
+      if (key === 'security' && matches) checks.push(...report.checks);
     } catch {
       /* Absent or corrupt artifact stays incomplete. */
     }
@@ -72,10 +81,9 @@ export function assessGate(
     finishedAt: at,
     checks,
   };
-  return assessReport(
-    report,
-    checks.map((check) => check.id),
-  );
+  return assessReport(report, [
+    ...new Set([...checks.map((check) => check.id), ...SECURITY_CHECKS]),
+  ]);
 }
 const json = readBoundedJson;
 
@@ -94,6 +102,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       } catch {
         reports[name] = null;
       }
+    }
+    try {
+      reports.security = json('.generated/harness/ci/security.json');
+    } catch {
+      reports.security = null;
     }
     const assessment = assessGate(plan, results, reports);
     writeFileSync(

@@ -5,6 +5,7 @@ import type { DeliverySnapshot, RunEvidence } from './delivery.ts';
 import type { Report } from './report.ts';
 import { assessGate } from '../ci/gate.ts';
 import { classify } from '../ci/plan.ts';
+import { SECURITY_CHECKS } from '../security/evidence.ts';
 const HEAD = 'a'.repeat(40);
 const BASE = 'b'.repeat(40);
 const TESTED = 'c'.repeat(40);
@@ -224,7 +225,16 @@ function plannedFixture(full: boolean) {
   const plan = classify(sourceReport(), 'pull_request', [
     full ? 'apps/web/source.ts' : 'README.md',
   ]);
-  const reports: Record<string, Report> = {};
+  const security = sourceReport();
+  security.producer = 'security-evidence';
+  security.checks = SECURITY_CHECKS.map((id) => ({
+    id,
+    required: true,
+    status: 'pass',
+    reason: 'fixture',
+    evidence: [{ uri: '.generated/harness/ci/security.json', sourceSha: TESTED }],
+  }));
+  const reports: Record<string, Report> = { security };
   for (const [index, os] of ['ubuntu-latest', 'windows-latest'].entries()) {
     const report = sourceReport();
     if (!full) {
@@ -301,6 +311,14 @@ describe('delivery with differential CI', () => {
       },
       (v: DeliverySnapshot) => {
         change((v.prRun!.gate!.report as Report).checks[0], 'status', 'fail');
+      },
+      (v: DeliverySnapshot) => {
+        const gate = v.prRun!.gate!.report as Report;
+        change(
+          gate.checks.find((check) => check.id === 'security:secret-scan'),
+          'status',
+          'unknown',
+        );
       },
     ]) {
       const value = plannedFixture(false);
