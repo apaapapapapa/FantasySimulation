@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'vite-plus/test';
@@ -42,6 +42,26 @@ describe('source evidence collection', () => {
       ) as Record<string, unknown>;
       assert.equal(receipt.sourceSha, repo.git('rev-parse', 'HEAD').trim());
       assert.equal(receipt.cleanAfter, true);
+    } finally {
+      repo.dispose();
+    }
+  });
+  it('rejects a repository subdirectory before executing verification', async () => {
+    const repo = repository();
+    try {
+      const nested = join(repo.root, 'nested');
+      mkdirSync(nested);
+      await assert.rejects(
+        collectSource(
+          nested,
+          '.generated/harness/nested',
+          async () => {
+            assert.fail('A nested directory must not execute verification');
+          },
+          {},
+        ),
+        /repository root/,
+      );
     } finally {
       repo.dispose();
     }

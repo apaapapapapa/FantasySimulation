@@ -7,7 +7,7 @@ import {
   realpathSync,
   writeFileSync,
 } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { assessReport, identity, record, sha } from './report.ts';
 import type { Report } from './report.ts';
 import { runCommand, safeEnvironment } from './process.ts';
@@ -65,7 +65,8 @@ export async function collectSource(
   env: NodeJS.ProcessEnv = process.env,
 ) {
   root = realpathSync(root);
-  if (resolve(git(root, ['rev-parse', '--show-toplevel'])) !== resolve(root))
+  // Git may return an 8.3 TEMP path on Windows; compare canonical filesystem paths.
+  if (realpathSync(git(root, ['rev-parse', '--show-toplevel'])) !== root)
     throw new Error('Run from the repository root');
   const info = sourceIdentity(root, env);
   const { sourceSha } = info;
