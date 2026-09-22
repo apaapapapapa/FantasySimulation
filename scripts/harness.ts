@@ -37,7 +37,16 @@ try {
     let result;
     if (command === 'source' && args.length === 0)
       result = await collectSource(process.cwd(), input);
-    else if (command === 'report') result = assessReport(json(input), args);
+    else if (command === 'issue-plan' && args.length === 0) {
+      const { completionDraft } = await import('./harness/issue-completion-api.ts');
+      result = { report: await completionDraft(Number(input)), exitCode: 0 };
+    } else if (
+      command === 'issue-complete' &&
+      (args.length === 0 || (args.length === 1 && args[0] === '--apply'))
+    ) {
+      const { completeIssues } = await import('./harness/issue-completion-api.ts');
+      result = await completeIssues(input, args[0] === '--apply');
+    } else if (command === 'report') result = assessReport(json(input), args);
     else if (command === 'delivery') {
       const [target, receipt, ...extra] = args;
       if ((target !== 'pr' && target !== 'merge') || extra.length)
