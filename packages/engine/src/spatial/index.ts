@@ -10,3 +10,5 @@ export {
   type MovedActor,
 } from './movement.ts';
 export * from './navigation.ts';
+export * from './perception.ts';
+export * from './policy.ts';

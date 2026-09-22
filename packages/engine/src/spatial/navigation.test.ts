@@ -179,6 +179,7 @@ describe('bounded body-aware support graphs', () => {
       expect(path.kind).toBe('path');
       if (path.kind !== 'path') throw new Error('Expected a jump route');
       expect(path.waypoints.some((p) => p.mode === 'jump')).toBe(true);
+      expect(navigator.find(start, goal, false, 30, false).kind).toBe('unreachable');
     } finally {
       world.free();
     }
