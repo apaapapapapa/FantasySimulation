@@ -37,8 +37,14 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
     'engine-core-boundary',
     { path: '^packages/engine/' },
-    { dependencyTypes: ['core'], pathNot: '^node:crypto$' },
+    { dependencyTypes: ['core'], pathNot: '^(?:node:)?crypto$' },
     'Only the reviewed pure hashing boundary is allowed.',
+  ),
+  rule(
+    'engine-hash-boundary',
+    { path: '^packages/engine/', pathNot: '^packages/engine/src/hashing[.]ts$' },
+    { path: '^(?:node:)?crypto$' },
+    'Core crypto belongs only in the reviewed hashing adapter; named createHash is checked by the determinism guard.',
   ),
   rule(
     'no-app-harness',
@@ -111,11 +117,16 @@ export interface ArchitectureResult {
 export async function architecture(root: string, paths: string[]): Promise<ArchitectureResult> {
   const sources = paths.filter(
     (path) =>
-      /^(apps|packages)\/[^/]+\/src\/.*\.(ts|tsx)$/.test(path) && !/\.(?:test|d)\.tsx?$/.test(path),
+      /^(apps|packages)\/[^/]+\/src\/.*\.(ts|tsx)$/.test(path) && !/\.test\.tsx?$/.test(path),
   );
   if (!sources.length) throw Error('Architecture source coverage is empty');
   const parsed = withSources(root, sources, (files, options) => ({
-    edges: new Map([...files].map(([path, file]) => [path, importEdges(file)])),
+    edges: new Map(
+      [...files].map(([path, file]) => [
+        path,
+        importEdges(file, path === 'apps/web/src/vite-env.d.ts' ? 'vite-plus/client' : undefined),
+      ]),
+    ),
     options,
   }));
   const { edges, options } = parsed;
@@ -135,7 +146,7 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         writeFileSync(
           file,
           imports
-            .filter((edge) => !runtime || !edge.typeOnly)
+            .filter((edge) => !runtime || (!path.endsWith('.d.ts') && !edge.typeOnly))
             .map((edge) => `import ${JSON.stringify(edge.specifier)};`)
             .join('\n') + '\n',
         );

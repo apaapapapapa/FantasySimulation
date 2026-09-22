@@ -71,7 +71,7 @@ export function withSources<T>(
     api.close();
   }
 }
-export function importEdges(file: SourceFile): ImportEdge[] {
+export function importEdges(file: SourceFile, allowedTypeReference?: string): ImportEdge[] {
   const edges: ImportEdge[] = [];
   walk(file, (node) => {
     if (isImportDeclaration(node)) {
@@ -115,7 +115,15 @@ export function importEdges(file: SourceFile): ImportEdge[] {
     } else if (node.kind === SyntaxKind.ImportEqualsDeclaration)
       throw Error('Import-equals is not part of the ESM workspace contract');
   });
-  if (file.referencedFiles.length || file.typeReferenceDirectives.length)
+  if (
+    file.referencedFiles.length ||
+    (file.typeReferenceDirectives.length &&
+      !(
+        allowedTypeReference &&
+        file.typeReferenceDirectives.length === 1 &&
+        file.typeReferenceDirectives[0]?.fileName === allowedTypeReference
+      ))
+  )
     throw Error('Triple-slash module dependencies require an explicit policy');
   return edges;
 }
