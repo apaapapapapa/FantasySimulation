@@ -29,9 +29,15 @@ export function exceptions(value: unknown, now = Date.now()): Set<string> {
     );
     const reviewed = Date.parse(text(entry.reviewedAt));
     const expires = Date.parse(text(entry.expiresAt));
-    requireCondition(Number.isFinite(reviewed) && Number.isFinite(expires), 'INVALID_EXCEPTION_DATE');
     requireCondition(
-      reviewed <= now && expires > now && expires > reviewed && expires - reviewed <= 30 * 86_400_000,
+      Number.isFinite(reviewed) && Number.isFinite(expires),
+      'INVALID_EXCEPTION_DATE',
+    );
+    requireCondition(
+      reviewed <= now &&
+        expires > now &&
+        expires > reviewed &&
+        expires - reviewed <= 30 * 86_400_000,
       'EXCEPTION_EXPIRED_OR_TOO_LONG',
     );
     ids.add(id);
