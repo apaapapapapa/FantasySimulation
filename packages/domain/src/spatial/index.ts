@@ -4,3 +4,6 @@ export * from './records.ts';
 export * from './random.ts';
 export * from './stream.ts';
 export * from './api.ts';
+export * from './numeric.ts';
+export * from './replay.ts';
+export * from './replay-state.ts';

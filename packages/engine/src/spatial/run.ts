@@ -1,24 +1,19 @@
 import {
-  canonicalJson,
+  eventHashLine,
+  trajectoryHashLine,
+  encodeNumericState,
   contentHash,
   DEFAULT_BUDGET,
   hashBytes,
-  type BattleEvent,
   type BattleResult,
   type Budget,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
-import { encodeNumericState } from './math.ts';
 import { initializePhysics } from './physics.ts';
 import { prepareBattle, type PreparedBattle } from './prepare.ts';
 import { simulate } from './simulate.ts';
 
-export const eventHashLine = (event: BattleEvent): string =>
-  `${canonicalJson(encodeNumericState(event))}\n`;
-export const trajectoryHashLine = (record: StreamRecord): string => {
-  const { events: _, ...display } = 'events' in record ? record : { ...record, events: [] };
-  return `${canonicalJson(encodeNumericState(display))}\n`;
-};
+export { eventHashLine, trajectoryHashLine } from '@fantasy/domain/spatial';
 /** Bounded convenience collector for fixtures/CLI. Production workers consume simulate() with backpressure. */
 export async function runPreparedBattle(
   battle: PreparedBattle,
