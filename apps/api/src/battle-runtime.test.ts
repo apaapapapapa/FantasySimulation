@@ -3,14 +3,69 @@ import { mkdir, readdir, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_BUDGET } from '@fantasy/domain/spatial';
+import { randomUUID } from 'node:crypto';
+import { DEFAULT_BUDGET, actorSeed, SpecInputSchema } from '@fantasy/domain/spatial';
 import { withRuntime } from '../test-support/runtime.ts';
 import { BattleRuntime } from './battle-runtime.ts';
 import { openStore, jsonValue } from './store.ts';
 import { readReplayManifest } from './replay-reader.ts';
 import { createApp } from './app.ts';
+import { battleSpecs } from './db/schema.ts';
 
 describe('persistent Worker/API orchestration', () => {
+  it.each([
+    { options: { queueLimit: 1 }, reason: /queue capacity/ },
+    { options: { storageBytes: 40 * 1024 ** 2 }, reason: /storage capacity/ },
+  ])(
+    'does not persist specifications rejected by admission: $reason',
+    async ({ options, reason }) => {
+      await withRuntime(
+        async ({ runtime, store, spec }) => {
+          const first = await runtime.submit(spec, 'capacity', 'accepted');
+          for (const seed of [41, 42, 43])
+            await expect(
+              runtime.submit(
+                SpecInputSchema.parse({
+                  ...spec,
+                  seed,
+                  participants: spec.participants.map((p) => ({
+                    ...p,
+                    rngSeed: actorSeed(seed, p.rngStream),
+                  })),
+                }),
+                'capacity',
+                String(seed),
+              ),
+            ).rejects.toThrow(reason);
+          expect(store.orm.select().from(battleSpecs).all()).toHaveLength(1);
+          runtime.cancel(first.id);
+          await runtime.wait(first.id);
+        },
+        options,
+        6000,
+      );
+    },
+  );
+  it.each(['nonempty', 'foreign'])(
+    'can correct a fresh database root after %s adoption fails',
+    async (kind) => {
+      await withRuntime(async ({ root, directory }) => {
+        const fresh = openStore(join(directory, 'fresh.sqlite'));
+        const bad = kind === 'foreign' ? root : join(directory, 'nonempty');
+        if (kind === 'nonempty') {
+          await mkdir(bad);
+          await writeFile(join(bad, 'notes.txt'), 'keep');
+        }
+        try {
+          await expect(BattleRuntime.open(fresh, bad)).rejects.toThrow(/nonempty|another database/);
+          const corrected = await BattleRuntime.open(fresh, join(directory, 'corrected'));
+          await corrected.close();
+        } finally {
+          fresh.close();
+        }
+      });
+    },
+  );
   it('reclaims an expired attempt after a real coordinator process exits abruptly', async () => {
     await withRuntime(async ({ runtime, store, spec, filename, root, directory }) => {
       await runtime.close();
@@ -149,14 +204,21 @@ describe('persistent Worker/API orchestration', () => {
         result = runtime.jobs.result(done.resultId!)!;
       await expect(BattleRuntime.open(store, root)).rejects.toThrow(/coordinator/);
       await runtime.close();
-      await mkdir(join(root, '.staging-00000000-0000-0000-0000-000000000000'));
-      await mkdir(join(root, '00000000-0000-0000-0000-000000000000'));
+      await mkdir(join(root, `.staging-${randomUUID()}`));
+      await mkdir(join(root, randomUUID()));
       await mkdir(join(root, 'user-notes'));
+      const unrelated = [
+        'a'.repeat(36),
+        '.staging-' + 'b'.repeat(36),
+        '00000000-0000-0000-0000-000000000000',
+      ];
+      for (const name of unrelated) await mkdir(join(root, name));
       const reopened = openStore(filename),
         next = await BattleRuntime.open(reopened, root);
       try {
         expect(next.owner.removed).toBe(2);
         expect(await readdir(root)).toContain('user-notes');
+        for (const name of unrelated) expect(await readdir(root)).toContain(name);
         expect((await next.submit(spec, 'restart', 'two')).resultId).toBe(result.id);
         await rm(join(root, result.replayId), { recursive: true });
         await expect(next.artifacts.verified(result.replayId)).rejects.toThrow(/missing/);

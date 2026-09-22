@@ -23,8 +23,11 @@ export async function ownRuntime(jobs: JobStore, inputRoot: string) {
   const root = resolve(inputRoot),
     token = randomUUID(),
     machine = hostname();
+  let created = false,
+    adopted = false;
   const owner = jobs.store.transaction(() => {
     const existing = jobs.store.orm.select().from(runtimeOwner).get();
+    created = !existing;
     if (
       existing &&
       (existing.artifactRoot !== root ||
@@ -82,12 +85,14 @@ export async function ownRuntime(jobs: JobStore, inputRoot: string) {
     }
     if ((await readBoundedFile(marker, 100)).toString('utf8') !== owner.storeId)
       throw new Error('Artifact root belongs to another database');
+    adopted = true;
     // Only names created by ReplayWriter are eligible; unrelated user files are untouched.
     let removed = 0;
     for await (const entry of await opendir(root)) {
       if (!entry.isDirectory()) continue;
-      const staging = /^\.staging-[0-9a-f-]{36}$/.test(entry.name);
-      const orphan = /^[0-9a-f-]{36}$/.test(entry.name) && !jobs.artifact(entry.name);
+      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+      const staging = entry.name.startsWith('.staging-') && uuid.test(entry.name.slice(9));
+      const orphan = uuid.test(entry.name) && !jobs.artifact(entry.name);
       if (staging || orphan) {
         await rm(join(root, entry.name), { recursive: true });
         removed++;
@@ -95,7 +100,12 @@ export async function ownRuntime(jobs: JobStore, inputRoot: string) {
     }
     return { root, removed, release };
   } catch (error) {
-    release();
+    if (created && !adopted)
+      jobs.store.orm
+        .delete(runtimeOwner)
+        .where(and(eq(runtimeOwner.id, 1), eq(runtimeOwner.token, token)))
+        .run();
+    else release();
     throw error;
   }
 }

@@ -93,18 +93,20 @@ export class BattleRuntime {
       return previous;
     }
     const battle = await this.jobs.store.prepareSpec(spec);
-    this.jobs.store.saveSpec(battle);
     const canonical =
       this.jobs.canonical(battle.simulationHash) ??
       this.jobs.canonicalRecord(battle.simulationHash);
     if (canonical) await this.artifacts.verified(canonical.replayId);
-    const job = this.jobs.submit({
-      simulationHash: battle.simulationHash,
-      clientId,
-      key,
-      requestHash,
-      budget,
-      ...(canonical ? { cachedResult: canonical } : {}),
+    const job = this.jobs.store.transaction(() => {
+      this.jobs.store.saveSpec(battle);
+      return this.jobs.submit({
+        simulationHash: battle.simulationHash,
+        clientId,
+        key,
+        requestHash,
+        budget,
+        ...(canonical ? { cachedResult: canonical } : {}),
+      });
     });
     this.tick();
     return job;
