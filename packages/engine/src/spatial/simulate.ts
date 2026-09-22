@@ -87,6 +87,18 @@ function effectsOf(
     abilityId: ability.id,
   }));
 }
+function outcomeFromError(error: unknown): Outcome {
+  if (error instanceof SpatialBudgetError)
+    return { kind: 'truncated', resource: error.resource, reason: error.message };
+  if (error instanceof UnresolvedRuleError)
+    return {
+      kind: 'unresolved',
+      ruleId: error.ruleId,
+      revisions: error.revisions,
+      reason: error.message,
+    };
+  throw error;
+}
 /** A synchronous pull stream: the host controls pace, cancellation and I/O. Never reads a wall clock. */
 export function* simulate(
   battle: PreparedBattle,
@@ -265,16 +277,7 @@ export function* simulate(
         outcome = verdict(actors);
         if (outcome) break;
       } catch (error) {
-        if (error instanceof SpatialBudgetError)
-          outcome = { kind: 'truncated', resource: error.resource, reason: error.message };
-        else if (error instanceof UnresolvedRuleError)
-          outcome = {
-            kind: 'unresolved',
-            ruleId: error.ruleId,
-            revisions: error.revisions,
-            reason: error.message,
-          };
-        else throw error;
+        outcome = outcomeFromError(error);
         break;
       }
       try {
@@ -450,6 +453,21 @@ export function* simulate(
             actor.random,
           );
           actor.random = aim.random;
+          if (
+            (definition.attack.kind === 'melee' || definition.attack.kind === 'projectile') &&
+            muzzleBlocked(world, actor.motion)
+          ) {
+            journal.emit({
+              kind: 'fizzle',
+              step,
+              phase: 'launch',
+              actorId: actorId(actor),
+              abilityId: action.ability.id,
+              parentEventId: launch.id,
+              ruleId: `${definition.attack.kind}.muzzle-blocked`,
+            });
+            continue;
+          }
           if (definition.attack.kind === 'hitscan') {
             if (++candidates > budget.maxCandidates) throw new SpatialBudgetError('candidates');
             const contact = hitscan(
@@ -477,73 +495,49 @@ export function* simulate(
                 effects.push(...effectsOf(actor, action.ability, actorId(enemy), hit.id, step));
             }
           } else if (definition.attack.kind === 'melee') {
-            if (muzzleBlocked(world, actor.motion))
-              journal.emit({
-                kind: 'fizzle',
-                step,
-                phase: 'launch',
-                actorId: actorId(actor),
-                abilityId: action.ability.id,
-                parentEventId: launch.id,
-                ruleId: 'melee.muzzle-blocked',
-              });
-            else
-              attacks.push({
-                id: action.id,
-                actorId: actorId(actor),
-                ability: action.ability,
-                cause: launch.id,
-                launchStep: step,
-                direction: aim.direction,
-                offset: sub(
-                  bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
-                  actor.motion.position,
-                ),
-                attack: effectiveStats(actor.motion.actor, actor.statuses, step).attack,
-                hits: 0,
-              });
+            attacks.push({
+              id: action.id,
+              actorId: actorId(actor),
+              ability: action.ability,
+              cause: launch.id,
+              launchStep: step,
+              direction: aim.direction,
+              offset: sub(
+                bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
+                actor.motion.position,
+              ),
+              attack: effectiveStats(actor.motion.actor, actor.statuses, step).attack,
+              hits: 0,
+            });
           } else if (definition.attack.kind === 'projectile') {
-            if (muzzleBlocked(world, actor.motion))
-              journal.emit({
-                kind: 'fizzle',
-                step,
-                phase: 'launch',
-                actorId: actorId(actor),
-                abilityId: action.ability.id,
-                parentEventId: launch.id,
-                ruleId: 'projectile.muzzle-blocked',
-              });
-            else {
-              const target = actor.memory.observation?.enemy ?? actor.memory.lastSeen;
-              const projectile: ProjectileState = {
-                id: `projectile.${action.id}`,
-                ownerId: actorId(actor),
-                ability: action.ability,
-                cause: launch.id,
-                launchStep: step,
-                position: bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
-                velocity: mul(aim.direction, definition.attack.speedMmPerSecond / 1000),
-                attack: effectiveStats(actor.motion.actor, actor.statuses, step).attack,
-                target: target ? { ...target.position } : null,
-              };
-              const spawn = journal.emit({
-                kind: 'projectile-spawn',
-                step,
-                phase: 'launch',
-                entityId: projectile.id,
-                actorId: projectile.ownerId,
-                abilityId: action.ability.id,
-                parentEventId: launch.id,
-                ruleId: 'projectile.spawn',
-                point: projectile.position,
-              });
-              projectile.cause = spawn.id;
-              bullets.push(projectile);
-              peakProjectiles = Math.max(peakProjectiles, bullets.length);
-              if (bullets.length > budget.maxProjectiles)
-                throw new SpatialBudgetError('projectiles');
-              spawns.push(displayProjectile(projectile));
-            }
+            const target = actor.memory.observation?.enemy ?? actor.memory.lastSeen;
+            const projectile: ProjectileState = {
+              id: `projectile.${action.id}`,
+              ownerId: actorId(actor),
+              ability: action.ability,
+              cause: launch.id,
+              launchStep: step,
+              position: bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
+              velocity: mul(aim.direction, definition.attack.speedMmPerSecond / 1000),
+              attack: effectiveStats(actor.motion.actor, actor.statuses, step).attack,
+              target: target ? { ...target.position } : null,
+            };
+            const spawn = journal.emit({
+              kind: 'projectile-spawn',
+              step,
+              phase: 'launch',
+              entityId: projectile.id,
+              actorId: projectile.ownerId,
+              abilityId: action.ability.id,
+              parentEventId: launch.id,
+              ruleId: 'projectile.spawn',
+              point: projectile.position,
+            });
+            projectile.cause = spawn.id;
+            bullets.push(projectile);
+            peakProjectiles = Math.max(peakProjectiles, bullets.length);
+            if (bullets.length > budget.maxProjectiles) throw new SpatialBudgetError('projectiles');
+            spawns.push(displayProjectile(projectile));
           }
         }
         const moved = moveActors(
@@ -684,16 +678,7 @@ export function* simulate(
         yield structuredClone(record);
         outcome = verdict(actors);
       } catch (error) {
-        if (error instanceof SpatialBudgetError)
-          outcome = { kind: 'truncated', resource: error.resource, reason: error.message };
-        else if (error instanceof UnresolvedRuleError)
-          outcome = {
-            kind: 'unresolved',
-            ruleId: error.ruleId,
-            revisions: error.revisions,
-            reason: error.message,
-          };
-        else throw error;
+        outcome = outcomeFromError(error);
       }
     }
     outcome ??= { kind: 'draw', reason: 'time-limit' };

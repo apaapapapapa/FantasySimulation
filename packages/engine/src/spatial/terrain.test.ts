@@ -1,40 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
-import type { Definition, Manifest } from '@fantasy/domain/spatial';
 import { at, ballShape, capsuleShape, initializePhysics } from './physics.ts';
-import { prepareBattle, reference, sealRevision } from './prepare.ts';
-import { sampleManifest } from './sample.ts';
+import { terrainBattle as withTerrain, boxObstacle as box } from '../../test-support/fixtures.ts';
 import { bodyCapsule, createBattleWorld, metres } from './terrain.ts';
 
 beforeAll(initializePhysics);
 const blocks = { movement: true, vision: true, attack: true };
-const box = (
-  id: string,
-  center: { x: number; y: number; z: number },
-  halfExtents: { x: number; y: number; z: number },
-): Extract<Definition<'scenario'>['obstacles'][number], { kind: 'box' }> => ({
-  id,
-  kind: 'box',
-  center,
-  halfExtents,
-  yawMilliDegrees: 0,
-  slopeMilliDegrees: 0,
-  blocks,
-});
-async function withTerrain(
-  obstacles: Definition<'scenario'>['obstacles'],
-  mutate?: (manifest: Manifest) => void,
-) {
-  const input = await sampleManifest();
-  const old = input.revisions.find((r) => r.kind === 'scenario')!;
-  const replacement = await sealRevision('scenario', old.id, 1, {
-    ...old.definition,
-    obstacles: [...old.definition.obstacles, ...obstacles],
-  });
-  input.revisions = input.revisions.map((r) => (r.kind === 'scenario' ? replacement : r));
-  input.scenario = reference(replacement);
-  mutate?.(input);
-  return prepareBattle(input);
-}
 describe('3D static world', () => {
   it('retains ground and bridge deck as separate support heights', async () => {
     const battle = await withTerrain([
