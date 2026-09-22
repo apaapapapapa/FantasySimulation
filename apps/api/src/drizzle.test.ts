@@ -31,7 +31,8 @@ function runKit(args: string[], filename: string) {
     env: { ...process.env, DATABASE_PATH: filename },
   });
   if (result.error) throw result.error;
-  expect(result.status, result.stdout + result.stderr).toBe(0);
+  if (result.status !== 0) throw new Error(result.stdout + result.stderr);
+  expect(result.status).toBe(0);
 }
 function receipts(db: Database.Database) {
   return db.prepare('SELECT * FROM __drizzle_migrations ORDER BY id').all();
@@ -234,6 +235,54 @@ describe('Drizzle Kit and ORM migration integration', () => {
       sqlite.close();
     }
   });
+
+  it('applies a Kit-generated incremental migration without replaying earlier SQL', () => {
+    const directory = temporary();
+    const output = join(directory, 'drizzle');
+    cpSync(migrationsFolder, output, { recursive: true });
+    const filename = join(directory, 'incremental.sqlite');
+    const sqlite = new Database(filename);
+    try {
+      const db = drizzle(sqlite);
+      migrate(db, { migrationsFolder: output });
+      sqlite.prepare('INSERT INTO characters VALUES (?, ?, ?)').run('existing', '{}', 'before');
+      const before = receipts(sqlite);
+      const files = new Set(readdirSync(output));
+      const config = join(directory, 'drizzle.config.ts');
+      writeFileSync(
+        config,
+        `export default ${JSON.stringify({
+          dialect: 'sqlite',
+          schema: resolve(repositoryRoot, 'apps/api/src/db/schema.ts'),
+          out: output,
+        })};\n`,
+      );
+      runKit(['generate', '--custom', '--name=incremental_probe', `--config=${config}`], filename);
+      const generated = readdirSync(output).filter(
+        (name) => name.endsWith('.sql') && !files.has(name),
+      );
+      expect(generated).toHaveLength(1);
+      const migration = generated[0];
+      if (!migration) throw new Error('Kit did not generate an incremental migration');
+      writeFileSync(
+        join(output, migration),
+        'ALTER TABLE characters ADD COLUMN migration_probe TEXT;\n',
+      );
+      migrate(db, { migrationsFolder: output });
+      const after = receipts(sqlite);
+      expect(after).toHaveLength(before.length + 1);
+      expect(after.slice(0, before.length)).toEqual(before);
+      expect(
+        sqlite.prepare('SELECT id, definition, updated_at, migration_probe FROM characters').all(),
+      ).toEqual([
+        { id: 'existing', definition: '{}', updated_at: 'before', migration_probe: null },
+      ]);
+      migrate(db, { migrationsFolder: output });
+      expect(receipts(sqlite)).toEqual(after);
+    } finally {
+      sqlite.close();
+    }
+  }, 90000);
 
   it('keeps TypeScript schema and generated snapshots synchronized using Kit generate', () => {
     const directory = temporary();
