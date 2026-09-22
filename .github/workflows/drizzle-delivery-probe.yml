@@ -1,0 +1,127 @@
+name: Drizzle delivery probe
+on:
+  push:
+    branches: [test/drizzle-delivery-20260923]
+    paths: [.github/workflows/drizzle-delivery-probe.yml]
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  statuses: read
+  pull-requests: read
+jobs:
+  probe:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/test/drizzle-delivery-20260923'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: b9ad2439b75cc03006e7391db9ada354fa8f9a55
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Build the exact reviewed candidate
+        run: |
+          test "$(git rev-parse HEAD)" = b9ad2439b75cc03006e7391db9ada354fa8f9a55
+          vp run build
+      - name: Verify documented CLI commands and compiled API startup with a disposable database
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { spawn, spawnSync } from 'node:child_process';
+          import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+          import { tmpdir } from 'node:os';
+          import { join } from 'node:path';
+          import { setTimeout as delay } from 'node:timers/promises';
+          const dir = mkdtempSync(join(tmpdir(), 'fantasy-compiled-'));
+          const db = join(dir, 'runtime.sqlite');
+          const env = { ...process.env, DATABASE_PATH: db, API_HOST: '127.0.0.1', API_PORT: '31317' };
+          const command = (script) => {
+            const result = spawnSync(process.execPath, ['node_modules/drizzle-kit/bin.cjs', script], { env, encoding: 'utf8', timeout: 60000 });
+            process.stdout.write(result.stdout ?? '');
+            process.stderr.write(result.stderr ?? '');
+            if (result.error) throw result.error;
+            assert.equal(result.status, 0);
+            assert.doesNotMatch((result.stdout ?? '') + (result.stderr ?? ''), /Error:|ENOENT/);
+            return result.stdout;
+          };
+          let child;
+          let output = '';
+          try {
+            assert.match(command('generate'), /No schema changes/);
+            command('check');
+            command('migrate');
+            command('migrate');
+            child = spawn(process.execPath, ['apps/api/dist/index.mjs'], { env, stdio: ['ignore', 'pipe', 'pipe'] });
+            child.stdout.on('data', (data) => { output += data.toString(); });
+            child.stderr.on('data', (data) => { output += data.toString(); });
+            let health;
+            for (let attempt = 0; attempt < 100; attempt++) {
+              if (child.exitCode !== null) throw new Error(output);
+              try {
+                const response = await fetch('http://127.0.0.1:31317/api/health', { signal: AbortSignal.timeout(1000) });
+                if (response.ok) { health = await response.json(); break; }
+              } catch { /* Startup is bounded by the finite loop and request timeout. */ }
+              await delay(100);
+            }
+            assert.equal(health?.migrationTool, 'drizzle', output);
+            const response = await fetch('http://127.0.0.1:31317/api/characters');
+            assert.equal(response.status, 200);
+            const characters = await response.json();
+            assert.equal(characters.items.length, 10);
+            const changed = spawnSync('git', ['status', '--porcelain'], { encoding: 'utf8' });
+            assert.equal(changed.status, 0);
+            assert.equal(changed.stdout.trim(), '', 'Probe changed tracked or unignored source');
+            mkdirSync('.generated/harness/drizzle-runtime', { recursive: true });
+            const receipt = { sourceSha: 'b9ad2439b75cc03006e7391db9ada354fa8f9a55', os: process.platform, checkedAt: new Date().toISOString(), result: 'pass', commands: ['build', 'drizzle-kit generate (no change)', 'drizzle-kit check', 'drizzle-kit migrate twice', 'node apps/api/dist/index.mjs'], health, characterCount: characters.items.length, database: 'disposable; removed after process exit' };
+            writeFileSync('.generated/harness/drizzle-runtime/report.json', JSON.stringify(receipt, null, 2) + '\n');
+            console.log('DRIZZLE_RUNTIME=' + JSON.stringify(receipt));
+          } finally {
+            if (child && child.exitCode === null) {
+              const closed = new Promise((resolve) => child.once('close', resolve));
+              child.kill('SIGTERM');
+              await Promise.race([closed, delay(5000)]);
+              if (child.exitCode === null && child.signalCode === null) { child.kill('SIGKILL'); await closed; }
+            }
+            rmSync(dir, { recursive: true, force: true });
+          }
+          NODE
+      - name: Collect authoritative PR evidence with the existing read-only harness
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: vp run harness github-snapshot apaapapapapa/FantasySimulation 44 .generated/harness/drizzle-delivery
+      - name: Record the completed self-review only if the reviewed inputs are unchanged
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { conversationDigest, parseSnapshot } from './scripts/harness/delivery.ts';
+          const snapshot = parseSnapshot(JSON.parse(readFileSync('.generated/harness/drizzle-delivery/github-snapshot.json', 'utf8')));
+          assert.equal(snapshot.pull.head.sha, 'b9ad2439b75cc03006e7391db9ada354fa8f9a55');
+          assert.deepEqual(snapshot.comments.map((c) => [c.id, c.updated_at]), [[5780219459, '2026-09-22T16:38:46Z']]);
+          assert.equal(snapshot.reviews.length, 0, 'An unseen review requires another actual review');
+          assert.equal(snapshot.threads.length, 0, 'An unseen thread requires another actual review');
+          const reviewedPaths = ['AGENTS.md','README.md','apps/api/package.json','apps/api/src/app.test.ts','apps/api/src/app.ts','apps/api/src/database-cli.ts','apps/api/src/db/schema.ts','apps/api/src/drizzle-drafts.test.ts','apps/api/src/drizzle.test.ts','apps/api/src/migrations.test.ts','apps/api/src/migrations.ts','apps/api/src/seed.ts','apps/api/src/store.ts','apps/api/test-fixtures/spatial-v1.sql','db/drizzle/0000_adopt_spatial_persistence.sql','db/drizzle/meta/0000_snapshot.json','db/drizzle/meta/_journal.json','db/migrations/003_draft_base.sql','db/schema.json','docs/adr/0003-schema-generations.md','docs/adr/0004-spatial-persistence.md','docs/adr/0005-drizzle-kit.md','docs/development/quality.md','drizzle.config.ts','package.json','packages/engine/src/spatial/implementation.json','pnpm-lock.yaml','pnpm-workspace.yaml','scripts/ci/plan.test.ts','scripts/quality.ts','scripts/quality/migrations.test.ts','scripts/quality/migrations.ts','tsconfig.json'];
+          assert.deepEqual(snapshot.files.map((f) => f.filename).sort(), [...reviewedPaths].sort());
+          const receipt = { candidateSha: snapshot.pull.head.sha, conversationDigest: conversationDigest(snapshot), reviewedPaths, completedAt: new Date().toISOString(), method: 'self', summary: 'Reviewed the complete final diff and existing conversation. Preserved concurrent spatial storage, immutable publication and optimistic transactions. Verified generated relational schema/SQL/snapshots, intentional STRICT and trigger amendments, adoption of existing spatial-v1 rows, removal of all application-owned migration paths, actual dependency lock changes and native build permission, CI and documentation. Corrected relative Kit paths, zero-exit generation errors, TypeScript config coverage and regression-test formatting. Runtime checksum and arbitrary legacy-schema support are explicitly not claimed. No unresolved code finding; this self-review is not independent approval.', unresolvedFindings: 0 };
+          writeFileSync('.generated/harness/drizzle-delivery/review.json', JSON.stringify(receipt, null, 2) + '\n');
+          NODE
+          vp run harness delivery .generated/harness/drizzle-delivery/github-snapshot.json pr .generated/harness/drizzle-delivery/review.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: drizzle-runtime-${{ matrix.os }}
+          path: .generated/harness/drizzle-runtime/report.json
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 7
