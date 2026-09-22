@@ -50,7 +50,7 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
         root,
         'checkout',
       );
-      await execute('pnpm', ['install', '--frozen-lockfile'], baselineRoot, 'install');
+      await execute('vp', ['install', '--frozen-lockfile'], baselineRoot, 'install');
       await execute(
         process.execPath,
         ['scripts/engine-identity.ts'],

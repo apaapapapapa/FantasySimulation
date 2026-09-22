@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "issue": 9,
+  "issueBodySha256": "f2033d47fa2e19f980f7125b1b4c4ff8d2bfb5d2e3b912f2a9cbc37626064bf0",
+  "issueUpdatedAt": "2026-09-22T22:34:32Z",
+  "complete": true,
+  "summary": "小PR #50/#56/#58で固定コーパス、実OS間digest突合、公平性、実Worker/SQLite状態遷移、決定的計算予算、同一runnerのpaired計測と実assertion回帰証跡を既存ハーネス/CIへ接続。追記のfast-checkも固定版・有限予算・seed/path/最小入力・manifest文脈・実行/再現コマンド・故意の不具合検出を実装。期待battle digestの一括再生成や旧runtime互換は追加せず、未計測/比較不能/中断はunknownとして保持。性能値は観測であり達成保証ではない。",
+  "remainingWork": [],
+  "pullRequests": [50, 56, 58],
+  "acceptance": [
+    {
+      "task": "対応中のengineについて、固定manifest・seed/PRNG・scenario revision・rules/schema version・実装digest・採用後のWASM hashを持つコーパスを定義する",
+      "evidence": "packages/engine/fixtures/spatial/corpus.json の固定6入力と契約を使用。corpus.ts の observedInput/engine:check が各実行の実装digest・WASM・固定入力hashを検証し、results.jsonへsource SHAとともに保持する。期待戦闘digestは再生成していない。"
+    },
+    {
+      "task": "既存のengine:check・固定fixture・単体/結合試験を呼ぶadapterを作る。検証ロジックをコピーして二重管理しない",
+      "evidence": "既存 corpus.ts adapter・scripts/engine-identity.ts・62件の対応テストを再利用。別エンジンを作らず、実行は packages/engine/src/spatial/index.ts と既存 BattlePool/JobStore に接続。"
+    },
+    {
+      "task": "同じ入力の反復、Linux/Windows、利用可能になったWorker数・投入順の違いで、result/event/必要な物理state digestを比較する",
+      "evidence": "corpusの2回実行、corpus-compare.tsによるLinux/Windowsの結果照合、worker-corpus.test.tsの固定6入力・1/複数実Worker・逆順投入でresult/event/trajectory/physics等を比較。"
+    },
+    {
+      "task": "両OSで試験が個別成功したことだけでなく、同一入力に対応する出力digestをartifactで突合する。欠落OS・欠落fixtureは不完全とする",
+      "evidence": "scripts/harness/corpus-compare.test.ts と scripts/ci/gate.ts。実artifactのcorpus hash・source・両OS・全fixtureを照合し、欠落、重複、余分な入力、改変digestを拒否。"
+    },
+    {
+      "task": "意味を持たない列挙順だけを変える試験と、意味を持つ配列順を保持する試験を分ける",
+      "evidence": "既存 prepare/effects/attacks等のテストを enumeration-order と ordered-arrays に別集計。properties.test.tsもrevision列挙だけを変えて実行し、意味を持つ優先配列をシャッフルしない。"
+    },
+    {
+      "task": "左右・参加枠交換の公平性は、主体・位置・向き・乱数対応を明示した別試験とする。異なるmanifestのhash一致を要求しない",
+      "evidence": "properties.test.ts の公平性fixtureはID、参加枠、位置、向き、actor-owned乱数を明示的に交換し、勝者・step・damageを対応比較。非ゼロ照準誤差により乱数を枠へ誤割当した対照ケースが不一致になる。"
+    },
+    {
+      "task": "同時致死、遮蔽、薄い壁、高速移動、観測制約等の#1のfixtureを集計し、未実装のcaseを合格として報告しない",
+      "evidence": "corpus.json の simultaneous-defeat/occlusion/thin-wall/high-speed/observation等から現行P2の具体的境界テストを呼び出す。未実行・欠落テストはunknownで、カテゴリの名称だけでは合格にしない。"
+    },
+    {
+      "task": "win/draw、unresolved/truncated、job failed/cancelledを分ける。ホストtimeoutをゲーム内drawにせず、予算変更による打切り/完走の違いを決定性違反と誤判定しない",
+      "evidence": "simulate.test.ts、job-store.test.ts、battle-runtime.test.ts、job-properties.test.tsを集計。ゲーム内結果、truncated、ホストtimeoutによるfailed、cancelled、予算を増やした再試行を別々にassert。"
+    },
+    {
+      "task": "step数、cast/接触候補数、探索ノード数、event数、ログ/軌跡bytesを測定し、必要なprofileへ上限を設定する",
+      "evidence": "load-capture.ts が実engineのsteps/casts/candidates/pathNodes/events/logBytesとcanonical trajectory bytesを計測。load-profile.jsonの6ケース・7指標すべてに明示的な上限を設定。"
+    },
+    {
+      "task": "経過時間、中央値/p95、メモリ最大値等を実際の計測条件とともに別の性能reportへ保存する。測定できない項目はnull/unknownと理由を残す",
+      "evidence": "load/performance.json と load-pair/performance.json にwall中央値/p95、CPU中央値、process high-water RSS、条件を保存。Windows RSS・このdirect profileが測らないWorker待機/保存wallはnullと理由を残す。"
+    },
+    {
+      "task": "実時間・Worker番号・計測値を意味上のsimulation/result/event hashへ混ぜない",
+      "evidence": "性能観測はload/worker-corpusの別artifactへ保存。engineの意味上のhashへclock、Worker番号、CPU/RSS観測値を加えない。worker-corpusで実Worker結果とdirect結果の完全一致を検証。"
+    },
+    {
+      "task": "exact baseline SHAとcandidate SHAを固定し、同じコーパス・profileで比較する。各実行物の固定toolchainを記録し、計測driverと対象ソースのidentityも残す",
+      "evidence": "load.tsがfull baseline SHAの使い捨てworktreeを作り、両engine identityを検証。同じcandidate-pinned corpus/profile/driverを使い、target SHA、driver SHA/hash、Node、pnpm、lock hash、CPU/OSを記録。"
+    },
+    {
+      "task": "CPU時間の比較は同一runner上のpaired実行、warmup、複数回試行を基本にする。無関係なCI実行間の時間差だけで退行と判定しない",
+      "evidence": "同一runner ID上でwarmup後に5組のbefore/afterをAB/BA交互実行。raw試行を残し、異なるrunnerや固定toolchainの比較を拒否。時刻差だけの性能退行判定は導入しない。"
+    },
+    {
+      "task": "決定的な件数/bytesの上限は明示的なgateとし、ばらつく実時間・メモリの閾値はまず観測してから妥当な許容幅を決める。初期の観測値だけで達成済み性能を宣言しない",
+      "evidence": "load-gate.tsが決定的件数/bytesを必須gateに接続。実時間/RSSは条件付きの観測値として別reportに記録し、初回観測から性能達成や閾値を宣言しない。"
+    },
+    {
+      "task": "fixtureや予算の引上げには理由、review、実際のbefore/after証跡を要求する。失敗baselineや証跡欠落を自動承認しない",
+      "evidence": "load-reviews.jsonがexact baseline SHA、profile/corpus/実測costのbeforeDigest/afterDigest、理由・reviewer・before/after raw証跡を固定。load-gate.test.tsで失敗baselineをreviewで免除できないことを確認。"
+    },
+    {
+      "task": "計測器の欠落、対象外profile、古いSHA、実行中断、必要artifact欠落を0またはpassとして集計しない",
+      "evidence": "load-gate.test.tsとscripts/ci/load-artifacts.test.tsが指標欠落、試行不足、profileずれ、古いSHA、raw/log削除・差替えを拒否。中断はunknownで0補完しない。CIがsummaryと各raw trialの一致まで確認。"
+    },
+    {
+      "task": "同一manifestの決定性違反を意図的に入れたfixtureで失敗を検出できる",
+      "evidence": "既存 corpus.test.ts が実engineの2回目のphysicsStateHashを故意に改変してfailを確認。corpus-compare.test.tsも両OSのdigest改変を検出。"
+    },
+    {
+      "task": "公平性fixtureと同一入力のhash比較が独立している",
+      "evidence": "公平性はmapped outcome/step/damage、同一入力決定性はhash一致という別のassertionとcoverage。公平性の交換前後はsimulationHashが異なることも確認。"
+    },
+    {
+      "task": "実際のassertionがbaselineで失敗しcandidateで成功する回帰証跡を保持できる。setup/import errorを回帰再現としない",
+      "evidence": "regression-probe.ts をexact baselineとcandidateへ同じdriverで実行。空のcorpus実行一覧を成功扱いする実在の不具合についてbaseline assertion-failed、candidate passedをload-pair/regression-*.jsonに保存。setup/import errorは別statusで拒否。"
+    },
+    {
+      "task": "計算量/ログ容量の意図的増加、上限超過、計測欠落、profile変更、古いartifactを期待どおりに扱う",
+      "evidence": "load-gate.test.tsで全7counterの欠落・意図的上限超過、cost/profile変化、古いSHA、truncated、失敗baselineを検証。load-artifacts.test.tsが必要rawファイルの欠落・旧試行を拒否。"
+    },
+    {
+      "task": "固定SHA・fixture/profile hash・実コマンド・raw結果・比較reportを#5へ結び付け、CIで保存する",
+      "evidence": "既存#5 report形式へsource/candidate/baseline/driver/corpus/profileを結合。CIの両OS source artifactとLinux paired artifactにcommands、raw、性能、比較、回帰を保存し、ci-gateで必須判定。"
+    },
+    {
+      "task": "全試験がlocalの使い捨てデータで動作し、Cloudflare/本番DB/外部モデルにアクセスしない",
+      "evidence": "JobStore/Worker試験は使い捨てSQLite/ディレクトリを使用。負荷baselineもlocal worktree。入力生成・縮小は計測区間外で、Cloudflare/本番DB/外部モデルへの接続なし。"
+    },
+    {
+      "task": "未完成のP2/P3機能に依存する試験は未完了のまま管理し、既存fixtureの合格で代用しない",
+      "evidence": "現行P2/P3の実engine、実Worker、永続JobStoreに対応するテストのみimplementedとして登録。未対応機能・異なる新契約はunknown/比較不能とし、旧runtime互換や既存fixtureの代用を追加しない。"
+    }
+  ]
+}
