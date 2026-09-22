@@ -19,5 +19,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["apps", "packages", "scripts", "vite.config.ts"]
+  "include": ["apps", "packages", "scripts", "vite.config.ts", "drizzle.config.ts"]
 }
