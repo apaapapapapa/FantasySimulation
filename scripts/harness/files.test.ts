@@ -11,8 +11,8 @@ it('accepts an exact byte limit and rejects excess, invalid JSON and non-files',
     expect(readBoundedJson(file, 7)).toEqual({ n: 1 });
     expect(() => readBoundedJson(file, 6)).toThrow(/oversized/);
     writeFileSync(file, 'invalid');
-    expect(() => readBoundedJson(file, 7)).toThrow();
-    expect(() => readBoundedJson(dir)).toThrow();
+    expect(() => readBoundedJson(file, 7)).toThrow(SyntaxError);
+    expect(() => readBoundedJson(dir)).toThrow(/Invalid or oversized input|EISDIR/);
     expect(() => readBoundedJson(file, 0)).toThrow(/budget/);
   } finally {
     rmSync(dir, { recursive: true, force: true });

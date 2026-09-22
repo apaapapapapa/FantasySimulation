@@ -57,3 +57,21 @@ await test('ambiguous comment-prefixed tasks fail closed instead of editing the 
   );
   assert.throws(() => issueTasks('<!-- unclosed'), /UNTERMINATED_ISSUE_MARKUP/);
 });
+
+await test('completion evidence escapes Markdown and HTML without creating extra lines', () => {
+  const raw = '&<>@`[]*_\r\nnext';
+  const escaped = '&#38;&#60;&#62;&#64;&#96;&#91;&#93;&#42;&#95; next';
+  const result = completedBody(
+    {
+      ...plan,
+      summary: raw,
+      acceptance: [{ task: raw, evidence: raw }],
+    },
+    'No checklist.',
+    'a'.repeat(40),
+    100,
+  );
+  assert.ok(result.includes(`\n${escaped}\n`));
+  assert.ok(result.includes(`- [x] ${escaped} — ${escaped}\n`));
+  assert.ok(!result.includes(raw));
+});

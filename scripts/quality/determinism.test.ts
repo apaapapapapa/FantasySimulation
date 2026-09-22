@@ -18,8 +18,8 @@ function cases(codes: string[]) {
   }
 }
 
-it('rejects direct, computed and aliased implicit randomness and environment access', () => {
-  for (const [code, findings] of cases([
+it.each(
+  cases([
     'Math.random();',
     "Math['random']();",
     'const {random}=Math; random();',
@@ -43,8 +43,9 @@ it('rejects direct, computed and aliased implicit randomness and environment acc
     'Atomics.wait(a, 0, 0);',
     'setTimeout(() => {}, 0);',
     "new Function('return Date.now()')();",
-  ]))
-    expect(findings, code).not.toEqual([]);
+  ]),
+)('rejects implicit randomness and environment access: %s', (_code, findings) => {
+  expect(findings).not.toEqual([]);
 });
 
 it('allows deterministic math, explicit local inputs, property names and pure hash aliases', () => {
@@ -61,8 +62,8 @@ it('allows deterministic math, explicit local inputs, property names and pure ha
   ).toEqual([]);
 });
 
-it('limits the crypto exception to static named createHash imports', () => {
-  for (const [code, findings] of cases([
+it.each(
+  cases([
     "import {randomBytes} from 'node:crypto';",
     "import * as crypto from 'node:crypto';",
     "import crypto from 'node:crypto';",
@@ -71,31 +72,29 @@ it('limits the crypto exception to static named createHash imports', () => {
     "export * from 'node:crypto';",
     "const c=await import('node:crypto');",
     "const c=require('node:crypto');",
-  ]))
-    expect(
-      findings.some((f) => f.rule === 'pure-hash-only'),
-      code,
-    ).toBe(true);
+  ]),
+)('limits the crypto exception to static named createHash imports: %s', (_code, findings) => {
+  expect(findings.some((f) => f.rule === 'pure-hash-only')).toBe(true);
 });
 
-it('rejects network, database and unreviewed SDK imports at the engine boundary', () => {
-  const modules = [
-    'node:fs',
-    'node:http',
-    'node:sqlite',
-    'crypto',
-    'undici',
-    'better-sqlite3',
-    '@fantasy/domain-unsafe',
-  ];
-  for (const [code, findings] of cases(
-    modules.map((module) => `import * as imported from '${module}';`),
-  ))
-    expect(
-      findings.some((f) => f.rule === 'engine-dependency-policy'),
-      code,
-    ).toBe(true);
-});
+it.each(
+  cases(
+    [
+      'node:fs',
+      'node:http',
+      'node:sqlite',
+      'crypto',
+      'undici',
+      'better-sqlite3',
+      '@fantasy/domain-unsafe',
+    ].map((module) => `import * as imported from '${module}';`),
+  ),
+)(
+  'rejects network, database and unreviewed SDK imports at the engine boundary: %s',
+  (_code, findings) => {
+    expect(findings.some((f) => f.rule === 'engine-dependency-policy')).toBe(true);
+  },
+);
 
 it('rejects unsupported TypeScript module variants instead of omitting their execution', () => {
   expect(
