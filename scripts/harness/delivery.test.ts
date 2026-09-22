@@ -314,7 +314,11 @@ describe('delivery with differential CI', () => {
       },
       (v: DeliverySnapshot) => {
         const gate = v.prRun!.gate!.report as Report;
-        change(gate.checks.find((check) => check.id === 'security:secret-scan'), 'status', 'unknown');
+        change(
+          gate.checks.find((check) => check.id === 'security:secret-scan'),
+          'status',
+          'unknown',
+        );
       },
     ]) {
       const value = plannedFixture(false);
