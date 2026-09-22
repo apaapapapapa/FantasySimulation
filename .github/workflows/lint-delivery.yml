@@ -23,15 +23,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: timeout 180 gh run watch 35773100966 --repo apaapapapapa/FantasySimulation --exit-status --interval 10
-      - name: Collect authoritative PR and review evidence with the existing harness
+      - name: Collect authoritative PR and completed review evidence
         env:
           GH_TOKEN: ${{ github.token }}
-        run: vp exec node scripts/harness.ts github-snapshot apaapapapapa/FantasySimulation 49 .generated/harness/pr49-before-merge
+        run: vp exec node scripts/harness.ts github-snapshot apaapapapapa/FantasySimulation 49 .generated/harness/pr49-final-before-merge
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: lint-pr-delivery
-          path: .generated/harness/pr49-before-merge/
+          name: lint-pr-final-delivery
+          path: .generated/harness/pr49-final-before-merge/
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
