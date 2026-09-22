@@ -1,4 +1,5 @@
 import RAPIER from '@dimforge/rapier3d-compat';
+import { capsuleOverlapsObstacle, faceNormal } from './geometry.ts';
 import { add, dot, IDENTITY, length, lerp, mul, sub, ZERO, type Vec3 } from './math.ts';
 
 let ready: Promise<void> | undefined;
@@ -10,6 +11,7 @@ export type Trace = Segment[];
 export type Capsule = { radius: number; halfHeight: number };
 export type Obstacle = {
   id: string;
+  kind?: 'pillar';
   position: Vec3;
   halfExtents: Vec3;
   rotation?: { x: number; y: number; z: number; w: number };
@@ -200,10 +202,14 @@ export class SpatialWorld {
     for (const obstacle of [...obstacles].sort((a, b) =>
       a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
     )) {
-      const desc = RAPIER.ColliderDesc.cuboid(
-        obstacle.halfExtents.x,
-        obstacle.halfExtents.y,
-        obstacle.halfExtents.z,
+      const desc = (
+        obstacle.kind === 'pillar'
+          ? RAPIER.ColliderDesc.cylinder(obstacle.halfExtents.y, obstacle.halfExtents.x)
+          : RAPIER.ColliderDesc.cuboid(
+              obstacle.halfExtents.x,
+              obstacle.halfExtents.y,
+              obstacle.halfExtents.z,
+            )
       ).setTranslation(obstacle.position.x, obstacle.position.y, obstacle.position.z);
       if (obstacle.rotation) desc.setRotation(obstacle.rotation);
       const collider = this.world.createCollider(desc);
@@ -255,7 +261,7 @@ export class SpatialWorld {
       )
     )
       return null;
-    return this.world.castShape(
+    const hit = this.world.castShape(
       start,
       IDENTITY,
       velocity,
@@ -269,24 +275,41 @@ export class SpatialWorld {
       undefined,
       (collider) => this.materials.get(collider.handle)?.blocks[layer] === true,
     );
+    if (hit)
+      hit.normal1 = faceNormal(this.materials.get(hit.collider.handle)!, hit.witness1, hit.normal1);
+    return hit;
+  }
+  raycast(start: Vec3, end: Vec3, layer: Layer) {
+    this.count();
+    const hit = this.world.castRayAndGetNormal(
+      new RAPIER.Ray(start, sub(end, start)),
+      1,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      (collider) => this.materials.get(collider.handle)?.blocks[layer] === true,
+    );
+    return hit
+      ? {
+          time: hit.timeOfImpact,
+          point: lerp(start, end, hit.timeOfImpact),
+          normal: hit.normal,
+          obstacleId: this.materials.get(hit.collider.handle)!.id,
+        }
+      : undefined;
   }
   occluded(start: Vec3, end: Vec3, layer: Layer): boolean {
-    this.count();
-    return (
-      this.world.castRay(
-        new RAPIER.Ray(start, sub(end, start)),
-        1,
-        true,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        (collider) => this.materials.get(collider.handle)?.blocks[layer] === true,
-      ) !== null
-    );
+    return this.raycast(start, end, layer) !== undefined;
   }
   overlaps(position: Vec3, shape: RAPIER.Shape): boolean {
     this.count();
+    const body = capsuleDimensions(shape);
+    if (body)
+      return [...this.materials.values()].some(
+        (obstacle) => obstacle.blocks.movement && capsuleOverlapsObstacle(position, body, obstacle),
+      );
     let blocked = false;
     this.world.intersectionsWithShape(position, IDENTITY, shape, (collider) => {
       if (this.materials.get(collider.handle)?.blocks.movement) {
