@@ -78,23 +78,23 @@ DATABASE_PATH=./data/fantasy.sqlite
 
 すべてリポジトリのルートで実行します。ローカルCLIの場合、先頭の`vp`を`pnpm exec vp`に置き換えられます。
 
-| コマンド               | 内容                                                |
-| ---------------------- | --------------------------------------------------- |
-| `vp run dev`           | 画面とAPIを並行起動、コード変更を反映               |
-| `vp check`             | フォーマット、lint、型を使った静的検査              |
-| `vp run typecheck`     | TypeScriptコンパイラによる全ソースの検査            |
-| `vp fmt`               | フォーマット修正                                    |
-| `vp test`              | 共通スキーマ、エンジン、API・SQLite結合テスト       |
-| `vp test watch`        | テストの継続実行                                    |
-| `vp run build`         | 画面とAPIのビルド                                   |
-| `vp run verify`        | チェック・型検査・テスト・ビルドを一括実行          |
-| `vp run db:migrate`    | Drizzle Kitで未適用SQLを適用                        |
-| `vp run db:generate`   | TypeScriptスキーマからSQL・snapshotを生成           |
-| `vp run db:check`      | Drizzle Kitの履歴整合性検査                         |
-| `vp run check:quality` | 依存方向・決定性・ソース形式・migration安全性を検査 |
-| `vp run db:seed`       | JSONサンプルの未登録IDのみ追加                      |
-| `vp run demo:spatial`  | 3Dサンプル対戦の結果・hashを表示                    |
-| `vp run engine:check`  | エンジン実装digestと現在のソースの整合性を検査      |
+| コマンド               | 内容                                                            |
+| ---------------------- | --------------------------------------------------------------- |
+| `vp run dev`           | 画面とAPIを並行起動、コード変更を反映                           |
+| `vp check`             | フォーマット、lint、型を使った静的検査                          |
+| `vp run typecheck`     | TypeScriptコンパイラによる全ソースの検査                        |
+| `vp fmt`               | フォーマット修正                                                |
+| `vp test`              | 共通スキーマ、エンジン、API・SQLite結合テスト                   |
+| `vp test watch`        | テストの継続実行                                                |
+| `vp run build`         | 画面とAPIのビルド                                               |
+| `vp run verify`        | チェック・型検査・テスト・ビルドを一括実行                      |
+| `vp run db:migrate`    | Drizzle Kitで未適用SQLを適用                                    |
+| `vp run db:generate`   | TypeScriptスキーマからSQL・snapshotを生成                       |
+| `vp run db:check`      | Drizzle Kitの履歴整合性検査                                     |
+| `vp run check:quality` | 依存方向・決定性・重複コード・ソース形式・migration安全性を検査 |
+| `vp run db:seed`       | JSONサンプルの未登録IDのみ追加                                  |
+| `vp run demo:spatial`  | 3Dサンプル対戦の結果・hashを表示                                |
+| `vp run engine:check`  | エンジン実装digestと現在のソースの整合性を検査                  |
 
 `pnpm check`、`pnpm test`、`pnpm build`、`pnpm verify`も利用できます。
 GitHub ActionsはLinux・Windowsで固定バージョンの依存関係をインストールし、同じ検証を実行します。
@@ -220,3 +220,7 @@ Drizzleが過去SQLの実行時改変検出を保証するわけではありま�
 [証跡の収集とレビュー](.github/harness/README.md)、[CI計画と実測](docs/development/ci.md)、
 [Issue完了手順](docs/issue-completion.md)を参照してください。
 PRの成功、mainの成功、release結果、Issue完了はそれぞれ確認します。
+
+ソース・テストの重複は `vp run check:quality` の `quality:duplication` で検査します。
+新規の未ステージファイルも対象です。指摘箇所を共通化し、期待値は各テストに残します。
+[重複防止の方針・共通fixture・検査範囲](docs/development/duplication.md)を参照してください。

@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import type { Definition } from '@fantasy/domain/spatial';
 import { initializePhysics } from './physics.ts';
-import { prepareBattle, reference, sealRevision } from './prepare.ts';
+import { prepareBattle } from './prepare.ts';
+import { editScenario } from '../../test-support/fixtures.ts';
 import { sampleManifest } from './sample.ts';
 import { createBattleWorld } from './terrain.ts';
 import { Navigator } from './navigation.ts';
@@ -27,13 +28,8 @@ const navigation: Definition<'scenario'>['navigation'] = {
   ],
 };
 async function setup(edit: (scenario: Definition<'scenario'>) => void = () => {}) {
-  const manifest = await sampleManifest(),
-    old = manifest.revisions.find((r) => r.kind === 'scenario')!;
-  const definition = structuredClone(old.definition);
-  edit(definition);
-  const scenario = await sealRevision('scenario', old.id, 1, definition);
-  manifest.revisions = manifest.revisions.map((r) => (r.kind === 'scenario' ? scenario : r));
-  manifest.scenario = reference(scenario);
+  const manifest = await sampleManifest();
+  await editScenario(manifest, edit);
   const battle = await prepareBattle(manifest),
     world = createBattleWorld(battle);
   return {

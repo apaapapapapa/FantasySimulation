@@ -1,35 +1,20 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { expect, it } from 'vite-plus/test';
 import { withSources } from './ast.ts';
 import { unsupportedTypeScriptModules } from './files.ts';
 import { determinism } from './determinism.ts';
+import { createTestProject } from './test-support/project.ts';
 
 function cases(codes: string[]) {
-  const root = mkdtempSync(join(tmpdir(), 'fantasy-determinism-'));
   const paths = codes.map((_, i) => `packages/engine/src/example${i}.ts`);
+  const project = createTestProject(
+    Object.fromEntries(paths.map((path, i) => [path, codes[i] + '\nexport {};'])),
+  );
   try {
-    mkdirSync(join(root, 'packages/engine/src'), { recursive: true });
-    writeFileSync(
-      join(root, 'tsconfig.json'),
-      JSON.stringify({
-        compilerOptions: {
-          target: 'ESNext',
-          module: 'ESNext',
-          moduleResolution: 'Bundler',
-          noEmit: true,
-        },
-        include: ['packages/**/*.ts'],
-      }),
-    );
-    for (const [i, path] of paths.entries())
-      writeFileSync(join(root, path), codes[i] + '\nexport {};');
-    return withSources(root, paths, (files, _options, checker) =>
+    return withSources(project.root, paths, (files, _options, checker) =>
       paths.map((path, i) => [codes[i]!, determinism(path, files.get(path)!, checker)] as const),
     );
   } finally {
-    rmSync(root, { recursive: true, force: true });
+    project.dispose();
   }
 }
 

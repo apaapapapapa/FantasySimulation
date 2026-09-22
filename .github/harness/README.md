@@ -28,6 +28,16 @@ Environment filtering is not an OS sandbox; use a secret-free disposable environ
 is the candidate and first parent is the tested base. Main push uses the actual main
 commit. Both OS jobs must verify the same source. Source success is not delivery.
 
+## Duplicate-code quality gate
+
+The existing source command includes `check:quality` and its required
+`quality:duplication` check. The pinned TypeScript AST parser covers application,
+engine, domain, tooling and test/helper TS/TSX, including unstaged local additions.
+Findings and selected paths/policy are retained in the existing SHA-bound quality
+artifact; Linux and Windows CI preserve it through the normal source harness.
+No parallel workflow, exemption baseline or auto-refactoring loop is used.
+See [duplication policy and workflow](../../docs/development/duplication.md).
+
 ## GitHub collection and delivery
 
 Supply `GH_TOKEN` through the environment, never a command argument or committed file.

@@ -2,11 +2,11 @@ import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { contentHash, type Definition, type Manifest } from '@fantasy/domain/spatial';
 import { encodeNumericState, mul, ZERO } from './math.ts';
 import { initializePhysics } from './physics.ts';
-import { prepareBattle, reference, sealRevision } from './prepare.ts';
-import { sampleManifest } from './sample.ts';
+import type { PreparedBattle } from './prepare.ts';
+import { terrainBattle } from '../../test-support/fixtures.ts';
 import { bodyCapsule, createBattleWorld } from './terrain.ts';
-import { capsuleShape } from './physics.ts';
-import { initialMotion, moveActors, type MotionIntent } from './movement.ts';
+import { capsuleShape, type SpatialWorld } from './physics.ts';
+import { initialMotion, moveActors, type MotionIntent, type MotionState } from './movement.ts';
 
 beforeAll(initializePhysics);
 const intent = (direction = { x: 1, y: 0, z: 0 }): MotionIntent => ({
@@ -21,17 +21,18 @@ async function scene(
   obstacles: Definition<'scenario'>['obstacles'] = [],
   edit?: (manifest: Manifest) => void,
 ) {
-  const input = await sampleManifest();
-  const old = input.revisions.find((r) => r.kind === 'scenario')!;
-  const terrain = await sealRevision('scenario', old.id, 1, {
-    ...old.definition,
-    obstacles: [...old.definition.obstacles, ...obstacles],
-  });
-  input.revisions = input.revisions.map((r) => (r.kind === 'scenario' ? terrain : r));
-  input.scenario = reference(terrain);
-  edit?.(input);
-  const battle = await prepareBattle(input);
+  const battle = await terrainBattle(obstacles, edit);
   return { battle, world: createBattleWorld(battle) };
+}
+function advanceIdle(
+  world: SpatialWorld,
+  state: MotionState,
+  rules: PreparedBattle['rules'],
+  steps: number,
+) {
+  const requests = new Map([[state.actor.participant.actorId, intent({ ...ZERO })]]);
+  for (let i = 0; i < steps; i++) state = moveActors(world, [state], requests, rules)[0]!.state;
+  return state;
 }
 const step = (
   id: string,
@@ -138,13 +139,7 @@ describe('simultaneous fixed-step locomotion', () => {
       )[0]!.state;
       expect(state.position.y).toBeGreaterThan(0.95);
       expect(state.grounded).toBe(false);
-      for (let i = 0; i < 80; i++)
-        state = moveActors(
-          world,
-          [state],
-          new Map([['left', intent({ ...ZERO })]]),
-          battle.rules,
-        )[0]!.state;
+      state = advanceIdle(world, state, battle.rules, 80);
       expect(state.grounded).toBe(true);
       expect(state.position.y).toBeCloseTo(0.902, 2);
       state = {
@@ -265,13 +260,7 @@ describe('simultaneous fixed-step locomotion', () => {
           battle.rules,
         )[0]!.state;
       expect(state.position.y).toBeGreaterThan(5);
-      for (let i = 0; i < 100; i++)
-        state = moveActors(
-          world,
-          [state],
-          new Map([['left', intent({ ...ZERO })]]),
-          battle.rules,
-        )[0]!.state;
+      state = advanceIdle(world, state, battle.rules, 100);
       expect(state.grounded).toBe(true);
       expect(() =>
         moveActors(world, [state], new Map([['left', intent()]]), battle.rules, 0),
