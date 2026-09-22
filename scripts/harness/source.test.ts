@@ -23,50 +23,58 @@ function repository() {
 }
 const passed = { exitCode: 0, signal: null, output: 'passed\n', bounded: false };
 describe('source evidence collection', () => {
-  it('records a real source identity and the fixed command without recursively verifying tests', async () => {
-    const repo = repository();
-    try {
-      const result = await collectSource(
-        repo.root,
-        '.generated/harness/success',
-        async (cmd, args) => {
-          assert.equal(cmd, 'vp');
-          assert.deepEqual(args, ['run', 'verify']);
-          return passed;
-        },
-        {},
-      );
-      assert.equal(result.exitCode, 0);
-      const receipt = JSON.parse(
-        readFileSync(join(repo.root, '.generated/harness/success/command.json'), 'utf8'),
-      ) as Record<string, unknown>;
-      assert.equal(receipt.sourceSha, repo.git('rev-parse', 'HEAD').trim());
-      assert.equal(receipt.cleanAfter, true);
-    } finally {
-      repo.dispose();
-    }
-  });
-  it('rejects a repository subdirectory before executing verification', async () => {
-    const repo = repository();
-    try {
-      const nested = join(repo.root, 'nested');
-      mkdirSync(nested);
-      await assert.rejects(
-        collectSource(
-          nested,
-          '.generated/harness/nested',
-          async () => {
-            assert.fail('A nested directory must not execute verification');
+  it(
+    'records a real source identity and the fixed command without recursively verifying tests',
+    { timeout: 15000 },
+    async () => {
+      const repo = repository();
+      try {
+        const result = await collectSource(
+          repo.root,
+          '.generated/harness/success',
+          async (cmd, args) => {
+            assert.equal(cmd, 'vp');
+            assert.deepEqual(args, ['run', 'verify']);
+            return passed;
           },
           {},
-        ),
-        /repository root/,
-      );
-    } finally {
-      repo.dispose();
-    }
-  });
-  it('does not execute against dirty or untracked source', async () => {
+        );
+        assert.equal(result.exitCode, 0);
+        const receipt = JSON.parse(
+          readFileSync(join(repo.root, '.generated/harness/success/command.json'), 'utf8'),
+        ) as Record<string, unknown>;
+        assert.equal(receipt.sourceSha, repo.git('rev-parse', 'HEAD').trim());
+        assert.equal(receipt.cleanAfter, true);
+      } finally {
+        repo.dispose();
+      }
+    },
+  );
+  it(
+    'rejects a repository subdirectory before executing verification',
+    { timeout: 15000 },
+    async () => {
+      const repo = repository();
+      try {
+        const nested = join(repo.root, 'nested');
+        mkdirSync(nested);
+        await assert.rejects(
+          collectSource(
+            nested,
+            '.generated/harness/nested',
+            async () => {
+              assert.fail('A nested directory must not execute verification');
+            },
+            {},
+          ),
+          /repository root/,
+        );
+      } finally {
+        repo.dispose();
+      }
+    },
+  );
+  it('does not execute against dirty or untracked source', { timeout: 15000 }, async () => {
     const repo = repository();
     try {
       writeFileSync(join(repo.root, 'untracked.ts'), 'export {};');
@@ -84,26 +92,30 @@ describe('source evidence collection', () => {
       repo.dispose();
     }
   });
-  it('fails if the command changes the source, exits unsuccessfully or exceeds its budget', async () => {
-    for (const mode of ['mutation', 'exit', 'budget']) {
-      const repo = repository();
-      try {
-        const result = await collectSource(
-          repo.root,
-          '.generated/harness/fail',
-          async () => {
-            if (mode === 'mutation') writeFileSync(join(repo.root, 'source.txt'), 'changed');
-            return { ...passed, exitCode: mode === 'exit' ? 1 : 0, bounded: mode === 'budget' };
-          },
-          {},
-        );
-        assert.equal(result.exitCode, 1);
-      } finally {
-        repo.dispose();
+  it(
+    'fails if the command changes the source, exits unsuccessfully or exceeds its budget',
+    { timeout: 15000 },
+    async () => {
+      for (const mode of ['mutation', 'exit', 'budget']) {
+        const repo = repository();
+        try {
+          const result = await collectSource(
+            repo.root,
+            '.generated/harness/fail',
+            async () => {
+              if (mode === 'mutation') writeFileSync(join(repo.root, 'source.txt'), 'changed');
+              return { ...passed, exitCode: mode === 'exit' ? 1 : 0, bounded: mode === 'budget' };
+            },
+            {},
+          );
+          assert.equal(result.exitCode, 1);
+        } finally {
+          repo.dispose();
+        }
       }
-    }
-  });
-  it('refuses stale CI identity and unsafe or reused evidence paths', () => {
+    },
+  );
+  it('refuses stale CI identity and unsafe or reused evidence paths', { timeout: 15000 }, () => {
     const repo = repository();
     try {
       assert.throws(() => sourceIdentity(repo.root, { GITHUB_SHA: 'a'.repeat(40) }));
