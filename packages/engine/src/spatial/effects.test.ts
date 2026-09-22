@@ -219,6 +219,30 @@ describe('status lifetime and stacking', () => {
     });
     expect(effectiveStats(actor, statuses, 4).flight).toBe(false);
   });
+  it('preserves original and refresh causes for later pulses and charges their cumulative budget', async () => {
+    const revision = await sealRevision('status', 'aura', 1, definition('refresh'));
+    const initial = applyStatuses([], [{ revision, cause: 'original' }], [], 1).statuses;
+    const refreshed = applyStatuses(initial, [{ revision, cause: 'refresh' }], [], 2);
+    expect(refreshed.statuses[0]!.causes).toEqual(['original', 'refresh']);
+    expect(refreshed.changes[0]!.causes).toEqual(['refresh']);
+    expect(statusBoundary(refreshed.statuses, 3).pulses[0]!.causes).toEqual([
+      'original',
+      'refresh',
+    ]);
+    expect(initial[0]!.causes).toEqual(['original']);
+    expect(() =>
+      applyStatuses(refreshed.statuses, [{ revision, cause: 'third' }], [], 3, {
+        maxStatusTypes: 1,
+        maxStatusCauses: 2,
+      }),
+    ).toThrow('status-causes');
+    expect(
+      applyStatuses(refreshed.statuses, [{ revision, cause: 'third' }], [], 3, {
+        maxStatusTypes: 1,
+        maxStatusCauses: 3,
+      }).statuses[0]!.causes,
+    ).toEqual(['original', 'refresh', 'third']);
+  });
   it('reports conflicting accepted definitions as unresolved and leaves both inputs untouched', async () => {
     const a = await sealRevision('status', 'aura', 1, definition('replace'));
     const b = await sealRevision('status', 'other', 1, {
