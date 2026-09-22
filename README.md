@@ -1,7 +1,7 @@
 # FantasySimulation
 
 キャラクターの設定を追加し、仮想対戦とランキングへ発展させるための開発基盤です。
-3D対戦エンジンと不変revision・下書きAPIを利用できます。ジョブ・ログ保存はP3で追加中です。
+3D対戦エンジン、不変revision・下書きAPI、非同期ジョブと圧縮リプレイ保存を利用できます。
 P2〜P3はIssue #1の3D設計へ移行中です。旧実装の互換維持は行いません。
 [計算基盤ADR](./docs/adr/0002-spatial-engine.md)に対象範囲・数値条件・性能目標を記録しています。
 `vp run bench:spatial`でRapier試作の6000step計測、`vp test`で固定hashと幾何境界を検証できます。
@@ -256,4 +256,21 @@ a disagreement quarantines every artifact for that simulation. Normal callers mu
 missing/corrupt result until recovery has been explicitly requested and verified. Late diagnostic
 insertion preserves every outstanding job's byte reservation. The initial admission limit is
 128 outstanding jobs and 16 GiB of stored replay data, reserving room for admitted work.
-This persistence layer does not start Workers or expose execution endpoints yet.
+`BattleRuntime` connects this store to reusable Workers and verified replay files.
+See [the runtime contract and measured-memory definitions](docs/adr/0007-worker-runtime.md).
+
+| API                                            | 用途                                                                                    |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `POST /api/battle-jobs`                        | `{spec, budget?}` を受付。`X-Client-Id`と`Idempotency-Key`が必要。202、確定cacheなら200 |
+| `GET /api/battle-jobs/:id`                     | 状態、attempt、進捗、診断、計測値                                                       |
+| `POST /api/battle-jobs/:id/cancel`             | 中止を確定してからWorkerを停止                                                          |
+| `POST /api/battle-jobs/:id/retry`              | `{expectedAttempts, budget}` で明示再試行                                               |
+| `GET /api/battle-results/:id`                  | 保存記録を検証した結果。欠落・破損・隔離時は503で保留                                   |
+| `POST /api/battle-results/:id/replay-recovery` | `{budget}` と冪等headersで欠落/破損記録の復旧を明示要求                                 |
+| `GET /api/replays/:id`                         | 検証済みmanifest                                                                        |
+| `GET /api/replays/:id/files/:file`             | manifestに列挙されたgzip bytes。Content-Encodingなし                                    |
+
+既定設定は`ARTIFACT_PATH=./data/replays`、`BATTLE_WORKERS=1`、
+`BATTLE_TIMEOUT_MS=30000`、`BATTLE_QUEUE_LIMIT=128`、
+`BATTLE_STORAGE_BYTES=17179869184`、`BATTLE_RSS_BYTES=1610612736`。
+APIは引き続き認証のないlocalhost開発用です。

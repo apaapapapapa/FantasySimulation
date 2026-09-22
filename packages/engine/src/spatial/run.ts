@@ -11,9 +11,25 @@ import {
 } from '@fantasy/domain/spatial';
 import { initializePhysics } from './physics.ts';
 import { prepareBattle, type PreparedBattle } from './prepare.ts';
-import { simulate } from './simulate.ts';
+import { simulate, type SimulationEnd } from './simulate.ts';
 
 export { eventHashLine, trajectoryHashLine } from '@fantasy/domain/spatial';
+export async function finalizeBattleResult(
+  simulationHash: string,
+  end: SimulationEnd,
+  hashes: { eventHash: string; trajectoryHash: string },
+): Promise<BattleResult> {
+  return {
+    schemaVersion: 1,
+    simulationHash,
+    ...hashes,
+    tsStateHash: await contentHash(encodeNumericState(end.decisionState)),
+    physicsStateHash: await hashBytes(end.physicsState),
+    steps: end.steps,
+    outcome: end.outcome,
+    stats: end.stats,
+  };
+}
 /** Bounded convenience collector for fixtures/CLI. Production workers consume simulate() with backpressure. */
 export async function runPreparedBattle(
   battle: PreparedBattle,
@@ -40,17 +56,7 @@ export async function runPreparedBattle(
   const trajectoryHash = await hashBytes(encoder.encode(records.map(trajectoryHashLine).join('')));
   return {
     records,
-    result: {
-      schemaVersion: 1,
-      simulationHash: battle.simulationHash,
-      eventHash,
-      trajectoryHash,
-      tsStateHash: await contentHash(encodeNumericState(end.decisionState)),
-      physicsStateHash: await hashBytes(end.physicsState),
-      steps: end.steps,
-      outcome: end.outcome,
-      stats: end.stats,
-    },
+    result: await finalizeBattleResult(battle.simulationHash, end, { eventHash, trajectoryHash }),
   };
 }
 export async function runBattle(input: unknown, budget: Budget = DEFAULT_BUDGET) {

@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { HashSchema, IdSchema, ManifestSchema, RefSchema, RevisionSchema } from './contracts.ts';
+import {
+  BudgetSchema,
+  DEFAULT_BUDGET,
+  HashSchema,
+  IdSchema,
+  ManifestSchema,
+  RefSchema,
+  RevisionSchema,
+} from './contracts.ts';
 export const DefinitionKindSchema = z.enum([
   'character',
   'ability',
@@ -51,3 +59,11 @@ export const SpecInputSchema = z.strictObject({
 export type SpecInput = z.infer<typeof SpecInputSchema>;
 export const SpecSchema = z.strictObject({ simulationHash: HashSchema, manifest: ManifestSchema });
 export type Spec = z.infer<typeof SpecSchema>;
+export const JobRequestSchema = z.strictObject({
+  spec: SpecInputSchema,
+  budget: BudgetSchema.default(DEFAULT_BUDGET),
+});
+export const RetryJobSchema = z.strictObject({
+  expectedAttempts: z.number().int().min(0).max(3),
+  budget: BudgetSchema,
+});

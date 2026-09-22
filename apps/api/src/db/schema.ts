@@ -187,3 +187,33 @@ export const replayArtifacts = sqliteTable(
     check('artifact_bytes', sql`${t.bytes} > 0 AND ${t.bytes} <= 20971520`),
   ],
 );
+
+// One coordinator owns a database/artifact root. PID liveness is checked only on the same host.
+export const runtimeOwner = sqliteTable(
+  'runtime_owner',
+  {
+    id: integer('id').primaryKey().notNull(),
+    storeId: text('store_id').notNull(),
+    artifactRoot: text('artifact_root').notNull(),
+    hostname: text('hostname').notNull(),
+    pid: integer('pid').notNull(),
+    token: text('token').notNull(),
+  },
+  (t) => [check('runtime_singleton', sql`${t.id} = 1`)],
+);
+
+export const attemptMetrics = sqliteTable(
+  'attempt_metrics',
+  {
+    attemptId: text('attempt_id')
+      .primaryKey()
+      .notNull()
+      .references(() => simulationAttempts.id),
+    progressStep: integer('progress_step').notNull().default(0),
+    metricsJson: text('metrics_json'),
+  },
+  (t) => [
+    check('attempt_progress', sql`${t.progressStep} BETWEEN 0 AND 6000`),
+    check('attempt_metrics_json', sql`${t.metricsJson} IS NULL OR json_valid(${t.metricsJson})`),
+  ],
+);

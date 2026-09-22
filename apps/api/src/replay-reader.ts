@@ -12,12 +12,18 @@ import {
   type ReplayManifest,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
-import { readBoundedFile, readCompressed, replayDirectory } from './replay-files.ts';
+import { readBoundedFile, readCompressed, replayDirectory, sha256 } from './replay-files.ts';
 
-export async function readReplayManifest(root: string, id: string): Promise<ReplayManifest> {
+export async function readReplayManifest(
+  root: string,
+  id: string,
+  expectedChecksum?: string,
+): Promise<ReplayManifest> {
   const directory = replayDirectory(root, id);
   if (!(await lstat(directory)).isDirectory()) throw new Error('Invalid replay directory');
   const bytes = await readBoundedFile(join(directory, 'manifest.json'), 4_000_000);
+  if (expectedChecksum !== undefined && sha256(bytes) !== expectedChecksum)
+    throw new Error('Manifest checksum mismatch');
   const manifest = parseJson(
     ReplayManifestSchema,
     JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown,
