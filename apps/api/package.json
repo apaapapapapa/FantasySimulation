@@ -8,7 +8,8 @@
     "build": "vp pack",
     "start": "node --env-file-if-exists=../../.env dist/index.mjs",
     "db:migrate": "node --env-file-if-exists=../../.env --import tsx src/database-cli.ts migrate",
-    "db:seed": "node --env-file-if-exists=../../.env --import tsx src/database-cli.ts seed"
+    "db:seed": "node --env-file-if-exists=../../.env --import tsx src/database-cli.ts seed",
+    "db:reset": "node --env-file-if-exists=../../.env --import tsx src/database-cli.ts reset"
   },
   "dependencies": {
     "@fantasy/domain": "workspace:*",

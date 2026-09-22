@@ -1,12 +1,13 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { checkMigrations } from './quality/migrations.ts';
 import { architecture } from './quality/architecture.ts';
 import { firstPartyJavaScript } from './quality/files.ts';
 import { assessReport } from './harness/report.ts';
 import type { Check, Report } from './harness/report.ts';
 import { sourceIdentity } from './harness/source.ts';
 
-const required = ['quality:typescript', 'quality:architecture'];
+const required = ['quality:typescript', 'quality:architecture', 'quality:migrations'];
 const startedAt = new Date().toISOString();
 const checks: Check[] = [];
 const details: Record<string, unknown> = {};
@@ -54,6 +55,7 @@ try {
     const graph = await architecture(root, paths);
     return [...graph.publicGraph.summary.violations, ...graph.runtimeGraph.summary.violations];
   });
+  await run('quality:migrations', () => checkMigrations(root));
   writeFileSync(`${directory}/findings.json`, JSON.stringify({ ...info, details }, null, 2) + '\n');
   const report: Report = {
     ...info,
