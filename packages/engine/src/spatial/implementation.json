@@ -1,5 +1,5 @@
 {
-  "digest": "sha256:84fb8fe2f15b86c7e60281f11d426b67c43dec86c3beee5f832e2247d4bc7f71",
+  "digest": "sha256:3c60bec649a1ad9245d2bdf3eaa1383a23f446dece54f3e4c8d5ccfb7b360c3c",
   "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
   "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
   "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
