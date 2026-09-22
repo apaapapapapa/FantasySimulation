@@ -27,7 +27,10 @@ export const JOB_LIMITS = Object.freeze({
 
 /** Short immediate transactions serialize claims/cancel/finish; calculation and file I/O stay outside. */
 export class JobStore {
-  constructor(readonly store: Store) {}
+  constructor(
+    readonly store: Store,
+    readonly limits: { [K in keyof typeof JOB_LIMITS]: number } = JOB_LIMITS,
+  ) {}
   get(id: string) {
     return this.store.orm.select().from(simulationJobs).where(eq(simulationJobs.id, id)).get();
   }
@@ -46,24 +49,46 @@ export class JobStore {
     return this.store.orm.select().from(replayArtifacts).where(eq(replayArtifacts.id, id)).get();
   }
   canonical(simulationHash: string) {
+    const original = this.canonicalRecord(simulationHash);
+    if (!original || this.artifact(original.replayId)?.state === 'quarantined') return undefined;
     return this.store.orm
       .select({ result: battleResults })
       .from(battleResults)
       .innerJoin(replayArtifacts, eq(battleResults.replayId, replayArtifacts.id))
       .where(
-        and(eq(battleResults.canonicalHash, simulationHash), eq(replayArtifacts.state, 'ready')),
+        and(
+          eq(battleResults.simulationHash, simulationHash),
+          eq(battleResults.resultHash, original.resultHash),
+          eq(replayArtifacts.state, 'ready'),
+        ),
       )
+      .orderBy(asc(battleResults.createdAt), asc(battleResults.id))
+      .limit(1)
       .get()?.result;
   }
-  markArtifact(id: string, state: 'missing' | 'corrupt') {
-    this.store.orm.update(replayArtifacts).set({ state }).where(eq(replayArtifacts.id, id)).run();
+  canonicalRecord(simulationHash: string) {
+    return this.store.orm
+      .select()
+      .from(battleResults)
+      .where(eq(battleResults.canonicalHash, simulationHash))
+      .get();
   }
-  private checkCapacity() {
-    const pending = this.store.orm
+  markArtifact(id: string, state: 'missing' | 'corrupt') {
+    this.store.orm
+      .update(replayArtifacts)
+      .set({ state })
+      .where(and(eq(replayArtifacts.id, id), eq(replayArtifacts.state, 'ready')))
+      .run();
+  }
+  private pending() {
+    return this.store.orm
       .select({ value: count() })
       .from(simulationJobs)
       .where(inArray(simulationJobs.state, ['queued', 'running']))
       .get()!.value;
+  }
+  private checkCapacity() {
+    const pending = this.pending();
     const bytes = Number(
       this.store.orm
         .select({ value: sum(replayArtifacts.bytes) })
@@ -71,18 +96,21 @@ export class JobStore {
         .get()?.value ?? 0,
     );
     // Reserve one maximum-size artifact for each admitted outstanding job.
-    if (pending >= JOB_LIMITS.queued) throw new StoreError(429, 'Job queue capacity exceeded');
-    if (bytes + (pending + 1) * 20 * 1024 * 1024 > JOB_LIMITS.storageBytes)
+    if (pending >= this.limits.queued) throw new StoreError(429, 'Job queue capacity exceeded');
+    if (bytes + (pending + 1) * 20 * 1024 * 1024 > this.limits.storageBytes)
       throw new StoreError(507, 'Replay storage capacity exceeded');
   }
-  private insertArtifact(artifact: StoredArtifact) {
+  private insertArtifact(artifact: StoredArtifact, consumedReservations = 0) {
     const bytes = Number(
       this.store.orm
         .select({ value: sum(replayArtifacts.bytes) })
         .from(replayArtifacts)
         .get()?.value ?? 0,
     );
-    if (bytes + artifact.bytes > JOB_LIMITS.storageBytes)
+    if (
+      bytes + artifact.bytes + Math.max(0, this.pending() - consumedReservations) * 20 * 1024 ** 2 >
+      this.limits.storageBytes
+    )
       throw new StoreError(507, 'Replay storage capacity exceeded');
     this.store.orm.insert(replayArtifacts).values(artifact).run();
   }
@@ -332,13 +360,9 @@ export class JobStore {
     return this.store.transaction(() => {
       if (!this.valid(claim, now)) return { accepted: false, conflict: false };
       const final = parsed.outcome.kind === 'win' || parsed.outcome.kind === 'draw';
-      const existing = this.store.orm
-        .select()
-        .from(battleResults)
-        .where(eq(battleResults.canonicalHash, parsed.simulationHash))
-        .get();
+      const existing = this.canonicalRecord(parsed.simulationHash);
       const conflict = final && !!existing && existing.resultHash !== resultHash;
-      this.insertArtifact({ ...artifact, state: conflict ? 'quarantined' : 'ready' });
+      this.insertArtifact({ ...artifact, state: conflict ? 'quarantined' : 'ready' }, 1);
       this.store.orm
         .insert(battleResults)
         .values({
@@ -356,7 +380,15 @@ export class JobStore {
         this.store.orm
           .update(replayArtifacts)
           .set({ state: 'quarantined' })
-          .where(eq(replayArtifacts.id, existing!.replayId))
+          .where(
+            inArray(
+              replayArtifacts.id,
+              this.store.orm
+                .select({ replayId: battleResults.replayId })
+                .from(battleResults)
+                .where(eq(battleResults.simulationHash, parsed.simulationHash)),
+            ),
+          )
           .run();
       this.store.orm
         .update(simulationAttempts)

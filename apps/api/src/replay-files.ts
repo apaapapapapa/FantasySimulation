@@ -35,10 +35,15 @@ export async function syncDirectory(path: string) {
 }
 /** Bound the actual read, including concurrent growth; never follow artifact symlinks. */
 export async function readBoundedFile(path: string, limit: number): Promise<Buffer> {
-  if ((await lstat(path)).isSymbolicLink()) throw new Error('Artifact symlink');
   const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
     const info = await file.stat();
+    // Inspect the entry after opening, then read only through that same handle.
+    // This also covers platforms without O_NOFOLLOW: a substituted symlink/entry
+    // cannot redirect the already-open handle or pass the identity comparison.
+    const entry = await lstat(path);
+    if (entry.isSymbolicLink() || entry.dev !== info.dev || entry.ino !== info.ino)
+      throw new Error('Artifact entry changed or is a symlink');
     if (!info.isFile() || info.size > limit) throw new Error('Artifact size/type limit');
     const bytes = Buffer.alloc(Math.min(info.size + 1, limit + 1));
     let size = 0;

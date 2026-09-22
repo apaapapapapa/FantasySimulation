@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { readFile, writeFile, readdir, rm } from 'node:fs/promises';
+import { readFile, writeFile, readdir, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import {
@@ -11,10 +11,20 @@ import {
 import saved from '../../../packages/domain/fixtures/replay/mutual-hit.json' with { type: 'json' };
 import { ReplayWriter } from './replay-writer.ts';
 import { readReplayManifest, seekReplay, verifyReplay } from './replay-reader.ts';
-import { readCompressed, sha256 } from './replay-files.ts';
+import { readBoundedFile, readCompressed, sha256 } from './replay-files.ts';
 import { withReplayDirectory, recordedBattle, artifactBytes } from '../test-support/replays.ts';
 
 describe('bounded independent replay artifacts', () => {
+  it('rejects symlinks before reading their target through the opened handle', async () => {
+    await withReplayDirectory(async (root) => {
+      const target = join(root, 'target'),
+        link = join(root, 'link');
+      await writeFile(target, 'untrusted target');
+      await symlink(target, link, 'file');
+      await expect(readBoundedFile(link, 100)).rejects.toThrow();
+      expect((await readBoundedFile(target, 100)).toString()).toBe('untrusted target');
+    });
+  });
   it('persists verified chunks, preserves logical hashes and restores a late seek independently', async () => {
     await withReplayDirectory(async (root) => {
       const { result, records, manifest } = await recordedBattle(root);

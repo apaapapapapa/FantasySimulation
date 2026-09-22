@@ -153,4 +153,42 @@ describe('persistent simulation job ownership', () => {
       });
     });
   });
+  it('recovers a lost canonical artifact only with a matching immutable definitive result', async () => {
+    await withJobs(async ({ jobs, submit, result }) => {
+      const job = submit('original'),
+        first = jobs.claim(100)!;
+      jobs.complete(first, 'original-result', result, artifactFor(first), 101);
+      jobs.markArtifact(artifactFor(first).id, 'missing');
+      submit('repair');
+      const repair = jobs.claim(102)!;
+      jobs.complete(repair, 'repair-result', result, artifactFor(repair), 103);
+      expect(jobs.canonical(job.simulationHash)?.id).toBe('repair-result');
+      expect(jobs.canonicalRecord(job.simulationHash)?.id).toBe('original-result');
+      submit('disagreement');
+      const third = jobs.claim(104)!;
+      jobs.complete(
+        third,
+        'conflict',
+        { ...result, eventHash: `sha256:${'c'.repeat(64)}` },
+        artifactFor(third),
+        105,
+      );
+      expect(jobs.canonical(job.simulationHash)).toBeUndefined();
+      expect(jobs.artifact(artifactFor(repair).id)?.state).toBe('quarantined');
+    });
+  });
+  it('does not let late diagnostics consume reservations belonging to admitted jobs', async () => {
+    await withJobs(async ({ store, submit, result }) => {
+      const jobs = new JobStore(store, { ...JOB_LIMITS, storageBytes: 20 * 1024 ** 2 });
+      const old = submit('old'),
+        claim = jobs.claim(100)!;
+      jobs.cancel(old.id, 101);
+      const pending = submit('reserved');
+      expect(() => jobs.saveDiagnostic(claim, artifactFor(claim))).toThrow(/storage capacity/);
+      expect(jobs.artifact(artifactFor(claim).id)).toBeUndefined();
+      const live = jobs.claim(102)!;
+      expect(live.job.id).toBe(pending.id);
+      expect(jobs.complete(live, 'fits', result, artifactFor(live), 103).accepted).toBe(true);
+    });
+  });
 });

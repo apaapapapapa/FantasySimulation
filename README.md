@@ -250,6 +250,10 @@ attempt number and a new budget. Previous attempt budgets and results remain rec
 
 Idempotency belongs to a client/endpoint scope and request hash, separately from simulation
 identity. Only definitive win/draw results with a ready artifact qualify for cache reuse.
-Disagreeing definitive results quarantine both artifacts. The initial admission limit is
+The first definitive result remains an immutable hash authority. After an artifact is lost,
+a separately verified rerun with exactly that result hash can supply the ready cache artifact;
+a disagreement quarantines every artifact for that simulation. Normal callers must hold a
+missing/corrupt result until recovery has been explicitly requested and verified. Late diagnostic
+insertion preserves every outstanding job's byte reservation. The initial admission limit is
 128 outstanding jobs and 16 GiB of stored replay data, reserving room for admitted work.
 This persistence layer does not start Workers or expose execution endpoints yet.
