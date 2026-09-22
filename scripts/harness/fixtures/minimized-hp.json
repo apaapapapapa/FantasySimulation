@@ -1,0 +1,8 @@
+{
+  "id": "negative-hp-mutant",
+  "fastCheckVersion": "4.10.2",
+  "seed": 20260923,
+  "path": "0:1:0:0:0:0",
+  "input": 1,
+  "reason": "The real effect resolver clamps HP at zero; subtracting the generated damage from its returned HP violates that invariant. The minimized positive damage is one."
+}

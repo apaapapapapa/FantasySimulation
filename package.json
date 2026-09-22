@@ -46,6 +46,7 @@
     "dependency-cruiser": "18.1.0",
     "drizzle-kit": "0.31.11",
     "drizzle-orm": "0.45.3",
+    "fast-check": "4.10.2",
     "semantic-release": "25.0.9",
     "typescript": "7.0.2",
     "vite-plus": "0.3.3"

@@ -200,6 +200,42 @@
     "canonical-ordered-arrays": {
       "file": "packages/domain/src/spatial/contracts.test.ts",
       "name": "canonicalizes keys without erasing ordered arrays and uses a stable UTF-8 SHA-256 contract"
+    },
+    "cross-os": {
+      "file": "scripts/harness/corpus-compare.test.ts",
+      "name": "cross OS corpus comparison compares each expected input and rejects missing, stale or changed evidence"
+    },
+    "fairness": {
+      "file": "scripts/harness/properties.test.ts",
+      "name": "bounded generated battle invariants exchanges actor IDs slots positions facings and owned random streams independently of hash equality"
+    },
+    "worker-corpus": {
+      "file": "scripts/harness/worker-corpus.test.ts",
+      "name": "runs the fixed corpus through one and multiple real Workers in reversed submission order"
+    },
+    "job-timeout": {
+      "file": "apps/api/src/battle-runtime.test.ts",
+      "name": "persistent Worker/API orchestration does not resurrect cancellation and records a timeout as failure, never as a game draw"
+    },
+    "job-recovery": {
+      "file": "apps/api/src/job-store.test.ts",
+      "name": "persistent simulation job ownership recovers lease expiry across connections and fences stale or duplicate completion"
+    },
+    "job-properties": {
+      "file": "scripts/harness/job-properties.test.ts",
+      "name": "compares generated ownership transitions with real SQLite and fences stale notifications"
+    },
+    "property-resources": {
+      "file": "scripts/harness/properties.test.ts",
+      "name": "bounded generated battle invariants checks HP MP resistance and shared shield boundaries against integer arithmetic"
+    },
+    "property-status": {
+      "file": "scripts/harness/properties.test.ts",
+      "name": "bounded generated battle invariants generates status lifetimes with expiry before periodic damage"
+    },
+    "property-mutant": {
+      "file": "scripts/harness/properties.test.ts",
+      "name": "bounded generated battle invariants retains a minimized counterexample for an intentional assertion violation and succeeds after correction"
     }
   },
   "entries": [
@@ -606,30 +642,30 @@
     {
       "id": "cross-os-digests",
       "title": "同一入力の出力digestをLinux/Windowsのartifactで突合",
-      "state": "planned",
-      "owner": "#9 小PR 2",
-      "tests": []
+      "state": "implemented",
+      "owner": null,
+      "tests": ["cross-os"]
     },
     {
       "id": "fairness-exchange",
       "title": "主体・位置・向き・乱数対応を明示した左右交換の公平性",
-      "state": "planned",
-      "owner": "#9 小PR 2",
-      "tests": []
+      "state": "implemented",
+      "owner": null,
+      "tests": ["fairness"]
     },
     {
       "id": "worker-order",
       "title": "Worker数・投入順を変えたdigest比較",
-      "state": "planned",
-      "owner": "#1 P3（Worker pool未実装）",
-      "tests": []
+      "state": "implemented",
+      "owner": null,
+      "tests": ["worker-corpus"]
     },
     {
       "id": "job-outcomes",
       "title": "job failed/cancelledとホストtimeoutを勝敗・drawへ変換しない",
-      "state": "planned",
-      "owner": "#1 P3（job/attempt未実装）",
-      "tests": []
+      "state": "implemented",
+      "owner": null,
+      "tests": ["job-timeout", "job-recovery", "job-properties"]
     },
     {
       "id": "load-budget",
@@ -644,6 +680,13 @@
       "state": "planned",
       "owner": "#9 小PR 3",
       "tests": []
+    },
+    {
+      "id": "bounded-properties",
+      "title": "固定seedと縮小証跡を持つ境界・状態遷移property",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["property-resources", "property-status", "property-mutant", "job-properties"]
     }
   ]
 }
