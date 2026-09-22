@@ -75,10 +75,17 @@ function capsuleDimensions(shape: RAPIER.Shape) {
   return undefined;
 }
 /** Exact sweep against the Minkowski sum of two upright capsules, including spherical caps. */
-function capsuleTime(p: Vec3, v: Vec3, radius: number, halfHeight: number, duration: number) {
+function capsuleTime(
+  p: Vec3,
+  v: Vec3,
+  radius: number,
+  halfHeight: number,
+  duration: number,
+  includeInitialContact: boolean,
+) {
   const nearest = { x: p.x, y: p.y - Math.max(-halfHeight, Math.min(halfHeight, p.y)), z: p.z };
   if (dot(nearest, nearest) <= (radius + CONTACT_TOLERANCE) ** 2)
-    return dot(nearest, v) < -1e-12 ? 0 : undefined;
+    return includeInitialContact || dot(nearest, v) < -1e-12 ? 0 : undefined;
   let first: number | undefined;
   function roots(q: Vec3, velocity: Vec3, accepts: (time: number) => boolean) {
     const a = dot(velocity, velocity),
@@ -128,6 +135,7 @@ export function firstContact(
   b: Trace,
   shapeB: RAPIER.Shape,
   skin = 0,
+  includeInitialContact = false,
 ): number | undefined {
   const ea = extent(shapeA),
     eb = extent(shapeB);
@@ -163,6 +171,7 @@ export function firstContact(
         ca.radius + cb.radius + skin,
         ca.halfHeight + cb.halfHeight,
         to - from,
+        includeInitialContact,
       );
       if (hit !== undefined) return from + hit;
       continue;
@@ -171,6 +180,8 @@ export function firstContact(
     const contact =
       (!radius || possiblyTouches(offset, ZERO, radius, 0)) &&
       shapeA.contactShape(aStart, IDENTITY, shapeB, bStart, IDENTITY, skin + CONTACT_TOLERANCE);
+    if (includeInitialContact && contact && contact.distance <= skin + CONTACT_TOLERANCE)
+      return from;
     if (
       contact &&
       contact.distance <= skin + CONTACT_TOLERANCE &&
@@ -371,16 +382,20 @@ export class SpatialWorld {
   occluded(start: Vec3, end: Vec3, layer: Layer): boolean {
     return this.raycast(start, end, layer) !== undefined;
   }
-  overlaps(position: Vec3, shape: RAPIER.Shape): boolean {
+  overlaps(position: Vec3, shape: RAPIER.Shape, layer: Layer = 'movement'): boolean {
     this.count();
     const body = capsuleDimensions(shape);
     if (body)
       return [...this.materials.values()].some(
-        (obstacle) => obstacle.blocks.movement && capsuleOverlapsObstacle(position, body, obstacle),
+        (obstacle) =>
+          obstacle.blocks[layer] &&
+          (layer === 'attack'
+            ? capsuleObstacleContact(position, body, obstacle).distance <= CONTACT_TOLERANCE
+            : capsuleOverlapsObstacle(position, body, obstacle)),
       );
     let blocked = false;
     this.world.intersectionsWithShape(position, IDENTITY, shape, (collider) => {
-      if (this.materials.get(collider.handle)?.blocks.movement) {
+      if (this.materials.get(collider.handle)?.blocks[layer]) {
         const contact = shape.contactShape(
           position,
           IDENTITY,
@@ -389,7 +404,11 @@ export class SpatialWorld {
           collider.rotation(),
           0,
         );
-        if (contact && contact.distance < -CONTACT_TOLERANCE) blocked = true;
+        if (
+          contact &&
+          contact.distance <= (layer === 'attack' ? CONTACT_TOLERANCE : -CONTACT_TOLERANCE)
+        )
+          blocked = true;
       }
       return !blocked;
     });
