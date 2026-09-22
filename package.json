@@ -30,6 +30,7 @@
     "fixtures:spatial": "node scripts/spatial-fixtures.ts --write",
     "harness": "node scripts/harness.ts",
     "check:quality": "node scripts/quality.ts",
+    "db:reset": "vp run --filter @fantasy/api db:reset",
     "demo:spatial": "node scripts/spatial-demo.ts",
     "catalog:spatial": "node scripts/spatial-catalog.ts"
   },

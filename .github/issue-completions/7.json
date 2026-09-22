@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "issue": 7,
+  "issueBodySha256": "9f1449b69a569f8d34444b06f11662d5dd60df4d9f33fad7b3d98b488907a157",
+  "issueUpdatedAt": "2026-09-22T15:54:34Z",
+  "complete": true,
+  "summary": "TypeScript 7とdependency-cruiserによる境界・循環検査、独立した決定性AST検査、first-party JS制限、既存SQLite runnerのmigration guardをverifyへ統合。両OSで検証し、明示的schema世代変更と安全な新規DB resetを維持。",
+  "remainingWork": [],
+  "pullRequests": [33, 35, 37, 41],
+  "acceptance": [
+    {
+      "task": "dependency-cruiser相当の検査を固定版devDependencyで導入し、workspace aliasとTS解決を含める。元のTypeScript 6を使う`vp dlx`をコピーせず、移植先TS/Vite+との適合性を確認",
+      "evidence": "PR #33 pins dependency-cruiser 18.1.0. Native TS7 makes nonexecuted import projections; the library owns workspace/TS alias resolution, .js-to-.ts edges, cycles and graph rules. Windows pnpm package-root links are handled explicitly."
+    },
+    {
+      "task": "`packages/domain`からapps、engineの実装、DB/HTTP/ファイルI/Oへ逆依存しない",
+      "evidence": "architecture.ts domain-is-independent/no-browser-core/domain-external-boundary reject reverse runtime/type dependencies; dedicated server/Node/alias fixtures verify enforcement."
+    },
+    {
+      "task": "`packages/engine`からapps/web、apps/api、DB/HTTPへ依存しない。Rapier依存は専用physics境界だけに閉じ、domainの公開型へRapier/Three.js型を漏らさない",
+      "evidence": "Engine stays headless; Rapier is confined to spatial/physics.ts and domain contracts cannot leak Rapier/Three types. Positive and negative dependency fixtures cover these boundaries."
+    },
+    {
+      "task": "`apps/web`からserver/SQLite/node専用I/O/engineの実行処理を直接importしない。共有契約はdomain経由、Three.js表示はP4のweb側責務",
+      "evidence": "web-is-client/no-browser-core/browser-external-boundary prohibit API/engine execution, server/SQLite and unreviewed Node SDK dependencies while domain contracts remain available."
+    },
+    {
+      "task": "`apps/api`はdomain/engineを利用できるがweb実装へ依存しない。開発harnessはapp runtimeから参照されない",
+      "evidence": "api-does-not-import-web and no-app-harness/development-tools-stay-outside-runtime prohibit UI/harness reversal while allowing API use of domain and engine."
+    },
+    {
+      "task": "first-party moduleの循環と解決不能importを検出。runtime importとtype-only importを区別し、必要な許可を根拠付きで狭く管理",
+      "evidence": "Public/runtime library graphs reject unresolved imports and runtime cycles while allowing reviewed type-only physics edges. Declarations are checked publicly; only the exact Vite ambient reference is exempted narrowly."
+    },
+    {
+      "task": "engine実行中の`Math.random`、実時計、HTTP/DB参照をlint/ASTで検査。依存グラフだけで決定性が保証されるとしない。明示的seed/PRNGと実行前のWASM準備は許可された境界で扱う",
+      "evidence": "PR #35 native AST rejects implicit random/clock/I/O/dynamic code, computed/aliased Math and import.meta. Ambient values use a pure-global allowlist; explicit PRNG/physics preparation passes."
+    },
+    {
+      "task": "既存の純粋なhash処理などを調査して例外を限定し、`node:*`を一律禁止して正当な実装まで壊さない",
+      "evidence": "Core crypto is confined to a hashing adapter path and static named createHash only. Namespace/default/entropy/reexport/dynamic access fails; positive hash and current seed/physics fixtures pass."
+    },
+    {
+      "task": "tracked first-party `.js/.mjs/.cjs/.jsx`を拒否。元scriptのArchify/vendor検証依存を外す。生成物/node_modulesを対象外とし、TypeScript内の正当な`.js` import指定と実ファイル追加を混同しない",
+      "evidence": "files.ts rejects tracked JS source variants and unsupported .mts/.cts instead of omitting them. Generated/build/dependency outputs alone are excluded; valid .js specifiers resolve normally."
+    },
+    {
+      "task": "`db/migrations`を既存runnerで検証。通常の更新は追記、適用済みSQLの改変・欠落・checksum不一致を拒否し、空DB初期化と同じ初期化の再実行を一時DBで確認",
+      "evidence": "PR #37 shares the existing API migration runner. Exact-baseline same-generation SQL is append-only; missing/reordered/checksum-mismatched applied SQL fails. Disposable empty initialization and reexecution pass."
+    },
+    {
+      "task": "すべてのcheckに違反元/依存先/修正指針を出し、既存`vp run verify`・#6のsource CI・#5のreportへ組み込む",
+      "evidence": "scripts/quality.ts emits required typescript/architecture/determinism/migrations checks with actionable findings in the shared report; existing verify and both OS source CI retain diagnostics."
+    },
+    {
+      "task": "違反import・循環・alias経由の逆依存・意図しないJS追加を専用fixtureで検出できる",
+      "evidence": "architecture.test.ts covers alias/type-only reverse imports, SDK/Rapier/core boundaries, declaration leaks, runtime cycles, unresolved imports, invalid parsing and JS additions."
+    },
+    {
+      "task": "engine実行での暗黙乱数/実時計参照の違反を検出し、許可されたhash/seed/physics境界を誤拒否しない",
+      "evidence": "determinism.test.ts covers direct/aliased/computed randomness, omitted ambient APIs/import.meta, unsupported modules, constrained hash and local inputs. Current engine/PRNG/physics tests pass."
+    },
+    {
+      "task": "正常な現在の構成がLinux/Windowsで合格。例外は広域無効化ではなく理由と対象を限定する",
+      "evidence": "Each guard PR passes pinned Linux/Windows CI and the final integration verifies all four. Narrow exceptions are documented in docs/development/quality.md without broad disables or a compiler downgrade."
+    },
+    {
+      "task": "migration改変/欠落/失敗、非対応DB、安全な新規初期化・再実行を使い捨てDBで確認。利用者DBを開かない",
+      "evidence": "migrations.test.ts covers changes/missing/order/checksum, fresh/appended SQL rollback, unsupported DB preservation, exclusive reset refusal and new-generation initialization. The actual db:reset CLI was tested only on a temporary file."
+    },
+    {
+      "task": "新schemaへの承認済み置換で旧互換テストを要求しない",
+      "evidence": "db/schema.json and ADR 0003 allow an explicit new generation with a new reviewed ADR and fresh initialization. P3 selects its own generation; old-runtime/old-DB compatibility fixtures are not required."
+    },
+    {
+      "task": "元のcrawler/catalog/Cloudflare依存、不要なvendor skill、第二のmigration runnerを追加しない",
+      "evidence": "No crawler/catalog/Cloudflare code, vendored skills, ORM or second migration runner is introduced. Withdrawn pure-rand/ngraph.path and unused future candidate dependencies remain absent."
+    }
+  ]
+}
