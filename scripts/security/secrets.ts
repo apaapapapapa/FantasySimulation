@@ -102,7 +102,7 @@ export function selfTest(): Outcome {
   const root = mkdtempSync(join(tmpdir(), 'fantasy-canary-'));
   try {
     const canary = ['FANTASY', 'SECURITY', 'CANARY', 'A'.repeat(32)].join('_');
-    const providerCanary = ['ghp', '0123456789abcdefghijklmnopqrstuvwxyz'].join('_');
+    const providerCanary = ['ghp', 'mK9rT2vX7pQ4cN8zL6hB3sD5wF1yG0jR4uA8'].join('_');
     writeFileSync(join(root, 'README.md'), `${canary} # gitleaks:allow\n${providerCanary}\n`);
     const findings = scan('dir', root);
     requireCondition(
@@ -111,7 +111,7 @@ export function selfTest(): Outcome {
     );
     requireCondition(
       findings.some((finding) => finding.rule !== 'fantasy-canary'),
-      'DEFAULT_RULES_NOT_ACTIVE',
+      'DEFAULT_RULE_CANARY_NOT_DETECTED',
     );
     successful('git', ['init', '-q'], root);
     successful('git', ['add', 'README.md'], root);

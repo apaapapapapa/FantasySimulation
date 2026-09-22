@@ -12,13 +12,13 @@ const exception = {
   expiresAt: '2026-09-28T00:00:00Z',
 };
 
-test('missing and failed checks cannot use the success exit code', () => {
+await test('missing and failed checks cannot use the success exit code', () => {
   assert.equal(exitCode('pass'), 0);
   assert.equal(exitCode('fail'), 1);
   assert.equal(exitCode('unknown'), 2);
 });
 
-test('secret exceptions require a single fingerprint and a time-limited review', () => {
+await test('secret exceptions require a single fingerprint and a time-limited review', () => {
   assert.equal(exceptions([], now).size, 0);
   assert.equal(exceptions([exception], now).size, 1);
   for (const invalid of [
@@ -36,7 +36,7 @@ test('secret exceptions require a single fingerprint and a time-limited review',
   assert.throws(() => exceptions({}, now));
 });
 
-test('secret output contains no source text or credential value', () => {
+await test('secret output contains no source text or credential value', () => {
   const synthetic = ['not', 'a', 'credential'].join('-');
   const findings = parseFindings([
     {
