@@ -17,15 +17,43 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: b9ad2439b75cc03006e7391db9ada354fa8f9a55
+          ref: 1ebd0b11a039e5b448d35ace669f66b66266db3d
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
+      - name: Observe the exact main CI run within a finite budget
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { setTimeout as delay } from 'node:timers/promises';
+          import { Octokit } from '@octokit/core';
+          const github = new Octokit({ auth: process.env.GH_TOKEN, request: { timeout: 10000 } });
+          let complete = false;
+          for (let attempt = 0; attempt < 24; attempt++) {
+            const { data } = await github.request('GET /repos/{owner}/{repo}/actions/runs/{run_id}', {
+              owner: 'apaapapapapa', repo: 'FantasySimulation', run_id: 35759390825,
+            });
+            assert.equal(data.head_sha, '1ebd0b11a039e5b448d35ace669f66b66266db3d');
+            assert.equal(data.event, 'push');
+            assert.equal(data.path, '.github/workflows/ci.yml');
+            console.log(JSON.stringify({ runId: data.id, attempt: data.run_attempt, status: data.status, conclusion: data.conclusion }));
+            if (data.status === 'completed') {
+              assert.equal(data.conclusion, 'success', 'Main CI must succeed before delivery assessment');
+              complete = true;
+              break;
+            }
+            await delay(10000);
+          }
+          assert.ok(complete, 'Main CI is still incomplete; no success claimed');
+          NODE
       - name: Collect current PR and main facts using the existing harness
         env:
           GH_TOKEN: ${{ github.token }}
         run: vp run harness github-snapshot apaapapapapa/FantasySimulation 44 .generated/harness/drizzle-merge
-      - name: Bind the existing review to unchanged inputs
+      - name: Verify the reviewed candidate and exact completed main merge
         shell: bash
         run: |
           node --input-type=module <<'NODE'
@@ -37,20 +65,20 @@ jobs:
           assert.equal(snapshot.pull.head.sha, 'b9ad2439b75cc03006e7391db9ada354fa8f9a55');
           assert.equal(conversationDigest(snapshot), '77fd96f759ad01a2f9ad43aef794c82349ab7ecbbc506db471eb7833767667ea', 'Review inputs changed; inspect them before replacing this reviewed digest');
           assert.equal(snapshot.files.length, 33);
-          assert.equal(snapshot.pull.merged, false);
-          assert.equal(snapshot.pull.base.sha, 'd7dc7edfa36ce8ddb45e8d2a66a434952c9463ae');
+          assert.equal(snapshot.pull.merged, true);
+          assert.equal(snapshot.pull.merge_commit_sha, '1ebd0b11a039e5b448d35ace669f66b66266db3d');
           const receipt = {
             candidateSha: snapshot.pull.head.sha,
             conversationDigest: conversationDigest(snapshot),
             reviewedPaths: snapshot.files.map((file) => file.filename),
             completedAt: new Date().toISOString(),
             method: 'self',
-            summary: 'Revalidated the unchanged 33-path Drizzle diff reviewed in delivery probe 35758335249. Exact candidate, changed-file/conversation digest, current successful CI, and absence of unresolved review threads were rechecked in the authorized merge session. The prior code review covers spatial persistence, generated schema/SQL, data-preserving adoption, removal of custom migration code, transactions, tests and documentation. No new source change or independent approval is claimed.',
+            summary: 'Revalidated the unchanged 33-path Drizzle diff reviewed in delivery probe 35758335249 and pre-merge run 35759280047. This assessment binds that existing self-review to the exact user-authorized main merge 1ebd0b1 and freshly collected PR/main CI evidence. No new source change or independent approval is claimed.',
             unresolvedFindings: 0,
           };
           writeFileSync(`${directory}/review.json`, JSON.stringify(receipt, null, 2) + '\n');
           NODE
-          vp run harness delivery .generated/harness/drizzle-merge/github-snapshot.json pr .generated/harness/drizzle-merge/review.json | tee .generated/harness/drizzle-merge/assessment.log
+          vp run harness delivery .generated/harness/drizzle-merge/github-snapshot.json merge .generated/harness/drizzle-merge/review.json | tee .generated/harness/drizzle-merge/assessment.log
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
