@@ -1,0 +1,362 @@
+import RAPIER from '@dimforge/rapier3d-compat';
+import { capsuleOverlapsObstacle, faceNormal } from './geometry.ts';
+import { add, dot, IDENTITY, length, lerp, mul, sub, ZERO, type Vec3 } from './math.ts';
+
+let ready: Promise<void> | undefined;
+export async function initializePhysics(): Promise<void> {
+  await (ready ??= RAPIER.init());
+}
+export type Segment = { start: Vec3; end: Vec3; from: number; to: number };
+export type Trace = Segment[];
+export type Capsule = { radius: number; halfHeight: number };
+export type Obstacle = {
+  id: string;
+  kind?: 'pillar';
+  position: Vec3;
+  halfExtents: Vec3;
+  rotation?: { x: number; y: number; z: number; w: number };
+  blocks: { movement: boolean; vision: boolean; attack: boolean };
+};
+export type Layer = keyof Obstacle['blocks'];
+export const COLLISION_SKIN = 0.002;
+export const CONTACT_TOLERANCE = 1e-6;
+export function firstImpact(wall: number | undefined, body: number | undefined) {
+  if (wall !== undefined && (body === undefined || wall <= body + CONTACT_TOLERANCE))
+    return { kind: 'wall' as const, time: wall };
+  return body === undefined ? undefined : { kind: 'body' as const, time: body };
+}
+export class SpatialBudgetError extends Error {
+  readonly resource: string;
+  constructor(resource: string) {
+    super(`Spatial budget exceeded: ${resource}`);
+    this.resource = resource;
+  }
+}
+
+export function at(trace: Trace, time: number): Vec3 {
+  const segment = trace.find((piece) => piece.to >= time) ?? trace.at(-1);
+  if (!segment) throw new Error('Empty movement trace');
+  return segment.to === segment.from
+    ? segment.end
+    : lerp(
+        segment.start,
+        segment.end,
+        Math.max(0, Math.min(1, (time - segment.from) / (segment.to - segment.from))),
+      );
+}
+export const straight = (start: Vec3, end: Vec3): Trace => [{ start, end, from: 0, to: 1 }];
+export function stopAt(trace: Trace, time: number): Trace {
+  const end = at(trace, time);
+  const result = trace
+    .filter((piece) => piece.from < time)
+    .map((piece) => (piece.to <= time ? piece : { ...piece, end, to: time }));
+  if (time < 1 || !result.length) result.push({ start: end, end, from: time, to: 1 });
+  return result;
+}
+
+/** Continuous relative motion over every pair of overlapping piecewise-linear segments. */
+function extent(shape: RAPIER.Shape): Vec3 | undefined {
+  if (shape instanceof RAPIER.Ball) return { x: shape.radius, y: shape.radius, z: shape.radius };
+  if (shape instanceof RAPIER.Capsule)
+    return { x: shape.radius, y: shape.radius + shape.halfHeight, z: shape.radius };
+  return undefined;
+}
+function capsuleDimensions(shape: RAPIER.Shape) {
+  if (shape instanceof RAPIER.Ball) return { radius: shape.radius, halfHeight: 0 };
+  if (shape instanceof RAPIER.Capsule)
+    return { radius: shape.radius, halfHeight: shape.halfHeight };
+  return undefined;
+}
+/** Exact sweep against the Minkowski sum of two upright capsules, including spherical caps. */
+function capsuleTime(p: Vec3, v: Vec3, radius: number, halfHeight: number, duration: number) {
+  const nearest = { x: p.x, y: p.y - Math.max(-halfHeight, Math.min(halfHeight, p.y)), z: p.z };
+  if (dot(nearest, nearest) <= (radius + CONTACT_TOLERANCE) ** 2)
+    return dot(nearest, v) < -1e-12 ? 0 : undefined;
+  let first: number | undefined;
+  function roots(q: Vec3, velocity: Vec3, accepts: (time: number) => boolean) {
+    const a = dot(velocity, velocity),
+      b = dot(q, velocity),
+      c = dot(q, q) - radius * radius;
+    if (a < 1e-24) return;
+    const discriminant = b * b - a * c;
+    if (discriminant < 0) return;
+    const time = (-b - Math.sqrt(discriminant)) / a;
+    if (time >= 0 && time <= duration && (first === undefined || time < first) && accepts(time))
+      first = time;
+  }
+  roots(
+    { x: p.x, y: 0, z: p.z },
+    { x: v.x, y: 0, z: v.z },
+    (t) => Math.abs(p.y + v.y * t) <= halfHeight,
+  );
+  for (const sign of [-1, 1])
+    roots(
+      { x: p.x, y: p.y - sign * halfHeight, z: p.z },
+      v,
+      (t) => sign * (p.y + v.y * t) >= halfHeight,
+    );
+  return first;
+}
+/** Conservative swept AABB in relative coordinates; never a replacement for the narrow phase. */
+function possiblyTouches(start: Vec3, velocity: Vec3, radius: Vec3, duration: number) {
+  let enter = 0,
+    exit = duration;
+  for (const axis of ['x', 'y', 'z'] as const) {
+    const size = radius[axis] + 1e-3; // conservative outward allowance for f32 at the supported kilometre bounds
+    if (Math.abs(velocity[axis]) < 1e-12) {
+      if (Math.abs(start[axis]) > size) return false;
+    } else {
+      const a = (-size - start[axis]) / velocity[axis],
+        b = (size - start[axis]) / velocity[axis];
+      enter = Math.max(enter, Math.min(a, b));
+      exit = Math.min(exit, Math.max(a, b));
+      if (enter > exit) return false;
+    }
+  }
+  return true;
+}
+export function firstContact(
+  a: Trace,
+  shapeA: RAPIER.Shape,
+  b: Trace,
+  shapeB: RAPIER.Shape,
+  skin = 0,
+): number | undefined {
+  const ea = extent(shapeA),
+    eb = extent(shapeB);
+  const ca = capsuleDimensions(shapeA),
+    cb = capsuleDimensions(shapeB);
+  const radius = ea && eb ? add(add(ea, eb), { x: skin, y: skin, z: skin }) : undefined;
+  const boundaries =
+    a.length === 1 && b.length === 1
+      ? [0, 1]
+      : [
+          ...new Set([
+            0,
+            1,
+            ...a.flatMap((s) => [s.from, s.to]),
+            ...b.flatMap((s) => [s.from, s.to]),
+          ]),
+        ].sort((x, y) => x - y);
+  for (let index = 0; index + 1 < boundaries.length; index++) {
+    const from = boundaries[index]!;
+    const to = boundaries[index + 1]!;
+    if (to <= from) continue;
+    const aStart = at(a, from),
+      bStart = at(b, from);
+    const va = mul(sub(at(a, to), aStart), 1 / (to - from));
+    const vb = mul(sub(at(b, to), bStart), 1 / (to - from));
+    const offset = sub(aStart, bStart),
+      relative = sub(va, vb);
+    if (radius && !possiblyTouches(offset, relative, radius, to - from)) continue;
+    if (ca && cb) {
+      const hit = capsuleTime(
+        offset,
+        relative,
+        ca.radius + cb.radius + skin,
+        ca.halfHeight + cb.halfHeight,
+        to - from,
+      );
+      if (hit !== undefined) return from + hit;
+      continue;
+    }
+    // Touching shapes that move apart must not stick together.
+    const contact =
+      (!radius || possiblyTouches(offset, ZERO, radius, 0)) &&
+      shapeA.contactShape(aStart, IDENTITY, shapeB, bStart, IDENTITY, skin + CONTACT_TOLERANCE);
+    if (
+      contact &&
+      contact.distance <= skin + CONTACT_TOLERANCE &&
+      dot(sub(va, vb), contact.normal1) <= 0
+    )
+      continue;
+    const hit = shapeA.castShape(
+      aStart,
+      IDENTITY,
+      va,
+      shapeB,
+      bStart,
+      IDENTITY,
+      vb,
+      skin,
+      to - from,
+      false,
+    );
+    if (hit) return from + hit.time_of_impact;
+  }
+  return undefined;
+}
+export const capsuleShape = (body: Capsule) => new RAPIER.Capsule(body.halfHeight, body.radius);
+export const ballShape = (radius: number) => new RAPIER.Ball(radius);
+
+export class SpatialWorld {
+  readonly world: RAPIER.World;
+  private readonly materials = new Map<number, Obstacle>();
+  private readonly bounds = new Map<Layer, { center: Vec3; radius: Vec3 }>();
+  casts = 0;
+  readonly castLimit: number;
+  constructor(obstacles: Obstacle[], castLimit = 1_000_000) {
+    this.castLimit = castLimit;
+    this.world = new RAPIER.World(ZERO);
+    this.world.timestep = 0.02;
+    for (const obstacle of [...obstacles].sort((a, b) =>
+      a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+    )) {
+      const desc = (
+        obstacle.kind === 'pillar'
+          ? RAPIER.ColliderDesc.cylinder(obstacle.halfExtents.y, obstacle.halfExtents.x)
+          : RAPIER.ColliderDesc.cuboid(
+              obstacle.halfExtents.x,
+              obstacle.halfExtents.y,
+              obstacle.halfExtents.z,
+            )
+      ).setTranslation(obstacle.position.x, obstacle.position.y, obstacle.position.z);
+      if (obstacle.rotation) desc.setRotation(obstacle.rotation);
+      const collider = this.world.createCollider(desc);
+      this.materials.set(collider.handle, obstacle);
+    }
+    this.world.step(); // Populate the query acceleration structure once for static terrain.
+    for (const layer of ['movement', 'vision', 'attack'] as const) {
+      const relevant = obstacles.filter((o) => o.blocks[layer]);
+      if (!relevant.length) continue;
+      const lower = { x: Infinity, y: Infinity, z: Infinity },
+        upper = { x: -Infinity, y: -Infinity, z: -Infinity };
+      for (const obstacle of relevant) {
+        const radius = obstacle.rotation
+          ? {
+              x: length(obstacle.halfExtents),
+              y: length(obstacle.halfExtents),
+              z: length(obstacle.halfExtents),
+            }
+          : obstacle.halfExtents;
+        for (const axis of ['x', 'y', 'z'] as const) {
+          lower[axis] = Math.min(lower[axis], obstacle.position[axis] - radius[axis]);
+          upper[axis] = Math.max(upper[axis], obstacle.position[axis] + radius[axis]);
+        }
+      }
+      this.bounds.set(layer, {
+        center: mul(add(lower, upper), 0.5),
+        radius: mul(sub(upper, lower), 0.5),
+      });
+    }
+  }
+  free() {
+    this.world.free();
+  }
+  private count() {
+    if (++this.casts > this.castLimit) throw new SpatialBudgetError('casts');
+  }
+  sweep(start: Vec3, velocity: Vec3, shape: RAPIER.Shape, layer: Layer, maxTime = 1, skin = 0) {
+    this.count();
+    const bounds = this.bounds.get(layer),
+      shapeExtent = extent(shape);
+    if (!bounds) return null;
+    if (
+      shapeExtent &&
+      !possiblyTouches(
+        sub(start, bounds.center),
+        velocity,
+        add(add(bounds.radius, shapeExtent), { x: skin, y: skin, z: skin }),
+        maxTime,
+      )
+    )
+      return null;
+    const hit = this.world.castShape(
+      start,
+      IDENTITY,
+      velocity,
+      shape,
+      skin,
+      maxTime,
+      false,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      (collider) => this.materials.get(collider.handle)?.blocks[layer] === true,
+    );
+    if (hit)
+      hit.normal1 = faceNormal(this.materials.get(hit.collider.handle)!, hit.witness1, hit.normal1);
+    return hit;
+  }
+  raycast(start: Vec3, end: Vec3, layer: Layer) {
+    this.count();
+    const hit = this.world.castRayAndGetNormal(
+      new RAPIER.Ray(start, sub(end, start)),
+      1,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      (collider) => this.materials.get(collider.handle)?.blocks[layer] === true,
+    );
+    return hit
+      ? {
+          time: hit.timeOfImpact,
+          point: lerp(start, end, hit.timeOfImpact),
+          normal: hit.normal,
+          obstacleId: this.materials.get(hit.collider.handle)!.id,
+        }
+      : undefined;
+  }
+  occluded(start: Vec3, end: Vec3, layer: Layer): boolean {
+    return this.raycast(start, end, layer) !== undefined;
+  }
+  overlaps(position: Vec3, shape: RAPIER.Shape): boolean {
+    this.count();
+    const body = capsuleDimensions(shape);
+    if (body)
+      return [...this.materials.values()].some(
+        (obstacle) => obstacle.blocks.movement && capsuleOverlapsObstacle(position, body, obstacle),
+      );
+    let blocked = false;
+    this.world.intersectionsWithShape(position, IDENTITY, shape, (collider) => {
+      if (this.materials.get(collider.handle)?.blocks.movement) {
+        const contact = shape.contactShape(
+          position,
+          IDENTITY,
+          collider.shape,
+          collider.translation(),
+          collider.rotation(),
+          0,
+        );
+        if (contact && contact.distance < -CONTACT_TOLERANCE) blocked = true;
+      }
+      return !blocked;
+    });
+    return blocked;
+  }
+  /** Move-and-slide with retained contact times and segments, unlike an endpoint-only controller. */
+  trace(start: Vec3, requested: Vec3, body: Capsule, maxSegments = 8): Trace {
+    const shape = capsuleShape(body);
+    const trace: Trace = [];
+    let position = start,
+      velocity = requested,
+      time = 0;
+    for (let segment = 0; segment < maxSegments; segment++) {
+      if (time >= 1) return trace;
+      if (length(velocity) < 1e-10) {
+        trace.push({ start: position, end: position, from: time, to: 1 });
+        return trace;
+      }
+      const hit = this.sweep(position, velocity, shape, 'movement', 1 - time, COLLISION_SKIN);
+      const duration = hit ? Math.max(0, Math.min(1 - time, hit.time_of_impact)) : 1 - time;
+      const end = add(position, mul(velocity, duration));
+      if (duration > 0) trace.push({ start: position, end, from: time, to: time + duration });
+      position = end;
+      time += duration;
+      if (!hit || time >= 1) return trace;
+      // World shape-cast normals are transformed by Rapier to world coordinates.
+      const normal = hit.normal1;
+      const into = dot(velocity, normal);
+      const slid = sub(velocity, mul(normal, Math.min(0, into)));
+      if (length(sub(slid, velocity)) < 1e-10) {
+        trace.push({ start: position, end: position, from: time, to: 1 });
+        return trace;
+      }
+      velocity = slid;
+    }
+    throw new SpatialBudgetError('movement-segments');
+  }
+}

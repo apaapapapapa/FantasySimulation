@@ -126,7 +126,10 @@ export function writeReceipt(checkId: string, outcome: Outcome): void {
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, `${json}\n`, { mode: 0o600 });
   if (process.env.GITHUB_STEP_SUMMARY) {
-    appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### ${checkId}\n\n\`\`\`json\n${json}\n\`\`\`\n`);
+    appendFileSync(
+      process.env.GITHUB_STEP_SUMMARY,
+      `### ${checkId}\n\n\`\`\`json\n${json}\n\`\`\`\n`,
+    );
   }
   console.log(`${checkId}: ${outcome.status} (${outcome.reason})`);
 }

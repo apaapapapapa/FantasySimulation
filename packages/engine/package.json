@@ -5,9 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./tick-v1": "./src/tick-v1/index.ts"
+    "./tick-v1": "./src/tick-v1/index.ts",
+    "./spatial": "./src/spatial/index.ts"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "0.20.0",
     "@fantasy/domain": "workspace:*"
   }
 }
