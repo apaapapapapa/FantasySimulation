@@ -170,6 +170,18 @@ describe('3D-01 physics feasibility', () => {
 });
 
 describe('deterministic numeric profile', () => {
+  it.each([
+    { x: 1, y: 0, z: 0 },
+    { x: 0, y: 1, z: 0 },
+    { x: 0, y: 0, z: 1 },
+    { x: 0.01, y: 1, z: 0 },
+  ])('preserves inversion for antipodal turns from %j', (from) => {
+    const desired = mul(from, -1);
+    for (const angle of [0, 30, 90, 179])
+      expect(encodeNumericState(turnToward(desired, from, angle))).toEqual(
+        encodeNumericState(mul(turnToward(from, desired, angle), -1)),
+      );
+  });
   it('uses fixed trigonometry and a bounded turn without runtime sin/cos', () => {
     expect(sinDegrees(0)).toBe(0);
     expect(sinDegrees(30)).toBe(0.5);

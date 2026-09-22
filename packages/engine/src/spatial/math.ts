@@ -36,8 +36,9 @@ export function turnToward(facing: Vec3, desired: Vec3, degrees: number): Vec3 {
   if (degrees >= 180 || dot(from, to) >= cosDegrees(degrees)) return to;
   let tangent = unit(sub(to, mul(from, dot(from, to))));
   if (length(tangent) < 1e-12) {
-    tangent = unit(cross({ x: 0, y: 1, z: 0 }, from));
-    if (length(tangent) < 1e-12) tangent = { x: 1, y: 0, z: 0 };
+    // The reference depends only on absolute components, so inversion negates the cross product.
+    const reference = Math.abs(from.y) > 0.9 ? { x: 1, y: 0, z: 0 } : { x: 0, y: 1, z: 0 };
+    tangent = unit(cross(reference, from));
   }
   return unit(add(mul(from, cosDegrees(degrees)), mul(tangent, sinDegrees(degrees))));
 }
