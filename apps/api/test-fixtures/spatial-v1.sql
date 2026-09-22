@@ -36,3 +36,13 @@ END;
 CREATE TRIGGER battle_specs_no_delete BEFORE DELETE ON battle_specs BEGIN
   SELECT RAISE(ABORT, 'Battle specifications cannot be deleted');
 END;
+
+-- Existing drafts without a base cannot supersede an existing definition.
+ALTER TABLE definition_drafts ADD COLUMN base_revision_json TEXT
+  CHECK (base_revision_json IS NULL OR json_valid(base_revision_json));
+
+CREATE TABLE schema_generation (id INTEGER PRIMARY KEY CHECK (id = 1), generation TEXT NOT NULL) STRICT;
+CREATE TABLE schema_migrations (name TEXT PRIMARY KEY, checksum TEXT NOT NULL) STRICT;
+INSERT INTO schema_generation VALUES (1, 'spatial-v1');
+INSERT INTO schema_migrations VALUES ('002_spatial_revisions.sql', 'fixture-002');
+INSERT INTO schema_migrations VALUES ('003_draft_base.sql', 'fixture-003');

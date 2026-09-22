@@ -50,7 +50,7 @@ export function createApp(store: Store, logger = false) {
   app.get('/api/health', async () => ({
     status: 'ok',
     engineVersion: 'spatial-v1.10',
-    schemaGeneration: 'spatial-v1',
+    migrationTool: 'drizzle',
   }));
   for (const [path, kind] of [
     ['characters', 'character'],

@@ -1,7 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
+import { and, asc, desc, eq, gt, lt, max, sql } from 'drizzle-orm';
+import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
+import { alias } from 'drizzle-orm/sqlite-core';
+import { battleSpecs, definitionDrafts, publishedRevisions } from './db/schema.ts';
 import {
   canonicalJson,
   contentHash,
@@ -26,7 +31,6 @@ import {
   sealRevision,
   type PreparedBattle,
 } from '@fantasy/engine/spatial';
-import { migrate } from './migrations.ts';
 import { repositoryRoot } from './config.ts';
 
 export class StoreError extends Error {
@@ -97,15 +101,18 @@ function resolveClosure(
 }
 
 export class Store {
-  readonly db: DatabaseSync;
+  readonly db: Database.Database;
+  private readonly orm: BetterSQLite3Database;
   constructor(filename: string) {
     if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
-    this.db = new DatabaseSync(filename);
+    this.db = new Database(filename);
+    this.orm = drizzle(this.db);
     try {
-      this.db.exec(
-        'PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;',
-      );
-      migrate(this.db);
+      this.db.pragma('foreign_keys = ON');
+      this.db.pragma('journal_mode = WAL');
+      this.db.pragma('busy_timeout = 5000');
+      // The official migrator and Kit share the same SQL, journal and receipts.
+      migrate(this.orm, { migrationsFolder: join(repositoryRoot, 'db/drizzle') });
     } catch (error) {
       this.db.close();
       throw error;
@@ -115,31 +122,30 @@ export class Store {
     this.db.close();
   }
   transaction<T>(work: () => T): T {
-    this.db.exec('BEGIN IMMEDIATE');
-    try {
-      const value = work();
-      if (value instanceof Promise) throw new Error('Database transactions cannot await');
-      this.db.exec('COMMIT');
-      return value;
-    } catch (error) {
-      this.db.exec('ROLLBACK');
-      throw error;
-    }
+    return this.orm.transaction(
+      () => {
+        const value = work();
+        if (value instanceof Promise) throw new Error('Database transactions cannot await');
+        return value;
+      },
+      { behavior: 'immediate' },
+    );
   }
   getRevision(kind: DefinitionKind, id: string, revision?: number): Revision | undefined {
-    const row =
-      revision === undefined
-        ? this.db
-            .prepare(
-              'SELECT revision_json FROM published_revisions WHERE kind=? AND definition_id=? ORDER BY revision DESC LIMIT 1',
-            )
-            .get(kind, id)
-        : this.db
-            .prepare(
-              'SELECT revision_json FROM published_revisions WHERE kind=? AND definition_id=? AND revision=?',
-            )
-            .get(kind, id, revision);
-    return row ? parseJson(RevisionSchema, jsonValue(row.revision_json)) : undefined;
+    const row = this.orm
+      .select({ revisionJson: publishedRevisions.revisionJson })
+      .from(publishedRevisions)
+      .where(
+        and(
+          eq(publishedRevisions.kind, kind),
+          eq(publishedRevisions.definitionId, id),
+          revision === undefined ? undefined : eq(publishedRevisions.revision, revision),
+        ),
+      )
+      .orderBy(desc(publishedRevisions.revision))
+      .limit(1)
+      .get();
+    return row ? parseJson(RevisionSchema, jsonValue(row.revisionJson)) : undefined;
   }
   requireRevision(kind: DefinitionKind, ref: RevisionRef): Revision {
     const r = this.getRevision(kind, ref.id, ref.revision);
@@ -150,27 +156,46 @@ export class Store {
   listRevisions(kind: DefinitionKind, limit = 50, cursor = '') {
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
       throw new StoreError(400, 'Page size must be 1..100');
-    const rows = this.db
-      .prepare(`SELECT r.revision_json FROM published_revisions r
-      WHERE r.kind=? AND r.definition_id>? AND r.revision=(SELECT MAX(s.revision) FROM published_revisions s WHERE s.kind=r.kind AND s.definition_id=r.definition_id)
-      ORDER BY r.definition_id LIMIT ?`)
-      .all(kind, cursor, limit + 1);
+    const latest = alias(publishedRevisions, 'latest');
+    const last = this.orm
+      .select({ value: max(latest.revision) })
+      .from(latest)
+      .where(
+        and(
+          eq(latest.kind, publishedRevisions.kind),
+          eq(latest.definitionId, publishedRevisions.definitionId),
+        ),
+      );
+    const rows = this.orm
+      .select({ revisionJson: publishedRevisions.revisionJson })
+      .from(publishedRevisions)
+      .where(
+        and(
+          eq(publishedRevisions.kind, kind),
+          gt(publishedRevisions.definitionId, cursor),
+          eq(publishedRevisions.revision, last),
+        ),
+      )
+      .orderBy(asc(publishedRevisions.definitionId))
+      .limit(limit + 1)
+      .all();
     const items = rows
       .slice(0, limit)
-      .map((row) => parseJson(RevisionSchema, jsonValue(row.revision_json)));
+      .map((row) => parseJson(RevisionSchema, jsonValue(row.revisionJson)));
     return { items, nextCursor: rows.length > limit ? items.at(-1)!.id : null };
   }
   private insertRevision(revision: Revision, now: string) {
-    this.db
-      .prepare('INSERT INTO published_revisions VALUES (?,?,?,?,?,?)')
-      .run(
-        revision.kind,
-        revision.id,
-        revision.revision,
-        revision.contentHash,
-        canonicalJson(revision),
-        now,
-      );
+    this.orm
+      .insert(publishedRevisions)
+      .values({
+        kind: revision.kind,
+        definitionId: revision.id,
+        revision: revision.revision,
+        contentHash: revision.contentHash,
+        revisionJson: canonicalJson(revision),
+        createdAt: now,
+      })
+      .run();
   }
   async seedRevisions(input: unknown[]) {
     if (input.length > 256) throw new StoreError(400, 'Sample catalog exceeds revision limit');
@@ -199,20 +224,20 @@ export class Store {
       now = new Date().toISOString();
     return this.transaction(() => {
       this.checkDraftBase(draft);
-      this.db
-        .prepare(
-          'INSERT INTO definition_drafts (id,kind,definition_id,version,definition_json,published_json,created_at,updated_at,base_revision_json) VALUES (?,?,?,?,?,NULL,?,?,?)',
-        )
-        .run(
+      this.orm
+        .insert(definitionDrafts)
+        .values({
           id,
-          draft.kind,
-          draft.definitionId,
-          1,
-          canonicalJson(draft.definition),
-          now,
-          now,
-          draft.base === null ? null : canonicalJson(draft.base),
-        );
+          kind: draft.kind,
+          definitionId: draft.definitionId,
+          version: 1,
+          definitionJson: canonicalJson(draft.definition),
+          publishedJson: null,
+          createdAt: now,
+          updatedAt: now,
+          baseRevisionJson: draft.base === null ? null : canonicalJson(draft.base),
+        })
+        .run();
       return this.getDraft(id)!;
     });
   }
@@ -225,28 +250,38 @@ export class Store {
       );
   }
   getDraft(id: string): Draft | undefined {
-    const row = this.db.prepare('SELECT * FROM definition_drafts WHERE id=?').get(id);
+    const row = this.orm.select().from(definitionDrafts).where(eq(definitionDrafts.id, id)).get();
     return row
       ? parseJson(DraftSchema, {
           id: row.id,
           kind: row.kind,
-          definitionId: row.definition_id,
-          base: row.base_revision_json === null ? null : jsonValue(row.base_revision_json),
+          definitionId: row.definitionId,
+          base: row.baseRevisionJson === null ? null : jsonValue(row.baseRevisionJson),
           version: row.version,
-          definition: jsonValue(row.definition_json),
-          published: row.published_json === null ? null : jsonValue(row.published_json),
-          createdAt: row.created_at,
-          updatedAt: row.updated_at,
+          definition: jsonValue(row.definitionJson),
+          published: row.publishedJson === null ? null : jsonValue(row.publishedJson),
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
         })
       : undefined;
   }
   patchDraft(id: string, expectedVersion: number, definition: unknown): Draft {
     const encoded = canonicalJson(definition);
-    const result = this.db
-      .prepare(
-        'UPDATE definition_drafts SET definition_json=?,version=version+1,updated_at=? WHERE id=? AND version=? AND version<2147483647',
+    const result = this.orm
+      .update(definitionDrafts)
+      .set({
+        definitionJson: encoded,
+        version: sql`${definitionDrafts.version} + 1`,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(
+        and(
+          eq(definitionDrafts.id, id),
+          eq(definitionDrafts.version, expectedVersion),
+          lt(definitionDrafts.version, 2147483647),
+        ),
       )
-      .run(encoded, new Date().toISOString(), id, expectedVersion);
+      .run();
     if (!result.changes)
       throw new StoreError(
         this.getDraft(id) ? 409 : 404,
@@ -296,17 +331,22 @@ export class Store {
       if (draft.version >= 2147483647) throw new StoreError(409, 'Draft version exhausted');
       const now = new Date().toISOString();
       this.insertRevision(revision, now);
-      this.db
-        .prepare(
-          'UPDATE definition_drafts SET version=version+1,published_json=?,base_revision_json=?,updated_at=? WHERE id=? AND version=? AND version<2147483647',
+      this.orm
+        .update(definitionDrafts)
+        .set({
+          version: sql`${definitionDrafts.version} + 1`,
+          publishedJson: canonicalJson(reference(revision)),
+          baseRevisionJson: canonicalJson(reference(revision)),
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(definitionDrafts.id, id),
+            eq(definitionDrafts.version, expectedVersion),
+            lt(definitionDrafts.version, 2147483647),
+          ),
         )
-        .run(
-          canonicalJson(reference(revision)),
-          canonicalJson(reference(revision)),
-          now,
-          id,
-          expectedVersion,
-        );
+        .run();
       return { draft: this.getDraft(id)!, revision };
     });
   }
@@ -336,21 +376,31 @@ export class Store {
   }
   saveSpec(battle: PreparedBattle) {
     const encoded = canonicalJson(battle.manifest);
-    this.db
-      .prepare('INSERT INTO battle_specs VALUES (?,?,?) ON CONFLICT(simulation_hash) DO NOTHING')
-      .run(battle.simulationHash, encoded, new Date().toISOString());
-    const row = this.db
-      .prepare('SELECT manifest_json FROM battle_specs WHERE simulation_hash=?')
-      .get(battle.simulationHash);
-    if (row?.manifest_json !== encoded) throw new Error('Battle specification hash collision');
+    this.orm
+      .insert(battleSpecs)
+      .values({
+        simulationHash: battle.simulationHash,
+        manifestJson: encoded,
+        createdAt: new Date().toISOString(),
+      })
+      .onConflictDoNothing({ target: battleSpecs.simulationHash })
+      .run();
+    const row = this.orm
+      .select({ manifestJson: battleSpecs.manifestJson })
+      .from(battleSpecs)
+      .where(eq(battleSpecs.simulationHash, battle.simulationHash))
+      .get();
+    if (row?.manifestJson !== encoded) throw new Error('Battle specification hash collision');
     return { simulationHash: battle.simulationHash, manifest: battle.manifest };
   }
   getSpec(simulationHash: string) {
-    const row = this.db
-      .prepare('SELECT manifest_json FROM battle_specs WHERE simulation_hash=?')
-      .get(simulationHash);
+    const row = this.orm
+      .select({ manifestJson: battleSpecs.manifestJson })
+      .from(battleSpecs)
+      .where(eq(battleSpecs.simulationHash, simulationHash))
+      .get();
     return row
-      ? { simulationHash, manifest: parseJson(ManifestSchema, jsonValue(row.manifest_json)) }
+      ? { simulationHash, manifest: parseJson(ManifestSchema, jsonValue(row.manifestJson)) }
       : undefined;
   }
 }

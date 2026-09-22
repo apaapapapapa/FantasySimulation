@@ -1,0 +1,218 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "117e5ad3-98a8-4af8-a5c5-6dbe293932ff",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "battle_specs": {
+      "name": "battle_specs",
+      "columns": {
+        "simulation_hash": {
+          "name": "simulation_hash",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "manifest_json": {
+          "name": "manifest_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "battle_specs_valid_json": {
+          "name": "battle_specs_valid_json",
+          "value": "json_valid(\"battle_specs\".\"manifest_json\")"
+        }
+      }
+    },
+    "definition_drafts": {
+      "name": "definition_drafts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_id": {
+          "name": "definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_json": {
+          "name": "definition_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "published_json": {
+          "name": "published_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "base_revision_json": {
+          "name": "base_revision_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "definition_drafts_kind": {
+          "name": "definition_drafts_kind",
+          "value": "\"definition_drafts\".\"kind\" IN ('character','ability','equipment','policy','status','ruleset','scenario')"
+        },
+        "definition_drafts_positive_version": {
+          "name": "definition_drafts_positive_version",
+          "value": "\"definition_drafts\".\"version\" > 0"
+        },
+        "definition_drafts_valid_json": {
+          "name": "definition_drafts_valid_json",
+          "value": "json_valid(\"definition_drafts\".\"definition_json\")"
+        },
+        "definition_drafts_valid_published": {
+          "name": "definition_drafts_valid_published",
+          "value": "\"definition_drafts\".\"published_json\" IS NULL OR json_valid(\"definition_drafts\".\"published_json\")"
+        },
+        "definition_drafts_valid_base": {
+          "name": "definition_drafts_valid_base",
+          "value": "\"definition_drafts\".\"base_revision_json\" IS NULL OR json_valid(\"definition_drafts\".\"base_revision_json\")"
+        }
+      }
+    },
+    "published_revisions": {
+      "name": "published_revisions",
+      "columns": {
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_id": {
+          "name": "definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revision_json": {
+          "name": "revision_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "published_revisions_kind_definition_id_revision_pk": {
+          "columns": ["kind", "definition_id", "revision"],
+          "name": "published_revisions_kind_definition_id_revision_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "published_revisions_kind": {
+          "name": "published_revisions_kind",
+          "value": "\"published_revisions\".\"kind\" IN ('character','ability','equipment','policy','status','ruleset','scenario')"
+        },
+        "published_revisions_positive_revision": {
+          "name": "published_revisions_positive_revision",
+          "value": "\"published_revisions\".\"revision\" > 0"
+        },
+        "published_revisions_valid_json": {
+          "name": "published_revisions_valid_json",
+          "value": "json_valid(\"published_revisions\".\"revision_json\")"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

@@ -12,5 +12,7 @@ peerDependencyRules:
     vite: 0.3.3
 
 allowBuilds:
+  # Required by the pinned Drizzle SQLite driver; other new scripts remain denied.
+  better-sqlite3: true
   esbuild: true
   vite-plus: true

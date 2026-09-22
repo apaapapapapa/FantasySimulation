@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
 import { afterEach, describe, expect, it } from 'vite-plus/test';
 import {
   DraftSchema,
@@ -31,12 +31,12 @@ async function setup(filename = ':memory:') {
   apps.push(app);
   return { store, app };
 }
-describe('3D revision API and new SQLite generation', () => {
+describe('3D revision API and Drizzle persistence', () => {
   it('serves paged immutable characters, rules and scenarios using shared contracts', async () => {
     const { app } = await setup();
     expect((await app.inject({ url: '/api/health' })).json()).toMatchObject({
       status: 'ok',
-      schemaGeneration: 'spatial-v1',
+      migrationTool: 'drizzle',
     });
     const page = RevisionPageSchema.parse(
       (await app.inject({ url: '/api/characters?limit=4' })).json(),
@@ -247,12 +247,14 @@ describe('3D revision API and new SQLite generation', () => {
     expect(second.store.getSpec(spec.simulationHash)).toEqual(spec);
     expect(second.store.getRevision('character', 'swordsman')?.revision).toBe(2);
     expect((await second.store.prepareSpec(request)).simulationHash).toBe(spec.simulationHash);
-    expect(second.store.db.prepare('SELECT COUNT(*) AS n FROM battle_specs').get()?.n).toBe(1);
+    expect(
+      second.store.db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM battle_specs').get()?.n,
+    ).toBe(1);
     expect(() =>
       second.store.db.prepare("UPDATE battle_specs SET manifest_json='{}'").run(),
     ).toThrow(/immutable/);
   });
-  it('initializes only the new tables and refuses another generation without destroying it', async () => {
+  it('initializes only current tables and preserves unrelated legacy data', async () => {
     const { store } = await setup();
     expect(
       store.db
@@ -260,15 +262,18 @@ describe('3D revision API and new SQLite generation', () => {
         .all(),
     ).toEqual([]);
     const filename = file(),
-      db = new DatabaseSync(filename);
+      db = new Database(filename);
     db.exec(
       "CREATE TABLE schema_generation(id INTEGER PRIMARY KEY,generation TEXT); INSERT INTO schema_generation VALUES(1,'local-v1'); CREATE TABLE schema_migrations(name TEXT,checksum TEXT); CREATE TABLE valuable(value TEXT); INSERT INTO valuable VALUES('keep');",
     );
     db.close();
-    expect(() => openStore(filename)).toThrow(/Unsupported database/);
-    const read = new DatabaseSync(filename);
+    const adopted = openStore(filename);
+    adopted.close();
+    const read = new Database(filename);
     try {
-      expect(read.prepare('SELECT value FROM valuable').get()?.value).toBe('keep');
+      expect(read.prepare<[], { value: string }>('SELECT value FROM valuable').get()?.value).toBe(
+        'keep',
+      );
     } finally {
       read.close();
     }
@@ -294,6 +299,8 @@ describe('3D revision API and new SQLite generation', () => {
         })
       ).statusCode,
     ).toBe(400);
-    expect(store.db.prepare('SELECT COUNT(*) AS n FROM definition_drafts').get()?.n).toBe(0);
+    expect(
+      store.db.prepare<[], { n: number }>('SELECT COUNT(*) AS n FROM definition_drafts').get()?.n,
+    ).toBe(0);
   });
 });
