@@ -31,12 +31,15 @@ All counted jobs and steps are retained. Before/after conditions differ, so the
 observations do not establish a causal speedup. No test sharding or task-result cache
 was added. `ci-gate` branch-rule application is **unconfirmed** without repository
 administration access, as Issue #6 explicitly permits; workflow code alone does not
-claim to activate protection. The migration procedure retains existing check names.
+claim to activate protection. The required-check rollout retains existing check names.
 
 The existing semantic-release job is the only publisher. PR #39 fixes propagation of
 the planned Docs skip while retaining all explicit successful main prerequisites;
 [main run 35748416057](https://github.com/apaapapapapa/FantasySimulation/actions/runs/35748416057)
-confirmed actual Release execution. No tag alone is used to infer success or failure.
+confirmed actual Release execution. The integrated main run
+[35750473711](https://github.com/apaapapapapa/FantasySimulation/actions/runs/35750473711)
+also passed at `3ae927d7ad0a36ac007402d17a23afaf798bec41` after all four quality
+guards were merged. No tag alone is used to infer success or failure.
 
 No historical engine registry, old-DB compatibility gate, ORM, second migration
 runner, Cloudflare/catalog code or unused candidate dependency was introduced.
