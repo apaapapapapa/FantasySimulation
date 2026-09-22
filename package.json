@@ -24,7 +24,7 @@
     "security:secrets": "node scripts/security/secrets.ts",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run",
-    "verify": "vp check && vp run typecheck && vp run engine:check && vp run check:quality && vp run security:test && vp test && vp run check:corpus && vp run build",
+    "verify": "vp check && vp run typecheck && vp run engine:check && vp run check:quality && vp run security:test && vp test && vp run check:corpus && vp run check:load && vp run build",
     "bench:spatial": "node scripts/spatial-benchmark.ts",
     "fixtures:spatial": "node scripts/spatial-fixtures.ts --write",
     "harness": "node scripts/harness.ts",
@@ -33,7 +33,8 @@
     "demo:spatial": "node scripts/spatial-demo.ts",
     "catalog:spatial": "node scripts/spatial-catalog.ts",
     "db:generate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs generate",
-    "db:check": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs check"
+    "db:check": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs check",
+    "check:load": "node scripts/harness.ts load current"
   },
   "devDependencies": {
     "@octokit/core": "7.0.8",

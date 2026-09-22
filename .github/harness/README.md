@@ -51,8 +51,8 @@ run and kept with the normal source artifact. `packages/engine/fixtures/spatial/
   not change the corpus, while data, rules, WASM or table changes do;
 - the existing determinism/regression tests, mapped to Issue #1 fixture categories such
   as simultaneous defeat, occlusion, thin walls, high speed and observation limits;
-- planned categories (cross-OS digest comparison, fairness exchange, Worker order, job
-  outcomes, load/budget and baseline regression) with their owning Issue or step.
+- coverage categories for cross-OS comparison, fairness, Worker order, job outcomes,
+  load/budget and regression; the adapters described below now implement the original plans.
 
 `corpus:engine-identity` executes the existing `engine:check`. `corpus:tests` executes
 only the mapped existing test files through the project-local Vite+ with the Vitest JSON
@@ -194,10 +194,12 @@ fast-check 4.10.2 (MIT, pinned development dependency) generates bounded inputs 
 seed 20260923, at most 24 runs/operations and a 30-second budget including shrinking.
 It uses pure-rand transitively for test generation only; the battle's xorshift32-v1
 and actor-stream-v1 are unchanged. Property receipts record source, versions,
-seed/path/counts, interruptions, minimal input and actual Vitest command under
+seed/path/counts, interruptions, minimal input, base manifest hash/battle seed when
+applicable, process launch and reproduction command under
 `.generated/harness/properties`. Discards and interruption never count as success.
 To replay a recorded case, set `FANTASY_PROPERTY_ID`, `FANTASY_PROPERTY_SEED` and
-`FANTASY_PROPERTY_PATH` from that receipt and run its recorded test command. A
+`FANTASY_PROPERTY_PATH` from that receipt and run its reproduction command. The
+corpus raw result separately records the exact executed test command. A
 replay tests that case only and is not evidence that the whole generated suite ran.
 The deliberate corruption control and its minimized input are kept in
 `scripts/harness/fixtures/minimized-hp.json`; it is evidence the property can detect
@@ -215,3 +217,56 @@ dependency/lockfile. No engine rule, pinned input or expected battle digest chan
 Provenance: HiFiScout `replay.ts` and `load-gate.ts` at the Issue #9 pinned SHA were
 read for coverage and exact-baseline review principles; no catalog or D1 adapter
 was imported. Upstream API reference: <https://fast-check.dev/docs/core-blocks/runners/>.
+
+### H5 deterministic budgets and exact paired comparisons
+
+On a clean committed checkout, `vp run check:load` runs the real engine for every
+fixed corpus case with one warmup and five measured runs. `verify` and both OS
+source artifacts include this report. Counts and canonical log/trajectory bytes
+have reviewed per-case ceilings in `load-profile.json`; zero counters are measured
+zeros, never substitutes for a missing instrument. The initial ceilings allow
+roughly 20–50% headroom for most positive operation counters; tiny counts round up,
+while the 6000-step boundary remains exact. Trajectory ceilings allow approximately
+twice the raw encoding size. Zero path/candidate counts stay strict. These are
+regression budgets for these six cases, not product scalability promises.
+
+`vp run harness load <FULL_BASELINE_SHA>` creates a disposable local worktree,
+installs that revision's frozen dependencies, checks both revisions' engine identity,
+and alternates five baseline/candidate pairs on this runner. Each trial warms its
+engine before measurement. Both targets
+receive the same candidate-pinned fixed corpus/profile and the same driver. Capture
+records target SHA, driver SHA/hash, input hash, implementation/WASM identity, Node,
+installed pnpm marker, lock hash, CPU/OS/architecture and raw metrics. Preparation,
+input generation and shrinking are outside the measured interval; actual simulation,
+hashing and bounded record collection are inside it. Persisted Worker/SQLite
+end-to-end timings are not inferred from this direct-engine profile.
+
+`performance.json` records elapsed median/p95, CPU median and process high-water
+RSS, separately from deterministic digests. Windows high-water RSS, Worker queue
+and persistence wall time are null with explicit reasons where this profile does
+not measure them. Real Worker compute/backpressure/heap/WASM metrics remain in
+`worker-corpus/results.json`. No elapsed-time or memory threshold is introduced
+from these initial noisy observations. Commands, setup logs, raw trial files,
+profile and common reports are retained together; interrupted/missing/failed
+baseline execution remains incomplete and cannot be waived by a review file.
+
+The Linux CI source job performs the paired run against the CI plan's exact base;
+manual `workflow_dispatch` requires the full `baseline` commit SHA input as well.
+`ci-gate` requires both OS budget reports and this paired report including the
+regression probe. No extra job, Cloudflare, external model or production data is
+used. New/changed profiles or deterministic costs require an exact-base review in
+`load-reviews.json` binding `beforeDigest`/`afterDigest`, a reason, reviewer and
+before/after evidence. A review is an auditable PR artifact, not an independent
+approval or automatic waiver. Do not generate it automatically in CI. The first
+profile introduction is marked explicitly; its baseline engine can run the same
+fixed inputs, so real before values are retained. If a future baseline cannot run
+a changed contract, report it as incomparable/unknown; introduce that profile in
+a separate reviewed change with independent boundary tests and measurements.
+Never copy old numbers or regenerate Golden results to claim compatibility.
+
+The paired collector also runs the same assertion probe against each target. The
+initial regression is real: before this change, an empty corpus execution list
+incorrectly passed identity/repeat checks. The baseline assertion fails and the
+candidate assertion passes, with separate source/driver identities. Import/setup
+errors cannot stand in for this reproduction. Later baselines retaining the fix
+are reported as retained regression coverage, not new failing-baseline evidence.

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "id": "spatial-fixed-v1",
+  "warmups": 1,
+  "samples": 5,
+  "limits": {
+    "sample-symmetric-melee": {
+      "steps": 200,
+      "casts": 2200,
+      "candidates": 16,
+      "pathNodes": 0,
+      "events": 64,
+      "logBytes": 200000,
+      "trajectoryBytes": 500000
+    },
+    "catalog-swordsman-sky-mage-pillars": {
+      "steps": 350,
+      "casts": 7500,
+      "candidates": 150,
+      "pathNodes": 500,
+      "events": 80,
+      "logBytes": 450000,
+      "trajectoryBytes": 1000000
+    },
+    "catalog-fire-mage-healer-flat": {
+      "steps": 800,
+      "casts": 15000,
+      "candidates": 200,
+      "pathNodes": 0,
+      "events": 350,
+      "logBytes": 1100000,
+      "trajectoryBytes": 2500000
+    },
+    "catalog-archer-guardian-flat": {
+      "steps": 850,
+      "casts": 17000,
+      "candidates": 275,
+      "pathNodes": 0,
+      "events": 250,
+      "logBytes": 1200000,
+      "trajectoryBytes": 3000000
+    },
+    "catalog-storm-mage-ice-mage-flat": {
+      "steps": 150,
+      "casts": 2400,
+      "candidates": 12,
+      "pathNodes": 0,
+      "events": 50,
+      "logBytes": 200000,
+      "trajectoryBytes": 500000
+    },
+    "catalog-lancer-swordsman-pillars": {
+      "steps": 6000,
+      "casts": 48000,
+      "candidates": 0,
+      "pathNodes": 0,
+      "events": 2,
+      "logBytes": 5500000,
+      "trajectoryBytes": 14000000
+    }
+  }
+}

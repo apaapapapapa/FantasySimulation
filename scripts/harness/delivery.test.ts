@@ -4,6 +4,7 @@ import { assessDelivery, conversationDigest, parseSnapshot, VERIFY_JOBS } from '
 import type { DeliverySnapshot, RunEvidence } from './delivery.ts';
 import type { Report } from './report.ts';
 import { assessGate } from '../ci/gate.ts';
+import { loadReceipts } from './test-support/load.ts';
 import { corpusEvidence } from './test-support/corpus.ts';
 import { classify } from '../ci/plan.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
@@ -266,7 +267,8 @@ function plannedFixture(full: boolean) {
   run.plan = { jobId: 3, value: plan, logDigest: 'e'.repeat(64) };
   run.gate = {
     jobId: 4,
-    report: assessGate(plan, results, reports, corpusEvidence(plan)).report,
+    report: assessGate(plan, results, { ...reports, ...loadReceipts(plan) }, corpusEvidence(plan))
+      .report,
     logDigest: 'e'.repeat(64),
   };
   const skipped = full ? 'Docs (${{ matrix.os }})' : 'Verify (${{ matrix.os }})';
