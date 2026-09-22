@@ -289,6 +289,17 @@ describe('delivery with differential CI', () => {
       assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
     }
   });
+  it('rejects deleted H4 gate entries even when all jobs succeeded', () => {
+    const ids = ['ci-evidence:security', ...SECURITY_CHECKS];
+    for (const full of [true, false]) {
+      for (const removed of [...ids.map((id) => [id]), ids]) {
+        const value = plannedFixture(full);
+        const gate = value.prRun!.gate!.report as Report;
+        gate.checks = gate.checks.filter((check) => !removed.includes(check.id));
+        assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+      }
+    }
+  });
   it('rejects missing, stale, failing and foreign-attempt plan/gate receipts', () => {
     for (const mutate of [
       (v: DeliverySnapshot) => {
