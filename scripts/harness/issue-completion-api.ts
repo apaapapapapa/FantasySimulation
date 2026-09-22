@@ -136,14 +136,19 @@ export async function completeOne(
   );
   const persisted = record(await api('GET', path));
   requireCompletion(
-    persisted.body === updated && persisted.state === 'closed' && persisted.state_reason === 'completed',
+    persisted.body === updated &&
+      persisted.state === 'closed' &&
+      persisted.state_reason === 'completed',
     'ISSUE_COMPLETION_NOT_PERSISTED',
   );
   return 'UPDATED_AND_CLOSED';
 }
 
 function readJson(path: string): unknown {
-  requireCompletion(statSync(path).isFile() && statSync(path).size <= 8 * 1024 * 1024, 'INVALID_FILE');
+  requireCompletion(
+    statSync(path).isFile() && statSync(path).size <= 8 * 1024 * 1024,
+    'INVALID_FILE',
+  );
   return JSON.parse(readFileSync(path, 'utf8')) as unknown;
 }
 
@@ -165,10 +170,16 @@ export async function completeIssues(evidenceDirectory: string, apply: boolean) 
   validateJobs(await collection(api, `/actions/runs/${runId}/attempts/${attempt}/jobs`, 'jobs'));
   for (const os of ['ubuntu-latest', 'windows-latest']) {
     const directory = join(evidenceDirectory, `harness-${os}`, 'source');
-    validateSource(readJson(join(directory, 'report.json')), readJson(join(directory, 'command.json')), sourceSha);
+    validateSource(
+      readJson(join(directory, 'report.json')),
+      readJson(join(directory, 'command.json')),
+      sourceSha,
+    );
   }
   const directory = '.github/issue-completions';
-  const files = readdirSync(directory).filter((file) => file.endsWith('.json')).sort();
+  const files = readdirSync(directory)
+    .filter((file) => file.endsWith('.json'))
+    .sort();
   requireCompletion(files.length <= 100, 'TOO_MANY_COMPLETIONS');
   const plans = files.map((file) => {
     const plan = parseCompletion(readJson(join(directory, file)));
@@ -184,8 +195,10 @@ export async function completeIssues(evidenceDirectory: string, apply: boolean) 
       reason = await completeOne(api, plan, sourceSha, runId, apply);
     } catch (error) {
       status = 'unknown';
-      reason = error instanceof Error && /^[A-Z_0-9]+$/.test(error.message)
-        ? error.message : 'ISSUE_COMPLETION_FAILED';
+      reason =
+        error instanceof Error && /^[A-Z_0-9]+$/.test(error.message)
+          ? error.message
+          : 'ISSUE_COMPLETION_FAILED';
     }
     checks.push({
       id: `issue-${plan.issue}`,
@@ -195,17 +208,34 @@ export async function completeIssues(evidenceDirectory: string, apply: boolean) 
       evidence: [{ uri: `https://github.com/${repository}/issues/${plan.issue}`, sourceSha }],
     });
   }
-  if (!checks.length) checks.push({
-    id: 'issues-none', required: true, status: 'pass', reason: 'NO_COMPLETION_DECLARATIONS',
-    evidence: [{ uri: `https://github.com/${repository}/actions/runs/${runId}`, sourceSha }],
-  });
+  if (!checks.length)
+    checks.push({
+      id: 'issues-none',
+      required: true,
+      status: 'pass',
+      reason: 'NO_COMPLETION_DECLARATIONS',
+      evidence: [{ uri: `https://github.com/${repository}/actions/runs/${runId}`, sourceSha }],
+    });
   const report: Report = {
-    schemaVersion: 1, producer: 'issue-completion', sourceSha, candidateSha: sourceSha,
-    baselineSha: null, testMergeSha: null, startedAt, finishedAt: new Date().toISOString(), checks,
+    schemaVersion: 1,
+    producer: 'issue-completion',
+    sourceSha,
+    candidateSha: sourceSha,
+    baselineSha: null,
+    testMergeSha: null,
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    checks,
   };
-  const result = assessReport(report, checks.map((check) => check.id));
+  const result = assessReport(
+    report,
+    checks.map((check) => check.id),
+  );
   mkdirSync('.generated/harness/issues', { recursive: true });
-  writeFileSync('.generated/harness/issues/report.json', `${JSON.stringify(result.report, null, 2)}\n`);
+  writeFileSync(
+    '.generated/harness/issues/report.json',
+    `${JSON.stringify(result.report, null, 2)}\n`,
+  );
   return result;
 }
 
@@ -216,8 +246,12 @@ export async function completionDraft(issue: number) {
   requireCompletion(!current.pull_request && current.state === 'open', 'ISSUE_NOT_OPEN');
   requireCompletion(typeof current.body === 'string', 'ISSUE_BODY_REQUIRED');
   return {
-    schemaVersion: 1, issue, issueBodySha256: bodyDigest(current.body),
-    issueUpdatedAt: current.updated_at, complete: false, summary: '',
+    schemaVersion: 1,
+    issue,
+    issueBodySha256: bodyDigest(current.body),
+    issueUpdatedAt: current.updated_at,
+    complete: false,
+    summary: '',
     remainingWork: ['Review the full Issue scope and provide evidence for every acceptance item.'],
     pullRequests: [],
     acceptance: issueTasks(current.body).map((entry) => ({ task: entry.task, evidence: '' })),

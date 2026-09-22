@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "issue": 25,
+  "issueBodySha256": "54534deec7eed73920cad8dd9f07b69023a773bc15dd010259263a0782c55efa",
+  "issueUpdatedAt": "2026-09-22T14:09:54Z",
+  "complete": true,
+  "summary": "Issueの完了記録をレビュー対象にし、main CIと受入証跡の確認後にチェックリスト・検証記録の更新とcompletedクローズを行うハーネスを導入。",
+  "remainingWork": [],
+  "pullRequests": [29],
+  "acceptance": [
+    {
+      "task": "完了宣言・受入項目の証跡・残件なしを記録したレビュー対象ファイルからIssueを完了処理する。",
+      "evidence": "scripts/harness/issue-completion.ts validates the reviewed completion declaration and every acceptance item; remainingWork must be empty."
+    },
+    {
+      "task": "同一リポジトリのmain成功CI、Linux/Windowsのsource証跡、関連PRのmainマージを確認する。",
+      "evidence": "issue-completion-api.ts validates live main CI, every required job, both source-runner reports and merged PR ancestry before any write."
+    },
+    {
+      "task": "Issue本文のチェックリストと実装・PR・main SHA・CIの記録を更新し、completedとしてクローズする。",
+      "evidence": "completeOne updates body and completed state in one PATCH and verifies the saved result; regression tests cover the write and receipt."
+    },
+    {
+      "task": "未完了項目、外部設定の残件、CI失敗・skip・証跡欠落、Issue本文の変更ではクローズしない。",
+      "evidence": "Regression tests reject incomplete declarations, stale or missing evidence, failed or skipped jobs, changed Issues and open sub-Issues."
+    },
+    {
+      "task": "再実行は重複更新せず、人手で再オープンされたIssueを勝手に閉じ直さない。",
+      "evidence": "Regression tests verify a repeated completion produces no second write and an existing completion marker prevents automatic reclosure."
+    },
+    {
+      "task": "PR検証はread-onlyとし、Issue書込権限をmain検証後の専用処理に限定する。",
+      "evidence": "issue-completion.yml limits Issue writes to a same-repository successful main workflow_run; PR CI remains read-only."
+    },
+    {
+      "task": "回帰テストとAGENTS.md・運用手順を追加し、既存ハーネスと両OSの検証を維持する。",
+      "evidence": "AGENTS.md and docs/issue-completion.md define mandatory completion bookkeeping; the existing verify and source harness run all regression tests."
+    }
+  ]
+}

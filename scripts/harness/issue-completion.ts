@@ -171,10 +171,17 @@ export function issueTasks(body: string): { line: number; task: string }[] {
 }
 
 function markdown(value: string): string {
-  return value.replace(/[&<>@`\[\]*_]/g, (char) => `&#${char.charCodeAt(0)};`).replace(/\r?\n/g, ' ');
+  return value
+    .replace(/[&<>@`\[\]*_]/g, (char) => `&#${char.charCodeAt(0)};`)
+    .replace(/\r?\n/g, ' ');
 }
 
-export function completedBody(plan: Completion, body: string, sourceSha: string, runId: number): string {
+export function completedBody(
+  plan: Completion,
+  body: string,
+  sourceSha: string,
+  runId: number,
+): string {
   const tasks = issueTasks(body);
   const expected = new Set(plan.acceptance.map((entry) => entry.task));
   requireCompletion(
@@ -200,7 +207,9 @@ export function completedBody(plan: Completion, body: string, sourceSha: string,
     `- 関連PR: ${plan.pullRequests.map((number) => `${url}/pull/${number}`).join(', ')}`,
     '- 残件: なし（完了宣言をレビュー済み）',
     '',
-    ...plan.acceptance.map((entry) => `- [x] ${markdown(entry.task)} — ${markdown(entry.evidence)}`),
+    ...plan.acceptance.map(
+      (entry) => `- [x] ${markdown(entry.task)} — ${markdown(entry.evidence)}`,
+    ),
   ].join('\n');
   const updated = `${lines.join('\n').trimEnd()}\n\n${receipt}\n`;
   requireCompletion(updated.length <= 60000, 'ISSUE_BODY_TOO_LARGE');
