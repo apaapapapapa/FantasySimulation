@@ -153,7 +153,8 @@ dry-runでも認証・push権限は検証しますが、タグとReleaseは作�
 ## 下書きと公開revision
 
 公開済みの設定は上書き・削除できません。`GET /api/characters/{id}`等で取得し、
-`POST /api/drafts` に `{kind, definitionId, definition}` を送って編集します。
+`POST /api/drafts` に `{kind, definitionId, base, definition}` を送って編集します。
+`base` は編集元の `{id, revision, contentHash}`（新規IDは`null`）。他の下書きから公開された場合も409を返します。
 `PATCH` は `{expectedVersion, definition}`、`publish` は `{expectedVersion}` を要求し、
 古い版による編集・二重公開は409です。未完成の下書きは保存できますが、公開時は型・参照を検証します。
 公開に成功すると不変の新revisionと更新後の下書きが返ります。

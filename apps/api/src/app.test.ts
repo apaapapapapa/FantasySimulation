@@ -10,7 +10,7 @@ import {
   SpecInputSchema,
   type Definition,
 } from '@fantasy/domain/spatial';
-import { catalogManifest } from '@fantasy/engine/spatial';
+import { catalogManifest, reference } from '@fantasy/engine/spatial';
 import { createApp } from './app.ts';
 import { openStore, readSampleRevisions } from './store.ts';
 const apps: ReturnType<typeof createApp>[] = [];
@@ -72,6 +72,7 @@ describe('3D revision API and new SQLite generation', () => {
       payload: {
         kind: 'ability',
         definitionId: 'unknown',
+        base: null,
         definition: { effects: [{ kind: 'absolute-win' }] },
       },
     });
@@ -94,7 +95,12 @@ describe('3D revision API and new SQLite generation', () => {
       store.getRevision('character', 'swordsman')!.definition,
     ) as Definition<'character'>;
     definition.policy.id = 'missing-policy';
-    const missing = store.createDraft({ kind: 'character', definitionId: 'new', definition });
+    const missing = store.createDraft({
+      kind: 'character',
+      definitionId: 'new',
+      base: null,
+      definition,
+    });
     expect((await store.validateDraft(missing.id)).valid).toBe(false);
     await expect(store.publishDraft(missing.id, 1)).rejects.toThrow(/Missing/);
   });
@@ -104,6 +110,7 @@ describe('3D revision API and new SQLite generation', () => {
     const d = store.createDraft({
       kind: 'character',
       definitionId: original.id,
+      base: reference(original),
       definition: original.definition,
     });
     const patch = await app.inject({
@@ -145,12 +152,67 @@ describe('3D revision API and new SQLite generation', () => {
       store.db.prepare("UPDATE published_revisions SET content_hash='changed'").run(),
     ).toThrow(/immutable/);
   });
+  it('rejects separate drafts based on superseded revisions, including across connections', async () => {
+    const filename = file(),
+      { store, app } = await setup(filename);
+    const original = store.getRevision('character', 'swordsman')!;
+    const input = {
+      kind: original.kind,
+      definitionId: original.id,
+      base: reference(original),
+      definition: original.definition,
+    };
+    const first = store.createDraft(input),
+      stale = store.createDraft(input);
+    const second = openStore(filename);
+    try {
+      expect(second.getDraft(stale.id)?.base).toEqual(reference(original));
+      const attempts = await Promise.allSettled([
+        store.publishDraft(first.id, 1),
+        second.publishDraft(stale.id, 1),
+      ]);
+      expect(attempts.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+      expect(attempts.find((r) => r.status === 'rejected')).toMatchObject({
+        reason: { statusCode: 409 },
+      });
+      expect(store.getRevision('character', original.id)?.revision).toBe(2);
+      expect(store.getDraft(stale.id)?.version).toBe(1);
+      expect((await second.validateDraft(stale.id)).valid).toBe(false);
+      const response = await app.inject({ method: 'POST', url: '/api/drafts', payload: input });
+      expect(response.statusCode).toBe(409);
+      // Its own successful publication advances the base for the next edit.
+      const own = store.getDraft(first.id)!;
+      expect(own.base).toEqual(own.published);
+      store.patchDraft(own.id, own.version, { ...original.definition, name: '次の編集' });
+      expect((await store.publishDraft(own.id, own.version + 1)).revision.revision).toBe(3);
+    } finally {
+      second.close();
+    }
+  });
+  it('allows exactly one first publication for two new-ID drafts', async () => {
+    const { store } = await setup(),
+      original = store.getRevision('character', 'swordsman')!;
+    const input = {
+      kind: original.kind,
+      definitionId: 'new',
+      base: null,
+      definition: original.definition,
+    };
+    const drafts = [store.createDraft(input), store.createDraft(input)];
+    const attempts = await Promise.allSettled(drafts.map((d) => store.publishDraft(d.id, 1)));
+    expect(attempts.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(attempts.find((r) => r.status === 'rejected')).toMatchObject({
+      reason: { statusCode: 409 },
+    });
+    expect(store.getRevision('character', 'new')?.revision).toBe(1);
+  });
   it('rechecks a draft after asynchronous validation without publishing a stale snapshot', async () => {
     const { store } = await setup(),
       r = store.getRevision('character', 'swordsman')!;
     const draft = store.createDraft({
       kind: r.kind,
       definitionId: 'new-swordsman',
+      base: null,
       definition: r.definition,
     });
     const pending = store.publishDraft(draft.id, 1);
@@ -175,6 +237,7 @@ describe('3D revision API and new SQLite generation', () => {
     const draft = first.store.createDraft({
       kind: 'character',
       definitionId: old.id,
+      base: reference(old),
       definition: { ...old.definition, name: '後の編集' },
     });
     await first.store.publishDraft(draft.id, 1);

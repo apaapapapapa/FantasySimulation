@@ -24,7 +24,7 @@ it('initializes the current schema twice using the same application runner', () 
   try {
     migrate(db);
     db.prepare(
-      "INSERT INTO definition_drafts VALUES ('preserved', 'character', 'preserved', 1, '{}', NULL, 'test', 'test')",
+      "INSERT INTO definition_drafts (id,kind,definition_id,version,definition_json,published_json,created_at,updated_at) VALUES ('preserved', 'character', 'preserved', 1, '{}', NULL, 'test', 'test')",
     ).run();
     const before = db.prepare('SELECT * FROM schema_migrations').all();
     migrate(db);

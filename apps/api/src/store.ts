@@ -197,10 +197,32 @@ export class Store {
     const draft = parseJson(DraftInputSchema, input),
       id = randomUUID(),
       now = new Date().toISOString();
-    this.db
-      .prepare('INSERT INTO definition_drafts VALUES (?,?,?,?,?,NULL,?,?)')
-      .run(id, draft.kind, draft.definitionId, 1, canonicalJson(draft.definition), now, now);
-    return this.getDraft(id)!;
+    return this.transaction(() => {
+      this.checkDraftBase(draft);
+      this.db
+        .prepare(
+          'INSERT INTO definition_drafts (id,kind,definition_id,version,definition_json,published_json,created_at,updated_at,base_revision_json) VALUES (?,?,?,?,?,NULL,?,?,?)',
+        )
+        .run(
+          id,
+          draft.kind,
+          draft.definitionId,
+          1,
+          canonicalJson(draft.definition),
+          now,
+          now,
+          draft.base === null ? null : canonicalJson(draft.base),
+        );
+      return this.getDraft(id)!;
+    });
+  }
+  private checkDraftBase(draft: Pick<Draft, 'kind' | 'definitionId' | 'base'>) {
+    const latest = this.getRevision(draft.kind, draft.definitionId);
+    if (canonicalJson(latest ? reference(latest) : null) !== canonicalJson(draft.base))
+      throw new StoreError(
+        409,
+        'Published revision changed; create a draft from the current revision',
+      );
   }
   getDraft(id: string): Draft | undefined {
     const row = this.db.prepare('SELECT * FROM definition_drafts WHERE id=?').get(id);
@@ -209,6 +231,7 @@ export class Store {
           id: row.id,
           kind: row.kind,
           definitionId: row.definition_id,
+          base: row.base_revision_json === null ? null : jsonValue(row.base_revision_json),
           version: row.version,
           definition: jsonValue(row.definition_json),
           published: row.published_json === null ? null : jsonValue(row.published_json),
@@ -236,6 +259,7 @@ export class Store {
     if (!draft) throw new StoreError(404, 'Draft not found');
     if (expectedVersion !== undefined && draft.version !== expectedVersion)
       throw new StoreError(409, 'Draft changed; reload before publishing');
+    this.checkDraftBase(draft);
     const parsed = parseJson(RevisionSchema, {
       kind: draft.kind,
       id: draft.definitionId,
@@ -265,6 +289,7 @@ export class Store {
     return this.transaction(() => {
       if (this.getDraft(id)?.version !== draft.version)
         throw new StoreError(409, 'Draft changed during validation');
+      this.checkDraftBase(draft);
       const last = this.getRevision(draft.kind, draft.definitionId);
       revision.revision = (last?.revision ?? 0) + 1;
       RevisionSchema.parse(revision);
@@ -273,9 +298,15 @@ export class Store {
       this.insertRevision(revision, now);
       this.db
         .prepare(
-          'UPDATE definition_drafts SET version=version+1,published_json=?,updated_at=? WHERE id=? AND version=? AND version<2147483647',
+          'UPDATE definition_drafts SET version=version+1,published_json=?,base_revision_json=?,updated_at=? WHERE id=? AND version=? AND version<2147483647',
         )
-        .run(canonicalJson(reference(revision)), now, id, expectedVersion);
+        .run(
+          canonicalJson(reference(revision)),
+          canonicalJson(reference(revision)),
+          now,
+          id,
+          expectedVersion,
+        );
       return { draft: this.getDraft(id)!, revision };
     });
   }

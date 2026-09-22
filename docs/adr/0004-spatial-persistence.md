@@ -9,6 +9,10 @@ Issue #1のP3としてDB世代を`local-v1`から`spatial-v1`へ置換する。
 DB triggerでUPDATE/DELETEを拒否する。編集は新revisionを発行する下書きへ分離し、
 PATCHとpublishはexpectedVersionを要求する。非同期検証中の編集もpublish直前の
 短いトランザクションで再確認し、古い編集の上書きと二重公開を防ぐ。
+003 SQLで下書きに編集元revision/hashを固定し、作成時と公開トランザクション内で
+最新revisionとの一致を要求する。別々の下書きや新規IDの同時公開も片方を409で拒否する。
+公開成功時のみ編集元を自身の新revisionへ進める。既存のbase未記録下書きは
+既存定義を公開できず、最新revisionから作り直す。
 
 下書きは未完成のJSONを許容する。公開時にはschema・内容hash・型付き参照と
 キャラクター方針の利用可能能力を検証する。公開済み参照のみを辿り、戦闘manifestには

@@ -13,6 +13,7 @@ const version = z.number().int().min(1).max(2147483647);
 export const DraftInputSchema = z.strictObject({
   kind: DefinitionKindSchema,
   definitionId: IdSchema,
+  base: RefSchema.nullable(),
   definition: z.unknown(),
 });
 export const DraftPatchSchema = z.strictObject({
