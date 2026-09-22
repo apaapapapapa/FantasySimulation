@@ -8,6 +8,12 @@ import {
 } from '@fantasy/domain/spatial';
 import { prepareBattle, reference, sealRevision } from './prepare.ts';
 import { sampleManifest } from './sample.ts';
+import {
+  battleEvents as events,
+  combatManifest,
+  editScenario,
+  glassWall,
+} from '../../test-support/fixtures.ts';
 import { runBattle, runPreparedBattle } from './run.ts';
 
 async function fixture(
@@ -21,75 +27,32 @@ async function fixture(
     wall?: boolean;
   } = {},
 ) {
-  const manifest = await sampleManifest(maxSteps);
-  const baseAbility = manifest.revisions.find((r) => r.kind === 'ability')!;
   const statuses = await Promise.all(
     (edit.statuses ?? []).map((definition, i) =>
       sealRevision('status', `status-${i}`, 1, definition),
     ),
   );
-  const ability = await sealRevision('ability', baseAbility.id, 1, {
-    ...baseAbility.definition,
-    ...edit.ability,
-    ...(statuses.length
-      ? {
-          target: 'self' as const,
-          attack: { kind: 'direct' as const },
-          castSteps: 0,
-          costs: { hp: 0, mp: 0, uses: 1 },
-          effects: statuses.map((s) => ({ kind: 'apply-status' as const, status: reference(s) })),
-        }
-      : {}),
-    ...(edit.startup ? { trigger: 'battle-start' as const } : {}),
+  const manifest = await combatManifest(maxSteps, {
+    ability: {
+      ...edit.ability,
+      ...(statuses.length
+        ? {
+            target: 'self' as const,
+            attack: { kind: 'direct' as const },
+            castSteps: 0,
+            costs: { hp: 0, mp: 0, uses: 1 },
+            effects: statuses.map((s) => ({ kind: 'apply-status' as const, status: reference(s) })),
+          }
+        : {}),
+      ...(edit.startup ? { trigger: 'battle-start' as const } : {}),
+    },
+    policy: edit.policy ?? {},
+    character: edit.character ?? {},
   });
-  const basePolicy = manifest.revisions.find((r) => r.kind === 'policy')!;
-  const policy = await sealRevision('policy', basePolicy.id, 1, {
-    ...basePolicy.definition,
-    ...edit.policy,
-  });
-  const baseCharacter = manifest.revisions.find((r) => r.kind === 'character')!;
-  const character = await sealRevision('character', baseCharacter.id, 1, {
-    ...baseCharacter.definition,
-    ...edit.character,
-    abilities: [reference(ability)],
-    policy: reference(policy),
-  });
-  manifest.revisions = manifest.revisions.map((r) =>
-    r.kind === 'character'
-      ? character
-      : r.kind === 'ability'
-        ? ability
-        : r.kind === 'policy'
-          ? policy
-          : r,
-  );
   manifest.revisions.push(...statuses);
-  manifest.participants.forEach((p) => {
-    p.character = reference(character);
-  });
-  if (edit.wall) {
-    const old = manifest.revisions.find((r) => r.kind === 'scenario')!;
-    const scenario = await sealRevision('scenario', old.id, 1, {
-      ...old.definition,
-      obstacles: [
-        ...old.definition.obstacles,
-        {
-          kind: 'box',
-          id: 'glass',
-          center: { x: 0, y: 2000, z: 0 },
-          halfExtents: { x: 5, y: 2000, z: 2000 },
-          yawMilliDegrees: 0,
-          slopeMilliDegrees: 0,
-          blocks: { movement: true, vision: false, attack: true },
-        },
-      ],
-    });
-    manifest.revisions = manifest.revisions.map((r) => (r.kind === 'scenario' ? scenario : r));
-    manifest.scenario = reference(scenario);
-  }
+  if (edit.wall) await editScenario(manifest, (scenario) => scenario.obstacles.push(glassWall(5)));
   return manifest;
 }
-const events = (records: StreamRecord[]) => records.flatMap((r) => ('events' in r ? r.events : []));
 const finalActors = (records: StreamRecord[]) => {
   const initial = records[0]!;
   if (initial.kind !== 'initial') throw new Error('Missing initial display');

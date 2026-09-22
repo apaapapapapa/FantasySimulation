@@ -36,6 +36,15 @@ Explanation-only and read-only review requests retain their requested scope.
 - On failures, missing permissions, changed requirements or incomplete work, leave the Issue open, record the blocker and repair/retry. Do not bypass the harness with a manual close. Respect intentionally reopened Issues and do not reclose them with old evidence.
 - See [docs/issue-completion.md](docs/issue-completion.md) for declaration, retry and evidence details.
 
+## Reuse and duplication prevention
+
+- Before implementing, search the owning module and `test-support` for an existing operation or fixture. Reuse it or extend its narrow contract; do not copy a sibling implementation.
+- Production helpers stay in the owning layer. Test factories belong in package-local `test-support`; production must never import them. Return fresh mutable test data, validate/reseal edited revisions, and retain explicit assertions/expected values in each test. Never derive expected results through the implementation under test.
+- Use table-driven tests for the same behavior with different inputs. Do not replace distinct behavior with a boolean-heavy universal helper or abstract unrelated code only to satisfy a metric.
+- Run `vp run check:quality` while editing, including before staging new files. `quality:duplication` is also required by `verify`, the source harness and both OS CI jobs. Fix the reported source/destination together; inspect other callers and add regression coverage.
+- Do not add a growing clone baseline, blanket test exclusions, suppression comments or higher thresholds to pass the gate. Parsing/coverage/budget failures are incomplete evidence, not success. Threshold changes require an explicit policy review and regression tests.
+- Follow [the duplication workflow](docs/development/duplication.md), then finish the normal source/PR delivery checks.
+
 ## Simulation invariants
 
 - Unknown abilities must fail validation; do not silently ignore them.

@@ -1,31 +1,14 @@
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { rmSync } from 'node:fs';
 import { afterEach, expect, it } from 'vite-plus/test';
 import { architecture } from './architecture.ts';
 import { withSources, importEdges } from './ast.ts';
 import { firstPartyJavaScript } from './files.ts';
+import { createTestProject } from './test-support/project.ts';
 const dirs: string[] = [];
 function fixture(files: Record<string, string>) {
-  const root = mkdtempSync(join(tmpdir(), 'fantasy-quality-'));
-  dirs.push(root);
-  const all = {
-    'tsconfig.json': JSON.stringify({
-      compilerOptions: {
-        module: 'ESNext',
-        target: 'ESNext',
-        moduleResolution: 'Bundler',
-        noEmit: true,
-      },
-      include: ['apps/**/*.ts', 'apps/**/*.tsx', 'packages/**/*.ts'],
-    }),
-    ...files,
-  };
-  for (const [path, content] of Object.entries(all)) {
-    mkdirSync(dirname(join(root, path)), { recursive: true });
-    writeFileSync(join(root, path), content);
-  }
-  return { root, paths: Object.keys(all) };
+  const project = createTestProject(files);
+  dirs.push(project.root);
+  return project;
 }
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });

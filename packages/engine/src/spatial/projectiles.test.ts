@@ -4,7 +4,6 @@ import {
   StreamRecordSchema,
   type Definition,
   type Manifest,
-  type StreamRecord,
 } from '@fantasy/domain/spatial';
 import { projectileCurve, explosionCoverage, type ProjectileState } from './projectiles.ts';
 import { at, initializePhysics, SpatialWorld, straight, type Obstacle } from './physics.ts';
@@ -13,7 +12,12 @@ import { emptyMemory, perceive } from './perception.ts';
 import { initialMotion } from './movement.ts';
 import { cosDegrees, dot, unit } from './math.ts';
 import { prepareBattle, reference, sealRevision } from './prepare.ts';
-import { sampleManifest } from './sample.ts';
+import {
+  battleEvents as events,
+  combatManifest,
+  editScenario,
+  glassWall,
+} from '../../test-support/fixtures.ts';
 import { runBattle } from './run.ts';
 beforeAll(initializePhysics);
 const shot: Extract<Definition<'ability'>['attack'], { kind: 'projectile' }> = {
@@ -28,63 +32,20 @@ const shot: Extract<Definition<'ability'>['attack'], { kind: 'projectile' }> = {
   maxHitsPerTarget: 1,
 };
 async function fixture(shape = shot, maxSteps = 50, wall = false): Promise<Manifest> {
-  const manifest = await sampleManifest(maxSteps);
-  const base = manifest.revisions.find((r) => r.kind === 'ability')!;
-  const ability = await sealRevision('ability', base.id, 1, {
-    ...base.definition,
-    attack: shape,
-    castSteps: 0,
-    recoverySteps: 1,
-    rangeMm: 20000,
-    costs: { hp: 0, mp: 1, uses: 1 },
-    effects: [{ kind: 'damage', amount: 205, attackScaleBps: 0, element: 'physical' }],
+  const manifest = await combatManifest(maxSteps, {
+    ability: {
+      attack: shape,
+      castSteps: 0,
+      recoverySteps: 1,
+      rangeMm: 20000,
+      costs: { hp: 0, mp: 1, uses: 1 },
+      effects: [{ kind: 'damage', amount: 205, attackScaleBps: 0, element: 'physical' }],
+    },
+    policy: { movement: 'hold' },
   });
-  const oldPolicy = manifest.revisions.find((r) => r.kind === 'policy')!;
-  const policy = await sealRevision('policy', oldPolicy.id, 1, {
-    ...oldPolicy.definition,
-    movement: 'hold',
-  });
-  const oldChar = manifest.revisions.find((r) => r.kind === 'character')!;
-  const character = await sealRevision('character', oldChar.id, 1, {
-    ...oldChar.definition,
-    abilities: [reference(ability)],
-    policy: reference(policy),
-  });
-  manifest.revisions = manifest.revisions.map((r) =>
-    r.kind === 'ability'
-      ? ability
-      : r.kind === 'policy'
-        ? policy
-        : r.kind === 'character'
-          ? character
-          : r,
-  );
-  manifest.participants.forEach((p) => {
-    p.character = reference(character);
-  });
-  if (wall) {
-    const old = manifest.revisions.find((r) => r.kind === 'scenario')!;
-    const scenario = await sealRevision('scenario', old.id, 1, {
-      ...old.definition,
-      obstacles: [
-        ...old.definition.obstacles,
-        {
-          kind: 'box',
-          id: 'glass',
-          center: { x: 0, y: 2000, z: 0 },
-          halfExtents: { x: 1, y: 2000, z: 2000 },
-          yawMilliDegrees: 0,
-          slopeMilliDegrees: 0,
-          blocks: { movement: true, attack: true, vision: false },
-        },
-      ],
-    });
-    manifest.revisions = manifest.revisions.map((r) => (r.kind === 'scenario' ? scenario : r));
-    manifest.scenario = reference(scenario);
-  }
+  if (wall) await editScenario(manifest, (scenario) => scenario.obstacles.push(glassWall(1)));
   return manifest;
 }
-const events = (records: StreamRecord[]) => records.flatMap((r) => ('events' in r ? r.events : []));
 async function projectile(shape = shot) {
   const battle = await prepareBattle(await fixture(shape));
   const value: ProjectileState = {

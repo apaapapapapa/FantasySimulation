@@ -1,9 +1,15 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { architecture } from './quality/architecture.ts';
-import { firstPartyJavaScript, unsupportedTypeScriptModules } from './quality/files.ts';
+import {
+  firstPartyJavaScript,
+  unsupportedTypeScriptModules,
+  qualityPaths,
+  firstPartyTypeScript,
+} from './quality/files.ts';
 import { withSources } from './quality/ast.ts';
+import { duplication, DUPLICATION_POLICY } from './quality/duplication.ts';
 import { determinism } from './quality/determinism.ts';
 import { assessReport } from './harness/report.ts';
 import type { Check, Report } from './harness/report.ts';
@@ -13,6 +19,7 @@ const required = [
   'quality:typescript',
   'quality:architecture',
   'quality:determinism',
+  'quality:duplication',
   'quality:migrations',
 ];
 const startedAt = new Date().toISOString();
@@ -25,14 +32,7 @@ try {
   const directory = '.generated/harness/quality';
   mkdirSync(directory, { recursive: true });
   const evidence = [{ uri: `${directory}/findings.json`, sourceSha: info.sourceSha }];
-  const paths = execFileSync('git', ['ls-files', '-z'], {
-    encoding: 'utf8',
-    timeout: 15000,
-    maxBuffer: 4 * 1024 * 1024,
-  })
-    .split('\0')
-    .filter(Boolean);
-  if (!paths.length) throw Error('Tracked source coverage is empty');
+  const paths = qualityPaths(root);
   const run = async (id: string, collect: () => Promise<unknown[]> | unknown[]) => {
     try {
       const findings = await collect();
@@ -74,6 +74,13 @@ try {
         [...files].flatMap(([path, file]) => determinism(path, file, checker)),
     ),
   );
+  await run('quality:duplication', () => {
+    details.duplicationCoverage = {
+      policy: DUPLICATION_POLICY,
+      selectedFiles: firstPartyTypeScript(paths),
+    };
+    return duplication(root, paths);
+  });
   await run('quality:migrations', () => {
     const result = spawnSync(process.execPath, ['node_modules/drizzle-kit/bin.cjs', 'check'], {
       cwd: root,
