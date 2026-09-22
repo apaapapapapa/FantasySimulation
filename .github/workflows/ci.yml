@@ -148,6 +148,16 @@ jobs:
         with:
           name: harness-docs-windows-latest
           path: .generated/harness/ci/evidence/docs-windows-latest/docs
+      - name: Collect security receipts from this run and attempt only
+        if: always()
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: security-*-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/ci/security-evidence
+          merge-multiple: false
+      - name: Bind every security receipt to the common report
+        if: always()
+        run: vp exec node scripts/security/evidence.ts
       - name: Require dependency policy
         if: always()
         shell: bash
