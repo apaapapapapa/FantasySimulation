@@ -183,7 +183,7 @@ dry-runでも認証・push権限は検証しますが、タグとReleaseは作�
 [記録形式と上限](docs/adr/0006-recorded-replay.md)を参照してください。
 API側の `ReplayWriter` は記録を独立したgzipチャンクへ保存し、全体を再読込検証してから
 確定配置します。`verifyReplay` は全件の整合性、`seekReplay` は対象チャンクからの
-表示状態を復元します。ジョブ実行・観戦画面への接続は後続の作業です。
+表示状態を復元します。ジョブ実行は下記APIで利用でき、観戦画面はP4の作業です。
 
 ## データとマイグレーション
 
@@ -274,3 +274,28 @@ See [the runtime contract and measured-memory definitions](docs/adr/0007-worker-
 `BATTLE_TIMEOUT_MS=30000`、`BATTLE_QUEUE_LIMIT=128`、
 `BATTLE_STORAGE_BYTES=17179869184`、`BATTLE_RSS_BYTES=1610612736`。
 APIは引き続き認証のないlocalhost開発用です。
+
+## Headlessバッチ（P3）
+
+cleanなcommitから計画を作り、同じcommit/toolchainで実行します。HTTPは不要です。
+入力は公開revision、最大1,000の予定枠、計算予算、予測保存量と2種類の容量上限を含みます。
+
+```sh
+vp run batch sample .generated/batch-input.json
+vp run batch plan .generated/batch-input.json .generated/batch-plan.json
+vp run batch run .generated/batch-plan.json .generated/batch-output --workers 1
+```
+
+`--shard 0/4`から`--shard 3/4`は各shardを実行します。並列実行では別々の出力先を指定します。
+同じ計画/出力先で再実行すると完全な結果を検証して再利用します。failed/cancelledを
+再試行する場合は`--retry-failed`を明示します。`--deadline`はミリ秒、最大1,800,000です。
+出力には不変のindexファイルのパスが表示されます。全体の照合には各indexと出力先を渡します。
+
+```sh
+vp run batch check .generated/batch-plan.json path/to/index.json .generated/batch-output
+```
+
+不完全なshardや破損を成功として数えません。不完全ならexit 2、入力/整合性エラーはexit 1です。
+配布ビルドでは`node apps/api/dist/batch.mjs`を使用できます。
+出力の`.work/`はローカルDB/作業記録です。必要ディスク容量は最終出力上限＋作業replay上限＋256 MiB。
+[計画・保存・再開の契約](docs/adr/0008-headless-batch.md)を参照してください。

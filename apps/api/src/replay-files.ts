@@ -1,7 +1,7 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { constants, createWriteStream } from 'node:fs';
-import { lstat, open, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { lstat, open, stat, link, rm } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createGzip, gunzip } from 'node:zlib';
@@ -10,6 +10,28 @@ import { ArtifactRefSchema, type ReplayManifest } from '@fantasy/domain/spatial'
 
 export const sha256 = (bytes: Uint8Array | string) =>
   `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+export const GENERATED_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+export async function writeDurableFile(path: string, bytes: string | Uint8Array) {
+  const file = await open(path, 'wx');
+  try {
+    await file.writeFile(bytes);
+    await file.sync();
+  } finally {
+    await file.close();
+  }
+}
+/** Atomic, create-only file publication; a stopped writer never exposes a partial pointer/index. */
+export async function publishImmutableFile(path: string, bytes: string | Uint8Array) {
+  const temporary = join(dirname(path), `.immutable-staging-${randomUUID()}`);
+  try {
+    await writeDurableFile(temporary, bytes);
+    await link(temporary, path);
+    await syncDirectory(dirname(path));
+  } finally {
+    await rm(temporary, { force: true });
+  }
+}
 export const replayDirectory = (root: string, id: string) => {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$/.test(id)) throw new Error('Invalid replay ID');
   return join(root, id);

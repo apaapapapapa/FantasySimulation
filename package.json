@@ -17,6 +17,7 @@
     "build": "vp run -r build",
     "db:migrate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs migrate",
     "db:seed": "vp run --filter @fantasy/api db:seed",
+    "batch": "vp run --filter @fantasy/api batch",
     "engine:stamp": "node scripts/engine-identity.ts --write",
     "engine:check": "node scripts/engine-identity.ts",
     "security:test": "node --test \"scripts/security/*.test.ts\"",

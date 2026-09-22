@@ -71,12 +71,13 @@ const revisionKey = (r: Pick<Revision, 'kind' | 'id' | 'revision'>) =>
 function resolveClosure(
   roots: Revision[],
   get: (kind: DefinitionKind, ref: RevisionRef) => Revision,
+  limit = 256,
 ): Revision[] {
   const found = new Map<string, Revision>();
   const visit = (r: Revision) => {
     const key = revisionKey(r);
     if (found.has(key)) return;
-    if (found.size >= 256) throw new StoreError(400, 'Revision closure exceeds 256 entries');
+    if (found.size >= limit) throw new StoreError(400, `Revision closure exceeds ${limit} entries`);
     found.set(key, r);
     for (const d of dependencies(r)) visit(get(d.kind, d.ref));
   };
@@ -198,13 +199,31 @@ export class Store {
       .run();
   }
   async seedRevisions(input: unknown[]) {
-    if (input.length > 256) throw new StoreError(400, 'Sample catalog exceeds revision limit');
+    return this.loadRevisions(input, 'missing-definition');
+  }
+  async loadPinnedRevisions(input: unknown[]) {
+    return this.loadRevisions(input, 'exact-revision');
+  }
+  private async loadRevisions(input: unknown[], mode: 'missing-definition' | 'exact-revision') {
+    if (input.length > (mode === 'exact-revision' ? 4096 : 256))
+      throw new StoreError(400, 'Revision import exceeds its limit');
     const revisions = input.map((r) => parseJson(RevisionSchema, r));
+    if (new Set(revisions.map(revisionKey)).size !== revisions.length)
+      throw new StoreError(400, 'Duplicate revision identity');
     for (const r of revisions)
       if (r.contentHash !== (await revisionHash(r)))
         throw new StoreError(400, 'Sample revision hash mismatch');
     this.transaction(() => {
-      const additions = revisions.filter((r) => !this.getRevision(r.kind, r.id));
+      const additions = revisions.filter((r) => {
+        const existing = this.getRevision(
+          r.kind,
+          r.id,
+          mode === 'exact-revision' ? r.revision : undefined,
+        );
+        if (existing && mode === 'exact-revision' && canonicalJson(existing) !== canonicalJson(r))
+          throw new StoreError(409, 'Pinned revision conflicts with immutable stored content');
+        return !existing;
+      });
       const available = new Map(additions.map((r) => [revisionKey(r), r]));
       const get = (kind: DefinitionKind, ref: RevisionRef) => {
         const r =
@@ -213,7 +232,7 @@ export class Store {
           throw new StoreError(409, 'Sample conflicts with an existing revision');
         return r;
       };
-      resolveClosure(additions, get);
+      resolveClosure(additions, get, mode === 'exact-revision' ? 4096 : 256);
       const now = new Date().toISOString();
       for (const r of additions) this.insertRevision(r, now);
     });
