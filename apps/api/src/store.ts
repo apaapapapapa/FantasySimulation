@@ -102,7 +102,7 @@ function resolveClosure(
 
 export class Store {
   readonly db: Database.Database;
-  private readonly orm: BetterSQLite3Database;
+  readonly orm: BetterSQLite3Database;
   constructor(filename: string) {
     if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
