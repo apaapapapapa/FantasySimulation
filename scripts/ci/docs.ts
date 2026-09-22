@@ -77,6 +77,7 @@ export function verifyDocs(root: string) {
     '.generated/harness/docs/report.json',
     JSON.stringify(result.report, null, 2) + '\n',
   );
+  console.log(`FANTASY_DOCS_REPORT=${JSON.stringify(result.report)}`);
   return result;
 }
 if (process.argv[1]?.endsWith('/ci/docs.ts') || process.argv[1]?.endsWith('\\ci\\docs.ts')) {
