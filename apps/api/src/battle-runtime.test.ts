@@ -12,7 +12,9 @@ import { readReplayManifest } from './replay-reader.ts';
 import { createApp } from './app.ts';
 import { battleSpecs } from './db/schema.ts';
 
-describe('persistent Worker/API orchestration', () => {
+// Several cases start/stop multiple real Workers and SQLite roots. Windows cold
+// starts exceeded Vitest's 5s default; this bounds the integration, not game time.
+describe('persistent Worker/API orchestration', { timeout: 30000 }, () => {
   it.each([
     { options: { queueLimit: 1 }, reason: /queue capacity/ },
     { options: { storageBytes: 40 * 1024 ** 2 }, reason: /storage capacity/ },

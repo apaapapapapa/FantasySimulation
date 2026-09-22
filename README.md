@@ -230,10 +230,11 @@ Drizzleが過去SQLの実行時改変検出を保証するわけではありま�
 [Issue完了手順](docs/issue-completion.md)を参照してください。
 PRの成功、mainの成功、release結果、Issue完了はそれぞれ確認します。
 
-対戦の決定性・回帰は `vp run check:corpus` で検査します（Issue #9の第1段階）。
+対戦の決定性・回帰は `vp run check:corpus` で検査します。
 `packages/engine/fixtures/spatial/corpus.json` の固定入力を2回実行してdigestの一致を確認し、
 入力identityの変化と、既存の決定性テストの実行結果をカテゴリ別に記録します。
-両OS間の突合・公平性・負荷比較は未実装で、計画中として `unknown` のまま報告します。
+両OSの出力はCIで突合し、公平性、Worker数・投入順、SQLiteの状態遷移も検証します。
+負荷・baseline比較はIssue #9の小PR 3で追加するため、現時点では `unknown` として報告します。
 固定入力や対応テストを意図して変更する場合は、同じPRでコーパスを更新し理由を記載します。
 
 ソース・テストの重複は `vp run check:quality` の `quality:duplication` で検査します。
