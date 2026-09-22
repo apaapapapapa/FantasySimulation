@@ -1,0 +1,24 @@
+name: Lint delivery evidence
+on:
+  push:
+    branches: [test/lint-delivery-20260923]
+permissions:
+  contents: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Export committed source and history without credentials
+        run: git bundle create source.bundle HEAD
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lint-source
+          path: source.bundle
+          retention-days: 1
+          if-no-files-found: error
