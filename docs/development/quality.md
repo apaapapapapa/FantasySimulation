@@ -24,12 +24,17 @@ Public edges enforce domain/engine/API/web boundaries; runtime edges enforce cyc
 Type-only edges cannot conceal a domain-to-server dependency, but a legitimate reverse
 physics type reference is not a runtime cycle. Rapier is allowed only in
 `packages/engine/src/spatial/physics.ts`. Browser/domain code cannot depend on platform
-builtins. Application modules cannot import development harness scripts.
+builtins. Application modules cannot import development harness scripts. Core crypto is limited
+to `packages/engine/src/hashing.ts`, a reserved dedicated adapter; current runtime
+source uses no core crypto (only test fixtures do). The separate determinism guard
+constrains any adapter to static named `createHash`, not entropy or namespace access.
 
 The root native TypeScript project is canonical. Unsupported export maps, nonliteral module
 expressions, import-equals, unaccounted triple-slash dependencies, unsafe paths and syntax
-errors fail rather than silently dropping edges. Source declarations/tests are not runtime
-entrypoints; imported files still must resolve. Generated projections are removed even on
+errors fail rather than silently dropping edges. Declarations participate in the public graph; their edges do not enter the runtime
+graph. Only the exact `vite-plus/client` type reference in `apps/web/src/vite-env.d.ts`
+is an approved compiler ambient reference; additional imports in that file are still
+checked. Tests are not runtime entrypoints; imported files still must resolve. Generated projections are removed even on
 failure. Dependency packages are not executed by this check. Changing the native TS API or
 workspace resolution requires the guard fixtures to pass, not a loose-parser fallback.
 
@@ -43,7 +48,11 @@ The native TS7 AST independently checks engine runtime source, including aliases
 computed access. `Math.random`, ambient clocks, network APIs, database/I/O imports,
 process/environment access, dynamic code and unreviewed dependencies are rejected.
 Use direct statically named deterministic Math members. Local engine inputs and
-ordinary `self` properties are distinguished from ambient browser globals.
+ordinary `self` properties are distinguished from ambient browser globals. Ambient
+value references use a reviewed pure-global allowlist, not an incomplete list of
+browser APIs to deny. `import.meta` is explicitly refused; type positions are not
+runtime access. Unsupported `.mts`/`.cts` files (including their declarations) are
+rejected as tracked source rather than silently omitted.
 
 The sole core-module exception is a static named `createHash` import from `node:crypto`
 (aliasing that import is allowed). Namespace/default imports, entropy functions,

@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { architecture } from './quality/architecture.ts';
-import { firstPartyJavaScript } from './quality/files.ts';
+import { firstPartyJavaScript, unsupportedTypeScriptModules } from './quality/files.ts';
 import { withSources } from './quality/ast.ts';
 import { determinism } from './quality/determinism.ts';
 import { assessReport } from './harness/report.ts';
@@ -47,9 +47,10 @@ try {
     }
   };
   await run('quality:typescript', () =>
-    firstPartyJavaScript(paths).map((path) => ({
+    [...firstPartyJavaScript(paths), ...unsupportedTypeScriptModules(paths)].map((path) => ({
       path,
-      correction: 'Use strict TypeScript for first-party source and configuration.',
+      correction:
+        'Use strict .ts/.tsx source; .mts/.cts module variants are unsupported by this workspace guard.',
     })),
   );
   await run('quality:architecture', async () => {

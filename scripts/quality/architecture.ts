@@ -9,6 +9,8 @@ import {
   symlinkSync,
   existsSync,
   lstatSync,
+  realpathSync,
+  readdirSync,
 } from 'node:fs';
 import { dirname, join, resolve, relative, sep } from 'node:path';
 import { withSources, importEdges } from './ast.ts';
@@ -35,8 +37,14 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
     'engine-core-boundary',
     { path: '^packages/engine/' },
-    { dependencyTypes: ['core'], pathNot: '^node:crypto$' },
+    { dependencyTypes: ['core'], pathNot: '^(?:node:)?crypto$' },
     'Only the reviewed pure hashing boundary is allowed.',
+  ),
+  rule(
+    'engine-hash-boundary',
+    { path: '^packages/engine/', pathNot: '^packages/engine/src/hashing[.]ts$' },
+    { path: '^(?:node:)?crypto$' },
+    'Core crypto belongs only in the reviewed hashing adapter; named createHash is checked by the determinism guard.',
   ),
   rule(
     'no-app-harness',
@@ -109,11 +117,16 @@ export interface ArchitectureResult {
 export async function architecture(root: string, paths: string[]): Promise<ArchitectureResult> {
   const sources = paths.filter(
     (path) =>
-      /^(apps|packages)\/[^/]+\/src\/.*\.(ts|tsx)$/.test(path) && !/\.(?:test|d)\.tsx?$/.test(path),
+      /^(apps|packages)\/[^/]+\/src\/.*\.(ts|tsx)$/.test(path) && !/\.test\.tsx?$/.test(path),
   );
   if (!sources.length) throw Error('Architecture source coverage is empty');
   const parsed = withSources(root, sources, (files, options) => ({
-    edges: new Map([...files].map(([path, file]) => [path, importEdges(file)])),
+    edges: new Map(
+      [...files].map(([path, file]) => [
+        path,
+        importEdges(file, path === 'apps/web/src/vite-env.d.ts' ? 'vite-plus/client' : undefined),
+      ]),
+    ),
     options,
   }));
   const { edges, options } = parsed;
@@ -133,7 +146,7 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         writeFileSync(
           file,
           imports
-            .filter((edge) => !runtime || !edge.typeOnly)
+            .filter((edge) => !runtime || (!path.endsWith('.d.ts') && !edge.typeOnly))
             .map((edge) => `import ${JSON.stringify(edge.specifier)};`)
             .join('\n') + '\n',
         );
@@ -148,12 +161,24 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         /^(apps|packages)\/[^/]+\/package\.json$/.test(path),
       )) {
         const modules = join(root, dirname(path), 'node_modules');
-        if (existsSync(modules))
-          symlinkSync(
-            modules,
-            join(projection, dirname(path), 'node_modules'),
-            process.platform === 'win32' ? 'junction' : 'dir',
-          );
+        if (existsSync(modules)) {
+          // Link resolved package roots individually. A junction of node_modules leaves
+          // pnpm's relative package links anchored to the projection on Windows.
+          for (const entry of readdirSync(modules).filter((name) => !name.startsWith('.'))) {
+            const names = entry.startsWith('@')
+              ? readdirSync(join(modules, entry)).map((name) => `${entry}/${name}`)
+              : [entry];
+            for (const name of names) {
+              const destination = join(projection, dirname(path), 'node_modules', name);
+              mkdirSync(dirname(destination), { recursive: true });
+              symlinkSync(
+                realpathSync(join(modules, name)),
+                destination,
+                process.platform === 'win32' ? 'junction' : 'dir',
+              );
+            }
+          }
+        }
       }
       const aliases: Record<string, string> = {};
       for (const path of paths.filter((path) => /^packages\/[^/]+\/package\.json$/.test(path))) {
@@ -203,7 +228,7 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         sources,
         {
           baseDir: projection,
-          // Keep projected junction paths stable on Windows; workspace aliases are explicit.
+          // Keep resolved package-root links stable; workspace aliases are explicit.
           preserveSymlinks: true,
           tsConfig: { fileName: config },
           parser: 'acorn',

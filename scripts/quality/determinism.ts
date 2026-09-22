@@ -1,5 +1,6 @@
 import {
   isIdentifier,
+  isTypeNode,
   isPropertyAccessExpression,
   isElementAccessExpression,
   isStringLiteral,
@@ -12,7 +13,7 @@ import {
 } from 'typescript/unstable/ast';
 import { SymbolFlags } from 'typescript/unstable/sync';
 import type { Checker } from 'typescript/unstable/sync';
-import type { SourceFile } from 'typescript/unstable/ast';
+import type { Node, SourceFile } from 'typescript/unstable/ast';
 import { walk } from './ast.ts';
 export interface Finding {
   path: string;
@@ -47,6 +48,65 @@ const globals = new Set([
   'queueMicrotask',
   'requestAnimationFrame',
 ]);
+const pureGlobals = new Set([
+  'undefined',
+  'NaN',
+  'Infinity',
+  'Math',
+  'JSON',
+  'Number',
+  'String',
+  'Boolean',
+  'BigInt',
+  'Object',
+  'Array',
+  'Map',
+  'Set',
+  'WeakMap',
+  'WeakSet',
+  'RegExp',
+  'Symbol',
+  'Promise',
+  'Error',
+  'TypeError',
+  'RangeError',
+  'SyntaxError',
+  'AggregateError',
+  'ReferenceError',
+  'URIError',
+  'ArrayBuffer',
+  'DataView',
+  'Int8Array',
+  'Uint8Array',
+  'Uint8ClampedArray',
+  'Int16Array',
+  'Uint16Array',
+  'Int32Array',
+  'Uint32Array',
+  'Float32Array',
+  'Float64Array',
+  'BigInt64Array',
+  'BigUint64Array',
+  'TextEncoder',
+  'TextDecoder',
+  'parseInt',
+  'parseFloat',
+  'isFinite',
+  'isNaN',
+  'encodeURI',
+  'decodeURI',
+  'encodeURIComponent',
+  'decodeURIComponent',
+  'structuredClone',
+]);
+function typePosition(node: Node): boolean {
+  for (let ancestor = node.parent; ancestor; ancestor = ancestor.parent) {
+    if (isTypeNode(ancestor)) return true;
+    if (ancestor.kind === SyntaxKind.ExpressionStatement || ancestor.kind === SyntaxKind.SourceFile)
+      return false;
+  }
+  return false;
+}
 /** A conservative AST policy for engine code, not proof of mathematical determinism. */
 export function determinism(path: string, file: SourceFile, checker: Checker): Finding[] {
   const findings: Finding[] = [];
@@ -60,7 +120,9 @@ export function determinism(path: string, file: SourceFile, checker: Checker): F
       });
     if (
       isIdentifier(node) &&
-      globals.has(node.text) &&
+      !pureGlobals.has(node.text) &&
+      (globals.has(node.text) || !!checker.resolveName(node.text, SymbolFlags.Value, node)) &&
+      !typePosition(node) &&
       !(isPropertyAccessExpression(node.parent) && node.parent.name === node) &&
       !(
         (isPropertyAssignment(node.parent) && node.parent.name === node) ||
@@ -71,6 +133,11 @@ export function determinism(path: string, file: SourceFile, checker: Checker): F
       add(
         'no-implicit-environment',
         `${node.text} is not an engine input; use manifest/seed/runner boundaries.`,
+      );
+    if (node.kind === SyntaxKind.MetaProperty)
+      add(
+        'no-implicit-environment',
+        'import.meta depends on the runtime location; pass explicit inputs instead.',
       );
     if (isIdentifier(node) && node.text === 'Math') {
       const parent = node.parent;
