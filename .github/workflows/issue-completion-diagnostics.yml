@@ -1,0 +1,29 @@
+name: Issue completion diagnostics
+on:
+  push:
+    branches: [feat/harness-issue-completion]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+      - run: vp install --frozen-lockfile
+      - run: vp fmt scripts/harness/issue-completion.ts scripts/security/issue-completion-markdown.test.ts
+      - run: vp run verify
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: issue-markdown-formatted
+          retention-days: 1
+          path: |
+            scripts/harness/issue-completion.ts
+            scripts/security/issue-completion-markdown.test.ts

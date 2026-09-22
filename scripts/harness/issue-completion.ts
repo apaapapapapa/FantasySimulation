@@ -145,26 +145,49 @@ export function validateSource(value: unknown, commandValue: unknown, sourceSha:
   );
 }
 
-// Ignore fenced examples and HTML comments; retain original line numbers for minimal edits.
+// Ignore fenced examples and strip comments without losing adjacent visible tasks.
 export function issueTasks(body: string): { line: number; task: string }[] {
   const tasks: { line: number; task: string }[] = [];
+  const pattern = /^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+)\[[ xX]\]\s+(.+)$/;
   let fence = '';
   let comment = false;
   for (const [line, raw] of body.split('\n').entries()) {
-    const value = raw.replace(/\r$/, '');
-    if (comment || value.includes('<!--')) {
-      comment = !value.includes('-->');
+    const original = raw.replace(/\r$/, '');
+    if (fence) {
+      const closing = /^\s*(`{3,}|~{3,})\s*$/.exec(original.replace(/^(\s*>\s*)+/, ''))?.[1];
+      if (closing && closing[0] === fence[0] && closing.length >= fence.length) fence = '';
       continue;
     }
-    const delimiter = /^\s*(`{3,}|~{3,})/.exec(value)?.[1];
+    let value = '';
+    let offset = 0;
+    while (offset < original.length) {
+      if (comment) {
+        const end = original.indexOf('-->', offset);
+        if (end < 0) break;
+        comment = false;
+        offset = end + 3;
+      } else {
+        const begin = original.indexOf('<!--', offset);
+        if (begin < 0) {
+          value += original.slice(offset);
+          break;
+        }
+        value += original.slice(offset, begin);
+        comment = true;
+        offset = begin + 4;
+      }
+    }
+    const delimiter = /^\s*(`{3,}|~{3,})/.exec(value.replace(/^(\s*>\s*)+/, ''))?.[1];
     if (delimiter) {
-      if (!fence) fence = delimiter;
-      else if (delimiter[0] === fence[0] && delimiter.length >= fence.length) fence = '';
+      fence = delimiter;
       continue;
     }
-    if (fence) continue;
-    const match = /^\s*(?:[-+*]|\d+[.)])\s+\[[ xX]\]\s+(.+)$/.exec(value);
-    if (match?.[1]) tasks.push({ line, task: match[1].trim() });
+    const match = pattern.exec(value);
+    if (match?.[2]) {
+      // A comment before/splitting the checkbox makes a minimal raw edit ambiguous.
+      requireCompletion(pattern.test(original), 'UNSUPPORTED_ISSUE_TASK_MARKUP');
+      tasks.push({ line, task: match[2].trim() });
+    }
   }
   requireCompletion(!fence && !comment, 'UNTERMINATED_ISSUE_MARKUP');
   return tasks;
@@ -194,7 +217,11 @@ export function completedBody(
       'UNCOVERED_ISSUE_TASKS',
     );
   const lines = body.split('\n');
-  for (const task of tasks) lines[task.line] = lines[task.line]!.replace(/\[[ xX]\]/, '[x]');
+  for (const task of tasks)
+    lines[task.line] = lines[task.line]!.replace(
+      /^(\s*(?:>\s*)*(?:[-+*]|\d+[.)])\s+)\[[ xX]\]/,
+      '$1[x]',
+    );
   const url = `https://github.com/${repository}`;
   const receipt = [
     completionMarker,
