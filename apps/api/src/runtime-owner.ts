@@ -6,7 +6,7 @@ import { and, eq } from 'drizzle-orm';
 import { runtimeOwner } from './db/schema.ts';
 import { JobStore } from './job-store.ts';
 import { StoreError } from './store.ts';
-import { readBoundedFile } from './replay-files.ts';
+import { readBoundedFile, GENERATED_UUID } from './replay-files.ts';
 
 function processAlive(pid: number) {
   if (pid <= 0) return false;
@@ -90,9 +90,9 @@ export async function ownRuntime(jobs: JobStore, inputRoot: string) {
     let removed = 0;
     for await (const entry of await opendir(root)) {
       if (!entry.isDirectory()) continue;
-      const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-      const staging = entry.name.startsWith('.staging-') && uuid.test(entry.name.slice(9));
-      const orphan = uuid.test(entry.name) && !jobs.artifact(entry.name);
+      const staging =
+        entry.name.startsWith('.staging-') && GENERATED_UUID.test(entry.name.slice(9));
+      const orphan = GENERATED_UUID.test(entry.name) && !jobs.artifact(entry.name);
       if (staging || orphan) {
         await rm(join(root, entry.name), { recursive: true });
         removed++;
