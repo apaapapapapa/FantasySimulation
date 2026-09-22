@@ -21,9 +21,11 @@
     "engine:check": "node scripts/engine-identity.ts",
     "fixtures:tick": "node scripts/tick-fixtures.ts --write",
     "demo:tick": "node scripts/tick-demo.ts",
+    "security:test": "node --test \"scripts/security/*.test.ts\"",
+    "security:secrets": "node scripts/security/secrets.ts",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run",
-    "verify": "vp check && vp run typecheck && vp run engine:check && vp test && vp run build",
+    "verify": "vp check && vp run typecheck && vp run engine:check && vp run security:test && vp test && vp run build",
     "bench:spatial": "node scripts/spatial-benchmark.ts",
     "fixtures:spatial": "node scripts/spatial-fixtures.ts --write"
   },

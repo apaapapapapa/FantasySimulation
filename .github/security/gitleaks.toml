@@ -1,0 +1,12 @@
+title = "FantasySimulation secret detection"
+
+[extend]
+useDefault = true
+
+# The full marker is generated only in a temporary test directory.
+# No directory exclusions, baseline or disabled default rules.
+[[rules]]
+id = "fantasy-canary"
+description = "Synthetic security regression marker (never a real credential)"
+regex = '''FANTASY_SECURITY_CANARY_[A-Z0-9]{32}'''
+keywords = ["FANTASY_SECURITY_CANARY_"]

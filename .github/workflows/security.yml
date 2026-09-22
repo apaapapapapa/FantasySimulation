@@ -1,0 +1,73 @@
+name: Security
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 19 * * 1'
+
+permissions:
+  contents: read
+
+env:
+  H4_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  H4_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+
+jobs:
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Configure temporary receipt directory
+        run: echo "H4_REPORT_DIR=$RUNNER_TEMP/h4-reports" >> "$GITHUB_ENV"
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
+        with:
+          node-version-file: .node-version
+          run-install: false
+      - name: Install checksum-pinned Gitleaks
+        shell: bash
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          set -euo pipefail
+          directory="$RUNNER_TEMP/gitleaks"
+          mkdir -p "$directory"
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --retry 2 \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}" \
+            --output "$directory/$archive"
+          echo "$GITLEAKS_SHA256  $directory/$archive" | sha256sum --check --status
+          tar -xzf "$directory/$archive" -C "$directory" gitleaks
+          echo "$directory" >> "$GITHUB_PATH"
+      - name: Policy regression tests
+        run: node --test scripts/security/security.test.ts
+      - name: Markdown and deleted-history canaries
+        run: node scripts/security/secrets.ts --self-test
+      - name: Scan full history and working tree
+        run: node scripts/security/secrets.ts
+      - name: Upload sanitized receipts only
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: security-secrets-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/h4-reports/*.json
+          if-no-files-found: error
+          retention-days: 14
+
+  gate:
+    name: security-gate
+    needs: [secrets]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require every planned security job to succeed
+        env:
+          SECRET_RESULT: ${{ needs.secrets.result }}
+        run: test "$SECRET_RESULT" = success

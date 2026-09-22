@@ -14,5 +14,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['packages/**/*.test.ts', 'apps/api/**/*.test.ts', 'scripts/**/*.test.ts'],
+    // These use node:test and are required by security:test in the same verify command.
+    exclude: ['**/node_modules/**', '**/.git/**', 'scripts/security/**/*.test.ts'],
   },
 });
