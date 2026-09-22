@@ -1,4 +1,4 @@
-# spatial-v1.7: 公開入力と実行manifest
+# spatial-v1.8: 公開入力と実行manifest
 
 3D-02で固定する公開契約。実際に受理する項目は`packages/domain/src/spatial`のstrict Zod
 schemaを正本とする。3D-03〜07で実行系を追加し、3D-08でAPIへ接続する。
@@ -215,3 +215,41 @@ meleeは半径radiusMmの球を、有効activeStepsの間に武器起点からre
 攻撃の開始重なりは命中として数え、身体移動の「離れる接触は止めない」と区別する。
 壁/身体の接触がepsilon以内なら壁優先。身体中心と武器offsetの間にも遮蔽検査を行い、
 武器だけを壁の向こうへ生成しない。接触時刻は表示/最初の接触選択に使い、HP確定は同区間末尾。
+
+## 固定step対戦と記録（3D-06c）
+
+`simulate(prepared, budget)`は同期generatorで、呼出し側が次の記録を要求するまで進まない。
+初期表示、必要な境界差分、各20ms区間の折れ線/差分/イベント、終端を出力する。途中でreturn
+してもfinallyでWASM worldを解放する。エンジンにI/O・実時計・Worker番号を渡さない。
+`runBattle`はCLI/fixture用の予算付き収集器であり、本番Workerはgeneratorをbackpressure付きで使う。
+
+境界nでは期限切れ→継続効果→敗北確認→遅延観測→AI→宣言/支払い→発射を処理し、
+区間[n,n+1)の両者の移動・接触・効果をまとめて確定する。AIは100msごとに評価し、移動指示は
+その間保持する。飛行権限の変化は次の移動から反映する。硬直終了やcooldownがAI間隔の途中なら
+次のAI境界で新規宣言する。新しい詠唱の移動禁止は宣言区間から反映する。
+
+開始条件/資源不足の不発はコスト0で通常の回復時間を待つ。成功宣言は使用回数とコストを消費し、
+発射時の条件/射程不成立でも返金しない。同区間でHP0となっても発射済み効果は取り消さない。
+区間末の同時致死はdraw、片方だけなら直ちにwin。最後の許容区間も解決し、終了境界の継続効果や
+新規宣言は実行しない。落下は環境由来のphysical damageとして同じ防御/耐性/シールドを通す。
+
+battle-startはdirect selfのみ。開始時の同じsnapshotで条件に合った能力群について、主体ごとに
+コスト合計を確認する。合計不足なら群全体が不発、足りれば同時に支払い・効果を解決する。
+開始状態は境界0で有効になり、その後に境界0の継続効果を解決する。配列順で資源を取り合わない。
+
+境界処理と各区間はそれぞれトランザクションである。予算超過/未定義干渉では未確定の
+コスト・乱数・移動・イベントを全て捨て、最後に確定した表示状態と理由を返す。既に保存可能な
+区間は失わない。入力不正や実装例外をunresolved/drawへ変換しない。
+`maxEvents/maxBytes/maxFrameBytes`で蓄積を制限し、初期+終端の診断に別途32KiBを予約する。
+経路のmaxPathNodesは1探索の上限、casts/candidatesは試合累計。数値statsは実行した作業量を表す。
+
+イベントは安定ID、記録sequence、step/phase/区間内時刻、親/原因集合、前後資源、厳密なダメージ
+内訳を持つ。sequenceは記録順であり戦闘の先手ではない。同時効果の各内訳のbefore/afterは
+共有snapshotと一括確定値を指す。状態の原因は付与eventから継続効果まで辿れる。
+表示記録は初期状態へのreplacement deltaと各折れ線で、戦闘を再実行せず復元できる。
+
+eventHashは各event、trajectoryHashは各記録からeventsを除いた内容について、数値を規定のf64
+encodingへ変換→canonical JSON→LFの列をSHA-256した値。圧縮checksumとは別物である。
+tsStateHashは資源・状態の原因/期限・行動時計・使用回数・cooldown・観測記憶・乱数を含む。
+physicsStateHashは静的Rapier world snapshot。TS側の身体運動はTS state/trajectoryに含める。
+これらを「途中から再計算を再開できる完全snapshot」とは扱わない。

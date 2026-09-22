@@ -212,7 +212,7 @@ export class SpatialWorld {
   private readonly materials = new Map<number, Obstacle>();
   private readonly bounds = new Map<Layer, { center: Vec3; radius: Vec3 }>();
   casts = 0;
-  readonly castLimit: number;
+  castLimit: number;
   constructor(obstacles: Obstacle[], castLimit = 1_000_000) {
     this.castLimit = castLimit;
     this.world = new RAPIER.World(ZERO);
