@@ -102,6 +102,8 @@ describe('bounded body-aware support graphs', () => {
       s.navigation = { version: 'support-graph-v1', nodes: [], edges: [] };
     });
     try {
+      expect(navigator.groundGoal({ x: 2, y: 4.102, z: 0 })).toEqual({ x: 2, y: 4.102, z: 0 });
+      expect(navigator.groundGoal({ x: 2, y: 6, z: 0 }).y).toBeCloseTo(4.102, 5);
       expect(
         navigator.find({ x: -2, y: 0.902, z: 0 }, { x: 2, y: 0.902, z: 0 }, false, 20).kind,
       ).toBe('path');

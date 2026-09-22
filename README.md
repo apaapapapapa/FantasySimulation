@@ -215,3 +215,19 @@ Node.js 24の`node:sqlite`は実験的APIの警告が表示される場合があ
 - [Vite+ / Monorepo](https://viteplus.dev/guide/monorepo)
 - [Vite+ / Project-local CLI](https://viteplus.dev/guide/local-cli)
 - [Vite+ / CI](https://viteplus.dev/guide/ci)
+
+## 3Dサンプル対戦（P2）
+
+`pnpm demo:spatial` は柱のある広場で剣士と飛行術師を対戦させます。
+`pnpm demo:spatial archer guardian flat` のように2体と戦場を指定できます。
+画面・DBなしで同じmanifest/seedの対戦を再現します。
+
+`data/spatial/catalog.json` は10体と能力・装備・方針・状態・戦場・ルールの40revisionです。
+剣士、槍兵、重装騎士、弓使い、魔法弓使い、炎術師、氷術師、雷術師、飛行術師、治癒剣士を
+同じ型付き部品で構成しています。キャラクターごとの実行分岐はありません。
+`pnpm catalog:spatial` で生成元との一致を確認し、変更時は
+`pnpm catalog:spatial --write` の差分をレビューしてください。
+公開後の編集は新revisionにします。P3でこの新形式をDBのシードへ接続します。
+
+戦場は `flat` と `pillars`。manifestには選択した参加者と戦場から辿れるrevisionだけを含めるため、
+無関係なキャラクターの追加が既存対戦のhashを変えることはありません。

@@ -322,7 +322,7 @@ export const ScenarioSchema = z
   });
 export const RulesetSchema = z.strictObject({
   name: z.string().min(1).max(100),
-  rulesVersion: z.literal('spatial-v1.9'),
+  rulesVersion: z.literal('spatial-v1.10'),
   stepMs: z.literal(20),
   maxSteps: positive(6_000),
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),
@@ -390,7 +390,7 @@ export const ManifestSchema = z
     schemaVersion: z.literal(3),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
-    engineVersion: z.literal('spatial-v1.9'),
+    engineVersion: z.literal('spatial-v1.10'),
     implementationDigest: HashSchema,
     physicsProfileHash: HashSchema,
     physicsProfile: PhysicsProfileSchema,
