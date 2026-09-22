@@ -1,0 +1,43 @@
+name: Final delivery evidence
+on:
+  push:
+    branches: [test/h1-final-delivery-evidence]
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  checks: read
+  statuses: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Collect current final PR evidence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/harness.ts github-snapshot apaapapapapa/FantasySimulation 41 .generated/harness/final-delivery
+      - name: Export observed snapshot for reviewed delivery assessment
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const s=JSON.parse(readFileSync('.generated/harness/final-delivery/github-snapshot.json','utf8'));
+          const keep=(x,keys)=>Object.fromEntries(keys.filter(k=>k in x).map(k=>[k,x[k]]));
+          const pull=p=>({...keep(p,['number','state','merged','updated_at','merge_commit_sha','changed_files']),head:{sha:p.head.sha},base:{sha:p.base.sha,ref:p.base.ref}});
+          const run=r=>keep(r,['id','name','head_sha','head_branch','event','path','status','conclusion','run_attempt','html_url','created_at','updated_at']);
+          const evidence=e=>e?{...e,before:run(e.before),after:run(e.after),jobs:e.jobs.map(j=>keep(j,['id','name','run_id','run_attempt','status','conclusion','html_url'])),commits:Object.fromEntries(Object.entries(e.commits).map(([sha,c])=>[sha,{sha:c.sha,parents:c.parents.map(p=>({sha:p.sha}))}]))}:null;
+          const compact={...s,pull:pull(s.pull),pullAfter:pull(s.pullAfter),prRuns:s.prRuns.map(run),prRunsAfter:s.prRunsAfter.map(run),mainRuns:s.mainRuns.map(run),mainRunsAfter:s.mainRunsAfter.map(run),prRun:evidence(s.prRun),mainRun:evidence(s.mainRun),checks:s.checks.map(c=>keep(c,['id','name','status','conclusion','head_sha'])),statuses:s.statuses.map(c=>keep(c,['id','context','state']))};
+          console.log('FANTASY_DELIVERY_SNAPSHOT='+JSON.stringify(compact));
+          NODE
+      - name: Preserve complete raw snapshot
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: final-delivery-snapshot
+          path: .generated/harness/final-delivery
+          include-hidden-files: true
+          retention-days: 7
