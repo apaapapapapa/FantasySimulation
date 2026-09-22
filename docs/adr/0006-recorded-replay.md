@@ -47,10 +47,29 @@ artifact参照は規定の相対ファイル名だけを許可し、URL・上位
 保存先の変更・バッチ分割・利用者によるアーカイブを要求する。アーカイブ/backupは
 DBとartifactの対応する世代を一緒に保持する。SQLiteの稼働中ファイルだけをコピーして
 backup完了と扱わない。現段階では停止してDBとartifact一式を保全する手順を基本とする。
-後続writerは一時配置→再読込検証→rename→DB参照確定の順とし、再開時に未参照の
+writerは一時配置→再読込検証→rename→DB参照確定の順とし、再開時に未参照の
 一時/孤立artifactだけを回収する。公開packや採用済み正本を回収対象にしない。
 欠落・破損は再生可否を明示し、cache/正式採用を保留する。勝敗の捏造や自動再生成はしない。
 
 `packages/domain/fixtures/replay/mutual-hit.json`は生成プロセスが停止した後にdomainだけで
 読む固定fixture。内容hash、同時致死、前後seek、表示eventを検証する。
 地形/飛行/弾/状態の統合recordもAPI側の契約試験で復元する。P4の画面・描画時計は範囲外。
+
+## 保存実装と配信契約
+
+`apps/api/src/replay-writer.ts` は `append` の完了を待つ逐次投入を要求する。
+Node標準のgzip streamが書込を待ち、保持するデータは1チャンクと表示状態に限定する。
+確定前に全チャンクを再読込し、各checkpointを実際の先頭からの復元結果と照合する。
+manifestは最後に書き、各ファイルをsyncしてから同一保存先でdirectoryをrenameする。
+DB登録はこの確定後に調整側が行う。Workerからの転送・DB参照・再起動時の回収は
+ジョブ調整のPRで接続する。
+
+readerは実bytes上限・symlink・圧縮checksum・展開後上限・UTF-8・NDJSON件数を検査する。
+checksumを付け替えた不正checkpointも全件検証で拒否する。seekは指定record境界の直前
+checkpointと対象chunkのみ読むため、同stepのboundary前後をrecord cursorで区別する。
+seekだけでログ全体の真正性や完全性が検証されたと表示しない。
+
+配信時は`.ndjson.gz` / `.json.gz`を`application/gzip`、`Content-Encoding`なしで返し、
+checksumは圧縮bytesに対して確認する。アプリ側で一度だけgzip展開する。
+ローカルimportも同じbytes契約を使う。任意URL・親directory・symlinkは受け付けない。
+HTTP経路とブラウザーの展開・Safari実機検証は、それぞれAPI接続/P4で追加する。
