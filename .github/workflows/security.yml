@@ -18,9 +18,9 @@ jobs:
     name: Secret scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      H4_REPORT_DIR: ${{ runner.temp }}/h4-reports
     steps:
+      - name: Configure temporary receipt directory
+        run: echo "H4_REPORT_DIR=$RUNNER_TEMP/h4-reports" >> "$GITHUB_ENV"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: security-secrets-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ env.H4_REPORT_DIR }}/*.json
+          path: ${{ runner.temp }}/h4-reports/*.json
           if-no-files-found: error
           retention-days: 14
 
