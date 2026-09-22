@@ -8,6 +8,7 @@
     "./tick-v1": "./src/tick-v1/index.ts"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "0.20.0",
     "@fantasy/domain": "workspace:*"
   }
 }

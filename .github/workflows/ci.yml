@@ -11,7 +11,6 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  # A main release must finish once it has pushed a tag.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -36,6 +35,15 @@ jobs:
       - run: vp install --frozen-lockfile
       - name: Read-only verification with source-bound evidence
         run: vp run harness source .generated/harness/source
+      # Temporary PR-only handoff of tracked source and public dependencies; remove before merge.
+      - name: Capture current main integration for isolated verification
+        if: always() && runner.os == 'Linux' && github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .generated/harness/local-validation
+          git bundle create .generated/harness/local-validation/source.bundle HEAD
+          tar -czf .generated/harness/local-validation/dependencies.tar.gz node_modules apps/*/node_modules packages/*/node_modules
       - name: Preserve source evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

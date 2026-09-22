@@ -50,10 +50,11 @@ export function sourceIdentity(root: string, env: NodeJS.ProcessEnv = process.en
     const event = record(JSON.parse(readFileSync(env.GITHUB_EVENT_PATH, 'utf8')) as unknown);
     const pull = record(event.pull_request);
     candidateSha = sha(record(pull.head).sha);
-    baselineSha = sha(record(pull.base).sha);
+    sha(record(pull.base).sha); // Validate the event, but it may describe an older base.
     const parents = git(root, ['show', '-s', '--format=%P', 'HEAD']).split(' ');
-    if (parents.length !== 2 || parents[0] !== baselineSha || parents[1] !== candidateSha)
+    if (parents.length !== 2 || parents[1] !== candidateSha)
       throw new Error('PR test-merge parents do not match the event');
+    baselineSha = sha(parents[0]);
     testMergeSha = sourceSha;
   }
   return identity({ sourceSha, candidateSha, baselineSha, testMergeSha });
@@ -64,9 +65,9 @@ export async function collectSource(
   run: typeof runCommand = runCommand,
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  root = realpathSync(root);
+  root = realpathSync.native(root);
   // Git may return an 8.3 TEMP path on Windows; compare canonical filesystem paths.
-  if (realpathSync(git(root, ['rev-parse', '--show-toplevel'])) !== root)
+  if (realpathSync.native(git(root, ['rev-parse', '--show-toplevel'])) !== root)
     throw new Error('Run from the repository root');
   const info = sourceIdentity(root, env);
   const { sourceSha } = info;

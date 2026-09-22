@@ -21,10 +21,12 @@
     "engine:check": "node scripts/engine-identity.ts",
     "fixtures:tick": "node scripts/tick-fixtures.ts --write",
     "demo:tick": "node scripts/tick-demo.ts",
-    "harness": "node scripts/harness.ts",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run",
-    "verify": "vp check && vp run typecheck && vp run engine:check && vp test && vp run build"
+    "verify": "vp check && vp run typecheck && vp run engine:check && vp test && vp run build",
+    "bench:spatial": "node scripts/spatial-benchmark.ts",
+    "fixtures:spatial": "node scripts/spatial-fixtures.ts --write",
+    "harness": "node scripts/harness.ts"
   },
   "devDependencies": {
     "@semantic-release/commit-analyzer": "13.0.1",
