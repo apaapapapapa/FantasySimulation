@@ -49,7 +49,7 @@ function fixtures(target = info): Record<string, Record<string, unknown>> {
   );
 }
 
-test('all seven receipts produce a SHA-bound common report with exact artifact paths', () => {
+await test('seven receipts bind to the common report and exact artifact paths', () => {
   const result = assessSecurityEvidence(info, run, fixtures(), at);
   assert.equal(result.exitCode, 0);
   assert.equal(assessReport(result.report, SECURITY_CHECKS).exitCode, 0);
@@ -61,14 +61,14 @@ test('all seven receipts produce a SHA-bound common report with exact artifact p
   }
 });
 
-test('main and manual runs use their real source without invented PR identities', () => {
+await test('main and manual runs never invent PR identities', () => {
   for (const baselineSha of [info.baselineSha, null]) {
     const main = { ...info, candidateSha: info.sourceSha, testMergeSha: null, baselineSha };
     assert.equal(assessSecurityEvidence(main, run, fixtures(main), at).exitCode, 0);
   }
 });
 
-test('every missing, skipped, corrupt or unsuccessful receipt blocks acceptance', () => {
+await test('missing, skipped, corrupt and unsuccessful receipts block acceptance', () => {
   for (const { key } of securityInputs(run)) {
     for (const value of [null, undefined, [], 'invalid', {}, { status: 'pass' }]) {
       assert.equal(
@@ -87,7 +87,7 @@ test('every missing, skipped, corrupt or unsuccessful receipt blocks acceptance'
   }
 });
 
-test('rejects wrong producer, check, source, head, base, run, attempt and invalid timestamps', () => {
+await test('rejects incorrect receipt identities and invalid timestamps', () => {
   for (const [field, value] of [
     ['schemaVersion', 2],
     ['producer', 'other'],
@@ -107,7 +107,7 @@ test('rejects wrong producer, check, source, head, base, run, attempt and invali
   }
 });
 
-test('rejects invalid counts and success claims inconsistent with detection or coverage', () => {
+await test('rejects invalid counts and inconsistent success claims', () => {
   for (const [key, counts] of [
     ['secret-canary', { scenarios: 0 }],
     ['secret-scan', { detected: 1, excepted: 0, blocking: 1 }],
@@ -127,7 +127,7 @@ test('rejects invalid counts and success claims inconsistent with detection or c
   }
 });
 
-test('never forwards raw errors, arbitrary metadata or receipt strings into common evidence', () => {
+await test('never forwards raw errors or arbitrary receipt strings', () => {
   const privateText = 'PRIVATE_FIXTURE_TEXT_MUST_NOT_LEAVE_INPUT';
   const receipts = fixtures();
   receipts['secret-scan'] = { ...receipts['secret-scan'], reason: privateText + '\nraw output' };
@@ -135,14 +135,14 @@ test('never forwards raw errors, arbitrary metadata or receipt strings into comm
   assert.ok(!output.includes(privateText));
 });
 
-test('missing or unsafe run identifiers cannot select other artifacts', () => {
+await test('unsafe run identifiers cannot select other artifacts', () => {
   for (const value of ['', '0', '../123', '1/2', '1.0', 'NaN']) {
     assert.throws(() => securityInputs({ ...run, runId: value }));
     assert.throws(() => securityInputs({ ...run, runAttempt: value }));
   }
 });
 
-test('official validator failure and non-execution never produce a passing receipt', () => {
+await test('validator failure and non-execution never produce a passing receipt', () => {
   assert.equal(validatorOutcome('success').status, 'pass');
   assert.equal(validatorOutcome('failure').status, 'fail');
   for (const value of ['skipped', 'cancelled', '', undefined, null, true, 'pass'])
