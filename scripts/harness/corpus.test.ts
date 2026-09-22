@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'vite-plus/test';
 import type { BattleResult } from '../../packages/domain/src/spatial/index.ts';
@@ -285,7 +285,9 @@ describe('corpus runner evidence', { timeout: 30000 }, () => {
         run: async (_program, args) => {
           commands.push(args[0]!.endsWith('engine-identity.ts') ? 'engine' : args[1]!);
           const file = args.find((arg) => arg.startsWith('--outputFile='));
-          if (file) writeFileSync(file.slice(13), JSON.stringify(vitestJson(repo.root)));
+          // Vitest runs with the canonical root as cwd; Windows TEMP can be an 8.3 alias.
+          const reported = vitestJson(realpathSync.native(repo.root));
+          if (file) writeFileSync(file.slice(13), JSON.stringify(reported));
           return command();
         },
       });
