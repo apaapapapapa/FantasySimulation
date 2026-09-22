@@ -175,13 +175,18 @@ describe('3D revision API and Drizzle persistence', () => {
       expect(attempts.find((r) => r.status === 'rejected')).toMatchObject({
         reason: { statusCode: 409 },
       });
+      // Asynchronous validation does not guarantee that the first caller wins.
+      const winner = attempts[0]!.status === 'fulfilled' ? first : stale;
+      const loser = winner.id === first.id ? stale : first;
       expect(store.getRevision('character', original.id)?.revision).toBe(2);
-      expect(store.getDraft(stale.id)?.version).toBe(1);
-      expect((await second.validateDraft(stale.id)).valid).toBe(false);
+      expect(store.getDraft(winner.id)?.version).toBe(2);
+      expect(store.getDraft(loser.id)?.version).toBe(1);
+      expect(store.getDraft(loser.id)?.base).toEqual(reference(original));
+      expect((await second.validateDraft(loser.id)).valid).toBe(false);
       const response = await app.inject({ method: 'POST', url: '/api/drafts', payload: input });
       expect(response.statusCode).toBe(409);
       // Its own successful publication advances the base for the next edit.
-      const own = store.getDraft(first.id)!;
+      const own = store.getDraft(winner.id)!;
       expect(own.base).toEqual(own.published);
       store.patchDraft(own.id, own.version, { ...original.definition, name: '次の編集' });
       expect((await store.publishDraft(own.id, own.version + 1)).revision.revision).toBe(3);
