@@ -3,6 +3,7 @@ import { assessReport, identity, parseReport, record, sha, text, timestamp } fro
 import type { Check, Identity, Report } from './report.ts';
 import { parsePlan } from '../ci/plan.ts';
 import type { Plan } from '../ci/plan.ts';
+import { SECURITY_CHECKS } from '../security/evidence.ts';
 
 export const VERIFY_JOBS = ['Verify (ubuntu-latest)', 'Verify (windows-latest)'] as const;
 export const DOCS_JOBS = ['Docs (ubuntu-latest)', 'Docs (windows-latest)'] as const;
@@ -236,6 +237,7 @@ export function validateRun(
     const ids = ['changes', 'security', 'dependency-policy', 'verify', 'docs'].map(
       (name) => `ci-job:${name}`,
     );
+    ids.push('ci-evidence:security', ...SECURITY_CHECKS);
     ids.push(
       ...(plan.full
         ? ['ubuntu-latest', 'windows-latest']
