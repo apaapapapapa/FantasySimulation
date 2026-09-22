@@ -2,6 +2,10 @@
   "name": "fantasy-simulation",
   "version": "0.1.0",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apaapapapapa/FantasySimulation.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vp run -r --parallel dev",
@@ -17,10 +21,17 @@
     "engine:check": "node scripts/engine-identity.ts",
     "fixtures:tick": "node scripts/tick-fixtures.ts --write",
     "demo:tick": "node scripts/tick-demo.ts",
+    "release": "semantic-release",
+    "release:dry-run": "semantic-release --dry-run",
     "verify": "vp check && vp run typecheck && vp run engine:check && vp test && vp run build"
   },
   "devDependencies": {
+    "@semantic-release/commit-analyzer": "13.0.1",
+    "@semantic-release/github": "12.0.9",
+    "@semantic-release/release-notes-generator": "14.1.1",
     "@types/node": "24.13.6",
+    "conventional-changelog-conventionalcommits": "9.3.1",
+    "semantic-release": "25.0.9",
     "typescript": "7.0.2",
     "vite-plus": "0.3.3"
   },

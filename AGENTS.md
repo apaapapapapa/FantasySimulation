@@ -17,6 +17,7 @@
 4. Add meaningful tests for new battle behavior, persistence changes and regression fixes.
 5. Run `vp run verify` (or `pnpm verify`) before committing. Verify startup when changing build or runtime configuration.
 6. Keep commands and limitations in the README accurate.
+7. Use Conventional Commits for commits and PR titles (`feat`, `fix`, `perf`, `docs`, `chore`, etc.). Preserve the intended title and any `BREAKING CHANGE:` footer in the final squash commit. `main` releases automatically after both CI platforms pass; do not manually bump package versions or create release tags.
 
 ## Simulation invariants
 
