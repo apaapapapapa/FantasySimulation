@@ -1,0 +1,46 @@
+name: Harness development inputs
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  inputs:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.head_ref == 'feat/h1-delivery-evidence' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+          run-install: false
+      - run: vp install --frozen-lockfile
+      - name: Capture only public source and locked development tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          out=.generated/harness/dev-inputs
+          mkdir -p "$out"
+          git bundle create "$out/source.bundle" HEAD
+          cp -L "$(command -v node)" "$out/node"
+          cp -L "$(command -v vp)" "$out/vp"
+          tar -czf "$out/dependencies.tgz" node_modules apps/api/node_modules apps/web/node_modules packages/domain/node_modules packages/engine/node_modules
+          git rev-parse HEAD > "$out/source-sha.txt"
+          node --version > "$out/node-version.txt"
+          vp --version > "$out/vp-version.txt"
+          sha256sum "$out/source.bundle" "$out/node" "$out/vp" "$out/dependencies.tgz" > "$out/checksums.txt"
+          git diff --exit-code
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: harness-development-inputs
+          path: .generated/harness/dev-inputs/
+          retention-days: 1
+          compression-level: 1
+          if-no-files-found: error
