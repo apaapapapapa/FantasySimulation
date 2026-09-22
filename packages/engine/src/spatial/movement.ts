@@ -15,6 +15,7 @@ import {
   at,
   capsuleShape,
   COLLISION_SKIN,
+  CONTACT_TOLERANCE,
   firstContact,
   SpatialWorld,
   SpatialBudgetError,
@@ -70,7 +71,8 @@ export function initialMotion(world: SpatialWorld, actor: ResolvedActor): Motion
     facing: unit(actor.participant.facing),
     grounded: false,
   };
-  state.grounded = support(world, state, state.position) !== undefined;
+  const ground = support(world, state, state.position);
+  state.grounded = !!ground && ground.time_of_impact <= CONTACT_TOLERANCE;
   return state;
 }
 function approachVelocity(current: Vec3, desired: Vec3, change: number): Vec3 {
@@ -206,15 +208,20 @@ export function moveActors(
     const { state, intent, trace } = plan,
       position = at(trace, 1);
     const ground = !intent.flight ? support(world, state, position) : undefined;
-    const grounded = !!ground && dot(plan.velocity, ground.normal1) <= 1e-6;
+    const grounded =
+      !!ground &&
+      ground.time_of_impact <= CONTACT_TOLERANCE &&
+      dot(plan.velocity, ground.normal1) <= 1e-6;
     const landed = !state.grounded && grounded;
     const last = trace.at(-1)!;
     const actualVelocity =
-      plan.stepped && plan.contactTime === undefined
-        ? { ...mul(sub(position, state.position), 1 / STEP_SECONDS), y: 0 }
-        : last.to === last.from
-          ? { ...ZERO }
-          : mul(sub(last.end, last.start), 1 / ((last.to - last.from) * STEP_SECONDS));
+      plan.contactTime !== undefined
+        ? { ...ZERO }
+        : plan.stepped
+          ? { ...mul(sub(position, state.position), 1 / STEP_SECONDS), y: 0 }
+          : last.to === last.from
+            ? { ...ZERO }
+            : mul(sub(last.end, last.start), 1 / ((last.to - last.from) * STEP_SECONDS));
     const velocity = actualVelocity;
     const excessFall = Math.max(0, -plan.velocity.y * 1000 - rules.fallSafeSpeedMmPerSecond);
     const fallDamage = landed
