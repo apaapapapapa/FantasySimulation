@@ -67,11 +67,15 @@ export function createGateway(token: string, limits: CollectionLimits = DEFAULT_
       reader?.releaseLock();
     }
     const body = Buffer.concat(chunks);
-    return new Response(response.status === 204 || response.status === 304 ? null : body, {
+    const bounded = new Response(response.status === 204 || response.status === 304 ? null : body, {
       status: response.status,
       statusText: response.statusText,
       headers: response.headers,
     });
+    // Response constructors have an empty URL. Octokit uses it to paginate counted
+    // envelopes (check runs, workflow runs); retain transport metadata after buffering.
+    Object.defineProperty(bounded, 'url', { value: response.url || url.href });
+    return bounded;
   };
   const Client = Octokit.plugin(paginateRest);
   const client = new Client({

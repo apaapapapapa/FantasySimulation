@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, it, vi } from 'vite-plus/test';
 import { createGateway } from './github.ts';
+import { collectPages } from './github-collect.ts';
 afterEach(() => vi.unstubAllGlobals());
 describe('Octokit transport boundaries', () => {
   it('uses SDK auth and rejects writes, foreign URLs and request-budget excess', async () => {
@@ -17,6 +18,29 @@ describe('Octokit transport boundaries', () => {
       await assert.rejects(client.query('mutation { dangerous }', {}));
       await assert.rejects(client.get('GET /repos/owner/repo'));
       assert.equal(calls, 1);
+    } finally {
+      client.close();
+    }
+  });
+  it('preserves the response URL required by counted SDK pagination', async () => {
+    let calls = 0;
+    vi.stubGlobal('fetch', async () => {
+      calls++;
+      const headers: Record<string, string> = { 'content-type': 'application/json' };
+      if (calls === 1)
+        headers.link =
+          '<https://api.github.com/repos/owner/repo/commits/head/check-runs?page=2>; rel="next"';
+      return new Response(JSON.stringify({ total_count: 2, check_runs: [{ id: calls }] }), {
+        headers,
+      });
+    });
+    const client = createGateway('fixture-only');
+    try {
+      assert.deepEqual(
+        await collectPages(client, 'GET /repos/owner/repo/commits/head/check-runs'),
+        [{ id: 1 }, { id: 2 }],
+      );
+      assert.equal(calls, 2);
     } finally {
       client.close();
     }
