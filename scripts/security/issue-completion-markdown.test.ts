@@ -17,7 +17,10 @@ const plan: Completion = {
 
 await test('inline HTML comments cannot hide an incomplete acceptance item', () => {
   const body = '- [ ] Implementation\n- [ ] External setup <!-- still required -->';
-  assert.deepEqual(issueTasks(body).map((item) => item.task), ['Implementation', 'External setup']);
+  assert.deepEqual(
+    issueTasks(body).map((item) => item.task),
+    ['Implementation', 'External setup'],
+  );
   assert.throws(() => completedBody(plan, body, 'a'.repeat(40), 100), /UNCOVERED_ISSUE_TASKS/);
 });
 
@@ -31,16 +34,26 @@ await test('quoted tasks are covered and checked, not silently ignored', () => {
   const body = '> - [ ] Implementation\n> - [ ] External setup';
   assert.equal(issueTasks(body).length, 2);
   assert.throws(() => completedBody(plan, body, 'a'.repeat(40), 100), /UNCOVERED_ISSUE_TASKS/);
-  assert.ok(completedBody(plan, '> - [ ] Implementation', 'a'.repeat(40), 100).startsWith('> - [x] Implementation'));
+  assert.ok(
+    completedBody(plan, '> - [ ] Implementation', 'a'.repeat(40), 100).startsWith(
+      '> - [x] Implementation',
+    ),
+  );
 });
 
 await test('comment-like text inside a fenced example does not hide following real tasks', () => {
   const body = '```md\n<!-- example text\n```\n- [ ] Implementation';
-  assert.deepEqual(issueTasks(body).map((item) => item.task), ['Implementation']);
+  assert.deepEqual(
+    issueTasks(body).map((item) => item.task),
+    ['Implementation'],
+  );
   assert.equal(issueTasks('~~~\n- [ ] example\n~~~\n- [ ] Implementation').length, 1);
 });
 
 await test('ambiguous comment-prefixed tasks fail closed instead of editing the wrong checkbox', () => {
-  assert.throws(() => issueTasks('<!-- [ ] example --> - [ ] Implementation'), /UNSUPPORTED_ISSUE_TASK_MARKUP/);
+  assert.throws(
+    () => issueTasks('<!-- [ ] example --> - [ ] Implementation'),
+    /UNSUPPORTED_ISSUE_TASK_MARKUP/,
+  );
   assert.throws(() => issueTasks('<!-- unclosed'), /UNTERMINATED_ISSUE_MARKUP/);
 });
