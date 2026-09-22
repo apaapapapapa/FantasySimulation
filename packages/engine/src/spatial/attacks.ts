@@ -1,0 +1,176 @@
+import {
+  nextRandom,
+  type DeepReadonly,
+  type Definition,
+  type ResourceState,
+} from '@fantasy/domain/spatial';
+import {
+  add,
+  sub,
+  mul,
+  unit,
+  length,
+  cross,
+  dot,
+  sinDegrees,
+  cosDegrees,
+  type Vec3,
+} from './math.ts';
+import {
+  at,
+  ballShape,
+  capsuleShape,
+  firstContact,
+  firstImpact,
+  straight,
+  type SpatialWorld,
+  type Trace,
+} from './physics.ts';
+import { bodyPoint, type DecisionView } from './perception.ts';
+import type { MotionState } from './movement.ts';
+import { bodyCapsule } from './terrain.ts';
+
+type Ability = DeepReadonly<Definition<'ability'>>;
+export type ActionClock = { launchAt: number; recoveryUntil: number; cooldownUntil: number };
+/** Action speed scales preparation/recovery/cooldown, not physics or an attack's active duration. */
+export function actionClock(ability: Ability, speedBps: number, step: number): ActionClock | null {
+  if (speedBps === 0) return null;
+  const delay = (value: number) => Math.ceil((value * 10000) / speedBps);
+  const launchAt = step + delay(ability.castSteps);
+  const active = ability.attack.kind === 'melee' ? ability.attack.activeSteps : 1;
+  return {
+    launchAt,
+    recoveryUntil: launchAt + active + Math.max(1, delay(ability.recoverySteps)),
+    cooldownUntil: launchAt + delay(ability.cooldownSteps),
+  };
+}
+/** Zero uses means unlimited. HP cost equal to current HP is legal. No partial cost on failure. */
+export function payCost(ability: Ability, resources: ResourceState, used: number) {
+  const cost = ability.costs;
+  const reason =
+    resources.hp < cost.hp
+      ? 'hp'
+      : resources.mp < cost.mp
+        ? 'mp'
+        : cost.uses && used >= cost.uses
+          ? 'uses'
+          : null;
+  return reason
+    ? { ok: false as const, reason, resources: { ...resources } }
+    : {
+        ok: true as const,
+        reason: null,
+        resources: {
+          hp: resources.hp - cost.hp,
+          mp: resources.mp - cost.mp,
+          shield: resources.shield,
+        },
+      };
+}
+/** Both declaration and release inspect only information available to the owner. Geometry decides actual contact. */
+export function inObservedRange(ability: Ability, view: DecisionView): boolean {
+  if (ability.target === 'self') return true;
+  const target = view.memory.observation?.enemy ?? view.memory.lastSeen;
+  if (!target) return false;
+  const delta = sub(
+    target.position,
+    bodyPoint(view.self, view.self.actor.character.body.muzzleOffset),
+  );
+  return length(delta) <= ability.rangeMm / 1000 && dot(view.self.facing, delta) >= -1e-12;
+}
+/** Two explicit PRNG samples per released spatial attack, including zero-error shots. */
+export function launchDirection(facing: Vec3, errorMilliDegrees: number, random: number) {
+  const yawState = nextRandom(random),
+    next = nextRandom(yawState);
+  const yaw = (((yawState / 0x1_0000_0000) * 2 - 1) * errorMilliDegrees) / 1000;
+  const pitch = (((next / 0x1_0000_0000) * 2 - 1) * errorMilliDegrees) / 1000;
+  const forward = unit(facing);
+  const reference = Math.abs(forward.y) > 0.9 ? { x: 1, y: 0, z: 0 } : { x: 0, y: 1, z: 0 };
+  const right = unit(cross(forward, reference)),
+    up = unit(cross(right, forward));
+  return {
+    direction: unit(
+      add(
+        mul(add(mul(forward, cosDegrees(yaw)), mul(right, sinDegrees(yaw))), cosDegrees(pitch)),
+        mul(up, sinDegrees(pitch)),
+      ),
+    ),
+    random: next,
+  };
+}
+export type AttackContact = { kind: 'wall' | 'body'; time: number; point: Vec3 };
+/** Attack overlap counts even for a stationary or separating body; movement contact has different semantics. */
+export function traceAttack(
+  world: SpatialWorld,
+  trace: Trace,
+  radius: number,
+  target: MotionState,
+  targetTrace: Trace,
+): AttackContact | null {
+  let wall: number | undefined;
+  const shape = ballShape(radius);
+  for (const piece of trace) {
+    if (world.overlaps(piece.start, shape, 'attack')) {
+      wall = piece.from;
+      break;
+    }
+    const hit = world.sweep(piece.start, sub(piece.end, piece.start), shape, 'attack');
+    if (hit) {
+      wall = piece.from + (piece.to - piece.from) * hit.time_of_impact;
+      break;
+    }
+  }
+  const body = firstContact(
+    trace,
+    shape,
+    targetTrace,
+    capsuleShape(bodyCapsule(target.actor.character.body)),
+    0,
+    true,
+  );
+  const hit = firstImpact(wall, body);
+  return hit ? { ...hit, point: at(trace, hit.time) } : null;
+}
+/** Prevent an offset weapon from appearing through a wall between the body and its muzzle. */
+export function muzzleBlocked(world: SpatialWorld, state: MotionState): boolean {
+  return world.occluded(
+    state.position,
+    bodyPoint(state, state.actor.character.body.muzzleOffset),
+    'attack',
+  );
+}
+export function hitscan(
+  world: SpatialWorld,
+  owner: MotionState,
+  target: MotionState,
+  direction: Vec3,
+  range: number,
+  radius: number,
+): AttackContact | null {
+  const origin = bodyPoint(owner, owner.actor.character.body.muzzleOffset);
+  if (muzzleBlocked(world, owner)) return { kind: 'wall', time: 0, point: origin };
+  return traceAttack(
+    world,
+    straight(origin, add(origin, mul(direction, range))),
+    radius,
+    target,
+    straight(target.position, target.position),
+  );
+}
+/** A melee attack is a forward thrust sphere. Its committed direction is fixed until its active window ends. */
+export function meleeTrace(
+  ownerTrace: Trace,
+  muzzleOffset: Vec3,
+  direction: Vec3,
+  reach: number,
+  elapsed: number,
+  activeSteps: number,
+): Trace {
+  const position = (body: Vec3, time: number) =>
+    add(add(body, muzzleOffset), mul(direction, (reach * (elapsed + time)) / activeSteps));
+  return ownerTrace.map((piece) => ({
+    ...piece,
+    start: position(piece.start, piece.from),
+    end: position(piece.end, piece.to),
+  }));
+}
