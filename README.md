@@ -2,6 +2,7 @@
 
 キャラクターの設定を追加し、仮想対戦とランキングへ発展させるための開発基盤です。
 現在は、JSON編集 → 検証 → SQLite保存 → サンプル対戦 → 履歴表示まで動作します。
+P1の新エンジン`tick-v1 / 0.2.0`は、DB・画面から独立したライブラリーと再現用デモとして利用できます。
 
 ## 技術構成
 
@@ -68,18 +69,20 @@ DATABASE_PATH=./data/fantasy.sqlite
 
 すべてリポジトリのルートで実行します。ローカルCLIの場合、先頭の`vp`を`pnpm exec vp`に置き換えられます。
 
-| コマンド            | 内容                                          |
-| ------------------- | --------------------------------------------- |
-| `vp run dev`        | 画面とAPIを並行起動、コード変更を反映         |
-| `vp check`          | フォーマット、lint、型を使った静的検査        |
-| `vp run typecheck`  | TypeScriptコンパイラによる全ソースの検査      |
-| `vp fmt`            | フォーマット修正                              |
-| `vp test`           | 共通スキーマ、エンジン、API・SQLite結合テスト |
-| `vp test watch`     | テストの継続実行                              |
-| `vp run build`      | 画面とAPIのビルド                             |
-| `vp run verify`     | チェック・型検査・テスト・ビルドを一括実行    |
-| `vp run db:migrate` | SQLマイグレーションを適用                     |
-| `vp run db:seed`    | JSONサンプルの未登録IDのみ追加                |
+| コマンド              | 内容                                                         |
+| --------------------- | ------------------------------------------------------------ |
+| `vp run dev`          | 画面とAPIを並行起動、コード変更を反映                        |
+| `vp check`            | フォーマット、lint、型を使った静的検査                       |
+| `vp run typecheck`    | TypeScriptコンパイラによる全ソースの検査                     |
+| `vp fmt`              | フォーマット修正                                             |
+| `vp test`             | 共通スキーマ、エンジン、API・SQLite結合テスト                |
+| `vp test watch`       | テストの継続実行                                             |
+| `vp run build`        | 画面とAPIのビルド                                            |
+| `vp run verify`       | チェック・型検査・テスト・ビルドを一括実行                   |
+| `vp run db:migrate`   | SQLマイグレーションを適用                                    |
+| `vp run db:seed`      | JSONサンプルの未登録IDのみ追加                               |
+| `vp run demo:tick`    | 新tickエンジンの固定manifestを実行し、結果・ログ・hashを表示 |
+| `vp run engine:check` | エンジン実装digestと現在のソースの整合性を検査               |
 
 `pnpm check`、`pnpm test`、`pnpm build`、`pnpm verify`も利用できます。
 GitHub ActionsはLinux・Windowsで固定バージョンの依存関係をインストールし、同じ検証を実行します。
@@ -132,8 +135,26 @@ MPやクールダウン、総当たりやランキング、複数条件による
 
 対戦履歴には両者のキャラクター定義のスナップショット、行動ログ、ルール版を保存します。
 キャラクターを更新しても過去の履歴は変わりません。
-判定ロジックを変更する場合はルール版を更新し、旧版の再実行が必要になったらエンジンの版別実装を追加してください。
+判定ロジックを変更する場合はルール版を更新し、対応するエンジンの版別実装を保持してください。
 ルール版の保存だけで、変更前のコードを自動実行できるわけではありません。
+
+## 新対戦エンジン P1
+
+`@fantasy/domain/tick-v1`と`@fantasy/engine/tick-v1`に新しい入力契約とエンジンを追加しています。
+manifest schema 2、rules / engine `tick-v1 / 0.2.0`として識別します。
+
+- 整数tickでdamage / heal / waitを同時解決。HP・MPコスト、速度、耐性、初期シールドを扱います。
+- `win / draw / unresolved / truncated`を区別し、状態差分と判定理由を記録します。
+- 解決済みrevision・seed・PRNG版・実装digestをmanifestへ固定し、入力・イベント・結果をSHA-256で検証します。
+- Golden fixture、境界値、主体と位置を交換した対称性、計算打切りからの再試行をテストします。
+- `vp run verify`とLinux / Windows CIで、実装digestの整合性も検査します。
+
+`vp run demo:tick`だけで新対戦を再現できます。詳細は[ルール・入力・hash仕様](./docs/rules/tick-v1.md)と
+[JSON fixture](./packages/engine/fixtures/tick-v1/golden.json)を参照してください。
+
+現在のUIと`POST /api/battles`は引き続き`basic-v1 / 0.1.0`で同期対戦します。
+新エンジンへの接続、revisionのDB保存、非同期ジョブはP3・P4で追加します。
+能力合成・状態効果・射程・移動・条件付き方針はP2以降です。
 
 ## データとマイグレーション
 
