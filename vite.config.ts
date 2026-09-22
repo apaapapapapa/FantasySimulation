@@ -14,7 +14,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     // Integration suites start their own bounded pools; cap concurrent test processes.
-    maxWorkers: 4,
+    maxWorkers: process.platform === 'win32' ? 1 : 4,
     include: ['packages/**/*.test.ts', 'apps/api/**/*.test.ts', 'scripts/**/*.test.ts'],
     // These use node:test and are required by security:test in the same verify command.
     exclude: ['**/node_modules/**', '**/.git/**', 'scripts/security/**/*.test.ts'],
