@@ -15,7 +15,7 @@
     "test": "vp test",
     "test:watch": "vp test watch",
     "build": "vp run -r build",
-    "db:migrate": "vp run --filter @fantasy/api db:migrate",
+    "db:migrate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs migrate",
     "db:seed": "vp run --filter @fantasy/api db:seed",
     "engine:stamp": "node scripts/engine-identity.ts --write",
     "engine:check": "node scripts/engine-identity.ts",
@@ -30,7 +30,8 @@
     "fixtures:spatial": "node scripts/spatial-fixtures.ts --write",
     "harness": "node scripts/harness.ts",
     "check:quality": "node scripts/quality.ts",
-    "db:reset": "vp run --filter @fantasy/api db:reset"
+    "db:generate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs generate",
+    "db:check": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs check"
   },
   "devDependencies": {
     "@octokit/core": "7.0.8",
@@ -39,8 +40,11 @@
     "@semantic-release/github": "12.0.9",
     "@semantic-release/release-notes-generator": "14.1.1",
     "@types/node": "24.13.6",
+    "better-sqlite3": "13.0.3",
     "conventional-changelog-conventionalcommits": "9.3.1",
     "dependency-cruiser": "18.1.0",
+    "drizzle-kit": "0.31.11",
+    "drizzle-orm": "0.45.3",
     "semantic-release": "25.0.9",
     "typescript": "7.0.2",
     "vite-plus": "0.3.3"

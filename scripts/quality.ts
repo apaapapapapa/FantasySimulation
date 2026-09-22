@@ -1,6 +1,6 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { checkMigrations } from './quality/migrations.ts';
 import { architecture } from './quality/architecture.ts';
 import { firstPartyJavaScript, unsupportedTypeScriptModules } from './quality/files.ts';
 import { withSources } from './quality/ast.ts';
@@ -74,7 +74,24 @@ try {
         [...files].flatMap(([path, file]) => determinism(path, file, checker)),
     ),
   );
-  await run('quality:migrations', () => checkMigrations(root));
+  await run('quality:migrations', () => {
+    const result = spawnSync(process.execPath, ['node_modules/drizzle-kit/bin.cjs', 'check'], {
+      cwd: root,
+      encoding: 'utf8',
+      timeout: 60000,
+      env: { ...process.env, DATABASE_PATH: resolve(root, '.generated/drizzle-check.sqlite') },
+    });
+    if (result.error) throw result.error;
+    return result.status === 0
+      ? []
+      : [
+          {
+            path: 'db/drizzle',
+            reason: result.stderr || result.stdout || `Drizzle Kit exited ${String(result.status)}`,
+            correction: 'Resolve the Drizzle Kit history conflict; never rewrite applied SQL.',
+          },
+        ];
+  });
   writeFileSync(`${directory}/findings.json`, JSON.stringify({ ...info, details }, null, 2) + '\n');
   const report: Report = {
     ...info,

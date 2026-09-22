@@ -7,7 +7,8 @@
 - `packages/domain`: shared Zod schemas and inferred TypeScript types. No platform-specific I/O.
 - `packages/engine`: bounded, deterministic battle logic. No HTTP, database, clocks or implicit randomness.
 - `data/characters`: versioned sample JSON. Seeding inserts missing IDs without replacing user edits.
-- `db/migrations`: append-only, checksum-verified SQL migrations.
+- `apps/api/src/db/schema.ts`: Drizzle SQLite table definitions.
+- `db/drizzle`: Drizzle Kit SQL and snapshots; application startup uses the official Drizzle migrator. Never add a custom migration runner or history table.
 
 ## Workflow
 
@@ -48,7 +49,7 @@ Explanation-only and read-only review requests retain their requested scope.
 ## Data and toolchain
 
 - Bind values in SQL. Never commit local databases, credentials or `.env`.
-- Add a new numbered migration instead of editing an applied SQL file.
+- Run `vp run db:generate` after schema changes and commit the SQL plus snapshots. Use `vp run db:migrate` to apply; never use `push` in CI or rewrite an applied migration. Review SQLite `STRICT` on every table rebuild; see ADR 0004.
 - Keep `vite-plus`, its `vite` alias, the peer-version allowance and the bundled Vitest pin aligned when upgrading.
 - Run both Linux and Windows CI. Do not disable failing checks to make a change pass.
 - The initial app is for local development. Add authentication and a deployment design before exposing write APIs publicly.

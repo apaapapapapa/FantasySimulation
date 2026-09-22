@@ -10,17 +10,17 @@ P2〜P3はIssue #1の3D設計へ移行中です。旧実装の互換維持は行
 
 ## 技術構成
 
-| 部分             | 採用技術                            | 配置                  |
-| ---------------- | ----------------------------------- | --------------------- |
-| 開発ツール       | Vite+ 0.3.3 / pnpm 11.19.0          | ルート設定            |
-| 画面             | React 19 / TypeScript strict        | `apps/web`            |
-| API              | Node.js 24.19.0 / Fastify 5         | `apps/api`            |
-| 対戦エンジン     | TypeScriptの純粋関数                | `packages/engine`     |
-| 共通型・JSON検証 | TypeScript / Zod 4                  | `packages/domain`     |
-| データベース     | SQLite / Node.js標準の`node:sqlite` | `data/fantasy.sqlite` |
-| サンプル設定     | JSON                                | `data/characters`     |
-| DB変更履歴       | SQLマイグレーション                 | `db/migrations`       |
-| 将来の分析       | 必要になった段階でPythonを追加      | `analysis`            |
+| 部分             | 採用技術                              | 配置                  |
+| ---------------- | ------------------------------------- | --------------------- |
+| 開発ツール       | Vite+ 0.3.3 / pnpm 11.19.0            | ルート設定            |
+| 画面             | React 19 / TypeScript strict          | `apps/web`            |
+| API              | Node.js 24.19.0 / Fastify 5           | `apps/api`            |
+| 対戦エンジン     | TypeScriptの純粋関数                  | `packages/engine`     |
+| 共通型・JSON検証 | TypeScript / Zod 4                    | `packages/domain`     |
+| データベース     | SQLite / Drizzle ORM / better-sqlite3 | `data/fantasy.sqlite` |
+| サンプル設定     | JSON                                  | `data/characters`     |
+| DB変更履歴       | Drizzle Kit                           | `db/drizzle`          |
+| 将来の分析       | 必要になった段階でPythonを追加        | `analysis`            |
 
 Vite+に含まれるVite、Vitest、Oxlint、Oxfmt、tsdown、タスクランナーを利用します。
 `vite`はVite+のコアにエイリアスし、VitestもVite+内蔵版に固定しています。
@@ -53,10 +53,11 @@ APIと画面の両方を起動するコマンドは**`vp run dev`**です。
 
 初回起動時にDBを作成し、マイグレーションとサンプル2人の登録を行います。
 通常の開発に別のDBサーバーやDocker、Pythonのインストールは不要です。
-現在のDB世代は`db/schema.json`に宣言します。世代情報がない旧DBや別世代のDBは起動時に拒否します。
-開発用には`vp run db:reset ./data/fantasy-new.sqlite --confirm-generation local-v1`で
-新しいファイルを作り、`DATABASE_PATH`を切り替えてください。既存ファイルは置換しません。
-[DB世代とresetの方針](docs/adr/0003-schema-generations.md)を参照してください。
+DBスキーマ・変更履歴はDrizzleへ統一しています。起動時はDrizzle公式migratorが未適用分を適用します。
+従来の`local-v1`の既存テーブルとデータは初回のDrizzleマイグレーションで保持し、旧管理テーブルだけを削除します。
+既存DBは先にバックアップし、APIを停止して`vp run db:migrate`で切り替えてください。
+新しい開発用DBが必要なら`.env`の`DATABASE_PATH`を未使用のファイル名に変更してください。自動削除・reset機能はありません。
+[Drizzle移行方針と制約](docs/adr/0004-drizzle-kit.md)を参照してください。
 
 ## 設定
 
@@ -77,22 +78,23 @@ DATABASE_PATH=./data/fantasy.sqlite
 
 すべてリポジトリのルートで実行します。ローカルCLIの場合、先頭の`vp`を`pnpm exec vp`に置き換えられます。
 
-| コマンド                                                   | 内容                                                         |
-| ---------------------------------------------------------- | ------------------------------------------------------------ |
-| `vp run dev`                                               | 画面とAPIを並行起動、コード変更を反映                        |
-| `vp check`                                                 | フォーマット、lint、型を使った静的検査                       |
-| `vp run typecheck`                                         | TypeScriptコンパイラによる全ソースの検査                     |
-| `vp fmt`                                                   | フォーマット修正                                             |
-| `vp test`                                                  | 共通スキーマ、エンジン、API・SQLite結合テスト                |
-| `vp test watch`                                            | テストの継続実行                                             |
-| `vp run build`                                             | 画面とAPIのビルド                                            |
-| `vp run verify`                                            | チェック・型検査・テスト・ビルドを一括実行                   |
-| `vp run db:migrate`                                        | SQLマイグレーションを適用                                    |
-| `vp run check:quality`                                     | 依存方向・決定性・ソース形式・migration安全性を検査          |
-| `vp run db:reset <new-file> --confirm-generation local-v1` | 既存DBを残して新しい開発用DBを初期化                         |
-| `vp run db:seed`                                           | JSONサンプルの未登録IDのみ追加                               |
-| `vp run demo:tick`                                         | 新tickエンジンの固定manifestを実行し、結果・ログ・hashを表示 |
-| `vp run engine:check`                                      | エンジン実装digestと現在のソースの整合性を検査               |
+| コマンド               | 内容                                                         |
+| ---------------------- | ------------------------------------------------------------ |
+| `vp run dev`           | 画面とAPIを並行起動、コード変更を反映                        |
+| `vp check`             | フォーマット、lint、型を使った静的検査                       |
+| `vp run typecheck`     | TypeScriptコンパイラによる全ソースの検査                     |
+| `vp fmt`               | フォーマット修正                                             |
+| `vp test`              | 共通スキーマ、エンジン、API・SQLite結合テスト                |
+| `vp test watch`        | テストの継続実行                                             |
+| `vp run build`         | 画面とAPIのビルド                                            |
+| `vp run verify`        | チェック・型検査・テスト・ビルドを一括実行                   |
+| `vp run db:migrate`    | Drizzle Kitで未適用SQLを適用                                 |
+| `vp run db:generate`   | TypeScriptスキーマからDrizzleのSQL・snapshotを生成           |
+| `vp run db:check`      | Drizzle Kitの履歴整合性検査                                  |
+| `vp run check:quality` | 依存方向・決定性・ソース形式・migration安全性を検査          |
+| `vp run db:seed`       | JSONサンプルの未登録IDのみ追加                               |
+| `vp run demo:tick`     | 新tickエンジンの固定manifestを実行し、結果・ログ・hashを表示 |
+| `vp run engine:check`  | エンジン実装digestと現在のソースの整合性を検査               |
 
 `pnpm check`、`pnpm test`、`pnpm build`、`pnpm verify`も利用できます。
 GitHub ActionsはLinux・Windowsで固定バージョンの依存関係をインストールし、同じ検証を実行します。
@@ -108,7 +110,7 @@ vp run --filter @fantasy/web preview
 ```
 
 プレビュー画面は<http://127.0.0.1:4173>です。
-APIは起動時にルートの`db/migrations`と`data/characters`を参照するため、リポジトリ内で実行してください。
+APIは起動時にルートの`db/drizzle`と`data/characters`を参照するため、リポジトリ内で実行してください。
 外部への公開・デプロイ設定は、この初期環境には含めていません。
 
 ## 自動リリース
@@ -208,10 +210,13 @@ manifest schema 2、rules / engine `tick-v1 / 0.2.0`として識別します。
 ## データとマイグレーション
 
 SQLiteファイル・WALファイル・`.env`はGit管理から除外します。
-`db/migrations`に連番のSQLファイルを追加すると、起動時または`db:migrate`でトランザクション内に適用します。
-適用済みSQLのチェックサムを保存しており、過去のファイルを書き換えると起動時に検出します。
-SQL変更は既存ファイルの編集ではなく、新しいマイグレーションで行ってください。
-Node.js 24の`node:sqlite`は実験的APIの警告が表示される場合があります。バージョンを固定して検証しています。
+`apps/api/src/db/schema.ts`を変更し、`vp run db:generate`で生成したSQLとsnapshotを`db/drizzle`へコミットします。
+`vp run db:check`で履歴を検査し、SQLをレビューした上で`vp run db:migrate`を実行します。
+API起動時も同じSQL・公式`__drizzle_migrations`履歴を使います。自前runner・世代管理・チェックサム台帳はありません。
+既存SQLは書き換えず追記してください。CIはKit検査、生成差分、実DBへの適用・再実行・失敗rollback、Git上の履歴不変性を検証します。
+Drizzleによる過去SQLの実行時改変検出は保証しません。レビュー済み履歴を迂回する`drizzle-kit push`は使用しません。
+SQLiteの`STRICT`は生成SQLで維持する必要があります。テーブル再作成時も制約を確認してください。
+JSONの実行時検証は引き続きZodが担い、キャラクター編集や過去の対戦記録を保持します。
 
 設計と拡張時の作業方針は[AGENTS.md](./AGENTS.md)を参照してください。
 

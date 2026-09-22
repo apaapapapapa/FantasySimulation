@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import Database from 'better-sqlite3';
+import { asc, desc, eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import {
   BattleRecordSchema,
   CharacterSchema,
@@ -10,7 +13,7 @@ import {
   type Ruleset,
 } from '@fantasy/domain';
 import { repositoryRoot } from './config.ts';
-import { migrate } from './migrations.ts';
+import { battles, characters, rulesets } from './db/schema.ts';
 
 function jsonValue(value: unknown): unknown {
   if (typeof value !== 'string') throw new Error('Invalid JSON in database.');
@@ -19,63 +22,78 @@ function jsonValue(value: unknown): unknown {
 
 export function openStore(filename: string) {
   if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
-  const db = new DatabaseSync(filename);
+  const sqlite = new Database(filename);
+  const db = drizzle(sqlite);
   try {
-    db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
-    migrate(db);
+    sqlite.pragma('foreign_keys = ON');
+    sqlite.pragma('journal_mode = WAL');
+    sqlite.pragma('busy_timeout = 5000');
+    // Official Drizzle migrator consumes the same Kit-generated SQL/journal and
+    // __drizzle_migrations table as db:migrate. There is no application runner.
+    migrate(db, { migrationsFolder: join(repositoryRoot, 'db/drizzle') });
   } catch (error) {
-    db.close();
+    sqlite.close();
     throw error;
   }
 
   return {
-    close: () => db.close(),
+    close: () => sqlite.close(),
     listCharacters: () =>
       db
-        .prepare('SELECT definition FROM characters ORDER BY id')
+        .select({ definition: characters.definition })
+        .from(characters)
+        .orderBy(asc(characters.id))
         .all()
         .map((row) => CharacterSchema.parse(jsonValue(row.definition))),
     getCharacter(id: string): Character | undefined {
-      const row = db.prepare('SELECT definition FROM characters WHERE id = ?').get(id);
+      const row = db
+        .select({ definition: characters.definition })
+        .from(characters)
+        .where(eq(characters.id, id))
+        .get();
       return row ? CharacterSchema.parse(jsonValue(row.definition)) : undefined;
     },
     saveCharacter(input: Character) {
       const character = CharacterSchema.parse(input);
-      db.prepare(`INSERT INTO characters (id, definition, updated_at) VALUES (?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET definition = excluded.definition, updated_at = excluded.updated_at`).run(
-        character.id,
-        JSON.stringify(character),
-        new Date().toISOString(),
-      );
+      const definition = JSON.stringify(character);
+      const updatedAt = new Date().toISOString();
+      db.insert(characters)
+        .values({ id: character.id, definition, updatedAt })
+        .onConflictDoUpdate({ target: characters.id, set: { definition, updatedAt } })
+        .run();
       return character;
     },
-    seedCharacters(characters: Character[]) {
-      const validated = characters.map((character) => CharacterSchema.parse(character));
-      const insert =
-        db.prepare(`INSERT INTO characters (id, definition, updated_at) VALUES (?, ?, ?)
-        ON CONFLICT(id) DO NOTHING`);
-      db.exec('BEGIN IMMEDIATE');
-      try {
-        for (const character of validated) {
-          insert.run(character.id, JSON.stringify(character), new Date().toISOString());
-        }
-        db.exec('COMMIT');
-      } catch (error) {
-        db.exec('ROLLBACK');
-        throw error;
-      }
+    seedCharacters(inputs: Character[]) {
+      const validated = inputs.map((character) => CharacterSchema.parse(character));
+      db.transaction(
+        (tx) => {
+          for (const character of validated) {
+            tx.insert(characters)
+              .values({
+                id: character.id,
+                definition: JSON.stringify(character),
+                updatedAt: new Date().toISOString(),
+              })
+              .onConflictDoNothing({ target: characters.id })
+              .run();
+          }
+        },
+        { behavior: 'immediate' },
+      );
     },
     registerRuleset(rules: Ruleset) {
       const definition = JSON.stringify(rules);
-      db.prepare(
-        'INSERT INTO rulesets (version, definition) VALUES (?, ?) ON CONFLICT(version) DO NOTHING',
-      ).run(rules.version, definition);
+      db.insert(rulesets)
+        .values({ version: rules.version, definition })
+        .onConflictDoNothing({ target: rulesets.version })
+        .run();
       const saved = db
-        .prepare('SELECT definition FROM rulesets WHERE version = ?')
-        .get(rules.version);
-      if (saved?.definition !== definition) {
+        .select({ definition: rulesets.definition })
+        .from(rulesets)
+        .where(eq(rulesets.version, rules.version))
+        .get();
+      if (saved?.definition !== definition)
         throw new Error('Rules changed without a version bump.');
-      }
     },
     saveBattle(participants: [Character, Character], result: BattleResult) {
       const record = BattleRecordSchema.parse({
@@ -84,16 +102,24 @@ export function openStore(filename: string) {
         participants,
         result,
       });
-      db.prepare(
-        'INSERT INTO battles (id, rules_version, record_json, created_at) VALUES (?, ?, ?, ?)',
-      ).run(record.id, result.rulesVersion, JSON.stringify(record), record.createdAt);
+      db.insert(battles)
+        .values({
+          id: record.id,
+          rulesVersion: result.rulesVersion,
+          recordJson: JSON.stringify(record),
+          createdAt: record.createdAt,
+        })
+        .run();
       return record;
     },
     listBattles: () =>
       db
-        .prepare('SELECT record_json FROM battles ORDER BY created_at DESC, id DESC LIMIT 50')
+        .select({ recordJson: battles.recordJson })
+        .from(battles)
+        .orderBy(desc(battles.createdAt), desc(battles.id))
+        .limit(50)
         .all()
-        .map((row) => BattleRecordSchema.parse(jsonValue(row.record_json))),
+        .map((row) => BattleRecordSchema.parse(jsonValue(row.recordJson))),
   };
 }
 

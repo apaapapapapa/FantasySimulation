@@ -1,0 +1,153 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "d9b12bc6-081e-43f7-a629-1b9258b61422",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "battles": {
+      "name": "battles",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rules_version": {
+          "name": "rules_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "record_json": {
+          "name": "record_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "battles_created_at": {
+          "name": "battles_created_at",
+          "columns": ["created_at desc", "id desc"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "battles_rules_version_rulesets_version_fk": {
+          "name": "battles_rules_version_rulesets_version_fk",
+          "tableFrom": "battles",
+          "tableTo": "rulesets",
+          "columnsFrom": ["rules_version"],
+          "columnsTo": ["version"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "battles_record_json_valid": {
+          "name": "battles_record_json_valid",
+          "value": "json_valid(\"battles\".\"record_json\")"
+        }
+      }
+    },
+    "characters": {
+      "name": "characters",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition": {
+          "name": "definition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "characters_definition_json": {
+          "name": "characters_definition_json",
+          "value": "json_valid(\"characters\".\"definition\")"
+        }
+      }
+    },
+    "rulesets": {
+      "name": "rulesets",
+      "columns": {
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition": {
+          "name": "definition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "rulesets_definition_json": {
+          "name": "rulesets_definition_json",
+          "value": "json_valid(\"rulesets\".\"definition\")"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {
+      "battles_created_at": {
+        "columns": {
+          "created_at desc": {
+            "isExpression": true
+          },
+          "id desc": {
+            "isExpression": true
+          }
+        }
+      }
+    }
+  }
+}
