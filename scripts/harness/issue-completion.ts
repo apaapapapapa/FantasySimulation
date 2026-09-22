@@ -4,6 +4,8 @@ import { assessReport, record, sha, text, timestamp } from './report.ts';
 export const repository = 'apaapapapapa/FantasySimulation';
 export const completionMarker = '<!-- harness:issue-completed:v1 -->';
 export const requiredJobs = [
+  'changes',
+  'ci-gate',
   'Verify (ubuntu-latest)',
   'Verify (windows-latest)',
   'Security / Secret scan',
@@ -111,12 +113,21 @@ export function validateRun(value: unknown, expectedSha: string, expectedAttempt
 
 export function validateJobs(values: unknown[]): void {
   const jobs = values.map(record);
+  requireCompletion(new Set(jobs.map((job) => job.name)).size === jobs.length, 'DUPLICATE_JOB');
   for (const name of requiredJobs) {
     const matching = jobs.filter((job) => job.name === name);
     requireCompletion(matching.length === 1, 'MISSING_OR_DUPLICATE_REQUIRED_JOB');
+    requireCompletion(matching[0]!.conclusion === 'success', 'FAILED_OR_SKIPPED_JOB');
   }
+  // Main always runs full verification. GitHub skips docs before expanding its matrix.
+  // Only that exact job may be skipped; planner, aggregate gate and source proofs stay mandatory.
   requireCompletion(
-    jobs.every((job) => job.status === 'completed' && job.conclusion === 'success'),
+    jobs.every(
+      (job) =>
+        job.status === 'completed' &&
+        (job.conclusion === 'success' ||
+          (job.name === 'Docs (${{ matrix.os }})' && job.conclusion === 'skipped')),
+    ),
     'FAILED_OR_SKIPPED_JOB',
   );
 }
