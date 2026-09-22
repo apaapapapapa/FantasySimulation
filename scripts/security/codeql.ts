@@ -1,7 +1,73 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { array, isMain, main, object, requireCondition, text } from './common.ts';
+import { array, count, isMain, main, object, requireCondition, text } from './common.ts';
 import type { Outcome } from './common.ts';
+
+type Component = {
+  data: Record<string, unknown>;
+  rules: Record<string, unknown>[];
+  ids: Map<string, Record<string, unknown>>;
+};
+
+function component(value: unknown): Component {
+  const data = object(value);
+  text(data.name);
+  const rules = data.rules === undefined ? [] : array(data.rules).map(object);
+  const ids = new Map(rules.map((rule) => [text(rule.id), rule]));
+  requireCondition(ids.size === rules.length, 'DUPLICATE_CODEQL_RULE');
+  return { data, rules, ids };
+}
+
+function resultRule(
+  result: Record<string, unknown>,
+  driver: Component,
+  extensions: Component[],
+): Record<string, unknown> {
+  const reference = result.rule === undefined ? {} : object(result.rule);
+  let owner = driver;
+  if (reference.toolComponent !== undefined) {
+    const target = object(reference.toolComponent);
+    if (target.index !== undefined) {
+      const selected = extensions[count(target.index)];
+      requireCondition(selected !== undefined, 'CODEQL_COMPONENT_MISSING');
+      owner = selected;
+    } else if (target.name !== undefined || target.guid !== undefined) {
+      const matches = [driver, ...extensions].filter(
+        (entry) =>
+          (target.name === undefined || entry.data.name === text(target.name)) &&
+          (target.guid === undefined || entry.data.guid === text(target.guid)),
+      );
+      requireCondition(matches.length === 1, 'CODEQL_COMPONENT_AMBIGUOUS_OR_MISSING');
+      const selected = matches[0];
+      requireCondition(selected !== undefined, 'CODEQL_COMPONENT_MISSING');
+      owner = selected;
+    }
+    for (const field of ['name', 'guid']) {
+      if (target[field] !== undefined) {
+        requireCondition(owner.data[field] === text(target[field]), 'CODEQL_COMPONENT_MISMATCH');
+      }
+    }
+  }
+  const id = reference.id ?? result.ruleId;
+  const index = reference.index ?? result.ruleIndex;
+  requireCondition(id !== undefined || index !== undefined, 'CODEQL_RESULT_RULE_MISSING');
+  const rule = index === undefined ? owner.ids.get(text(id)) : owner.rules[count(index)];
+  requireCondition(rule !== undefined, 'CODEQL_RESULT_RULE_MISSING');
+  for (const candidate of [result.ruleId, reference.id]) {
+    if (candidate !== undefined) {
+      requireCondition(rule.id === text(candidate), 'CODEQL_RESULT_RULE_MISMATCH');
+    }
+  }
+  for (const candidate of [result.ruleIndex, reference.index]) {
+    if (candidate !== undefined) {
+      requireCondition(owner.rules[count(candidate)] === rule, 'CODEQL_RESULT_RULE_MISMATCH');
+    }
+  }
+  if (reference.guid !== undefined) {
+    requireCondition(rule.guid === text(reference.guid), 'CODEQL_RESULT_RULE_MISMATCH');
+  }
+  return rule;
+}
 
 export function codeqlOutcome(value: unknown): Outcome {
   const report = object(value);
@@ -13,21 +79,33 @@ export function codeqlOutcome(value: unknown): Outcome {
   let rulesCount = 0;
   for (const value of runs) {
     const run = object(value);
-    const driver = object(object(run.tool).driver);
-    requireCondition(driver.name === 'CodeQL', 'UNEXPECTED_SARIF_PRODUCER');
-    const rules = array(driver.rules).map(object);
-    requireCondition(rules.length > 0, 'CODEQL_RULES_MISSING');
-    rulesCount += rules.length;
-    const ids = new Map(rules.map((rule) => [text(rule.id), rule]));
-    requireCondition(ids.size === rules.length, 'DUPLICATE_CODEQL_RULE');
-    for (const invocation of array(run.invocations)) {
-      requireCondition(object(invocation).executionSuccessful === true, 'CODEQL_EXECUTION_FAILED');
+    const tool = object(run.tool);
+    const driver = component(tool.driver);
+    requireCondition(driver.data.name === 'CodeQL', 'UNEXPECTED_SARIF_PRODUCER');
+    // The pinned CodeQL action emits --sarif-group-rules-by-pack: driver.rules
+    // can be empty while each query pack owns its rules in tool.extensions.
+    const extensions = tool.extensions === undefined ? [] : array(tool.extensions).map(component);
+    const totalRules = [driver, ...extensions].reduce(
+      (total, entry) => total + entry.rules.length,
+      0,
+    );
+    requireCondition(totalRules > 0, 'CODEQL_RULES_MISSING');
+    rulesCount += totalRules;
+    const invocations = array(run.invocations);
+    requireCondition(invocations.length > 0, 'CODEQL_INVOCATION_MISSING');
+    for (const value of invocations) {
+      const invocation = object(value);
+      requireCondition(invocation.executionSuccessful === true, 'CODEQL_EXECUTION_FAILED');
+      for (const field of ['toolExecutionNotifications', 'toolConfigurationNotifications']) {
+        if (invocation[field] === undefined) continue;
+        for (const notification of array(invocation[field])) {
+          requireCondition(object(notification).level !== 'error', 'CODEQL_REPORTED_ERROR');
+        }
+      }
     }
-    requireCondition(array(run.invocations).length > 0, 'CODEQL_INVOCATION_MISSING');
     for (const value of array(run.results)) {
       const result = object(value);
-      const rule = ids.get(text(result.ruleId));
-      requireCondition(rule !== undefined, 'CODEQL_RESULT_RULE_MISSING');
+      const rule = resultRule(result, driver, extensions);
       const properties = rule.properties === undefined ? {} : object(rule.properties);
       const severity = properties['security-severity'];
       if (severity !== undefined) {
@@ -41,7 +119,7 @@ export function codeqlOutcome(value: unknown): Outcome {
       } else if (Array.isArray(properties.tags) && properties.tags.includes('security')) {
         requireCondition(false, 'CODEQL_SECURITY_SEVERITY_MISSING');
       }
-      // Count the full current inventory, including unchanged/suppressed results.
+      // Every emitted result counts, including unchanged and suppressed results.
       findings += 1;
     }
   }

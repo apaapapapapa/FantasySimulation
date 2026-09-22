@@ -82,3 +82,136 @@ await test('CodeQL missing or incompatible evidence is incomplete, not clean', (
   missingRules.runs[0]?.tool.driver.rules.splice(0);
   assert.throws(() => codeqlOutcome(missingRules));
 });
+
+function groupedSarif(score = '8.0', results = true) {
+  const extension = {
+    name: 'codeql/javascript-queries',
+    guid: '11111111-1111-4111-8111-111111111111',
+    rules: [{ id: 'js/test', properties: { 'security-severity': score } }],
+  };
+  const run = {
+    tool: { driver: { name: 'CodeQL', rules: [] }, extensions: [extension] },
+    invocations: [{ executionSuccessful: true }],
+    results: results
+      ? [
+          {
+            ruleId: 'js/test',
+            rule: { id: 'js/test', index: 0, toolComponent: { index: 0 } },
+            baselineState: 'unchanged',
+          },
+        ]
+      : [],
+  };
+  return { version: '2.1.0', runs: [run] };
+}
+
+await test('grouped query-pack inventory with no findings is clean, not missing rules', () => {
+  const value = groupedSarif('8.0', false);
+  assert.deepEqual(codeqlOutcome(value), {
+    status: 'pass',
+    reason: 'CODEQL_SEVERITY_POLICY_PASSED',
+    counts: { runs: 1, rules: 1, findings: 0, blocking: 0 },
+  });
+  Reflect.deleteProperty(value.runs[0]?.tool.driver ?? {}, 'rules');
+  assert.equal(codeqlOutcome(value).status, 'pass');
+});
+
+await test('grouped high/critical findings block even when suppressed or unchanged', () => {
+  for (const score of ['7.0', '9.8']) {
+    const value = groupedSarif(score);
+    Object.assign(value.runs[0]?.results[0] ?? {}, { suppressions: [{ status: 'accepted' }] });
+    assert.equal(codeqlOutcome(value).status, 'fail');
+    assert.equal(codeqlOutcome(value).counts.blocking, 1);
+  }
+  assert.equal(codeqlOutcome(groupedSarif('6.9')).status, 'pass');
+});
+
+await test('rule ids are resolved in their owning component instead of a flattened map', () => {
+  const value = groupedSarif('6.9');
+  const run = value.runs[0];
+  assert.ok(run);
+  run.tool.extensions.push({
+    name: 'local/security-queries',
+    guid: '22222222-2222-4222-8222-222222222222',
+    rules: [{ id: 'js/test', properties: { 'security-severity': '9.8' } }],
+  });
+  assert.equal(codeqlOutcome(value).status, 'pass');
+  const result = run.results[0];
+  assert.ok(result);
+  result.rule.toolComponent.index = 1;
+  assert.equal(codeqlOutcome(value).status, 'fail');
+});
+
+await test('component names and guids must resolve uniquely and agree with indices', () => {
+  for (const target of [
+    { name: 'codeql/javascript-queries' },
+    { guid: '11111111-1111-4111-8111-111111111111' },
+    { index: 0, name: 'codeql/javascript-queries' },
+  ]) {
+    const value = groupedSarif();
+    Object.assign(value.runs[0]?.results[0]?.rule ?? {}, { toolComponent: target });
+    assert.equal(codeqlOutcome(value).status, 'fail');
+  }
+  for (const target of [
+    { index: 1 },
+    { index: -1 },
+    { index: 0.5 },
+    { index: 0, name: 'wrong-pack' },
+    { index: 0, guid: 'wrong-guid' },
+    { name: 'unknown-pack' },
+  ]) {
+    const value = groupedSarif();
+    Object.assign(value.runs[0]?.results[0]?.rule ?? {}, { toolComponent: target });
+    assert.throws(() => codeqlOutcome(value));
+  }
+});
+
+await test('nested rule ids and indices cannot disagree with legacy result references', () => {
+  for (const update of [
+    { ruleId: 'js/other' },
+    { ruleIndex: 1 },
+    { rule: { id: 'js/other', index: 0, toolComponent: { index: 0 } } },
+    { rule: { id: 'js/test', index: 99, toolComponent: { index: 0 } } },
+  ]) {
+    const value = groupedSarif();
+    Object.assign(value.runs[0]?.results[0] ?? {}, update);
+    assert.throws(() => codeqlOutcome(value));
+  }
+  const nestedOnly = groupedSarif();
+  Reflect.deleteProperty(nestedOnly.runs[0]?.results[0] ?? {}, 'ruleId');
+  assert.equal(codeqlOutcome(nestedOnly).status, 'fail');
+});
+
+await test('empty rules everywhere, missing results and failed invocations never pass', () => {
+  const emptyRules = groupedSarif('8.0', false);
+  emptyRules.runs[0]?.tool.extensions.splice(0);
+  assert.throws(() => codeqlOutcome(emptyRules));
+  const missingResults = groupedSarif('8.0', false);
+  Reflect.deleteProperty(missingResults.runs[0] ?? {}, 'results');
+  assert.throws(() => codeqlOutcome(missingResults));
+  const missingInvocations = groupedSarif('8.0', false);
+  missingInvocations.runs[0]?.invocations.splice(0);
+  assert.throws(() => codeqlOutcome(missingInvocations));
+  for (const field of ['toolExecutionNotifications', 'toolConfigurationNotifications']) {
+    const failed = groupedSarif('8.0', false);
+    Object.assign(failed.runs[0]?.invocations[0] ?? {}, { [field]: [{ level: 'error' }] });
+    assert.throws(() => codeqlOutcome(failed));
+  }
+});
+
+await test('duplicate pack rules and invalid security metadata remain incomplete', () => {
+  const duplicate = groupedSarif();
+  duplicate.runs[0]?.tool.extensions[0]?.rules.push({
+    id: 'js/test',
+    properties: { 'security-severity': '1.0' },
+  });
+  assert.throws(() => codeqlOutcome(duplicate));
+  for (const score of ['unknown', '11', '-1']) {
+    assert.throws(() => codeqlOutcome(groupedSarif(score)));
+  }
+  const missingSeverity = groupedSarif();
+  Object.assign(missingSeverity.runs[0]?.tool.extensions[0]?.rules[0] ?? {}, {
+    properties: { tags: ['security'] },
+  });
+  assert.throws(() => codeqlOutcome(missingSeverity));
+});
