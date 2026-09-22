@@ -33,16 +33,33 @@ export const EventSchema = z.strictObject({
     'land',
     'terminal',
     'diagnostic',
+    'state',
   ]),
   actorId: IdSchema.nullable(),
   targetId: IdSchema.nullable(),
   parentEventId: IdSchema.nullable(),
+  causes: z.array(IdSchema).max(65536),
   abilityId: IdSchema.nullable(),
   ruleId: IdSchema,
   point: PhysicalVectorSchema.nullable(),
   before: ResourceStateSchema.nullable(),
   after: ResourceStateSchema.nullable(),
   amount: count.nullable(),
+  damage: z
+    .strictObject({
+      defenseApplied: count,
+      afterDefense: count,
+      afterResistance: count,
+      absorbed: z.strictObject({
+        numerator: z.string().regex(/^\d{1,40}$/),
+        denominator: z.string().regex(/^[1-9]\d{0,39}$/),
+      }),
+      toHp: z.strictObject({
+        numerator: z.string().regex(/^\d{1,40}$/),
+        denominator: z.string().regex(/^[1-9]\d{0,39}$/),
+      }),
+    })
+    .nullable(),
   reason: z.string().max(500),
 });
 export type BattleEvent = z.infer<typeof EventSchema>;

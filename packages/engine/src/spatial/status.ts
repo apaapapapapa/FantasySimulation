@@ -39,20 +39,21 @@ const clone = (s: StatusCohort): StatusCohort => ({ ...s, causes: [...s.causes] 
 export function statusBoundary(statuses: readonly StatusCohort[], step: number) {
   const removed = statuses.filter((s) => s.endStep <= step).map(clone);
   const active = statuses.filter((s) => s.startStep <= step && step < s.endStep);
-  const pulses = active.flatMap((s) =>
-    s.revision.definition.periodic.flatMap((effect, index) =>
+  const pulses = active.flatMap((s) => {
+    const causes = Object.freeze([...s.causes]);
+    return s.revision.definition.periodic.flatMap((effect, index) =>
       step >= s.startStep && (step - s.startStep) % effect.everySteps === 0
         ? Array.from({ length: s.stacks }, (_, stack) => ({
             revision: s.revision,
             effect,
             index,
             stack,
-            causes: [...s.causes],
+            causes,
             startStep: s.startStep,
           }))
         : [],
-    ),
-  );
+    );
+  });
   return { statuses: statuses.filter((s) => s.endStep > step).map(clone), removed, pulses };
 }
 /** Dispel affects the pre-existing snapshot; simultaneous new applications become active nextStep. */
