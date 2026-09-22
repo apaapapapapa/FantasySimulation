@@ -12,7 +12,15 @@ describe('Drizzle draft storage invariants', () => {
     const store = openStore(':memory:');
     try {
       const values: (string | number | null)[] = [
-        'draft', 'character', 'definition', 1, '{}', null, 'now', 'now', null,
+        'draft',
+        'character',
+        'definition',
+        1,
+        '{}',
+        null,
+        'now',
+        'now',
+        null,
       ];
       values[position] = invalid;
       expect(() =>
@@ -30,7 +38,10 @@ describe('Drizzle draft storage invariants', () => {
       expect(() =>
         store.transaction(() => {
           const draft = store.createDraft({
-            kind: 'character', definitionId: 'new-character', base: null, definition: {},
+            kind: 'character',
+            definitionId: 'new-character',
+            base: null,
+            definition: {},
           });
           draftId = draft.id;
           store.patchDraft(draft.id, draft.version, { name: 'not committed' });
