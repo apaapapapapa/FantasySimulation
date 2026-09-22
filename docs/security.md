@@ -62,17 +62,16 @@ an independent human review of the exception PR and do not self-approve it.
 H4's sanitized receipts retain the `fantasy-security-h4` producer. They are
 inputs, not substitutes for the H1 common report. `scripts/security/evidence.ts`
 converts them to that schema using the existing report assessor. The aggregate
-`scripts/ci/gate.ts` requires every check below, on full and wording-only PRs:
+`scripts/ci/gate.ts` requires every check below, on full and wording-only PRs.
+Each entry maps the common check ID to its artifact prefix and receipt filename:
 
-| Common check ID | Receipt artifact prefix | Required receipt |
-| --- | --- | --- |
-| `security:secret-canary` | `security-secrets` | `secret-canary.json` |
-| `security:secret-scan` | `security-secrets` | `secret-scan.json` |
-| `security:codeql-severity` | `security-codeql` | `codeql-severity.json` |
-| `security:dependency-audit` | `security-audit` | `dependency-audit.json` |
-| `security:renovate-configuration` | `security-renovate` | `renovate-configuration.json` |
-| `security:toolchain-ubuntu-latest` | `security-toolchain-ubuntu-latest` | `toolchain-policy.json` |
-| `security:toolchain-windows-latest` | `security-toolchain-windows-latest` | `toolchain-policy.json` |
+- `security:secret-canary`: `security-secrets` / `secret-canary.json`.
+- `security:secret-scan`: `security-secrets` / `secret-scan.json`.
+- `security:codeql-severity`: `security-codeql` / `codeql-severity.json`.
+- `security:dependency-audit`: `security-audit` / `dependency-audit.json`.
+- `security:renovate-configuration`: `security-renovate` / `renovate-configuration.json`.
+- `security:toolchain-ubuntu-latest`: `security-toolchain-ubuntu-latest` / `toolchain-policy.json`.
+- `security:toolchain-windows-latest`: `security-toolchain-windows-latest` / `toolchain-policy.json`.
 
 Each artifact name ends with `-<runId>-<runAttempt>`. CI downloads only that
 run and attempt and keeps artifact directories separate, so the two platform
