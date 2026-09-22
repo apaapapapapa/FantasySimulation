@@ -111,7 +111,7 @@ export function applyStatuses(
           ? {
               ...s,
               endStep: Math.max(s.endStep, nextStep + definition.durationSteps),
-              causes: [...causes],
+              causes: [...new Set([...s.causes, ...causes])].sort(compareIds),
             }
           : s,
       );

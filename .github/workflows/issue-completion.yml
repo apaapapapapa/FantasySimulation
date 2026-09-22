@@ -1,0 +1,62 @@
+name: Issue completion
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: issue-completion
+  cancel-in-progress: false
+
+jobs:
+  complete:
+    if: >-
+      github.repository == 'apaapapapapa/FantasySimulation' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      issues: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - name: Download only the verified run's source evidence
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
+        with:
+          pattern: harness-*
+          path: ${{ runner.temp }}/issue-completion-source
+          merge-multiple: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Update and close fully completed Issues
+        run: node scripts/harness.ts issue-complete "$ISSUE_SOURCE_DIRECTORY" --apply
+        env:
+          ISSUE_SOURCE_DIRECTORY: ${{ runner.temp }}/issue-completion-source
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Preserve issue completion evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: issue-completion-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/issues/report.json
+          if-no-files-found: error
+          retention-days: 14
+          include-hidden-files: true

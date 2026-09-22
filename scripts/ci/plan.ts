@@ -1,0 +1,139 @@
+import { readBoundedJson } from '../harness/files.ts';
+import { execFileSync } from 'node:child_process';
+import { appendFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { identity, record, sha } from '../harness/report.ts';
+import type { Identity } from '../harness/report.ts';
+export interface Plan extends Identity {
+  schemaVersion: 1;
+  event: string;
+  full: boolean;
+  reason: string;
+  paths: string[];
+}
+// Only wording documents are eligible; unknown files and executable/configuration docs run full CI.
+export function wordingOnly(paths: readonly string[]): boolean {
+  return (
+    paths.length > 0 &&
+    paths.every((path) => {
+      if (/^(?:AGENTS|CLAUDE)\.md$/i.test(path)) return false;
+      if (/^(?:\.agents|\.github|scripts|packages|apps|data|db)\//.test(path)) return false;
+      if (/^docs\/(?:rules|adr|development|tooling|security|architecture)(?:[/.]|$)/.test(path))
+        return false;
+      return (
+        path === 'README.md' || /^docs\/[\w./-]+\.md$/.test(path) || path === 'analysis/README.md'
+      );
+    })
+  );
+}
+export function classify(info: Identity, event: string, paths: string[] | null): Plan {
+  const full =
+    event !== 'pull_request' || info.baselineSha === null || paths === null || !wordingOnly(paths);
+  return {
+    ...info,
+    schemaVersion: 1,
+    event,
+    full,
+    reason: full
+      ? 'Full verification: source/configuration, sensitive docs, main/dispatch or uncertain comparison'
+      : 'Known nonempty PR diff contains only wording documents',
+    paths: paths ?? [],
+  };
+}
+export function parsePlan(input: unknown): Plan {
+  const value = record(input),
+    info = identity(value);
+  if (
+    value.schemaVersion !== 1 ||
+    typeof value.event !== 'string' ||
+    typeof value.full !== 'boolean' ||
+    !Array.isArray(value.paths) ||
+    value.paths.length > 10000 ||
+    value.paths.some((path) => typeof path !== 'string' || !path || path.includes('\0')) ||
+    typeof value.reason !== 'string'
+  )
+    throw new Error('Invalid CI plan');
+  const paths = value.paths as string[];
+  if (
+    !value.full &&
+    (value.event !== 'pull_request' ||
+      info.testMergeSha === null ||
+      info.baselineSha === null ||
+      !wordingOnly(paths))
+  )
+    throw new Error('Unjustified CI short circuit');
+  return {
+    ...info,
+    schemaVersion: 1,
+    event: value.event,
+    full: value.full,
+    paths,
+    reason: value.reason,
+  };
+}
+function git(root: string, args: string[]): string {
+  return execFileSync('git', args, {
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 30000,
+    maxBuffer: 4 * 1024 * 1024,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+}
+export function collectPlan(root: string, env: NodeJS.ProcessEnv): Plan {
+  const sourceSha = sha(git(root, ['rev-parse', 'HEAD']).trim());
+  if (env.GITHUB_SHA && env.GITHUB_SHA !== sourceSha)
+    throw new Error('CI checkout identity mismatch');
+  const event = env.GITHUB_EVENT_NAME ?? 'local';
+  let candidateSha = sourceSha,
+    baselineSha: string | null = null,
+    testMergeSha: string | null = null;
+  try {
+    const eventPath = env.GITHUB_EVENT_PATH;
+    if (!eventPath) throw new Error('Missing/bounded event');
+    const payload = record(readBoundedJson(eventPath, 2 * 1024 * 1024));
+    if (event === 'pull_request') {
+      candidateSha = sha(record(record(payload.pull_request).head).sha);
+      const parents = git(root, ['show', '-s', '--format=%P', 'HEAD']).trim().split(' ');
+      if (parents.length !== 2 || parents[1] !== candidateSha)
+        throw new Error('Unconfirmed test merge parents');
+      baselineSha = sha(parents[0]);
+      testMergeSha = sourceSha;
+    } else if (event === 'push') baselineSha = sha(payload.before);
+    if (!baselineSha) throw new Error('No comparison baseline');
+    git(root, ['cat-file', '-e', `${baselineSha}^{commit}`]);
+    const diff = git(root, [
+      'diff',
+      '--no-renames',
+      '--name-only',
+      '-z',
+      baselineSha,
+      sourceSha,
+      '--',
+    ]);
+    if (diff && !diff.endsWith('\0')) throw new Error('Incomplete diff');
+    const paths = diff ? diff.slice(0, -1).split('\0') : [];
+    if (paths.length > 10000) throw new Error('Diff exceeds budget');
+    return classify({ sourceSha, candidateSha, baselineSha, testMergeSha }, event, paths);
+  } catch {
+    return classify({ sourceSha, candidateSha, baselineSha, testMergeSha }, event, null);
+  }
+}
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    const output = process.argv[2];
+    if (!output) throw new Error('Usage: plan.ts <output.json>');
+    const plan = collectPlan(process.cwd(), process.env);
+    writeFileSync(output, JSON.stringify(plan, null, 2) + '\n');
+    if (process.env.GITHUB_OUTPUT)
+      appendFileSync(
+        process.env.GITHUB_OUTPUT,
+        `full=${plan.full}\nbaseline=${plan.baselineSha ?? ''}\n`,
+      );
+    console.log(`FANTASY_CI_PLAN=${JSON.stringify(plan)}`);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : 'CI planning failed');
+    process.exitCode = 1;
+  }
+}
