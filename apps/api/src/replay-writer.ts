@@ -14,7 +14,7 @@ import {
   type ReplayManifest,
   type ReplayCheckpoint,
 } from '@fantasy/domain/spatial';
-import { replayDirectory, writeCompressed } from './replay-files.ts';
+import { replayDirectory, writeCompressed, syncDirectory } from './replay-files.ts';
 import { recordEvents, verifyReplayDirectory } from './replay-reader.ts';
 
 type Identity = { id: string; attemptId: string; simulationHash: string; input: unknown };
@@ -146,7 +146,9 @@ export class ReplayWriter {
     } finally {
       await handle.close();
     }
+    await syncDirectory(this.directory);
     await rename(this.directory, replayDirectory(this.root, this.identity.id));
+    await syncDirectory(this.root);
     // Only after this returns may the coordinator commit the database reference.
     return manifest;
   }

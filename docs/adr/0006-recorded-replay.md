@@ -60,7 +60,11 @@ writerは一時配置→再読込検証→rename→DB参照確定の順とし、
 `apps/api/src/replay-writer.ts` は `append` の完了を待つ逐次投入を要求する。
 Node標準のgzip streamが書込を待ち、保持するデータは1チャンクと表示状態に限定する。
 確定前に全チャンクを再読込し、各checkpointを実際の先頭からの復元結果と照合する。
-manifestは最後に書き、各ファイルをsyncしてから同一保存先でdirectoryをrenameする。
+manifestは最後に書き、各ファイルとstaging directoryをsyncしてから同一保存先でdirectoryをrenameし、
+保存先の親directoryもsyncする。POSIXでdirectory同期に失敗した場合は確定成功を返さない。
+WindowsではNode/libuvがdirectory同期を提供しない場合があり、明示した非対応エラーだけを許容する。
+その環境はファイル同期・renameまでの保証で、停電後のdirectory保持を保証しない。
+再起動・読込時の欠落/破損検証を省略せず、失われたartifactのDB参照はcacheに採用しない。
 DB登録はこの確定後に調整側が行う。Workerからの転送・DB参照・再起動時の回収は
 ジョブ調整のPRで接続する。
 

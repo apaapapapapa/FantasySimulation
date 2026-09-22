@@ -14,6 +14,25 @@ export const replayDirectory = (root: string, id: string) => {
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,95}$/.test(id)) throw new Error('Invalid replay ID');
   return join(root, id);
 };
+/** POSIX publication durability includes directory entries, not just file contents. */
+export async function syncDirectory(path: string) {
+  let handle;
+  try {
+    handle = await open(path, 'r');
+    await handle.sync();
+  } catch (error) {
+    // Node/libuv on Windows may not expose directory FlushFileBuffers. File sync,
+    // atomic rename and mandatory read-time verification still apply; see ADR 0006.
+    const code = (error as NodeJS.ErrnoException).code;
+    if (
+      process.platform !== 'win32' ||
+      !['EPERM', 'EISDIR', 'EINVAL', 'ENOTSUP', 'EBADF'].includes(code ?? '')
+    )
+      throw error;
+  } finally {
+    await handle?.close();
+  }
+}
 /** Bound the actual read, including concurrent growth; never follow artifact symlinks. */
 export async function readBoundedFile(path: string, limit: number): Promise<Buffer> {
   if ((await lstat(path)).isSymbolicLink()) throw new Error('Artifact symlink');
