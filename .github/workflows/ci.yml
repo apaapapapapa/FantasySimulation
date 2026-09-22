@@ -36,25 +36,6 @@ jobs:
       - run: vp install --frozen-lockfile
       - name: Read-only verification with source-bound evidence
         run: vp run harness source .generated/harness/source
-      - name: Collect read-only formatting suggestions after failure
-        if: failure() && runner.os == 'Linux'
-        run: node scripts/harness/format-suggestions.ts
-      # Temporary PR-only diagnostic handoff; remove before merging this PR.
-      # Export only the versioned source and installed public toolchain, never .git/config or HOME.
-      - name: Prepare isolated local validation inputs
-        if: always() && runner.os == 'Linux' && github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          out=.generated/harness/local-validation
-          mkdir -p "$out"
-          git bundle create "$out/source.bundle" HEAD
-          tar -czf "$out/dependencies.tar.gz" node_modules apps/*/node_modules packages/*/node_modules
-          cp "$(node -p 'process.execPath')" "$out/node"
-          cp -L "$(command -v vp)" "$out/vp"
-          node -p 'JSON.stringify({sourceSha:process.env.GITHUB_SHA,node:process.execPath,nodeVersion:process.version})' > "$out/identity.json"
-          vp --version >> "$out/toolchain.txt"
-          find "$HOME/.local/share/vite-plus" -maxdepth 4 -type d >> "$out/toolchain.txt"
       - name: Preserve source evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

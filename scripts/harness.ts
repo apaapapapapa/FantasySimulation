@@ -4,7 +4,8 @@ import { collectSource } from './harness/source.ts';
 
 try {
   const [command, input, ...required] = process.argv.slice(2);
-  if (!input) throw new Error('Usage: harness source <fresh-output> | report <file> <required-check>...');
+  if (!input)
+    throw new Error('Usage: harness source <fresh-output> | report <file> <required-check>...');
   let result;
   if (command === 'source' && required.length === 0)
     result = await collectSource(process.cwd(), input);
@@ -14,6 +15,7 @@ try {
     result = assessReport(JSON.parse(data.toString('utf8')) as unknown, required);
   } else throw new Error('Unknown command or unexpected arguments');
   console.log(JSON.stringify(result.report, null, 2));
+  if (command === 'source') console.log(`FANTASY_SOURCE_REPORT=${JSON.stringify(result.report)}`);
   process.exitCode = result.exitCode;
 } catch (error) {
   console.error(error instanceof Error ? error.message : 'Invalid harness input');
