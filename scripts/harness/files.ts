@@ -1,7 +1,7 @@
 import { openSync, closeSync, fstatSync, readSync } from 'node:fs';
 
 /** Open once: metadata and bounded reads refer to the same descriptor, not a re-resolved path. */
-export function readBoundedJson(path: string, maxBytes = 8 * 1024 * 1024): unknown {
+export function readBoundedBytes(path: string, maxBytes = 8 * 1024 * 1024): Buffer {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 32 * 1024 * 1024)
     throw new Error('Invalid input budget');
   const descriptor = openSync(path, 'r');
@@ -16,8 +16,11 @@ export function readBoundedJson(path: string, maxBytes = 8 * 1024 * 1024): unkno
       size += count;
     }
     if (size > maxBytes) throw new Error('Input exceeds size budget');
-    return JSON.parse(bytes.subarray(0, size).toString('utf8')) as unknown;
+    return bytes.subarray(0, size);
   } finally {
     closeSync(descriptor);
   }
+}
+export function readBoundedJson(path: string, maxBytes = 8 * 1024 * 1024): unknown {
+  return JSON.parse(readBoundedBytes(path, maxBytes).toString('utf8')) as unknown;
 }

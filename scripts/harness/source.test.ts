@@ -1,26 +1,12 @@
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'vite-plus/test';
 import { artifactDirectory, collectSource, sourceIdentity } from './source.ts';
 import { redact, runCommand, safeEnvironment } from './process.ts';
+import { testRepository as repository } from './test-support/repository.ts';
 
-function repository() {
-  const root = mkdtempSync(join(tmpdir(), 'fantasy-harness-'));
-  const git = (...args: string[]) =>
-    execFileSync('git', args, { cwd: root, encoding: 'utf8', stdio: 'pipe' });
-  git('init');
-  git('config', 'user.name', 'Harness fixture');
-  git('config', 'user.email', 'harness@example.invalid');
-  git('config', 'core.autocrlf', 'false');
-  writeFileSync(join(root, '.gitignore'), '.generated/\n');
-  writeFileSync(join(root, 'source.txt'), 'original\n');
-  git('add', '.');
-  git('commit', '-m', 'fixture');
-  return { root, git, dispose: () => rmSync(root, { recursive: true, force: true }) };
-}
 const passed = { exitCode: 0, signal: null, output: 'passed\n', bounded: false };
 describe('source evidence collection', () => {
   it(

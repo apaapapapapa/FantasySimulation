@@ -37,7 +37,10 @@ try {
     let result;
     if (command === 'source' && args.length === 0)
       result = await collectSource(process.cwd(), input);
-    else if (command === 'issue-plan' && args.length === 0) {
+    else if (command === 'corpus' && args.length === 0) {
+      const { collectCorpus } = await import('./harness/corpus.ts');
+      result = await collectCorpus(process.cwd(), input);
+    } else if (command === 'issue-plan' && args.length === 0) {
       const { completionDraft } = await import('./harness/issue-completion-api.ts');
       result = { report: await completionDraft(Number(input)), exitCode: 0 };
     } else if (
@@ -56,6 +59,7 @@ try {
     } else throw new Error('Unknown command or unexpected arguments');
     console.log(JSON.stringify(result.report, null, 2));
     if (command === 'source') console.log(`FANTASY_SOURCE_REPORT=${JSON.stringify(result.report)}`);
+    if (command === 'corpus') console.log(`FANTASY_CORPUS_REPORT=${JSON.stringify(result.report)}`);
     process.exitCode = result.exitCode;
   }
 } catch {
