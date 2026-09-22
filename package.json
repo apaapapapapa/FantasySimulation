@@ -25,10 +25,11 @@
     "security:secrets": "node scripts/security/secrets.ts",
     "release": "semantic-release",
     "release:dry-run": "semantic-release --dry-run",
-    "verify": "vp check && vp run typecheck && vp run engine:check && vp run security:test && vp test && vp run build",
+    "verify": "vp check && vp run typecheck && vp run engine:check && vp run check:quality && vp run security:test && vp test && vp run build",
     "bench:spatial": "node scripts/spatial-benchmark.ts",
     "fixtures:spatial": "node scripts/spatial-fixtures.ts --write",
-    "harness": "node scripts/harness.ts"
+    "harness": "node scripts/harness.ts",
+    "check:quality": "node scripts/quality.ts"
   },
   "devDependencies": {
     "@octokit/core": "7.0.8",
@@ -38,6 +39,7 @@
     "@semantic-release/release-notes-generator": "14.1.1",
     "@types/node": "24.13.6",
     "conventional-changelog-conventionalcommits": "9.3.1",
+    "dependency-cruiser": "18.1.0",
     "semantic-release": "25.0.9",
     "typescript": "7.0.2",
     "vite-plus": "0.3.3"
