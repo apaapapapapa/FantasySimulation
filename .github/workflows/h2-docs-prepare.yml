@@ -1,0 +1,86 @@
+name: Prepare reviewed two-platform docs checks
+on:
+  push:
+    branches: [automation/h2-docs-platforms]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+      - run: vp install --frozen-lockfile
+      - name: Apply explicit reviewed documentation-platform change
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+          function replace(s,a,b){if(!s.includes(a))throw Error('Unexpected source for reviewed patch');return s.replaceAll(a,b);}
+          const matrix=String.fromCharCode(36)+'{{ matrix.os }}';
+          let gate=readFileSync('scripts/ci/gate.ts','utf8');
+          gate=replace(gate,"plan.full ? osNames : ['docs']","plan.full ? osNames : osNames.map(os => `docs-${os}`)");
+          gate=replace(gate,"name === 'docs' ? 'docs' : 'source'","name.startsWith('docs-') ? 'docs' : 'source'");
+          gate=replace(gate,"security: 'success',","security: 'success', 'dependency-policy': 'success',");
+          writeFileSync('scripts/ci/gate.ts',gate);
+          let tests=readFileSync('scripts/ci/plan.test.ts','utf8');
+          tests=replace(tests,"security: 'success',","security: 'success', 'dependency-policy': 'success',");
+          tests=replace(tests,"{ docs: evidence(['docs:diff', 'docs:links']) }","{ 'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']), 'docs-windows-latest': evidence(['docs:diff', 'docs:links']) }");
+          tests=replace(tests,"expect(assessGate(docs, observed, {}).exitCode).toBe(2);","expect(assessGate(docs, observed, {}).exitCode).toBe(2); expect(assessGate(docs, observed, {'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links'])}).exitCode).toBe(2);");
+          writeFileSync('scripts/ci/plan.test.ts',tests);
+          let ci=readFileSync('.github/workflows/ci.yml','utf8');
+          ci=replace(ci,"  docs:\n    needs: changes\n    if: needs.changes.outputs.full == 'false'\n    runs-on: ubuntu-latest", "  docs:\n    needs: changes\n    if: needs.changes.outputs.full == 'false'\n    name: Docs ("+matrix+")\n    strategy:\n      fail-fast: false\n      matrix:\n        os: [ubuntu-latest, windows-latest]\n    runs-on: "+matrix);
+          ci=replace(ci,"name: harness-docs\n          path: .generated/harness/docs/", "name: harness-docs-"+matrix+"\n          path: .generated/harness/docs/");
+          const download="      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093\n        if: always() && needs.changes.outputs.full == 'false'\n        with:\n          name: harness-docs\n          path: .generated/harness/ci/evidence/docs/docs";
+          ci=replace(ci,download,['ubuntu-latest','windows-latest'].map(os=>download.replace('name: harness-docs','name: harness-docs-'+os).replace('/evidence/docs/docs','/evidence/docs-'+os+'/docs')).join('\n'));
+          writeFileSync('.github/workflows/ci.yml',ci);
+          const doc='docs/development/ci.md';writeFileSync(doc,readFileSync(doc,'utf8')+'\nThe lightweight docs plan also runs on both Linux and Windows. The aggregate requires both\n`ci-evidence:docs-ubuntu-latest` and `ci-evidence:docs-windows-latest`; one successful\nplatform cannot substitute for the other. Dependency policy is a required report item.\n');
+          NODE
+          vp fmt scripts/ci/gate.ts scripts/ci/plan.test.ts .github/workflows/ci.yml docs/development/ci.md
+          vp check
+          vp run typecheck
+          vp test run scripts/ci
+      - name: Export source-only allowlist
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync,mkdirSync} from 'node:fs';
+          const paths=['scripts/ci/gate.ts','scripts/ci/plan.test.ts','.github/workflows/ci.yml','docs/development/ci.md'];
+          mkdirSync('prepared');writeFileSync('prepared/tree.json',JSON.stringify({sourceSha:process.env.GITHUB_SHA,tree:paths.map(path=>({path,mode:'100644',type:'blob',content:readFileSync(path,'utf8')}))}));
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: h2-docs-tree
+          path: prepared/tree.json
+          retention-days: 1
+          if-no-files-found: error
+  emit:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: h2-docs-tree
+          path: prepared
+      - name: Create an unreferenced tree only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          const allowed=['scripts/ci/gate.ts','scripts/ci/plan.test.ts','.github/workflows/ci.yml','docs/development/ci.md'];const v=JSON.parse(readFileSync('prepared/tree.json','utf8'));
+          if(v.sourceSha!==process.env.GITHUB_SHA||v.tree.length!==allowed.length||new Set(v.tree.map(x=>x.path)).size!==allowed.length)throw Error('Invalid prepared source');
+          for(const x of v.tree)if(!allowed.includes(x.path)||x.mode!=='100644'||x.type!=='blob'||typeof x.content!=='string'||x.content.length>100000||Object.keys(x).sort().join(',')!=='content,mode,path,type')throw Error('Invalid entry');
+          writeFileSync('request.json',JSON.stringify({base_tree:'15dbc8e4901f0b71a53e9aa94cc24e2528c7dd48',tree:v.tree}));
+          NODE
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/trees" --input request.json --jq .sha
