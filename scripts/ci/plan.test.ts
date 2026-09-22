@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { classify, collectPlan, parsePlan, wordingOnly } from './plan.ts';
 import { assessGate } from './gate.ts';
+import { corpusEvidence } from '../harness/test-support/corpus.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import type { Identity, Report } from '../harness/report.ts';
 const info: Identity = {
@@ -77,6 +78,7 @@ describe('fail-closed CI gate', () => {
     verify: 'success',
     docs: 'skipped',
   };
+  const corpus = corpusEvidence(info);
   const security = { ...evidence(SECURITY_CHECKS), producer: 'security-evidence' };
   const reports = {
     'ubuntu-latest': evidence(['source-clean', 'source-verify']),
@@ -84,7 +86,7 @@ describe('fail-closed CI gate', () => {
     security,
   };
   it('requires both operating systems and exact source identities', () => {
-    expect(assessGate(plan, results, reports).exitCode).toBe(0);
+    expect(assessGate(plan, results, reports, corpus).exitCode).toBe(0);
     expect(assessGate(plan, results, { 'ubuntu-latest': reports['ubuntu-latest'] }).exitCode).toBe(
       2,
     );
@@ -105,14 +107,14 @@ describe('fail-closed CI gate', () => {
     expect(assessGate(plan, results, { ...reports, security: null }).exitCode).toBe(2);
     for (const id of SECURITY_CHECKS) {
       const missing = { ...security, checks: security.checks.filter((check) => check.id !== id) };
-      expect(assessGate(plan, results, { ...reports, security: missing }).exitCode).toBe(2);
+      expect(assessGate(plan, results, { ...reports, security: missing }, corpus).exitCode).toBe(2);
       const failed = {
         ...security,
         checks: security.checks.map((check) =>
           check.id === id ? { ...check, status: 'fail' } : check,
         ),
       };
-      expect(assessGate(plan, results, { ...reports, security: failed }).exitCode).toBe(1);
+      expect(assessGate(plan, results, { ...reports, security: failed }, corpus).exitCode).toBe(1);
     }
     for (const changed of [
       { ...security, sourceSha: 'd'.repeat(40), testMergeSha: 'd'.repeat(40) },
@@ -120,7 +122,7 @@ describe('fail-closed CI gate', () => {
       { ...security, producer: 'untrusted-producer' },
     ])
       expect(assessGate(plan, results, { ...reports, security: changed }).exitCode).toBe(2);
-    const gate = assessGate(plan, results, reports).report;
+    const gate = assessGate(plan, results, reports, corpus).report;
     for (const id of SECURITY_CHECKS)
       expect(gate.checks.find((check) => check.id === id)?.status).toBe('pass');
   });

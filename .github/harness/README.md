@@ -172,3 +172,46 @@ with both OS plans/reports; review coverage remained `unknown` without a receipt
 and a skipped Release was separately `unknown`. The probe did not manufacture a
 review or treat CI success as full delivery. Its temporary workflow was kept only
 on a test branch and removed after the observation.
+
+### H5 cross-platform, Worker and property evidence
+
+`ci-gate` now compares both OS corpus artifacts with the checked-out corpus and
+source SHA. Missing/duplicate entries, missing OS, failed corpus report, changed
+inputs, Node/engine identity and digest differences cannot pass. Corpus subprocesses
+receive the existing filtered environment: their own identity is the tested commit;
+the CI gate binds it to the plan's candidate/base/test-merge identity. The
+`coverage:cross-os-digests` local test checks the comparator; only `corpus:cross-os`
+in the CI gate is evidence of an actual two-OS comparison.
+
+The corpus adapter also invokes tests against the real Piscina pool (one and up to
+four Workers, reversed submission order) and the persisted job implementation.
+A host without two usable Workers fails that coverage explicitly. Job operation
+sequences compare an independent small ownership model to real disposable SQLite;
+process restart, durable replay and real Worker failure/cancellation use the existing
+integration tests. No second battle implementation is introduced.
+
+fast-check 4.10.2 (MIT, pinned development dependency) generates bounded inputs with
+seed 20260923, at most 24 runs/operations and a 30-second budget including shrinking.
+It uses pure-rand transitively for test generation only; the battle's xorshift32-v1
+and actor-stream-v1 are unchanged. Property receipts record source, versions,
+seed/path/counts, interruptions, minimal input and actual Vitest command under
+`.generated/harness/properties`. Discards and interruption never count as success.
+To replay a recorded case, set `FANTASY_PROPERTY_ID`, `FANTASY_PROPERTY_SEED` and
+`FANTASY_PROPERTY_PATH` from that receipt and run its recorded test command. A
+replay tests that case only and is not evidence that the whole generated suite ran.
+The deliberate corruption control and its minimized input are kept in
+`scripts/harness/fixtures/minimized-hp.json`; it is evidence the property can detect
+a violation, not a historical product bug or a full proof of fairness.
+
+The fairness fixture exchanges IDs, slots, horizontal positions/facings and the
+actor-owned random streams. It compares mapped victory, step and damage effects;
+it deliberately does not demand equal hashes from different manifests. Existing
+ordered-priority and enumeration tests stay separate. The fixed generated inputs
+and fixed corpus run identically on both OS; generated-suite timing is not a battle
+performance measurement.
+
+The engine digest change in this PR is solely from the reviewed root development
+dependency/lockfile. No engine rule, pinned input or expected battle digest changed.
+Provenance: HiFiScout `replay.ts` and `load-gate.ts` at the Issue #9 pinned SHA were
+read for coverage and exact-baseline review principles; no catalog or D1 adapter
+was imported. Upstream API reference: <https://fast-check.dev/docs/core-blocks/runners/>.
