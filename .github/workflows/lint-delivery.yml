@@ -4,275 +4,34 @@ on:
     branches: [test/lint-delivery-20260923]
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
+  checks: read
+  statuses: read
 jobs:
-  prepare:
+  collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: write
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: 4fd45b99deb780482db3b12e7bcaafd12e642a70
+          ref: 79c24a8caec35af234c3419823c266ed346f6aca
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Apply the reviewed seven-file patch and require its exact tree
-        shell: bash
-        run: |
-          cat > "$RUNNER_TEMP/lint.patch" <<'PATCH'
-          diff --git a/apps/api/src/app.test.ts b/apps/api/src/app.test.ts
-          index cd0da81..1082963 100644
-          --- a/apps/api/src/app.test.ts
-          +++ b/apps/api/src/app.test.ts
-          @@ -137,7 +137,7 @@ describe('3D revision API and Drizzle persistence', () => {
-                   }),
-                 ),
-               );
-          -    expect(responses.map((r) => r.statusCode).sort()).toEqual([201, 409]);
-          +    expect(responses.map((r) => r.statusCode).sort((a, b) => a - b)).toEqual([201, 409]);
-               const published = PublishResponseSchema.parse(
-                 responses.find((r) => r.statusCode === 201)!.json(),
-               );
-          diff --git a/apps/api/src/drizzle.test.ts b/apps/api/src/drizzle.test.ts
-          index a0d1127..187366f 100644
-          --- a/apps/api/src/drizzle.test.ts
-          +++ b/apps/api/src/drizzle.test.ts
-          @@ -246,7 +246,9 @@ describe('Drizzle Kit and spatial persistence integration', () => {
-             it('rolls back failed initial migration DDL and official receipts', () => {
-               const db = new Database(':memory:');
-               try {
-          -      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow();
-          +      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow(
-          +        /Failed to run the query '[\s\S]*INSERT INTO deliberately_missing_table VALUES\(1\);/,
-          +      );
-                 expect(
-                   db
-                     .prepare(
-          @@ -265,7 +267,9 @@ describe('Drizzle Kit and spatial persistence integration', () => {
-               try {
-                 db.exec(legacyFixture());
-                 db.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run('keep', '{}', 'before');
-          -      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow();
-          +      expect(() => migrate(drizzle(db), { migrationsFolder: failingMigrations() })).toThrow(
-          +        /Failed to run the query '[\s\S]*INSERT INTO deliberately_missing_table VALUES\(1\);/,
-          +      );
-                 expect(db.prepare('SELECT simulation_hash FROM battle_specs').all()).toEqual([
-                   { simulation_hash: 'keep' },
-                 ]);
-          diff --git a/packages/engine/src/spatial/simulate.test.ts b/packages/engine/src/spatial/simulate.test.ts
-          index 96c92a4..abcd590 100644
-          --- a/packages/engine/src/spatial/simulate.test.ts
-          +++ b/packages/engine/src/spatial/simulate.test.ts
-          @@ -91,22 +91,27 @@ describe('fixed-step battle stream', () => {
-                 physicsStateHash: 'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976',
-               });
-               expect(finalActors(run.records).map((a) => a.resources.hp)).toEqual([0, 0]);
-          -    for (const record of run.records) {
-          +    for (const record of run.records)
-                 expect(StreamRecordSchema.safeParse(record).success).toBe(true);
-          -      if (record.kind === 'interval')
-          -        for (const path of record.paths) {
-          -          expect(path.segments[0]!.from).toBe(0);
-          -          expect(path.segments.at(-1)!.to).toBe(1);
-          -          for (let i = 1; i < path.segments.length; i++)
-          -            expect(path.segments[i]!.start).toEqual(path.segments[i - 1]!.end);
-          -        }
-          +    const intervals = run.records.filter((record) => record.kind === 'interval');
-          +    expect(intervals.length).toBeGreaterThan(0);
-          +    const paths = intervals.flatMap((record) => record.paths);
-          +    expect(paths.length).toBeGreaterThan(0);
-          +    for (const path of paths) {
-          +      expect(path.segments.length).toBeGreaterThan(0);
-          +      expect(path.segments[0]!.from).toBe(0);
-          +      expect(path.segments.at(-1)!.to).toBe(1);
-          +      for (let i = 1; i < path.segments.length; i++)
-          +        expect(path.segments[i]!.start).toEqual(path.segments[i - 1]!.end);
-               }
-               const log = events(run.records);
-          +    expect(log.length).toBeGreaterThan(0);
-          +    expect(log.some((event) => event.parentEventId !== null)).toBe(true);
-               expect(log.map((e) => e.sequence)).toEqual(log.map((_, i) => i));
-               const seen = new Set<string>();
-               for (const event of log) {
-          -      if (event.parentEventId) expect(seen.has(event.parentEventId)).toBe(true);
-          -      for (const cause of event.causes) expect(seen.has(cause)).toBe(true);
-          +      const parents = event.parentEventId === null ? [] : [event.parentEventId];
-          +      for (const cause of [...parents, ...event.causes]) expect(seen.has(cause)).toBe(true);
-                 seen.add(event.id);
-               }
-               expect(input).toEqual(copy);
-          diff --git a/scripts/harness/files.test.ts b/scripts/harness/files.test.ts
-          index a258dfc..3a93819 100644
-          --- a/scripts/harness/files.test.ts
-          +++ b/scripts/harness/files.test.ts
-          @@ -11,8 +11,8 @@ it('accepts an exact byte limit and rejects excess, invalid JSON and non-files',
-               expect(readBoundedJson(file, 7)).toEqual({ n: 1 });
-               expect(() => readBoundedJson(file, 6)).toThrow(/oversized/);
-               writeFileSync(file, 'invalid');
-          -    expect(() => readBoundedJson(file, 7)).toThrow();
-          -    expect(() => readBoundedJson(dir)).toThrow();
-          +    expect(() => readBoundedJson(file, 7)).toThrow(SyntaxError);
-          +    expect(() => readBoundedJson(dir)).toThrow(/Invalid or oversized input|EISDIR/);
-               expect(() => readBoundedJson(file, 0)).toThrow(/budget/);
-             } finally {
-               rmSync(dir, { recursive: true, force: true });
-          diff --git a/scripts/harness/issue-completion.ts b/scripts/harness/issue-completion.ts
-          index 3b2f6bf..4979387 100644
-          --- a/scripts/harness/issue-completion.ts
-          +++ b/scripts/harness/issue-completion.ts
-          @@ -206,7 +206,7 @@ export function issueTasks(body: string): { line: number; task: string }[] {
-           
-           function markdown(value: string): string {
-             return value
-          -    .replace(/[&<>@`\[\]*_]/g, (char) => `&#${char.charCodeAt(0)};`)
-          +    .replace(/[&<>@`[\]*_]/g, (char) => `&#${char.charCodeAt(0)};`)
-               .replace(/\r?\n/g, ' ');
-           }
-           
-          diff --git a/scripts/quality/determinism.test.ts b/scripts/quality/determinism.test.ts
-          index a1251b7..b982f4d 100644
-          --- a/scripts/quality/determinism.test.ts
-          +++ b/scripts/quality/determinism.test.ts
-          @@ -18,8 +18,8 @@ function cases(codes: string[]) {
-             }
-           }
-           
-          -it('rejects direct, computed and aliased implicit randomness and environment access', () => {
-          -  for (const [code, findings] of cases([
-          +it.each(
-          +  cases([
-               'Math.random();',
-               "Math['random']();",
-               'const {random}=Math; random();',
-          @@ -43,8 +43,9 @@ it('rejects direct, computed and aliased implicit randomness and environment acc
-               'Atomics.wait(a, 0, 0);',
-               'setTimeout(() => {}, 0);',
-               "new Function('return Date.now()')();",
-          -  ]))
-          -    expect(findings, code).not.toEqual([]);
-          +  ]),
-          +)('rejects implicit randomness and environment access: %s', (_code, findings) => {
-          +  expect(findings).not.toEqual([]);
-           });
-           
-           it('allows deterministic math, explicit local inputs, property names and pure hash aliases', () => {
-          @@ -61,8 +62,8 @@ it('allows deterministic math, explicit local inputs, property names and pure ha
-             ).toEqual([]);
-           });
-           
-          -it('limits the crypto exception to static named createHash imports', () => {
-          -  for (const [code, findings] of cases([
-          +it.each(
-          +  cases([
-               "import {randomBytes} from 'node:crypto';",
-               "import * as crypto from 'node:crypto';",
-               "import crypto from 'node:crypto';",
-          @@ -71,31 +72,29 @@ it('limits the crypto exception to static named createHash imports', () => {
-               "export * from 'node:crypto';",
-               "const c=await import('node:crypto');",
-               "const c=require('node:crypto');",
-          -  ]))
-          -    expect(
-          -      findings.some((f) => f.rule === 'pure-hash-only'),
-          -      code,
-          -    ).toBe(true);
-          +  ]),
-          +)('limits the crypto exception to static named createHash imports: %s', (_code, findings) => {
-          +  expect(findings.some((f) => f.rule === 'pure-hash-only')).toBe(true);
-           });
-           
-          -it('rejects network, database and unreviewed SDK imports at the engine boundary', () => {
-          -  const modules = [
-          -    'node:fs',
-          -    'node:http',
-          -    'node:sqlite',
-          -    'crypto',
-          -    'undici',
-          -    'better-sqlite3',
-          -    '@fantasy/domain-unsafe',
-          -  ];
-          -  for (const [code, findings] of cases(
-          -    modules.map((module) => `import * as imported from '${module}';`),
-          -  ))
-          -    expect(
-          -      findings.some((f) => f.rule === 'engine-dependency-policy'),
-          -      code,
-          -    ).toBe(true);
-          -});
-          +it.each(
-          +  cases(
-          +    [
-          +      'node:fs',
-          +      'node:http',
-          +      'node:sqlite',
-          +      'crypto',
-          +      'undici',
-          +      'better-sqlite3',
-          +      '@fantasy/domain-unsafe',
-          +    ].map((module) => `import * as imported from '${module}';`),
-          +  ),
-          +)(
-          +  'rejects network, database and unreviewed SDK imports at the engine boundary: %s',
-          +  (_code, findings) => {
-          +    expect(findings.some((f) => f.rule === 'engine-dependency-policy')).toBe(true);
-          +  },
-          +);
-           
-           it('rejects unsupported TypeScript module variants instead of omitting their execution', () => {
-             expect(
-          diff --git a/scripts/security/issue-completion-markdown.test.ts b/scripts/security/issue-completion-markdown.test.ts
-          index c060f5e..f124bc4 100644
-          --- a/scripts/security/issue-completion-markdown.test.ts
-          +++ b/scripts/security/issue-completion-markdown.test.ts
-          @@ -57,3 +57,21 @@ await test('ambiguous comment-prefixed tasks fail closed instead of editing the
-             );
-             assert.throws(() => issueTasks('<!-- unclosed'), /UNTERMINATED_ISSUE_MARKUP/);
-           });
-          +
-          +await test('completion evidence escapes Markdown and HTML without creating extra lines', () => {
-          +  const raw = '&<>@`[]*_\r\nnext';
-          +  const escaped = '&#38;&#60;&#62;&#64;&#96;&#91;&#93;&#42;&#95; next';
-          +  const result = completedBody(
-          +    {
-          +      ...plan,
-          +      summary: raw,
-          +      acceptance: [{ task: raw, evidence: raw }],
-          +    },
-          +    'No checklist.',
-          +    'a'.repeat(40),
-          +    100,
-          +  );
-          +  assert.ok(result.includes(`\n${escaped}\n`));
-          +  assert.ok(result.includes(`- [x] ${escaped} — ${escaped}\n`));
-          +  assert.ok(!result.includes(raw));
-          +});
-          PATCH
-          test "$(git rev-parse HEAD)" = 4fd45b99deb780482db3b12e7bcaafd12e642a70
-          git apply --check "$RUNNER_TEMP/lint.patch"
-          git apply --index "$RUNNER_TEMP/lint.patch"
-          git diff --cached --check
-          test "$(git write-tree)" = 277684374a58714dde0108da7a8265a541d5fae5
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'test: resolve all 13 lint warnings without weakening checks'
-      - name: Canonical verification of the clean candidate
-        shell: bash
-        run: env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp exec node scripts/harness.ts source .generated/harness/lint-source
-      - name: Publish only the reviewed candidate branch
-        shell: bash
+      - name: Require the exact PR CI run to finish successfully
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          test "$(git rev-parse HEAD^{tree})" = 277684374a58714dde0108da7a8265a541d5fae5
-          test -z "$(git status --porcelain)"
-          git -c credential.helper= -c 'credential.helper=!f() { echo username=x-access-token; echo password=$GH_TOKEN; }; f' push origin HEAD:refs/heads/chore/lint-zero-warnings
-          git rev-parse HEAD > .generated/harness/lint-source/candidate-sha.txt
+        run: timeout 180 gh run watch 35773100966 --repo apaapapapapa/FantasySimulation --exit-status --interval 10
+      - name: Collect authoritative PR and review evidence with the existing harness
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: vp exec node scripts/harness.ts github-snapshot apaapapapapa/FantasySimulation 49 .generated/harness/pr49-before-merge
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: lint-candidate-evidence
-          path: .generated/harness/
+          name: lint-pr-delivery
+          path: .generated/harness/pr49-before-merge/
           include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
