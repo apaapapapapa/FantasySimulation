@@ -78,7 +78,8 @@ export async function writeCompressed(directory: string, file: string, raw: stri
     createGzip({ level: 6 }),
     createWriteStream(path, { flags: 'wx' }),
   );
-  const handle = await open(path, 'r');
+  // FlushFileBuffers requires write access on Windows; reopening must not truncate.
+  const handle = await open(path, 'r+');
   try {
     await handle.sync();
   } finally {
