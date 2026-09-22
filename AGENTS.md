@@ -6,7 +6,7 @@
 - `apps/api`: HTTP boundary, validated configuration, database lifecycle and persistence.
 - `packages/domain`: shared Zod schemas and inferred TypeScript types. No platform-specific I/O.
 - `packages/engine`: bounded, deterministic battle logic. No HTTP, database, clocks or implicit randomness.
-- `data/characters`: versioned sample JSON. Seeding inserts missing IDs without replacing user edits.
+- `data/spatial`: versioned sample JSON. Seeding inserts missing IDs without replacing user edits.
 - `db/migrations`: append-only, checksum-verified SQL migrations.
 
 ## Workflow

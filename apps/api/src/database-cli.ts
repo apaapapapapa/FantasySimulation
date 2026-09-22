@@ -1,8 +1,7 @@
 import { resolve } from 'node:path';
 import { resetDevelopmentDatabase } from './migrations.ts';
-import { DEFAULT_RULESET } from '@fantasy/engine';
 import { readConfig, repositoryRoot } from './config.ts';
-import { openStore, readSampleCharacters } from './store.ts';
+import { openStore, readSampleRevisions } from './store.ts';
 
 const command = process.argv[2];
 if (command === 'reset') {
@@ -17,8 +16,7 @@ if (command === 'reset') {
   const config = readConfig();
   const store = openStore(config.databasePath);
   try {
-    store.registerRuleset(DEFAULT_RULESET);
-    if (command === 'seed') store.seedCharacters(readSampleCharacters());
+    if (command === 'seed') await store.seedRevisions(readSampleRevisions());
     console.log(`Database ${command} completed: ${config.databasePath}`);
   } finally {
     store.close();

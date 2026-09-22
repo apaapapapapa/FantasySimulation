@@ -23,11 +23,13 @@ it('initializes the current schema twice using the same application runner', () 
   const db = new DatabaseSync(target());
   try {
     migrate(db);
-    db.prepare("INSERT INTO characters VALUES ('preserved', '{}', 'test')").run();
+    db.prepare(
+      "INSERT INTO definition_drafts (id,kind,definition_id,version,definition_json,published_json,created_at,updated_at) VALUES ('preserved', 'character', 'preserved', 1, '{}', NULL, 'test', 'test')",
+    ).run();
     const before = db.prepare('SELECT * FROM schema_migrations').all();
     migrate(db);
     expect(db.prepare('SELECT * FROM schema_migrations').all()).toEqual(before);
-    expect(db.prepare('SELECT id FROM characters').get()?.id).toBe('preserved');
+    expect(db.prepare('SELECT id FROM definition_drafts').get()?.id).toBe('preserved');
   } finally {
     db.close();
   }
@@ -43,7 +45,9 @@ it('refuses modified, missing, reordered and corrupt applied receipts', () => {
       if (mode === 'reordered') set.migrations.unshift(migration('000_before.sql', 'SELECT 1;'));
       if (mode === 'corrupt') db.prepare("UPDATE schema_migrations SET checksum='incorrect'").run();
       expect(() => migrate(db, set)).toThrow(/migration (missing|checksum)/i);
-      expect(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count).toBe(1);
+      expect(db.prepare('SELECT COUNT(*) AS count FROM schema_migrations').get()?.count).toBe(
+        current().migrations.length,
+      );
     } finally {
       db.close();
     }
