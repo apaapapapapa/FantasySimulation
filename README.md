@@ -51,6 +51,10 @@ APIと画面の両方を起動するコマンドは**`vp run dev`**です。
 
 初回起動時にDBを作成し、マイグレーションとサンプル2人の登録を行います。
 通常の開発に別のDBサーバーやDocker、Pythonのインストールは不要です。
+現在のDB世代は`db/schema.json`に宣言します。世代情報がない旧DBや別世代のDBは起動時に拒否します。
+開発用には`vp run db:reset ./data/fantasy-new.sqlite --confirm-generation local-v1`で
+新しいファイルを作り、`DATABASE_PATH`を切り替えてください。既存ファイルは置換しません。
+[DB世代とresetの方針](docs/adr/0003-schema-generations.md)を参照してください。
 
 ## 設定
 
@@ -71,20 +75,22 @@ DATABASE_PATH=./data/fantasy.sqlite
 
 すべてリポジトリのルートで実行します。ローカルCLIの場合、先頭の`vp`を`pnpm exec vp`に置き換えられます。
 
-| コマンド              | 内容                                                         |
-| --------------------- | ------------------------------------------------------------ |
-| `vp run dev`          | 画面とAPIを並行起動、コード変更を反映                        |
-| `vp check`            | フォーマット、lint、型を使った静的検査                       |
-| `vp run typecheck`    | TypeScriptコンパイラによる全ソースの検査                     |
-| `vp fmt`              | フォーマット修正                                             |
-| `vp test`             | 共通スキーマ、エンジン、API・SQLite結合テスト                |
-| `vp test watch`       | テストの継続実行                                             |
-| `vp run build`        | 画面とAPIのビルド                                            |
-| `vp run verify`       | チェック・型検査・テスト・ビルドを一括実行                   |
-| `vp run db:migrate`   | SQLマイグレーションを適用                                    |
-| `vp run db:seed`      | JSONサンプルの未登録IDのみ追加                               |
-| `vp run demo:tick`    | 新tickエンジンの固定manifestを実行し、結果・ログ・hashを表示 |
-| `vp run engine:check` | エンジン実装digestと現在のソースの整合性を検査               |
+| コマンド                                                   | 内容                                                         |
+| ---------------------------------------------------------- | ------------------------------------------------------------ |
+| `vp run dev`                                               | 画面とAPIを並行起動、コード変更を反映                        |
+| `vp check`                                                 | フォーマット、lint、型を使った静的検査                       |
+| `vp run typecheck`                                         | TypeScriptコンパイラによる全ソースの検査                     |
+| `vp fmt`                                                   | フォーマット修正                                             |
+| `vp test`                                                  | 共通スキーマ、エンジン、API・SQLite結合テスト                |
+| `vp test watch`                                            | テストの継続実行                                             |
+| `vp run build`                                             | 画面とAPIのビルド                                            |
+| `vp run verify`                                            | チェック・型検査・テスト・ビルドを一括実行                   |
+| `vp run db:migrate`                                        | SQLマイグレーションを適用                                    |
+| `vp run check:quality`                                     | 依存方向・決定性・ソース形式・migration安全性を検査          |
+| `vp run db:reset <new-file> --confirm-generation local-v1` | 既存DBを残して新しい開発用DBを初期化                         |
+| `vp run db:seed`                                           | JSONサンプルの未登録IDのみ追加                               |
+| `vp run demo:tick`                                         | 新tickエンジンの固定manifestを実行し、結果・ログ・hashを表示 |
+| `vp run engine:check`                                      | エンジン実装digestと現在のソースの整合性を検査               |
 
 `pnpm check`、`pnpm test`、`pnpm build`、`pnpm verify`も利用できます。
 GitHub ActionsはLinux・Windowsで固定バージョンの依存関係をインストールし、同じ検証を実行します。
@@ -213,3 +219,12 @@ Node.js 24の`node:sqlite`は実験的APIの警告が表示される場合があ
 - [Vite+ / Monorepo](https://viteplus.dev/guide/monorepo)
 - [Vite+ / Project-local CLI](https://viteplus.dev/guide/local-cli)
 - [Vite+ / CI](https://viteplus.dev/guide/ci)
+
+## 開発ハーネス
+
+実装・修正・PR完了は [fantasy-delivery skill](.agents/skills/fantasy-delivery/SKILL.md)
+と [開発ルール](AGENTS.md)に従います。`vp run harness source .generated/harness/source-1`
+は、cleanなcommitに対して既存の`vp run verify`を実行し、SHA・実行command・結果を保存します。
+[証跡の収集とレビュー](.github/harness/README.md)、[CI計画と実測](docs/development/ci.md)、
+[Issue完了手順](docs/issue-completion.md)を参照してください。
+PRの成功、mainの成功、release結果、Issue完了はそれぞれ確認します。

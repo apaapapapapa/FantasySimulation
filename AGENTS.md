@@ -11,6 +11,12 @@
 
 ## Workflow
 
+For implementation, fixes, CI recovery and unfinished PR delivery, apply
+[fantasy-delivery](.agents/skills/fantasy-delivery/SKILL.md). The existing source
+harness is the canonical acceptance runner: verify a clean committed tree, retain
+SHA-bound evidence, review the latest PR state, and confirm post-merge main CI.
+Explanation-only and read-only review requests retain their requested scope.
+
 1. Read the README and the relevant existing schemas and tests before changing behavior.
 2. Use the pinned Node.js, pnpm and Vite+ versions. Use `vp run dev` for both apps.
 3. Keep TypeScript strict. Validate untrusted JSON at the boundary with the domain schemas.

@@ -1,7 +1,11 @@
 # Development evidence harness
 
-Development-only runners connect existing verification tools with GitHub facts. They
-never merge, write to GitHub, start repair loops, or deploy. Application runtime code
+The source and delivery collectors connect existing verification tools with GitHub facts.
+They are read-only: they never merge, write to GitHub, start repair loops, or deploy.
+The separately scoped Issue completion command writes only after verified main CI;
+see [its protocol](../../docs/issue-completion.md).
+Apply the repository [fantasy-delivery skill](../../.agents/skills/fantasy-delivery/SKILL.md)
+for implementation through Issue completion. Application runtime code
 must not import `scripts/harness`.
 
 ## Source verification
@@ -119,3 +123,10 @@ semantic-release. No historical engine compatibility layer is introduced. Curren
 engine identity includes root manifests/lockfile, so reviewed development dependency
 changes can alter its digest without changing battle rules. Record/verify that fact;
 do not automatically stamp in CI or a repair loop.
+
+The H2 integration was exercised against real PR #32 and its exact main merge in
+read-only collector run `35748030310`. Collection/stability, PR CI and main CI passed
+with both OS plans/reports; review coverage remained `unknown` without a receipt,
+and a skipped Release was separately `unknown`. The probe did not manufacture a
+review or treat CI success as full delivery. Its temporary workflow was kept only
+on a test branch and removed after the observation.
