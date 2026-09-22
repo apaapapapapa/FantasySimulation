@@ -15,6 +15,10 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  security:
+    name: Security
+    uses: ./.github/workflows/security.yml
+
   verify:
     name: Verify (${{ matrix.os }})
     strategy:
@@ -25,6 +29,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
       - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
         with:
           node-version-file: .node-version
@@ -37,6 +43,8 @@ jobs:
         run: vp run typecheck
       - name: Engine implementation identity
         run: vp run engine:check
+      - name: Security policy regression tests
+        run: vp run security:test
       - name: Engine and SQLite integration tests
         run: vp test
       - name: Build web and API
@@ -44,7 +52,7 @@ jobs:
 
   release:
     name: Release
-    needs: verify
+    needs: [verify, security]
     if: >-
       github.repository == 'apaapapapapa/FantasySimulation' &&
       github.ref == 'refs/heads/main' &&
