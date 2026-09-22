@@ -37,6 +37,7 @@ export const EventSchema = z.strictObject({
   ]),
   actorId: IdSchema.nullable(),
   targetId: IdSchema.nullable(),
+  entityId: IdSchema.nullable(),
   parentEventId: IdSchema.nullable(),
   causes: z.array(IdSchema).max(65536),
   abilityId: IdSchema.nullable(),

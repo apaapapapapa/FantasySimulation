@@ -98,7 +98,7 @@ export function launchDirection(facing: Vec3, errorMilliDegrees: number, random:
     random: next,
   };
 }
-export type AttackContact = { kind: 'wall' | 'body'; time: number; point: Vec3 };
+export type AttackContact = { kind: 'wall' | 'body'; time: number; point: Vec3; center: Vec3 };
 /** Attack overlap counts even for a stationary or separating body; movement contact has different semantics. */
 export function traceAttack(
   world: SpatialWorld,
@@ -108,15 +108,18 @@ export function traceAttack(
   targetTrace: Trace,
 ): AttackContact | null {
   let wall: number | undefined;
+  let wallPoint: Vec3 | undefined;
   const shape = ballShape(radius);
   for (const piece of trace) {
     if (world.overlaps(piece.start, shape, 'attack')) {
       wall = piece.from;
+      wallPoint = piece.start;
       break;
     }
     const hit = world.sweep(piece.start, sub(piece.end, piece.start), shape, 'attack');
     if (hit) {
       wall = piece.from + (piece.to - piece.from) * hit.time_of_impact;
+      wallPoint = sub(at(trace, wall), mul(hit.normal1, radius));
       break;
     }
   }
@@ -129,7 +132,20 @@ export function traceAttack(
     true,
   );
   const hit = firstImpact(wall, body);
-  return hit ? { ...hit, point: at(trace, hit.time) } : null;
+  if (!hit) return null;
+  const center = at(trace, hit.time);
+  const targetPosition = at(targetTrace, hit.time);
+  const capsule = bodyCapsule(target.actor.character.body);
+  const axis = {
+    ...targetPosition,
+    y: Math.max(
+      targetPosition.y - capsule.halfHeight,
+      Math.min(targetPosition.y + capsule.halfHeight, center.y),
+    ),
+  };
+  const point =
+    hit.kind === 'wall' ? wallPoint! : sub(center, mul(unit(sub(center, axis)), radius));
+  return { ...hit, point, center };
 }
 /** Prevent an offset weapon from appearing through a wall between the body and its muzzle. */
 export function muzzleBlocked(world: SpatialWorld, state: MotionState): boolean {
@@ -148,7 +164,7 @@ export function hitscan(
   radius: number,
 ): AttackContact | null {
   const origin = bodyPoint(owner, owner.actor.character.body.muzzleOffset);
-  if (muzzleBlocked(world, owner)) return { kind: 'wall', time: 0, point: origin };
+  if (muzzleBlocked(world, owner)) return { kind: 'wall', time: 0, point: origin, center: origin };
   return traceAttack(
     world,
     straight(origin, add(origin, mul(direction, range))),

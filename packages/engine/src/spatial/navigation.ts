@@ -122,6 +122,28 @@ export class Navigator {
         ? this.jump(from, to)
         : this.walk(from, to);
   }
+  /** Project an observed aerial goal onto the first supporting surface below it.
+   * Already supported bridge decks keep their level; this never changes an explicit graph edge.
+   */
+  groundGoal(goal: Vec3): Vec3 {
+    if (this.supported(goal)) return { ...goal };
+    const shape = capsuleShape(bodyCapsule(this.actor.character.body));
+    if (this.world.overlaps(goal, shape)) return { ...goal };
+    const hit = this.world.sweep(
+      goal,
+      { x: 0, y: -1, z: 0 },
+      shape,
+      'movement',
+      Math.max(0, goal.y - this.scenario.bounds.min.y / 1000),
+      COLLISION_SKIN,
+    );
+    if (
+      !hit ||
+      hit.normal1.y < cosDegrees(this.actor.character.movement.maxSlopeMilliDegrees / 1000)
+    )
+      return { ...goal };
+    return { ...goal, y: goal.y - hit.time_of_impact };
+  }
   find(
     start: Vec3,
     goal: Vec3,

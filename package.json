@@ -30,6 +30,8 @@
     "fixtures:spatial": "node scripts/spatial-fixtures.ts --write",
     "harness": "node scripts/harness.ts",
     "check:quality": "node scripts/quality.ts",
+    "demo:spatial": "node scripts/spatial-demo.ts",
+    "catalog:spatial": "node scripts/spatial-catalog.ts",
     "db:generate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs generate",
     "db:check": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs check"
   },

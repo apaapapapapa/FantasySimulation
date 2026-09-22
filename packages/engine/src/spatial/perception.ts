@@ -101,7 +101,12 @@ export function perceive(
         .filter(
           (p) => p.ownerId !== self.actor.participant.actorId && canSee(world, self, p.position),
         )
-        .map((p) => ({ ...p, position: { ...p.position }, velocity: { ...p.velocity } })),
+        .map((p) => ({
+          id: p.id,
+          ownerId: p.ownerId,
+          position: { ...p.position },
+          velocity: { ...p.velocity },
+        })),
     });
     sampledAt = step;
   }

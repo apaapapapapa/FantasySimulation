@@ -35,6 +35,36 @@ export const ActorDisplaySchema = z.strictObject({
 export type ActorDisplay = z.infer<typeof ActorDisplaySchema>;
 export const ActorDeltaSchema = ActorDisplaySchema.partial().required({ id: true });
 export type ActorDelta = z.infer<typeof ActorDeltaSchema>;
+export const ProjectileDisplaySchema = z.strictObject({
+  id: IdSchema,
+  ownerId: IdSchema,
+  abilityId: IdSchema,
+  position: PhysicalVectorSchema,
+  velocity: PhysicalVectorSchema,
+  radiusMm: z.number().int().min(1).max(5000),
+  launchStep: step,
+  endStep: z.number().int().min(1).max(12000),
+});
+export type ProjectileDisplay = z.infer<typeof ProjectileDisplaySchema>;
+export const ProjectileDeltaSchema = ProjectileDisplaySchema.pick({
+  id: true,
+  position: true,
+  velocity: true,
+});
+export const ProjectileChangesSchema = z.strictObject({
+  spawn: z.array(ProjectileDisplaySchema).max(2),
+  update: z.array(ProjectileDeltaSchema).max(256),
+  remove: z
+    .array(
+      z.strictObject({
+        id: IdSchema,
+        subtimeMicros: z.number().int().min(0).max(1000000),
+        reason: z.enum(['body', 'wall', 'expired']),
+      }),
+    )
+    .max(256),
+});
+export type ProjectileChanges = z.infer<typeof ProjectileChangesSchema>;
 const fraction = z.number().min(0).max(1);
 export const SegmentSchema = z
   .strictObject({
@@ -49,7 +79,10 @@ export const PathSchema = z.strictObject({
   segments: z.array(SegmentSchema).min(1).max(256),
 });
 export type DisplayPath = z.infer<typeof PathSchema>;
-export const DisplayStateSchema = z.strictObject({ actors: z.array(ActorDisplaySchema).length(2) });
+export const DisplayStateSchema = z.strictObject({
+  actors: z.array(ActorDisplaySchema).length(2),
+  projectiles: z.array(ProjectileDisplaySchema).max(256),
+});
 export type DisplayState = z.infer<typeof DisplayStateSchema>;
 export const StreamRecordSchema = z.discriminatedUnion('kind', [
   z.strictObject({
@@ -72,6 +105,7 @@ export const StreamRecordSchema = z.discriminatedUnion('kind', [
       fromStep: step,
       toStep: step,
       paths: z.array(PathSchema).max(258),
+      projectiles: ProjectileChangesSchema,
       changes: z.array(ActorDeltaSchema).max(2),
       events: z.array(EventSchema).max(50000),
     })

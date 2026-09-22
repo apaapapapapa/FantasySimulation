@@ -17,3 +17,5 @@ export * from './effects.ts';
 export * from './attacks.ts';
 export * from './simulate.ts';
 export * from './run.ts';
+export * from './projectiles.ts';
+export * from './catalog.ts';

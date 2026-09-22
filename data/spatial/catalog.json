@@ -1,0 +1,1832 @@
+[
+  {
+    "kind": "ability",
+    "id": "arrow",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81",
+    "definition": {
+      "name": "放物線の矢",
+      "originalText": "放物線の矢",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 10,
+      "recoverySteps": 30,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 30000,
+      "aimErrorMilliDegrees": 500,
+      "attack": {
+        "kind": "projectile",
+        "speedMmPerSecond": 30000,
+        "radiusMm": 80,
+        "lifetimeSteps": 150,
+        "gravityScaleBps": 10000,
+        "homingTurnMilliDegreesPerSecond": 0,
+        "observation": "launch-only",
+        "explosionRadiusMm": 0,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 10,
+          "attackScaleBps": 10000,
+          "element": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "cleanse",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:6e039c88be89bf40379ad6a6ae7a74b5b6ab2c492b3cbe417a452187d2d98121",
+    "definition": {
+      "name": "炎と凍気の解除",
+      "originalText": "炎と凍気の解除",
+      "trigger": "action",
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 5,
+        "uses": 0
+      },
+      "castSteps": 0,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "dispel",
+          "statusIds": ["burning", "frost"]
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "fireball",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e4dc989f853cc05c7b8238c68610c3e32a4b94784ecab7df4113c6ec99d44fc1",
+    "definition": {
+      "name": "爆炎弾",
+      "originalText": "爆炎弾",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 8,
+        "uses": 0
+      },
+      "castSteps": 20,
+      "recoverySteps": 35,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 30000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "projectile",
+        "speedMmPerSecond": 16000,
+        "radiusMm": 80,
+        "lifetimeSteps": 150,
+        "gravityScaleBps": 0,
+        "homingTurnMilliDegreesPerSecond": 0,
+        "observation": "launch-only",
+        "explosionRadiusMm": 2500,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 35,
+          "attackScaleBps": 10000,
+          "element": "fire"
+        },
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "burning",
+            "revision": 1,
+            "contentHash": "sha256:72d9b975b163b4e18f003e9650dcf6486e554ee1d7d12bcc7d93d2ecdc7a7fa1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "guard",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769",
+    "definition": {
+      "name": "盾の構え",
+      "originalText": "盾の構え",
+      "trigger": "battle-start",
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 0,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "shield",
+          "amount": 60
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "heal",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:2ff77c3130c363d1d15d991a0ee1a92f9595759fcabfc85c90f2ebdc922f2231",
+    "definition": {
+      "name": "癒しと再生",
+      "originalText": "癒しと再生",
+      "trigger": "action",
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 15,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 20,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "heal",
+          "amount": 35
+        },
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "regeneration",
+            "revision": 1,
+            "contentHash": "sha256:dcf1edb121b94689de4d5e26c75168b3256c26be1682490b0d7012216197067d"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "ice",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:0102cbd86b2e227894db699bfc4340ca7f727e1767c43e5e7cb41e000b294444",
+    "definition": {
+      "name": "氷の射線",
+      "originalText": "氷の射線",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 5,
+        "uses": 0
+      },
+      "castSteps": 15,
+      "recoverySteps": 30,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 25000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 100
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 15,
+          "attackScaleBps": 10000,
+          "element": "ice"
+        },
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "frost",
+            "revision": 1,
+            "contentHash": "sha256:ee8f40e6e7b1b8597c4cc3c0db041db0ac9f5e1726eb8788bad69387d18486f4"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "lightning",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:72ad3f4db08936dbe3f70f547dd517b355b54f724295c5a17ab843ec28b8f8a8",
+    "definition": {
+      "name": "雷光",
+      "originalText": "雷光",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 6,
+        "uses": 0
+      },
+      "castSteps": 8,
+      "recoverySteps": 25,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 18,
+          "attackScaleBps": 10000,
+          "element": "lightning"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "seeker",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3",
+    "definition": {
+      "name": "観測誘導弾",
+      "originalText": "観測誘導弾",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 4,
+        "uses": 0
+      },
+      "castSteps": 10,
+      "recoverySteps": 35,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 30000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "projectile",
+        "speedMmPerSecond": 18000,
+        "radiusMm": 80,
+        "lifetimeSteps": 150,
+        "gravityScaleBps": 0,
+        "homingTurnMilliDegreesPerSecond": 90000,
+        "observation": "owner-visible",
+        "explosionRadiusMm": 0,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 10000,
+          "element": "arcane"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spear",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3",
+    "definition": {
+      "name": "槍の突き",
+      "originalText": "槍の突き",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 30,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 3500,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 3200,
+        "radiusMm": 150,
+        "activeSteps": 3,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 10,
+          "attackScaleBps": 10000,
+          "element": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "sword",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+    "definition": {
+      "name": "剣",
+      "originalText": "正面の相手を剣で攻撃する",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 2000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 1800,
+        "radiusMm": 200,
+        "activeSteps": 2,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 10,
+          "attackScaleBps": 10000,
+          "element": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "takeoff",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd",
+    "definition": {
+      "name": "開幕の飛行",
+      "originalText": "開幕の飛行",
+      "trigger": "battle-start",
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 0,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "flight",
+            "revision": 1,
+            "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "character",
+    "id": "arcane-archer",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:efde0ebbb7c06098ae9e55adc65d8b39fcb21e142921da31fcfdaeccddba5bb9",
+    "definition": {
+      "name": "魔法弓使い",
+      "originalText": "魔法弓使い。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 85,
+        "mp": 300,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "seeker",
+          "revision": 1,
+          "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "arcane-archer-policy",
+        "revision": 1,
+        "contentHash": "sha256:8472426e6400c50f121ef90b1efa56a0ecab8acdcce07548fc6f3c8d95b685b4"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "archer",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+    "definition": {
+      "name": "弓使い",
+      "originalText": "弓使い。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 80,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "arrow",
+          "revision": 1,
+          "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "archer-policy",
+        "revision": 1,
+        "contentHash": "sha256:84929035bc77b8b535df55c8c8f5524bcd1cbb906a17fd7dbc2056d4b1a81843"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "fire-mage",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:92d6fdbe4449a4cf2df33bc96903f689d77ebe9aa5273b478a3caf88f5fca5b7",
+    "definition": {
+      "name": "炎術師",
+      "originalText": "炎術師。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "fireball",
+          "revision": 1,
+          "contentHash": "sha256:e4dc989f853cc05c7b8238c68610c3e32a4b94784ecab7df4113c6ec99d44fc1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "fire-mage-policy",
+        "revision": 1,
+        "contentHash": "sha256:626da8128a7b437511d969c2df5ed6a5ae987de33287131138f715c294656bd7"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "guardian",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+    "definition": {
+      "name": "重装騎士",
+      "originalText": "重装騎士。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 160,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 2500,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "sword",
+          "revision": 1,
+          "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef"
+        },
+        {
+          "id": "guard",
+          "revision": 1,
+          "contentHash": "sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769"
+        }
+      ],
+      "equipment": [
+        {
+          "id": "plate",
+          "revision": 1,
+          "contentHash": "sha256:96bbdbd35cfb6b454b6a504779ee1a4530d8179c59fbc13c6d508042bdf3feaf"
+        }
+      ],
+      "policy": {
+        "id": "guardian-policy",
+        "revision": 1,
+        "contentHash": "sha256:24fe8f031decaf929218e92cd4cc444ac056cde4c34029ce258d1ec2f2d5bd64"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "healer",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:8cc1e799233de3462c00fda0b19421f6b6a8714776a82c47b65a6a0e46a0a33d",
+    "definition": {
+      "name": "治癒剣士",
+      "originalText": "治癒剣士。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 110,
+        "mp": 180,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "sword",
+          "revision": 1,
+          "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef"
+        },
+        {
+          "id": "cleanse",
+          "revision": 1,
+          "contentHash": "sha256:6e039c88be89bf40379ad6a6ae7a74b5b6ab2c492b3cbe417a452187d2d98121"
+        },
+        {
+          "id": "heal",
+          "revision": 1,
+          "contentHash": "sha256:2ff77c3130c363d1d15d991a0ee1a92f9595759fcabfc85c90f2ebdc922f2231"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "healer-policy",
+        "revision": 1,
+        "contentHash": "sha256:32a1c0f07b9dca7896ae4bf5ee264c39d046d15006ccffc47fab7383c6ca86da"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "ice-mage",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:229c51fbb2b38b2cd3c66f571dad8fd7f26d6f7e9fbcba00913bdb110e16cbd4",
+    "definition": {
+      "name": "氷術師",
+      "originalText": "氷術師。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 4000,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "ice",
+          "revision": 1,
+          "contentHash": "sha256:0102cbd86b2e227894db699bfc4340ca7f727e1767c43e5e7cb41e000b294444"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "ice-mage-policy",
+        "revision": 1,
+        "contentHash": "sha256:79ef23078b741061dd9c5b5423b35ce46f938c2af9d0fca9c9cd3c76951288c2"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "lancer",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:66182d21f131993513596e85ab55858f95bc379c690de511307d2056f9d00e88",
+    "definition": {
+      "name": "槍兵",
+      "originalText": "槍兵。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [],
+      "equipment": [
+        {
+          "id": "long-spear",
+          "revision": 1,
+          "contentHash": "sha256:a00a48880d5a98a202dd40e8c1c396aea301bc1be0f0d02d0c4bd7e6dfced717"
+        }
+      ],
+      "policy": {
+        "id": "lancer-policy",
+        "revision": 1,
+        "contentHash": "sha256:b280076b1ee04863022b1b18b79e788ac8c957cc28a3608d302b93c31a02e0b9"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "sky-mage",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8",
+    "definition": {
+      "name": "飛行術師",
+      "originalText": "飛行術師。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 100,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "seeker",
+          "revision": 1,
+          "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3"
+        },
+        {
+          "id": "takeoff",
+          "revision": 1,
+          "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "sky-mage-policy",
+        "revision": 1,
+        "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "storm-mage",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a9d96cf5dfad37749f6ab4b757a55c872459698647054856a49444778b99a489",
+    "definition": {
+      "name": "雷術師",
+      "originalText": "雷術師。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 80,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "lightning",
+          "revision": 1,
+          "contentHash": "sha256:72ad3f4db08936dbe3f70f547dd517b355b54f724295c5a17ab843ec28b8f8a8"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "storm-mage-policy",
+        "revision": 1,
+        "contentHash": "sha256:974519701fe5f7abe4ca8880cbc17bc6bb2c0c1385b4c26ea671a6cc828563b7"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "swordsman",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e",
+    "definition": {
+      "name": "剣士",
+      "originalText": "剣士。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "sword",
+          "revision": 1,
+          "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "swordsman-policy",
+        "revision": 1,
+        "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda"
+      }
+    }
+  },
+  {
+    "kind": "equipment",
+    "id": "long-spear",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a00a48880d5a98a202dd40e8c1c396aea301bc1be0f0d02d0c4bd7e6dfced717",
+    "definition": {
+      "name": "長槍",
+      "originalText": "攻撃力を補い、槍の突きを使える装備",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "abilities": [
+        {
+          "id": "spear",
+          "revision": 1,
+          "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "equipment",
+    "id": "plate",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:96bbdbd35cfb6b454b6a504779ee1a4530d8179c59fbc13c6d508042bdf3feaf",
+    "definition": {
+      "name": "重装鎧",
+      "originalText": "防御力を補う鎧",
+      "attackBonus": 0,
+      "defenseBonus": 12,
+      "abilities": []
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "arcane-archer-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:8472426e6400c50f121ef90b1efa56a0ecab8acdcce07548fc6f3c8d95b685b4",
+    "definition": {
+      "name": "魔法弓使いの方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "seeker"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 9000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "archer-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:84929035bc77b8b535df55c8c8f5524bcd1cbb906a17fd7dbc2056d4b1a81843",
+    "definition": {
+      "name": "弓使いの方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "arrow"
+        }
+      ],
+      "movement": "evade",
+      "preferredDistanceMm": 8000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "fire-mage-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:626da8128a7b437511d969c2df5ed6a5ae987de33287131138f715c294656bd7",
+    "definition": {
+      "name": "炎術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "fireball"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "guardian-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:24fe8f031decaf929218e92cd4cc444ac056cde4c34029ce258d1ec2f2d5bd64",
+    "definition": {
+      "name": "重装騎士の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "sword"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "healer-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:32a1c0f07b9dca7896ae4bf5ee264c39d046d15006ccffc47fab7383c6ca86da",
+    "definition": {
+      "name": "治癒剣士の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "any",
+            "children": [
+              {
+                "kind": "status",
+                "id": "burning",
+                "present": true
+              },
+              {
+                "kind": "status",
+                "id": "frost",
+                "present": true
+              }
+            ]
+          },
+          "abilityId": "cleanse"
+        },
+        {
+          "when": {
+            "kind": "resource",
+            "resource": "hp",
+            "belowBps": 6000
+          },
+          "abilityId": "heal"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "sword"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "ice-mage-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:79ef23078b741061dd9c5b5423b35ce46f938c2af9d0fca9c9cd3c76951288c2",
+    "definition": {
+      "name": "氷術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "ice"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "lancer-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:b280076b1ee04863022b1b18b79e788ac8c957cc28a3608d302b93c31a02e0b9",
+    "definition": {
+      "name": "槍兵の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spear"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 2200,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "sky-mage-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c",
+    "definition": {
+      "name": "飛行術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "seeker"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 6000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "storm-mage-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:974519701fe5f7abe4ca8880cbc17bc6bb2c0c1385b4c26ea671a6cc828563b7",
+    "definition": {
+      "name": "雷術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "lightning"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 6000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "swordsman-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda",
+    "definition": {
+      "name": "剣士の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "sword"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae",
+    "definition": {
+      "name": "標準3D",
+      "rulesVersion": "spatial-v1.10",
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "scenario",
+    "id": "flat",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb",
+    "definition": {
+      "name": "平地",
+      "bounds": {
+        "min": {
+          "x": -50000,
+          "y": -1000,
+          "z": -50000
+        },
+        "max": {
+          "x": 50000,
+          "y": 50000,
+          "z": 50000
+        }
+      },
+      "obstacles": [
+        {
+          "id": "floor",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": -500,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 50000,
+            "y": 500,
+            "z": 50000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        }
+      ],
+      "navigation": {
+        "version": "support-graph-v1",
+        "nodes": [],
+        "edges": []
+      }
+    }
+  },
+  {
+    "kind": "scenario",
+    "id": "pillars",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:3c846f9dd90660266784e51c3303bc0faaa95367a6a26c3689a9cb3c526de898",
+    "definition": {
+      "name": "柱のある広場",
+      "bounds": {
+        "min": {
+          "x": -50000,
+          "y": -1000,
+          "z": -50000
+        },
+        "max": {
+          "x": 50000,
+          "y": 50000,
+          "z": 50000
+        }
+      },
+      "obstacles": [
+        {
+          "id": "floor",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": -500,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 50000,
+            "y": 500,
+            "z": 50000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        },
+        {
+          "id": "pillar",
+          "kind": "pillar",
+          "center": {
+            "x": 0,
+            "y": 1500,
+            "z": 0
+          },
+          "radiusMm": 1200,
+          "halfHeightMm": 1500,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        }
+      ],
+      "navigation": {
+        "version": "support-graph-v1",
+        "nodes": [
+          {
+            "id": "corner-ws",
+            "position": {
+              "x": -2200,
+              "y": 902,
+              "z": -2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-wn",
+            "position": {
+              "x": -2200,
+              "y": 902,
+              "z": 2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-es",
+            "position": {
+              "x": 2200,
+              "y": 902,
+              "z": -2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-en",
+            "position": {
+              "x": 2200,
+              "y": 902,
+              "z": 2200
+            },
+            "mode": "ground"
+          }
+        ],
+        "edges": [
+          {
+            "from": "corner-ws",
+            "to": "corner-wn",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-ws",
+            "to": "corner-es",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-wn",
+            "to": "corner-en",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-es",
+            "to": "corner-en",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "kind": "status",
+    "id": "burning",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:72d9b975b163b4e18f003e9650dcf6486e554ee1d7d12bcc7d93d2ecdc7a7fa1",
+    "definition": {
+      "name": "炎上",
+      "originalText": "炎上",
+      "stackKey": "burning",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 250,
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [
+        {
+          "everySteps": 25,
+          "kind": "damage",
+          "amount": 8,
+          "element": "fire"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "status",
+    "id": "flight",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944",
+    "definition": {
+      "name": "魔法飛行",
+      "originalText": "魔法飛行",
+      "stackKey": "flight",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 1000,
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": true,
+        "rooted": false
+      },
+      "periodic": []
+    }
+  },
+  {
+    "kind": "status",
+    "id": "frost",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:ee8f40e6e7b1b8597c4cc3c0db041db0ac9f5e1726eb8788bad69387d18486f4",
+    "definition": {
+      "name": "凍気",
+      "originalText": "凍気",
+      "stackKey": "frost",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 250,
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 5000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": []
+    }
+  },
+  {
+    "kind": "status",
+    "id": "regeneration",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:dcf1edb121b94689de4d5e26c75168b3256c26be1682490b0d7012216197067d",
+    "definition": {
+      "name": "再生",
+      "originalText": "再生",
+      "stackKey": "regeneration",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 250,
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [
+        {
+          "everySteps": 25,
+          "kind": "heal",
+          "amount": 8,
+          "element": "arcane"
+        }
+      ]
+    }
+  }
+]
