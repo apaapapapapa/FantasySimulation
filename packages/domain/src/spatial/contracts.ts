@@ -287,17 +287,40 @@ export const ScenarioSchema = z
       ids.add(obstacle.id);
     }
     const nodes = new Set<string>();
+    const positions = new Set<string>();
     for (const node of scenario.navigation.nodes) {
       if (nodes.has(node.id)) ctx.addIssue({ code: 'custom', message: 'Duplicate navigation ID' });
       nodes.add(node.id);
+      const positionKey = `${node.mode}:${node.position.x}:${node.position.y}:${node.position.z}`;
+      if (positions.has(positionKey))
+        ctx.addIssue({ code: 'custom', message: 'Duplicate navigation position' });
+      positions.add(positionKey);
+      if (
+        (['x', 'y', 'z'] as const).some(
+          (axis) =>
+            node.position[axis] < scenario.bounds.min[axis] ||
+            node.position[axis] > scenario.bounds.max[axis],
+        )
+      )
+        ctx.addIssue({ code: 'custom', message: 'Navigation position outside arena' });
     }
-    for (const edge of scenario.navigation.edges)
+    const nodeModes = new Map(scenario.navigation.nodes.map((node) => [node.id, node.mode]));
+    for (const edge of scenario.navigation.edges) {
       if (!nodes.has(edge.from) || !nodes.has(edge.to) || edge.from === edge.to)
         ctx.addIssue({ code: 'custom', message: 'Invalid navigation edge reference' });
+      else {
+        const requiredMode = edge.mode === 'fly' ? 'air' : 'ground';
+        if (nodeModes.get(edge.from) !== requiredMode || nodeModes.get(edge.to) !== requiredMode)
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Navigation edge mode must match both endpoint layers',
+          });
+      }
+    }
   });
 export const RulesetSchema = z.strictObject({
   name: z.string().min(1).max(100),
-  rulesVersion: z.literal('spatial-v1.2'),
+  rulesVersion: z.literal('spatial-v1.4'),
   stepMs: z.literal(20),
   maxSteps: positive(6_000),
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),
@@ -362,7 +385,7 @@ export const ManifestSchema = z
     schemaVersion: z.literal(3),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
-    engineVersion: z.literal('spatial-v1.2'),
+    engineVersion: z.literal('spatial-v1.4'),
     implementationDigest: HashSchema,
     physicsProfileHash: HashSchema,
     physicsProfile: PhysicsProfileSchema,
