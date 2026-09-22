@@ -61,28 +61,34 @@ explicit inputs. Existing versioned PRNG and the Rapier physics adapter remain v
 WASM preparation stays in its reviewed physics boundary. Dependency graphs alone do
 not prove determinism, and this conservative AST policy is not a mathematical proof.
 
-## SQLite migration generations
+## Drizzle migration verification
 
-The existing API migration runner is shared from `apps/api/src/migrations.ts` by
-startup, development reset and the disposable guard. `quality:migrations` compares
-with `MIGRATION_BASE_SHA` supplied by the exact CI plan (or local merge-base with
-origin/main); missing baseline evidence fails closed. Existing SQL in a generation
-is append-only, and applied receipts must be an unchanged prefix with exact checksums.
-The runner initializes and reinitializes a temporary DB and checks integrity; tests
-also cover failing SQL rollback, missing/modified receipts and unsupported DBs.
-Verification never opens DATABASE_PATH or a user DB.
+Drizzle Kit generates and checks `db/drizzle`. The API directly calls the official
+Drizzle ORM migrator with the same SQL, journal and `__drizzle_migrations` table as
+the Kit CLI. There is no application-owned runner, generation declaration, checksum
+ledger, SQL parser or reset implementation. See [ADR 0004](../adr/0004-drizzle-kit.md).
 
-`db/schema.json` plus a new reviewed ADR permits a new generation, SQL replacement
-and fresh initialization without retaining obsolete engine/DB compatibility fixtures.
-The first generation declaration still protects previous SQL. Ordinary startup never
-resets data. `db:reset` requires explicit generation confirmation and a new destination;
-its exclusive file creation refuses an existing file before SQLite can open it.
-See [the schema decision](../adr/0003-schema-generations.md).
+`quality:migrations` runs the actual `drizzle-kit check` command and retains failures
+in the ordinary quality report. Real integration tests in `apps/api/src/drizzle.test.ts`
+verify fresh SQLite initialization, Kit/startup reexecution, legacy data adoption,
+failure rollback, STRICT/JSON/foreign-key constraints and descending history indexes.
+They run Kit generate against a disposable copy of the snapshots to detect uncommitted
+schema changes. Existing API persistence and restart tests continue to run.
+
+A Git diff test rejects edits or deletion of already committed Drizzle SQL and snapshots.
+Its baseline is `MIGRATION_BASE_SHA` from the exact CI plan, or the local merge-base
+with origin/main; missing baseline evidence fails rather than passing silently.
+This test neither parses nor executes migrations. It is a source review policy,
+not a replacement runtime checksum ledger or a guarantee against arbitrary DB drift.
+All verification uses in-memory or temporary databases, never the user's DATABASE_PATH.
+Initial adoption and SQLite STRICT SQL amendments require explicit review; schema
+changes must not bypass migration history with `drizzle-kit push`.
 
 ## Change workflow
 
-Use `vp test run scripts/quality` for meaningful positive and negative fixtures. CI uses
-both Linux and Windows. New dependencies remain dev-only and frozen by the existing lockfile.
+Use `vp test run scripts/quality` for guard fixtures and `vp test run apps/api` for
+Drizzle and persistence regressions. CI uses both Linux and Windows. Guard dependencies
+remain dev-only; Drizzle ORM and the SQLite driver are pinned API runtime dependencies.
 Manifest/lock changes conservatively affect the existing engine identity: restamp explicitly
 in the engineering PR, review the diff, and keep physics/rules/Golden values unchanged when
 only tooling changed. Quality gates, fixtures and budgets are protected from repair loops;
