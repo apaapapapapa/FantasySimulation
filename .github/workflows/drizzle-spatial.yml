@@ -1,0 +1,77 @@
+name: Integrate spatial Drizzle migration
+on:
+  push:
+    branches: [codex/drizzle-kit-complete-20260923]
+    paths: [.github/drizzle-spatial.py, .github/workflows/drizzle-spatial.yml]
+permissions:
+  contents: read
+concurrency:
+  group: drizzle-spatial-integration
+  cancel-in-progress: false
+jobs:
+  integrate:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/codex/drizzle-kit-complete-20260923'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-project
+      - name: Preserve the concurrent spatial implementation and integrate persistence
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git merge --no-commit --no-ff d7dc7edfa36ce8ddb45e8d2a66a434952c9463ae || true
+          python - <<'PY'
+          import subprocess
+          conflicts = subprocess.check_output(['git','diff','--name-only','--diff-filter=U'],text=True).splitlines()
+          remove = {'apps/api/src/database-cli.ts','apps/api/src/migrations.test.ts','db/schema.json','scripts/quality/migrations.ts','scripts/quality/migrations.test.ts','apps/api/test-fixtures/local-v1.sql'}
+          current = {'AGENTS.md','README.md','apps/api/src/store.ts','package.json','packages/engine/src/spatial/implementation.json'}
+          allowed = remove | current
+          if set(conflicts) - allowed:
+              subprocess.run(['git','diff','--cc'],check=True)
+              raise RuntimeError(f'Unreviewed conflicts: {conflicts}')
+          for path in conflicts:
+              if path in remove:
+                  subprocess.run(['git','rm','--',path],check=True)
+              elif path == 'AGENTS.md':
+                  subprocess.run(['git','checkout','--ours','--',path],check=True)
+              else:
+                  subprocess.run(['git','checkout','--theirs','--',path],check=True)
+          PY
+          python .github/drizzle-spatial.py source
+          vp exec drizzle-kit generate --name=adopt_spatial_persistence
+          python .github/drizzle-spatial.py sql
+          vp fmt
+          git rm .github/drizzle-spatial.py .github/workflows/drizzle-spatial.yml
+          vp exec node scripts/engine-identity.ts --write
+          git add -A
+          git diff --cached --stat
+          git diff --cached -- db/drizzle packages/engine/src/spatial/implementation.json
+          git commit -m 'feat(db): integrate immutable spatial persistence with the Drizzle migration'
+          git push origin HEAD:refs/heads/codex/drizzle-kit-complete-20260923
+      - name: Verify all real database and API regressions
+        run: vp test run apps/api
+      - name: Run the canonical source harness on the clean generated commit
+        shell: bash
+        run: |
+          echo "Development commit: $(git rev-parse HEAD); canonical PR CI supplies test-merge evidence."
+          env -u GITHUB_SHA -u GITHUB_EVENT_NAME vp exec node scripts/harness.ts source .generated/harness/drizzle-spatial
+      - name: Show source verification result
+        if: always()
+        shell: bash
+        run: |
+          test ! -f .generated/harness/drizzle-spatial/report.json || cat .generated/harness/drizzle-spatial/report.json
+          test ! -f .generated/harness/drizzle-spatial/verify.log || tail -n 160 .generated/harness/drizzle-spatial/verify.log
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: drizzle-spatial-evidence
+          path: .generated/harness/
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 7
