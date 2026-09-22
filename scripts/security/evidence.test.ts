@@ -1,0 +1,150 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { assessReport } from '../harness/report.ts';
+import type { Identity } from '../harness/report.ts';
+import { assessSecurityEvidence, SECURITY_CHECKS, securityInputs } from './evidence.ts';
+import { validatorOutcome } from './validator.ts';
+
+const info: Identity = {
+  sourceSha: 'a'.repeat(40),
+  candidateSha: 'b'.repeat(40),
+  baselineSha: 'c'.repeat(40),
+  testMergeSha: 'a'.repeat(40),
+};
+const run = { runId: '123', runAttempt: '2' };
+const at = '2026-09-23T00:00:00.000Z';
+function fixtures(target = info): Record<string, Record<string, unknown>> {
+  return Object.fromEntries(
+    securityInputs(run).map(({ key, checkId }) => [
+      key,
+      {
+        schemaVersion: 1,
+        producer: 'fantasy-security-h4',
+        checkId,
+        sourceSha: target.sourceSha,
+        prHeadSha: target.testMergeSha ? target.candidateSha : null,
+        baselineSha: target.baselineSha,
+        ...run,
+        completedAt: at,
+        status: 'pass',
+        reason: 'VERIFIED_FIXTURE',
+        counts: {
+          scenarios: 4,
+          detected: 0,
+          excepted: 0,
+          blocking: 0,
+          runs: 1,
+          rules: 30,
+          findings: 0,
+          info: 0,
+          low: 0,
+          moderate: 0,
+          high: 0,
+          critical: 0,
+          checks: 6,
+          validators: 1,
+        },
+      },
+    ]),
+  );
+}
+
+test('all seven receipts produce a SHA-bound common report with exact artifact paths', () => {
+  const result = assessSecurityEvidence(info, run, fixtures(), at);
+  assert.equal(result.exitCode, 0);
+  assert.equal(assessReport(result.report, SECURITY_CHECKS).exitCode, 0);
+  assert.equal(result.report.producer, 'security-evidence');
+  assert.equal(result.report.checks.length, 7);
+  for (const check of result.report.checks) {
+    assert.equal(check.required, true);
+    assert.ok(check.evidence[0]?.uri.includes('-123-2/'));
+  }
+});
+
+test('main and manual runs use their real source without invented PR identities', () => {
+  for (const baselineSha of [info.baselineSha, null]) {
+    const main = { ...info, candidateSha: info.sourceSha, testMergeSha: null, baselineSha };
+    assert.equal(assessSecurityEvidence(main, run, fixtures(main), at).exitCode, 0);
+  }
+});
+
+test('every missing, skipped, corrupt or unsuccessful receipt blocks acceptance', () => {
+  for (const { key } of securityInputs(run)) {
+    for (const value of [null, undefined, [], 'invalid', {}, { status: 'pass' }]) {
+      assert.equal(
+        assessSecurityEvidence(info, run, { ...fixtures(), [key]: value }, at).exitCode,
+        2,
+      );
+    }
+    for (const status of ['fail', 'unknown', 'skipped', 'cancelled', 'success', '']) {
+      const receipts = fixtures();
+      receipts[key] = { ...receipts[key], status };
+      assert.equal(
+        assessSecurityEvidence(info, run, receipts, at).exitCode,
+        status === 'fail' ? 1 : 2,
+      );
+    }
+  }
+});
+
+test('rejects wrong producer, check, source, head, base, run, attempt and invalid timestamps', () => {
+  for (const [field, value] of [
+    ['schemaVersion', 2],
+    ['producer', 'other'],
+    ['checkId', 'secret-canary'],
+    ['sourceSha', 'd'.repeat(40)],
+    ['prHeadSha', null],
+    ['baselineSha', 'd'.repeat(40)],
+    ['runId', '124'],
+    ['runAttempt', '1'],
+    ['completedAt', '2026-02-30T00:00:00Z'],
+    ['completedAt', '2026-09-24T00:00:00Z'],
+    ['reason', 'Do not publish arbitrary text'],
+  ]) {
+    const receipts = fixtures();
+    receipts['secret-scan'] = { ...receipts['secret-scan'], [field as string]: value };
+    assert.equal(assessSecurityEvidence(info, run, receipts, at).exitCode, 2, String(field));
+  }
+});
+
+test('rejects invalid counts and success claims inconsistent with detection or coverage', () => {
+  for (const [key, counts] of [
+    ['secret-canary', { scenarios: 0 }],
+    ['secret-scan', { detected: 1, excepted: 0, blocking: 1 }],
+    ['secret-scan', { blocking: 0 }],
+    ['codeql-severity', { runs: 1, rules: 0, findings: 0, blocking: 0 }],
+    ['dependency-audit', { high: 0, critical: 0 }],
+    ['dependency-audit', { info: 0, low: 0, moderate: 0, high: 1, critical: 0 }],
+    ['renovate-configuration', { validators: 0 }],
+    ['toolchain-windows-latest', { checks: 0 }],
+    ['secret-scan', { detected: -1, excepted: -1, blocking: 0 }],
+    ['secret-scan', { detected: 0.5, excepted: 0.5, blocking: 0 }],
+    ['secret-scan', { detected: '0', excepted: '0', blocking: 0 }],
+  ] as const) {
+    const receipts: Record<string, unknown> = fixtures();
+    receipts[key] = { ...fixtures()[key], counts };
+    assert.equal(assessSecurityEvidence(info, run, receipts, at).exitCode, 2, key);
+  }
+});
+
+test('never forwards raw errors, arbitrary metadata or receipt strings into common evidence', () => {
+  const privateText = 'PRIVATE_FIXTURE_TEXT_MUST_NOT_LEAVE_INPUT';
+  const receipts = fixtures();
+  receipts['secret-scan'] = { ...receipts['secret-scan'], reason: privateText + '\nraw output' };
+  const output = JSON.stringify(assessSecurityEvidence(info, run, receipts, at));
+  assert.ok(!output.includes(privateText));
+});
+
+test('missing or unsafe run identifiers cannot select other artifacts', () => {
+  for (const value of ['', '0', '../123', '1/2', '1.0', 'NaN']) {
+    assert.throws(() => securityInputs({ ...run, runId: value }));
+    assert.throws(() => securityInputs({ ...run, runAttempt: value }));
+  }
+});
+
+test('official validator failure and non-execution never produce a passing receipt', () => {
+  assert.equal(validatorOutcome('success').status, 'pass');
+  assert.equal(validatorOutcome('failure').status, 'fail');
+  for (const value of ['skipped', 'cancelled', '', undefined, null, true, 'pass'])
+    assert.equal(validatorOutcome(value).status, 'unknown');
+});
