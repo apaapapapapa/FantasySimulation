@@ -200,6 +200,12 @@ export function effectiveStats(
   return {
     attack: Math.max(0, attack),
     defense: Math.max(0, defense),
+    ...(actor.character.stats.magicPower !== undefined && {
+      magicPower: actor.character.stats.magicPower,
+    }),
+    ...(actor.character.stats.magicDefense !== undefined && {
+      magicDefense: actor.character.stats.magicDefense,
+    }),
     speedBps: Math.max(0, Math.min(30000, speedBps)),
     flight,
     rooted,

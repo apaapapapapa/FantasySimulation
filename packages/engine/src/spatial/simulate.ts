@@ -43,6 +43,7 @@ import { effectiveStats, statusBoundary, UnresolvedRuleError } from './status.ts
 import { createBattleWorld } from './terrain.ts';
 import { displayProjectile, type ProjectileState } from './projectiles.ts';
 import { stepProjectiles } from './projectile-step.ts';
+import { damageSource } from './damage.ts';
 
 export type SimulationEnd = {
   steps: number;
@@ -67,12 +68,12 @@ function effectsOf(
   parentEventId: string,
   step: number,
 ): PendingEffect[] {
-  const attack = effectiveStats(actor.motion.actor, actor.statuses, step).attack;
+  const source = damageSource(effectiveStats(actor.motion.actor, actor.statuses, step));
   return ability.definition.effects.map((effect) => ({
     actorId: actorId(actor),
     targetId,
     effect,
-    attack,
+    ...source,
     parentEventId,
     abilityId: ability.id,
   }));
@@ -577,7 +578,7 @@ export function* simulate(
                 bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
                 actor.motion.position,
               ),
-              attack: effectiveStats(actor.motion.actor, actor.statuses, step).attack,
+              ...damageSource(effectiveStats(actor.motion.actor, actor.statuses, step)),
               hits: 0,
             });
           } else if (definition.attack.kind === 'projectile') {
@@ -590,7 +591,7 @@ export function* simulate(
               launchStep: step,
               position: bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
               velocity: mul(aim.direction, definition.attack.speedMmPerSecond / 1000),
-              attack: effectiveStats(actor.motion.actor, actor.statuses, step).attack,
+              ...damageSource(effectiveStats(actor.motion.actor, actor.statuses, step)),
               target: target ? { ...target.position } : null,
             };
             const spawn = journal.emit({
@@ -675,7 +676,7 @@ export function* simulate(
                   actorId: attack.actorId,
                   targetId: enemy.state.actor.participant.actorId,
                   effect,
-                  attack: attack.attack,
+                  ...damageSource(attack),
                   parentEventId: hit.id,
                   abilityId: attack.ability.id,
                   observation: contactObservation(

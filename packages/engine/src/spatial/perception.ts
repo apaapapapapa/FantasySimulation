@@ -147,6 +147,7 @@ export function observeImpact(
     eventId: string;
     element: Experience['element'];
     basePower: number;
+    defense?: Experience['defense'];
     impact: number;
     shield: boolean;
     partial: boolean;
@@ -172,6 +173,7 @@ export function observeImpact(
     availableAt: step + self.actor.character.perception.reactionSteps,
     expiresAt: step + rules.knowledgeTtlSteps,
     basePower: detail.basePower,
+    ...(detail.defense !== undefined && { defense: detail.defense }),
     distanceBand: Math.min(200, Math.floor(length(sub(self.position, target.position)) / 2)),
     range: uncertain || shield ? null : { low, high: low + rules.damageQuantum },
     confidenceBps: uncertain || shield ? 0 : 2500,
@@ -339,6 +341,7 @@ export type DecisionView = {
   burnDamage?: number;
   waterExtinguishable?: boolean;
   attack?: number;
+  magicPower?: number;
   rules?: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>>;
 };
 export function conditionMatches(condition: DeepReadonly<Condition>, view: DecisionView): boolean {

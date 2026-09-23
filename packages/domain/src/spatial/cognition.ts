@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { AppearanceSchema, ElementSchema, IdSchema, RefSchema, Vec3Schema } from './contracts.ts';
+import {
+  AppearanceSchema,
+  DamageDefenseSchema,
+  ElementSchema,
+  IdSchema,
+  RefSchema,
+  Vec3Schema,
+} from './contracts.ts';
 
 const tick = z.number().int().min(0).max(8000),
   bps = z.number().int().min(0).max(10000);
@@ -20,6 +27,7 @@ export const ExperienceSchema = z
     targetId: IdSchema,
     ability: RefSchema,
     element: ElementSchema,
+    defense: DamageDefenseSchema.optional(),
     kind: z.enum(['impact', 'shield', 'uncertain', 'reveal']),
     sampledAt: tick,
     availableAt: tick,
