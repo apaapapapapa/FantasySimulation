@@ -1,7 +1,12 @@
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial';
 import type { ActorState } from './combat-state.ts';
 import type { DecisionView } from './perception.ts';
-import { effectiveStats, statusKnowledge, type StatusRevision } from './status.ts';
+import {
+  effectiveStats,
+  periodicPulseCount,
+  statusKnowledge,
+  type StatusRevision,
+} from './status.ts';
 import { calculateDamage, damageSource } from './damage.ts';
 import { damageStatusBps, statusResistance } from './status-modifiers.ts';
 import { reactionDamageBps, statusReactions } from './status-reactions.ts';
@@ -31,11 +36,11 @@ export function selfView(
       (s.revision.definition.burning || generalizedStatus(s.revision.definition)
         ? s.revision.definition.periodic.reduce((damage, p) => {
             if (p.kind !== 'damage') return damage;
-            const next =
-              s.startStep + (Math.floor((step - s.startStep) / p.everySteps) + 1) * p.everySteps;
-            const count = Math.max(
-              0,
-              Math.ceil((Math.min(step + rules.horizonSteps + 1, s.endStep) - next) / p.everySteps),
+            const count = periodicPulseCount(
+              s.startStep,
+              p.everySteps,
+              step + 1,
+              Math.min(step + rules.horizonSteps + 1, s.endStep),
             );
             return (
               damage +

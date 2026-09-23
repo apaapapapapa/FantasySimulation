@@ -352,6 +352,18 @@
     "status-strengthening-value": {
       "file": "packages/engine/src/spatial/status-integration.test.ts",
       "name": "G-03 status combat and subjective observations values strengthening once against total stacks with the oldest deadline regardless of cohort order"
+    },
+    "status-pulse-forecast": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts preserves the periodic origin for removal, replacement and added stacks"
+    },
+    "status-launch-forecast": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts uses speed-scaled launch time and ignores states that expire during casting"
+    },
+    "status-transaction-forecast": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts groups duplicate grants, capped stacks and overlapping cleanses into one transaction"
     }
   },
   "entries": [
@@ -891,7 +903,10 @@
         "status-revealed-context",
         "status-received-knowledge",
         "status-replacement-value",
-        "status-strengthening-value"
+        "status-strengthening-value",
+        "status-pulse-forecast",
+        "status-launch-forecast",
+        "status-transaction-forecast"
       ]
     }
   ]

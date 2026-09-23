@@ -10,7 +10,7 @@ import type { DecisionView } from './perception.ts';
 import { length, sub } from './math.ts';
 import { actionClock } from './attacks.ts';
 import { damagePower, damageDefense } from './damage.ts';
-import { assessStatusEffect, observedDamagePrior } from './status-assessment.ts';
+import { assessStatusEffects, observedDamagePrior } from './status-assessment.ts';
 import { adjustedStatusValue, damageStatusBps } from './status-modifiers.ts';
 import { abilityCategories } from './categories.ts';
 
@@ -110,20 +110,11 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
     confidencePower = 0;
   const evidence: string[] = [],
     reasons: string[] = [];
-  const reacted = new Set<string>();
+  const stateValue = assessStatusEffects(view, d.effects, d.target, (view.step ?? 0) + cast);
+  utility += stateValue.value * rules.actionWeight;
+  if (stateValue.reason) reasons.push(stateValue.reason);
   for (const effect of d.effects) {
-    const element =
-      effect.kind === 'water' ? 'water' : effect.kind === 'damage' ? effect.element : null;
-    const stateValue = assessStatusEffect(
-      view,
-      effect,
-      d.target,
-      !element || !reacted.has(element),
-    );
-    if (element) reacted.add(element);
-    utility += stateValue.value * rules.actionWeight;
-    if (stateValue.reason) reasons.push(stateValue.reason);
-    if (stateValue.handled) continue;
+    if (stateValue.handled.has(effect)) continue;
     if (effect.kind === 'damage' && d.target === 'enemy') {
       const power = Number(
         damagePower(effect, {

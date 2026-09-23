@@ -661,7 +661,7 @@ describe('G-03 status combat and subjective observations', () => {
       expect(replaced.statuses).toMatchObject([
         { revision: weak, startStep: 11, endStep: 111, stacks: 1 },
       ]);
-      const next = { ...view, ownStatuses: replaced.statuses };
+      const next = { ...view, step: 11, ownStatuses: replaced.statuses };
       expect(
         assessStatusEffect(next, { kind: 'apply-status', status: reference(permanent!) }, 'self')
           .value,

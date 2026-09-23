@@ -9,14 +9,11 @@ import {
 import { calculateDamage, damageDefense, hasDamageFormula, type DamageEffect } from './damage.ts';
 import type { DamageSnapshot } from './status-damage.ts';
 import type { ResolvedActor } from './prepare.ts';
-import { dispelTargets } from './categories.ts';
 import { adjustedStatusValue, damageStatusBps, statusResistance } from './status-modifiers.ts';
-import { planStatusReactions, reactionDamageBps } from './status-reactions.ts';
+import { planStatusEffects, reactionDamageBps } from './status-reactions.ts';
 import {
   applyStatuses,
   effectiveStats,
-  type DispelTarget,
-  type StatusApplication,
   type StatusCohort,
   type StatusRevision,
   type StatusLimits,
@@ -91,22 +88,7 @@ export function resolveEffects(
     .map((target) => {
       const incoming = applications.filter((a) => a.targetId === target.actor.participant.actorId);
       const stats = effectiveStats(target.actor, target.statuses, step);
-      const reactions = planStatusReactions(
-        target.statuses,
-        incoming.flatMap((a) =>
-          (a.scaleBps ?? 10000) > 0 && (a.effect.kind === 'water' || a.effect.kind === 'damage')
-            ? [
-                {
-                  id: a.id,
-                  element: a.effect.kind === 'water' ? ('water' as const) : a.effect.element,
-                  ...(a.effect.kind === 'water' && { legacyWater: true }),
-                },
-              ]
-            : [],
-        ),
-        statuses,
-        step,
-      );
+      const reactions = planStatusEffects(target.statuses, incoming, statuses, step);
       const damages: (ReturnType<typeof calculateDamage> & {
         applicationId: string;
         effect: DamageEffect;
@@ -115,8 +97,6 @@ export function resolveEffects(
       let heal = 0n,
         shield = BigInt(target.resources.shield);
       const healing: { applicationId: string; amount: number }[] = [];
-      const statusApplications: StatusApplication[] = [...reactions.applications],
-        dispels: DispelTarget[] = [...reactions.dispels];
       for (const application of incoming) {
         const effect = application.effect,
           scale = BigInt(application.scaleBps ?? 10000);
@@ -175,31 +155,13 @@ export function resolveEffects(
             shield += (BigInt(effect.amount) * scale) / 10000n;
             break;
           case 'dispel':
-            if (scale > 0n)
-              dispels.push(
-                ...dispelTargets(
-                  effect,
-                  target.statuses.map((s) => s.revision),
-                ),
-              );
-            break;
           case 'water':
-            // Legacy water is one elemental contact in the shared reaction plan.
+          case 'apply-status':
+            // Collected together in the shared status transaction above.
             break;
           case 'reveal':
             // Information is extracted only by the observation boundary, after actual contact.
             break;
-          case 'apply-status': {
-            const revision = statuses.find(
-              (s) =>
-                s.id === effect.status.id &&
-                s.revision === effect.status.revision &&
-                s.contentHash === effect.status.contentHash,
-            );
-            if (!revision) throw new Error('Missing prepared status reference');
-            if (scale > 0n) statusApplications.push({ revision, cause: application.id });
-            break;
-          }
           default: {
             const impossible: never = effect;
             throw new Error(`Unknown effect: ${String(impossible)}`);
@@ -241,8 +203,8 @@ export function resolveEffects(
         }));
       const result = applyStatuses(
         reactions.statuses,
-        statusApplications,
-        dispels,
+        reactions.applications,
+        reactions.dispels,
         activationStep,
         limits,
       );

@@ -40,6 +40,25 @@
         "packages/engine/fixtures/spatial/corpus.json",
         "docs/adr/0010-battle-version-compatibility.md"
       ]
+    },
+    {
+      "baselineSha": "b354a2ac83ba24ef6e3c9c52076e9b7b43dafb0d",
+      "beforeDigest": "ebc58ce781d09662fd834f13344d3f710e1452b7061028771b5598fe79abfc24",
+      "afterDigest": "5063ceb0bde6fbe4685e806e0f5ac0dcd1c94d6191cb23bb3abf207823fa4b29",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Reviewed five actual alternating pairs (35 measurements per revision) from main b354a2a and G-03 8563041. All seven deterministic operation/count/byte dictionaries and outcomes match before/after, and both revisions complete within unchanged ceilings. Only the pinned engine/rules identities deliberately move from spatial-v1.11 / standard-observed-v1 to spatial-v1.12 / standard-status-v1 under ADR 0010; released sample IDs/hashes and Golden expectations remain fixed. Current independent corpus evidence verifies all 85 mapped regressions, including self replacement losses and total-cohort strengthening capacity. Different fixed input identities prevent same-input and wall-time/RSS regression claims. This is independent-input transition review, not a failed-baseline waiver or an increase in limits; runtime pins and profile are unchanged.",
+      "evidence": [
+        ".generated/harness/load-pair/0-before.json",
+        ".generated/harness/load-pair/0-after.json",
+        ".generated/harness/load-pair/results.json",
+        ".generated/harness/load-pair/commands.json",
+        ".generated/harness/load-pair/baseline-corpus.json",
+        ".generated/harness/load-pair/boundary.json",
+        "packages/engine/fixtures/spatial/corpus.json",
+        "docs/adr/0010-battle-version-compatibility.md"
+      ]
     }
   ]
 }

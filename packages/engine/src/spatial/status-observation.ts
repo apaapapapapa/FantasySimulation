@@ -8,7 +8,7 @@ import {
 import { permanentStatus, statusCategories } from './categories.ts';
 import { adjustedStatusValue } from './status-modifiers.ts';
 import { statusReactions } from './status-reactions.ts';
-import type { StatusCohort } from './status.ts';
+import { periodicPulseCount, type StatusCohort } from './status.ts';
 import type { MotionState } from './movement.ts';
 
 type Status = DeepReadonly<Definition<'status'>>;
@@ -33,6 +33,7 @@ export function statusBenefit(
   horizon = 50,
   remaining = status.durationSteps,
   resources: { mp?: boolean; stamina?: boolean } = {},
+  phase?: { startStep: number; fromStep: number },
 ) {
   const m = status.modifiers;
   let benefit =
@@ -63,7 +64,12 @@ export function statusBenefit(
     benefit +=
       (p.kind === 'damage' ? -1 : 1) *
       (p.amount / 25) *
-      Math.ceil(Math.max(0, duration) / p.everySteps);
+      periodicPulseCount(
+        phase?.startStep ?? 0,
+        p.everySteps,
+        phase?.fromStep ?? 0,
+        (phase?.fromStep ?? 0) + Math.max(0, duration),
+      );
   }
   return Math.max(-16, Math.min(16, benefit));
 }

@@ -218,8 +218,8 @@ staminaRecovery at step+1; later removal/grants cannot alter elapsed recovery. N
 Only visible states yield ≤64 sorted summaries after sight/reaction delay:
 ID/categories, benefit/adjustment direction, removability, reaction/damage direction; no hashes,
 quantities, stacks or deadlines. Own AI knows ability/held-state transform closures; enemy AI
-uses delayed summaries/impacts only. Self utility compares shared runtime transitions, including
-displaced cohorts, stack caps, clocks and resources (missing resources ignored). Weakness changes the coarse
+uses delayed summaries/impacts only. Self utility compares one shared transaction at launch+1,
+preserving pulse phase, displaced cohorts, caps and expiry (missing resources ignored). Weakness changes the coarse
 prior, never duplicates measured impact. Public changes retire prior/same-boundary impacts after
 delay; baseline reveals persist and use the public prior.
 Knowledge/decision logs use these summaries, never enemy truth.

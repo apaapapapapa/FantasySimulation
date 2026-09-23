@@ -1,23 +1,53 @@
 import type { DeepReadonly, Effect } from '@fantasy/domain/spatial';
-import { dispelTargets } from './categories.ts';
 import { generalizedStatus, statusBenefit } from './status-observation.ts';
-import { planStatusReactions } from './status-reactions.ts';
+import { planStatusEffects } from './status-reactions.ts';
 import { applyStatuses, UnresolvedRuleError, type StatusCohort } from './status.ts';
 import { SpatialBudgetError } from './physics.ts';
 import type { DecisionView } from './perception.ts';
 
-/** Only own definitions/active states and delayed public opponent summaries enter status utility. */
-export function assessStatusEffect(
+/** Forecast one ability transaction using self knowledge or delayed public summaries only. */
+export function assessStatusEffects(
   view: DecisionView,
-  effect: DeepReadonly<Effect>,
+  effects: readonly DeepReadonly<Effect>[],
   target: 'self' | 'enemy',
-  includeReaction = true,
+  launchStep = view.step ?? 0,
 ) {
-  const horizon = view.rules?.horizonSteps ?? 50,
-    step = view.step ?? 0;
+  const horizon = view.rules?.horizonSteps ?? 50;
   const own = view.ownStatuses ?? [];
   const observed = (view.memory.observation?.enemy ?? view.memory.lastSeen)?.statuses ?? [];
   const definitions = view.self.actor.knownStatuses ?? [];
+  const knownApplications = new Map(
+    effects.flatMap((effect) => {
+      if (effect.kind !== 'apply-status') return [];
+      const ref = effect.status;
+      const revision = definitions.find(
+        (s) => s.id === ref.id && s.revision === ref.revision && s.contentHash === ref.contentHash,
+      );
+      return revision ? [[effect, revision] as const] : [];
+    }),
+  );
+  const generalized =
+    (target === 'self'
+      ? own.some((s) => generalizedStatus(s.revision.definition))
+      : observed.length > 0) ||
+    [...knownApplications.values()].some((s) => generalizedStatus(s.definition));
+  const handled = new Set<DeepReadonly<Effect>>();
+  const result = (value: number) => ({
+    value,
+    handled,
+    reason:
+      value !== 0
+        ? 'defined status benefit/reaction from own knowledge or observed public state'
+        : '',
+  });
+  if (!generalized) return result(0);
+  for (const effect of effects)
+    if (
+      effect.kind === 'dispel' ||
+      effect.kind === 'water' ||
+      (effect.kind === 'apply-status' && knownApplications.has(effect))
+    )
+      handled.add(effect);
   const resources =
     target === 'self'
       ? {
@@ -25,105 +55,76 @@ export function assessStatusEffect(
           stamina: view.self.actor.character.stamina !== undefined,
         }
       : {};
-  let value = 0,
-    handled = false;
-  const activationStep = step + 1;
+  const activationStep = launchStep + 1;
   const benefit = (states: readonly StatusCohort[]) =>
     states.reduce(
       (sum, s) =>
         sum +
-        statusBenefit(s.revision.definition, horizon, s.endStep - activationStep, resources) *
+        statusBenefit(s.revision.definition, horizon, s.endStep - activationStep, resources, {
+          startStep: s.startStep,
+          fromStep: activationStep,
+        }) *
           s.stacks,
       0,
     );
-  const marginal = (resolve: () => readonly StatusCohort[]) => {
-    try {
-      return benefit(resolve()) - benefit(own);
-    } catch (error) {
-      // This is a self-only forecast. Actual resolution still reports these failures normally.
-      if (error instanceof UnresolvedRuleError || error instanceof SpatialBudgetError) return 0;
-      throw error;
-    }
-  };
-  if (effect.kind === 'apply-status') {
-    const status = definitions.find(
-      (s) =>
-        s.id === effect.status.id &&
-        s.revision === effect.status.revision &&
-        s.contentHash === effect.status.contentHash,
-    );
-    if (status && generalizedStatus(status.definition)) {
-      handled = true;
-      value =
-        target === 'self'
-          ? marginal(
-              () =>
-                applyStatuses(
-                  own,
-                  [{ revision: status, cause: 'decision.status' }],
-                  [],
-                  activationStep,
-                ).statuses,
-            )
-          : -statusBenefit(status.definition, horizon, status.definition.durationSteps, resources);
-    }
-  } else if (effect.kind === 'dispel') {
-    if (target === 'self' && own.some((s) => generalizedStatus(s.revision.definition))) {
-      handled = true;
-      const matches = dispelTargets(
-        effect,
-        own.map((s) => s.revision),
+  const forecastEffects = effects
+    .filter((e) => e.kind !== 'apply-status' || knownApplications.has(e))
+    .map((effect, index) => ({ id: `decision.status.${index}`, effect }));
+  try {
+    if (target === 'self') {
+      const active = own.filter((s) => s.startStep <= launchStep && launchStep < s.endStep);
+      const plan = planStatusEffects(active, forecastEffects, definitions, launchStep);
+      return result(
+        benefit(
+          applyStatuses(plan.statuses, plan.applications, plan.dispels, activationStep).statuses,
+        ) - benefit(active),
       );
-      value = marginal(() => applyStatuses(own, [], matches, activationStep).statuses);
-    } else if (target === 'enemy' && observed.length) {
-      handled = true;
-      for (const s of observed)
-        if (
-          s.removable &&
-          (effect.statusIds?.includes(s.id) ||
-            effect.categories?.some((c) => s.categories.includes(c)))
-        )
-          value += s.benefit === 'beneficial' ? 1 : s.benefit === 'harmful' ? -1 : 0;
     }
-  } else if (effect.kind === 'damage' || effect.kind === 'water') {
-    const element = effect.kind === 'water' ? 'water' : effect.element;
-    if (target === 'self' && own.some((s) => generalizedStatus(s.revision.definition))) {
-      handled = effect.kind === 'water';
-      if (includeReaction)
-        value = marginal(() => {
-          const plan = planStatusReactions(
-            own,
-            [{ id: 'decision.status', element }],
-            definitions,
-            step,
-          );
-          return applyStatuses(plan.statuses, plan.applications, plan.dispels, activationStep)
-            .statuses;
-        });
-    } else if (target === 'enemy') {
-      handled = effect.kind === 'water' && observed.length > 0;
-      for (const s of observed) {
-        if (!includeReaction) continue;
-        const reaction = s.reactions.find((r) => r.element === element),
-          benefit = s.benefit === 'beneficial' ? 1 : s.benefit === 'harmful' ? -1 : 0;
-        if (!reaction) continue;
-        if (reaction.response === 'strengthen') value -= benefit;
-        else if (
-          s.removable &&
-          (reaction.response === 'remove' || reaction.response === 'transform')
-        )
-          value += benefit;
-      }
+    // Incoming definitions are known; enemy stack counts, clocks and transform destinations are not.
+    const grants = planStatusEffects(
+      [],
+      forecastEffects.filter((a) => a.effect.kind === 'apply-status'),
+      definitions,
+      launchStep,
+    );
+    let value = -benefit(applyStatuses([], grants.applications, [], activationStep).statuses);
+    const elements = new Set(
+      effects.flatMap((e) =>
+        e.kind === 'water' ? ['water'] : e.kind === 'damage' ? [e.element] : [],
+      ),
+    );
+    for (const status of observed) {
+      const reactions = status.reactions.filter((r) => elements.has(r.element));
+      const remove =
+        status.removable &&
+        (effects.some(
+          (e) =>
+            e.kind === 'dispel' &&
+            (e.statusIds?.includes(status.id) ||
+              e.categories?.some((c) => status.categories.includes(c))),
+        ) ||
+          reactions.some((r) => r.response === 'remove' || r.response === 'transform'));
+      const sign = status.benefit === 'beneficial' ? 1 : status.benefit === 'harmful' ? -1 : 0;
+      if (remove) value += sign;
+      else if (reactions.some((r) => r.response === 'strengthen')) value -= sign;
     }
+    return result(value);
+  } catch (error) {
+    // Forecast failure grants no utility; actual resolution still reports its diagnostic.
+    if (error instanceof UnresolvedRuleError || error instanceof SpatialBudgetError)
+      return result(0);
+    throw error;
   }
-  return {
-    value,
-    handled,
-    reason:
-      value !== 0
-        ? 'defined status benefit/reaction from own knowledge or observed public state'
-        : '',
-  };
+}
+
+/** Single-effect entry point for callers without an ability clock. */
+export function assessStatusEffect(
+  view: DecisionView,
+  effect: DeepReadonly<Effect>,
+  target: 'self' | 'enemy',
+) {
+  const result = assessStatusEffects(view, [effect], target);
+  return { ...result, handled: result.handled.has(effect) };
 }
 
 /** Coarse visible weakness affects the prior only; measured impacts already include it. */

@@ -2,20 +2,65 @@ import {
   compareIds,
   type DeepReadonly,
   type Definition,
+  type Effect,
   type StatusReaction,
 } from '@fantasy/domain/spatial';
-import { permanentStatus } from './categories.ts';
+import { dispelTargets, permanentStatus } from './categories.ts';
 import {
   UnresolvedRuleError,
   type StatusApplication,
   type StatusChange,
   type StatusCohort,
   type StatusRevision,
+  type DispelTarget,
 } from './status.ts';
 
 type Status = DeepReadonly<Definition<'status'>>;
 type DamageElement = StatusReaction['element'];
 export type ElementContact = { id: string; element: DamageElement; legacyWater?: boolean };
+/** Collect the whole status transaction before applying any grants or removals. */
+export function planStatusEffects(
+  existing: readonly StatusCohort[],
+  effects: readonly { id: string; effect: DeepReadonly<Effect>; scaleBps?: number }[],
+  definitions: readonly StatusRevision[],
+  step: number,
+) {
+  const reactions = planStatusReactions(
+    existing,
+    effects.flatMap((a) =>
+      (a.scaleBps ?? 10000) > 0 && (a.effect.kind === 'water' || a.effect.kind === 'damage')
+        ? [
+            {
+              id: a.id,
+              element: a.effect.kind === 'water' ? ('water' as const) : a.effect.element,
+              ...(a.effect.kind === 'water' && { legacyWater: true }),
+            },
+          ]
+        : [],
+    ),
+    definitions,
+    step,
+  );
+  const applications: StatusApplication[] = [...reactions.applications];
+  const dispels: DispelTarget[] = [...reactions.dispels];
+  for (const a of effects) {
+    if (a.effect.kind === 'apply-status') {
+      const ref = a.effect.status;
+      const revision = definitions.find(
+        (s) => s.id === ref.id && s.revision === ref.revision && s.contentHash === ref.contentHash,
+      );
+      if (!revision) throw new Error('Missing prepared status reference');
+      if ((a.scaleBps ?? 10000) > 0) applications.push({ revision, cause: a.id });
+    } else if (a.effect.kind === 'dispel' && (a.scaleBps ?? 10000) > 0)
+      dispels.push(
+        ...dispelTargets(
+          a.effect,
+          existing.map((s) => s.revision),
+        ),
+      );
+  }
+  return { ...reactions, applications, dispels };
+}
 /** An explicit response wins; legacy input is an adapter, never a second reaction. */
 export function statusReactions(status: Status): readonly DeepReadonly<StatusReaction>[] {
   const reactions = status.reactions ?? [];

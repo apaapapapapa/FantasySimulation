@@ -63,6 +63,16 @@ export class UnresolvedRuleError extends Error {
 const sameRevision = (a: StatusRevision, b: StatusRevision) =>
   a.id === b.id && a.revision === b.revision && a.contentHash === b.contentHash;
 const clone = (s: StatusCohort): StatusCohort => ({ ...s, causes: [...s.causes] });
+/** Number of origin-aligned pulses in the half-open interval [from, until). */
+export function periodicPulseCount(
+  origin: number,
+  everySteps: number,
+  from: number,
+  until: number,
+) {
+  const first = origin + Math.max(0, Math.ceil((from - origin) / everySteps)) * everySteps;
+  return Math.max(0, Math.ceil((until - first) / everySteps));
+}
 /** Expiry precedes periodic effects. A new status first pulses at its activation boundary. */
 export function statusBoundary(statuses: readonly StatusCohort[], step: number) {
   const removed = statuses.filter((s) => s.endStep <= step).map(clone);
@@ -70,7 +80,7 @@ export function statusBoundary(statuses: readonly StatusCohort[], step: number) 
   const pulses = active.flatMap((s) => {
     const causes = Object.freeze([...s.causes]);
     return s.revision.definition.periodic.flatMap((effect, index) =>
-      step >= s.startStep && (step - s.startStep) % effect.everySteps === 0
+      periodicPulseCount(s.startStep, effect.everySteps, step, step + 1) > 0
         ? Array.from({ length: s.stacks }, (_, stack) => ({
             revision: s.revision,
             effect,
