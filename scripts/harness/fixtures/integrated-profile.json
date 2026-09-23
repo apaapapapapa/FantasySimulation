@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "p3-integrated-v1",
+  "seed": 20260923,
+  "estimatedBytesPerMatch": 2097152,
+  "cases": [
+    { "left": "swordsman", "right": "swordsman", "scenario": "flat" },
+    { "left": "archer", "right": "guardian", "scenario": "flat" },
+    { "left": "healer", "right": "fire-mage", "scenario": "flat" },
+    { "left": "ice-mage", "right": "lancer", "scenario": "flat" },
+    { "left": "storm-mage", "right": "arcane-archer", "scenario": "flat" },
+    { "left": "water-observer", "right": "ember-duelist", "scenario": "flat" },
+    { "left": "fire-seer", "right": "ember-duelist", "scenario": "flat" },
+    { "left": "sky-mage", "right": "fire-mage", "scenario": "flat" },
+    { "left": "swordsman", "right": "sky-mage", "scenario": "pillars" },
+    { "left": "guardian", "right": "guardian", "scenario": "pillars" }
+  ]
+}

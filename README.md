@@ -318,3 +318,14 @@ vp run batch check .generated/batch-plan.json path/to/index.json .generated/batc
 本人の `decision` / `knowledge` イベントは全知の結果イベントと分けて保存し、
 候補の整数重み/合計（選択確率）、成功・撃破の推定、除外理由、知識の期限、乱数用途を記録します。
 画面での説明表示はP4です。[数式・境界・fixture更新の根拠](docs/adr/0009-observed-ai.md)を参照してください。
+
+### P3の統合性能計測
+
+`pnpm --filter @fantasy/api exec node --import tsx ../../scripts/integrated-benchmark.ts .generated/harness/p3-worker1 1 100`
+で固定10入力の1 Worker計測、別の出力先で `4 100` を指定して同一入力集合の4 Worker比較を行います。
+正式な1,000試合の受入には `4 1000` を実行します。cleanなcommitと新しい出力先が必要です。
+既存のWorker・batch runner・SQLite・正式replay writerを使い、計算/保存/キャッシュと
+cold/warmを分け、個別attempt、全予定枠の完走、100ms間隔のプロセスRSS、Workerの
+heap/external/arrayBuffers/WASM領域を共通reportへ記録します。これらのメモリ値は重なるため加算しません。
+100件等の少数計測は `integrated:full-batch=unknown`（exit 2）となり、1,000件の性能合格にはなりません。
+基準値はADR 0002のままです。共有CIの実時間や打切り・キャッシュだけの結果で合格にしません。
