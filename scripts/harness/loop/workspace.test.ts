@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
@@ -7,12 +7,13 @@ import { DEFAULT_BUDGET } from './contract.ts';
 import { initialize, readJournal } from './journal.ts';
 import { status } from './state.ts';
 import { applyPatch, beginAttempt, locations, owned, prepare, recover } from './workspace.ts';
-import { isolatedCommand, sandboxCommand } from './evaluation.ts';
+import { evaluate, isolatedCommand, sandboxCommand } from './evaluation.ts';
 
 function fixture() {
   const repo = testRepository({
     'src/value.ts': 'export const value = 0;\n',
     'src/value.test.ts': 'old acceptance\n',
+    '.gitignore': '.generated/\nnode_modules/\n**/dist/\n',
   });
   repo.git('remote', 'add', 'origin', 'https://github.com/owner/repo.git');
   const store = mkdtempSync(join(tmpdir(), 'fantasy-loop-workspace-'));
@@ -134,6 +135,31 @@ describe('owned workspace and full baseline scope', () => {
         phase: 'ready',
       });
       owned(f.path);
+    } finally {
+      f.dispose();
+    }
+  });
+  it('keeps trusted collector writes outside candidate-controlled symlinks', async () => {
+    const f = fixture();
+    try {
+      await prepare(f.path, f.repo.root);
+      await beginAttempt(f.path, reservation);
+      await applyPatch(f.path, f.proposal(change()));
+      const dirs = locations(f.path),
+        victim = join(f.store, 'host-evidence');
+      mkdirSync(victim);
+      writeFileSync(join(victim, 'verify.log'), 'Host data');
+      const result = await evaluate(f.path, async () => {
+        const generated = join(dirs.workspace, '.generated/harness');
+        mkdirSync(generated, { recursive: true });
+        symlinkSync(victim, join(generated, 'loop-attempt-1'));
+        return { exitCode: 0, signal: null, bounded: false, output: 'Candidate output' };
+      });
+      expect(result.phase).toBe('review');
+      expect(readFileSync(join(victim, 'verify.log'), 'utf8')).toBe('Host data');
+      expect(
+        readFileSync(join(dirs.root, '.generated/harness/loop-attempt-1/verify.log'), 'utf8'),
+      ).toBe('Candidate output');
     } finally {
       f.dispose();
     }

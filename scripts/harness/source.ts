@@ -76,13 +76,14 @@ export async function collectSource(
   relative: string,
   run: typeof runCommand = runCommand,
   env: NodeJS.ProcessEnv = process.env,
+  evidenceRoot = input,
 ) {
   const root = repositoryRoot(input);
   const info = sourceIdentity(root, env);
   const { sourceSha } = info;
   const startedAt = new Date().toISOString();
   const before = git(root, ['status', '--porcelain=v1', '--untracked-files=all']);
-  const directory = artifactDirectory(root, relative);
+  const directory = artifactDirectory(evidenceRoot, relative);
   const result = before
     ? null
     : await run('vp', ['run', 'verify'], root, {

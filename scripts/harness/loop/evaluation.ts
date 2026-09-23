@@ -72,7 +72,7 @@ export async function isolatedCommand(
     maxBytes: 4 * 1024 * 1024,
   });
 }
-export async function evaluate(path: string) {
+export async function evaluate(path: string, run: typeof runCommand = runCommand) {
   return operation(path, async () => {
     const j = readJournal(path),
       view = status(j),
@@ -106,9 +106,10 @@ export async function evaluate(path: string) {
         [command, ...args],
         Math.min(720_000, remaining),
         writable,
+        run,
       );
     };
-    const result = await collectSource(dirs.workspace, relative, runner, {});
+    const result = await collectSource(dirs.workspace, relative, runner, {}, dirs.root);
     owned(path, j);
     const evidence = join(dirs.root, 'evidence', `evaluation-${view.attempts}.json`);
     const assessed = assessReport(result.report, j.contract.requiredChecks);
@@ -118,8 +119,8 @@ export async function evaluate(path: string) {
       JSON.stringify(
         {
           report: assessed.report,
-          command: JSON.parse(readFileSync(join(dirs.workspace, relative, 'command.json'), 'utf8')),
-          log: readFileSync(join(dirs.workspace, relative, 'verify.log'), 'utf8'),
+          command: JSON.parse(readFileSync(join(dirs.root, relative, 'command.json'), 'utf8')),
+          log: readFileSync(join(dirs.root, relative, 'verify.log'), 'utf8'),
         },
         null,
         2,
