@@ -109,6 +109,46 @@ it('fails closed when repetitive input exhausts the comparison budget', () => {
   const f = project({ 'a.ts': 'export {};\n' + 'work(value);\n'.repeat(1500) });
   expect(() => duplication(f.root, f.paths)).toThrow(/budget exceeded/);
 });
+const uniqueStatements = (prefix: string, count: number) =>
+  Array.from({ length: count }, (_, i) => `${prefix}${i};`).join('\n');
+// Each identifier statement contributes two nodes; these exercise real production limits.
+it.each([false, true])(
+  'scans past 250,000 nodes with cross-file clones=%s',
+  (cloned) => {
+    const f = project({
+      'a.ts': uniqueStatements('a', 65000),
+      'b.ts': uniqueStatements('b', 65000),
+      'y.ts': calculation,
+      'z.ts': cloned ? calculation : '',
+    });
+    const findings = duplication(f.root, f.paths);
+    expect(findings).toHaveLength(cloned ? 1 : 0);
+    if (cloned)
+      expect(findings[0]).toMatchObject({
+        source: { path: 'y.ts' },
+        destination: { path: 'z.ts' },
+      });
+  },
+  20000,
+);
+it.each([
+  ['source', 1, 125001],
+  ['repository', 3, 85000],
+] as const)(
+  'fails closed at the %s node limit',
+  (scope, files, statements) => {
+    const f = project(
+      Object.fromEntries(
+        Array.from({ length: files }, (_, i) => [
+          `file${i}.ts`,
+          uniqueStatements(`item${i}_`, statements),
+        ]),
+      ),
+    );
+    expect(() => duplication(f.root, f.paths)).toThrow(`Duplication ${scope} node budget exceeded`);
+  },
+  20000,
+);
 it('covers untracked TS and TSX locally without scanning ignored output or node_modules', () => {
   const f = project({
     '.gitignore': '.generated/\nnode_modules/\n',
