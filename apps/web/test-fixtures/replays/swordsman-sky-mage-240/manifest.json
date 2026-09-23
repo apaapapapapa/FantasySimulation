@@ -1,0 +1,599 @@
+{
+  "attemptId": "fixture-attempt",
+  "checkpoints": [
+    {
+      "bytes": 177,
+      "checksum": "sha256:4910346bdeaf30d649ec2f516ede9e8071ad6d7f4fd462a1860296c92b37bb23",
+      "file": "checkpoint-00000.json.gz",
+      "index": 0,
+      "nextRecord": 0,
+      "rawBytes": 203,
+      "step": 0
+    },
+    {
+      "bytes": 1881,
+      "checksum": "sha256:d707ed81096be7e26dbe7747a28fff45dca2289001c79cbc0bb4e58a7eb2f312",
+      "file": "checkpoint-00001.json.gz",
+      "index": 1,
+      "nextRecord": 93,
+      "rawBytes": 6050,
+      "step": 91
+    },
+    {
+      "bytes": 831,
+      "checksum": "sha256:ae63493d42fb69ff10e179cce2fa42bc37658070e3636d2c20b3c3ef927fa375",
+      "file": "checkpoint-00002.json.gz",
+      "index": 2,
+      "nextRecord": 161,
+      "rawBytes": 2200,
+      "step": 159
+    },
+    {
+      "bytes": 1137,
+      "checksum": "sha256:a9dbfcfa6e630c568b504e16518ab28739bc4aea4d101da32efdfb57447b8271",
+      "file": "checkpoint-00003.json.gz",
+      "index": 3,
+      "nextRecord": 234,
+      "rawBytes": 3261,
+      "step": 232
+    }
+  ],
+  "chunks": [
+    {
+      "bytes": 12107,
+      "checkpoint": 0,
+      "checksum": "sha256:85f1e4fcebfac12e4012dad4d6003a8bba6f18b44c4f7f4fed415327e8fa5e85",
+      "file": "chunk-00000.ndjson.gz",
+      "firstRecord": 0,
+      "fromStep": 0,
+      "index": 0,
+      "rawBytes": 134154,
+      "records": 93,
+      "toStep": 91
+    },
+    {
+      "bytes": 16762,
+      "checkpoint": 1,
+      "checksum": "sha256:675fd4ca7d77c4371dec891e55aa5213e82b6df8eada73fb362fc23bcf28bf71",
+      "file": "chunk-00001.ndjson.gz",
+      "firstRecord": 93,
+      "fromStep": 91,
+      "index": 1,
+      "rawBytes": 132020,
+      "records": 68,
+      "toStep": 159
+    },
+    {
+      "bytes": 15081,
+      "checkpoint": 2,
+      "checksum": "sha256:17a187359f45e036f05e1bae86e90e364a6e9fe9c9b2c65eb770803e66d21707",
+      "file": "chunk-00002.ndjson.gz",
+      "firstRecord": 161,
+      "fromStep": 159,
+      "index": 2,
+      "rawBytes": 133127,
+      "records": 73,
+      "toStep": 232
+    },
+    {
+      "bytes": 1764,
+      "checkpoint": 3,
+      "checksum": "sha256:5dd79d79615ba46988d732e90ea76fe7f0ad5d46b10757e9022c067a240b9c82",
+      "file": "chunk-00003.ndjson.gz",
+      "firstRecord": 234,
+      "fromStep": 232,
+      "index": 3,
+      "rawBytes": 10528,
+      "records": 9,
+      "toStep": 240
+    }
+  ],
+  "end": {
+    "kind": "result",
+    "result": {
+      "eventHash": "sha256:ff448600c1b9fa8519b0593ed1b3cc3dcd00ddb5ff1f7ca45c54c4e82a3a0a5e",
+      "outcome": { "kind": "draw", "reason": "time-limit" },
+      "physicsStateHash": "sha256:00451a7b0723ea74eef33934f77f27c648747dec834602d0836a3a7131abdd80",
+      "schemaVersion": 1,
+      "simulationHash": "sha256:19367b25829f4aa91c064e4bbf7e7f458cc27ecefe3ed1389280d93e49c3d494",
+      "stats": {
+        "candidates": 88,
+        "casts": 4365,
+        "events": 128,
+        "logBytes": 409829,
+        "pathNodes": 187,
+        "peakProjectiles": 1
+      },
+      "steps": 240,
+      "trajectoryHash": "sha256:a92ebcf06dd6d9458ae5ec0a7bd8d04bc6faf66cf0e096f7af205dd035b9155e",
+      "tsStateHash": "sha256:ff54ed011fda57112f733aa149faec53c2974a1a9cb66b50fd7e23c8a7feadfd"
+    }
+  },
+  "eventHash": "sha256:ff448600c1b9fa8519b0593ed1b3cc3dcd00ddb5ff1f7ca45c54c4e82a3a0a5e",
+  "id": "swordsman-sky-mage-240",
+  "input": {
+    "aiProfile": "observed-utility-v1",
+    "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
+    "engineVersion": "spatial-v1.11",
+    "eventSchemaVersion": 1,
+    "implementationDigest": "sha256:76efdcfe669e0956b34d27118d9f900ce0626cbba5f20671c1665ea269d5ad9e",
+    "participants": [
+      {
+        "actorId": "left",
+        "character": {
+          "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e",
+          "id": "swordsman",
+          "revision": 1
+        },
+        "facing": { "x": 1, "y": 0, "z": 0 },
+        "position": { "x": -6000, "y": 902, "z": 0 },
+        "rngSeed": 2654435731,
+        "rngStream": 0
+      },
+      {
+        "actorId": "right",
+        "character": {
+          "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8",
+          "id": "sky-mage",
+          "revision": 1
+        },
+        "facing": { "x": -1, "y": 0, "z": 0 },
+        "position": { "x": 6000, "y": 902, "z": 0 },
+        "rngSeed": 1013904216,
+        "rngStream": 1
+      }
+    ],
+    "physicsProfile": {
+      "actorCollision": "binary64-analytic-upright-capsule-sweep-v1",
+      "aiMs": 100,
+      "axis": "right-handed-Y-up",
+      "contactTimeEpsilon": 0.000001,
+      "creationOrder": "ascending-ASCII-id",
+      "floatEncoding": "IEEE754-binary64-big-endian-hex-negative-zero-normalized",
+      "gravityMmPerSecond2": -9807,
+      "id": "spatial-v1",
+      "inputUnits": "integer-mm-ms",
+      "maxMoveSegments": 8,
+      "maxSteps": 6000,
+      "physicsConversion": "TS-binary64-metres-to-Rapier-binary32-at-each-WASM-call",
+      "rapier": "0.20.0",
+      "simultaneousObstacleContact": "wall-first-within-epsilon",
+      "skinMm": 2,
+      "stepMs": 20,
+      "trigonometry": "quarter-sine-1-degree-linear-1e9-v1"
+    },
+    "physicsProfileHash": "sha256:fec78a239c989b1345919bad1e4188561054dffae03303ac338d739c3e40df98",
+    "prng": "xorshift32-v1",
+    "replaySchemaVersion": 1,
+    "revisions": [
+      {
+        "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": {
+            "explosionRadiusMm": 0,
+            "gravityScaleBps": 0,
+            "homingTurnMilliDegreesPerSecond": 90000,
+            "kind": "projectile",
+            "lifetimeSteps": 150,
+            "maxHitsPerTarget": 1,
+            "observation": "owner-visible",
+            "radiusMm": 80,
+            "speedMmPerSecond": 18000
+          },
+          "castSteps": 10,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 0,
+          "costs": { "hp": 0, "mp": 4, "uses": 0 },
+          "effects": [
+            { "amount": 12, "attackScaleBps": 10000, "element": "arcane", "kind": "damage" }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "観測誘導弾",
+          "originalText": "観測誘導弾",
+          "rangeMm": 30000,
+          "recoverySteps": 35,
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "seeker",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": {
+            "activeSteps": 2,
+            "kind": "melee",
+            "maxHitsPerTarget": 1,
+            "radiusMm": 200,
+            "reachMm": 1800
+          },
+          "castSteps": 5,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 0,
+          "costs": { "hp": 0, "mp": 0, "uses": 0 },
+          "effects": [
+            { "amount": 10, "attackScaleBps": 10000, "element": "physical", "kind": "damage" }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "剣",
+          "originalText": "正面の相手を剣で攻撃する",
+          "rangeMm": 2000,
+          "recoverySteps": 20,
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "sword",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": { "kind": "direct" },
+          "castSteps": 0,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 0,
+          "costs": { "hp": 0, "mp": 0, "uses": 0 },
+          "effects": [
+            {
+              "kind": "apply-status",
+              "status": {
+                "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944",
+                "id": "flight",
+                "revision": 1
+              }
+            }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "開幕の飛行",
+          "originalText": "開幕の飛行",
+          "rangeMm": 0,
+          "recoverySteps": 20,
+          "target": "self",
+          "trigger": "battle-start"
+        },
+        "id": "takeoff",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3",
+              "id": "seeker",
+              "revision": 1
+            },
+            {
+              "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd",
+              "id": "takeoff",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "飛行術師",
+          "originalText": "飛行術師。能力・装備・方針はすべて公開revisionで固定する。",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c",
+            "id": "sky-mage-policy",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 400,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "sky-mage",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+              "id": "sword",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "剣士",
+          "originalText": "剣士。能力・装備・方針はすべて公開revisionで固定する。",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda",
+            "id": "swordsman-policy",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "swordsman",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c",
+        "definition": {
+          "flightAltitudeMm": 6000,
+          "jumpWhenBlocked": true,
+          "movement": "keep-distance",
+          "name": "飛行術師の方針",
+          "originalText": "条件を満たす優先行動と、観測に基づく移動",
+          "preferredDistanceMm": 6000,
+          "priorities": [{ "abilityId": "seeker", "when": { "kind": "always" } }]
+        },
+        "id": "sky-mage-policy",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda",
+        "definition": {
+          "flightAltitudeMm": 6000,
+          "jumpWhenBlocked": true,
+          "movement": "approach",
+          "name": "剣士の方針",
+          "originalText": "条件を満たす優先行動と、観測に基づく移動",
+          "preferredDistanceMm": 1200,
+          "priorities": [{ "abilityId": "sword", "when": { "kind": "always" } }]
+        },
+        "id": "swordsman-policy",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:6e4335f06185c8d49ce676bf484370bdf8841280faeadfbac09e089cb18882fa",
+        "definition": {
+          "ai": {
+            "actionWeight": 100,
+            "damageQuantum": 10,
+            "dodgeWeight": 600,
+            "explorationWeight": 60,
+            "healthPrior": 200,
+            "horizonSteps": 50,
+            "initialKnowledge": "empty-match-v1",
+            "killWeight": 2400,
+            "knowledgeTtlSteps": 500,
+            "memorySamples": 32,
+            "observation": "visible-coarse-v1",
+            "profile": "observed-utility-v1",
+            "random": "actor-purpose-rejection-v1",
+            "riskWeight": 800
+          },
+          "aoeOcclusion": "five-samples-equal-linear-v1",
+          "bodyContact": "symmetric-stop",
+          "curveErrorMm": 1,
+          "fallDamagePerMeterPerSecond": 5,
+          "fallSafeSpeedMmPerSecond": 8000,
+          "gravityMmPerSecond2": -9807,
+          "maxSteps": 240,
+          "name": "標準3D",
+          "rulesVersion": "spatial-v1.11",
+          "simultaneousConflict": "unresolved",
+          "stepMs": 20
+        },
+        "id": "standard-observed-v1",
+        "kind": "ruleset",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",
+        "definition": {
+          "bounds": {
+            "max": { "x": 50000, "y": 50000, "z": 50000 },
+            "min": { "x": -50000, "y": -1000, "z": -50000 }
+          },
+          "name": "柱のある広場",
+          "navigation": {
+            "edges": [
+              {
+                "bidirectional": true,
+                "from": "corner-ws",
+                "headroomMm": 10000,
+                "mode": "walk",
+                "to": "corner-wn",
+                "widthMm": 1500
+              },
+              {
+                "bidirectional": true,
+                "from": "corner-ws",
+                "headroomMm": 10000,
+                "mode": "walk",
+                "to": "corner-es",
+                "widthMm": 1500
+              },
+              {
+                "bidirectional": true,
+                "from": "corner-wn",
+                "headroomMm": 10000,
+                "mode": "walk",
+                "to": "corner-en",
+                "widthMm": 1500
+              },
+              {
+                "bidirectional": true,
+                "from": "corner-es",
+                "headroomMm": 10000,
+                "mode": "walk",
+                "to": "corner-en",
+                "widthMm": 1500
+              }
+            ],
+            "nodes": [
+              {
+                "id": "corner-ws",
+                "mode": "ground",
+                "position": { "x": -2200, "y": 902, "z": -2200 }
+              },
+              {
+                "id": "corner-wn",
+                "mode": "ground",
+                "position": { "x": -2200, "y": 902, "z": 2200 }
+              },
+              {
+                "id": "corner-es",
+                "mode": "ground",
+                "position": { "x": 2200, "y": 902, "z": -2200 }
+              },
+              {
+                "id": "corner-en",
+                "mode": "ground",
+                "position": { "x": 2200, "y": 902, "z": 2200 }
+              }
+            ],
+            "version": "support-graph-v1"
+          },
+          "obstacles": [
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": 0, "y": -500, "z": 0 },
+              "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+              "id": "floor",
+              "kind": "box",
+              "slopeMilliDegrees": 0,
+              "yawMilliDegrees": 0
+            },
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": 0, "y": 1500, "z": 0 },
+              "halfHeightMm": 1500,
+              "id": "pillar",
+              "kind": "pillar",
+              "radiusMm": 1200
+            }
+          ],
+          "terrainKnowledge": "surveyed"
+        },
+        "id": "pillars-surveyed-v1",
+        "kind": "scenario",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944",
+        "definition": {
+          "durationSteps": 1000,
+          "maxStacks": 1,
+          "modifiers": {
+            "attack": 0,
+            "defense": 0,
+            "flight": true,
+            "rooted": false,
+            "speedBps": 10000
+          },
+          "name": "魔法飛行",
+          "originalText": "魔法飛行",
+          "periodic": [],
+          "stackKey": "flight",
+          "stacking": "refresh"
+        },
+        "id": "flight",
+        "kind": "status",
+        "revision": 1,
+        "schemaVersion": 1
+      }
+    ],
+    "ruleset": {
+      "contentHash": "sha256:6e4335f06185c8d49ce676bf484370bdf8841280faeadfbac09e089cb18882fa",
+      "id": "standard-observed-v1",
+      "revision": 1
+    },
+    "scenario": {
+      "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",
+      "id": "pillars-surveyed-v1",
+      "revision": 1
+    },
+    "schemaVersion": 3,
+    "seed": 42,
+    "seedDerivation": "actor-stream-v1",
+    "wasmHash": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4"
+  },
+  "lastVerifiedStep": 240,
+  "profile": {
+    "codec": "gzip",
+    "id": "display-ndjson-gzip-v1",
+    "interpolation": "recorded-piecewise-linear",
+    "maxCheckpointSteps": 250,
+    "maxRawBytes": 256032768,
+    "maxStoredBytes": 16777216,
+    "stepMs": 20,
+    "targetChunkBytes": 131072,
+    "units": "metres-binary64"
+  },
+  "records": 243,
+  "resultId": "fixture-result",
+  "schemaVersion": 1,
+  "simulationHash": "sha256:19367b25829f4aa91c064e4bbf7e7f458cc27ecefe3ed1389280d93e49c3d494",
+  "trajectoryHash": "sha256:a92ebcf06dd6d9458ae5ec0a7bd8d04bc6faf66cf0e096f7af205dd035b9155e"
+}

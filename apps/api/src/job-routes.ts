@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import {
@@ -12,7 +11,7 @@ import {
 } from '@fantasy/domain/spatial';
 import type { BattleRuntime } from './battle-runtime.ts';
 import { StoreError, jsonValue } from './store.ts';
-import { readBoundedFile, replayDirectory, sha256 } from './replay-files.ts';
+import { sha256 } from './replay-files.ts';
 
 const idParams = z.strictObject({ id: IdSchema });
 const clientKey = z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,95}$/);
@@ -81,17 +80,7 @@ export function addJobRoutes(app: FastifyInstance, runtime: BattleRuntime) {
     const { id, file } = z
       .strictObject({ id: IdSchema, file: z.string().max(96) })
       .parse(request.params);
-    const manifest = await runtime.artifacts.verified(id);
-    const ref = [...manifest.chunks, ...manifest.checkpoints].find((r) => r.file === file);
-    if (!ref) throw new StoreError(404, 'Replay file not found');
-    const bytes = await readBoundedFile(
-      join(replayDirectory(runtime.owner.root, id), file),
-      ref.bytes,
-    );
-    if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum) {
-      runtime.jobs.markArtifact(id, 'corrupt');
-      throw new StoreError(503, 'Replay changed during read');
-    }
+    const bytes = await runtime.artifacts.file(id, file);
     return reply.type('application/gzip').header('Cache-Control', 'no-store').send(bytes);
   });
 }

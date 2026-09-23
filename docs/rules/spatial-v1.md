@@ -217,7 +217,7 @@ removability; no hashes, quantities, stacks or deadlines. Self knows held/abilit
 All status grants/removals compare the shared transaction at launch+1: magnitude, duration,
 category/element, target, displaced cohorts, stacks and expiry. Absent resources and unmatched
 outgoing skill qualifiers give no benefit. Harmful-only self grants have zero candidate weight.
-Own periodic risk reuses combat damage/shield arithmetic; cleanse competes by risk reduction,
+Own risk replays combat expiry/pulses/reactions/shields; cleanse competes by risk reduction,
 cost and exposure (standard attack81/cleanse659). Permanent effects use the evaluation horizon.
 Enemy estimates use public summaries only. Weakness alters priors, never duplicates measured damage.
 Impacts carry their visible status context; mismatches cannot train baseline resistance. Public

@@ -1,11 +1,10 @@
 import type { ResourceState } from '@fantasy/domain/spatial';
 import type { ResolvedActor } from './prepare.ts';
-import { effectiveStats, periodicPulseCount, type StatusCohort } from './status.ts';
-import { calculateDamage } from './damage.ts';
-import { damageStatusBps, statusResistance } from './status-modifiers.ts';
-import { reactionDamageBps } from './status-reactions.ts';
+import { statusBoundary, UnresolvedRuleError, type StatusCohort } from './status.ts';
+import { resolveEffects, type EffectApplication } from './effects.ts';
+import { SpatialBudgetError } from './physics.ts';
 
-/** Forecast own periodic damage with the same modifiers and integer damage calculation as combat. */
+/** Bounded own-state forecast through combat's expiry, pulse and reaction transaction. */
 export function knownPeriodicDamage(
   actor: ResolvedActor,
   statuses: readonly StatusCohort[],
@@ -14,63 +13,64 @@ export function knownPeriodicDamage(
   horizonSteps: number,
   fromStep = step + 1,
 ) {
-  const end = fromStep + horizonSteps;
-  const boundaries = [
-    ...new Set([
-      fromStep,
-      end,
-      ...statuses.flatMap((s) => [s.startStep, s.endStep]).filter((t) => fromStep < t && t < end),
-    ]),
-  ].sort((a, b) => a - b);
-  let damage = 0;
-  for (let i = 0; i + 1 < boundaries.length; i++) {
-    const at = boundaries[i]!,
-      until = boundaries[i + 1]!;
-    const stats = effectiveStats(actor, statuses, at);
-    damage += statuses.reduce(
-      (sum, s) =>
-        sum +
-        s.revision.definition.periodic.reduce((damage, p) => {
-          if (p.kind !== 'damage') return damage;
-          const count = periodicPulseCount(
-            s.startStep,
-            p.everySteps,
-            at,
-            Math.min(until, s.endStep),
-          );
-          return (
-            damage +
-            Number(
-              calculateDamage(
-                { kind: 'damage', amount: p.amount, attackScaleBps: 0, element: p.element },
-                { attack: 0 },
-                {
-                  ...stats,
-                  resistance: statusResistance(
-                    actor.character.stats.resistances,
-                    statuses,
-                    at,
-                    p.element,
-                  ),
+  const end = fromStep + horizonSteps,
+    targetId = actor.participant.actorId;
+  let current = [...statuses],
+    balance = { ...resources },
+    damage = 0,
+    cursor = fromStep;
+  try {
+    while (cursor < end) {
+      // Jump to the next damage pulse, including newly transformed statuses. No recursive pulses.
+      const at = Math.min(
+        end,
+        ...current.flatMap((s) =>
+          s.revision.definition.periodic.flatMap((p) => {
+            if (p.kind !== 'damage') return [];
+            const t =
+              s.startStep +
+              Math.max(0, Math.ceil((cursor - s.startStep) / p.everySteps)) * p.everySteps;
+            return t < s.endStep ? [t] : [];
+          }),
+        ),
+      );
+      if (at >= end) break;
+      const boundary = statusBoundary(current, at);
+      const applications: EffectApplication[] = boundary.pulses.flatMap((p, i) =>
+        p.effect.kind !== 'damage'
+          ? []
+          : [
+              {
+                id: 'forecast.' + at + '.' + i,
+                actorId: null,
+                targetId,
+                attack: 0,
+                effect: {
+                  kind: 'damage',
+                  amount: p.effect.amount,
+                  element: p.effect.element,
+                  attackScaleBps: 0,
                 },
-                10000,
-                {
-                  receivedBps: damageStatusBps(
-                    'damageTaken',
-                    statuses,
-                    at,
-                    { element: p.element },
-                    reactionDamageBps(statuses, at, p.element),
-                  ),
-                },
-              ).afterModifiers,
-            ) *
-              count *
-              s.stacks
-          );
-        }, 0),
-      0,
-    );
+              },
+            ],
+      );
+      const next = resolveEffects(
+        [{ actor, resources: balance, statuses: boundary.statuses }],
+        applications,
+        actor.knownStatuses ?? [],
+        at,
+        at,
+      )[0]!;
+      damage += next.hpDamage;
+      current = next.statuses;
+      balance = next.resources;
+      cursor = at + 1;
+    }
+    return damage;
+  } catch (error) {
+    // Forecast uncertainty must not publish an actual future diagnostic at the current boundary.
+    if (error instanceof UnresolvedRuleError || error instanceof SpatialBudgetError)
+      return undefined;
+    throw error;
   }
-  return Math.max(0, damage - resources.shield);
 }

@@ -11,6 +11,7 @@ import { resolveEffects } from './effects.ts';
 import { publicStatuses } from './status-observation.ts';
 import { choosePolicy } from './policy.ts';
 import { initialDecisionRandom } from './decision-random.ts';
+import { knownPeriodicDamage } from './status-risk.ts';
 
 beforeAll(initializePhysics);
 const cohort = (revision: StatusRevision, endStep = 100, stacks = 1) => ({
@@ -179,6 +180,125 @@ describe('status transaction forecasts', () => {
       );
       // Pulse10 is blocked; defence expires before pulses20/30/40/50, each 15-5=10.
       expect(value.risk).toMatchObject({ before: 40, after: 0 });
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it.each([
+    ['remove', 4],
+    ['transform', 8],
+    ['strengthen', 48],
+  ] as const)('advances %s reactions after each forecast pulse', async (kind, expected) => {
+    const f = await fixture([
+      {
+        durationSteps: 25,
+        stackKey: 'destination',
+        periodic: [{ kind: 'damage', amount: 7, element: 'fire', everySteps: 10 }],
+      },
+    ]);
+    try {
+      const revision = await sealRevision(
+        'status',
+        'reactive-dot',
+        1,
+        initialStatus({
+          stacking: 'sum',
+          maxStacks: 3,
+          periodic: [{ kind: 'damage', amount: 9, element: 'fire', everySteps: 10 }],
+          reactions: [
+            {
+              element: 'fire',
+              response:
+                kind === 'remove'
+                  ? { kind }
+                  : kind === 'transform'
+                    ? { kind, status: reference(f.statuses[0]!) }
+                    : { kind, stacks: 1 },
+            },
+          ],
+        }),
+      );
+      const states = [cohort(revision)],
+        view = {
+          ...f.view,
+          step: 5,
+          ownStatuses: states,
+          self: {
+            ...f.view.self,
+            actor: { ...f.view.self.actor, knownStatuses: [...f.statuses, revision] },
+          },
+        };
+      const risk = assessStatusEffects(
+        view,
+        [{ kind: 'dispel', statusIds: [revision.id] }],
+        'self',
+        5,
+      ).risk;
+      // 4 on the first pulse; transformed ticks at20/30 add2 each; strengthening ticks1/2/3/3/3 stacks.
+      expect(risk).toMatchObject({ before: expected, after: 0 });
+      expect(states).toEqual([cohort(revision)]);
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it('leaves undefined future reactions to actual resolution without failing the current forecast', async () => {
+    const f = await fixture(
+      [25, 50].map((attack) => ({
+        stackKey: 'conflicting-destination',
+        modifiers: { ...initialStatus().modifiers, attack },
+      })),
+    );
+    try {
+      const origins = await Promise.all(
+        f.statuses.map((destination, i) =>
+          sealRevision(
+            'status',
+            `origin-${i}`,
+            1,
+            initialStatus({
+              stackKey: `origin-${i}`,
+              periodic:
+                i === 0 ? [{ kind: 'damage', amount: 9, element: 'fire', everySteps: 10 }] : [],
+              reactions: [
+                {
+                  element: 'fire',
+                  response: { kind: 'transform', status: reference(destination) },
+                },
+              ],
+            }),
+          ),
+        ),
+      );
+      const actor = { ...f.view.self.actor, knownStatuses: [...f.statuses, ...origins] };
+      const states = origins.map((s) => cohort(s));
+      expect(knownPeriodicDamage(actor, states, f.view.resources, 5, 50)).toBeUndefined();
+      expect(
+        assessStatusEffects(
+          { ...f.view, ownStatuses: states, self: { ...f.view.self, actor } },
+          [{ kind: 'dispel', statusIds: origins.map((s) => s.id) }],
+          'self',
+          5,
+        ).value,
+      ).toBe(0);
+      expect(() =>
+        resolveEffects(
+          [{ actor, resources: f.view.resources, statuses: states }],
+          [
+            {
+              id: 'actual-pulse',
+              actorId: null,
+              targetId: 'left',
+              attack: 0,
+              effect: { kind: 'damage', amount: 9, element: 'fire', attackScaleBps: 0 },
+            },
+          ],
+          actor.knownStatuses,
+          10,
+          10,
+        ),
+      ).toThrow('Different simultaneous definitions share a stack key');
     } finally {
       f.world.free();
     }

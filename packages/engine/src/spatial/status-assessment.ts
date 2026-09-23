@@ -112,6 +112,7 @@ export function assessStatusEffects(
         );
       const beforeDamage = damage(active),
         afterDamage = damage(after);
+      if (beforeDamage === undefined || afterDamage === undefined) return result(0);
       return result(
         benefit(after) - benefit(active),
         beforeDamage || afterDamage

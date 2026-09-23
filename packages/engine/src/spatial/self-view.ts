@@ -25,6 +25,13 @@ export function selfView(
     knowledge.length === known.length && knowledge.every((s, i) => s === known[i])
       ? actor.motion
       : { ...actor.motion, actor: { ...actor.motion.actor, knownStatuses: knowledge } };
+  const burnDamage = knownPeriodicDamage(
+    self.actor,
+    active,
+    actor.resources,
+    step,
+    rules.horizonSteps,
+  );
   return {
     self,
     resources: actor.resources,
@@ -50,7 +57,7 @@ export function selfView(
     silenced: stats.silenced,
     speedBps: stats.speedBps,
     ...damageSource(stats),
-    burnDamage: knownPeriodicDamage(self.actor, active, actor.resources, step, rules.horizonSteps),
+    ...(burnDamage === undefined ? {} : { burnDamage }),
     waterExtinguishable: active.some((s) =>
       statusReactions(s.revision.definition).some(
         (r) => r.element === 'water' && r.response.kind === 'remove',

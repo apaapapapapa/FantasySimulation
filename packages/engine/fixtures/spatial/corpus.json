@@ -424,6 +424,22 @@
     "general-ai-risk-expiry": {
       "file": "packages/engine/src/spatial/status-assessment.test.ts",
       "name": "status transaction forecasts expires defensive modifiers within the periodic risk horizon before the next pulse"
+    },
+    "general-ai-pulse-remove": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts advances remove reactions after each forecast pulse"
+    },
+    "general-ai-pulse-transform": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts advances transform reactions after each forecast pulse"
+    },
+    "general-ai-pulse-strengthen": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts advances strengthen reactions after each forecast pulse"
+    },
+    "general-ai-forecast-unknown": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts leaves undefined future reactions to actual resolution without failing the current forecast"
     }
   },
   "entries": [
@@ -997,7 +1013,11 @@
         "general-ai-cleanse",
         "general-ai-qualifiers",
         "general-ai-storage",
-        "general-ai-risk-expiry"
+        "general-ai-risk-expiry",
+        "general-ai-pulse-remove",
+        "general-ai-pulse-transform",
+        "general-ai-pulse-strengthen",
+        "general-ai-forecast-unknown"
       ]
     }
   ]
