@@ -4,6 +4,7 @@ import { assessDelivery, conversationDigest, parseSnapshot, VERIFY_JOBS } from '
 import type { DeliverySnapshot, RunEvidence } from './delivery.ts';
 import type { Report } from './report.ts';
 import { assessGate } from '../ci/gate.ts';
+import { loadReceipts } from './test-support/load.ts';
 import { corpusEvidence } from './test-support/corpus.ts';
 import { classify } from '../ci/plan.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
@@ -65,6 +66,8 @@ function evidence(main = false): RunEvidence {
 export function fixture(merged = false): DeliverySnapshot {
   const pull = {
     number: 13,
+    title: 'feat: tested change',
+    body: 'Refs #9',
     updated_at: AT,
     state: merged ? 'closed' : 'open',
     merged,
@@ -108,12 +111,62 @@ function receipt(snapshot: DeliverySnapshot) {
     method: 'self',
     summary: 'Reviewed fixture paths and complete conversation.',
     unresolvedFindings: 0,
+    squashTitle: 'feat: tested change',
+    squashBody: 'Refs #9',
   };
 }
 function change(obj: unknown, key: string, value: unknown) {
   (obj as Record<string, unknown>)[key] = value;
 }
 describe('delivery evidence', () => {
+  it('blocks automatic Issue closure even inside explanatory prose', () => {
+    for (const body of [
+      'The declaration only closes #9 after successful main CI.',
+      'CLOSES: #9',
+      'Fixed owner/repo#9',
+      'Resolves https://github.com/owner/repo/issues/9',
+    ]) {
+      const value = fixture();
+      change(value.pull, 'body', body);
+      change(value.pullAfter, 'body', body);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 1);
+    }
+    for (const body of ['Refs #9', 'Completion follows main CI for Issue #9.', null]) {
+      const value = fixture();
+      change(value.pull, 'body', body);
+      change(value.pullAfter, 'body', body);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+    }
+    const missing = fixture();
+    change(missing.pull, 'body', undefined);
+    change(missing.pullAfter, 'body', undefined);
+    assert.equal(assessDelivery(missing, 'pr', receipt(missing)).exitCode, 2);
+  });
+  it('binds PR wording to review receipts and snapshot stability', () => {
+    for (const field of ['title', 'body']) {
+      const value = fixture();
+      const reviewed = receipt(value);
+      change(value.pullAfter, field, 'Revised wording');
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+      change(value.pull, field, 'Revised wording');
+      assert.equal(assessDelivery(value, 'pr', reviewed).exitCode, 2);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+    }
+  });
+  it('checks PR titles and requires explicit safe final squash wording', () => {
+    for (const field of ['title', 'squashTitle', 'squashBody']) {
+      for (const [wording, exitCode] of [
+        ['fix: prevent regression (Fixes #9)', 1],
+        [undefined, 2],
+      ] as const) {
+        const value = fixture();
+        const reviewed = receipt(value);
+        change(field === 'title' ? value.pull : reviewed, field, wording);
+        if (field === 'title') change(value.pullAfter, field, wording);
+        assert.equal(assessDelivery(value, 'pr', reviewed).exitCode, exitCode);
+      }
+    }
+  });
   it('separates collection, review coverage and PR completion', () => {
     const value = fixture();
     assert.equal(assessDelivery(value, 'pr').exitCode, 2);
@@ -137,15 +190,15 @@ describe('delivery evidence', () => {
       assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
     }
   });
-  it('requires each OS, correct attempt and the same actual test source', () => {
+  it('requires Linux, correct attempt and the same actual test source', () => {
     const value = fixture();
     value.prRun!.sources.pop();
     assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
     const retry = fixture();
-    change(retry.prRun!.jobs[1], 'run_attempt', 2);
+    change(retry.prRun!.jobs[0], 'run_attempt', 2);
     assert.equal(assessDelivery(retry, 'pr', receipt(retry)).exitCode, 2);
     const other = fixture();
-    change(other.prRun!.sources[1]!.report, 'candidateSha', BASE);
+    change(other.prRun!.sources[0]!.report, 'candidateSha', BASE);
     assert.equal(assessDelivery(other, 'pr', receipt(other)).exitCode, 2);
   });
   it('rejects unrelated test-merge parents and stale base/head', () => {
@@ -236,7 +289,7 @@ function plannedFixture(full: boolean) {
     evidence: [{ uri: '.generated/harness/ci/security.json', sourceSha: TESTED }],
   }));
   const reports: Record<string, Report> = { security };
-  for (const [index, os] of ['ubuntu-latest', 'windows-latest'].entries()) {
+  for (const [index, os] of ['ubuntu-latest'].entries()) {
     const report = sourceReport();
     if (!full) {
       report.producer = 'docs-check';
@@ -252,6 +305,7 @@ function plannedFixture(full: boolean) {
     security: 'success',
     'dependency-policy': 'success',
     verify: full ? 'success' : 'skipped',
+    load: full ? 'success' : 'skipped',
     docs: full ? 'skipped' : 'success',
   };
   for (const [index, name] of ['changes', 'ci-gate'].entries())
@@ -266,10 +320,11 @@ function plannedFixture(full: boolean) {
   run.plan = { jobId: 3, value: plan, logDigest: 'e'.repeat(64) };
   run.gate = {
     jobId: 4,
-    report: assessGate(plan, results, reports, corpusEvidence(plan)).report,
+    report: assessGate(plan, results, { ...reports, ...loadReceipts(plan) }, corpusEvidence(plan))
+      .report,
     logDigest: 'e'.repeat(64),
   };
-  const skipped = full ? 'Docs (${{ matrix.os }})' : 'Verify (${{ matrix.os }})';
+  const skipped = full ? 'Docs (ubuntu-latest)' : 'Verify (ubuntu-latest)';
   run.jobs.push({
     id: 5,
     name: skipped,
@@ -282,7 +337,7 @@ function plannedFixture(full: boolean) {
   return value;
 }
 describe('delivery with differential CI', () => {
-  it('accepts full and wording plans only with both OS receipts and the aggregate', () => {
+  it('accepts full and wording plans only with Linux receipts and the aggregate', () => {
     for (const full of [true, false]) {
       const value = plannedFixture(full);
       assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
@@ -301,6 +356,18 @@ describe('delivery with differential CI', () => {
       }
     }
   });
+  it('requires corpus and both load receipts even when CI claims success', () => {
+    for (const id of [
+      'corpus:artifacts',
+      'ci-evidence:load-ubuntu-latest',
+      'ci-evidence:load-pair',
+    ]) {
+      const value = plannedFixture(true);
+      const gate = value.prRun!.gate!.report as Report;
+      gate.checks = gate.checks.filter((check) => check.id !== id);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    }
+  });
   it('rejects missing, stale, failing and foreign-attempt plan/gate receipts', () => {
     for (const mutate of [
       (v: DeliverySnapshot) => {
@@ -316,7 +383,11 @@ describe('delivery with differential CI', () => {
         change(v.prRun!.gate!.report, 'candidateSha', BASE);
       },
       (v: DeliverySnapshot) => {
-        change(v.prRun!.jobs[3], 'run_attempt', 2);
+        change(
+          v.prRun!.jobs.find((job) => (job as { name: string }).name === 'ci-gate'),
+          'run_attempt',
+          2,
+        );
       },
       (v: DeliverySnapshot) => {
         change(v.prRun!.gate!, 'logDigest', 'invalid');

@@ -101,6 +101,7 @@ export function collectPlan(root: string, env: NodeJS.ProcessEnv): Plan {
       baselineSha = sha(parents[0]);
       testMergeSha = sourceSha;
     } else if (event === 'push') baselineSha = sha(payload.before);
+    else if (event === 'workflow_dispatch') baselineSha = sha(record(payload.inputs).baseline);
     if (!baselineSha) throw new Error('No comparison baseline');
     git(root, ['cat-file', '-e', `${baselineSha}^{commit}`]);
     const diff = git(root, [

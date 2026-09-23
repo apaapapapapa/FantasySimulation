@@ -8,6 +8,11 @@ existing source harness for verification, then include a reviewed declaration
 at `.github/issue-completions/<number>.json` in the final PR. Partial PRs use
 `Refs #number`; do not use GitHub's `Closes`/`Fixes`/`Resolves` keywords because
 those can close an Issue at merge time, before main validation succeeds.
+The delivery gate rejects closing-keyword references anywhere in the PR title/body
+or intended squash title/body, including explanatory prose. Its review receipt
+binds the PR wording; editing it requires renewed review. Record `squashTitle` and
+`squashBody` in that receipt, then use those exact values for the authorized merge.
+Missing intended squash wording remains incomplete; do not rely on GitHub defaults.
 
 Review the latest Issue body, discussion, all acceptance criteria, linked PRs,
 sub-Issues and external setup. Update partial progress directly in the Issue;
@@ -41,10 +46,10 @@ attestation of full scope, not something inferred from a green build.
 has only repository/actions/PR read and Issue write permissions. PR workflows
 never invoke this writer; no production secrets, new PAT or package install
 is required. It checks the completed CI's path, repository, event, branch,
-SHA and attempt, all thirteen required successful jobs (including `changes`
-and `ci-gate`), both source-runner reports and actual `vp run verify` command
+SHA and attempt, all required successful jobs (including `changes`
+and `ci-gate`, plus the independent paired-load job), the Linux source-runner report and actual `vp run verify` command
 receipts through the existing report contract. Main always runs full CI;
-only the unexpanded `Docs (${{ matrix.os }})` job may have its planned skip.
+only the `Docs (ubuntu-latest)` job may have its planned skip.
 Unknown skips, duplicated jobs and failed required checks still block writes.
 Artifacts are downloaded only from that exact run and never executed.
 

@@ -69,6 +69,8 @@ describe('bounded generated battle invariants', { timeout: 45000 }, () => {
           assert.equal(targets[0]!.resources.hp, hp);
         },
       ),
+      {},
+      { manifestHash: await contentHash(battle.manifest), battleSeed: battle.manifest.seed },
     );
   });
 
@@ -184,6 +186,7 @@ describe('bounded generated battle invariants', { timeout: 45000 }, () => {
         },
       ),
       { numRuns: 4 },
+      { manifestHash: await contentHash(manifest), battleSeed: manifest.seed },
     );
   });
 
@@ -208,11 +211,21 @@ describe('bounded generated battle invariants', { timeout: 45000 }, () => {
         if (broken) resolved[0]!.resources.hp -= damage; // Deliberate corruption of the real resolver output.
         assert.ok(resolved[0]!.resources.hp >= 0, 'HP must never be negative');
       });
-    await expect(checkProperty('negative-hp-mutant', file, property(true))).rejects.toThrow(
-      'HP must never be negative',
+    const context = {
+      manifestHash: await contentHash(battle.manifest),
+      battleSeed: battle.manifest.seed,
+    };
+    await expect(
+      checkProperty('negative-hp-mutant', file, property(true), {}, context),
+    ).rejects.toThrow('HP must never be negative');
+    await checkProperty(
+      'negative-hp-corrected',
+      file,
+      property(false),
+      {
+        examples: [[minimized.input]],
+      },
+      context,
     );
-    await checkProperty('negative-hp-corrected', file, property(false), {
-      examples: [[minimized.input]],
-    });
   });
 });

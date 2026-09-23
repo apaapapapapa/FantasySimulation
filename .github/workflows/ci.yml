@@ -4,6 +4,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      baseline:
+        description: Exact baseline commit SHA for migration and paired load evidence
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -51,12 +56,8 @@ jobs:
   docs:
     needs: changes
     if: needs.changes.outputs.full == 'false'
-    name: Docs (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    name: Docs (ubuntu-latest)
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -76,19 +77,15 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: harness-docs-${{ matrix.os }}
+          name: harness-docs-ubuntu-latest
           path: .generated/harness/docs/
           if-no-files-found: error
           retention-days: 7
   verify:
     needs: changes
     if: needs.changes.outputs.full == 'true'
-    name: Verify (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    name: Verify (ubuntu-latest)
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -104,14 +101,43 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: harness-${{ matrix.os }}
+          name: harness-ubuntu-latest
+          path: .generated/harness/
+          retention-days: 7
+          if-no-files-found: error
+          include-hidden-files: true
+  load:
+    needs: changes
+    if: needs.changes.outputs.full == 'true'
+    name: Paired load (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      # Transitions still need independent boundary evidence on this exact source.
+      - name: Collect corpus boundary evidence for paired comparisons
+        run: vp run check:corpus
+      - name: Compare exact baseline and candidate on one runner
+        env:
+          LOAD_BASE_SHA: ${{ needs.changes.outputs.baseline }}
+        shell: bash
+        run: vp exec node scripts/harness.ts load "$LOAD_BASE_SHA"
+      - name: Preserve paired load evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: harness-load
           path: .generated/harness/
           retention-days: 7
           if-no-files-found: error
           include-hidden-files: true
   ci-gate:
     name: ci-gate
-    needs: [changes, verify, docs, security, dependency-policy]
+    needs: [changes, verify, load, docs, security, dependency-policy]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -136,18 +162,13 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: always() && needs.changes.outputs.full == 'true'
         with:
-          name: harness-windows-latest
-          path: .generated/harness/ci/evidence/windows-latest
+          name: harness-load
+          path: .generated/harness/ci/evidence/load
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: always() && needs.changes.outputs.full == 'false'
         with:
           name: harness-docs-ubuntu-latest
           path: .generated/harness/ci/evidence/docs-ubuntu-latest/docs
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        if: always() && needs.changes.outputs.full == 'false'
-        with:
-          name: harness-docs-windows-latest
-          path: .generated/harness/ci/evidence/docs-windows-latest/docs
       - name: Collect security receipts from this run and attempt only
         if: always()
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093

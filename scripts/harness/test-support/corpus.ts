@@ -64,5 +64,5 @@ export function corpusEvidence(info: Identity) {
       })),
     },
   });
-  return { definition, sha256, artifacts: { linux: bundle('linux'), win32: bundle('win32') } };
+  return { definition, sha256, artifacts: { linux: bundle('linux') } };
 }

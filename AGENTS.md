@@ -24,7 +24,7 @@ Explanation-only and read-only review requests retain their requested scope.
 4. Add meaningful tests for new battle behavior, persistence changes and regression fixes.
 5. Run `vp run verify` (or `pnpm verify`) before committing. Verify startup when changing build or runtime configuration.
 6. Keep commands and limitations in the README accurate.
-7. Use Conventional Commits for commits and PR titles (`feat`, `fix`, `perf`, `docs`, `chore`, etc.). Preserve the intended title and any `BREAKING CHANGE:` footer in the final squash commit. `main` releases automatically after both CI platforms pass; do not manually bump package versions or create release tags.
+7. Use Conventional Commits for commits and PR titles (`feat`, `fix`, `perf`, `docs`, `chore`, etc.). Preserve the intended title and any `BREAKING CHANGE:` footer in the final squash commit. `main` releases automatically after Linux CI passes; do not manually bump package versions or create release tags.
 8. Use the existing source harness and finish Issue bookkeeping. Follow the Issue completion protocol below; a chat summary or merged PR alone is not completion.
 
 ## Issue completion protocol
@@ -41,7 +41,7 @@ Explanation-only and read-only review requests retain their requested scope.
 - Before implementing, search the owning module and `test-support` for an existing operation or fixture. Reuse it or extend its narrow contract; do not copy a sibling implementation.
 - Production helpers stay in the owning layer. Test factories belong in package-local `test-support`; production must never import them. Return fresh mutable test data, validate/reseal edited revisions, and retain explicit assertions/expected values in each test. Never derive expected results through the implementation under test.
 - Use table-driven tests for the same behavior with different inputs. Do not replace distinct behavior with a boolean-heavy universal helper or abstract unrelated code only to satisfy a metric.
-- Run `vp run check:quality` while editing, including before staging new files. `quality:duplication` is also required by `verify`, the source harness and both OS CI jobs. Fix the reported source/destination together; inspect other callers and add regression coverage.
+- Run `vp run check:quality` while editing, including before staging new files. `quality:duplication` is also required by `verify`, the source harness and Linux CI jobs. Fix the reported source/destination together; inspect other callers and add regression coverage.
 - Do not add a growing clone baseline, blanket test exclusions, suppression comments or higher thresholds to pass the gate. Parsing/coverage/budget failures are incomplete evidence, not success. Threshold changes require an explicit policy review and regression tests.
 - Follow [the duplication workflow](docs/development/duplication.md), then finish the normal source/PR delivery checks.
 
@@ -56,10 +56,18 @@ Explanation-only and read-only review requests retain their requested scope.
 - If randomness is added, require and persist a seed plus its PRNG algorithm/version.
 - `packages/engine/fixtures/spatial/corpus.json` pins fixed battle inputs and maps existing determinism tests (`vp run check:corpus`, part of `verify`). When an input or mapped test changes intentionally, update it in the same reviewed PR with the reason; never regenerate it from candidate output or mark planned coverage as done.
 
+## Battle-version compatibility
+
+- Follow [ADR 0010](docs/adr/0010-battle-version-compatibility.md) and the revised Issue #59. Keep saved definitions/results/replays readable in the same database. Extend schemas with optional fields or enum values, preserving existing meanings and omitted-field behavior.
+- For a decision change, bump rules/engine versions and add the new rules under a new ID. Review implementation digest, corpus, expected fixture changes and rule documentation together. Old rules remain readable but must never execute through either a historical or current engine.
+- Change distributed samples by adding new IDs, not rewriting existing IDs/revisions. Add catalog-history checks and previous-version DB fixtures with definitions, completed results/replays and unfinished jobs. Unsupported jobs must fail clearly; retry/replay recovery must return 409 rather than repeat a schema error.
+- A fresh DB is an exception for an unavoidable incompatible change, justified in that PR's ADR. Only then implement separate DB/artifact paths, retain old files and reject incompatible explicit paths before writing. Do not add a schema-generation declaration, checksum ledger, custom reset/migrator/history table.
+- Finish the usual verify, clean-source, PR review, Linux and main checks. Document incomplete compatibility work honestly and do not close its Issue on documentation evidence alone.
+
 ## Data and toolchain
 
 - Bind values in SQL. Never commit local databases, credentials or `.env`.
 - Run `vp run db:generate` after schema changes and commit the SQL plus snapshots. Use `vp run db:migrate` to apply; never use `push` in CI or rewrite an applied migration. Review SQLite `STRICT` on every table rebuild; see ADR 0005.
 - Keep `vite-plus`, its `vite` alias, the peer-version allowance and the bundled Vitest pin aligned when upgrading.
-- Run both Linux and Windows CI. Do not disable failing checks to make a change pass.
+- Run Linux CI. Windows is outside the CI verification policy (owner request, 2026-09-23). Do not disable failing checks to make a change pass.
 - The initial app is for local development. Add authentication and a deployment design before exposing write APIs publicly.

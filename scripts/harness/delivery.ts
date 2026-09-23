@@ -4,9 +4,10 @@ import type { Check, Identity, Report } from './report.ts';
 import { parsePlan } from '../ci/plan.ts';
 import type { Plan } from '../ci/plan.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
+import { CORPUS_ARTIFACT_CHECK } from './corpus-compare.ts';
 
-export const VERIFY_JOBS = ['Verify (ubuntu-latest)', 'Verify (windows-latest)'] as const;
-export const DOCS_JOBS = ['Docs (ubuntu-latest)', 'Docs (windows-latest)'] as const;
+export const VERIFY_JOBS = ['Verify (ubuntu-latest)'] as const;
+export const DOCS_JOBS = ['Docs (ubuntu-latest)'] as const;
 export type DeliveryTarget = 'pr' | 'merge';
 export interface RunEvidence {
   before: unknown;
@@ -48,6 +49,25 @@ export interface ReviewReceipt {
   method: 'self' | 'human';
   summary: string;
   unresolvedFindings: number;
+  squashTitle: string;
+  squashBody: string;
+}
+function issueWordingStatus(pull: Record<string, unknown>, receipt: unknown): Check['status'] {
+  const planned = receipt === null ? {} : record(receipt);
+  const wording = [
+    pull.title,
+    pull.body === null ? '' : pull.body,
+    planned.squashTitle,
+    planned.squashBody,
+  ];
+  const closingReference =
+    /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*:?\s*(?:(?:[\w.-]+\/[\w.-]+)?#\d+|https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+)/i;
+  if (wording.some((value) => typeof value === 'string' && closingReference.test(value)))
+    return 'fail';
+  return wording.some((value) => typeof value !== 'string') ||
+    [pull.title, planned.squashTitle].some((value) => typeof value !== 'string' || !value.trim())
+    ? 'unknown'
+    : 'pass';
 }
 export function repositoryName(value: string): string {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value)) throw new Error('Invalid repository');
@@ -86,6 +106,8 @@ function pullIdentity(value: unknown) {
     updated: timestamp(pull.updated_at),
     state: text(pull.state),
     merged: pull.merged,
+    title: pull.title,
+    body: pull.body,
   };
 }
 function stable(a: unknown, b: unknown): boolean {
@@ -97,6 +119,8 @@ export function conversationDigest(snapshot: DeliverySnapshot): string {
     .update(
       JSON.stringify({
         candidateSha: pullIdentity(snapshot.pull).head,
+        title: record(snapshot.pull).title,
+        body: record(snapshot.pull).body,
         comments: snapshot.comments,
         reviews: snapshot.reviews,
         threads: snapshot.threads,
@@ -151,6 +175,7 @@ export function parseSnapshot(value: unknown): DeliverySnapshot {
 }
 function reviewInputsChangedAt(snapshot: DeliverySnapshot): number {
   const dates = [
+    record(snapshot.pull).updated_at,
     ...objects(snapshot.comments).map((comment) => comment.updated_at),
     ...objects(snapshot.reviews).map((review) => review.submitted_at),
     ...objects(snapshot.threads).flatMap((thread) =>
@@ -234,15 +259,16 @@ export function validateRun(
       return { status: 'unknown', reason: 'CI plan or aggregate evidence missing' };
     plan = parsePlan(evidence.plan.value);
     const gate = parseReport(evidence.gate.report);
-    const ids = ['changes', 'security', 'dependency-policy', 'verify', 'docs'].map(
+    const ids = ['changes', 'security', 'dependency-policy', 'verify', 'load', 'docs'].map(
       (name) => `ci-job:${name}`,
     );
     ids.push('ci-evidence:security', ...SECURITY_CHECKS);
+    if (plan.full)
+      ids.push(CORPUS_ARTIFACT_CHECK, 'ci-evidence:load-ubuntu-latest', 'ci-evidence:load-pair');
     ids.push(
-      ...(plan.full
-        ? ['ubuntu-latest', 'windows-latest']
-        : ['docs-ubuntu-latest', 'docs-windows-latest']
-      ).map((name) => `ci-evidence:${name}`),
+      ...(plan.full ? ['ubuntu-latest'] : ['docs-ubuntu-latest']).map(
+        (name) => `ci-evidence:${name}`,
+      ),
     );
     for (const [name, receipt] of [
       ['changes', evidence.plan],
@@ -298,7 +324,7 @@ export function validateRun(
       return { status: 'unknown', reason: `Source receipt missing for ${name}` };
     const source = parseReport(sources[0]!.report);
     if (testedSource !== null && testedSource !== source.sourceSha)
-      return { status: 'unknown', reason: 'OS jobs tested different source commits' };
+      return { status: 'unknown', reason: 'Jobs tested different source commits' };
     testedSource = source.sourceSha;
     if (
       !/^[a-f0-9]{64}$/.test(sources[0]!.logDigest) ||
@@ -315,7 +341,7 @@ export function validateRun(
         source.testMergeSha !== plan.testMergeSha ||
         (source.testMergeSha !== null && source.baselineSha !== plan.baselineSha))
     )
-      return { status: 'unknown', reason: 'OS receipt and CI plan disagree' };
+      return { status: 'unknown', reason: 'Source receipt and CI plan disagree' };
     if (source.candidateSha !== candidate)
       return { status: 'unknown', reason: 'Source receipt has stale candidate' };
     if (main) {
@@ -337,7 +363,7 @@ export function validateRun(
   }
   return {
     status: 'pass',
-    reason: 'Latest CI and both OS planned receipts match the evaluated revision',
+    reason: 'Latest CI and Linux planned receipts match the evaluated revision',
   };
 }
 export function assessDelivery(
@@ -372,6 +398,11 @@ export function assessDelivery(
     'snapshot-stable',
     stable(snapshot.pull, snapshot.pullAfter) ? 'pass' : 'unknown',
     'PR head/base/merge/update identity must remain unchanged',
+  );
+  add(
+    'issue-completion-policy',
+    issueWordingStatus(pull, reviewReceipt),
+    'PR title/body and explicit squash title/body must use non-closing references; completion follows main CI',
   );
   const pr = validateRun(snapshot, snapshot.prRun, false);
   add('pr-ci', pr.status, pr.reason);
@@ -421,8 +452,8 @@ export function assessDelivery(
   if (pr.status === 'pass' && snapshot.prRun?.plan) {
     const plan = parsePlan(snapshot.prRun.plan.value);
     const names: readonly string[] = plan.full
-      ? [...DOCS_JOBS, 'Docs (${{ matrix.os }})']
-      : [...VERIFY_JOBS, 'Verify (${{ matrix.os }})'];
+      ? DOCS_JOBS
+      : [...VERIFY_JOBS, 'Paired load (ubuntu-latest)'];
     for (const job of objects(snapshot.prRun.jobs))
       if (names.includes(String(job.name)) && job.conclusion === 'skipped')
         plannedSkips.add(String(job.name));

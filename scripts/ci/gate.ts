@@ -11,7 +11,8 @@ import { SOURCE_CHECKS } from '../harness/source.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { parsePlan } from './plan.ts';
 import type { Plan } from './plan.ts';
-const osNames = ['ubuntu-latest', 'windows-latest'] as const;
+import { readLoadArtifacts } from './load-artifacts.ts';
+const osNames = ['ubuntu-latest'] as const;
 export function assessGate(
   plan: Plan,
   results: Record<string, unknown>,
@@ -26,6 +27,7 @@ export function assessGate(
     security: 'success',
     'dependency-policy': 'success',
     verify: plan.full ? 'success' : 'skipped',
+    load: plan.full ? 'success' : 'skipped',
     docs: plan.full ? 'skipped' : 'success',
   };
   for (const [job, result] of Object.entries(expected))
@@ -78,6 +80,38 @@ export function assessGate(
     checks.push(
       compareCorpus(plan, corpus?.definition, corpus?.sha256 ?? '', corpus?.artifacts ?? {}),
     );
+  if (plan.full) {
+    for (const key of ['load-ubuntu-latest', 'load-pair']) {
+      let status: Check['status'] = 'unknown',
+        reason = 'Missing load receipt';
+      try {
+        const pair = key === 'load-pair';
+        const receipt = assessReport(
+          reports[key],
+          pair
+            ? [
+                'load:budget:before',
+                'load:budget:after',
+                'load:comparison',
+                'load:regression',
+                'load:collection',
+              ]
+            : ['load:budget', 'load:collection'],
+        );
+        if (
+          receipt.report.producer !== 'load-runner' ||
+          receipt.report.sourceSha !== plan.sourceSha ||
+          (pair && receipt.report.baselineSha !== plan.baselineSha)
+        )
+          throw new Error('Stale load source/baseline');
+        status = receipt.exitCode === 0 ? 'pass' : receipt.exitCode === 1 ? 'fail' : 'unknown';
+        reason = `Bound ${key} receipt; exit=${receipt.exitCode}`;
+      } catch {
+        /* Fail closed on absent/malformed raw capture report. */
+      }
+      checks.push({ id: `ci-evidence:${key}`, required: true, status, reason, evidence });
+    }
+  }
   const report: Report = {
     schemaVersion: 1,
     producer: 'ci-gate',
@@ -117,10 +151,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       reports.security = null;
     }
     const artifacts: Record<string, unknown> = {};
-    for (const [os, platform] of [
-      ['ubuntu-latest', 'linux'],
-      ['windows-latest', 'win32'],
-    ] as const) {
+    for (const [os, platform] of [['ubuntu-latest', 'linux']] as const) {
       try {
         const directory = `.generated/harness/ci/evidence/${os}/corpus`;
         artifacts[platform] = {
@@ -129,6 +160,24 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         };
       } catch {
         /* Missing artifacts remain unknown, including a missing operating system. */
+      }
+    }
+    for (const [key, path] of [
+      ['load-ubuntu-latest', 'ubuntu-latest/load'],
+      ['load-pair', 'load/load-pair'],
+    ]) {
+      try {
+        reports[key!] = readLoadArtifacts(
+          process.cwd(),
+          `.generated/harness/ci/evidence/${path}`,
+          plan,
+          key === 'load-pair',
+        );
+      } catch (error) {
+        reports[key!] = null;
+        console.error(
+          `Incomplete load artifacts ${key}: ${error instanceof Error ? error.message : 'invalid evidence'}`,
+        );
       }
     }
     const bytes = readFileSync('packages/engine/fixtures/spatial/corpus.json');

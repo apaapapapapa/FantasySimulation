@@ -1,9 +1,15 @@
+// Synchronous numeric-only calls cannot re-enter this scratch buffer. Each Worker
+// has its own module instance; no memory is shared between isolates.
+const floatView = new DataView(new ArrayBuffer(8));
+
 /** Exact binary64 big-endian encoding; canonicalize -0, reject non-finite state. */
 export function floatBits(value: number): string {
   if (!Number.isFinite(value)) throw new Error('Non-finite physical state');
-  const bytes = new Uint8Array(8);
-  new DataView(bytes.buffer).setFloat64(0, Object.is(value, -0) ? 0 : value, false);
-  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+  floatView.setFloat64(0, Object.is(value, -0) ? 0 : value, false);
+  return (
+    floatView.getUint32(0, false).toString(16).padStart(8, '0') +
+    floatView.getUint32(4, false).toString(16).padStart(8, '0')
+  );
 }
 
 export function encodeNumericState(input: unknown): unknown {

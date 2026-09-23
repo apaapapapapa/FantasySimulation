@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { classify, collectPlan, parsePlan, wordingOnly } from './plan.ts';
 import { assessGate } from './gate.ts';
+import { loadReceipts } from '../harness/test-support/load.ts';
 import { corpusEvidence } from '../harness/test-support/corpus.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import type { Identity, Report } from '../harness/report.ts';
@@ -76,16 +77,17 @@ describe('fail-closed CI gate', () => {
     security: 'success',
     'dependency-policy': 'success',
     verify: 'success',
+    load: 'success',
     docs: 'skipped',
   };
   const corpus = corpusEvidence(info);
   const security = { ...evidence(SECURITY_CHECKS), producer: 'security-evidence' };
   const reports = {
+    ...loadReceipts(info),
     'ubuntu-latest': evidence(['source-clean', 'source-verify']),
-    'windows-latest': evidence(['source-clean', 'source-verify']),
     security,
   };
-  it('requires both operating systems and exact source identities', () => {
+  it('requires Linux evidence and exact source identities', () => {
     expect(assessGate(plan, results, reports, corpus).exitCode).toBe(0);
     expect(assessGate(plan, results, { 'ubuntu-latest': reports['ubuntu-latest'] }).exitCode).toBe(
       2,
@@ -93,15 +95,28 @@ describe('fail-closed CI gate', () => {
     expect(
       assessGate(plan, results, {
         ...reports,
-        'windows-latest': { ...reports['windows-latest'], candidateSha: 'd'.repeat(40) },
+        'ubuntu-latest': { ...reports['ubuntu-latest'], candidateSha: 'd'.repeat(40) },
       }).exitCode,
     ).toBe(2);
   });
   it('rejects job failure, cancellation, unplanned skip and absence', () => {
-    for (const value of ['failure', 'cancelled', 'skipped', undefined])
-      expect(assessGate(plan, { ...results, verify: value }, reports).exitCode).toBe(1);
+    for (const job of ['verify', 'load'])
+      for (const value of ['failure', 'cancelled', 'skipped', undefined])
+        expect(assessGate(plan, { ...results, [job]: value }, reports).exitCode).toBe(1);
     expect(assessGate(plan, { ...results, changes: 'failure' }, reports).exitCode).toBe(1);
     expect(assessGate(plan, { ...results, security: 'skipped' }, reports).exitCode).toBe(1);
+  });
+  it('requires independent paired evidence from the exact source and baseline', () => {
+    const paired = loadReceipts(info)['load-pair']!;
+    for (const invalid of [
+      null,
+      { ...paired, sourceSha: 'd'.repeat(40) },
+      { ...paired, baselineSha: 'd'.repeat(40) },
+      { ...paired, checks: paired.checks.filter((check) => check.id !== 'load:regression') },
+    ])
+      expect(assessGate(plan, results, { ...reports, 'load-pair': invalid }, corpus).exitCode).toBe(
+        2,
+      );
   });
   it('requires each H4 check even when every security job reports success', () => {
     expect(assessGate(plan, results, { ...reports, security: null }).exitCode).toBe(2);
@@ -133,11 +148,11 @@ describe('fail-closed CI gate', () => {
         security: 'success',
         'dependency-policy': 'success',
         verify: 'skipped',
+        load: 'skipped',
         docs: 'success',
       };
     const docReports = {
       'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']),
-      'docs-windows-latest': evidence(['docs:diff', 'docs:links']),
       security,
     };
     expect(assessGate(docs, observed, docReports).exitCode).toBe(0);
@@ -148,6 +163,7 @@ describe('fail-closed CI gate', () => {
         .exitCode,
     ).toBe(2);
     expect(assessGate(docs, { ...observed, docs: 'skipped' }, {}).exitCode).toBe(1);
+    expect(assessGate(docs, { ...observed, load: 'failure' }, docReports).exitCode).toBe(1);
   });
 });
 it(
@@ -202,6 +218,16 @@ it(
         true,
       );
       expect(() => collectPlan(root, { ...env, GITHUB_SHA: 'e'.repeat(40) })).toThrow(Error);
+      const dispatch = { ...env, GITHUB_EVENT_NAME: 'workflow_dispatch' };
+      writeFileSync(eventPath, JSON.stringify({ inputs: { baseline: base } }));
+      const manual = collectPlan(root, dispatch);
+      expect(manual.baselineSha).toBe(base);
+      expect(manual.paths).toEqual(['apps/source.ts', 'docs/renamed.md']);
+      expect(manual.full).toBe(true);
+      for (const baseline of [undefined, 'main', '']) {
+        writeFileSync(eventPath, JSON.stringify({ inputs: { baseline } }));
+        expect(collectPlan(root, dispatch).baselineSha).toBeNull();
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

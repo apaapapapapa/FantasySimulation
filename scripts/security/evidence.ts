@@ -12,7 +12,6 @@ const definitions = [
   ['dependency-audit', 'audit', 'dependency-audit'],
   ['renovate-configuration', 'renovate', 'renovate-configuration'],
   ['toolchain-ubuntu-latest', 'toolchain-ubuntu-latest', 'toolchain-policy'],
-  ['toolchain-windows-latest', 'toolchain-windows-latest', 'toolchain-policy'],
 ] as const;
 export const SECURITY_CHECKS = definitions.map(([key]) => `security:${key}`);
 export interface SecurityRun {

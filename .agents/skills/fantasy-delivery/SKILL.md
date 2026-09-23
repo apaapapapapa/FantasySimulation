@@ -45,7 +45,7 @@ time, method and disposition. A self-review receipt is not independent approval.
 Never fabricate coverage or substitute a receipt for required GitHub approval.
 Recollect when the head, base, conversation or CI attempt changes.
 
-PR completion requires the latest CI plan/gate and both OS source/docs reports at
+PR completion requires the latest CI plan/gate and Linux source/docs reports at
 the tested merge SHA. Only observed, planned skips are allowed. Collection success
 alone is not delivery success. If the SDK cannot authenticate, use the GitHub
 connector with the same contract; incomplete pagination, jobs or logs stay unknown.
@@ -57,7 +57,7 @@ evidence before asking for the missing authorization. The read-only harness neve
 grants mutation permission or performs the merge. Preserve Conventional Commit titles.
 
 After merge, collect again and assess `delivery <snapshot.json> merge <review-receipt.json>`.
-Confirm the actual main merge SHA, both OS verification, required gates and release
+Confirm the actual main merge SHA, Linux verification, required gates and release
 job at its latest attempt. A tag, PR green check or successful merge API response is
 insufficient. Distinguish release-job success from whether semantic-release needed
 to publish a version. Deployment and production effectiveness are separate outcomes.

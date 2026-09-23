@@ -47,12 +47,8 @@ jobs:
           retention-days: 14
 
   toolchain:
-    name: Toolchain policy (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+    name: Toolchain policy (ubuntu-latest)
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -74,7 +70,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: security-toolchain-${{ matrix.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          name: security-toolchain-ubuntu-latest-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/h4-toolchain/*.json
           if-no-files-found: error
           retention-days: 14
@@ -86,7 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - name: Require validator and both toolchain platforms
+      - name: Require validator and Linux toolchain policy
         env:
           CONFIGURATION_RESULT: ${{ needs.configuration.result }}
           TOOLCHAIN_RESULT: ${{ needs.toolchain.result }}

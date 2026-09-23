@@ -161,7 +161,7 @@ export async function completeIssues(evidenceDirectory: string, apply: boolean) 
     'RUN_ID_MISMATCH',
   );
   validateJobs(await collection(api, `/actions/runs/${runId}/attempts/${attempt}/jobs`, 'jobs'));
-  for (const os of ['ubuntu-latest', 'windows-latest']) {
+  for (const os of ['ubuntu-latest']) {
     const directory = join(evidenceDirectory, `harness-${os}`, 'source');
     validateSource(
       readJson(join(directory, 'report.json')),

@@ -59,6 +59,12 @@ DBスキーマ・変更履歴はDrizzleへ統一しました。既存の最新`s
 新しい開発用DBが必要なら`.env`の`DATABASE_PATH`を未使用のファイル名に変更してください。自前resetや世代管理はありません。
 [Drizzleの移行・制約](docs/adr/0005-drizzle-kit.md)を参照してください。
 
+戦闘ルールの版更新では、既存DBの定義・結果・replayを読めるまま残し、新しいrulesや変更するサンプルを別IDで追加する方針です。
+既定の保存先は引き続き`data/fantasy.sqlite`と`data/replays`です。旧engineの再実行や保存データの自動変換は行いません。
+新DBへの切替は、互換性を維持できない変更が避けられない場合だけADRで理由を定めます。
+[版更新の規則と未完了項目](docs/adr/0010-battle-version-compatibility.md)を参照してください。
+旧版DBの回帰試験、未完了jobの明示拒否、サンプル不変性の検査はIssue #59の後続実装です。
+
 ## 設定
 
 既定値のままで起動できます。変更する場合だけ、ルートの`.env.example`を`.env`にコピーしてください。
@@ -98,7 +104,9 @@ DATABASE_PATH=./data/fantasy.sqlite
 | `vp run engine:check`  | エンジン実装digestと現在のソースの整合性を検査                     |
 
 `pnpm check`、`pnpm test`、`pnpm build`、`pnpm verify`も利用できます。
-GitHub ActionsはLinux・Windowsで固定バージョンの依存関係をインストールし、同じ検証を実行します。
+GitHub ActionsはLinuxで固定バージョンの依存関係をインストールし、検証を実行します。
+通常検証と性能比較は別のLinux runnerで並列実行し、両方の合格を必須とします。
+Windowsでの自動検証は行いません。
 
 ビルド成果物は`apps/web/dist`と`apps/api/dist`です。確認するには、ビルド後に別々のターミナルで実行します。
 
@@ -116,7 +124,7 @@ APIは起動時にルートの`db/drizzle`と`data/spatial`を参照するため
 
 ## 自動リリース
 
-`main`へのpush後、GitHub ActionsのLinux・Windows両方の検証が成功すると、
+`main`へのpush後、GitHub ActionsのLinuxの通常検証・性能比較と各ゲートが成功すると、
 semantic-releaseが前回のリリース以降のコミットを解析します。
 リリース対象の変更があれば、`vX.Y.Z`タグと変更履歴付きの
 [GitHub Release](https://github.com/apaapapapapa/FantasySimulation/releases)を作成します。
@@ -146,7 +154,7 @@ PRタイトルだけを整えても、最終コミットに残らなければ解
 GitHub Actions標準の`GITHUB_TOKEN`を使います。Issue/PRへの自動コメントとラベル変更は無効にしています。
 ブランチ・タグの保護ルールを追加する場合は、Actionsによる`v*`タグ作成との整合性を確認してください。
 
-リリースの再試行は、Actions → CI → Run workflowで`main`を選びます。両OSの検証から実行します。
+リリースの再試行は、Actions → CI → Run workflowで`main`を選びます。Linuxの検証から実行します。
 ローカルで解析結果を確認する場合は、書き込み権限を確認できる`GITHUB_TOKEN`を環境変数に設定し、
 最新の`main`とタグを取得した上で`pnpm release:dry-run`を実行してください。
 dry-runでも認証・push権限は検証しますが、タグとReleaseは作成しません。
@@ -233,8 +241,8 @@ PRの成功、mainの成功、release結果、Issue完了はそれぞれ確認�
 対戦の決定性・回帰は `vp run check:corpus` で検査します。
 `packages/engine/fixtures/spatial/corpus.json` の固定入力を2回実行してdigestの一致を確認し、
 入力identityの変化と、既存の決定性テストの実行結果をカテゴリ別に記録します。
-両OSの出力はCIで突合し、公平性、Worker数・投入順、SQLiteの状態遷移も検証します。
-負荷・baseline比較はIssue #9の小PR 3で追加するため、現時点では `unknown` として報告します。
+Linux上の反復出力の一致、公平性、Worker投入順、計算量・容量の上限と同一runnerでの負荷比較も検証します。
+実測の欠落・比較不能・中断は `unknown` とし、未完了の証跡を合格に数えません。
 固定入力や対応テストを意図して変更する場合は、同じPRでコーパスを更新し理由を記載します。
 
 ソース・テストの重複は `vp run check:quality` の `quality:duplication` で検査します。
@@ -300,6 +308,15 @@ vp run batch check .generated/batch-plan.json path/to/index.json .generated/batc
 配布ビルドでは`node apps/api/dist/batch.mjs`を使用できます。
 出力の`.work/`はローカルDB/作業記録です。必要ディスク容量は最終出力上限＋作業replay上限＋256 MiB。
 [計画・保存・再開の契約](docs/adr/0008-headless-batch.md)を参照してください。
+
+### 対戦の回帰・負荷ハーネス（Issue #9）
+
+`verify`は固定コーパスの再現性、実Workerの並列数・投入順、左右交換の公平性、
+SQLiteの状態遷移、計算回数とログ容量の上限をコミット前にも検証できます。
+作業中の結果は未コミットの診断として保存し、最終証跡はcleanなcommitに固定します。
+CIはLinuxの固定入力・反復出力の証跡を検証し、固定baseline SHAとcandidateを
+通常検証とは別のLinux runnerで交互に測定します。時間・メモリは観測値として別reportへ保存します。
+再現手順、制約、予算変更reviewは[ハーネス手順](.github/harness/README.md)を参照してください。
 
 ## 観測・経験に基づくAI（P2/P3）
 

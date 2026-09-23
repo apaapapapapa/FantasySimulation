@@ -25,13 +25,13 @@ const workers = Number(workersText),
   count = Number(countText);
 if (
   !relative ||
-  ![1, 4].includes(workers) ||
+  ![1, 2, 4].includes(workers) ||
   !Number.isInteger(count) ||
   count < 20 ||
   count > 1000
 )
   throw new Error(
-    'Usage: node --import tsx ../../scripts/integrated-benchmark.ts .generated/harness/<fresh-run> <1|4 workers> <20..1000 matches>',
+    'Usage: node --import tsx ../../scripts/integrated-benchmark.ts .generated/harness/<fresh-run> <1|2|4 workers> <20..1000 matches>',
   );
 const source = executionSource(),
   identity = sourceIdentity(root);
@@ -197,6 +197,8 @@ const warm = attempts.flatMap((a) =>
     ? [a.metrics]
     : [],
 );
+// Cold initialization is excluded only from latency, never from memory limits.
+const measured = attempts.flatMap((a) => (a.metrics ? [a.metrics] : []));
 const computeWarm = compute.filter((c) => !c.metrics.cold && ['win', 'draw'].includes(c.outcome));
 const batchSamples = memory.filter((s) => s.elapsedMs >= batchStart && s.elapsedMs <= batchEnd);
 const secondHalf = batchSamples.filter((s) => s.elapsedMs >= (batchStart + batchEnd) / 2);
@@ -225,10 +227,10 @@ const summary = {
   processRssPeak: max(batchSamples.map((s) => s.rss)),
   latterHalfRssGrowth:
     earlierRss === null || laterRss === null ? null : Math.max(0, laterRss - earlierRss),
-  workerHeapPeak: max(warm.map((m) => m.heapUsed)),
-  workerExternalPeak: max(warm.map((m) => m.external)),
-  workerArrayBuffersPeak: max(warm.map((m) => m.arrayBuffers)),
-  workerWasmPeak: max(warm.map((m) => m.wasmLinearBytes)),
+  workerHeapPeak: max(measured.map((m) => m.heapUsed)),
+  workerExternalPeak: max(measured.map((m) => m.external)),
+  workerArrayBuffersPeak: max(measured.map((m) => m.arrayBuffers)),
+  workerWasmPeak: max(measured.map((m) => m.wasmLinearBytes)),
   artifactBytesPeak: max(bytes),
   artifactBytesTotal: bytes.reduce((n, b) => n + b, 0),
   completedStressMatches:

@@ -31,7 +31,7 @@ await test('Issue completion still rejects unsuccessful or skipped main releases
   const jobs = requiredJobs
     .filter((name) => name !== 'Release')
     .map((name) => ({ name, status: 'completed', conclusion: 'success' }));
-  const docs = { name: 'Docs (${{ matrix.os }})', status: 'completed', conclusion: 'skipped' };
+  const docs = { name: 'Docs (ubuntu-latest)', status: 'completed', conclusion: 'skipped' };
   for (const conclusion of ['skipped', 'failure', 'cancelled', null]) {
     assert.throws(() =>
       validateJobs([...jobs, docs, { name: 'Release', status: 'completed', conclusion }]),
