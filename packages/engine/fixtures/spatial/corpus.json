@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.11",
-    "rulesVersion": "spatial-v1.11",
+    "engineVersion": "spatial-v1.12",
+    "rulesVersion": "spatial-v1.12",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -284,6 +284,86 @@
     "load-transitions": {
       "file": "scripts/harness/load-gate.test.ts",
       "name": "load evidence gate requires review and independent boundaries for corpus profile or runtime transitions"
+    },
+    "status-reaction": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations applies the old-snapshot weakness on the extinguishing hit, then observes its removal after delay"
+    },
+    "status-transform": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations transforms once into a referenced status and expires the destination on its own clock"
+    },
+    "status-strengthen": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations strengthens once per element despite multiple components, retains the deadline, and prevents actions while incapacitated"
+    },
+    "status-permanent": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations keeps a permanent state past its declared duration and through normal dispel and water contact"
+    },
+    "status-launch-snapshot": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations retains launch-time outgoing multipliers after the source status expires in flight"
+    },
+    "status-hidden": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations does not leak hidden states into observation, candidate weights, or cognition"
+    },
+    "status-context-expiry": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations retires measured damage from the previous public status context only after observing the change"
+    },
+    "status-storage": {
+      "file": "apps/api/src/status-dependencies.test.ts",
+      "name": "persisted status transformations validates transformation references and atomically stores their immutable revision closure"
+    },
+    "status-resource-0": {
+      "file": "packages/engine/src/spatial/status-resources.test.ts",
+      "name": "G-03 resource states through the G-04 resource API sums signed MP and stamina pulses once before clamping and expires before the next pulse"
+    },
+    "status-resource-1": {
+      "file": "packages/engine/src/spatial/status-resources.test.ts",
+      "name": "G-03 resource states through the G-04 resource API retains permanent drains and clamps to zero without creating stamina on legacy actors"
+    },
+    "status-resource-2": {
+      "file": "packages/engine/src/spatial/status-resources.test.ts",
+      "name": "G-03 resource states through the G-04 resource API keeps fractional recovery across expiry and makes a permanent recovery modifier last the battle"
+    },
+    "status-resource-3": {
+      "file": "packages/engine/src/spatial/status-resources.test.ts",
+      "name": "G-03 resource states through the G-04 resource API uses the interval-start modifier when a water hit removes it at the interval end"
+    },
+    "status-resource-4": {
+      "file": "packages/engine/src/spatial/status-resources.test.ts",
+      "name": "G-03 resource states through the G-04 resource API values resource states from own definitions, excludes missing resources and records only coarse public benefit"
+    },
+    "status-revealed-context": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations combines revealed baseline resistance with public status direction and retains that baseline after expiry"
+    },
+    "status-received-knowledge": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations learns only the transform closure of a received own status and rejects a worsening self reaction"
+    },
+    "status-replacement-value": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations subtracts displaced cohorts from self replacement utility and installs an incoming permanent revision"
+    },
+    "status-strengthening-value": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations values strengthening once against total stacks with the oldest deadline regardless of cohort order"
+    },
+    "status-pulse-forecast": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts preserves the periodic origin for removal, replacement and added stacks"
+    },
+    "status-launch-forecast": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts uses speed-scaled launch time and ignores states that expire during casting"
+    },
+    "status-transaction-forecast": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts groups duplicate grants, capped stacks and overlapping cleanses into one transaction"
     }
   },
   "entries": [
@@ -296,7 +376,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:66423efaeb61a07031b78625934d705ca5e91986d40cf1a7bba8c390361ebea5",
+        "inputHash": "sha256:8613aee3226b77271ee16ba83203de8298af4d27b942999c891f209c92579d7f",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -304,9 +384,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-observed-v1",
+          "id": "standard-status-v1",
           "revision": 1,
-          "contentHash": "sha256:68fe9a15b15b38e45567fd69040afcd9faec923cf47f4aaa40ed467468788e45"
+          "contentHash": "sha256:e29c8030c49e960ac47eace52dcdfa9f1306d75ad38dca3abe9f3eb5e2389e43"
         },
         "participants": [
           {
@@ -341,7 +421,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:0bd2ce0b48b8b1a51c79e605d6cf3f730b62a2b64d7350ebec5354f8d21eb4b4",
+        "inputHash": "sha256:1b64339b675177e16bc5d2f14be052317e69d0af8ca64784354ea0b523c47fe4",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -349,9 +429,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-observed-v1",
+          "id": "standard-status-v1",
           "revision": 1,
-          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
+          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
         },
         "participants": [
           {
@@ -386,7 +466,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:8e912867e7637ed1dd9af48dc0aba66e35f51de2d6d6406c9dfa8474d153d9c8",
+        "inputHash": "sha256:f66d50a83c56ea621412826bc03c7a44b92dbac1e45bf84498464d9d163228ea",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -394,9 +474,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-observed-v1",
+          "id": "standard-status-v1",
           "revision": 1,
-          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
+          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
         },
         "participants": [
           {
@@ -431,7 +511,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:e0a7f435fb835836fccdb21805b500dc4be86f6a3f810037f6b236d8211b669c",
+        "inputHash": "sha256:e29b5223181b2a594d20722c96e7a5e7d2fbee3f8d6490f32d360670793156c1",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -439,9 +519,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-observed-v1",
+          "id": "standard-status-v1",
           "revision": 1,
-          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
+          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
         },
         "participants": [
           {
@@ -476,7 +556,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:3e778c2cc750780e7e96126443a65082a1a7fc8d3e13c6690e386e3c320c72fe",
+        "inputHash": "sha256:01cebc835540f91fba4643b3f6d37faa35db84789c5641e1a656687d275c64c1",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -484,9 +564,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-observed-v1",
+          "id": "standard-status-v1",
           "revision": 1,
-          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
+          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
         },
         "participants": [
           {
@@ -521,7 +601,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:5572f77b69a8077a323a2f3a315751e6c0f804323b5412688d366e00ce87bb62",
+        "inputHash": "sha256:97a4d0f9cd9ac7337634c82f8d4648c5922737a0c7c26903ab7d94fb670e76c9",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -529,9 +609,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-observed-v1",
+          "id": "standard-status-v1",
           "revision": 1,
-          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
+          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
         },
         "participants": [
           {
@@ -566,7 +646,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:65e3c12f6dc5a1865694b00225f120e4fde1d8c9ec3b6b301f9d0a746d18734c",
+        "inputHash": "sha256:4f119e03d19142d6ce2f71f2b0927c9e61b21088837d35b2c18f283e4b52da34",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -574,9 +654,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-observed-v1",
+          "id": "standard-status-v1",
           "revision": 1,
-          "contentHash": "sha256:6a483b157d9e0772d0cb4878b6f6792760302dada3ddc1911bebd9360a27f6f6"
+          "contentHash": "sha256:3ec19be8fb068733175e48744d2ea5ccd90b848871d4b29ca1733158eeb9ed89"
         },
         "participants": [
           {
@@ -800,6 +880,34 @@
       "state": "implemented",
       "owner": null,
       "tests": ["property-resources", "property-status", "property-mutant", "job-properties"]
+    },
+    {
+      "id": "generalized-status",
+      "title": "状態反応・補正・常時効果・期限・非公開状態と観測遅延・保存参照",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "status-reaction",
+        "status-transform",
+        "status-strengthen",
+        "status-permanent",
+        "status-launch-snapshot",
+        "status-hidden",
+        "status-context-expiry",
+        "status-storage",
+        "status-resource-0",
+        "status-resource-1",
+        "status-resource-2",
+        "status-resource-3",
+        "status-resource-4",
+        "status-revealed-context",
+        "status-received-knowledge",
+        "status-replacement-value",
+        "status-strengthening-value",
+        "status-pulse-forecast",
+        "status-launch-forecast",
+        "status-transaction-forecast"
+      ]
     }
   ]
 }

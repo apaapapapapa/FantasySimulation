@@ -79,8 +79,9 @@ export function writableOutputs(workspace: string) {
     'apps/api/dist',
     'packages/domain/dist',
     'packages/engine/dist',
-    'node_modules/.vite',
-    'node_modules/.vite-temp',
+    ...['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine'].flatMap((prefix) =>
+      ['.vite', '.vite-temp'].map((cache) => join(prefix, 'node_modules', cache)),
+    ),
   ];
   ensure(!git(workspace, ['ls-files', '--', ...paths]), 'Writable output contains tracked source');
   const outputs = paths.map((path) => regularPath(join(workspace, path)));
