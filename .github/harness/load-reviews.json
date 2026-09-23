@@ -21,6 +21,23 @@
         "scripts/ci/load-artifacts.test.ts",
         "docs/adr/0009-observed-ai.md"
       ]
+    },
+    {
+      "baselineSha": "b354a2ac83ba24ef6e3c9c52076e9b7b43dafb0d",
+      "beforeDigest": "ebc58ce781d09662fd834f13344d3f710e1452b7061028771b5598fe79abfc24",
+      "afterDigest": "9573e7c3c6c63ff7beab07b80fd26f385d3c963739544e075d53e96a01a6aaa6",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "G-04 introduces spatial-v1.12 / standard-locomotion-v1 because published v1.11 stamina-only exhaustion movement changes. The seven existing recipes keep the same characters, scenarios and seeds; only engine/rules identity changes, and six G-04 regressions join the corpus. Reviewed five actual alternating before/after trials for every case (35 measurements per revision) against exact main b354a2a: both revisions execute their own pinned inputs successfully, every deterministic cost vector is stable and equal, and all original count/byte ceilings pass unchanged. Candidate b858b77 has successful independent corpus boundary evidence; Golden expectations were not regenerated. Different input identities make this an independent transition, not a same-input timing or performance claim. Published v1.11 replay bytes remain readable and old execution is rejected.",
+      "evidence": [
+        ".generated/harness/load-pair/0-before.json",
+        ".generated/harness/load-pair/0-after.json",
+        ".generated/harness/load-pair/results.json",
+        ".generated/harness/load-pair/commands.json",
+        ".generated/harness/load-pair/boundary.json",
+        "apps/api/fixtures/compatibility/stamina-v1.11.json"
+      ]
     }
   ]
 }
