@@ -62,3 +62,5 @@ Nodeは[.node-version](.node-version)、pnpmと依存版は[package.json](packag
 Linux CIは静的検査・ビルド・分割テスト・性能比較を並列実行し、同じ実行のテスト結果を共有します。
 性能比較の各対戦は同じrunnerで5回測定します。実行条件は[CI](docs/development/ci.md)を参照してください。
 mainのゲート成功後にsemantic-releaseが必要なタグとGitHub Releaseを作成します。
+
+<!-- Temporary CI scope verification; this change will not be merged. -->
