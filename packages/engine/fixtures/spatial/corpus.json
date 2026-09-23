@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.14",
-    "rulesVersion": "spatial-v1.14",
+    "engineVersion": "spatial-v1.15",
+    "rulesVersion": "spatial-v1.15",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -440,6 +440,34 @@
     "general-ai-forecast-unknown": {
       "file": "packages/engine/src/spatial/status-assessment.test.ts",
       "name": "status transaction forecasts leaves undefined future reactions to actual resolution without failing the current forecast"
+    },
+    "slot-choice": {
+      "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
+      "name": "simultaneous action and evasion selects both slots from one observation with distinct action, movement and direction streams"
+    },
+    "slot-payment": {
+      "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
+      "name": "simultaneous action and evasion admits the whole shared cost or nothing, protecting flight upkeep"
+    },
+    "slot-execution-stamina": {
+      "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
+      "name": "simultaneous action and evasion executes and restores shooting while evading, with stamina=true"
+    },
+    "slot-execution-legacy": {
+      "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
+      "name": "simultaneous action and evasion executes and restores shooting while evading, with stamina=false"
+    },
+    "slot-storage": {
+      "file": "apps/api/src/simultaneous-persistence.test.ts",
+      "name": "simultaneous slots through persisted Workers preserves joint decisions, costs and replacement displays across forward and backward seeks"
+    },
+    "slot-rejected-gait-true": {
+      "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
+      "name": "simultaneous action and evasion restores prior walking and its actual cost after a rejected jump pair, explicit gait=true"
+    },
+    "slot-rejected-gait-false": {
+      "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
+      "name": "simultaneous action and evasion restores prior walking and its actual cost after a rejected jump pair, explicit gait=false"
     }
   },
   "entries": [
@@ -452,7 +480,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:bed33401bf4a7368b5842a9cac3c9f1614db9876d8220c9e8b2b1b1946a60eba",
+        "inputHash": "sha256:5d12682a554b8159f7b76689d4fb26523af97ea2c31ad869b68ee93f70dd6d8b",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -460,9 +488,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-general-ai-v1",
+          "id": "standard-simultaneous-v1",
           "revision": 1,
-          "contentHash": "sha256:f7c73cd16ebf01380417b31df9c9bb70a33454969ae9bb32f6a2a7aa90f20963"
+          "contentHash": "sha256:c8444157deeb5e88b46b4b54a4f2eb23a2dae7aaf652820ca5a64e0d3f3157bd"
         },
         "participants": [
           {
@@ -497,7 +525,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:191733f86d121e06ef245ba15f18d974ac348807e0c030b0b5bcdac4fdf727c5",
+        "inputHash": "sha256:d1b9180c94017ca6bc9ef3685bf60d08c957565b91a0e6de8deec30f2dafecb4",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -505,9 +533,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-general-ai-v1",
+          "id": "standard-simultaneous-v1",
           "revision": 1,
-          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
+          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
         },
         "participants": [
           {
@@ -542,7 +570,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:631ad2cbb9fc23543202b05ab42ab35a4520c6ca93068e13e212ce1d10296ead",
+        "inputHash": "sha256:69bbc2e99d749a6b8d8c3df14eeaad72c0146809e7899270b25c3a887a054ff6",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -550,9 +578,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-general-ai-v1",
+          "id": "standard-simultaneous-v1",
           "revision": 1,
-          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
+          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
         },
         "participants": [
           {
@@ -587,7 +615,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:72f9d8b905dc38ab7ec4f30cd8d4999964cf2efb53611a72c7aaee1191e70946",
+        "inputHash": "sha256:4b5d8273309fe8c920b709185e708cfd6e02a274a6343bd98514b59ae4cae17a",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -595,9 +623,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-general-ai-v1",
+          "id": "standard-simultaneous-v1",
           "revision": 1,
-          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
+          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
         },
         "participants": [
           {
@@ -632,7 +660,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:68669e77740a0b8fbe6fc2a01dd0c85ba336e12e07ec5f5625eb4a12448e22f6",
+        "inputHash": "sha256:1ae03d080a3bd0463b6809c5d169a7ee65542d3561c56a5d52d32fce668dd92e",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -640,9 +668,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-general-ai-v1",
+          "id": "standard-simultaneous-v1",
           "revision": 1,
-          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
+          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
         },
         "participants": [
           {
@@ -677,7 +705,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:4d164bf22d9437dd7b2c0de0741d53d58a0c12d165331846bbb697c3468bed03",
+        "inputHash": "sha256:092155feeba8c006182152e107dafb7223343de92784d062aed4742964ffbaa3",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -685,9 +713,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-general-ai-v1",
+          "id": "standard-simultaneous-v1",
           "revision": 1,
-          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
+          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
         },
         "participants": [
           {
@@ -722,7 +750,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:346f5417a2f27d9e2b2d5000efb9963bde0d8e14aee404ee27edfae60dd8f0d8",
+        "inputHash": "sha256:59bb78fc3ea9dc898171d5628ba0b7645ebb19d2461c43514b1be2a06d87d051",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -730,9 +758,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-general-ai-v1",
+          "id": "standard-simultaneous-v1",
           "revision": 1,
-          "contentHash": "sha256:fde8890fa1b4f892ffe5df0c3c52aa247804ca14ae0e3d8e4e391946439cd37d"
+          "contentHash": "sha256:54da911fe9ba660cd0de35039e0616e5cac3ba4248e2a914c7aa1e1e0b392de3"
         },
         "participants": [
           {
@@ -1018,6 +1046,21 @@
         "general-ai-pulse-transform",
         "general-ai-pulse-strengthen",
         "general-ai-forecast-unknown"
+      ]
+    },
+    {
+      "id": "simultaneous-slots",
+      "title": "同じ観測からの技と回避・共有資源・保存",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "slot-choice",
+        "slot-payment",
+        "slot-execution-stamina",
+        "slot-execution-legacy",
+        "slot-storage",
+        "slot-rejected-gait-true",
+        "slot-rejected-gait-false"
       ]
     }
   ]

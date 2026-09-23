@@ -1,7 +1,6 @@
 import {
   canonicalJson,
   compareIds,
-  AI_RULES,
   type CandidateAssessment,
   type Cognition,
 } from '@fantasy/domain/spatial';
@@ -15,6 +14,7 @@ import { usesObservedConditions } from './observed-conditions.ts';
 import { blockedBySilence } from './categories.ts';
 import { assessAbility, type KnownClearance } from './assessment.ts';
 import { dodgeOptions } from './dodge.ts';
+import { chooseMovementSlot, dodgeAssessment, passiveAssessment } from './movement-choice.ts';
 import { initialDecisionRandom, weightedChoice, type DecisionRandom } from './decision-random.ts';
 import {
   canMaintainFlight,
@@ -31,7 +31,10 @@ export type Decision = {
   cognition?: Extract<Cognition, { kind: 'decision' }>;
   random?: DecisionRandom;
   gait?: Gait;
+  dodge?: boolean;
 };
+export const isDodgeDecision = (decision: Decision) =>
+  decision.dodge ?? decision.cognition?.selection === 'dodge';
 function movementGoal(view: DecisionView, facing: Vec3, flight: boolean): Vec3 | null {
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen,
     policy = view.self.actor.policy;
@@ -56,6 +59,7 @@ export function choosePolicy(
   random: DecisionRandom = initialDecisionRandom(view.self.actor.participant.rngSeed),
   clear: KnownClearance = () => true,
 ): Decision {
+  const simultaneous = view.rules?.slots === 'simultaneous-v1';
   const actor = view.self.actor,
     target = view.memory.observation?.enemy ?? view.memory.lastSeen;
   const toward = target ? sub(target.position, view.self.position) : { ...ZERO };
@@ -112,53 +116,10 @@ export function choosePolicy(
     if (assessment.weight) candidates.push(assessment);
     else excluded.push({ abilityId: ability.id, reason: 'no estimated benefit' });
   }
-  const directions = dodgeOptions(view, flight, clear),
-    available = directions.filter((d) => d.weight > 0);
-  const dodgeCost = actor.character.movement.locomotion?.dodgeStamina ?? 0;
-  const dodgeCostBps = Math.min(
-    10000,
-    Math.floor((dodgeCost * 10000) / Math.max(1, view.resources.stamina ?? 0)),
-  );
-  if (available.length)
-    candidates.push({
-      key: 'dodge',
-      kind: 'dodge',
-      abilityId: null,
-      weight: Math.max(
-        1,
-        Math.floor(((view.rules ?? AI_RULES).dodgeWeight * 10000) / (10000 + dodgeCostBps)),
-      ),
-      totalWeight: 1,
-      successBps: 7000,
-      killBps: 0,
-      survivalBps: 8000,
-      efficacyBps: 0,
-      confidenceBps: 5000,
-      durationSteps: 5,
-      costBps: dodgeCostBps,
-      exploration: 0,
-      evidence: [],
-      reason: 'escape observed projectile paths; actual collision remains authoritative',
-    });
+  let directions = dodgeOptions(view, flight, clear);
+  if (!simultaneous && directions.some((d) => d.weight > 0)) candidates.push(dodgeAssessment(view));
   let goal = movementGoal(view, facing, flight);
-  if (!candidates.length)
-    candidates.push({
-      key: goal ? 'move' : 'wait',
-      kind: goal ? 'move' : 'wait',
-      abilityId: null,
-      weight: 1,
-      totalWeight: 1,
-      successBps: 10000,
-      killBps: 0,
-      survivalBps: 0,
-      efficacyBps: 0,
-      confidenceBps: 0,
-      durationSteps: 5,
-      costBps: 0,
-      exploration: 0,
-      evidence: [],
-      reason: 'no executable beneficial action',
-    });
+  if (!candidates.length) candidates.push(passiveAssessment(!!goal));
   const choice = weightedChoice(
       candidates.map((c) => c.weight),
       random.action,
@@ -175,7 +136,17 @@ export function choosePolicy(
     },
   ];
   const nextRandom = { ...random, action: choice.state };
-  if (selected.kind === 'dodge') {
+  const ability = actor.abilities.find((a) => a.id === selected.abilityId);
+  const movement =
+    simultaneous && view.memory.observation?.projectiles.length
+      ? chooseMovementSlot(view, ability, flight, !!goal, random.movement, clear)
+      : undefined;
+  const dodge = movement?.dodge ?? selected.kind === 'dodge';
+  if (movement) {
+    directions = movement.directions;
+    nextRandom.movement = movement.random;
+  }
+  if (dodge) {
     const direction = weightedChoice(
         directions.map((d) => d.weight),
         random.dodge,
@@ -192,25 +163,23 @@ export function choosePolicy(
     });
   }
   const observation = view.memory.observation;
-  const allocation = chooseGait(
-    view,
-    actor.abilities.find((a) => a.id === selected.abilityId)?.definition.costs.stamina ?? 0,
-    selected.kind === 'dodge',
-  );
+  const allocation = chooseGait(view, ability?.definition.costs.stamina ?? 0, dodge);
   return {
     abilityId: selected.abilityId,
+    ...(movement ? { dodge } : {}),
     goal,
     facing,
     random: nextRandom,
-    ...(allocation ? { gait: selected.kind === 'dodge' ? ('run' as const) : allocation.gait } : {}),
+    ...(allocation ? { gait: dodge ? ('run' as const) : allocation.gait } : {}),
     cognition: {
       kind: 'decision',
+      ...(movement ? { movementSlot: movement.cognition } : {}),
       perspective: 'subjective',
       ...(allocation
         ? {
             locomotion: {
               ...allocation,
-              gait: selected.kind === 'dodge' ? ('run' as const) : allocation.gait,
+              gait: dodge ? ('run' as const) : allocation.gait,
               stamina: view.resources.stamina ?? 0,
               exhausted: !resourceReady(view),
             },
@@ -280,7 +249,7 @@ export function steerPolicy(
     (view.resources.stamina ?? 0) -
       (view.self.actor.abilities.find((a) => a.id === decision.abilityId)?.definition.costs
         .stamina ?? 0) -
-      (decision.cognition?.selection === 'dodge' ? (movement?.dodgeStamina ?? 0) : 0),
+      (isDodgeDecision(decision) ? (movement?.dodgeStamina ?? 0) : 0),
   );
   const ready = resourceReady({ ...view, resources: { ...view.resources, stamina } });
   const gait = ready ? (decision.gait ?? 'walk') : 'slow';
