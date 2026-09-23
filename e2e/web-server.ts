@@ -1,6 +1,8 @@
 import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { build, preview, type InlineConfig } from 'vite-plus';
+import { publicBuild } from '../apps/web/public-build.ts';
 
 export async function startWeb(
   root: string,
@@ -26,17 +28,23 @@ export async function startWeb(
     cacheDir: join(temporary, 'vite-cache'),
     plugins: [
       react(),
+      ...(dataOrigin
+        ? [
+            publicBuild(
+              dataOrigin,
+              execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
+            ).plugin,
+          ]
+        : []),
       {
         name: 'isolated-test-font',
+        transform(code, id) {
+          if (id === join(root, 'apps/web/src/main.tsx'))
+            return 'import "@fontsource/noto-sans-jp/400.css";\n' + code;
+        },
         transformIndexHtml: {
           order: 'pre',
           handler: () => [
-            {
-              tag: 'script',
-              attrs: { type: 'module' },
-              children: 'import "@fontsource/noto-sans-jp/400.css";',
-              injectTo: 'head',
-            },
             {
               tag: 'style',
               children: ':root { font-family: "Noto Sans JP", sans-serif !important; }',

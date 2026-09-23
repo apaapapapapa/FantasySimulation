@@ -4,18 +4,9 @@
 
 ## 設定
 
-既定値のままで起動できます。変更する場合だけ、ルートの`.env.example`を`.env`にコピーしてください。
-
-```dotenv
-API_HOST=127.0.0.1
-API_PORT=3001
-DATABASE_PATH=./data/fantasy.sqlite
-```
-
-`DATABASE_PATH`の相対パスはリポジトリのルートを基準に解決します。
-画面の`/api`リクエストはViteのプロキシからAPIへ送信されます。
-`.env`の`API_PORT`を変更したら、開発サーバーを再起動してください。
-ローカル利用を前提としており、認証は未実装です。APIは既定でループバックにのみ待ち受けます。
+変更時だけルートの`.env.example`を`.env`へコピーします。DB相対パスはrepo基準。
+Viteは`/api`をAPIへproxyします。`API_PORT`変更後は開発サーバーを再起動してください。
+APIは認証なし・ループバック専用です。
 
 ## ビルドして起動
 
@@ -50,15 +41,10 @@ SQLiteのネイティブビルドが必要な環境ではPythonとC++ツール�
 保存IDから下書きを再開できます。保存ログはstep・速度・カメラを変えて3D観戦できます。
 描画時はengineを実行しません（[ADR 0006](../adr/0006-recorded-replay.md)）。
 
-静的観戦版は`apps/web`で`VITE_PUBLICATION_ROOT=https://データ配信先/ vp build --mode public`。
-成果物`dist`を`/FantasySimulation/`に配信します。データ側はこのoriginへのCORSを許可し、
-`.gz`は`application/gzip`で配信、HTTPの`Content-Encoding`を付けません。API/DBは不要です。
-
 ## 3Dサンプル対戦
 
 `pnpm demo:spatial` は柱のある広場で剣士と飛行術師を対戦させます。
 `pnpm demo:spatial archer guardian flat` のように2体と戦場を指定できます。
-画面・DBなしで同じmanifest/seedの対戦を再現します。
 
 `data/spatial/catalog.json` は15体と能力・装備・方針・状態・戦場・ルールの69revisionです。
 型付き部品で構成し、キャラクター固有の実行分岐はありません。
@@ -120,3 +106,13 @@ R2書込みは後続です。公開layout/理由コード/容量は[ADR 0008](..
 配布ビルドでは`node apps/api/dist/batch.mjs`を使用できます。
 出力の`.work/`はローカルDB/作業記録です。必要ディスク容量は最終出力上限＋作業replay上限＋256 MiB。
 [計画・保存・再開の契約](../adr/0008-headless-batch.md)を参照してください。
+
+## Public viewer
+
+Build: `VITE_PUBLICATION_ROOT=https://<reader>.workers.dev/ vp run --filter @fantasy/web build --mode public`.
+Base defaults to `/FantasySimulation/`; use `VITE_PUBLIC_BASE=/` for a custom domain.
+Hash routes survive reload; `build.json` identifies source SHA and supported formats.
+CSP allows connections only to self/data origin. Data CORS permits only the viewer origin;
+gzip has no Content-Encoding. No API/DB/credentials belong in the static output.
+`Public viewer` verifies successful main push CI/ci-gate before build and deploy.
+Manual rollback takes a successful main CI run ID and verifies main ancestry.
