@@ -1,0 +1,1888 @@
+{
+  "sourceSha": "e21bbc3fd5f5e66021a027d1b0a44e123d8a5c11",
+  "input": {
+    "schemaVersion": 3,
+    "eventSchemaVersion": 1,
+    "replaySchemaVersion": 1,
+    "engineVersion": "spatial-v1.11",
+    "aiProfile": "observed-utility-v1",
+    "implementationDigest": "sha256:76efdcfe669e0956b34d27118d9f900ce0626cbba5f20671c1665ea269d5ad9e",
+    "physicsProfileHash": "sha256:fec78a239c989b1345919bad1e4188561054dffae03303ac338d739c3e40df98",
+    "physicsProfile": {
+      "id": "spatial-v1",
+      "rapier": "0.20.0",
+      "axis": "right-handed-Y-up",
+      "inputUnits": "integer-mm-ms",
+      "stepMs": 20,
+      "aiMs": 100,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "skinMm": 2,
+      "contactTimeEpsilon": 0.000001,
+      "maxMoveSegments": 8,
+      "floatEncoding": "IEEE754-binary64-big-endian-hex-negative-zero-normalized",
+      "physicsConversion": "TS-binary64-metres-to-Rapier-binary32-at-each-WASM-call",
+      "trigonometry": "quarter-sine-1-degree-linear-1e9-v1",
+      "creationOrder": "ascending-ASCII-id",
+      "simultaneousObstacleContact": "wall-first-within-epsilon",
+      "actorCollision": "binary64-analytic-upright-capsule-sweep-v1"
+    },
+    "wasmHash": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+    "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
+    "prng": "xorshift32-v1",
+    "seed": 42,
+    "seedDerivation": "actor-stream-v1",
+    "participants": [
+      {
+        "actorId": "left",
+        "character": {
+          "id": "fighter",
+          "revision": 1,
+          "contentHash": "sha256:e65f1a0ee40c337952b6618ae946b63b040217fbe6a40cd969f191c4c6a12b1f"
+        },
+        "position": {
+          "x": -4000,
+          "y": 902,
+          "z": 0
+        },
+        "facing": {
+          "x": 1,
+          "y": 0,
+          "z": 0
+        },
+        "rngSeed": 2654435731,
+        "rngStream": 0
+      },
+      {
+        "actorId": "right",
+        "character": {
+          "id": "fighter",
+          "revision": 1,
+          "contentHash": "sha256:e65f1a0ee40c337952b6618ae946b63b040217fbe6a40cd969f191c4c6a12b1f"
+        },
+        "position": {
+          "x": 4000,
+          "y": 902,
+          "z": 0
+        },
+        "facing": {
+          "x": -1,
+          "y": 0,
+          "z": 0
+        },
+        "rngSeed": 1013904216,
+        "rngStream": 1
+      }
+    ],
+    "ruleset": {
+      "id": "standard-observed-v1",
+      "revision": 1,
+      "contentHash": "sha256:7650dd759d5a4b3fc87cc9e8e027c1bf988ae7c1db01dc076033d1f1d10ba95c"
+    },
+    "scenario": {
+      "id": "flat",
+      "revision": 1,
+      "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
+    },
+    "revisions": [
+      {
+        "kind": "ability",
+        "id": "sword",
+        "revision": 1,
+        "schemaVersion": 1,
+        "contentHash": "sha256:e78907174ee2509bd92811b68a517b23a0d3b13e4a838e447f9576917415cb8f",
+        "definition": {
+          "name": "剣",
+          "originalText": "正面の相手を剣で攻撃する",
+          "trigger": "battle-start",
+          "target": "self",
+          "condition": {
+            "kind": "always"
+          },
+          "costs": {
+            "hp": 0,
+            "mp": 0,
+            "stamina": 100,
+            "uses": 1
+          },
+          "castSteps": 0,
+          "recoverySteps": 20,
+          "cooldownSteps": 0,
+          "movementWhileCasting": "allow",
+          "rangeMm": 2000,
+          "aimErrorMilliDegrees": 0,
+          "attack": {
+            "kind": "direct"
+          },
+          "effects": [
+            {
+              "kind": "shield",
+              "amount": 1
+            }
+          ]
+        }
+      },
+      {
+        "kind": "character",
+        "id": "fighter",
+        "revision": 1,
+        "schemaVersion": 1,
+        "contentHash": "sha256:e65f1a0ee40c337952b6618ae946b63b040217fbe6a40cd969f191c4c6a12b1f",
+        "definition": {
+          "name": "剣士",
+          "originalText": "",
+          "stamina": {
+            "max": 100,
+            "recoveryPerSecond": 0
+          },
+          "stats": {
+            "hp": 100,
+            "mp": 100,
+            "attack": 20,
+            "defense": 5,
+            "actionSpeedBps": 10000,
+            "shield": 0,
+            "resistances": {
+              "physical": 0,
+              "fire": 0,
+              "ice": 0,
+              "lightning": 0,
+              "arcane": 0
+            }
+          },
+          "body": {
+            "radiusMm": 300,
+            "heightMm": 1800,
+            "eyeOffset": {
+              "x": 0,
+              "y": 650,
+              "z": 0
+            },
+            "muzzleOffset": {
+              "x": 0,
+              "y": 400,
+              "z": 300
+            },
+            "aimOffset": {
+              "x": 0,
+              "y": 200,
+              "z": 0
+            }
+          },
+          "movement": {
+            "speedMmPerSecond": 4000,
+            "accelerationMmPerSecond2": 12000,
+            "turnMilliDegreesPerSecond": 360000,
+            "jumpMmPerSecond": 5000,
+            "stepHeightMm": 300,
+            "maxSlopeMilliDegrees": 45000,
+            "flySpeedMmPerSecond": 5000
+          },
+          "perception": {
+            "rangeMm": 50000,
+            "fovMilliDegrees": 180000,
+            "reactionSteps": 5,
+            "memorySteps": 250
+          },
+          "abilities": [
+            {
+              "id": "sword",
+              "revision": 1,
+              "contentHash": "sha256:e78907174ee2509bd92811b68a517b23a0d3b13e4a838e447f9576917415cb8f"
+            }
+          ],
+          "equipment": [],
+          "policy": {
+            "id": "approach",
+            "revision": 1,
+            "contentHash": "sha256:1e1dd369ccf42b93f165e2e0d98f5cfd703b146d6aad276f89d25472e83452b9"
+          }
+        }
+      },
+      {
+        "kind": "policy",
+        "id": "approach",
+        "revision": 1,
+        "schemaVersion": 1,
+        "contentHash": "sha256:1e1dd369ccf42b93f165e2e0d98f5cfd703b146d6aad276f89d25472e83452b9",
+        "definition": {
+          "name": "接近戦",
+          "originalText": "",
+          "priorities": [],
+          "movement": "approach",
+          "preferredDistanceMm": 1000,
+          "flightAltitudeMm": 4000,
+          "jumpWhenBlocked": true
+        }
+      },
+      {
+        "kind": "ruleset",
+        "id": "standard-observed-v1",
+        "revision": 1,
+        "schemaVersion": 1,
+        "contentHash": "sha256:7650dd759d5a4b3fc87cc9e8e027c1bf988ae7c1db01dc076033d1f1d10ba95c",
+        "definition": {
+          "name": "標準3D",
+          "rulesVersion": "spatial-v1.11",
+          "ai": {
+            "profile": "observed-utility-v1",
+            "observation": "visible-coarse-v1",
+            "initialKnowledge": "empty-match-v1",
+            "random": "actor-purpose-rejection-v1",
+            "horizonSteps": 50,
+            "memorySamples": 32,
+            "knowledgeTtlSteps": 500,
+            "damageQuantum": 10,
+            "healthPrior": 200,
+            "explorationWeight": 60,
+            "riskWeight": 800,
+            "killWeight": 2400,
+            "actionWeight": 100,
+            "dodgeWeight": 600
+          },
+          "stepMs": 20,
+          "maxSteps": 10,
+          "gravityMmPerSecond2": -9807,
+          "fallSafeSpeedMmPerSecond": 8000,
+          "fallDamagePerMeterPerSecond": 5,
+          "curveErrorMm": 1,
+          "bodyContact": "symmetric-stop",
+          "aoeOcclusion": "five-samples-equal-linear-v1",
+          "simultaneousConflict": "unresolved"
+        }
+      },
+      {
+        "kind": "scenario",
+        "id": "flat",
+        "revision": 1,
+        "schemaVersion": 1,
+        "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+        "definition": {
+          "name": "平地",
+          "bounds": {
+            "min": {
+              "x": -50000,
+              "y": -1000,
+              "z": -50000
+            },
+            "max": {
+              "x": 50000,
+              "y": 50000,
+              "z": 50000
+            }
+          },
+          "obstacles": [
+            {
+              "id": "floor",
+              "kind": "box",
+              "center": {
+                "x": 0,
+                "y": -500,
+                "z": 0
+              },
+              "halfExtents": {
+                "x": 50000,
+                "y": 500,
+                "z": 50000
+              },
+              "yawMilliDegrees": 0,
+              "slopeMilliDegrees": 0,
+              "blocks": {
+                "movement": true,
+                "vision": true,
+                "attack": true
+              }
+            }
+          ],
+          "navigation": {
+            "version": "support-graph-v1",
+            "nodes": [],
+            "edges": []
+          },
+          "terrainKnowledge": "surveyed"
+        }
+      }
+    ]
+  },
+  "records": [
+    {
+      "kind": "initial",
+      "schemaVersion": 1,
+      "step": 0,
+      "state": {
+        "actors": [
+          {
+            "id": "left",
+            "position": {
+              "x": -4,
+              "y": 0.902,
+              "z": 0
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "facing": {
+              "x": 1,
+              "y": 0,
+              "z": 0
+            },
+            "grounded": true,
+            "resources": {
+              "hp": 100,
+              "mp": 100,
+              "stamina": 100,
+              "shield": 0
+            },
+            "statuses": [],
+            "action": null
+          },
+          {
+            "id": "right",
+            "position": {
+              "x": 4,
+              "y": 0.902,
+              "z": 0
+            },
+            "velocity": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "facing": {
+              "x": -1,
+              "y": 0,
+              "z": 0
+            },
+            "grounded": true,
+            "resources": {
+              "hp": 100,
+              "mp": 100,
+              "stamina": 100,
+              "shield": 0
+            },
+            "statuses": [],
+            "action": null
+          }
+        ],
+        "projectiles": []
+      }
+    },
+    {
+      "kind": "boundary",
+      "schemaVersion": 1,
+      "step": 0,
+      "changes": [
+        {
+          "id": "left",
+          "resources": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 0,
+            "shield": 1
+          }
+        },
+        {
+          "id": "right",
+          "resources": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 0,
+            "shield": 1
+          }
+        }
+      ],
+      "events": [
+        {
+          "schemaVersion": 1,
+          "id": "e.0",
+          "sequence": 0,
+          "actorId": "left",
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": null,
+          "causes": [],
+          "abilityId": null,
+          "point": null,
+          "before": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 100,
+            "shield": 0
+          },
+          "after": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 0,
+            "shield": 0
+          },
+          "amount": null,
+          "damage": null,
+          "reason": "Simultaneous startup cost group",
+          "subtimeMicros": 0,
+          "kind": "cost",
+          "step": 0,
+          "phase": "boundary",
+          "ruleId": "startup.cost-group"
+        },
+        {
+          "schemaVersion": 1,
+          "id": "e.1",
+          "sequence": 1,
+          "actorId": "left",
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": "e.0",
+          "causes": [],
+          "abilityId": "sword",
+          "point": null,
+          "before": null,
+          "after": null,
+          "amount": null,
+          "damage": null,
+          "reason": "",
+          "subtimeMicros": 0,
+          "kind": "launch",
+          "step": 0,
+          "phase": "boundary",
+          "ruleId": "startup.launch"
+        },
+        {
+          "schemaVersion": 1,
+          "id": "e.2",
+          "sequence": 2,
+          "actorId": "right",
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": null,
+          "causes": [],
+          "abilityId": null,
+          "point": null,
+          "before": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 100,
+            "shield": 0
+          },
+          "after": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 0,
+            "shield": 0
+          },
+          "amount": null,
+          "damage": null,
+          "reason": "Simultaneous startup cost group",
+          "subtimeMicros": 0,
+          "kind": "cost",
+          "step": 0,
+          "phase": "boundary",
+          "ruleId": "startup.cost-group"
+        },
+        {
+          "schemaVersion": 1,
+          "id": "e.3",
+          "sequence": 3,
+          "actorId": "right",
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": "e.2",
+          "causes": [],
+          "abilityId": "sword",
+          "point": null,
+          "before": null,
+          "after": null,
+          "amount": null,
+          "damage": null,
+          "reason": "",
+          "subtimeMicros": 0,
+          "kind": "launch",
+          "step": 0,
+          "phase": "boundary",
+          "ruleId": "startup.launch"
+        },
+        {
+          "schemaVersion": 1,
+          "id": "e.4",
+          "sequence": 4,
+          "actorId": "left",
+          "targetId": "left",
+          "entityId": null,
+          "parentEventId": "e.1",
+          "causes": [],
+          "abilityId": "sword",
+          "point": null,
+          "before": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 0,
+            "shield": 0
+          },
+          "after": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 0,
+            "shield": 1
+          },
+          "amount": 1,
+          "damage": null,
+          "reason": "shield",
+          "subtimeMicros": 0,
+          "step": 0,
+          "phase": "boundary",
+          "kind": "shield",
+          "ruleId": "effect.application"
+        },
+        {
+          "schemaVersion": 1,
+          "id": "e.5",
+          "sequence": 5,
+          "actorId": "right",
+          "targetId": "right",
+          "entityId": null,
+          "parentEventId": "e.3",
+          "causes": [],
+          "abilityId": "sword",
+          "point": null,
+          "before": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 0,
+            "shield": 0
+          },
+          "after": {
+            "hp": 100,
+            "mp": 100,
+            "stamina": 0,
+            "shield": 1
+          },
+          "amount": 1,
+          "damage": null,
+          "reason": "shield",
+          "subtimeMicros": 0,
+          "step": 0,
+          "phase": "boundary",
+          "kind": "shield",
+          "ruleId": "effect.application"
+        }
+      ]
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 0,
+      "toStep": 1,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -4,
+                "y": 0.902,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 2.874401599329368e-14
+            },
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 2.874401599329368e-14,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 4,
+                "y": 0.902,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 2.874401599329368e-14
+            },
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 2.874401599329368e-14,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [
+        {
+          "id": "left",
+          "position": {
+            "x": -4,
+            "y": 0.9019999999999999,
+            "z": 0
+          }
+        },
+        {
+          "id": "right",
+          "position": {
+            "x": 4,
+            "y": 0.9019999999999999,
+            "z": 0
+          }
+        }
+      ],
+      "events": [
+        {
+          "schemaVersion": 1,
+          "id": "e.6",
+          "sequence": 6,
+          "actorId": "left",
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": null,
+          "causes": [],
+          "abilityId": null,
+          "point": null,
+          "before": null,
+          "after": null,
+          "amount": null,
+          "damage": null,
+          "reason": "",
+          "subtimeMicros": 0,
+          "kind": "decision",
+          "step": 0,
+          "phase": "declaration",
+          "ruleId": "ai.observed-utility",
+          "cognition": {
+            "kind": "decision",
+            "perspective": "subjective",
+            "sampledAt": null,
+            "availableAt": null,
+            "targetId": null,
+            "targetObservedAt": null,
+            "targetAvailableAt": null,
+            "appearance": null,
+            "wounds": "unknown",
+            "targetPositionMm": null,
+            "observedProjectiles": [],
+            "terrain": [],
+            "candidates": [
+              {
+                "key": "wait",
+                "kind": "wait",
+                "abilityId": null,
+                "weight": 1,
+                "totalWeight": 1,
+                "successBps": 10000,
+                "killBps": 0,
+                "survivalBps": 0,
+                "efficacyBps": 0,
+                "confidenceBps": 0,
+                "durationSteps": 5,
+                "costBps": 0,
+                "exploration": 0,
+                "evidence": [],
+                "reason": "no executable beneficial action"
+              }
+            ],
+            "excluded": [],
+            "selection": "wait",
+            "method": "sole",
+            "draws": [
+              {
+                "purpose": "action",
+                "before": 3037645550,
+                "after": 3037645550,
+                "draws": 0,
+                "selection": "wait"
+              }
+            ],
+            "directions": []
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "id": "e.7",
+          "sequence": 7,
+          "actorId": "right",
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": null,
+          "causes": [],
+          "abilityId": null,
+          "point": null,
+          "before": null,
+          "after": null,
+          "amount": null,
+          "damage": null,
+          "reason": "",
+          "subtimeMicros": 0,
+          "kind": "decision",
+          "step": 0,
+          "phase": "declaration",
+          "ruleId": "ai.observed-utility",
+          "cognition": {
+            "kind": "decision",
+            "perspective": "subjective",
+            "sampledAt": null,
+            "availableAt": null,
+            "targetId": null,
+            "targetObservedAt": null,
+            "targetAvailableAt": null,
+            "appearance": null,
+            "wounds": "unknown",
+            "targetPositionMm": null,
+            "observedProjectiles": [],
+            "terrain": [],
+            "candidates": [
+              {
+                "key": "wait",
+                "kind": "wait",
+                "abilityId": null,
+                "weight": 1,
+                "totalWeight": 1,
+                "successBps": 10000,
+                "killBps": 0,
+                "survivalBps": 0,
+                "efficacyBps": 0,
+                "confidenceBps": 0,
+                "durationSteps": 5,
+                "costBps": 0,
+                "exploration": 0,
+                "evidence": [],
+                "reason": "no executable beneficial action"
+              }
+            ],
+            "excluded": [],
+            "selection": "wait",
+            "method": "sole",
+            "draws": [
+              {
+                "purpose": "action",
+                "before": 1176109253,
+                "after": 1176109253,
+                "draws": 0,
+                "selection": "wait"
+              }
+            ],
+            "directions": []
+          }
+        }
+      ]
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 1,
+      "toStep": 2,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [],
+      "events": []
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 2,
+      "toStep": 3,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [],
+      "events": []
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 3,
+      "toStep": 4,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [],
+      "events": []
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 4,
+      "toStep": 5,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [],
+      "events": []
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 5,
+      "toStep": 6,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.9952,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 4,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.9952,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [
+        {
+          "id": "left",
+          "position": {
+            "x": -3.9952,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": 0.2399999999999959,
+            "y": 0,
+            "z": 0
+          },
+          "facing": {
+            "x": 1,
+            "y": 1.3877787807814457e-17,
+            "z": 0
+          }
+        },
+        {
+          "id": "right",
+          "position": {
+            "x": 3.9952,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": -0.2399999999999959,
+            "y": 0,
+            "z": 0
+          },
+          "facing": {
+            "x": -1,
+            "y": 1.3877787807814457e-17,
+            "z": 0
+          }
+        }
+      ],
+      "events": [
+        {
+          "schemaVersion": 1,
+          "id": "e.8",
+          "sequence": 8,
+          "actorId": "left",
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": null,
+          "causes": [],
+          "abilityId": null,
+          "point": null,
+          "before": null,
+          "after": null,
+          "amount": null,
+          "damage": null,
+          "reason": "",
+          "subtimeMicros": 0,
+          "kind": "decision",
+          "step": 5,
+          "phase": "declaration",
+          "ruleId": "ai.observed-utility",
+          "cognition": {
+            "kind": "decision",
+            "perspective": "subjective",
+            "sampledAt": 0,
+            "availableAt": 5,
+            "targetId": "right",
+            "targetObservedAt": 0,
+            "targetAvailableAt": 5,
+            "appearance": {
+              "silhouette": "humanoid",
+              "surface": "neutral",
+              "equipment": []
+            },
+            "wounds": "unhurt",
+            "targetPositionMm": {
+              "x": 4000,
+              "y": 902,
+              "z": 0
+            },
+            "observedProjectiles": [],
+            "terrain": [],
+            "candidates": [
+              {
+                "key": "move",
+                "kind": "move",
+                "abilityId": null,
+                "weight": 1,
+                "totalWeight": 1,
+                "successBps": 10000,
+                "killBps": 0,
+                "survivalBps": 0,
+                "efficacyBps": 0,
+                "confidenceBps": 0,
+                "durationSteps": 5,
+                "costBps": 0,
+                "exploration": 0,
+                "evidence": [],
+                "reason": "no executable beneficial action"
+              }
+            ],
+            "excluded": [],
+            "selection": "move",
+            "method": "sole",
+            "draws": [
+              {
+                "purpose": "action",
+                "before": 3037645550,
+                "after": 3037645550,
+                "draws": 0,
+                "selection": "move"
+              }
+            ],
+            "directions": []
+          }
+        },
+        {
+          "schemaVersion": 1,
+          "id": "e.9",
+          "sequence": 9,
+          "actorId": "right",
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": null,
+          "causes": [],
+          "abilityId": null,
+          "point": null,
+          "before": null,
+          "after": null,
+          "amount": null,
+          "damage": null,
+          "reason": "",
+          "subtimeMicros": 0,
+          "kind": "decision",
+          "step": 5,
+          "phase": "declaration",
+          "ruleId": "ai.observed-utility",
+          "cognition": {
+            "kind": "decision",
+            "perspective": "subjective",
+            "sampledAt": 0,
+            "availableAt": 5,
+            "targetId": "left",
+            "targetObservedAt": 0,
+            "targetAvailableAt": 5,
+            "appearance": {
+              "silhouette": "humanoid",
+              "surface": "neutral",
+              "equipment": []
+            },
+            "wounds": "unhurt",
+            "targetPositionMm": {
+              "x": -4000,
+              "y": 902,
+              "z": 0
+            },
+            "observedProjectiles": [],
+            "terrain": [],
+            "candidates": [
+              {
+                "key": "move",
+                "kind": "move",
+                "abilityId": null,
+                "weight": 1,
+                "totalWeight": 1,
+                "successBps": 10000,
+                "killBps": 0,
+                "survivalBps": 0,
+                "efficacyBps": 0,
+                "confidenceBps": 0,
+                "durationSteps": 5,
+                "costBps": 0,
+                "exploration": 0,
+                "evidence": [],
+                "reason": "no executable beneficial action"
+              }
+            ],
+            "excluded": [],
+            "selection": "move",
+            "method": "sole",
+            "draws": [
+              {
+                "purpose": "action",
+                "before": 1176109253,
+                "after": 1176109253,
+                "draws": 0,
+                "selection": "move"
+              }
+            ],
+            "directions": []
+          }
+        }
+      ]
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 6,
+      "toStep": 7,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -3.9952,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.9952,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -3.9952,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.9856000000000003,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 3.9952,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.9952,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 3.9952,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.9856000000000003,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [
+        {
+          "id": "left",
+          "position": {
+            "x": -3.9856000000000003,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": 0.4799999999999918,
+            "y": 0,
+            "z": 0
+          }
+        },
+        {
+          "id": "right",
+          "position": {
+            "x": 3.9856000000000003,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": -0.4799999999999918,
+            "y": 0,
+            "z": 0
+          }
+        }
+      ],
+      "events": []
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 7,
+      "toStep": 8,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -3.9856000000000003,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.9856000000000003,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -3.9856000000000003,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.9712000000000005,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 3.9856000000000003,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.9856000000000003,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 3.9856000000000003,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.9712000000000005,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [
+        {
+          "id": "left",
+          "position": {
+            "x": -3.9712000000000005,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": 0.7199999999999878,
+            "y": 0,
+            "z": 0
+          }
+        },
+        {
+          "id": "right",
+          "position": {
+            "x": 3.9712000000000005,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": -0.7199999999999878,
+            "y": 0,
+            "z": 0
+          }
+        }
+      ],
+      "events": []
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 8,
+      "toStep": 9,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -3.9712000000000005,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.9712000000000005,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -3.9712000000000005,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.952000000000001,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 3.9712000000000005,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.9712000000000005,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 3.9712000000000005,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.952000000000001,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [
+        {
+          "id": "left",
+          "position": {
+            "x": -3.952000000000001,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": 0.9599999999999836,
+            "y": 0,
+            "z": 0
+          }
+        },
+        {
+          "id": "right",
+          "position": {
+            "x": 3.952000000000001,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": -0.9599999999999836,
+            "y": 0,
+            "z": 0
+          }
+        }
+      ],
+      "events": []
+    },
+    {
+      "kind": "interval",
+      "schemaVersion": 1,
+      "fromStep": 9,
+      "toStep": 10,
+      "paths": [
+        {
+          "entityId": "left",
+          "segments": [
+            {
+              "start": {
+                "x": -3.952000000000001,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.952000000000001,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": -3.952000000000001,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": -3.9280000000000013,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        },
+        {
+          "entityId": "right",
+          "segments": [
+            {
+              "start": {
+                "x": 3.952000000000001,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.952000000000001,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 0,
+              "to": 4.422156306660566e-16
+            },
+            {
+              "start": {
+                "x": 3.952000000000001,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "end": {
+                "x": 3.9280000000000013,
+                "y": 0.9019999999999999,
+                "z": 0
+              },
+              "from": 4.422156306660566e-16,
+              "to": 1
+            }
+          ]
+        }
+      ],
+      "projectiles": {
+        "spawn": [],
+        "update": [],
+        "remove": []
+      },
+      "changes": [
+        {
+          "id": "left",
+          "position": {
+            "x": -3.9280000000000013,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": 1.1999999999999795,
+            "y": 0,
+            "z": 0
+          }
+        },
+        {
+          "id": "right",
+          "position": {
+            "x": 3.9280000000000013,
+            "y": 0.9019999999999999,
+            "z": 0
+          },
+          "velocity": {
+            "x": -1.1999999999999795,
+            "y": 0,
+            "z": 0
+          }
+        }
+      ],
+      "events": []
+    },
+    {
+      "kind": "terminal",
+      "schemaVersion": 1,
+      "step": 10,
+      "outcome": {
+        "kind": "draw",
+        "reason": "time-limit"
+      },
+      "events": [
+        {
+          "schemaVersion": 1,
+          "id": "e.10",
+          "sequence": 10,
+          "actorId": null,
+          "targetId": null,
+          "entityId": null,
+          "parentEventId": null,
+          "causes": [],
+          "abilityId": null,
+          "point": null,
+          "before": null,
+          "after": null,
+          "amount": null,
+          "damage": null,
+          "reason": "time-limit",
+          "subtimeMicros": 0,
+          "kind": "terminal",
+          "step": 10,
+          "phase": "terminal",
+          "ruleId": "battle.draw"
+        }
+      ]
+    }
+  ],
+  "result": {
+    "schemaVersion": 1,
+    "simulationHash": "sha256:2e33e0974cbcb4958217bd4809950c1f878822bc87212204aaa471ed684cb312",
+    "eventHash": "sha256:a9388fd62bbbe2c27dc5d2f026ff8885b446ae5863cf3704fce55e132559ce90",
+    "trajectoryHash": "sha256:c72fb3a20188a590ac2890ee4e7262eecb10461b1dbee98fb2ae1475ce3cd4d1",
+    "tsStateHash": "sha256:2ec8618c13ad5fbe61fa07a79a30d861932ed84ba2c4cc16e455835c171691a3",
+    "physicsStateHash": "sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976",
+    "steps": 10,
+    "outcome": {
+      "kind": "draw",
+      "reason": "time-limit"
+    },
+    "stats": {
+      "events": 11,
+      "logBytes": 16777,
+      "casts": 152,
+      "candidates": 0,
+      "pathNodes": 0,
+      "peakProjectiles": 0
+    }
+  }
+}

@@ -1,4 +1,4 @@
-# spatial-v1.11: 公開入力と実行manifest
+# spatial-v1.12: 公開入力と実行manifest
 
 公開契約の正本は`packages/domain/src/spatial`のstrict Zod schema。旧契約を暗黙変換しない。
 観測AIの式・情報境界・記憶・乱数は[ADR 0009](../adr/0009-observed-ai.md)を参照。
@@ -253,40 +253,39 @@ meleeは半径radiusMmの球を、有効activeStepsの間に武器起点からre
 battle-startはdirect selfのみ。同じ初期snapshotで条件を満たす群を主体ごとに一括予約し、
 合計不足なら全不発、成功なら支払い・効果を同時解決する。開始状態は境界0の継続効果より先に有効。
 
-G-04 resources: `character.stamina?={max,recoveryPerSecond,resumeAt?}` starts at max, clamps
-0..max and recovers every interval, including casting, movement and the final interval.
+G-04: standard-locomotion-v1 changes v1.11 stamina-only exhaustion movement.
+Keep old definitions/replays readable; reject old execution.
+`character.stamina?={max,recoveryPerSecond,resumeAt?}` starts full, clamps 0..max and
+recovers every interval (casting/moving/final included).
 Zero latches exhaustion until resumeAt (default ceil(max/10)); stamina skills, run, dodge and
 jump then stop. Optional `movement.locomotion` requires stamina and defines walk/run
 `{speedMmPerSecond,staminaPerMeter}`, `exhaustedSpeedMmPerSecond`, positive `jumpStamina`,
 `dodgeStamina`, `stepStaminaPerMeter`. Run is faster/costlier; exhausted walk is slower and free.
 Missing locomotion keeps the single free speed; a stamina-only exhausted actor uses 1/4 speed.
-Missing stamina and locomotion preserve legacy definitions, decisions and fixture hashes.
+Without either field, legacy motion/decisions and Golden outputs stay unchanged.
 
-Ground/airborne horizontal travel costs actual metres at the chosen gait rate; blocked travel
-costs zero. Distances round to micrometres, accumulating fractional stamina with BigInt.
-Takeoff charges jump once (including a ceiling-blocked attempt); successful step corrections
-charge upward lift metres. Dodge charges once per selected burst, plus its actual locomotion.
+Ground/airborne travel charges actual horizontal gait metres; walls cost0. Round to micrometres;
+BigInt carries fractional stamina. Jump charges once at takeoff (including blocked ceilings);
+successful steps charge vertical lift. Dodge charges per selected burst plus actual locomotion.
 Jump horizontal reach uses gait speed; speed changes still obey physical acceleration.
 Insufficient reservations fall back run→walk→free slow walk; gravity/contact continue.
-One actor ResourceBudget covers skill, flight, dodge, jump, step and travel in that order.
-Combined requests are atomic; commit/cancel once; travelled costs settle below their physical
-upper-bound reservation. No pending holds cross a resource update. Started skills retain costs
-on later fizzle; failed reservations consume nothing. uses=0 is unlimited; HP can pay its full amount.
+One ResourceBudget per actor covers skill→flight→dodge→jump→step→travel. Reserve atomically;
+commit/cancel once. Actual travel≤physical bound; settle all holds before updates. Started
+skills keep costs after fizzle; failed reservations cost0; uses0=unlimited; HP may pay all.
 
-`status.flightStaminaPerSecond?` and the apply-status effect override specify maintenance per
-second, including hover/root/cast. Omitted=0; active grants/cohort refresh use their minimum
-rate, never summed duplicate charges. Paid flight needs the next interval's ceiling cost and
-resume threshold; shortage restores gravity/ground routing, recovery retries flight. Free flight
-remains available. The override is retained in status display/replay; fractions in decision state.
+`status.flightStaminaPerSecond?` or apply-status override defines upkeep/s, including hover/root/cast.
+Omitted=0; grant/refresh minimum wins without duplicate charges. Paid flight requires next interval
+ceiling cost and resume threshold; shortage restores gravity/ground routes; retry after recovery.
+Free flight persists. Display/replay retains override; decision state retains fractions.
 `updateResources` sums signed deltas and max(0,rate+add)×Bps/10000 recovery before one clamp;
 recovery fractions persist, discarded at max. G-03 supplies interval-start recovery modifiers.
 
-AI knows its own resources, preserves near-term skill/jump/dodge funds, and runs when its
-horizon travel budget fits. Visible threats price dodge; skills preserve paid-flight upkeep.
+AI reserves own skill/jump/dodge funds, then runs if its horizon travel budget fits.
+Visible threats price dodge; skills preserve paid-flight upkeep.
 Opponent inputs remain delayed visible speed/appearance, never exact stamina. Decision logs
 record own gait/reserve, movement.cost records actual before/after; recovery has a boundary event.
 ActorDisplay.locomotion stores mode/jumping/dodging; old records/legacy actors may omit it.
-New sample IDs stamina-scout-v1/glider-v1: max100, recovery3/s, resume20; walk2m/s at2/m,
+Samples stamina-scout-v1/glider-v1: max100, recovery3/s, resume20; walk2m/s at2/m,
 run6m/s at6/m, slow0.5m/s free, jump12, dodge8, step10/m. Steady walk nets -1/s, run -33/s;
 Stationary recovery: +3/s. Glider takeoff overrides its grant's rate8/s to5/s.
 

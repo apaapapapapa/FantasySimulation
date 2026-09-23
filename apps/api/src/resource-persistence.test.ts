@@ -1,9 +1,22 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { catalogManifest, reference, sealRevision } from '@fantasy/engine/spatial';
+import { ReplayState, replayContext } from '@fantasy/domain/spatial';
+import { catalogManifest, prepareBattle, reference, sealRevision } from '@fantasy/engine/spatial';
+import priorStamina from '../fixtures/compatibility/stamina-v1.11.json' with { type: 'json' };
 import { specInput, withRuntime } from '../test-support/runtime.ts';
 import { seekReplay, verifyReplay } from './replay-reader.ts';
 
 describe('stamina through Worker, SQLite and recorded replay', () => {
+  it('reads published stamina-only v1.11 displays unchanged and refuses execution under current rules', async () => {
+    const replay = new ReplayState(
+      await replayContext(priorStamina.input, priorStamina.result.simulationHash),
+    );
+    for (const record of priorStamina.records) replay.apply(record);
+    const actors = replay.checkpoint().state!.actors;
+    expect(actors.map((actor) => actor.resources.stamina)).toEqual([0, 0]);
+    expect(actors.every((actor) => actor.locomotion === undefined)).toBe(true);
+    expect(actors[0]!.position.x).toBeGreaterThan(-4);
+    await expect(prepareBattle(priorStamina.input)).rejects.toThrow(/Unsupported engine version/);
+  });
   it('saves new locomotion and paid-flight definitions and reconstructs resource and grant displays', async () => {
     await withRuntime(
       async ({ runtime, store, root }) => {

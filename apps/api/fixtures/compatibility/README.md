@@ -13,3 +13,7 @@ replays and metadata. Regeneration requires separate review.
 
 CI restores disposable DBs; only stopped runtime-owner host/path is relocated.
 Store identity and all game data stay intact. No user DB or old engine runs in CI.
+
+`stamina-v1.11.json`: PR #73 head `e21bbc3`, `combatManifest(10)` → `prepareBattle` →
+`runBattle`. Both actors: stamina100/recovery0, self shield startup costs100;
+approach/no skills. Preserves pre-G-04 stamina-only motion/display without re-execution.

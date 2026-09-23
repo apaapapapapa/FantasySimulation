@@ -9,6 +9,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { reference, sealRevision } from './prepare.ts';
 import { sampleManifest } from './sample.ts';
+import { observedRules } from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
 /** Versioned data examples, never character-specific branches in the simulator. */
@@ -18,7 +19,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
   const fighter = base.revisions.find((r) => r.kind === 'character')!;
   const flat = base.revisions.find((r) => r.kind === 'scenario')!;
   const rules = base.revisions.find((r) => r.kind === 'ruleset')!;
-  const revisions: Revision[] = [sword, flat, rules];
+  const revisions: Revision[] = [sword, flat, rules, structuredClone(observedRules)];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);
     revisions.push(revision);
@@ -532,7 +533,7 @@ export async function catalogManifest(
   }
   const rules = template.revisions.find((r) => r.kind === 'ruleset')!,
     scenario = get('scenario', scenarioId);
-  const revisions = catalog.map((r) => (r.kind === 'ruleset' ? rules : r));
+  const revisions = catalog.map((r) => (r.kind === 'ruleset' && r.id === rules.id ? rules : r));
   template.seed = seed;
   for (const [i, id] of [left, right].entries()) {
     const p = template.participants[i]!;

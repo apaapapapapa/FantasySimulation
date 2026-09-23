@@ -368,6 +368,12 @@
       "id": "stamina-wings-v1",
       "revision": 1,
       "contentHash": "sha256:c49f480d72eda771c15552ae74cfda8f813be5c3a72b1974afacfa5ca5eea761"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-locomotion-v1",
+      "revision": 1,
+      "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
     }
   ]
 }
