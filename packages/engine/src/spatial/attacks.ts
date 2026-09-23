@@ -29,6 +29,7 @@ import {
 import { bodyPoint, type DecisionView } from './perception.ts';
 import type { MotionState } from './movement.ts';
 import { bodyCapsule } from './terrain.ts';
+import { ResourceBudget } from './resources.ts';
 
 type Ability = DeepReadonly<Definition<'ability'>>;
 export type ActionClock = { launchAt: number; recoveryUntil: number; cooldownUntil: number };
@@ -45,27 +46,19 @@ export function actionClock(ability: Ability, speedBps: number, step: number): A
   };
 }
 /** Zero uses means unlimited. HP cost equal to current HP is legal. No partial cost on failure. */
-export function payCost(ability: Ability, resources: ResourceState, used: number) {
-  const cost = ability.costs;
-  const reason =
-    resources.hp < cost.hp
-      ? 'hp'
-      : resources.mp < cost.mp
-        ? 'mp'
-        : cost.uses && used >= cost.uses
-          ? 'uses'
-          : null;
-  return reason
-    ? { ok: false as const, reason, resources: { ...resources } }
-    : {
-        ok: true as const,
-        reason: null,
-        resources: {
-          hp: resources.hp - cost.hp,
-          mp: resources.mp - cost.mp,
-          shield: resources.shield,
-        },
-      };
+export function payCost(
+  ability: Ability,
+  resources: ResourceState,
+  used: number,
+  staminaReady = true,
+) {
+  const budget = new ResourceBudget(resources, { ability: used }, staminaReady);
+  const result = budget.reserve('ability', [
+    { ...ability.costs, uses: { id: 'ability', limit: ability.costs.uses } },
+  ]);
+  if (!result.ok) return { ...result, resources: { ...resources } };
+  budget.commit('ability');
+  return { ok: true as const, reason: null, resources: budget.finish().resources };
 }
 /** Both declaration and release inspect only information available to the owner. Geometry decides actual contact. */
 export function inObservedRange(ability: Ability, view: DecisionView): boolean {

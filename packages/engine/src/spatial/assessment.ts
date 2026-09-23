@@ -86,7 +86,9 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
   const exposure = Math.min(1, (observedThreat * duration) / rules.horizonSteps);
   const costBps = clampBps(
     10000 *
-      (d.costs.hp / Math.max(1, view.resources.hp) + d.costs.mp / Math.max(1, view.resources.mp)),
+      (d.costs.hp / Math.max(1, view.resources.hp) +
+        d.costs.mp / Math.max(1, view.resources.mp) +
+        (d.costs.stamina ?? 0) / Math.max(1, view.resources.stamina ?? 0)),
   );
   let utility = 0,
     success = 10000,

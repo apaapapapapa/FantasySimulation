@@ -109,7 +109,7 @@ export const AI_RULES = Object.freeze(
 
 export type Condition =
   | { kind: 'always' }
-  | { kind: 'resource'; resource: 'hp' | 'mp'; belowBps: number }
+  | { kind: 'resource'; resource: 'hp' | 'mp' | 'stamina'; belowBps: number }
   | { kind: 'distance'; withinMm: number }
   | { kind: 'visible'; value: boolean }
   | { kind: 'status'; id: string; present: boolean }
@@ -121,7 +121,7 @@ function conditionAt(depth: number): z.ZodType<Condition> {
     z.strictObject({ kind: z.literal('always') }),
     z.strictObject({
       kind: z.literal('resource'),
-      resource: z.enum(['hp', 'mp']),
+      resource: z.enum(['hp', 'mp', 'stamina']),
       belowBps: uint(10_000),
     }),
     z.strictObject({ kind: z.literal('distance'), withinMm: uint(200_000) }),
@@ -249,7 +249,12 @@ export const AbilitySchema = z
     categories: categoryList(AbilityCategorySchema).optional(),
     target: z.enum(['self', 'enemy']),
     condition: ConditionSchema,
-    costs: z.strictObject({ hp: uint(1_000_000), mp: uint(1_000_000), uses: uint(6_000) }),
+    costs: z.strictObject({
+      hp: uint(1_000_000),
+      mp: uint(1_000_000),
+      stamina: uint(1_000_000).optional(),
+      uses: uint(6_000),
+    }),
     castSteps: uint(6_000),
     recoverySteps: positive(6_000),
     cooldownSteps: uint(6_000),
@@ -312,10 +317,18 @@ export const EquipmentSchema = z.strictObject({
   defenseBonus: uint(100_000),
   abilities: z.array(RefSchema).max(16),
 });
+export const StaminaSchema = z
+  .strictObject({
+    max: positive(1_000_000),
+    recoveryPerSecond: uint(1_000_000),
+    resumeAt: positive(1_000_000).optional(),
+  })
+  .refine((s) => (s.resumeAt ?? 1) <= s.max, 'Stamina resume threshold exceeds maximum');
 export const CharacterSchema = z.strictObject({
   name: z.string().min(1).max(100),
   originalText: z.string().max(20_000),
   appearance: AppearanceSchema.optional(),
+  stamina: StaminaSchema.optional(),
   stats: z.strictObject({
     hp: positive(1_000_000),
     mp: uint(1_000_000),

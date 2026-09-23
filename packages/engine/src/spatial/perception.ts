@@ -330,6 +330,7 @@ export function perceive(
 export type DecisionView = {
   self: MotionState;
   resources: ResourceState;
+  staminaExhausted?: boolean;
   statusIds: readonly string[];
   memory: PerceptionMemory;
   step?: number;
@@ -349,8 +350,13 @@ export function conditionMatches(condition: DeepReadonly<Condition>, view: Decis
     case 'always':
       return true;
     case 'resource': {
-      const max = view.self.actor.character.stats[condition.resource];
-      return max > 0 && view.resources[condition.resource] * 10000 < max * condition.belowBps;
+      const max =
+        condition.resource === 'stamina'
+          ? (view.self.actor.character.stamina?.max ?? 0)
+          : view.self.actor.character.stats[condition.resource];
+      return (
+        max > 0 && (view.resources[condition.resource] ?? 0) * 10000 < max * condition.belowBps
+      );
     }
     case 'distance': {
       const target = view.memory.observation?.enemy ?? view.memory.lastSeen;

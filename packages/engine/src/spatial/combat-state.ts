@@ -24,6 +24,7 @@ export type ActionState = {
 export type ActorState = {
   motion: MotionState;
   resources: ResourceState;
+  staminaClock?: { remainder: number; exhausted: boolean };
   statuses: StatusCohort[];
   memory: PerceptionMemory;
   decision: Decision;
@@ -54,6 +55,7 @@ export const cloneActor = (state: ActorState): ActorState => ({
     facing: { ...state.motion.facing },
   },
   resources: { ...state.resources },
+  ...(state.staminaClock ? { staminaClock: { ...state.staminaClock } } : {}),
   statuses: state.statuses.map((s) => ({ ...s, causes: [...s.causes] })),
   used: { ...state.used },
   cooldowns: { ...state.cooldowns },
