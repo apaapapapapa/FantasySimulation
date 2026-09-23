@@ -1,0 +1,78 @@
+{
+  "source": "06958f6a2944e3e3cafeb98fdf18bcac901f083c",
+  "engineVersion": "spatial-v1.10",
+  "complete": {
+    "id": "c826f93f-ace5-4783-b464-a68cbbf85366",
+    "simulationHash": "sha256:37247e5ec4ce1240d9fc850375436b68389dde224133469113199be9b7d3eef9",
+    "clientId": "fixture",
+    "idempotencyKey": "completed",
+    "requestHash": "sha256:bb930216038583faa2d5e8f765b536867ce1b49745869dbf9fb7f30b0ffb7d66",
+    "budgetJson": "{\"maxBytes\":16000000,\"maxCandidates\":1000000,\"maxCasts\":1000000,\"maxCurveSegments\":64,\"maxEvents\":50000,\"maxFrameBytes\":512000,\"maxMoveSegments\":8,\"maxPathNodes\":4096,\"maxProjectiles\":64,\"maxStatusCauses\":2048,\"maxStatusTypes\":64}",
+    "state": "completed",
+    "attempts": 1,
+    "maxAttempts": 3,
+    "currentAttemptId": "38e8456e-9fc1-4cc5-b90a-65af0323d4fc",
+    "resultId": "f0e0bb9d-37d9-4d7b-b43d-daef64fa5339",
+    "error": null,
+    "createdAt": 1790138508768,
+    "updatedAt": 1790138509362
+  },
+  "pending": "07f7cde3-d0d3-4af6-b29c-c2655750e3f1",
+  "interrupted": "4c11a49c-1c5c-4895-9b6d-a828376764c5",
+  "claimed": "07f7cde3-d0d3-4af6-b29c-c2655750e3f1",
+  "spec": {
+    "seed": 42,
+    "participants": [
+      {
+        "actorId": "left",
+        "character": {
+          "id": "archer",
+          "revision": 1,
+          "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc"
+        },
+        "position": {
+          "x": -6000,
+          "y": 902,
+          "z": 0
+        },
+        "facing": {
+          "x": 1,
+          "y": 0,
+          "z": 0
+        },
+        "rngSeed": 2654435731,
+        "rngStream": 0
+      },
+      {
+        "actorId": "right",
+        "character": {
+          "id": "guardian",
+          "revision": 1,
+          "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1"
+        },
+        "position": {
+          "x": 6000,
+          "y": 902,
+          "z": 0
+        },
+        "facing": {
+          "x": -1,
+          "y": 0,
+          "z": 0
+        },
+        "rngSeed": 1013904216,
+        "rngStream": 1
+      }
+    ],
+    "ruleset": {
+      "id": "compat-fixture-rules",
+      "revision": 1,
+      "contentHash": "sha256:9bded105226e082f3253cd08688c86b61e4559b8efdadd9adf29e7e0a2a27df6"
+    },
+    "scenario": {
+      "id": "flat",
+      "revision": 1,
+      "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+    }
+  }
+}

@@ -1,34 +1,13 @@
 import { z } from 'zod';
 import { canonicalJson } from './canonical.ts';
-import {
-  HashSchema,
-  IdSchema,
-  ManifestSchema,
-  RefSchema,
-  RevisionSchema,
-  RulesetSchema,
-} from './contracts.ts';
+import { HashSchema, IdSchema, StoredManifestSchema } from './contracts.ts';
 import { encodeNumericState } from './numeric.ts';
 import { ResultSchema, type BattleEvent } from './records.ts';
 import { DisplayStateSchema, StreamRecordSchema, type StreamRecord } from './stream.ts';
 
 // Display schema support is independent of the installed engine/rules version.
 // Old engines are never loaded. A structural format change requires a replay schema bump.
-const RecordedRevisionSchema = z.union([
-  RevisionSchema,
-  z.strictObject({
-    kind: z.literal('ruleset'),
-    ...RefSchema.shape,
-    schemaVersion: z.literal(1),
-    definition: RulesetSchema.extend({ rulesVersion: IdSchema }),
-  }),
-]);
-export const RecordedManifestSchema = z.strictObject({
-  ...ManifestSchema.shape,
-  engineVersion: IdSchema,
-  aiProfile: ManifestSchema.shape.aiProfile.optional(),
-  revisions: z.array(RecordedRevisionSchema).min(4).max(256),
-});
+export const RecordedManifestSchema = StoredManifestSchema;
 export type RecordedManifest = z.infer<typeof RecordedManifestSchema>;
 export const eventHashLine = (event: BattleEvent): string =>
   `${canonicalJson(encodeNumericState(event))}\n`;

@@ -1,57 +1,47 @@
-# ADR 0010: 戦闘版を更新するときの保存データ互換性
+# ADR 0010: 戦闘版と保存データの互換性
 
-状態: Issue #59の2026-09-23改訂に基づく運用規則。Refs #1, #45, #59, #61。
-「版が上がるたびに新DBへ切り替える」という同日初回の方針を置き換える。
-ADR 0004/0005の公式Drizzle運用とADR 0009の保存記録再生を維持する。
+Issue #59の2026-09-23改訂。版ごとに新DBを作る旧決定を置き換える。Refs #1, #45, #61。
 
-## 互換な追加
+## 追加と版更新
 
-省略可能な項目や列挙値の追加でschemaを広げ、既存項目の意味・範囲・必須性を変えない。
-省略時には既存fixtureの結果を変えず、保存revision・結果・replayを現在の厳格な検証で読めるまま残す。
-同じDBを引き続き使い、利用者のキャラクター・下書き・保存結果を無言で変換しない。
-データ追加の都合でschema世代の宣言・checksum receipt・reset・自前migration runner・履歴tableを復活させない。
-relational schemaの変更は、引き続きDrizzle Kitと公式migratorで適用する。
+schemaは省略可能な項目・列挙値の追加で広げ、省略時の既存fixtureを維持する。
+既存項目の削除、意味・範囲・必須性の変更は原則禁止。保存revision・結果・replayを
+同じDBで厳格に検証して読み、利用者の定義・下書き・結果を無言で変換しない。
 
-## 判断を変える変更
+判断を変える場合はrules/engine版を上げ、新rulesを別IDで追加する。
+実装digest・コーパス・fixture・ルール文書を同じPRでレビューし、差の理由を記録する。
+失敗を通すためだけに期待値を再生成しない。旧engineの登録・ロード・再実行は行わない。
 
-rules/engineの版を上げ、新しいrulesを別IDで追加する。例: `standard`を残して
-`standard-observed-v1`を追加する。保存済みの旧rulesを更新しない。
-実装digest・入力コーパス・必要なfixture・ルール文書を同じPRでレビューする。
-判断が変わる理由と期待する差を説明してから更新し、失敗した検証を通すためだけに再生成しない。
+保存用`StoredManifestSchema`を実行用`ManifestSchema`から分離する。
+`unsupportedExecutionReason`はengine/AI/実装identityを判定する。
+旧版の未完了jobは理由付きで失敗とし、再試行・replay復旧は409で拒否する。
+実行と再試行は`Store.requireExecutableSpec`、新規入力は`prepareSpec`で検査し、
+旧rules指定には現在版を選ぶよう案内する。保存済み結果とdisplay/replayは読めるまま残す。
 
-旧rulesは読み取り用とし、旧engineの登録・ロード・再実行は行わない。
-旧版の未完了jobは「対応していない版」と分かる理由で失敗として終え、再試行・replay復旧は409で拒否する。
-一覧またはBattleSpec作成時の4xxで実行可否を区別できるようにする。
-保存済みの結果と対応replay schemaの記録は、同じDBから読めるままにする。
-これは必要な実装契約であり、下記の未完了項目を実装済みとは扱わない。
+## サンプル
 
-## サンプルの不変性
+変更には新IDを使う。配布済みidentityは`data/spatial/published-revisions.json`へ追記し、
+catalog検査とCIで再hash・revision・欠落・ID重複を検査する。seedは既存IDを上書きしない。
 
-配布済みサンプルを変える場合は新しいIDで追加する。同じkind/ID/revisionの内容を書き換えない。
-前版の配布カタログとの比較を検査へ加え、既存IDの内容変更を失敗にする。
-サンプル登録は既存IDを上書きしないため、同じIDの変更で新規DBと既存DBの内容を食い違わせてはならない。
+PR #57で`flat`・`pillars` rev 1に`terrainKnowledge: surveyed`が追加された履歴は残す。
+配布用の正本は#57後の内容を固定する。既存DBの追加前（省略=observed）・後の双方を変換しない。
+新規参照には`flat-surveyed-v1`・`pillars-surveyed-v1`を追加し、catalogの既定は後者とする。
+両DBへ同じ内容で追加できる。旧IDを明示した呼出し・固定コーパスは従来の入力を維持し、
+alias化しない。既存の保存revision参照はその内容に従う。
 
-PR #57で`flat`・`pillars`のrevision 1へ`terrainKnowledge: surveyed`が追加された件は未解消。
-既存DB内には追加前・追加後の両方があり得る。現時点でどちらも自動変換しない。
-surveyed用の新しいID、配布するrevision 1の正本、両方の既存DBの扱い、fixture/コーパスの変更は、
-Issue #59の後続実装PRで一緒に決定・検証する。
+## 避けられない非互換変更
 
-## 新しいDBが避けられない場合
+PRのADRで必要性・影響を記録した場合だけDBとartifact rootの両方を版別にする。
+旧ファイルは削除・移動・変換しない。`.store-id`保護を迂回しない。
+明示した`DATABASE_PATH`・`ARTIFACT_PATH`が対応外なら、書込み前に保存版・現在版・
+新規パスの対処を示して停止する。この例外機能は必要時に実装し、現在の既定パスは維持する。
+schema世代宣言・checksum receipt・reset・自前migration runner・履歴tableを復活させない。
+relational schemaは[公式Drizzle](0005-drizzle-kit.md)で変更する。
 
-既存定義を読めなくする削除・意味変更・範囲縮小は原則として行わない。
-避けられない場合だけ、そのPRのADRに理由と影響範囲を記録し、DBとartifact rootの両方を版ごとの場所へ分ける。
-旧ファイルを削除・移動・自動変換せずに残す。DBだけを分けて既存の`.store-id`所有権を迂回しない。
-明示した`DATABASE_PATH`または`ARTIFACT_PATH`が対応外なら、書込み前に保存版・現在版・新規パスの案内を出して停止する。
-この例外手順の実装は必要になったPRで行う。今の既定値は`data/fantasy.sqlite`と`data/replays`を維持する。
+## 検証
 
-## 版更新PRの手順と残作業
-
-1. 変更を互換な追加・判断変更・避けられない非互換変更に分類し、影響する保存契約を説明する。
-2. 判断変更ならrules/engine版と新rules IDを揃え、変更するサンプルを新IDへ分ける。
-3. 省略時の従来動作、旧定義の読み取り、未対応版の実行拒否を試験する。
-4. 前版で作った定義・完了試合/replay・未完了jobを含むDBで、起動・seed・API取得・失敗理由を検証する。
-5. 実装digestとコーパスの意図した変更をレビューし、既存のverify・source harness・Linux CI・main確認を完了する。
-
-このADRのPRは運用規則の文書化だけを扱う。旧版DBの回帰fixture、未完了job/再試行の明示拒否、
-rulesの実行可否表示、配布済みカタログ検査、`flat`・`pillars`の整理はIssue #59に残す。
-Issue全体の完了宣言・クローズは、それらの実装と検証が完了してから既存ハーネスで行う。
+各PRで追加/判断変更/非互換を分類し、省略時の動作・旧定義読取・未対応版拒否を検証する。
+実際の旧コード2版のSQL exportとreplayは[fixture](../../apps/api/fixtures/compatibility/README.md)に固定。
+`version-compatibility.test.ts`で起動・seed・API取得・未完了job/再試行/復旧拒否を確認する。
+復元は試験用だけで、製品へ旧engineや別migrationを追加しない。
+版と新IDの整合、digest/corpus差分をレビューし、verify・clean source・Linux CI・main確認を完了する。

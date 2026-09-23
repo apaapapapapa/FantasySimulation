@@ -2186,7 +2186,195 @@
   },
   {
     "kind": "scenario",
+    "id": "flat-surveyed-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+    "definition": {
+      "name": "平地",
+      "bounds": {
+        "min": {
+          "x": -50000,
+          "y": -1000,
+          "z": -50000
+        },
+        "max": {
+          "x": 50000,
+          "y": 50000,
+          "z": 50000
+        }
+      },
+      "obstacles": [
+        {
+          "id": "floor",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": -500,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 50000,
+            "y": 500,
+            "z": 50000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        }
+      ],
+      "navigation": {
+        "version": "support-graph-v1",
+        "nodes": [],
+        "edges": []
+      },
+      "terrainKnowledge": "surveyed"
+    }
+  },
+  {
+    "kind": "scenario",
     "id": "pillars",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",
+    "definition": {
+      "name": "柱のある広場",
+      "bounds": {
+        "min": {
+          "x": -50000,
+          "y": -1000,
+          "z": -50000
+        },
+        "max": {
+          "x": 50000,
+          "y": 50000,
+          "z": 50000
+        }
+      },
+      "obstacles": [
+        {
+          "id": "floor",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": -500,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 50000,
+            "y": 500,
+            "z": 50000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        },
+        {
+          "id": "pillar",
+          "kind": "pillar",
+          "center": {
+            "x": 0,
+            "y": 1500,
+            "z": 0
+          },
+          "radiusMm": 1200,
+          "halfHeightMm": 1500,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        }
+      ],
+      "navigation": {
+        "version": "support-graph-v1",
+        "nodes": [
+          {
+            "id": "corner-ws",
+            "position": {
+              "x": -2200,
+              "y": 902,
+              "z": -2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-wn",
+            "position": {
+              "x": -2200,
+              "y": 902,
+              "z": 2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-es",
+            "position": {
+              "x": 2200,
+              "y": 902,
+              "z": -2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-en",
+            "position": {
+              "x": 2200,
+              "y": 902,
+              "z": 2200
+            },
+            "mode": "ground"
+          }
+        ],
+        "edges": [
+          {
+            "from": "corner-ws",
+            "to": "corner-wn",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-ws",
+            "to": "corner-es",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-wn",
+            "to": "corner-en",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-es",
+            "to": "corner-en",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          }
+        ]
+      },
+      "terrainKnowledge": "surveyed"
+    }
+  },
+  {
+    "kind": "scenario",
+    "id": "pillars-surveyed-v1",
     "revision": 1,
     "schemaVersion": 1,
     "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",

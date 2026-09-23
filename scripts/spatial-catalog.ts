@@ -1,9 +1,11 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { contentHash } from '../packages/domain/src/spatial/index.ts';
 import { sampleCatalog } from '../packages/engine/src/spatial/catalog.ts';
+import { assertPublishedRevisions } from './catalog-history.ts';
 const directory = new URL('../data/spatial/', import.meta.url);
 const file = new URL('catalog.json', directory);
 const catalog = await sampleCatalog();
+await assertPublishedRevisions(catalog);
 if (process.argv.includes('--write')) {
   mkdirSync(directory, { recursive: true });
   writeFileSync(file, JSON.stringify(catalog, null, 2) + '\n');

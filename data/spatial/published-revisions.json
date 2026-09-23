@@ -1,0 +1,331 @@
+{
+  "source": "e42a991375377dcea996faf6204de986f3bff3d1",
+  "revisions": [
+    {
+      "kind": "ability",
+      "id": "arrow",
+      "revision": 1,
+      "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81"
+    },
+    {
+      "kind": "ability",
+      "id": "cleanse",
+      "revision": 1,
+      "contentHash": "sha256:6e039c88be89bf40379ad6a6ae7a74b5b6ab2c492b3cbe417a452187d2d98121"
+    },
+    {
+      "kind": "ability",
+      "id": "fireball",
+      "revision": 1,
+      "contentHash": "sha256:e4dc989f853cc05c7b8238c68610c3e32a4b94784ecab7df4113c6ec99d44fc1"
+    },
+    {
+      "kind": "ability",
+      "id": "guard",
+      "revision": 1,
+      "contentHash": "sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769"
+    },
+    {
+      "kind": "ability",
+      "id": "heal",
+      "revision": 1,
+      "contentHash": "sha256:2ff77c3130c363d1d15d991a0ee1a92f9595759fcabfc85c90f2ebdc922f2231"
+    },
+    {
+      "kind": "ability",
+      "id": "ice",
+      "revision": 1,
+      "contentHash": "sha256:0102cbd86b2e227894db699bfc4340ca7f727e1767c43e5e7cb41e000b294444"
+    },
+    {
+      "kind": "ability",
+      "id": "lightning",
+      "revision": 1,
+      "contentHash": "sha256:72ad3f4db08936dbe3f70f547dd517b355b54f724295c5a17ab843ec28b8f8a8"
+    },
+    {
+      "kind": "ability",
+      "id": "measured-fire",
+      "revision": 1,
+      "contentHash": "sha256:e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965"
+    },
+    {
+      "kind": "ability",
+      "id": "measured-ice",
+      "revision": 1,
+      "contentHash": "sha256:39b76f7d8ff892a180d7142fcba6d92a7c361d58a4fe5261251ed6f0190696d2"
+    },
+    {
+      "kind": "ability",
+      "id": "ordinary-flare",
+      "revision": 1,
+      "contentHash": "sha256:ebe6c0f4194d04a18d9d657a3fdd2b692a86b1ccb82b291d6b5885e17ddc5c42"
+    },
+    {
+      "kind": "ability",
+      "id": "reveal-fire",
+      "revision": 1,
+      "contentHash": "sha256:1d54c35a5d79ce021d43eb0cc31b6bccd027ad71846ea9f9ce3dbde71f6c3514"
+    },
+    {
+      "kind": "ability",
+      "id": "seeker",
+      "revision": 1,
+      "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3"
+    },
+    {
+      "kind": "ability",
+      "id": "self-water",
+      "revision": 1,
+      "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55"
+    },
+    {
+      "kind": "ability",
+      "id": "spear",
+      "revision": 1,
+      "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3"
+    },
+    {
+      "kind": "ability",
+      "id": "sword",
+      "revision": 1,
+      "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef"
+    },
+    {
+      "kind": "ability",
+      "id": "takeoff",
+      "revision": 1,
+      "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd"
+    },
+    {
+      "kind": "character",
+      "id": "arcane-archer",
+      "revision": 1,
+      "contentHash": "sha256:efde0ebbb7c06098ae9e55adc65d8b39fcb21e142921da31fcfdaeccddba5bb9"
+    },
+    {
+      "kind": "character",
+      "id": "archer",
+      "revision": 1,
+      "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc"
+    },
+    {
+      "kind": "character",
+      "id": "ember-duelist",
+      "revision": 1,
+      "contentHash": "sha256:afb1cf71bf6a2be45a23001982fd25328d31d0c15f0e0b197a39f953114f923a"
+    },
+    {
+      "kind": "character",
+      "id": "fire-mage",
+      "revision": 1,
+      "contentHash": "sha256:92d6fdbe4449a4cf2df33bc96903f689d77ebe9aa5273b478a3caf88f5fca5b7"
+    },
+    {
+      "kind": "character",
+      "id": "fire-seer",
+      "revision": 1,
+      "contentHash": "sha256:fa9724ead3a489542266bccf43fef95c01991c9cc3878fc203820305fe6a3cbb"
+    },
+    {
+      "kind": "character",
+      "id": "guardian",
+      "revision": 1,
+      "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1"
+    },
+    {
+      "kind": "character",
+      "id": "healer",
+      "revision": 1,
+      "contentHash": "sha256:8cc1e799233de3462c00fda0b19421f6b6a8714776a82c47b65a6a0e46a0a33d"
+    },
+    {
+      "kind": "character",
+      "id": "ice-mage",
+      "revision": 1,
+      "contentHash": "sha256:229c51fbb2b38b2cd3c66f571dad8fd7f26d6f7e9fbcba00913bdb110e16cbd4"
+    },
+    {
+      "kind": "character",
+      "id": "lancer",
+      "revision": 1,
+      "contentHash": "sha256:66182d21f131993513596e85ab55858f95bc379c690de511307d2056f9d00e88"
+    },
+    {
+      "kind": "character",
+      "id": "sky-mage",
+      "revision": 1,
+      "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8"
+    },
+    {
+      "kind": "character",
+      "id": "storm-mage",
+      "revision": 1,
+      "contentHash": "sha256:a9d96cf5dfad37749f6ab4b757a55c872459698647054856a49444778b99a489"
+    },
+    {
+      "kind": "character",
+      "id": "swordsman",
+      "revision": 1,
+      "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e"
+    },
+    {
+      "kind": "character",
+      "id": "water-observer",
+      "revision": 1,
+      "contentHash": "sha256:26185be68cef86a3d3f407b8180ecc3375b8709f343c01362aa44ddf08c9d839"
+    },
+    {
+      "kind": "equipment",
+      "id": "long-spear",
+      "revision": 1,
+      "contentHash": "sha256:a00a48880d5a98a202dd40e8c1c396aea301bc1be0f0d02d0c4bd7e6dfced717"
+    },
+    {
+      "kind": "equipment",
+      "id": "plate",
+      "revision": 1,
+      "contentHash": "sha256:96bbdbd35cfb6b454b6a504779ee1a4530d8179c59fbc13c6d508042bdf3feaf"
+    },
+    {
+      "kind": "policy",
+      "id": "arcane-archer-policy",
+      "revision": 1,
+      "contentHash": "sha256:8472426e6400c50f121ef90b1efa56a0ecab8acdcce07548fc6f3c8d95b685b4"
+    },
+    {
+      "kind": "policy",
+      "id": "archer-policy",
+      "revision": 1,
+      "contentHash": "sha256:84929035bc77b8b535df55c8c8f5524bcd1cbb906a17fd7dbc2056d4b1a81843"
+    },
+    {
+      "kind": "policy",
+      "id": "ember-duelist-policy",
+      "revision": 1,
+      "contentHash": "sha256:06cad52985a9446fb07e7081cc5414a55a0f8f68a0dd59214051e15ebe80ff55"
+    },
+    {
+      "kind": "policy",
+      "id": "fire-mage-policy",
+      "revision": 1,
+      "contentHash": "sha256:626da8128a7b437511d969c2df5ed6a5ae987de33287131138f715c294656bd7"
+    },
+    {
+      "kind": "policy",
+      "id": "fire-seer-policy",
+      "revision": 1,
+      "contentHash": "sha256:0c7c8c1e8bd7edd94b088cfcf8e4a9e6be5fc66107c0c8c1924be45e69d05ddf"
+    },
+    {
+      "kind": "policy",
+      "id": "guardian-policy",
+      "revision": 1,
+      "contentHash": "sha256:24fe8f031decaf929218e92cd4cc444ac056cde4c34029ce258d1ec2f2d5bd64"
+    },
+    {
+      "kind": "policy",
+      "id": "healer-policy",
+      "revision": 1,
+      "contentHash": "sha256:32a1c0f07b9dca7896ae4bf5ee264c39d046d15006ccffc47fab7383c6ca86da"
+    },
+    {
+      "kind": "policy",
+      "id": "ice-mage-policy",
+      "revision": 1,
+      "contentHash": "sha256:79ef23078b741061dd9c5b5423b35ce46f938c2af9d0fca9c9cd3c76951288c2"
+    },
+    {
+      "kind": "policy",
+      "id": "lancer-policy",
+      "revision": 1,
+      "contentHash": "sha256:b280076b1ee04863022b1b18b79e788ac8c957cc28a3608d302b93c31a02e0b9"
+    },
+    {
+      "kind": "policy",
+      "id": "sky-mage-policy",
+      "revision": 1,
+      "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c"
+    },
+    {
+      "kind": "policy",
+      "id": "storm-mage-policy",
+      "revision": 1,
+      "contentHash": "sha256:974519701fe5f7abe4ca8880cbc17bc6bb2c0c1385b4c26ea671a6cc828563b7"
+    },
+    {
+      "kind": "policy",
+      "id": "swordsman-policy",
+      "revision": 1,
+      "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda"
+    },
+    {
+      "kind": "policy",
+      "id": "water-observer-policy",
+      "revision": 1,
+      "contentHash": "sha256:b7596f61912a7a8b22802b3c262a138617f552930a8c59ba0a9e1ae747ef91ca"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-observed-v1",
+      "revision": 1,
+      "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
+    },
+    {
+      "kind": "scenario",
+      "id": "flat",
+      "revision": 1,
+      "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
+    },
+    {
+      "kind": "scenario",
+      "id": "pillars",
+      "revision": 1,
+      "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
+    },
+    {
+      "kind": "status",
+      "id": "burning",
+      "revision": 1,
+      "contentHash": "sha256:72d9b975b163b4e18f003e9650dcf6486e554ee1d7d12bcc7d93d2ecdc7a7fa1"
+    },
+    {
+      "kind": "status",
+      "id": "flight",
+      "revision": 1,
+      "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944"
+    },
+    {
+      "kind": "status",
+      "id": "frost",
+      "revision": 1,
+      "contentHash": "sha256:ee8f40e6e7b1b8597c4cc3c0db041db0ac9f5e1726eb8788bad69387d18486f4"
+    },
+    {
+      "kind": "status",
+      "id": "ordinary-burning",
+      "revision": 1,
+      "contentHash": "sha256:4d6b455fc9652857bda8fafdb8c1286c858a2638ef5a432dd754b19095442024"
+    },
+    {
+      "kind": "status",
+      "id": "regeneration",
+      "revision": 1,
+      "contentHash": "sha256:dcf1edb121b94689de4d5e26c75168b3256c26be1682490b0d7012216197067d"
+    }
+  ],
+  "additions": [
+    {
+      "kind": "scenario",
+      "id": "flat-surveyed-v1",
+      "revision": 1,
+      "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
+    },
+    {
+      "kind": "scenario",
+      "id": "pillars-surveyed-v1",
+      "revision": 1,
+      "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
+    }
+  ]
+}

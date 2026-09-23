@@ -406,7 +406,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
       position: { x: x * 2200, y: 902, z: z * 2200 },
     })),
   );
-  await add('scenario', 'pillars', {
+  const pillars = await add('scenario', 'pillars', {
     ...flat.definition,
     name: '柱のある広場',
     obstacles: [
@@ -438,6 +438,9 @@ export async function sampleCatalog(): Promise<Revision[]> {
       ),
     },
   });
+  // Old IDs have two historical DB variants. New references use unambiguous IDs.
+  await add('scenario', 'flat-surveyed-v1', flat.definition);
+  await add('scenario', 'pillars-surveyed-v1', pillars.definition);
   return revisions.sort((a, b) => compareIds(`${a.kind}:${a.id}`, `${b.kind}:${b.id}`));
 }
 
@@ -474,7 +477,7 @@ export function revisionClosure(
 export async function catalogManifest(
   left = 'swordsman',
   right = 'sky-mage',
-  scenarioId = 'pillars',
+  scenarioId = 'pillars-surveyed-v1',
   maxSteps = 6000,
   seed = 42,
 ): Promise<Manifest> {
