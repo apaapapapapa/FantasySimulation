@@ -484,13 +484,14 @@ export const PhysicsProfileSchema = z.strictObject({
   simultaneousObstacleContact: z.literal('wall-first-within-epsilon'),
   actorCollision: z.literal('binary64-analytic-upright-capsule-sweep-v1'),
 });
-export const ManifestSchema = z
+/** Saved inputs remain readable; only ManifestSchema admits current execution. */
+export const StoredManifestSchema = z
   .strictObject({
     schemaVersion: z.literal(3),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
-    engineVersion: z.literal(CURRENT_ENGINE_VERSION),
-    aiProfile: z.literal('observed-utility-v1'),
+    engineVersion: IdSchema,
+    aiProfile: IdSchema.optional(),
     implementationDigest: HashSchema,
     physicsProfileHash: HashSchema,
     physicsProfile: PhysicsProfileSchema,
@@ -516,6 +517,11 @@ export const ManifestSchema = z
       ids.add(key);
     }
   });
+export const ManifestSchema = StoredManifestSchema.safeExtend({
+  engineVersion: z.literal(CURRENT_ENGINE_VERSION),
+  aiProfile: z.literal('observed-utility-v1'),
+});
+export type StoredManifest = z.infer<typeof StoredManifestSchema>;
 export type Manifest = z.infer<typeof ManifestSchema>;
 export const BudgetSchema = z.strictObject({
   maxEvents: positive(1_000_000),

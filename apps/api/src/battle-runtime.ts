@@ -134,8 +134,7 @@ export class BattleRuntime {
     )
       throw new StoreError(409, 'Only a missing/corrupt definitive replay can be recovered');
     try {
-      const spec = this.jobs.store.getSpec(result.simulationHash);
-      if (!spec) throw new Error('Saved specification is unavailable');
+      const spec = this.jobs.store.requireExecutableSpec(result.simulationHash);
       await prepareBattle(spec.manifest);
     } catch {
       throw new StoreError(409, 'Saved engine identity is unsupported; replay remains held');
@@ -207,8 +206,7 @@ export class BattleRuntime {
       Math.floor(JOB_LIMITS.leaseMs / 3),
     );
     try {
-      const spec = this.jobs.store.getSpec(claim.job.simulationHash);
-      if (!spec) throw new Error('Missing saved specification');
+      const spec = this.jobs.store.requireExecutableSpec(claim.job.simulationHash);
       writer = await ReplayWriter.create(this.owner.root, {
         id,
         attemptId: claim.attempt.id,

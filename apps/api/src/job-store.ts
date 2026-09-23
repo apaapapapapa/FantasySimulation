@@ -376,6 +376,7 @@ export class JobStore {
         outcome === 'draw'
       )
         throw new StoreError(409, 'Job cannot be retried at this version');
+      this.store.requireExecutableSpec(job.simulationHash);
       this.checkCapacity();
       this.store.orm
         .update(simulationJobs)

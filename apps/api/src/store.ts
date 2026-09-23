@@ -14,6 +14,7 @@ import {
   DraftInputSchema,
   DraftSchema,
   ManifestSchema,
+  StoredManifestSchema,
   parseJson,
   RevisionSchema,
   SpecInputSchema,
@@ -30,6 +31,7 @@ import {
   reference,
   revisionHash,
   sealRevision,
+  unsupportedExecutionReason,
   type PreparedBattle,
 } from '@fantasy/engine/spatial';
 import { repositoryRoot } from './config.ts';
@@ -377,6 +379,15 @@ export class Store {
       this.requireRevision('ruleset', request.ruleset),
       this.requireRevision('scenario', request.scenario),
     ];
+    const rules = roots.find((r) => r.kind === 'ruleset')!;
+    if (
+      rules.kind === 'ruleset' &&
+      (rules.definition.rulesVersion !== CURRENT_ENGINE_VERSION || !rules.definition.ai)
+    )
+      throw new StoreError(
+        409,
+        `Unsupported rules version: saved ${rules.definition.rulesVersion}, current ${CURRENT_ENGINE_VERSION}; select a current rules revision`,
+      );
     const revisions = resolveClosure(roots, (kind, ref) => this.requireRevision(kind, ref));
     return prepareBattle({
       ...request,
@@ -421,8 +432,15 @@ export class Store {
       .where(eq(battleSpecs.simulationHash, simulationHash))
       .get();
     return row
-      ? { simulationHash, manifest: parseJson(ManifestSchema, jsonValue(row.manifestJson)) }
+      ? { simulationHash, manifest: parseJson(StoredManifestSchema, jsonValue(row.manifestJson)) }
       : undefined;
+  }
+  requireExecutableSpec(simulationHash: string) {
+    const spec = this.getSpec(simulationHash);
+    if (!spec) throw new StoreError(409, 'Saved specification is unavailable');
+    const reason = unsupportedExecutionReason(spec.manifest);
+    if (reason) throw new StoreError(409, reason);
+    return { simulationHash, manifest: parseJson(ManifestSchema, spec.manifest) };
   }
 }
 export const openStore = (filename: string) => new Store(filename);

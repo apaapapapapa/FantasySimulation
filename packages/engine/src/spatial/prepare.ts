@@ -4,6 +4,7 @@ import {
   type DeepReadonly,
   actorSeed,
   ManifestSchema,
+  StoredManifestSchema,
   parseJson,
   RevisionSchema,
   compareIds,
@@ -11,6 +12,7 @@ import {
   type Definition,
   type DefinitionKind,
   type Manifest,
+  type StoredManifest,
   type Revision,
   type RevisionRef,
 } from '@fantasy/domain/spatial';
@@ -68,12 +70,26 @@ export const reference = (revision: Revision): RevisionRef => ({
   contentHash: revision.contentHash,
 });
 
-export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
-  const manifest = parseJson(ManifestSchema, input);
+/** Read-only identity check shared by admission, retry and execution; never loads an old engine. */
+export function unsupportedExecutionReason(manifest: StoredManifest): string | null {
+  if (manifest.engineVersion !== CURRENT_ENGINE_VERSION)
+    return `Unsupported engine version: saved ${manifest.engineVersion}, current ${CURRENT_ENGINE_VERSION}`;
+  if (manifest.aiProfile !== 'observed-utility-v1')
+    return `Unsupported AI profile: ${manifest.aiProfile ?? 'legacy'}`;
   if (
     manifest.implementationDigest !== implementation.digest ||
     manifest.wasmHash !== implementation.wasm ||
-    manifest.angleTableHash !== implementation.table ||
+    manifest.angleTableHash !== implementation.table
+  )
+    return 'Unsupported engine/physics implementation identity';
+  return null;
+}
+
+export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
+  const unsupported = unsupportedExecutionReason(parseJson(StoredManifestSchema, input));
+  if (unsupported) throw new Error(unsupported);
+  const manifest = parseJson(ManifestSchema, input);
+  if (
     manifest.physicsProfileHash !== (await contentHash(profile)) ||
     manifest.physicsProfileHash !== (await contentHash(manifest.physicsProfile))
   )
