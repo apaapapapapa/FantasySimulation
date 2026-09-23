@@ -95,8 +95,10 @@ export function inspectContext(root: string, paths: readonly string[]) {
   const canonicalRoot = realpathSync(root);
   const safePath = (path: string) => {
     const file = resolve(root, path);
+    if (lstatSync(file).isSymbolicLink())
+      throw Error(`Documentation/navigation must stay inside the repository: ${path}`);
     const inside = relative(canonicalRoot, realpathSync(file));
-    if (inside.startsWith('..') || lstatSync(file).isSymbolicLink())
+    if (inside.startsWith('..'))
       throw Error(`Documentation/navigation must stay inside the repository: ${path}`);
     return file;
   };
@@ -114,8 +116,9 @@ export function inspectContext(root: string, paths: readonly string[]) {
   for (const topic of ['list', ...Object.keys(CONTEXT_TOPICS)]) contextPlan(topic);
   for (const path of documents) {
     // Git lists unstaged deletions too; incoming links and required targets still catch them.
-    if (!existsSync(resolve(root, path))) continue;
-    const stat = lstatSync(safePath(path));
+    const stat = lstatSync(resolve(root, path), { throwIfNoEntry: false });
+    if (!stat) continue;
+    safePath(path);
     if (!stat.isFile()) throw Error(`Not a document file: ${path}`);
     const limit = /(?:^|\/)(?:AGENTS|CLAUDE|SKILL)\.md$/i.test(path)
       ? CONTEXT_POLICY.instructionBytes

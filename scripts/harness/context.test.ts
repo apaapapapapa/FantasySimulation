@@ -114,18 +114,25 @@ describe('documentation budgets and navigation', () => {
     }
   });
 
-  it('fails on empty coverage and symlinked documents instead of reading outside the tree', () => {
-    const project = contextRepository();
-    try {
-      expect(() => inspectContext(project.root, [])).toThrow('coverage is empty');
-      symlinkSync(resolve('README.md'), join(project.root, 'docs/external.md'));
-      expect(() => inspectContext(project.root, qualityPaths(project.root))).toThrow(
-        'inside the repository',
-      );
-    } finally {
-      project.dispose();
-    }
-  });
+  it.each(['existing', 'dangling'] as const)(
+    'rejects empty coverage and %s Markdown symlinks',
+    (kind) => {
+      const project = contextRepository();
+      try {
+        expect(() => inspectContext(project.root, [])).toThrow('coverage is empty');
+        symlinkSync(
+          kind === 'existing' ? resolve('README.md') : join(project.root, 'missing.md'),
+          join(project.root, 'docs/external.md'),
+        );
+        project.git('add', 'docs/external.md');
+        expect(() => inspectContext(project.root, qualityPaths(project.root))).toThrow(
+          'inside the repository',
+        );
+      } finally {
+        project.dispose();
+      }
+    },
+  );
 
   it('returns a failing CLI status when a budget is exceeded', () => {
     const project = contextRepository({ 'docs/oversized.md': 'x'.repeat(32001) });
