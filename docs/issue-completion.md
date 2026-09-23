@@ -8,9 +8,11 @@ existing source harness for verification, then include a reviewed declaration
 at `.github/issue-completions/<number>.json` in the final PR. Partial PRs use
 `Refs #number`; do not use GitHub's `Closes`/`Fixes`/`Resolves` keywords because
 those can close an Issue at merge time, before main validation succeeds.
-The delivery gate rejects closing-keyword references anywhere in the PR body,
-including explanatory prose. Its review receipt binds the PR title and body;
-editing either requires renewed review. Inspect the intended squash message too.
+The delivery gate rejects closing-keyword references anywhere in the PR title/body
+or intended squash title/body, including explanatory prose. Its review receipt
+binds the PR wording; editing it requires renewed review. Record `squashTitle` and
+`squashBody` in that receipt, then use those exact values for the authorized merge.
+Missing intended squash wording remains incomplete; do not rely on GitHub defaults.
 
 Review the latest Issue body, discussion, all acceptance criteria, linked PRs,
 sub-Issues and external setup. Update partial progress directly in the Issue;

@@ -48,6 +48,25 @@ export interface ReviewReceipt {
   method: 'self' | 'human';
   summary: string;
   unresolvedFindings: number;
+  squashTitle: string;
+  squashBody: string;
+}
+function issueWordingStatus(pull: Record<string, unknown>, receipt: unknown): Check['status'] {
+  const planned = receipt === null ? {} : record(receipt);
+  const wording = [
+    pull.title,
+    pull.body === null ? '' : pull.body,
+    planned.squashTitle,
+    planned.squashBody,
+  ];
+  const closingReference =
+    /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*:?\s*(?:(?:[\w.-]+\/[\w.-]+)?#\d+|https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+)/i;
+  if (wording.some((value) => typeof value === 'string' && closingReference.test(value)))
+    return 'fail';
+  return wording.some((value) => typeof value !== 'string') ||
+    [pull.title, planned.squashTitle].some((value) => typeof value !== 'string' || !value.trim())
+    ? 'unknown'
+    : 'pass';
 }
 export function repositoryName(value: string): string {
   if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(value)) throw new Error('Invalid repository');
@@ -378,16 +397,10 @@ export function assessDelivery(
     stable(snapshot.pull, snapshot.pullAfter) ? 'pass' : 'unknown',
     'PR head/base/merge/update identity must remain unchanged',
   );
-  const closingReference =
-    /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*:?\s*(?:(?:[\w.-]+\/[\w.-]+)?#\d+|https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+)/i;
   add(
     'issue-completion-policy',
-    pull.body !== null && typeof pull.body !== 'string'
-      ? 'unknown'
-      : typeof pull.body === 'string' && closingReference.test(pull.body)
-        ? 'fail'
-        : 'pass',
-    'Collect the PR body and use non-closing references; Issue completion follows main CI',
+    issueWordingStatus(pull, reviewReceipt),
+    'PR title/body and explicit squash title/body must use non-closing references; completion follows main CI',
   );
   const pr = validateRun(snapshot, snapshot.prRun, false);
   add('pr-ci', pr.status, pr.reason);

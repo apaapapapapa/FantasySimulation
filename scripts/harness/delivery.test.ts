@@ -111,6 +111,8 @@ function receipt(snapshot: DeliverySnapshot) {
     method: 'self',
     summary: 'Reviewed fixture paths and complete conversation.',
     unresolvedFindings: 0,
+    squashTitle: 'feat: tested change',
+    squashBody: 'Refs #9',
   };
 }
 function change(obj: unknown, key: string, value: unknown) {
@@ -149,6 +151,20 @@ describe('delivery evidence', () => {
       change(value.pull, field, 'Revised wording');
       assert.equal(assessDelivery(value, 'pr', reviewed).exitCode, 2);
       assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+    }
+  });
+  it('checks PR titles and requires explicit safe final squash wording', () => {
+    for (const field of ['title', 'squashTitle', 'squashBody']) {
+      for (const [wording, exitCode] of [
+        ['fix: prevent regression (Fixes #9)', 1],
+        [undefined, 2],
+      ] as const) {
+        const value = fixture();
+        const reviewed = receipt(value);
+        change(field === 'title' ? value.pull : reviewed, field, wording);
+        if (field === 'title') change(value.pullAfter, field, wording);
+        assert.equal(assessDelivery(value, 'pr', reviewed).exitCode, exitCode);
+      }
     }
   });
   it('separates collection, review coverage and PR completion', () => {
