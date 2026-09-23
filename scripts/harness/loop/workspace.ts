@@ -256,6 +256,10 @@ export async function recover(path: string, reason: string) {
     const j = readJournal(path),
       dirs = locations(path),
       view = status(j);
+    if (view.phase === 'blocked') {
+      owned(path, j);
+      return status(transition(path, j, 'resumed', { reason: text(reason) }));
+    }
     ensure(['running', 'applying', 'candidate'].includes(view.phase), 'No interrupted attempt');
     // Validate identity before touching an owned checkout, permitting only this attempt's dirty index.
     const head = git(dirs.workspace, ['rev-parse', 'HEAD']);

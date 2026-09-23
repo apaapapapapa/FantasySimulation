@@ -28,6 +28,7 @@ Run `node scripts/harness.ts loop` with these arguments:
 Resume with `status JOURNAL`; retain journal/owner/repositories/patches/logs/comparisons
 at their original paths. Never reset budgets with a new store/goal/baseline. Before
 `recover JOURNAL REASON`, confirm the prior process ended and reconcile ownership/Git.
+Isolation failure blocks evaluation; recover after repair reuses the charged candidate.
 Remove only verified abandoned locks; uncertain commits require normal engineering.
 Optional review waits at most 15 minutes then needs actual self review; mandatory
 independent approval never falls back. Pending CI/review, command success, publication,

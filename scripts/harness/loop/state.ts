@@ -12,6 +12,7 @@ export type Phase =
   | 'review'
   | 'delivery'
   | 'completed'
+  | 'blocked'
   | 'stopped';
 export function ensure(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -130,6 +131,17 @@ export function status(value: unknown, now = new Date().toISOString()) {
         ensure(typeof d.complete === 'boolean', 'Missing delivery result');
         if (d.complete) phase = 'completed';
         break;
+      case 'blocked':
+        ensure(phase === 'candidate', 'Only candidate evaluation can block');
+        text(d.reason);
+        text(d.evidence);
+        phase = 'blocked';
+        break;
+      case 'resumed':
+        ensure(phase === 'blocked', 'Only blocked evaluation can resume');
+        text(d.reason);
+        phase = 'candidate';
+        break;
       case 'interrupted':
         ensure(
           ['running', 'applying', 'candidate'].includes(phase),
@@ -167,6 +179,7 @@ export function status(value: unknown, now = new Date().toISOString()) {
     review: 'review',
     delivery: 'observe',
     completed: 'none',
+    blocked: 'recover',
     stopped: 'normal-engineering-handoff',
   };
   return {
