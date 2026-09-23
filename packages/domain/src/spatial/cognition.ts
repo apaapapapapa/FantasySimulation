@@ -9,6 +9,7 @@ import {
   StatusCategorySchema,
   AdjustmentTargetSchema,
   AbilityCategorySchema,
+  ObservedPhaseSchema,
 } from './contracts.ts';
 
 const tick = z.number().int().min(0).max(8000),
@@ -141,6 +142,12 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
     appearance: AppearanceSchema.nullable(),
     wounds: z.enum(['unknown', 'unhurt', 'hurt', 'severe', 'critical']),
     observedStatuses: ObservedStatusesSchema.optional(),
+    conditionObservation: z
+      .strictObject({
+        phase: ObservedPhaseSchema.nullable(),
+        facingBps: Vec3Schema,
+      })
+      .optional(),
     targetPositionMm: Vec3Schema.nullable(),
     observedProjectiles: z.array(IdSchema).max(32),
     terrain: z.array(ObservedSurfaceSchema).max(64),
