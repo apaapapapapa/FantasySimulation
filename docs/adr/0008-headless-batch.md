@@ -1,66 +1,61 @@
-# ADR 0008: 固定計画によるheadless実行と持ち運べる結果
+# ADR 0008: 固定計画・結果bundle・公開layout
 
-P3 / Issue #10 A1。HTTPを起動せず、公開revision、`BattleRuntime`、Piscina、
-同じエンジンと保存処理を使う。別エンジンや簡略判定は作らない。
+#10 A1のheadless実行は公開revision、BattleRuntime、Piscina、既存エンジンを共用する。
+[採用済みの計画・容量・再開契約の全文](https://github.com/apaapapapapa/FantasySimulation/blob/e9325df8ca62beba39b85d100265379e4c5ad2fb/docs/adr/0008-headless-batch.md)
+を正本として保持する。以下の要約で既存の上限・耐久性・実行契約は変更しない。
 
-## 計画
+## 計画と保存
 
-`batch plan`はcleanなGit commit、Node版、OS/arch、engine digest、全入力revision、
-seed/主体stream、予定枠、計算予算、容量を実行前に固定する。最大1,000枠。
-source SHA/toolchain/OSの異なる実行は拒否する。ラベルだけ違う同一simulationも
-二重の対戦枠として認めない。revision、枠の入力列挙順は意味を持たない。
-各枠はsimulationHashとラベルから識別し、sha256の先頭32bit modulo shard数で割り当てる。
-最大64 shards。shard数・投入順・Worker数は対戦seedへ混ぜない。
+The linked adopted contract retains all execution, capacity, deadline, shard, atomic
+publication, ownership, retry and recovery rules. No engine behavior changes here.
 
-計画全体は最大4,096 revision、各対戦の到達可能なrevisionは従来どおり最大256。
-バッチDBへの取込は(kind, id, revision)と内容を照合して不足版だけを追加し、
-新旧の版を同じ作業先で使える。同じ版で異なる内容は拒否する。
-通常のサンプルseedは引き続き未登録IDだけを追加し、利用者の編集を置き換えない。
+`batch check`: all planned slots, source/shards/receipts/files; complete=0, incomplete=2,
+invalid=1. Empty indexes mean all pending. Hashes are not authentication. Reading plans
+accepts historical engine IDs; execution still requires current engine/source/digest and
+reconstruction equality. No historical execution.
 
-計画の予測bytes×枠数が最終出力またはローカル作業容量を超える場合は、実行前に拒否する。
-予測値は達成済みの計測値ではない。実ファイル容量も保存ごとに照合する。
-既定deadlineは30分、上限も30分。次の30秒timeoutと1秒の余裕を残せなければ
-新しい対戦を開始せずpendingとして記録する。各対戦のtimeout/leaseはADR 0007に従う。
-OSの停止やディスクI/Oの時間を厳密に保証するリアルタイム制御ではない。
-SIGINT/SIGTERMは実行中jobを中止し、未開始枠と区別したindexを保存する。
+## 公開契約 v1（#81小PR1 / #80小PR1）
 
-## 容量と所有権
+Zodと型の正本は`packages/domain/src/spatial/publication.ts`。通信のReplaySource/OpenedReplayは
+webが所有する。公開JSONはschemaVersion=1、未知版/余分なfieldを拒否する。
 
-最終bundleは`maxOutputBytes`（最大16 GiB）、ローカルreplay作業域は別の
-`maxWorkBytes`（最大16 GiB）で制限する。SQLiteは64 MiBのpage上限とし、各枠の終了時に
-WALをcheckpoint/truncateする。DB/WAL等の管理領域として256 MiBを別途見込む。
-必要ディスク容量は **maxOutputBytes + maxWorkBytes + 256 MiB**。
-最終出力16 GiBをローカル全使用量16 GiBと取り違えない。Workerごとの二重書込予約と
-追加1件が作業容量に入らない設定は起動前に拒否する。最終index用に2 MBを予約する。
+| key（hashはsha256のhex64桁）     | 内容                                                            |
+| -------------------------------- | --------------------------------------------------------------- |
+| `catalog/current.json`           | 現行catalogHashと展開後bytes                                    |
+| `catalog/<hash>.json`            | 前catalogHash（初回null）、setHash/bytesの昇順一覧（最大1,000） |
+| `sets/<setHash>/set.json`        | source・計算条件・件数・ページ参照                              |
+| `sets/<setHash>/<pageHash>.json` | planId/index、slotId順100行（末尾だけ短い、最大10ページ）       |
+| `objects/<objectHash>/...`       | 既存receipt/manifest/chunk/checkpointを元bytesのまま保持        |
 
-`.work/`は単一調整側が所有するSQLiteと元replay。並列shardsは別々のoutput rootを使う。
-同じrootへの逐次再開は可能。同一rootの同時実行は既存のDB/root所有権で拒否する。
-所有権を得た後だけ、専用prefixとcanonical v4 UUIDの未確定stagingを回収する。
-公開対象は`plans/`、`indexes/`、`complete/`、`objects/`のみ。DB、内部絶対パス、
-環境変数、認証情報はpayloadに入れない。ローカル`.work/`を丸ごと公開しない。
+新規JSONはcanonicalJsonのUTF-8、改行なし。hashはファイル全体で、自己hash fieldを含めない。
+pageにsetHashを含めず循環を避ける。配信JSONのchecksum/サイズはHTTP展開後bytes、gzipは
+圧縮bytesが対象。既存objectHashは従来どおりreceiptからobjectHashを除いたcanonical body。
+receiptの実bytesのchecksum/サイズとmanifestChecksumを行のPublicReplayRefへ持つ。
+consumerはbytesを検証してからrow→receipt→manifest、set→pageの共有照合関数を使う。
 
-## 保存・再開
+行はslotId/simulationHash、名前付きcharacter/scenario revision、配置/向き/主体stream、
+ruleset、seed、state/reason、reused、勝敗/終了step、再生参照、records/lastVerifiedStepを持つ。
+complete=full、unresolved/truncated=検証済み範囲だけpartial。failed/pendingは参照/result=null、
+records=0でunavailable。架空IDを作らない。欠落shardもpending行として残す。
+reasonは固定コード。バッチの生エラー文を公開しない。cancelled診断は本bundle形式には含めない。
 
-結果bundleはmanifest、独立gzip、チェックポイント、元attempt/result/sourceを示す
-receiptからなる。全件検証後、content hashのobject directoryへatomic renameする。
-確定win/drawだけが`complete/<simulationHash>.json`に登録される。
-pointer/indexはfsync済み一時ファイルをhard linkでcreate-only公開する。
-同名の既存ファイルを上書きしない。Windowsの電源断耐久性の制限はADR 0006と同じ。
+## ローカルexport
 
-再開時はpointer、receipt、manifest、全チャンク/checkpointを再検証する。
-破損を正常cacheとして再利用したり、黙って別の結果に置き換えたりしない。
-object確定後・pointer前の停止は、元DB結果から同じobjectを検証してpointerを補完する。
-failed/cancelledの再試行には`--retry-failed`を指定し、元jobの最大3 attemptsを守る。
-truncated/unresolvedはその診断結果を保持し、確定cache/成功枠にしない。
-大きな計算予算への変更は新しい計画になる。既存の完全な結果はsimulationHashで再利用する。
+`batch export plan.json public-dir index.json bundle-root [index.json bundle-root ...]`。
+DB・戦闘・Git checkout・ネットワークを使わず、checkと同じ照合を再利用する。
+plan/index/receiptの参照、revision hash、manifest入力と一覧の条件を検証する。
+公開fieldの選択に加え、JSONと展開gzipの絶対パス・秘密field・既知credential形式を検査し拒否。
+任意の秘密文字列を完全検出する保証ではない。管理者が公開可能な定義だけを入力する。
+`.work/`、DB、環境変数、下書き、任意ファイルはコピーしない。
 
-indexは毎回不変hashで保存する。可変の「最新」pointerを持たないため、遅れて終了した
-古い実行が新しいindexを巻き戻すことはない。`batch check`は元計画の全予定枠、重複、
-shard構成、source、receiptと実ファイルを突合する。一部shardだけの完了を全体完了にしない。
-不完全ならexit 2、入力/整合性エラーならexit 1。ランキング計算や正式公開は行わない。
-hashは整合性の検査であり第三者の結果に対する認証ではない。
+全衝突・容量を事前照合後、object→page→set→catalog→currentの順に保存。
+既存bytesが同じなら再利用、違えば停止。同じsimulationのresultHash差も停止。
+同じsetの再exportは世代を進めない。追加setは前世代と過去リンクを保持し、自動削除しない。
+上限は保存8,000,000,000 bytes（pointer staging込み）、100,000ファイル。複数objectは非原子的。
+rootは入力から分離し、symlink/形式外keyを拒否。ローカル単一writer lockとcurrent再照合を使う。
+例外後は再実行可能。強制終了でlockが残った場合、writer停止を確認して管理者がlockを除去する。
+exit 2でも全予定枠を含む未完了exportが確定する。通信成功や正式公開の意味ではない。
 
-`batch.test.ts`は同一計画の1 Worker/複数Worker/逆順shard、deadlineからの再開、
-新計画へのcache再利用、破損保留、truncation、欠落shard、二重計上、容量とatomic公開を検証する。
-source identityのfixture値はテスト入力であり、実checkoutの検証証跡には使わない。
-A2のR2 publisher、A3の定期Actions実行、A4のPages画面は後続範囲。
+Tests use fixed v1.10 records; no engine/SQLite execution. R2/S3, Worker, viewer
+compatibility, Pages, external setup and production acceptance remain #81 follow-ups.
+Static adapter/UI belongs to #79; E2E to #12.
