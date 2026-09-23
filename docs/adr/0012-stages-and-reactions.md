@@ -1,14 +1,14 @@
 # ADR 0012: 技の段・攻撃形状・移動・反応型発動
 
-状態: **提案・設計承認待ち**。Refs #61 G-06/§2-E,F、#45、#59、#1 P6。
-Docs only; no automatic G-07/G-08. Approval protocol: §10.
+状態: **設計承認済み**（[承認](https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5792777109)）。
+Refs #61 G-06/§2-E,F, #45, #59, #1 P6. Docs only.
 
 ## 1. 採用案・前提
 
 Baseline main `ed847cf15b0556b297b18af244aa64d8bcf9a53c`: #59/#71,
 G-01/#68,G-02/#69,G-03/#70/#72,G-04/#73/#78,G-05 first PR #85.
 #45 simultaneous slots remain pending. Later #45/#59/#61 override old parent text.
-Recheck main/PRs before implementation; G-05 confirmed §7 on this PR, not whole-ADR approval.
+Recheck main/PRs before implementation; G-05 confirmed §7 separately.
 
 Adopt one20ms clock, staged instances/shared ledger, bounded waves in existing
 transactions. Alternatives rejected: separate loops (duplicate ownership), recursive
