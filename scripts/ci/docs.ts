@@ -1,28 +1,12 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, relative, resolve } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { assessReport } from '../harness/report.ts';
 import type { Report } from '../harness/report.ts';
 import { parsePlan } from './plan.ts';
-// Wording check, not a Markdown renderer: local inline links, not remote URLs/anchors.
-export function missingLocalLinks(root: string, paths: readonly string[]): string[] {
-  const failures: string[] = [];
-  for (const path of paths) {
-    const file = resolve(root, path);
-    if (!existsSync(file)) continue;
-    const content = readFileSync(file, 'utf8').replace(/```[^]*?```/g, '');
-    for (const match of content.matchAll(/\]\(([^\s)]+)(?:\s+"[^"]*")?\)/g)) {
-      const link = match[1]!;
-      if (/^(?:[a-z][a-z0-9+.-]*:|#|\/\/)/i.test(link)) continue;
-      const target = decodeURIComponent(link.split(/[?#]/)[0] ?? '');
-      if (!target) continue;
-      const absolute = resolve(dirname(file), target),
-        inside = relative(root, absolute);
-      if (inside.startsWith('..') || !existsSync(absolute)) failures.push(`${path}: ${target}`);
-    }
-  }
-  return failures;
-}
+import { missingLocalLinks } from '../quality/markdown.ts';
+import { qualityPaths } from '../quality/files.ts';
+import { inspectContext } from '../harness/context.ts';
+export const DOCS_CHECKS = ['docs:diff', 'docs:links', 'docs:context'] as const;
 export function verifyDocs(root: string) {
   const plan = parsePlan(
     JSON.parse(readFileSync('.generated/harness/ci/plan.json', 'utf8')) as unknown,
@@ -30,6 +14,7 @@ export function verifyDocs(root: string) {
   if (plan.full || !plan.baselineSha || process.env.GITHUB_SHA !== plan.sourceSha)
     throw new Error('Docs shortcut is not authorized by this source plan');
   const at = new Date().toISOString(),
+    context = inspectContext(root, qualityPaths(root)),
     failures = missingLocalLinks(root, plan.paths);
   let clean = true;
   try {
@@ -45,8 +30,11 @@ export function verifyDocs(root: string) {
   const details = '.generated/harness/docs/links.json';
   writeFileSync(
     details,
-    JSON.stringify({ sourceSha: plan.sourceSha, failures, checkedPaths: plan.paths }, null, 2) +
-      '\n',
+    JSON.stringify(
+      { sourceSha: plan.sourceSha, failures, checkedPaths: plan.paths, context },
+      null,
+      2,
+    ) + '\n',
   );
   const evidence = [{ uri: details, sourceSha: plan.sourceSha }];
   const report: Report = {
@@ -56,6 +44,13 @@ export function verifyDocs(root: string) {
     startedAt: at,
     finishedAt: new Date().toISOString(),
     checks: [
+      {
+        id: 'docs:context',
+        required: true,
+        status: context.findings.length ? 'fail' : 'pass',
+        reason: `${context.findings.length} context violations; ${context.totalBytes} documentation bytes`,
+        evidence,
+      },
       {
         id: 'docs:diff',
         required: true,
@@ -72,7 +67,7 @@ export function verifyDocs(root: string) {
       },
     ],
   };
-  const result = assessReport(report, ['docs:diff', 'docs:links']);
+  const result = assessReport(report, DOCS_CHECKS);
   writeFileSync(
     '.generated/harness/docs/report.json',
     JSON.stringify(result.report, null, 2) + '\n',

@@ -7,7 +7,15 @@ const json = (path: string) => readBoundedJson(path, 32 * 1024 * 1024);
 try {
   const [command, input, ...args] = process.argv.slice(2);
   if (!input) throw new Error('Harness input is required');
-  if (command === 'github-snapshot') {
+  if (command === 'context' && args.length === 0) {
+    const { contextPlan, inspectContext } = await import('./harness/context.ts');
+    if (input === 'check') {
+      const { qualityPaths } = await import('./quality/files.ts');
+      const { files, ...summary } = inspectContext(process.cwd(), qualityPaths(process.cwd()));
+      console.log(JSON.stringify({ ...summary, documentCount: files.length }, null, 2));
+      process.exitCode = summary.findings.length ? 1 : 0;
+    } else process.stdout.write(contextPlan(input));
+  } else if (command === 'github-snapshot') {
     const [number, directory, ...extra] = args;
     if (!number || !/^[1-9]\d*$/.test(number) || !directory || extra.length)
       throw new Error('Invalid collection arguments');

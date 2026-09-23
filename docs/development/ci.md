@@ -10,7 +10,7 @@ parent, not a potentially old event base. Renames are inspected as deletion plus
 An unknown comparison, empty diff, configuration/source change or sensitive documentation
 runs `Verify (ubuntu-latest)` and `Paired load (ubuntu-latest)` concurrently on separate
 Linux runners. Main push and manual runs always do so. Only known nonempty wording-only PRs run lightweight docs checks
-(diff whitespace and local inline links). AGENTS, skills, harness/CI instructions, rules and
+(diff whitespace, local inline links and repository-wide context budgets). AGENTS, skills, harness/CI instructions, rules and
 ADRs are not wording-only. The existing Security workflow still runs for Markdown changes.
 
 `ci-gate` always assesses the planned jobs and actual source reports. The Linux source and paired-load reports must
@@ -62,37 +62,9 @@ The new graph removes the Windows jobs and overlaps source and paired-load work 
 separate runners. Paired baseline/candidate trials still share one runner, alternate
 in sequence, and keep the same five samples, warmups and acceptance criteria.
 
-## Observed rollout timings (2026-09-22 UTC)
+## Earlier observations
 
-Measurements use Actions `created_at`, `started_at`, `completed_at`, step timestamps
-and cache restore logs. The [structured observations](ci-measurements.json) retain
-full candidate SHAs, run/attempt/job IDs and step durations. Queue is job creation
-to start; job duration is start to completion. Neither includes an unobserved workflow
-concurrency wait before job creation. Setup includes install where indicated.
-
-| Sample                                                                                                              | OS      | Job seconds | Queue seconds | Setup + install seconds | Verify step seconds | Dependency cache           |
-| ------------------------------------------------------------------------------------------------------------------- | ------- | ----------: | ------------: | ----------------------: | ------------------: | -------------------------- |
-| Before, main [35740738309](https://github.com/apaapapapapa/FantasySimulation/actions/runs/35740738309), attempt 1   | Linux   |          31 |             3 |                   9 + 4 |                  10 | hit (setup-vp legacy key)  |
-| Before, same run                                                                                                    | Windows |          67 |             4 |                  33 + 6 |                  13 | hit (setup-vp legacy key)  |
-| After, full PR [35742066714](https://github.com/apaapapapapa/FantasySimulation/actions/runs/35742066714), attempt 1 | Linux   |          27 |             2 |             12 combined |                  10 | miss (new exact store key) |
-| After, same run                                                                                                     | Windows |          61 |             3 |             33 combined |                  13 | miss (new exact store key) |
-
-The two Verify jobs total 1.63 versus 1.47 elapsed runner minutes. All executed jobs
-in those runs total 11.45 versus 5.23 elapsed runner minutes (sum of job durations,
-not billing multipliers or wall time). The first is main with Release; the second
-is a PR with Release intentionally skipped, and runner/setup conditions and source
-also differ. These are observations, not a claimed causal speedup. Verification
-itself remained 10/13 seconds in these samples; no test sharding is justified.
-
-The wording-only probe [35739277072](https://github.com/apaapapapapa/FantasySimulation/actions/runs/35739277072)
-used both docs platforms. Attempt 1's Linux job took 14 seconds (queue 3 seconds),
-while Windows was cancelled after 306 seconds. Its gate failed as required.
-Attempt 2's Windows rerun succeeded in 45 seconds (queue 2 seconds), followed by a
-successful aggregate. GitHub carries previous successful jobs into rerun views;
-the mixed view must not be used to infer a negative queue or an eight-minute runner
-queue. These retries are excluded from the comparable runner sums above. No pnpm
-store is used by the lightweight docs jobs. The test-only PR #27 was closed unmerged.
-
-Future measurements should compare repeated like-for-like main/source and docs
-runs, retain exact attempts, and distinguish cache hit/miss/unknown. Existing receipts
-support that analysis without adding task-result caching. The observations above predate the Linux-only policy.
+[ci-measurements.json](ci-measurements.json) retains the pre-Linux-only rollout's
+SHAs, attempts, job/step timings and cache observations. These are historical,
+uncontrolled samples, not proof of current performance. Compare repeated like-for-like
+runs; distinguish queue/setup/check intervals and cache hit/miss/unknown.

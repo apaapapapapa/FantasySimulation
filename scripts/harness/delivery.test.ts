@@ -295,6 +295,7 @@ function plannedFixture(full: boolean) {
       report.producer = 'docs-check';
       report.checks[0]!.id = 'docs:diff';
       report.checks[1]!.id = 'docs:links';
+      report.checks.push({ ...report.checks[1]!, id: 'docs:context' });
       change(run.jobs[index], 'name', `Docs (${os})`);
     }
     run.sources[index]!.report = report;
@@ -337,6 +338,12 @@ function plannedFixture(full: boolean) {
   return value;
 }
 describe('delivery with differential CI', () => {
+  it('refuses missing context evidence even with a successful docs aggregate', () => {
+    const value = plannedFixture(false);
+    const report = value.prRun!.sources[0]!.report as Report;
+    report.checks = report.checks.filter((check) => check.id !== 'docs:context');
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+  });
   it('accepts full and wording plans only with Linux receipts and the aggregate', () => {
     for (const full of [true, false]) {
       const value = plannedFixture(full);

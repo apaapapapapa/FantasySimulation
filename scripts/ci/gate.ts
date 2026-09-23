@@ -10,6 +10,7 @@ import type { Check, Report } from '../harness/report.ts';
 import { SOURCE_CHECKS } from '../harness/source.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { parsePlan } from './plan.ts';
+import { DOCS_CHECKS } from './docs.ts';
 import type { Plan } from './plan.ts';
 import { readLoadArtifacts } from './load-artifacts.ts';
 const osNames = ['ubuntu-latest'] as const;
@@ -45,11 +46,7 @@ export function assessGate(
     try {
       const assessed = assessReport(
         reports[key],
-        key === 'security'
-          ? SECURITY_CHECKS
-          : plan.full
-            ? SOURCE_CHECKS
-            : ['docs:diff', 'docs:links'],
+        key === 'security' ? SECURITY_CHECKS : plan.full ? SOURCE_CHECKS : DOCS_CHECKS,
       );
       const report = assessed.report;
       const matches =
