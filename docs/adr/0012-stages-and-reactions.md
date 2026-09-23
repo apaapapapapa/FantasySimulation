@@ -5,8 +5,8 @@ Refs #61 G-06/§2-E,F, #45, #59, #1 P6. Docs only.
 
 ## 1. 採用案・前提
 
-Baseline main `ed847cf15b0556b297b18af244aa64d8bcf9a53c`: #59/#71,
-G-01/#68,G-02/#69,G-03/#70/#72,G-04/#73/#78,G-05 first PR #85.
+Baseline main `d8a50814cb26a4aaa97c0033363d0dd66cf53571`: #59/#71,
+G-01/#68,G-02/#69,G-03/#70/#72,G-04/#73/#78,G-05/#85/#87.
 #45 simultaneous slots remain pending. Later #45/#59/#61 override old parent text.
 Recheck main/PRs before implementation; G-05 confirmed §7 separately.
 
@@ -71,16 +71,26 @@ G-07b effect (strict, integers): `{kind:force,profile:linear-v1,direction:away|t
 speedMmPerSecond:1..100000,durationSteps:1..100}`. Freeze source actor→target center unit
 vector at contact (negate for toward); coincident=zero/logged. Multiply by speed,
 round each mm/s component, ties away from0. Active[n+1,n+1+duration); BigInt sum
-active vectors, then Euclidean norm-clamp via optional rules.`forcedSpeedCapMmPerSecond`
-(integer1..100000; omitted100000). Log contributors/cap. Timed transport replaces
-voluntary velocity; add separate gravity/jump vertical accumulator after cap,
-then collision clips combined trace. Expiry leaves no transport velocity; no
-retargeting. §10 versioning; never use character speed as cap; no force=unchanged. Root/
-action lock blocks voluntary motion, not gravity/force. Force costs target no stamina.
+active vectors; F is the sum clamped to optional `rules.forcedSpeedCapMmPerSecond`
+(integer1..100000; omitted100000) by Euclidean norm. Log contributors/cap. §10 versioning;
+never character-speed cap/retargeting. No force=unchanged legacy path.
+
+Nonzero F: force mode; suppress voluntary movement/jump/step. On entry:
+G=(0,previousVelocity.y,0). Each step: flying→G=0, else add gravity to G.y.
+Convert capped F to m/s and add G. Shared trace supplies each collision's effective
+normal n (horizontal normal for steep-wall branch). If the combined velocity is
+inward, apply P=I-nnᵀ to BOTH G,F, not separate sign tests. Apply in trace order,
+including endpoint hits; body-contact/no-progress collision stop uses P=0.
+Unblocked cancellation G+F=0 uses identity. Carry only projected G; rebuild F from
+active definitions next step. At zero F/last expiry hand G to normal movement, never
+actualVelocity. Landing damage uses combined incident y before ground projection.
+Hash G; record projections/incident speed. Ceiling: G.y=4,F.y=12m/s → both0
+at impact; expiry starts falling from0 under gravity, without retained force.
+Root/action lock blocks voluntary motion, not gravity/force.
 Dash/retreat supplies velocity/acceleration to shared movement, leap uses real
 support/jump/ceiling checks. Authored motion replaces gait: stage cost replaces gait
 travel cost; G-04 flight/jump/step charges remain. No duplicate distance charging.
-Force pays no target gait/jump charge. Dodge pays burst+actual travel; cancel a
+Force adds no target cost. Dodge pays burst+actual travel; cancel a
 suppressed unstarted hold, never refund a committed burst. Walls clip travel,
 not stage time/fixed skill cost.
 
@@ -203,19 +213,18 @@ Use DecisionView→assessAbility/assessStatusEffects→CandidateAssessment;
 observedCondition uses only latest delayed visible snapshot, including unknown propagation.
 G-05 confirmed this boundary; no wait for its completion.
 
-Enemy stage cues/phase/motion/status/impacts pass sight/delay. Hidden future stages,
-unused reactions, exact resources/costs/revision/hash remain private; no ID lookup.
-Unknown stays unknown, not zero. Mechanical triggers/omniscient replay never enter AI.
-Subjective cognition logs both slots/exclusions, own allocation, estimates/confidence,
-sampled/available cues, weight/total/PRNG purpose. Separate result events record stage
-lifecycle, contact/group/dedupe, costs, component/shield/reflection basis, waves/causes,
-force result/revival/diagnostics.
+Enemy stage/phase/motion/status/impact cues obey sight/delay. Future stages, unused
+reactions, exact resources/costs/revision/hash are private; no lookup. Unknown≠0;
+mechanical triggers/omniscient replay are forbidden AI inputs. Subjective cognition:
+both slots/exclusions, own allocation, estimates/confidence, sampled/available cues,
+weight/total/PRNG purpose. Separate results: stage lifecycle, contact/group/dedupe,
+cost/component/shield/reflection basis, wave/cause, force/revival/diagnostics.
 
-StreamRecord/ActorDisplay/checkpoints must store actual stage/phase clocks, IDs,
-emitted geometry/paths, motion/discontinuity/reaction visuals and replacement deltas.
-No viewer inference/engine/Rapier execution. Hash stages/ledger/deferred counters/
-forces/activation counts. Checkpoints do not resume simulation. Test domain ReplayState
-forward/backward seeks across stages/waves/terminal plus Worker/SQLite round trips.
+StreamRecord/ActorDisplay/checkpoints store actual stage/phase clocks/IDs, emitted
+geometry/paths, motion/discontinuity/reaction visuals, replacement deltas. Viewer
+never infers or runs engine/Rapier. Hash stage/ledger/deferred counter/force/activation
+state. Checkpoints cannot resume. Test domain ReplayState forward/backward across
+stage/wave/terminal and Worker/SQLite round trips.
 
 ## 8. データ例と机上受入（実装試験ではない）
 
@@ -232,7 +241,7 @@ stages=[
 ]
 ```
 
-Unless stated, defenses are zero; each case uses the common pipeline.
+Zero defenses unless specified.
 
 - 連撃: declaration10/speed10000 → L12, windows[12,14),[15,17), hits10+15,
   no duplicate at13. Extra4 paid15; shortage cancels second, retains6.
@@ -253,10 +262,9 @@ Unless stated, defenses are zero; each case uses the common pipeline.
 
 ## 9. 実装PR・所有・検証
 
-G-07 requires approved ADR **and merged #45 simultaneous slots**; consume #45's
-interface without reimplementing posture/policy. G-08 merges after G-07; only pure
-reducers/fixture preparation may proceed in parallel. One owner edits shared loop,
-domain schema and log adapters at a time. G-04 is published; G-05 need only review §7.
+G-07 needs approved ADR **and merged #45 simultaneous slots**; reuse #45 posture/policy.
+G-08 merges after G-07; only pure reducers/fixtures parallel. One editor for shared
+loop/domain schema/log adapters. G-04 is published; G-05 reviews only §7.
 
 - **G-07a**: New stages.ts/hit-ledger.ts, attacks.ts/combat-state.ts/simulate.ts, domain contracts/records/replay: one-stage legacy equivalence, pair reservation, clocks/interruption/rollback
 - **G-07b (after a)**: Shape/movement adapters using shared movement.ts/physics.ts; pending forces: combo/dash/arc, walls/ceiling/posture, shared hits/actual costs and saved geometry
@@ -267,7 +275,7 @@ Each PR: #61 §2-I, independent fixtures/docs/new sample IDs. Coordinate G-05
 evaluation/perception; one editor/shared file. P6 owns reflection/revival fixtures.
 
 Tests: boundary0/final/end-contact, melee duration mismatch, interruption, exact
-HP cost/stage shortage, force bounds/zero direction/expiry/gravity, expiry/transform,
+HP cost/stage shortage, force bounds/zero direction/expiry/gravity/ceiling, expiry/transform,
 repeated contact, enumeration swaps,
 seed/hash/Worker equivalence, unseen-enemy mutation invariance, cast/queue/byte
 rollback, bidirectional replay seek, old DB/result/replay reading. ADR needs full Linux CI:
