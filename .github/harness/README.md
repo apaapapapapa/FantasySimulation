@@ -1,10 +1,10 @@
 # Development evidence harness
 
 Apply [fantasy-delivery](../../.agents/skills/fantasy-delivery/SKILL.md) for changes.
-Collectors are read-only, with no merge/deploy authority. Application runtime must
-not import the harness. The separate [Issue completion writer](../../docs/issue-completion.md)
-requires successful main CI. [Manual repair loops](../../.agents/skills/fantasy-loop/SKILL.md)
-retain a frozen contract and budget; operation success is not completion.
+Collectors cannot mutate; runtime cannot import the harness.
+[Issue completion](../../docs/issue-completion.md) requires successful main CI.
+[Manual loops](../../.agents/skills/fantasy-loop/SKILL.md) freeze contracts and budgets;
+operation success is not completion.
 
 ## Source verification
 
@@ -16,10 +16,9 @@ vp run harness source .generated/harness/source-1
 vp run harness report .generated/harness/source-1/report.json source-clean source-verify
 ```
 
-Retain report, command receipt and logs together. The runner executes `vp run verify`
-once and records clean-before/after, actual command, exit and SHAs. Use a fresh output
-directory. Missing, timed-out or stale evidence cannot pass. A worktree/environment
-allowlist is not an OS sandbox: use a secret-free disposable execution environment.
+Retain the fresh report, command receipt and logs. `vp run verify` records source
+cleanliness, exit and SHAs. Missing, timed-out or stale evidence cannot pass. Use a
+secret-free disposable environment; a worktree/allowlist is not an OS sandbox.
 
 `sourceSha` is the checkout; PR test-merge parents identify candidate and tested base.
 Main push uses actual main SHA. Source and paired-load jobs must agree on source.
@@ -29,19 +28,19 @@ See [quality](../../docs/development/duplication.md),
 
 ## GitHub collection and review
 
-Supply read-only `GH_TOKEN` via environment: contents, Actions, PRs, Checks and statuses.
-Pinned Octokit owns auth/HTTP/pagination; no provider/production key or `gh` is needed.
+Supply read-only `GH_TOKEN`: contents, Actions, PRs, Checks and statuses.
+Pinned Octokit owns auth/HTTP/pagination; no other key or `gh` is needed.
 
 ```sh
 vp run harness github-snapshot OWNER/REPOSITORY 22 .generated/harness/pr-22-1
 vp run harness delivery .generated/harness/pr-22-1/github-snapshot.json pr REVIEW.json
 ```
 
-Collection covers all file/discussion/nested-thread pages, attempt-specific jobs,
-log reports/plan/gate, commit parents and reread identities, plus main CI after merge.
-Retain artifacts/log digests; discussion can be sensitive. Limits: 200 requests, 16 MiB,
-120 seconds, bounded pages/rows, zero retries. Incomplete/changed/unauthorized data stays
-unknown. Collection exit 0 is not delivery approval (`deliveryAssessed: false`).
+Collect all file/discussion/thread pages, exact-attempt jobs, log reports/plan/gate,
+commit parents, reread identities and post-merge main CI. Retain artifacts/log digests;
+discussion can be sensitive. Limits: 200 requests, 16 MiB, 120 seconds, bounded pages/rows,
+zero retries. Incomplete/changed/unauthorized data stays unknown. Collection exit 0
+is not delivery approval (`deliveryAssessed: false`).
 
 Read all changed files and discussion, resolve findings, then record actual review:
 

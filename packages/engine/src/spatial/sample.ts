@@ -87,7 +87,7 @@ export async function sampleManifest(maxSteps = 6000): Promise<Manifest> {
     ],
     navigation: { version: 'support-graph-v1', nodes: [], edges: [] },
   });
-  const ruleset = await sealRevision('ruleset', 'standard-observed-v1', 1, {
+  const ruleset = await sealRevision('ruleset', 'standard-status-v1', 1, {
     name: '標準3D',
     rulesVersion: CURRENT_ENGINE_VERSION,
     ai: { ...AI_RULES },

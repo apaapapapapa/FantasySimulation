@@ -3,7 +3,7 @@ import { assertJson } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.11' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.12' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -109,7 +109,7 @@ export const AI_RULES = Object.freeze(
 
 export type Condition =
   | { kind: 'always' }
-  | { kind: 'resource'; resource: 'hp' | 'mp'; belowBps: number }
+  | { kind: 'resource'; resource: 'hp' | 'mp' | 'stamina'; belowBps: number }
   | { kind: 'distance'; withinMm: number }
   | { kind: 'visible'; value: boolean }
   | { kind: 'status'; id: string; present: boolean }
@@ -121,7 +121,7 @@ function conditionAt(depth: number): z.ZodType<Condition> {
     z.strictObject({ kind: z.literal('always') }),
     z.strictObject({
       kind: z.literal('resource'),
-      resource: z.enum(['hp', 'mp']),
+      resource: z.enum(['hp', 'mp', 'stamina']),
       belowBps: uint(10_000),
     }),
     z.strictObject({ kind: z.literal('distance'), withinMm: uint(200_000) }),
@@ -140,7 +140,13 @@ function conditionAt(depth: number): z.ZodType<Condition> {
 export const ConditionSchema = conditionAt(4);
 // Issue #61 G-01: extend these enums additively; omitted categories keep legacy meaning.
 export const AbilityCategorySchema = z.enum(['physical', 'magic', 'technique', 'special']);
-export const StatusCategorySchema = z.enum(['buff', 'debuff', 'control', 'damage-over-time']);
+export const StatusCategorySchema = z.enum([
+  'buff',
+  'debuff',
+  'control',
+  'damage-over-time',
+  'permanent',
+]);
 export type AbilityCategory = z.infer<typeof AbilityCategorySchema>;
 export type StatusCategory = z.infer<typeof StatusCategorySchema>;
 const categoryList = <T extends z.ZodType<string>>(item: T) =>
@@ -191,6 +197,54 @@ export const EffectSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
+export const AdjustmentTargetSchema = z.enum([
+  'attack',
+  'defense',
+  'magicPower',
+  'magicDefense',
+  'speed',
+  'damageDealt',
+  'damageTaken',
+  'resistance',
+  'hpRecovery',
+  'staminaRecovery',
+  'perceptionRange',
+  'perceptionFov',
+  'action',
+  'movement',
+  'vision',
+  'visibility',
+]);
+export const StatusAdjustmentSchema = z
+  .strictObject({
+    target: AdjustmentTargetSchema,
+    operation: z.enum(['add', 'multiply']),
+    amount: z.number().int().min(-1_000_000).max(1_000_000),
+    element: ElementSchema.optional(),
+    category: AbilityCategorySchema.optional(),
+  })
+  .superRefine((a, ctx) => {
+    if (a.operation === 'multiply' && (a.amount < 0 || a.amount > 30000))
+      ctx.addIssue({ code: 'custom', message: 'Multiplier must be between 0 and 30000 Bps' });
+    if (
+      (a.target === 'resistance' && !a.element) ||
+      (a.element && !['resistance', 'damageDealt', 'damageTaken'].includes(a.target)) ||
+      (a.category && a.target !== 'damageDealt')
+    )
+      ctx.addIssue({ code: 'custom', message: 'Invalid adjustment selector' });
+  });
+export type StatusAdjustment = z.infer<typeof StatusAdjustmentSchema>;
+export const StatusReactionSchema = z.strictObject({
+  element: ElementSchema,
+  response: z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('none') }),
+    z.strictObject({ kind: z.literal('remove') }),
+    z.strictObject({ kind: z.literal('strengthen'), stacks: positive(32) }),
+    z.strictObject({ kind: z.literal('transform'), status: RefSchema }),
+  ]),
+  damageTakenBps: uint(30000).optional(),
+});
+export type StatusReaction = z.infer<typeof StatusReactionSchema>;
 export const StatusSchema = z.strictObject({
   name: z.string().min(1).max(100),
   originalText: z.string().max(20_000),
@@ -200,6 +254,16 @@ export const StatusSchema = z.strictObject({
   durationSteps: positive(6_000),
   categories: categoryList(StatusCategorySchema).optional(),
   burning: z.strictObject({ waterExtinguishable: z.boolean() }).optional(),
+  adjustments: z.array(StatusAdjustmentSchema).max(32).optional(),
+  reactions: z
+    .array(StatusReactionSchema)
+    .max(16)
+    .refine(
+      (values) => new Set(values.map((r) => r.element)).size === values.length,
+      'Only one reaction per element is allowed',
+    )
+    .optional(),
+  visibility: z.enum(['visible', 'hidden']).optional(),
   modifiers: z.strictObject({
     attack: z.number().int().min(-100_000).max(100_000),
     defense: z.number().int().min(-100_000).max(100_000),
@@ -210,12 +274,20 @@ export const StatusSchema = z.strictObject({
   }),
   periodic: z
     .array(
-      z.strictObject({
-        everySteps: positive(6_000),
-        kind: z.enum(['damage', 'heal']),
-        amount: uint(1_000_000),
-        element: ElementSchema,
-      }),
+      z.union([
+        z.strictObject({
+          everySteps: positive(6_000),
+          kind: z.enum(['damage', 'heal']),
+          amount: uint(1_000_000),
+          element: ElementSchema,
+        }),
+        z.strictObject({
+          everySteps: positive(6_000),
+          kind: z.literal('resource'),
+          resource: z.enum(['mp', 'stamina']),
+          amount: z.number().int().min(-1_000_000).max(1_000_000),
+        }),
+      ]),
     )
     .max(8),
 });
@@ -249,7 +321,12 @@ export const AbilitySchema = z
     categories: categoryList(AbilityCategorySchema).optional(),
     target: z.enum(['self', 'enemy']),
     condition: ConditionSchema,
-    costs: z.strictObject({ hp: uint(1_000_000), mp: uint(1_000_000), uses: uint(6_000) }),
+    costs: z.strictObject({
+      hp: uint(1_000_000),
+      mp: uint(1_000_000),
+      stamina: uint(1_000_000).optional(),
+      uses: uint(6_000),
+    }),
     castSteps: uint(6_000),
     recoverySteps: positive(6_000),
     cooldownSteps: uint(6_000),
@@ -312,10 +389,18 @@ export const EquipmentSchema = z.strictObject({
   defenseBonus: uint(100_000),
   abilities: z.array(RefSchema).max(16),
 });
+export const StaminaSchema = z
+  .strictObject({
+    max: positive(1_000_000),
+    recoveryPerSecond: uint(1_000_000),
+    resumeAt: positive(1_000_000).optional(),
+  })
+  .refine((s) => (s.resumeAt ?? 1) <= s.max, 'Stamina resume threshold exceeds maximum');
 export const CharacterSchema = z.strictObject({
   name: z.string().min(1).max(100),
   originalText: z.string().max(20_000),
   appearance: AppearanceSchema.optional(),
+  stamina: StaminaSchema.optional(),
   stats: z.strictObject({
     hp: positive(1_000_000),
     mp: uint(1_000_000),

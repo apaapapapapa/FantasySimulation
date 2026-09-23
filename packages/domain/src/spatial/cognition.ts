@@ -6,11 +6,42 @@ import {
   IdSchema,
   RefSchema,
   Vec3Schema,
+  StatusCategorySchema,
+  AdjustmentTargetSchema,
+  AbilityCategorySchema,
 } from './contracts.ts';
 
 const tick = z.number().int().min(0).max(8000),
   bps = z.number().int().min(0).max(10000);
 const quantity = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+export const ObservedStatusSchema = z.strictObject({
+  id: IdSchema,
+  categories: z.array(StatusCategorySchema).max(8),
+  benefit: z.enum(['beneficial', 'harmful', 'neutral']),
+  removable: z.boolean(),
+  adjustments: z
+    .array(
+      z.strictObject({
+        target: AdjustmentTargetSchema,
+        direction: z.enum(['higher', 'lower']),
+        element: ElementSchema.optional(),
+        category: AbilityCategorySchema.optional(),
+      }),
+    )
+    .max(32)
+    .optional(),
+  reactions: z
+    .array(
+      z.strictObject({
+        element: ElementSchema,
+        response: z.enum(['none', 'remove', 'strengthen', 'transform']),
+        damage: z.enum(['normal', 'higher', 'lower']),
+      }),
+    )
+    .max(16),
+});
+export type ObservedStatus = z.infer<typeof ObservedStatusSchema>;
+const ObservedStatusesSchema = z.array(ObservedStatusSchema).max(64);
 export const ObservedSurfaceSchema = z.strictObject({
   pointMm: Vec3Schema,
   normalBps: Vec3Schema,
@@ -82,6 +113,14 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
     perspective: z.literal('subjective'),
     learned: z.array(ExperienceSchema).max(32),
     expired: z.array(IdSchema).max(32),
+    statusObservation: z
+      .strictObject({
+        targetId: IdSchema,
+        sampledAt: tick,
+        availableAt: tick,
+        statuses: ObservedStatusesSchema,
+      })
+      .optional(),
   }),
   z.strictObject({
     kind: z.literal('decision'),
@@ -93,6 +132,7 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
     targetAvailableAt: tick.nullable(),
     appearance: AppearanceSchema.nullable(),
     wounds: z.enum(['unknown', 'unhurt', 'hurt', 'severe', 'critical']),
+    observedStatuses: ObservedStatusesSchema.optional(),
     targetPositionMm: Vec3Schema.nullable(),
     observedProjectiles: z.array(IdSchema).max(32),
     terrain: z.array(ObservedSurfaceSchema).max(64),

@@ -85,7 +85,10 @@ export function copyDependencies(root: string, workspace: string) {
   for (const prefix of ['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine']) {
     const dependencies = join(root, prefix, 'node_modules');
     if (existsSync(dependencies))
-      cpSync(dependencies, join(workspace, prefix, 'node_modules'), { recursive: true });
+      cpSync(dependencies, join(workspace, prefix, 'node_modules'), {
+        recursive: true,
+        verbatimSymlinks: true,
+      });
   }
 }
 export async function prepare(path: string, source: string) {
@@ -109,7 +112,7 @@ export async function prepare(path: string, source: string) {
       !existsSync(dirs.repository) && !existsSync(dirs.workspace),
       'Interrupted prepare: preserve and reconcile existing workspace',
     );
-    git(dirs.root, ['clone', '--bare', '--no-hardlinks', root, dirs.repository]);
+    git(dirs.root, ['clone', '--bare', '--no-local', root, dirs.repository]);
     git(dirs.root, [
       '--git-dir',
       dirs.repository,

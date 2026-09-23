@@ -80,7 +80,23 @@ export async function isolatedCommand(
     },
   );
 }
-export async function evaluate(path: string) {
+export function writableOutputs(workspace: string) {
+  const paths = [
+    '.generated',
+    'apps/web/dist',
+    'apps/api/dist',
+    'packages/domain/dist',
+    'packages/engine/dist',
+    ...['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine'].flatMap((prefix) =>
+      ['.vite', '.vite-temp'].map((cache) => join(prefix, 'node_modules', cache)),
+    ),
+  ];
+  ensure(!git(workspace, ['ls-files', '--', ...paths]), 'Writable output contains tracked source');
+  const outputs = paths.map((path) => regularPath(join(workspace, path)));
+  for (const output of outputs) mkdirSync(output, { recursive: true });
+  return outputs;
+}
+export async function evaluate(path: string, run: typeof runCommand = runCommand) {
   return operation(path, async () => {
     const j = readJournal(path),
       view = status(j),
@@ -89,16 +105,7 @@ export async function evaluate(path: string) {
     scope(dirs.workspace, j.contract);
     const relative = `.generated/harness/loop-attempt-${view.attempts}`;
     // Only ignored build/cache outputs are writable. All tracked inputs and Git objects remain read-only.
-    const outputs = [
-      '.generated',
-      'apps/web/dist',
-      'apps/api/dist',
-      'packages/domain/dist',
-      'packages/engine/dist',
-      'node_modules/.vite',
-    ];
-    const writable = outputs.map((p) => regularPath(join(dirs.workspace, p)));
-    for (const output of writable) mkdirSync(output, { recursive: true });
+    const writable = writableOutputs(dirs.workspace);
     const before = git(dirs.workspace, ['status', '--porcelain=v1', '--untracked-files=all']);
     ensure(!before, 'Build output is not ignored');
     const runner: typeof runCommand = async (command, args, cwd) => {
@@ -114,9 +121,10 @@ export async function evaluate(path: string) {
         [command, ...args],
         Math.min(720_000, remaining),
         writable,
+        run,
       );
     };
-    const result = await collectSource(dirs.workspace, relative, runner, {});
+    const result = await collectSource(dirs.workspace, relative, runner, {}, dirs.root);
     owned(path, j);
     const evidence = join(dirs.root, 'evidence', `evaluation-${view.attempts}.json`);
     const assessed = assessReport(result.report, j.contract.requiredChecks);
@@ -126,8 +134,8 @@ export async function evaluate(path: string) {
       JSON.stringify(
         {
           report: assessed.report,
-          command: JSON.parse(readFileSync(join(dirs.workspace, relative, 'command.json'), 'utf8')),
-          log: readFileSync(join(dirs.workspace, relative, 'verify.log'), 'utf8'),
+          command: JSON.parse(readFileSync(join(dirs.root, relative, 'command.json'), 'utf8')),
+          log: readFileSync(join(dirs.root, relative, 'verify.log'), 'utf8'),
         },
         null,
         2,
@@ -139,7 +147,8 @@ export async function evaluate(path: string) {
     const next = transition(path, j, 'evaluated', {
       candidateSha: view.candidateSha,
       outcome: assessed.exitCode === 0 ? 'pass' : assessed.exitCode === 1 ? 'fail' : 'unknown',
-      passed: assessed.report.checks.filter((c) => c.required && c.status === 'pass').length,
+      passed: assessed.report.checks.filter((c) => c.id === 'source-verify' && c.status === 'pass')
+        .length,
       evidence,
     });
     return { ...status(next), repairComplete: false, evidence };
