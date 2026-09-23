@@ -1,4 +1,4 @@
-import { SUPPORTED_REPLAY_FORMAT, ViewerBuildSchema } from '@fantasy/domain/spatial';
+import { SUPPORTED_REPLAY_FORMAT, ViewerBuildSchema } from '@fantasy/domain';
 import type { Plugin } from 'vite-plus';
 
 export function publicBuild(dataRoot: string, sourceSha: string, base = '/FantasySimulation/') {

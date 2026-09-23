@@ -1,6 +1,6 @@
+import { SUPPORTED_REPLAY_FORMAT } from '@fantasy/domain';
 import {
   deepFreeze,
-  SUPPORTED_REPLAY_FORMAT,
   ReplayManifestSchema,
   replayChunkRecords,
   replayContext,
