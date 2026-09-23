@@ -3,44 +3,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vite-plus/test';
-import { readUiEvidence, uiCoverage } from './ui-results.ts';
+import { readUiEvidence, readUiRun, uiCoverage } from './ui-results.ts';
 import { runCommand } from './process.ts';
-import { UI_CASES, UI_CHECKS, allowedRequest, localOrigin } from '../../e2e/contract.ts';
+import { UI_CHECKS, allowedRequest, localOrigin } from '../../e2e/contract.ts';
 import { startStaticFixtures } from '../../e2e/static-fixtures.ts';
 import { startServers } from '../../e2e/servers.ts';
 
-function results() {
-  return {
-    errors: [],
-    suites: [
-      {
-        specs: UI_CASES.map((title) => ({
-          id: `stable-${title}`,
-          title,
-          tests: [
-            {
-              projectName: 'chromium',
-              expectedStatus: 'passed',
-              results: [
-                {
-                  retry: 0,
-                  status: 'passed',
-                  attachments: [
-                    {
-                      name: 'browser-identity',
-                      body: Buffer.from('{"name":"chromium","version":"123.0"}').toString('base64'),
-                      path: undefined as string | undefined,
-                    },
-                  ],
-                },
-              ],
-            },
-          ],
-        })),
-      },
-    ],
-  };
-}
+import { uiResults as results } from './test-support/ui.ts';
 
 describe('UI evidence', () => {
   it('binds relocated artifacts to source and CI attempt and detects removed files', () => {
@@ -61,18 +30,23 @@ describe('UI evidence', () => {
         'results.json',
         'coverage.json',
         'servers.json',
+        'lifecycle.json',
       ];
       const raw = {
         ...results(),
         config: { projects: [{ outputDir: '/original/checkout/ui/tests' }] },
       };
       for (const file of artifacts) write(file, {});
+      const runReceipt = { ...info, runId: '10', runAttempt: '2' };
+      write('run.json', runReceipt);
+      write('execution.json', { run: runReceipt });
       write('results.json', raw);
       write('coverage.json', uiCoverage(raw, directory, '/original/checkout/ui'));
       write('command.json', {
         ...info,
         runId: '10',
         runAttempt: '2',
+        scenario: 'smoke',
         exitCode: 0,
         bounded: false,
         temporaryRemoved: true,
@@ -100,23 +74,20 @@ describe('UI evidence', () => {
           evidence: [{ uri: '.generated/harness/ui/command.json', sourceSha: info.sourceSha }],
         })),
       });
-      expect(readUiEvidence(directory, info, { id: '10', attempt: '2' }).producer).toBe(
-        'ui-runner',
+      expect(readUiRun(directory, info, { id: '10', attempt: '2' }).producer).toBe('ui-runner');
+      expect(() => readUiEvidence(directory, info, { id: '10', attempt: '2' })).toThrow(
+        'diagnostic evidence',
       );
-      expect(() => readUiEvidence(directory, info, { id: '10', attempt: '1' })).toThrow('Stale UI');
+      expect(() => readUiRun(directory, info, { id: '10', attempt: '1' })).toThrow('Stale UI');
       expect(() =>
-        readUiEvidence(
-          directory,
-          { ...info, sourceSha: 'b'.repeat(40) },
-          { id: '10', attempt: '2' },
-        ),
+        readUiRun(directory, { ...info, sourceSha: 'b'.repeat(40) }, { id: '10', attempt: '2' }),
       ).toThrow('Stale UI');
       write('execution.json', { changed: true });
-      expect(() => readUiEvidence(directory, info, { id: '10', attempt: '2' })).toThrow(
-        'changed UI raw artifact',
+      expect(() => readUiRun(directory, info, { id: '10', attempt: '2' })).toThrow(
+        'UI execution does not belong',
       );
       rmSync(join(directory, 'results.json'));
-      expect(() => readUiEvidence(directory, info, { id: '10', attempt: '2' })).toThrow(Error);
+      expect(() => readUiRun(directory, info, { id: '10', attempt: '2' })).toThrow(Error);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -251,3 +222,21 @@ it('serves built web assets and isolated API without the dev websocket client', 
     rmSync(temporary, { recursive: true, force: true });
   }
 }, 15_000);
+
+it('closes the API when web startup fails after its port is bound', async () => {
+  const temporary = mkdtempSync(join(tmpdir(), 'fantasy-ui-partial-'));
+  const observed: import('../../e2e/servers.ts').ServerState[] = [];
+  try {
+    await expect(
+      startServers(join(temporary, 'missing-web'), temporary, (state) => observed.push(state)),
+    ).rejects.toThrow();
+    const last = observed.at(-1)!;
+    expect(last).toMatchObject({ webOrigin: null, stopped: true });
+    expect(last.apiOrigin).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
+    await expect(
+      fetch(`${last.apiOrigin}/api/health`, { signal: AbortSignal.timeout(1000) }),
+    ).rejects.toThrow();
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
+});

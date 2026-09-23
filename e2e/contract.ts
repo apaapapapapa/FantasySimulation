@@ -5,7 +5,15 @@ export const UI_CASES = [
   'api-invalid-json',
   'network-boundary',
 ] as const;
-export const UI_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
+export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
+export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics'] as const;
+export const UI_FAULTS = ['startup', 'timeout', 'crash'] as const;
+export type UiScenario = 'smoke' | (typeof UI_FAULTS)[number];
+export function uiScenario(value: string | undefined): UiScenario {
+  if (value === undefined || value === 'smoke') return 'smoke';
+  if (UI_FAULTS.some((fault) => fault === value)) return value as UiScenario;
+  throw new Error('Unknown UI execution scenario');
+}
 export const UI_SETTINGS = {
   browser: 'chromium',
   locale: 'ja-JP',

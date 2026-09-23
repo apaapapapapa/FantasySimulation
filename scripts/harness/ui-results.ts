@@ -4,7 +4,13 @@ import { isDeepStrictEqual } from 'node:util';
 import { createHash } from 'node:crypto';
 import { record, text, identity, assessReport } from './report.ts';
 import type { CheckStatus, Identity } from './report.ts';
-import { UI_CASES, UI_CHECKS } from '../../e2e/contract.ts';
+import {
+  UI_CASES,
+  UI_CHECKS,
+  UI_RUN_CHECKS,
+  UI_FAULTS,
+  type UiScenario,
+} from '../../e2e/contract.ts';
 import { readBoundedJson } from './files.ts';
 
 /** Validate relocated CI artifacts against the same run/attempt, raw files and attachments. */
@@ -12,6 +18,22 @@ export function readUiEvidence(
   directory: string,
   expected: Identity,
   run: { id: string; attempt: string },
+) {
+  const report = readUiRun(directory, expected, run);
+  const observed = inspectUiDiagnostics(directory, expected, run);
+  if (
+    observed.status !== 'pass' ||
+    report.checks.find((check) => check.id === 'ui:diagnostics')?.status !== observed.status
+  )
+    throw new Error('Missing or inconsistent UI diagnostic evidence');
+  return assessReport(report, UI_CHECKS).report;
+}
+
+export function readUiRun(
+  directory: string,
+  expected: Identity,
+  run: { id: string | null; attempt: string | null },
+  scenario: UiScenario = 'smoke',
 ) {
   const command = record(readBoundedJson(join(directory, 'command.json')));
   const info = identity(command);
@@ -21,18 +43,35 @@ export function readUiEvidence(
     info.testMergeSha !== expected.testMergeSha ||
     (expected.testMergeSha && info.baselineSha !== expected.baselineSha) ||
     command.runId !== run.id ||
-    command.runAttempt !== run.attempt
+    command.runAttempt !== run.attempt ||
+    command.scenario !== scenario
   )
     throw new Error('Stale UI source or CI attempt');
   const digests = record(command.digests);
-  for (const file of [
+  const runReceipt = record(readBoundedJson(join(directory, 'run.json')));
+  if (
+    !isDeepStrictEqual(identity(runReceipt), info) ||
+    runReceipt.runId !== run.id ||
+    runReceipt.runAttempt !== run.attempt
+  )
+    throw new Error('UI run receipt identity mismatch');
+  if (
+    scenario !== 'startup' &&
+    !isDeepStrictEqual(record(readBoundedJson(join(directory, 'execution.json'))).run, runReceipt)
+  )
+    throw new Error('UI execution does not belong to this run');
+  const files = [
     'run.json',
     'runner.log',
-    'execution.json',
-    'results.json',
     'coverage.json',
     'servers.json',
-  ]) {
+    'lifecycle.json',
+    ...(scenario === 'startup' ? ['failure.json'] : ['execution.json', 'results.json']),
+    ...(existsSync(join(directory, 'failure.json')) && scenario !== 'startup'
+      ? ['failure.json']
+      : []),
+  ];
+  for (const file of files) {
     if (
       createHash('sha256')
         .update(readFileSync(join(directory, file)))
@@ -41,12 +80,21 @@ export function readUiEvidence(
       throw new Error('Missing or changed UI raw artifact');
   }
   const coverage = record(readBoundedJson(join(directory, 'coverage.json')));
-  const raw = record(readBoundedJson(join(directory, 'results.json')));
-  const projects = record(raw.config).projects;
-  if (!Array.isArray(projects) || projects.length !== 1)
-    throw new Error('Missing Chromium configuration');
-  const original = dirname(text(record(projects[0]).outputDir));
-  const recollected = uiCoverage(raw, directory, original);
+  const raw =
+    scenario === 'startup' ? null : record(readBoundedJson(join(directory, 'results.json')));
+  let original = directory;
+  if (raw) {
+    const projects = record(raw.config).projects;
+    if (!Array.isArray(projects) || projects.length !== 1)
+      throw new Error('Missing Chromium configuration');
+    original = dirname(text(record(projects[0]).outputDir));
+  }
+  const recollected = uiCoverage(
+    raw,
+    directory,
+    original,
+    scenario === 'smoke' ? undefined : [scenario],
+  );
   if (!isDeepStrictEqual(coverage, recollected))
     throw new Error('UI coverage does not match raw execution');
   if (!Array.isArray(coverage.attempts)) throw new Error('Missing UI attempt coverage');
@@ -66,7 +114,16 @@ export function readUiEvidence(
         throw new Error('Missing or changed UI attachment');
     }
   }
-  const assessment = assessReport(readBoundedJson(join(directory, 'report.json')), UI_CHECKS);
+  const assessment = assessReport(readBoundedJson(join(directory, 'report.json')), UI_RUN_CHECKS);
+  const report = assessment.report;
+  if (
+    report.sourceSha !== info.sourceSha ||
+    report.candidateSha !== info.candidateSha ||
+    report.testMergeSha !== info.testMergeSha ||
+    report.baselineSha !== info.baselineSha ||
+    report.producer !== (scenario === 'smoke' ? 'ui-runner' : 'ui-diagnostic')
+  )
+    throw new Error('UI report identity mismatch');
   if (
     assessment.exitCode === 0 &&
     (command.exitCode !== 0 ||
@@ -77,6 +134,84 @@ export function readUiEvidence(
   )
     throw new Error('UI summary contradicts its command/coverage');
   return assessment.report;
+}
+
+export function inspectUiDiagnostics(
+  directory: string,
+  expected: Identity,
+  run: { id: string | null; attempt: string | null },
+): { status: CheckStatus; reason: string } {
+  try {
+    for (const scenario of UI_FAULTS) {
+      const folder = join(directory, 'diagnostics', scenario);
+      const report = readUiRun(folder, expected, run, scenario);
+      const command = record(readBoundedJson(join(folder, 'command.json')));
+      const servers = record(readBoundedJson(join(folder, 'servers.json')));
+      if (
+        command.exitCode === 0 ||
+        command.bounded !== false ||
+        command.temporaryRemoved !== true ||
+        command.serversStopped !== true ||
+        servers.stopped !== true ||
+        report.checks.find((check) => check.id === 'ui:source')?.status !== 'pass' ||
+        report.checks.find((check) => check.id === 'ui:execution')?.status !== 'fail'
+      )
+        throw new Error(`Unverified ${scenario} failure or cleanup`);
+      if (scenario === 'startup') {
+        const failure = record(readBoundedJson(join(folder, 'failure.json')));
+        if (
+          failure.stage !== 'server-start' ||
+          !text(failure.message) ||
+          !servers.apiOrigin ||
+          servers.webOrigin !== null
+        )
+          throw new Error('Partial startup failure was not exercised');
+        continue;
+      }
+      const coverage = record(readBoundedJson(join(folder, 'coverage.json')));
+      const attempts = coverage.attempts;
+      if (
+        coverage.status !== 'fail' ||
+        !Array.isArray(attempts) ||
+        attempts.length !== 1 ||
+        record(attempts[0]).status !== (scenario === 'timeout' ? 'timedOut' : 'failed')
+      )
+        throw new Error(`Expected actual ${scenario} execution`);
+      const raw = record(readBoundedJson(join(folder, 'results.json')));
+      const suites = raw.suites;
+      if (!Array.isArray(suites)) throw new Error('Missing diagnostic result');
+      const specs = record(suites[0]).specs;
+      if (!Array.isArray(specs)) throw new Error('Missing diagnostic case');
+      const tests = record(specs[0]).tests;
+      if (!Array.isArray(tests)) throw new Error('Missing diagnostic browser');
+      const results = record(tests[0]).results;
+      if (!Array.isArray(results)) throw new Error('Missing diagnostic attempt');
+      const attachments = record(results[0]).attachments;
+      if (!Array.isArray(attachments)) throw new Error('Missing diagnostic artifacts');
+      const bodies = attachments.map(record);
+      if (!bodies.some((a) => a.name === 'before-fault' && (a.path || a.body)))
+        throw new Error('Pre-failure screenshot missing');
+      if (
+        scenario === 'crash' &&
+        !bodies.some(
+          (a) =>
+            a.name === 'fault-observed' &&
+            Buffer.from(text(a.body), 'base64').toString('utf8') === 'browser-disconnected',
+        )
+      )
+        throw new Error('Browser crash not observed');
+    }
+    return {
+      status: 'pass',
+      reason:
+        'Real partial startup failure, test timeout and browser crash retained evidence and cleaned up',
+    };
+  } catch (error) {
+    return {
+      status: 'unknown',
+      reason: error instanceof Error ? error.message : 'Invalid diagnostic evidence',
+    };
+  }
 }
 
 export interface UiAttempt {
@@ -92,6 +227,7 @@ export function uiCoverage(
   input: unknown,
   directory: string,
   originalDirectory = directory,
+  cases: readonly string[] = UI_CASES,
 ): { status: CheckStatus; attempts: UiAttempt[]; reason: string } {
   const attempts: UiAttempt[] = [];
   try {
@@ -111,8 +247,8 @@ export function uiCoverage(
     visit(result.suites);
     const observed = specs.map((spec) => text(spec.title));
     if (
-      observed.length !== UI_CASES.length ||
-      UI_CASES.some((id) => observed.filter((title) => title === id).length !== 1)
+      observed.length !== cases.length ||
+      cases.some((id) => observed.filter((title) => title === id).length !== 1)
     )
       throw new Error('Required case missing/duplicated or unexpected case');
     for (const spec of specs) {

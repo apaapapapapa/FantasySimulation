@@ -293,10 +293,12 @@ function plannedFixture(full: boolean) {
     reports.ui = {
       ...sourceReport(),
       producer: 'ui-runner',
-      checks: ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'].map((id) => ({
-        ...sourceReport().checks[0]!,
-        id,
-      })),
+      checks: ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup', 'ui:diagnostics'].map(
+        (id) => ({
+          ...sourceReport().checks[0]!,
+          id,
+        }),
+      ),
     };
   for (const [index, os] of ['ubuntu-latest'].entries()) {
     const report = sourceReport();
