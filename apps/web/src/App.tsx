@@ -3,7 +3,15 @@ import { DefinitionEditor } from './workbench/DefinitionEditor.tsx';
 import { BattlePanel } from './workbench/BattlePanel.tsx';
 import { ReplayPanel } from './replay/ReplayPanel.tsx';
 import { apiReplaySource } from './replay/api-source.ts';
+import { PublicViewer } from './publication/PublicViewer.tsx';
 export function App() {
+  return import.meta.env.VITE_APP_MODE === 'public' ? (
+    <PublicViewer root={import.meta.env.VITE_PUBLICATION_ROOT} />
+  ) : (
+    <LocalApp />
+  );
+}
+function LocalApp() {
   const [status, setStatus] = useState('接続を確認しています');
   const [revisionTick, setRevisionTick] = useState(0);
   const [replayId, setReplayId] = useState<string | null>(null);

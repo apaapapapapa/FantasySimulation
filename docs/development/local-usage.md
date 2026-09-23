@@ -47,7 +47,12 @@ SQLiteのネイティブビルドが必要な環境ではPythonとC++ツール�
 画面ではキャラクター・能力のJSONを下書き保存→検証→新revision公開できます。
 対戦は設定とseedを選んで開始し、中止・再試行・結果・保存ログを確認します。
 ログ上限で中断した場合は計算予算を増やして再試行します。公開revisionは保持されます。
-記録の検証・表示復元は[ADR 0006](../adr/0006-recorded-replay.md)。描画はengineを実行しません。
+保存IDから下書きを再開できます。保存ログはstep・速度・カメラを変えて3D観戦できます。
+描画時はengineを実行しません（[ADR 0006](../adr/0006-recorded-replay.md)）。
+
+静的観戦版は`apps/web`で`VITE_PUBLICATION_ROOT=https://データ配信先/ vp build --mode public`。
+成果物`dist`を`/FantasySimulation/`に配信します。データ側はこのoriginへのCORSを許可し、
+`.gz`は`application/gzip`で配信、HTTPの`Content-Encoding`を付けません。API/DBは不要です。
 
 ## 3Dサンプル対戦
 
@@ -56,8 +61,7 @@ SQLiteのネイティブビルドが必要な環境ではPythonとC++ツール�
 画面・DBなしで同じmanifest/seedの対戦を再現します。
 
 `data/spatial/catalog.json` は15体と能力・装備・方針・状態・戦場・ルールの69revisionです。
-剣士、槍兵、重装騎士、弓使い、魔法弓使い、炎術師、氷術師、雷術師、飛行術師、治癒剣士を
-同じ型付き部品で構成しています。キャラクターごとの実行分岐はありません。
+型付き部品で構成し、キャラクター固有の実行分岐はありません。
 `pnpm catalog:spatial` で生成元との一致を確認し、変更時は
 `pnpm catalog:spatial --write` の差分をレビューしてください。
 配布済みサンプルは[版更新規則](../adr/0010-battle-version-compatibility.md)に従い新しいIDで追加します。起動時・`db:seed`で未登録のIDをDBへ追加します。
@@ -84,7 +88,6 @@ SQLiteのネイティブビルドが必要な環境ではPythonとC++ツール�
 既定設定は`ARTIFACT_PATH=./data/replays`、`BATTLE_WORKERS=1`、
 `BATTLE_TIMEOUT_MS=30000`、`BATTLE_QUEUE_LIMIT=128`、
 `BATTLE_STORAGE_BYTES=17179869184`、`BATTLE_RSS_BYTES=1610612736`。
-APIは引き続き認証のないlocalhost開発用です。
 
 ## Headlessバッチ
 
@@ -113,7 +116,7 @@ vp run batch check .generated/batch-plan.json path/to/index.json .generated/batc
 vp run batch export .generated/batch-plan.json .generated/public path/to/index.json .generated/batch-output
 ```
 
-R2書込みや画面への接続は後続です。公開layout/理由コード/容量は[ADR 0008](../adr/0008-headless-batch.md)。
+R2書込みは後続です。公開layout/理由コード/容量は[ADR 0008](../adr/0008-headless-batch.md)。
 配布ビルドでは`node apps/api/dist/batch.mjs`を使用できます。
 出力の`.work/`はローカルDB/作業記録です。必要ディスク容量は最終出力上限＋作業replay上限＋256 MiB。
 [計画・保存・再開の契約](../adr/0008-headless-batch.md)を参照してください。

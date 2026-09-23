@@ -93,7 +93,11 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
     'browser-external-boundary',
     { path: '^apps/web/' },
-    { path: '(?:^|/)node_modules/', pathNot: '(?:^|/)node_modules/(?:react|react-dom|zod)/' },
+    {
+      path: '(?:^|/)node_modules/',
+      pathNot:
+        '(?:^|/)node_modules/(?:react|react-dom|zod|three|@react-three/(?:fiber|drei)|@tanstack/react-table)/',
+    },
     'Review browser safety before adding another runtime dependency; server/SQLite/tooling belong outside web.',
   ),
   rule(

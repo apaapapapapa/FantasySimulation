@@ -12,11 +12,21 @@ export const UI_CASES = [
   'battle-api-error',
 ] as const;
 export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
-export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics'] as const;
+export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics', 'ui:static-replay'] as const;
+export const UI_STATIC_CASES = [
+  'static-selection',
+  'static-replay-controls',
+  'static-partials',
+  'static-errors',
+  'static-stale-navigation',
+  'static-webgl-fallback',
+  'static-network-boundary',
+] as const;
 export const UI_FAULTS = ['startup', 'timeout', 'crash'] as const;
-export type UiScenario = 'smoke' | (typeof UI_FAULTS)[number];
+export type UiScenario = 'smoke' | 'static' | (typeof UI_FAULTS)[number];
 export function uiScenario(value: string | undefined): UiScenario {
   if (value === undefined || value === 'smoke') return 'smoke';
+  if (value === 'static') return value;
   if (UI_FAULTS.some((fault) => fault === value)) return value as UiScenario;
   throw new Error('Unknown UI execution scenario');
 }
@@ -33,6 +43,25 @@ export const UI_SETTINGS = {
   timeout: 20_000,
   globalTimeout: 120_000,
 } as const;
+
+export const uiCases = (scenario: UiScenario) =>
+  scenario === 'smoke' ? UI_CASES : scenario === 'static' ? UI_STATIC_CASES : [scenario];
+export const uiBrowsers = (scenario: UiScenario) =>
+  scenario === 'static' ? (['chromium', 'webkit'] as const) : (['chromium'] as const);
+export function uiSettings(scenario: UiScenario) {
+  return {
+    ...UI_SETTINGS,
+    browsers: uiBrowsers(scenario),
+    retries: scenario === 'smoke' || scenario === 'static' ? 1 : 0,
+    globalTimeout: scenario === 'static' ? 180000 : UI_SETTINGS.globalTimeout,
+    timeout: scenario === 'static' ? 30000 : UI_SETTINGS.timeout,
+  };
+}
+export const CHROMIUM_ARGS = [
+  '--use-gl=angle',
+  '--use-angle=swiftshader',
+  '--enable-unsafe-swiftshader',
+];
 
 export function localOrigin(value: string | undefined): string {
   if (!value) throw new Error('Missing isolated server origin');

@@ -2,8 +2,9 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { startServers } from './servers.ts';
-import { UI_SETTINGS, uiScenario } from './contract.ts';
+import type { startServers } from './servers.ts';
+import type { startStaticServers } from './static-servers.ts';
+import { CHROMIUM_ARGS, uiSettings, uiScenario } from './contract.ts';
 
 const require = createRequire(import.meta.url);
 const output = process.env.FANTASY_UI_OUTPUT;
@@ -18,16 +19,28 @@ function progress(value: string) {
   lifecycle.push({ stage: value, at: new Date().toISOString() });
   save('lifecycle.json', lifecycle);
 }
-let servers: Awaited<ReturnType<typeof startServers>> | undefined;
+let servers: Awaited<ReturnType<typeof startServers | typeof startStaticServers>> | undefined;
 try {
   progress(stage);
   // A missing web package fails after the real API has bound, exercising partial startup cleanup.
-  servers = await startServers(
+  const start =
+    scenario === 'static'
+      ? (await import('./static-servers.ts')).startStaticServers
+      : (await import('./servers.ts')).startServers;
+  servers = await start(
     scenario === 'startup' ? join(temporary, 'missing-web') : process.cwd(),
     temporary,
     (state) => {
       save('servers.json', state);
-      progress(state.stopped ? 'servers-stopped' : state.webOrigin ? 'web-ready' : 'api-ready');
+      progress(
+        state.stopped
+          ? 'servers-stopped'
+          : state.webOrigin
+            ? 'web-ready'
+            : scenario === 'static'
+              ? 'fixtures-ready'
+              : 'api-ready',
+      );
     },
   );
   const playwright = dirname(
@@ -46,7 +59,8 @@ try {
   );
   save('execution.json', {
     run: JSON.parse(readFileSync(join(output, 'run.json'), 'utf8')) as unknown,
-    settings: { ...UI_SETTINGS, retries: scenario === 'smoke' ? UI_SETTINGS.retries : 0 },
+    settings: uiSettings(scenario),
+    launch: { chromiumArgs: CHROMIUM_ARGS, softwareGL: true },
     playwright: installed.version,
     browsers: JSON.parse(readFileSync(join(browserPackage, 'browsers.json'), 'utf8')) as unknown,
     font: {
@@ -54,7 +68,11 @@ try {
       version: manifest.devDependencies['@fontsource/noto-sans-jp'],
       weight: 400,
     },
-    origins: { web: servers.webOrigin, api: servers.apiOrigin },
+    origins: {
+      web: servers.webOrigin,
+      api: servers.apiOrigin,
+      data: 'dataOrigin' in servers ? servers.dataOrigin : null,
+    },
     samples: servers.samples,
     node: process.version,
     platform: process.platform,
@@ -78,6 +96,8 @@ try {
           ...process.env,
           FANTASY_UI_ORIGIN: servers!.webOrigin,
           FANTASY_UI_SCENARIO: scenario,
+          FANTASY_UI_DATA_ORIGIN: 'dataOrigin' in servers! ? servers.dataOrigin : '',
+          LIBGL_ALWAYS_SOFTWARE: '1',
         },
       },
     );

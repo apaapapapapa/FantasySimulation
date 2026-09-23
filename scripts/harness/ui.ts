@@ -7,24 +7,32 @@ import { artifactDirectory, git, repositoryRoot, sourceIdentity } from './source
 import { runCommand, safeEnvironment } from './process.ts';
 import { assessReport } from './report.ts';
 import type { Report } from './report.ts';
-import { inspectUiDiagnostics, uiCoverage } from './ui-results.ts';
+import { inspectUiDiagnostics, inspectUiStatic, uiCoverage } from './ui-results.ts';
 import {
   UI_CHECKS,
   UI_RUN_CHECKS,
   UI_FAULTS,
-  UI_SETTINGS,
+  uiSettings,
+  uiCases,
+  uiBrowsers,
   type UiScenario,
 } from '../../e2e/contract.ts';
 
 export async function collectUi(input: string, relative = `.generated/harness/ui-${randomUUID()}`) {
   const result = await runUiOnce(input, relative, 'smoke');
   let diagnostics;
+  let staticResult;
   try {
     if (result.interrupted) throw new Error('UI execution interrupted');
     for (const scenario of UI_FAULTS) {
       const probe = await runUiOnce(input, `${relative}/diagnostics/${scenario}`, scenario);
       if (probe.interrupted) throw new Error('UI diagnostics interrupted');
     }
+    await runUiOnce(input, `${relative}/static`, 'static');
+    staticResult = inspectUiStatic(join(input, relative), result.report, {
+      id: process.env.GITHUB_RUN_ID ?? null,
+      attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+    });
     diagnostics = inspectUiDiagnostics(join(input, relative), result.report, {
       id: process.env.GITHUB_RUN_ID ?? null,
       attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
@@ -43,6 +51,15 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
       uri: `${relative}/diagnostics/${scenario}/command.json`,
       sourceSha: result.report.sourceSha,
     })),
+  });
+  result.report.checks.push({
+    id: 'ui:static-replay',
+    required: true,
+    ...(staticResult ?? {
+      status: 'unknown' as const,
+      reason: 'Static browser execution did not complete',
+    }),
+    evidence: [{ uri: `${relative}/static/command.json`, sourceSha: result.report.sourceSha }],
   });
   result.report.finishedAt = new Date().toISOString();
   const assessment = assessReport(result.report, UI_CHECKS);
@@ -91,7 +108,7 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
       root,
       {
         env,
-        timeoutMs: UI_SETTINGS.globalTimeout + 60_000,
+        timeoutMs: uiSettings(scenario).globalTimeout + 60_000,
         maxBytes: 4 * 1024 * 1024,
         signal: controller.signal,
       },
@@ -107,7 +124,8 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
     }
   }
   writeFileSync(join(directory, 'runner.log'), result.output);
-  if (scenario === 'smoke' && result.exitCode !== 0) console.error(result.output);
+  if ((scenario === 'smoke' || scenario === 'static') && result.exitCode !== 0)
+    console.error(result.output);
   let results: unknown = null;
   try {
     results = JSON.parse(readFileSync(join(directory, 'results.json'), 'utf8')) as unknown;
@@ -118,7 +136,8 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
     results,
     directory,
     directory,
-    scenario === 'smoke' ? undefined : [scenario],
+    uiCases(scenario),
+    uiBrowsers(scenario),
   );
   save('coverage.json', coverage);
   let serversStopped = false;
@@ -173,7 +192,8 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
   const report: Report = {
     ...info,
     schemaVersion: 1,
-    producer: scenario === 'smoke' ? 'ui-runner' : 'ui-diagnostic',
+    producer:
+      scenario === 'smoke' ? 'ui-runner' : scenario === 'static' ? 'ui-static' : 'ui-diagnostic',
     startedAt,
     finishedAt: new Date().toISOString(),
     checks: [
@@ -204,14 +224,6 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
         status: removed && serversStopped ? 'pass' : 'fail',
         reason: `Temporary data removed=${removed}; graceful server shutdown=${serversStopped}; forced exits remain failures`,
         evidence,
-      },
-      {
-        id: 'ui:static-replay',
-        required: false,
-        status: 'unknown',
-        reason:
-          'Blocked on #81 publication schemas and #79/#80 screens; no speculative fixture or placeholder browser pass',
-        evidence: [],
       },
       {
         id: 'ui:p4-editor-battle',

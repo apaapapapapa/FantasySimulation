@@ -3,106 +3,163 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vite-plus/test';
-import { readUiEvidence, readUiRun, uiCoverage } from './ui-results.ts';
+import { inspectUiStatic, readUiEvidence, readUiRun, uiCoverage } from './ui-results.ts';
 import { runCommand } from './process.ts';
-import { UI_CHECKS, allowedRequest, localOrigin } from '../../e2e/contract.ts';
+import {
+  UI_CHECKS,
+  UI_STATIC_CASES,
+  uiBrowsers,
+  uiCases,
+  uiSettings,
+  allowedRequest,
+  localOrigin,
+} from '../../e2e/contract.ts';
 import { startStaticFixtures } from '../../e2e/static-fixtures.ts';
 import { startServers } from '../../e2e/servers.ts';
+import { publicFixtures } from '../../e2e/publication-fixtures.ts';
 
 import { uiResults as results } from './test-support/ui.ts';
 
 describe('UI evidence', () => {
-  it('binds relocated artifacts to source and CI attempt and detects removed files', () => {
-    const directory = mkdtempSync(join(tmpdir(), 'fantasy-ui-relocated-'));
-    const info = {
-      sourceSha: 'a'.repeat(40),
-      candidateSha: 'a'.repeat(40),
-      testMergeSha: null,
-      baselineSha: null,
-    };
-    const write = (file: string, value: unknown) =>
-      writeFileSync(join(directory, file), JSON.stringify(value));
-    try {
-      const artifacts = [
-        'run.json',
-        'runner.log',
-        'execution.json',
-        'results.json',
-        'coverage.json',
-        'servers.json',
-        'lifecycle.json',
-      ];
-      const raw = {
-        ...results(),
-        config: { projects: [{ outputDir: '/original/checkout/ui/tests' }] },
+  it.each(['smoke', 'static'] as const)(
+    'binds relocated %s artifacts to source and CI attempt and detects removed files',
+    (scenario) => {
+      const root = mkdtempSync(join(tmpdir(), 'fantasy-ui-relocated-'));
+      const directory = scenario === 'static' ? join(root, 'static') : root;
+      mkdirSync(directory, { recursive: true });
+      const info = {
+        sourceSha: 'a'.repeat(40),
+        candidateSha: 'a'.repeat(40),
+        testMergeSha: null,
+        baselineSha: null,
       };
-      for (const file of artifacts) write(file, {});
-      const runReceipt = { ...info, runId: '10', runAttempt: '2' };
-      write('run.json', runReceipt);
-      write('execution.json', { run: runReceipt });
-      write(
-        'lifecycle.json',
-        [
-          'server-start',
-          'api-ready',
-          'web-ready',
-          'browser',
-          'browser-finished',
-          'servers-stopped',
-        ].map((stage) => ({ stage, at: '2026-09-23T00:00:00Z' })),
-      );
-      write('results.json', raw);
-      write('coverage.json', uiCoverage(raw, directory, '/original/checkout/ui'));
-      write('command.json', {
-        ...info,
-        runId: '10',
-        runAttempt: '2',
-        scenario: 'smoke',
-        exitCode: 0,
-        bounded: false,
-        temporaryRemoved: true,
-        serversStopped: true,
-        digests: Object.fromEntries(
-          artifacts.map((file) => [
-            file,
-            createHash('sha256')
-              .update(readFileSync(join(directory, file)))
-              .digest('hex'),
-          ]),
-        ),
-      });
-      write('report.json', {
-        ...info,
-        schemaVersion: 1,
-        producer: 'ui-runner',
-        startedAt: '2026-09-23T00:00:00Z',
-        finishedAt: '2026-09-23T00:00:01Z',
-        checks: UI_CHECKS.map((id) => ({
-          id,
-          required: true,
-          status: 'pass',
-          reason: 'fixture',
-          evidence: [{ uri: '.generated/harness/ui/command.json', sourceSha: info.sourceSha }],
-        })),
-      });
-      expect(readUiRun(directory, info, { id: '10', attempt: '2' }).producer).toBe('ui-runner');
-      expect(() => readUiEvidence(directory, info, { id: '10', attempt: '2' })).toThrow(
-        'diagnostic evidence',
-      );
-      expect(() => readUiRun(directory, info, { id: '10', attempt: '1' })).toThrow('Stale UI');
-      expect(() =>
-        readUiRun(directory, { ...info, sourceSha: 'b'.repeat(40) }, { id: '10', attempt: '2' }),
-      ).toThrow('Stale UI');
-      write('execution.json', { changed: true });
-      expect(() => readUiRun(directory, info, { id: '10', attempt: '2' })).toThrow(
-        'UI execution does not belong',
-      );
-      rmSync(join(directory, 'results.json'));
-      expect(() => readUiRun(directory, info, { id: '10', attempt: '2' })).toThrow(Error);
-    } finally {
-      rmSync(directory, { recursive: true, force: true });
-    }
-  });
+      const write = (file: string, value: unknown) =>
+        writeFileSync(join(directory, file), JSON.stringify(value));
+      try {
+        const artifacts = [
+          'run.json',
+          'runner.log',
+          'execution.json',
+          'results.json',
+          'coverage.json',
+          'servers.json',
+          'lifecycle.json',
+        ];
+        const raw = {
+          ...results(uiCases(scenario), uiBrowsers(scenario)),
+          config: {
+            projects: uiBrowsers(scenario).map(() => ({
+              outputDir: '/original/checkout/ui/tests',
+            })),
+          },
+        };
+        for (const file of artifacts) write(file, {});
+        const runReceipt = { ...info, runId: '10', runAttempt: '2' };
+        write('run.json', runReceipt);
+        write('execution.json', {
+          run: runReceipt,
+          settings: uiSettings(scenario),
+          origins: {
+            web: 'http://127.0.0.1:1234',
+            api: scenario === 'static' ? null : 'http://127.0.0.1:1236',
+            data: scenario === 'static' ? 'http://127.0.0.1:1235' : null,
+          },
+          samples: [],
+        });
+        write('servers.json', {
+          stopped: true,
+          apiOrigin: scenario === 'static' ? null : 'http://127.0.0.1:1236',
+          webOrigin: 'http://127.0.0.1:1234',
+          dataOrigin: scenario === 'static' ? 'http://127.0.0.1:1235' : null,
+        });
+        write(
+          'lifecycle.json',
+          [
+            'server-start',
+            scenario === 'static' ? 'fixtures-ready' : 'api-ready',
+            'web-ready',
+            'browser',
+            'browser-finished',
+            'servers-stopped',
+          ].map((stage) => ({ stage, at: '2026-09-23T00:00:00Z' })),
+        );
+        write('results.json', raw);
+        write(
+          'coverage.json',
+          uiCoverage(
+            raw,
+            directory,
+            '/original/checkout/ui',
+            uiCases(scenario),
+            uiBrowsers(scenario),
+          ),
+        );
+        write('command.json', {
+          ...info,
+          runId: '10',
+          runAttempt: '2',
+          scenario,
+          exitCode: 0,
+          bounded: false,
+          temporaryRemoved: true,
+          serversStopped: true,
+          digests: Object.fromEntries(
+            artifacts.map((file) => [
+              file,
+              createHash('sha256')
+                .update(readFileSync(join(directory, file)))
+                .digest('hex'),
+            ]),
+          ),
+        });
+        write('report.json', {
+          ...info,
+          schemaVersion: 1,
+          producer: scenario === 'static' ? 'ui-static' : 'ui-runner',
+          startedAt: '2026-09-23T00:00:00Z',
+          finishedAt: '2026-09-23T00:00:01Z',
+          checks: UI_CHECKS.map((id) => ({
+            id,
+            required: true,
+            status: 'pass',
+            reason: 'fixture',
+            evidence: [{ uri: '.generated/harness/ui/command.json', sourceSha: info.sourceSha }],
+          })),
+        });
+        expect(readUiRun(directory, info, { id: '10', attempt: '2' }, scenario).producer).toBe(
+          scenario === 'static' ? 'ui-static' : 'ui-runner',
+        );
+        if (scenario === 'static') {
+          expect(inspectUiStatic(root, info, { id: '10', attempt: '2' }).status).toBe('pass');
+          expect(inspectUiStatic(root, info, { id: '10', attempt: '3' }).status).toBe('unknown');
+        } else
+          expect(() => readUiEvidence(directory, info, { id: '10', attempt: '2' })).toThrow(
+            'diagnostic evidence',
+          );
+        expect(() => readUiRun(directory, info, { id: '10', attempt: '1' }, scenario)).toThrow(
+          'Stale UI',
+        );
+        expect(() =>
+          readUiRun(
+            directory,
+            { ...info, sourceSha: 'b'.repeat(40) },
+            { id: '10', attempt: '2' },
+            scenario,
+          ),
+        ).toThrow('Stale UI');
+        write('execution.json', { changed: true });
+        expect(() => readUiRun(directory, info, { id: '10', attempt: '2' }, scenario)).toThrow(
+          'UI execution does not belong',
+        );
+        rmSync(join(directory, 'results.json'));
+        expect(() => readUiRun(directory, info, { id: '10', attempt: '2' }, scenario)).toThrow(
+          Error,
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
   it('requires all actual browser cases and rejects missing/duplicate/skipped executions', () => {
     expect(uiCoverage(results(), '/tmp').status).toBe('pass');
     for (const mutation of ['missing', 'duplicate', 'browser', 'skip', 'retry'] as const) {
@@ -116,6 +173,23 @@ describe('UI evidence', () => {
       if (mutation === 'retry') attempt.retry = 1;
       expect(uiCoverage(value, '/tmp').status).toBe('unknown');
     }
+  });
+  it('requires both static browsers for every case, including real matching browser identities', () => {
+    const raw = results(UI_STATIC_CASES, uiBrowsers('static'));
+    expect(uiCoverage(raw, '/tmp', '/tmp', UI_STATIC_CASES, uiBrowsers('static')).status).toBe(
+      'pass',
+    );
+    raw.suites[0]!.specs[0]!.tests.pop();
+    expect(uiCoverage(raw, '/tmp', '/tmp', UI_STATIC_CASES, uiBrowsers('static')).status).toBe(
+      'unknown',
+    );
+    const spoofed = results(UI_STATIC_CASES, uiBrowsers('static'));
+    spoofed.suites[0]!.specs[0]!.tests[1]!.results[0]!.attachments[0]!.body = Buffer.from(
+      '{"name":"chromium","version":"123.0"}',
+    ).toString('base64');
+    expect(uiCoverage(spoofed, '/tmp', '/tmp', UI_STATIC_CASES, uiBrowsers('static')).status).toBe(
+      'unknown',
+    );
   });
   it('keeps the initial failed attempt and requires its artifact after a passing retry', () => {
     const root = mkdtempSync(join(tmpdir(), 'fantasy-ui-evidence-'));
@@ -158,26 +232,26 @@ it('allows only owned HTTP origins, never arbitrary localhost, credentials or ex
 });
 
 it('serves saved fixture bytes on a separate read-only origin without starting API/DB', async () => {
-  const server = await startStaticFixtures(process.cwd(), 'http://127.0.0.1:12345');
+  const server = await startStaticFixtures(process.cwd(), () => 'http://127.0.0.1:12345');
   try {
-    const manifest = await fetch(`${server.origin}/fixtures/manifest.json`);
+    const files = publicFixtures(process.cwd());
+    const key = [...files.keys()].find((key) => key.endsWith('/chunk-00000.ndjson.gz'))!;
+    const manifest = await fetch(`${server.origin}/fixtures/catalog/current.json`);
     expect(manifest.status).toBe(200);
     expect(manifest.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:12345');
-    const chunk = await fetch(`${server.origin}/fixtures/chunk-00000.ndjson.gz`);
+    const chunk = await fetch(`${server.origin}/fixtures/${key}`);
     expect(chunk.headers.get('content-type')).toBe('application/gzip');
     expect(chunk.headers.get('content-encoding')).toBeNull();
-    expect(Buffer.from(await chunk.arrayBuffer())).toEqual(
-      readFileSync('apps/web/test-fixtures/replays/swordsman-sky-mage-240/chunk-00000.ndjson.gz'),
-    );
+    expect(Buffer.from(await chunk.arrayBuffer())).toEqual(files.get(key));
     for (const path of [
       '/api/health',
       '/.env',
       '/fixtures/../.env',
-      '/fixtures/manifest.json?other',
+      '/fixtures/catalog/current.json?other',
     ])
       expect((await fetch(server.origin + path)).status).toBe(404);
     expect(
-      (await fetch(`${server.origin}/fixtures/manifest.json`, { method: 'POST' })).status,
+      (await fetch(`${server.origin}/fixtures/catalog/current.json`, { method: 'POST' })).status,
     ).toBe(404);
   } finally {
     await server.stop();
