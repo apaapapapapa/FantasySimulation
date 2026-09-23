@@ -2,10 +2,8 @@ import { createApp } from './app.ts';
 import { readConfig } from './config.ts';
 import { openStore, readSampleRevisions } from './store.ts';
 import { BattleRuntime } from './battle-runtime.ts';
-import { assertStoragePaths } from './storage-version.ts';
 
 const config = readConfig();
-await assertStoragePaths(config.databasePath, config.artifactPath);
 const store = openStore(config.databasePath);
 await store.seedRevisions(readSampleRevisions());
 const runtime = await BattleRuntime.open(store, config.artifactPath, config.runtime);

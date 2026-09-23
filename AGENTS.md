@@ -52,10 +52,17 @@ Explanation-only and read-only review requests retain their requested scope.
 - Preserve input character definitions. Record snapshots alongside results.
 - Every simulation must have a finite termination condition and an explicit draw outcome.
 - Any decision-affecting change requires a rules-version bump. The 3D replacement intentionally removes pre-3D runtime/API/schema compatibility (Issue #1). New replays use immutable saved display records, not historical engine execution (Issue #10). Do not add an old-engine registry or silently upgrade old databases.
-- For a rules/decision version bump, update CURRENT_ENGINE_VERSION and the rules/catalog/manifest contracts together, review and restamp the implementation digest, and explicitly review corpus/fixture changes. Default DB and artifact paths derive from that constant; update README and .env.example examples, verify fresh startup and old-path rejection without changing old bytes, then run the normal source/PR/both-OS/main delivery steps. Never import old-version rows to avoid a fresh database.
 - Do not assert universal victory or create arbitrary precedence for contradictory abilities without defining the rules.
 - If randomness is added, require and persist a seed plus its PRNG algorithm/version.
 - `packages/engine/fixtures/spatial/corpus.json` pins fixed battle inputs and maps existing determinism tests (`vp run check:corpus`, part of `verify`). When an input or mapped test changes intentionally, update it in the same reviewed PR with the reason; never regenerate it from candidate output or mark planned coverage as done.
+
+## Battle-version compatibility
+
+- Follow [ADR 0010](docs/adr/0010-battle-version-compatibility.md) and the revised Issue #59. Keep saved definitions/results/replays readable in the same database. Extend schemas with optional fields or enum values, preserving existing meanings and omitted-field behavior.
+- For a decision change, bump rules/engine versions and add the new rules under a new ID. Review implementation digest, corpus, expected fixture changes and rule documentation together. Old rules remain readable but must never execute through either a historical or current engine.
+- Change distributed samples by adding new IDs, not rewriting existing IDs/revisions. Add catalog-history checks and previous-version DB fixtures with definitions, completed results/replays and unfinished jobs. Unsupported jobs must fail clearly; retry/replay recovery must return 409 rather than repeat a schema error.
+- A fresh DB is an exception for an unavoidable incompatible change, justified in that PR's ADR. Only then implement separate DB/artifact paths, retain old files and reject incompatible explicit paths before writing. Do not add a schema-generation declaration, checksum ledger, custom reset/migrator/history table.
+- Finish the usual verify, clean-source, PR review, both-OS and main checks. Document incomplete compatibility work honestly and do not close its Issue on documentation evidence alone.
 
 ## Data and toolchain
 

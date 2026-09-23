@@ -1,7 +1,6 @@
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import { defaultStoragePaths } from './storage-paths.ts';
 
 // src/ and dist/ have the same depth below the repository root.
 export const repositoryRoot = fileURLToPath(new URL('../../../', import.meta.url));
@@ -11,8 +10,8 @@ export function readConfig() {
     .object({
       API_HOST: z.string().min(1).default('127.0.0.1'),
       API_PORT: z.coerce.number().int().min(1).max(65535).default(3001),
-      DATABASE_PATH: z.string().min(1).default(defaultStoragePaths.databasePath),
-      ARTIFACT_PATH: z.string().min(1).default(defaultStoragePaths.artifactPath),
+      DATABASE_PATH: z.string().min(1).default('./data/fantasy.sqlite'),
+      ARTIFACT_PATH: z.string().min(1).default('./data/replays'),
       BATTLE_WORKERS: z.coerce.number().int().min(1).max(4).default(1),
       BATTLE_TIMEOUT_MS: z.coerce.number().int().min(1).max(30000).default(30000),
       BATTLE_QUEUE_LIMIT: z.coerce.number().int().min(1).max(128).default(128),

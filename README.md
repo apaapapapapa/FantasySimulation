@@ -10,17 +10,17 @@ P2〜P3はIssue #1の3D設計へ移行中です。旧実装の互換維持は行
 
 ## 技術構成
 
-| 部分             | 採用技術                              | 配置                                   |
-| ---------------- | ------------------------------------- | -------------------------------------- |
-| 開発ツール       | Vite+ 0.3.3 / pnpm 11.19.0            | ルート設定                             |
-| 画面             | React 19 / TypeScript strict          | `apps/web`                             |
-| API              | Node.js 24.19.0 / Fastify 5           | `apps/api`                             |
-| 対戦エンジン     | TypeScriptの純粋関数                  | `packages/engine`                      |
-| 共通型・JSON検証 | TypeScript / Zod 4                    | `packages/domain`                      |
-| データベース     | SQLite / Drizzle ORM / better-sqlite3 | `data/<engine version>/fantasy.sqlite` |
-| サンプル設定     | JSON                                  | `data/spatial`                         |
-| DB変更履歴       | Drizzle Kit                           | `db/drizzle`                           |
-| 将来の分析       | 必要になった段階でPythonを追加        | `analysis`                             |
+| 部分             | 採用技術                              | 配置                  |
+| ---------------- | ------------------------------------- | --------------------- |
+| 開発ツール       | Vite+ 0.3.3 / pnpm 11.19.0            | ルート設定            |
+| 画面             | React 19 / TypeScript strict          | `apps/web`            |
+| API              | Node.js 24.19.0 / Fastify 5           | `apps/api`            |
+| 対戦エンジン     | TypeScriptの純粋関数                  | `packages/engine`     |
+| 共通型・JSON検証 | TypeScript / Zod 4                    | `packages/domain`     |
+| データベース     | SQLite / Drizzle ORM / better-sqlite3 | `data/fantasy.sqlite` |
+| サンプル設定     | JSON                                  | `data/spatial`        |
+| DB変更履歴       | Drizzle Kit                           | `db/drizzle`          |
+| 将来の分析       | 必要になった段階でPythonを追加        | `analysis`            |
 
 Vite+に含まれるVite、Vitest、Oxlint、Oxfmt、tsdown、タスクランナーを利用します。
 `vite`はVite+のコアにエイリアスし、VitestもVite+内蔵版に固定しています。
@@ -53,14 +53,17 @@ APIと画面の両方を起動するコマンドは**`vp run dev`**です。
 
 初回起動時にDBを作成し、マイグレーションとサンプル13体の登録を行います。
 通常の開発に別のDBサーバーやDockerは不要です。SQLiteドライバーのネイティブビルドが必要な環境ではPythonとC++ビルドツールを用意してください。
-戦闘ルールの版が上がると、新しいDBとreplay保存先で始めます。現在の既定値は
-`data/spatial-v1.11/fantasy.sqlite`と`data/spatial-v1.11/replays`です。
-両方とも`CURRENT_ENGINE_VERSION`から導出するため、環境変数を未指定にすれば次の版にも追従します。
-旧版のDB・下書き・artifactは変更・移動・削除せず、新版へ取り込みません。
-同じ戦闘ルールのDBへschema変更を適用する場合は、バックアップしてAPIを止め、`vp run db:migrate`を実行します。
-新しいDBは`vp run dev`または`vp run db:seed`で作成してください。公式Drizzle migrationとseedを続けて実行します。
-`db:migrate`だけで作った未登録DBや中断した初期化など、保存データから版を判定できないDBも拒否するため、別の未使用パスで初期化してください。
+DBスキーマ・変更履歴はDrizzleへ統一しました。既存の最新`spatial-v1`（旧002・003適用済み）のrevision・下書き・BattleSpecは保持し、旧管理テーブルのみ削除します。
+既存DBはバックアップし、APIを停止して`vp run db:migrate`を実行してください。
+旧`local-v1`の業務データを3D定義へ自動変換する機能はありません。既存の無関係なテーブル・行は削除しません。
+新しい開発用DBが必要なら`.env`の`DATABASE_PATH`を未使用のファイル名に変更してください。自前resetや世代管理はありません。
 [Drizzleの移行・制約](docs/adr/0005-drizzle-kit.md)を参照してください。
+
+戦闘ルールの版更新では、既存DBの定義・結果・replayを読めるまま残し、新しいrulesや変更するサンプルを別IDで追加する方針です。
+既定の保存先は引き続き`data/fantasy.sqlite`と`data/replays`です。旧engineの再実行や保存データの自動変換は行いません。
+新DBへの切替は、互換性を維持できない変更が避けられない場合だけADRで理由を定めます。
+[版更新の規則と未完了項目](docs/adr/0010-battle-version-compatibility.md)を参照してください。
+旧版DBの回帰試験、未完了jobの明示拒否、サンプル不変性の検査はIssue #59の後続実装です。
 
 ## 設定
 
@@ -69,19 +72,10 @@ APIと画面の両方を起動するコマンドは**`vp run dev`**です。
 ```dotenv
 API_HOST=127.0.0.1
 API_PORT=3001
-# 未指定なら戦闘ルールの版に追従します。
-# DATABASE_PATH=./data/spatial-v1.11/fantasy.sqlite
-# ARTIFACT_PATH=./data/spatial-v1.11/replays
+DATABASE_PATH=./data/fantasy.sqlite
 ```
 
-`DATABASE_PATH`と`ARTIFACT_PATH`の相対パスはリポジトリのルートを基準に解決します。
-版が異なるDBや別DB所有のartifact rootを明示すると、書込み前に`StorageVersionError`で停止します。
-エラーには保存済みの版（不明なら`unknown`）、現在の版、新しいパスの指定方法を表示します。
-旧版へ向いた両変数を削除するか、両方に未使用パスを指定してください。`.store-id`は削除・付け替えないでください。
-旧版の結果は新版アプリの一覧に出ません。保存記録の再生は対応replay schemaのexport・静的pack等で扱い、旧engineを実行しません。
-旧ファイルが不要なら、APIを停止し、必要なexport・バックアップを保管した後、該当する旧版のディレクトリを手動削除できます。
-例: POSIXの`rm -r ./data/spatial-v1.10`、PowerShellの`Remove-Item -Recurse ./data/spatial-v1.10`。
-従来の`data/fantasy.sqlite`を削除する場合も、対応する`-wal`・`-shm`と旧`data/replays`を確認してください。
+`DATABASE_PATH`の相対パスはリポジトリのルートを基準に解決します。
 画面の`/api`リクエストはViteのプロキシからAPIへ送信されます。
 `.env`の`API_PORT`を変更したら、開発サーバーを再起動してください。
 ローカル利用を前提としており、認証は未実装です。APIは既定でループバックにのみ待ち受けます。
@@ -283,7 +277,7 @@ See [the runtime contract and measured-memory definitions](docs/adr/0007-worker-
 | `GET /api/replays/:id`                         | 検証済みmanifest                                                                        |
 | `GET /api/replays/:id/files/:file`             | manifestに列挙されたgzip bytes。Content-Encodingなし                                    |
 
-既定設定は`ARTIFACT_PATH=./data/spatial-v1.11/replays`、`BATTLE_WORKERS=1`、
+既定設定は`ARTIFACT_PATH=./data/replays`、`BATTLE_WORKERS=1`、
 `BATTLE_TIMEOUT_MS=30000`、`BATTLE_QUEUE_LIMIT=128`、
 `BATTLE_STORAGE_BYTES=17179869184`、`BATTLE_RSS_BYTES=1610612736`。
 APIは引き続き認証のないlocalhost開発用です。

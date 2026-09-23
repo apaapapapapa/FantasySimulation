@@ -20,32 +20,25 @@ The task began against local-v1. While implementing it, main d7dc7ed introduced
 spatial revisions, drafts and immutable BattleSpecs, removing the legacy engine/API.
 Integrate that work without resurrecting old contracts. The initial, unreleased
 Drizzle baseline is generated for these current three tables, not the old tables.
-Within the same battle-rules version, databases with former migrations 002 and 003 applied are adopted
+Existing spatial-v1 databases with former migrations 002 and 003 applied are adopted
 using reviewed IF NOT EXISTS DDL. Their revisions, draft versions/bases, JSON and
 specifications remain unchanged. The official transaction removes only the old
 schema_generation and schema_migrations bookkeeping tables. No legacy receipts are
 read, translated or maintained. Arbitrary partial/ad-hoc schemas are not supported.
 
-Issue #59 changes version transitions: defaults are now
-`data/<CURRENT_ENGINE_VERSION>/fantasy.sqlite` and `data/<CURRENT_ENGINE_VERSION>/replays`
-(currently `spatial-v1.11`). Leave both environment overrides unset to follow version bumps.
-Before opening SQLite, inspect stored ruleset `rulesVersion` and BattleSpec `engineVersion`.
-All observed versions must be current. Missing, unreadable or mixed evidence is refused,
-including existing schema-only files. A temporary private copy includes WAL data so SQLite
-cannot modify the original DB/WAL/SHM during admission. This copy is only inspected and
-removed; it is never migrated, seeded or imported into the application database.
-Artifact admission runs before opening the configured DB and retains `.store-id` ownership.
-Errors show the stored/current versions and how to select two unused paths.
-
-Back up a same-version database and stop the API before `db:migrate`. New installations
-use `dev` or `db:seed`, which run the official migration and seed together. A crash leaving
-no version evidence requires another unused path; do not guess or adopt it automatically.
-Old-version DBs, drafts and artifacts are left untouched and absent from new-app lists.
-Exported/static replay records may be displayed under supported replay schemas; old engines
-and database imports are not added. To discard an old version, stop its API, preserve any
-needed backup/export and manually remove only its old directory (OS examples in README).
-No reset, schema-generation declaration, checksum receipt, history table or custom migrator is added.
+Back up an existing SQLite database and stop the API before the first db:migrate.
+Old local-v1 domain rows are not converted to 3D definitions or exposed by a legacy
+API; unrelated tables/rows are not deleted. A new disposable database can be selected
+with DATABASE_PATH. No reset, automatic deletion or broad schema inference is added.
 Run schema changes serially. This does not add a custom distributed migration lock.
+
+For later battle-version changes, [ADR 0010](0010-battle-version-compatibility.md)
+preserves readable definitions/results/replays in the same database through additive
+schemas and new rules/sample IDs. A rules-version bump alone does not select a new
+database or reject the old one. An unavoidable incompatible change needs its own
+reviewed ADR before implementing separate DB/artifact paths and explicit-path rejection.
+Previous-version fixtures, unsupported-job handling and catalog-history checks remain
+implementation work under Issue #59; this decision does not claim they already pass.
 
 ## Generation and verification
 
