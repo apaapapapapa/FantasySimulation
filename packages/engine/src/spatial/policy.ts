@@ -10,6 +10,7 @@ import type { MotionIntent } from './movement.ts';
 import { Navigator, type NavigationResult } from './navigation.ts';
 import { conditionMatches, type DecisionView } from './perception.ts';
 import { inObservedRange, payCost } from './attacks.ts';
+import { copyPublicStatuses } from './status-observation.ts';
 import { blockedBySilence } from './categories.ts';
 import { assessAbility, type KnownClearance } from './assessment.ts';
 import { dodgeOptions } from './dodge.ts';
@@ -70,8 +71,9 @@ export function choosePolicy(
       view.used?.[ability.id] ?? 0,
       !view.staminaExhausted,
     );
-    const reason =
-      view.canAct === false
+    const reason = view.incapacitated
+      ? 'incapacitated'
+      : view.canAct === false
         ? 'action-phase'
         : !readyAbilities.has(ability.id)
           ? 'cooldown'
@@ -183,6 +185,7 @@ export function choosePolicy(
         ? { ...target.appearance, equipment: [...target.appearance.equipment] }
         : null,
       wounds: target?.wounds ?? 'unknown',
+      ...(target?.statuses && { observedStatuses: copyPublicStatuses(target.statuses) }),
       targetPositionMm: target
         ? {
             x: Math.round(target.position.x * 1000),

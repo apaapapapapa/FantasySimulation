@@ -6,6 +6,8 @@ import {
 } from '@fantasy/domain/spatial';
 import type { ResolvedActor } from './prepare.ts';
 import { SpatialBudgetError } from './physics.ts';
+import { permanentStatus } from './categories.ts';
+import { adjustedStatusValue } from './status-modifiers.ts';
 export type StatusLimits = { maxStatusTypes: number; maxStatusCauses: number };
 export type StatusRevision = DeepReadonly<Extract<Revision, { kind: 'status' }>>;
 export type StatusCohort = {
@@ -15,7 +17,11 @@ export type StatusCohort = {
   stacks: number;
   causes: string[];
 };
-export type StatusApplication = { revision: StatusRevision; cause: string };
+export type StatusApplication = {
+  revision: StatusRevision;
+  cause: string;
+  causes?: readonly string[];
+};
 export type StatusChange = {
   kind: 'apply' | 'remove' | 'refresh' | 'reject';
   revision: StatusRevision;
@@ -67,6 +73,7 @@ export function applyStatuses(
   limits: StatusLimits = DEFAULT_BUDGET,
 ): { statuses: StatusCohort[]; changes: StatusChange[] } {
   const dispelled = (s: StatusCohort) =>
+    !permanentStatus(s.revision.definition) &&
     dispel.some((t) => (typeof t === 'string' ? t === s.revision.id : sameRevision(t, s.revision)));
   let statuses = existing.filter((s) => s.endStep > nextStep && !dispelled(s)).map(clone);
   const changes: StatusChange[] = existing
@@ -95,7 +102,15 @@ export function applyStatuses(
         'Different simultaneous definitions share a stack key',
       );
     const old = statuses.filter((s) => s.revision.definition.stackKey === key);
-    const causes = [...new Set(group.map((a) => a.cause))].sort(compareIds);
+    if (
+      old.some((s) => permanentStatus(s.revision.definition) && !sameRevision(s.revision, revision))
+    )
+      throw new UnresolvedRuleError(
+        'status.permanent-conflict',
+        [revision.id, ...old.map((s) => s.revision.id)],
+        'A permanent status cannot be replaced by a different revision',
+      );
+    const causes = [...new Set(group.flatMap((a) => a.causes ?? [a.cause]))].sort(compareIds);
     const change = (kind: StatusChange['kind'], stacks: number, reason: string) =>
       changes.push({ kind, revision, stacks, causes, reason });
     if (definition.stacking === 'reject' && old.length) {
@@ -108,12 +123,18 @@ export function applyStatuses(
         [revision.id, ...old.map((s) => s.revision.id)],
         'Different definitions share a stack key without replacement',
       );
-    if (definition.stacking === 'refresh' && old.length) {
+    if (
+      (definition.stacking === 'refresh' ||
+        (permanentStatus(definition) && definition.stacking === 'replace')) &&
+      old.length
+    ) {
       statuses = statuses.map((s) =>
         s.revision.definition.stackKey === key
           ? {
               ...s,
-              endStep: Math.max(s.endStep, nextStep + definition.durationSteps),
+              endStep: permanentStatus(definition)
+                ? 12000
+                : Math.max(s.endStep, nextStep + definition.durationSteps),
               causes: [...new Set([...s.causes, ...causes])].sort(compareIds),
             }
           : s,
@@ -154,7 +175,7 @@ export function applyStatuses(
       statuses.push({
         revision,
         startStep: nextStep,
-        endStep: nextStep + definition.durationSteps,
+        endStep: permanentStatus(definition) ? 12000 : nextStep + definition.durationSteps,
         stacks,
         causes,
       });
@@ -197,18 +218,38 @@ export function effectiveStats(
       rooted ||= modifiers.rooted;
       silenced ||= modifiers.silenced ?? false;
     }
+  attack = adjustedStatusValue(attack, 'attack', statuses, step);
+  defense = adjustedStatusValue(defense, 'defense', statuses, step);
+  const has = (target: 'magicPower' | 'magicDefense') =>
+    statuses.some(
+      (s) =>
+        s.startStep <= step &&
+        step < s.endStep &&
+        s.revision.definition.adjustments?.some((a) => a.target === target),
+    );
   return {
-    attack: Math.max(0, attack),
-    defense: Math.max(0, defense),
-    ...(actor.character.stats.magicPower !== undefined && {
-      magicPower: actor.character.stats.magicPower,
+    attack,
+    defense,
+    ...((actor.character.stats.magicPower !== undefined || has('magicPower')) && {
+      magicPower: adjustedStatusValue(
+        actor.character.stats.magicPower ?? attack,
+        'magicPower',
+        statuses,
+        step,
+      ),
     }),
-    ...(actor.character.stats.magicDefense !== undefined && {
-      magicDefense: actor.character.stats.magicDefense,
+    ...((actor.character.stats.magicDefense !== undefined || has('magicDefense')) && {
+      magicDefense: adjustedStatusValue(
+        actor.character.stats.magicDefense ?? defense,
+        'magicDefense',
+        statuses,
+        step,
+      ),
     }),
-    speedBps: Math.max(0, Math.min(30000, speedBps)),
+    speedBps: Math.min(30000, adjustedStatusValue(10000, 'speed', statuses, step, {}, speedBps)),
     flight,
-    rooted,
+    rooted: rooted || adjustedStatusValue(10000, 'movement', statuses, step) === 0,
     silenced,
+    incapacitated: adjustedStatusValue(10000, 'action', statuses, step) === 0,
   };
 }

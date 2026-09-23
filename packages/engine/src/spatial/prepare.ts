@@ -9,6 +9,7 @@ import {
   RevisionSchema,
   compareIds,
   CURRENT_ENGINE_VERSION,
+  statusTransformationRefs,
   type Definition,
   type DefinitionKind,
   type Manifest,
@@ -26,6 +27,7 @@ export type ResolvedActor = DeepReadonly<{
   abilities: Extract<Revision, { kind: 'ability' }>[];
   equipment: Definition<'equipment'>[];
   policy: Definition<'policy'>;
+  knownStatuses?: Extract<Revision, { kind: 'status' }>[];
 }>;
 export type PreparedBattle = DeepReadonly<{
   manifest: Manifest;
@@ -123,6 +125,17 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
         if (effect.kind === 'apply-status') get('status', effect.status);
     }
     const policy = get('policy', character.policy).definition;
+    const knownStatuses = new Map<string, Extract<Revision, { kind: 'status' }>>();
+    function know(ref: RevisionRef) {
+      const status = get('status', ref),
+        key = `${status.id}:${status.revision}:${status.contentHash}`;
+      if (knownStatuses.has(key)) return;
+      knownStatuses.set(key, status);
+      for (const dependency of statusTransformationRefs(status.definition)) know(dependency);
+    }
+    for (const ability of abilities)
+      for (const effect of ability.definition.effects)
+        if (effect.kind === 'apply-status') know(effect.status);
     for (const priority of policy.priorities)
       if (!ids.has(priority.abilityId))
         throw new Error(`Policy references unavailable ability: ${priority.abilityId}`);
@@ -132,6 +145,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
       abilities: abilities.sort((a, b) => compareIds(a.id, b.id)),
       equipment,
       policy,
+      ...(knownStatuses.size && { knownStatuses: [...knownStatuses.values()] }),
     };
   }
   for (const revision of manifest.revisions) {
@@ -148,10 +162,12 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
         for (const effect of revision.definition.effects)
           if (effect.kind === 'apply-status') get('status', effect.status);
         break;
+      case 'status':
+        for (const ref of statusTransformationRefs(revision.definition)) get('status', ref);
+        break;
       case 'policy':
       case 'scenario':
       case 'ruleset':
-      case 'status':
         break;
       default: {
         const never: never = revision;

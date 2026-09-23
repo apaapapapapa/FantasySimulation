@@ -27,6 +27,7 @@ export const blockedBySilence = (ability: Ability) => hasAbilityCategory(ability
 
 export const statusCategories = (status: Status): readonly StatusCategory[] =>
   status.categories ?? NONE;
+export const permanentStatus = (status: Status) => statusCategories(status).includes('permanent');
 type Dispel = DeepReadonly<Extract<Effect, { kind: 'dispel' }>>;
 /** True when a dispel's categories share at least one category with the status. */
 export function dispelMatchesCategory(effect: Dispel, status: Status): boolean {

@@ -32,6 +32,7 @@ import { mul, sub, ZERO } from './math.ts';
 import { initialMotion, moveActors } from './movement.ts';
 import { initialResources, ResourceBudget } from './resources.ts';
 import { recoverActorResources } from './resource-step.ts';
+import { applyStatusResourcePulses, statusRecoveryAdjustment } from './status-resources.ts';
 import { Navigator } from './navigation.ts';
 import { knownTerrainWorld } from './known-terrain.ts';
 import { selfView } from './self-view.ts';
@@ -45,7 +46,8 @@ import { effectiveStats, statusBoundary, UnresolvedRuleError } from './status.ts
 import { createBattleWorld } from './terrain.ts';
 import { displayProjectile, type ProjectileState } from './projectiles.ts';
 import { stepProjectiles } from './projectile-step.ts';
-import { damageSource } from './damage.ts';
+import { statusDamageSource, copyDamageSnapshot } from './status-damage.ts';
+import { statusVision, copyPublicStatuses } from './status-observation.ts';
 
 export type SimulationEnd = {
   steps: number;
@@ -70,7 +72,7 @@ function effectsOf(
   parentEventId: string,
   step: number,
 ): PendingEffect[] {
-  const source = damageSource(effectiveStats(actor.motion.actor, actor.statuses, step));
+  const source = statusDamageSource(actor, ability, step);
   return ability.definition.effects.map((effect) => ({
     actorId: actorId(actor),
     targetId,
@@ -234,7 +236,9 @@ export function* simulate(
               causes: [...removed.causes],
               reason: removed.revision.id,
             });
-          for (const pulse of boundary.pulses)
+          applyStatusResourcePulses(actor, boundary.pulses, step, journal);
+          for (const pulse of boundary.pulses) {
+            if (pulse.effect.kind === 'resource') continue;
             periodic.push({
               actorId: null,
               targetId: actorId(actor),
@@ -252,6 +256,7 @@ export function* simulate(
               abilityId: null,
               causes: pulse.causes,
             });
+          }
         }
         if (periodic.length)
           commitEffects(next, periodic, battle, journal, step, step, 'boundary', budget, world);
@@ -292,10 +297,12 @@ export function* simulate(
         // Observe and choose before either participant pays or declares anything.
         for (const actor of next) {
           const enemy = actors.find((a) => actorId(a) !== actorId(actor))!;
+          const previousStatuses = actor.memory.observation?.enemy?.statuses;
+          actor.motion = statusVision(actor.motion, actor.statuses, step);
           actor.memory = perceive(
             world,
             actor.motion,
-            enemy.motion,
+            statusVision(enemy.motion, enemy.statuses, step),
             projectiles.map((p) => ({
               ...p,
               radiusMm:
@@ -307,6 +314,7 @@ export function* simulate(
             actor.memory,
             {
               resources: enemy.resources,
+              statuses: enemy.statuses,
               action: displayActor(enemy, step).action?.phase ?? 'idle',
             },
             battle.scenario.terrainKnowledge ?? 'observed',
@@ -322,7 +330,12 @@ export function* simulate(
               )
               .map((a) => a.id),
           );
-          if (actor.memory.learned.length || actor.memory.expired.length)
+          const seen = actor.memory.observation?.enemy;
+          const newStatuses = seen?.statuses;
+          const changedStatuses =
+            newStatuses !== undefined &&
+            JSON.stringify(newStatuses) !== JSON.stringify(previousStatuses);
+          if (actor.memory.learned.length || actor.memory.expired.length || changedStatuses)
             journal.emit({
               kind: 'knowledge',
               step,
@@ -338,10 +351,20 @@ export function* simulate(
                   range: e.range ? { ...e.range } : null,
                 })),
                 expired: [...actor.memory.expired],
+                ...(changedStatuses &&
+                  seen && {
+                    statusObservation: {
+                      targetId: seen.id,
+                      sampledAt: seen.step,
+                      availableAt: actor.memory.observation!.availableAt,
+                      statuses: copyPublicStatuses(newStatuses),
+                    },
+                  }),
               },
             });
           const canMove =
             !stats.rooted &&
+            !stats.incapacitated &&
             !(
               actor.action &&
               step < actor.action.launchAt &&
@@ -409,7 +432,12 @@ export function* simulate(
         }
         for (const actor of next) {
           const view = selfView(actor, step, battle.rules.ai!);
-          if (aiBoundary && step >= actor.readyAt && actor.decision.abilityId) {
+          if (
+            aiBoundary &&
+            step >= actor.readyAt &&
+            actor.decision.abilityId &&
+            !view.incapacitated
+          ) {
             const ability = actor.motion.actor.abilities.find(
               (a) => a.id === actor.decision.abilityId,
             )!;
@@ -495,6 +523,7 @@ export function* simulate(
           const definition = action.ability.definition;
           if (
             !inObservedRange(definition, selfView(actor, step, battle.rules.ai!)) ||
+            selfView(actor, step, battle.rules.ai!).incapacitated ||
             !conditionMatches(definition.condition, selfView(actor, step, battle.rules.ai!)) ||
             (selfView(actor, step, battle.rules.ai!).silenced && blockedBySilence(definition))
           ) {
@@ -590,7 +619,7 @@ export function* simulate(
                 bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
                 actor.motion.position,
               ),
-              ...damageSource(effectiveStats(actor.motion.actor, actor.statuses, step)),
+              ...statusDamageSource(actor, action.ability, step),
               hits: 0,
             });
           } else if (definition.attack.kind === 'projectile') {
@@ -603,7 +632,7 @@ export function* simulate(
               launchStep: step,
               position: bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
               velocity: mul(aim.direction, definition.attack.speedMmPerSecond / 1000),
-              ...damageSource(effectiveStats(actor.motion.actor, actor.statuses, step)),
+              ...statusDamageSource(actor, action.ability, step),
               target: target ? { ...target.position } : null,
             };
             const spawn = journal.emit({
@@ -688,7 +717,7 @@ export function* simulate(
                   actorId: attack.actorId,
                   targetId: enemy.state.actor.participant.actorId,
                   effect,
-                  ...damageSource(attack),
+                  ...copyDamageSnapshot(attack),
                   parentEventId: hit.id,
                   abilityId: attack.ability.id,
                   observation: contactObservation(
@@ -738,8 +767,17 @@ export function* simulate(
           }
         }
         commitEffects(next, effects, battle, journal, step, step + 1, 'resolution', budget, world);
-        for (const actor of next)
-          recoverActorResources(actor, battle.rules.stepMs, step + 1, journal);
+        for (const actor of next) {
+          if (!actor.staminaClock) continue;
+          const start = actors.find((a) => actorId(a) === actorId(actor))!;
+          recoverActorResources(
+            actor,
+            battle.rules.stepMs,
+            step + 1,
+            journal,
+            statusRecoveryAdjustment(start.statuses, step),
+          );
+        }
         const record: StreamRecord = {
           kind: 'interval',
           schemaVersion: 1,

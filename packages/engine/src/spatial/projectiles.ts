@@ -5,9 +5,9 @@ import type { AbilityRevision } from './combat-state.ts';
 import type { PerceptionMemory } from './perception.ts';
 import type { MotionState } from './movement.ts';
 import { bodyCapsule } from './terrain.ts';
-import type { DamageSource } from './damage.ts';
+import type { DamageSnapshot } from './status-damage.ts';
 
-export type ProjectileState = DamageSource & {
+export type ProjectileState = DamageSnapshot & {
   id: string;
   ownerId: string;
   ability: AbilityRevision;

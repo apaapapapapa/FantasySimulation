@@ -1,6 +1,7 @@
 import type { BattleEvent, Budget, DeepReadonly, Effect } from '@fantasy/domain/spatial';
 import { resolveEffects } from './effects.ts';
-import { damagePower, type DamageSource } from './damage.ts';
+import { damagePower } from './damage.ts';
+import type { DamageSnapshot } from './status-damage.ts';
 import type { ActorState } from './combat-state.ts';
 import type { PreparedBattle } from './prepare.ts';
 import type { Journal } from './journal.ts';
@@ -16,7 +17,7 @@ const effectEventKinds = {
   water: 'diagnostic',
   reveal: 'diagnostic',
 } satisfies Record<Effect['kind'], BattleEvent['kind']>;
-export type PendingEffect = DamageSource & {
+export type PendingEffect = DamageSnapshot & {
   actorId: string | null;
   targetId: string;
   effect: DeepReadonly<Effect>;
@@ -90,7 +91,9 @@ export function commitEffects(
         app.event.amount = detail.calculation?.afterModifiers ?? detail.afterResistance;
         app.event.ruleId = 'damage.defense-resistance-shield';
         app.event.reason = 'shared-shield-and-single-hp-clamp';
-      } else if (app.effect.kind === 'heal' || app.effect.kind === 'shield') {
+      } else if (app.effect.kind === 'heal') {
+        app.event.amount = result.healing.find((h) => h.applicationId === app.id)!.amount;
+      } else if (app.effect.kind === 'shield') {
         app.event.amount = Math.floor((app.effect.amount * (app.scaleBps ?? 10000)) / 10000);
       }
       const observer = actors.find((a) => a.motion.actor.participant.actorId === app.actorId);
@@ -122,7 +125,11 @@ export function commitEffects(
                     ability: ref,
                     eventId: app.id,
                     element: app.effect.element,
-                    basePower: Number(damagePower(app.effect, app)),
+                    basePower: Number(
+                      (damagePower(app.effect, app) *
+                        BigInt(app.dealtByElement?.[app.effect.element] ?? 10000)) /
+                        10000n,
+                    ),
                     ...(app.effect.defense !== undefined && { defense: app.effect.defense }),
                     impact: detail.calculation?.afterModifiers ?? detail.afterResistance,
                     shield: BigInt(detail.absorbed.numerator) > 0n,
@@ -135,6 +142,17 @@ export function commitEffects(
         if (experience) observer.memory = rememberExperience(observer.memory, experience);
       }
     }
+    for (const reaction of result.reactions)
+      journal.emit({
+        step: activationStep,
+        phase,
+        kind: 'diagnostic',
+        targetId: result.actorId,
+        causes: reaction.causes,
+        ruleId: 'status.reaction',
+        amount: reaction.multiplier,
+        reason: `${reaction.statusId}:${reaction.element}:${reaction.response}`,
+      });
     for (const change of result.changes)
       journal.emit({
         step: activationStep,

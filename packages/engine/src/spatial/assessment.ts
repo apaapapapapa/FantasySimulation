@@ -10,6 +10,9 @@ import type { DecisionView } from './perception.ts';
 import { length, sub } from './math.ts';
 import { actionClock } from './attacks.ts';
 import { damagePower, damageDefense } from './damage.ts';
+import { assessStatusEffect, observedDamagePrior } from './status-assessment.ts';
+import { adjustedStatusValue, damageStatusBps } from './status-modifiers.ts';
+import { abilityCategories } from './categories.ts';
 
 export const clampBps = (n: number) => Math.max(0, Math.min(10000, Math.round(n)));
 export const boundedWeight = (n: number) => Math.max(0, Math.min(1_000_000, Math.round(n)));
@@ -61,7 +64,7 @@ export function efficacy(
       ? 6500
       : 7500;
   return {
-    bps: prior,
+    bps: Math.min(30000, Math.round((prior * observedDamagePrior(view, element)) / 10000)),
     confidence: surface === 'red' || surface === 'blue' ? 1000 : 0,
     evidence: [],
   };
@@ -101,9 +104,22 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
     confidencePower = 0;
   const evidence: string[] = [],
     reasons: string[] = [];
+  const reacted = new Set<string>();
   for (const effect of d.effects) {
+    const element =
+      effect.kind === 'water' ? 'water' : effect.kind === 'damage' ? effect.element : null;
+    const stateValue = assessStatusEffect(
+      view,
+      effect,
+      d.target,
+      !element || !reacted.has(element),
+    );
+    if (element) reacted.add(element);
+    utility += stateValue.value * rules.actionWeight;
+    if (stateValue.reason) reasons.push(stateValue.reason);
+    if (stateValue.handled) continue;
     if (effect.kind === 'damage' && d.target === 'enemy') {
-      const base = Number(
+      const power = Number(
         damagePower(effect, {
           attack: view.attack ?? view.self.actor.character.stats.attack,
           magicPower:
@@ -112,6 +128,14 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
             view.attack ??
             view.self.actor.character.stats.attack,
         }),
+      );
+      const base = Math.floor(
+        (power *
+          damageStatusBps('damageDealt', view.ownStatuses ?? [], view.step ?? 0, {
+            element: effect.element,
+            categories: abilityCategories(d),
+          })) /
+          10000,
       );
       const known = efficacy(view, effect.element, base, damageDefense(effect)),
         expected = (base * known.bps) / 10000;
@@ -127,7 +151,17 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
     } else if (effect.kind === 'heal' && d.target === 'self') {
       utility +=
         (((rules.riskWeight *
-          Math.min(effect.amount, view.self.actor.character.stats.hp - view.resources.hp)) /
+          Math.min(
+            Math.floor(
+              (effect.amount *
+                Math.min(
+                  30000,
+                  adjustedStatusValue(10000, 'hpRecovery', view.ownStatuses ?? [], view.step ?? 0),
+                )) /
+                10000,
+            ),
+            view.self.actor.character.stats.hp - view.resources.hp,
+          )) /
           Math.max(1, view.resources.hp)) *
           weights.survivalBps) /
         10000;

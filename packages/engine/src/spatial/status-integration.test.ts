@@ -1,0 +1,413 @@
+import { beforeAll, describe, expect, it } from 'vite-plus/test';
+import { StreamRecordSchema, type Definition, type Effect } from '@fantasy/domain/spatial';
+import {
+  aiFixture,
+  impactEvidence,
+  initialStatus,
+  withInitialStatus,
+} from '../../test-support/ai.ts';
+import { battleEvents } from '../../test-support/fixtures.ts';
+import { initializePhysics } from './physics.ts';
+import { prepareBattle, reference, sealRevision } from './prepare.ts';
+import { runBattle } from './run.ts';
+import { emptyMemory, perceive } from './perception.ts';
+import { choosePolicy } from './policy.ts';
+import { assessAbility, efficacy } from './assessment.ts';
+import { assessStatusEffect } from './status-assessment.ts';
+import { statusVision } from './status-observation.ts';
+
+beforeAll(initializePhysics);
+const water: Effect = { kind: 'damage', amount: 25, attackScaleBps: 0, element: 'water' };
+const stopped: Definition<'status'>['adjustments'] = [
+  { target: 'action', operation: 'multiply', amount: 0 },
+];
+
+async function statusCombat(status: Partial<Definition<'status'>>, effects: Effect[] = [water]) {
+  const f = await aiFixture({
+    steps: 30,
+    abilities: [{ castSteps: 0, costs: { hp: 0, mp: 0, uses: 1 }, effects }],
+  });
+  f.world.free();
+  await withInitialStatus(
+    f.manifest,
+    1,
+    initialStatus({ durationSteps: 12, visibility: 'visible', adjustments: stopped, ...status }),
+  );
+  return f.manifest;
+}
+
+describe('G-03 status combat and subjective observations', () => {
+  it('applies the old-snapshot weakness on the extinguishing hit, then observes its removal after delay', async () => {
+    const manifest = await statusCombat({
+      burning: { waterExtinguishable: false },
+      reactions: [{ element: 'water', response: { kind: 'remove' }, damageTakenBps: 20000 }],
+      periodic: [{ kind: 'damage', amount: 6, element: 'fire', everySteps: 4 }],
+    });
+    const run = await runBattle(manifest),
+      events = battleEvents(run.records);
+    const damage = events.find((e) => e.kind === 'damage' && e.actorId === 'left')!;
+    expect(damage).toMatchObject({
+      step: 6,
+      amount: 40,
+      after: { hp: 58 },
+      damage: { calculation: { basePower: 25, afterModifiers: 40 } },
+    });
+    const reaction = events.find((e) => e.ruleId === 'status.reaction')!;
+    expect(reaction).toMatchObject({
+      step: 6,
+      reason: 'initial-status-1:water:remove',
+      causes: [damage.id],
+    });
+    expect(events.some((e) => e.kind === 'status-remove' && e.step === 6)).toBe(true);
+    const seen = events
+      .filter((e) => e.actorId === 'left')
+      .flatMap((e) =>
+        e.cognition?.kind === 'knowledge' && e.cognition.statusObservation
+          ? [{ step: e.step, ...e.cognition.statusObservation }]
+          : [],
+      );
+    expect(seen.map((s) => [s.step, s.sampledAt, s.availableAt, s.statuses.length])).toEqual([
+      [5, 0, 5, 1],
+      [15, 10, 15, 0],
+    ]);
+    expect(seen[0]!.statuses[0]).not.toHaveProperty('contentHash');
+    expect(seen[0]!.statuses[0]).not.toHaveProperty('stacks');
+    expect(seen[0]!.statuses[0]).not.toHaveProperty('endStep');
+    for (const record of run.records)
+      expect(StreamRecordSchema.safeParse(record).success).toBe(true);
+    expect((await runBattle(manifest)).result).toEqual(run.result);
+  });
+
+  it('transforms once into a referenced status and expires the destination on its own clock', async () => {
+    const thaw = await sealRevision(
+      'status',
+      'thawed',
+      1,
+      initialStatus({
+        stackKey: 'thawed',
+        durationSteps: 5,
+        visibility: 'visible',
+        reactions: [{ element: 'water', response: { kind: 'remove' } }],
+      }),
+    );
+    const manifest = await statusCombat({
+      reactions: [{ element: 'water', response: { kind: 'transform', status: reference(thaw) } }],
+    });
+    manifest.revisions.push(thaw);
+    const prepared = await prepareBattle(manifest);
+    expect(prepared.actors[0].knownStatuses).toBeUndefined();
+    expect(prepared.actors[1].knownStatuses?.map((s) => s.id)).toEqual([
+      'initial-status-1',
+      'thawed',
+    ]);
+    const events = battleEvents((await runBattle(manifest)).records);
+    expect(
+      events
+        .filter((e) => e.kind === 'status-apply' && e.reason.startsWith('thawed:'))
+        .map((e) => e.step),
+    ).toEqual([6]);
+    expect(
+      events
+        .filter((e) => e.kind === 'status-remove' && e.reason === 'thawed:expired')
+        .map((e) => e.step),
+    ).toEqual([11]);
+    await expect(
+      prepareBattle({
+        ...manifest,
+        revisions: manifest.revisions.filter((r) => r.id !== 'thawed'),
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('strengthens once per element despite multiple components, retains the deadline, and prevents actions while incapacitated', async () => {
+    const manifest = await statusCombat(
+      {
+        maxStacks: 3,
+        stacking: 'sum',
+        reactions: [{ element: 'water', response: { kind: 'strengthen', stacks: 2 } }],
+      },
+      [water, { ...water, amount: 0 }],
+    );
+    const events = battleEvents((await runBattle(manifest)).records);
+    expect(
+      events
+        .filter((e) => e.reason.endsWith('element-strengthen-preserve-period'))
+        .map((e) => [e.step, e.amount]),
+    ).toEqual([[6, 2]]);
+    expect(
+      events
+        .filter((e) => e.kind === 'status-remove' && e.reason === 'initial-status-1:expired')
+        .map((e) => e.step),
+    ).toEqual([12]);
+    expect(
+      events
+        .filter((e) => e.kind === 'launch' && e.actorId === 'right' && e.abilityId === 'choice-0')
+        .every((e) => e.step >= 12),
+    ).toBe(true);
+    expect(
+      events.some(
+        (e) =>
+          e.actorId === 'right' &&
+          e.cognition?.kind === 'decision' &&
+          e.cognition.excluded.some((x) => x.reason === 'incapacitated'),
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps a permanent state past its declared duration and through normal dispel and water contact', async () => {
+    const manifest = await statusCombat(
+      {
+        durationSteps: 1,
+        categories: ['permanent', 'control'],
+        reactions: [{ element: 'water', response: { kind: 'remove' } }],
+      },
+      [water, { kind: 'dispel', categories: ['control'] }],
+    );
+    const events = battleEvents((await runBattle(manifest)).records);
+    expect(events.some((e) => e.kind === 'status-remove')).toBe(false);
+    expect(events.some((e) => e.reason === 'initial-status-1:water:permanent-retained')).toBe(true);
+    expect(
+      events.some(
+        (e) => e.kind === 'launch' && e.actorId === 'right' && e.abilityId === 'choice-0',
+      ),
+    ).toBe(false);
+  });
+
+  it('retains launch-time outgoing multipliers after the source status expires in flight', async () => {
+    const f = await aiFixture({
+      steps: 50,
+      abilities: [
+        {
+          castSteps: 0,
+          costs: { hp: 0, mp: 0, uses: 1 },
+          categories: ['magic'],
+          attack: {
+            kind: 'projectile',
+            speedMmPerSecond: 20000,
+            radiusMm: 100,
+            lifetimeSteps: 100,
+            gravityScaleBps: 0,
+            homingTurnMilliDegreesPerSecond: 0,
+            observation: 'launch-only',
+            explosionRadiusMm: 0,
+            maxHitsPerTarget: 1,
+          },
+          effects: [water],
+        },
+      ],
+    });
+    f.world.free();
+    await withInitialStatus(
+      f.manifest,
+      0,
+      initialStatus({
+        durationSteps: 8,
+        adjustments: [
+          {
+            target: 'damageDealt',
+            operation: 'multiply',
+            amount: 20000,
+            element: 'water',
+            category: 'magic',
+          },
+        ],
+      }),
+    );
+    const events = battleEvents((await runBattle(f.manifest)).records);
+    const hit = events.find((e) => e.kind === 'damage' && e.actorId === 'left')!;
+    expect(hit.step).toBeGreaterThan(8);
+    expect(hit.amount).toBe(40);
+    expect(
+      events
+        .flatMap((e) =>
+          e.actorId === 'left' && e.cognition?.kind === 'knowledge' ? e.cognition.learned : [],
+        )
+        .some((e) => e.basePower === 50),
+    ).toBe(true);
+  });
+
+  it('does not leak hidden states into observation, candidate weights, or cognition', async () => {
+    const f = await aiFixture();
+    try {
+      const hidden = await sealRevision(
+        'status',
+        'secret',
+        1,
+        initialStatus({
+          visibility: 'hidden',
+          adjustments: [{ target: 'damageTaken', operation: 'multiply', amount: 30000 }],
+        }),
+      );
+      const states = [
+        { revision: hidden, startStep: 0, endStep: 20, stacks: 3, causes: ['secret-source'] },
+      ];
+      const observe = (statuses: typeof states) => {
+        const visible = {
+          resources: { hp: 100, mp: 100, shield: 0 },
+          action: 'idle' as const,
+          statuses,
+        };
+        const first = perceive(f.world, f.self, f.enemy, [], 0, emptyMemory(), visible);
+        return perceive(f.world, f.self, f.enemy, [], 5, first, visible);
+      };
+      const absent = observe([]),
+        concealed = observe(states);
+      expect(concealed).toEqual(absent);
+      const ready = new Set(f.abilities.map((a) => a.id));
+      expect(choosePolicy({ ...f.view, memory: concealed }, ready, false)).toEqual(
+        choosePolicy({ ...f.view, memory: absent }, ready, false),
+      );
+      const visibleRevision = await sealRevision('status', 'public', 1, {
+        ...hidden.definition,
+        visibility: 'visible',
+      });
+      const publicMemory = observe([{ ...states[0]!, revision: visibleRevision }]);
+      expect(efficacy({ ...f.view, memory: publicMemory }, 'fire', 25).bps).toBe(9375);
+      const decision = choosePolicy({ ...f.view, memory: publicMemory }, ready, false);
+      expect(decision.cognition?.observedStatuses?.[0]).toMatchObject({
+        id: 'public',
+        adjustments: [{ target: 'damageTaken', direction: 'higher' }],
+      });
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it('applies perception range, blindness and invisibility only at the observation boundary and restores them on expiry', async () => {
+    const f = await aiFixture();
+    try {
+      for (const target of ['perceptionRange', 'vision', 'visibility'] as const) {
+        const revision = await sealRevision(
+          'status',
+          target.toLowerCase(),
+          1,
+          initialStatus({ adjustments: [{ target, operation: 'multiply', amount: 0 }] }),
+        );
+        const states = [{ revision, startStep: 0, endStep: 5, stacks: 1, causes: [] }];
+        const self = target === 'visibility' ? f.self : statusVision(f.self, states, 0);
+        const enemy = target === 'visibility' ? statusVision(f.enemy, states, 0) : f.enemy;
+        const unseen = perceive(f.world, self, enemy, [], 0, emptyMemory());
+        expect(unseen.pending[0]?.enemy).toBeNull();
+        const clear = perceive(
+          f.world,
+          statusVision(f.self, states, 5),
+          statusVision(f.enemy, states, 5),
+          [],
+          5,
+          unseen,
+        );
+        expect(clear.pending[0]?.enemy?.id).toBe('right');
+      }
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it('retires measured damage from the previous public status context only after observing the change', async () => {
+    const f = await aiFixture();
+    try {
+      const revision = await sealRevision(
+        'status',
+        'visible-weakness',
+        1,
+        initialStatus({
+          visibility: 'visible',
+          reactions: [{ element: 'fire', response: { kind: 'none' }, damageTakenBps: 20000 }],
+        }),
+      );
+      const visible = {
+        resources: { hp: 100, mp: 100, shield: 0 },
+        action: 'idle' as const,
+        statuses: [{ revision, startStep: 0, endStep: 10, stacks: 1, causes: [] }],
+      };
+      const sampled = perceive(f.world, f.self, f.enemy, [], 0, emptyMemory(), visible);
+      const observed = perceive(f.world, f.self, f.enemy, [], 5, sampled, visible);
+      const old = impactEvidence(f.abilities[0]!, {
+        sampledAt: 5,
+        availableAt: 10,
+        range: { low: 40, high: 50 },
+      });
+      const before = perceive(
+        f.world,
+        f.self,
+        f.enemy,
+        [],
+        10,
+        { ...observed, knowledge: [old] },
+        visible,
+      );
+      expect(efficacy({ ...f.view, step: 10, memory: before }, 'fire', 25).bps).toBe(18000);
+      const after = perceive(f.world, f.self, f.enemy, [], 15, before, visible);
+      expect(after.expired).toEqual(['observed.1']);
+      expect(efficacy({ ...f.view, step: 15, memory: after }, 'fire', 25)).toMatchObject({
+        bps: 7500,
+        confidence: 0,
+        evidence: [],
+      });
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it('values known new buffs, harmful self states, transformation destinations, and permanent cleanse immunity', async () => {
+    const f = await aiFixture();
+    try {
+      const buff = await sealRevision(
+        'status',
+        'buff',
+        1,
+        initialStatus({
+          stackKey: 'buff',
+          adjustments: [{ target: 'attack', operation: 'add', amount: 25 }],
+        }),
+      );
+      const harmful = await sealRevision(
+        'status',
+        'harmful',
+        1,
+        initialStatus({
+          adjustments: stopped,
+          reactions: [
+            { element: 'water', response: { kind: 'transform', status: reference(buff) } },
+          ],
+        }),
+      );
+      const permanent = await sealRevision('status', 'permanent', 1, {
+        ...harmful.definition,
+        categories: ['permanent'],
+      });
+      const view = {
+        ...f.view,
+        burnDamage: 0,
+        self: { ...f.self, actor: { ...f.self.actor, knownStatuses: [buff, harmful, permanent] } },
+        ownStatuses: [{ revision: harmful, startStep: 0, endStep: 100, stacks: 1, causes: [] }],
+      };
+      expect(
+        assessStatusEffect(view, { kind: 'apply-status', status: reference(buff) }, 'self').value,
+      ).toBe(1);
+      expect(
+        assessStatusEffect(view, { kind: 'apply-status', status: reference(harmful) }, 'self')
+          .value,
+      ).toBeLessThan(0);
+      expect(assessStatusEffect(view, { kind: 'water', extinguish: true }, 'self').value).toBe(2);
+      expect(
+        assessStatusEffect(
+          { ...view, ownStatuses: [{ ...view.ownStatuses[0]!, revision: permanent }] },
+          { kind: 'dispel', statusIds: ['permanent'] },
+          'self',
+        ).value,
+      ).toBe(0);
+      const selfHarm = {
+        ...f.abilities[0]!,
+        definition: {
+          ...f.abilities[0]!.definition,
+          target: 'self' as const,
+          effects: [{ kind: 'apply-status' as const, status: reference(harmful) }],
+        },
+      };
+      expect(assessAbility(view, selfHarm).weight).toBe(0);
+    } finally {
+      f.world.free();
+    }
+  });
+});
