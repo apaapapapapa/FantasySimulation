@@ -7,7 +7,7 @@ import { DEFAULT_BUDGET } from './contract.ts';
 import { initialize, readJournal } from './journal.ts';
 import { status } from './state.ts';
 import { applyPatch, beginAttempt, locations, owned, prepare, recover } from './workspace.ts';
-import { evaluate, isolatedCommand, sandboxCommand } from './evaluation.ts';
+import { evaluate, isolatedCommand, sandboxCommand, writableOutputs } from './evaluation.ts';
 
 function fixture() {
   const repo = testRepository({
@@ -139,6 +139,47 @@ describe('owned workspace and full baseline scope', () => {
       f.dispose();
     }
   });
+  it('owns every Git object even when the source borrows objects from another checkout', async () => {
+    const f = fixture();
+    try {
+      const borrowed = join(f.store, 'borrowed');
+      f.repo.git('clone', '--shared', f.repo.root, borrowed);
+      f.repo.git(
+        '-C',
+        borrowed,
+        'remote',
+        'set-url',
+        'origin',
+        'https://github.com/owner/repo.git',
+      );
+      await prepare(f.path, borrowed);
+      rmSync(borrowed, { recursive: true });
+      rmSync(f.repo.root, { recursive: true });
+      expect(owned(f.path).workspace).toBe(locations(f.path).workspace);
+      expect(readFileSync(join(locations(f.path).workspace, 'src/value.ts'), 'utf8')).toContain(
+        '= 0',
+      );
+    } finally {
+      f.dispose();
+    }
+  });
+  it('prepares dependencies that remain usable without the original installation', async () => {
+    const f = fixture();
+    try {
+      const dependencies = join(f.repo.root, 'node_modules');
+      mkdirSync(join(dependencies, '.pnpm/example'), { recursive: true });
+      writeFileSync(join(dependencies, '.pnpm/example/index.js'), 'module.exports = 1;');
+      symlinkSync('.pnpm/example', join(dependencies, 'example'));
+      await prepare(f.path, f.repo.root);
+      rmSync(dependencies, { recursive: true });
+      expect(
+        readFileSync(join(locations(f.path).workspace, 'node_modules/example/index.js'), 'utf8'),
+      ).toBe('module.exports = 1;');
+      expect(f.repo.git('status', '--porcelain')).toBe('');
+    } finally {
+      f.dispose();
+    }
+  });
   it('keeps trusted collector writes outside candidate-controlled symlinks', async () => {
     const f = fixture();
     try {
@@ -164,6 +205,43 @@ describe('owned workspace and full baseline scope', () => {
       f.dispose();
     }
   });
+  it('does not count a clean checkout as repair progress after failed verification', async () => {
+    const f = fixture();
+    try {
+      await prepare(f.path, f.repo.root);
+      await beginAttempt(f.path, reservation);
+      await applyPatch(f.path, f.proposal(change()));
+      const result = await evaluate(f.path, async (_command, args) => ({
+        exitCode: args.at(-1) === '--version' ? 0 : 1,
+        signal: null,
+        bounded: false,
+        output: 'Verification failed',
+      }));
+      expect(result).toMatchObject({
+        phase: 'ready',
+        attempts: 1,
+        noProgress: 1,
+        verifiedSha: null,
+      });
+    } finally {
+      f.dispose();
+    }
+  });
+});
+it('never exposes tracked build inputs or dangling output symlinks as writable', () => {
+  const f = fixture();
+  try {
+    symlinkSync(join(f.store, 'absent-host-target'), join(f.repo.root, '.generated'));
+    expect(() => writableOutputs(f.repo.root)).toThrow(/Symlink/);
+    rmSync(join(f.repo.root, '.generated'));
+    mkdirSync(join(f.repo.root, 'apps/web/dist'), { recursive: true });
+    writeFileSync(join(f.repo.root, 'apps/web/dist/input.ts'), 'tracked input');
+    f.repo.git('add', '-f', 'apps/web/dist/input.ts');
+    expect(() => writableOutputs(f.repo.root)).toThrow(/tracked/);
+    expect(readFileSync(join(f.repo.root, 'apps/web/dist/input.ts'), 'utf8')).toBe('tracked input');
+  } finally {
+    f.dispose();
+  }
 });
 it('bounds evaluation, filters host secrets, and never falls back on missing isolation', async () => {
   const args = sandboxCommand(

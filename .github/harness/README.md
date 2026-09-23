@@ -16,10 +16,9 @@ vp run harness source .generated/harness/source-1
 vp run harness report .generated/harness/source-1/report.json source-clean source-verify
 ```
 
-Retain report, command receipt and logs together. The runner executes `vp run verify`
-once and records clean-before/after, actual command, exit and SHAs. Use a fresh output
-directory. Missing, timed-out or stale evidence cannot pass. A worktree/environment
-allowlist is not an OS sandbox: use a secret-free disposable execution environment.
+Retain the fresh report, command receipt and logs. `vp run verify` records source
+cleanliness, exit and SHAs. Missing, timed-out or stale evidence cannot pass. Use a
+secret-free disposable environment; a worktree/allowlist is not an OS sandbox.
 
 `sourceSha` is the checkout; PR test-merge parents identify candidate and tested base.
 Main push uses actual main SHA. Source and paired-load jobs must agree on source.
@@ -37,13 +36,11 @@ vp run harness github-snapshot OWNER/REPOSITORY 22 .generated/harness/pr-22-1
 vp run harness delivery .generated/harness/pr-22-1/github-snapshot.json pr REVIEW.json
 ```
 
-The collector reads all files, conversation/review/thread pages (including nested
-comments), latest attempt-specific jobs, source/docs reports and CI plan/gate from
-GitHub logs. It checks commit parents, rereads PR/run identity and separately collects
-main CI after merge. Retain original command artifacts and log digests; discussions
-can be sensitive. Budget: 200 requests, 16 MiB, 120 seconds, bounded pages/rows, zero
-automatic retries. Partial pages, changed identity, rate limits and missing permissions
-stay unknown. Collection exit 0 is not delivery approval (`deliveryAssessed: false`).
+The collector checks all file/discussion/review pages (including nested comments),
+latest attempt jobs, log reports, CI plan/gate and commit parents. It rereads PR/run
+identity and collects main CI after merge. Retain original artifacts and log digests.
+Limits: 200 requests, 16 MiB, 120 seconds, bounded pages/rows, no retries. Partial pages,
+changed identity, rate limits or missing access stay unknown. Collection is not approval.
 
 Read all changed files and discussion, resolve findings, then record actual review:
 
@@ -61,11 +58,10 @@ Read all changed files and discussion, resolve findings, then record actual revi
 }
 ```
 
-This template is not evidence. Self review is not independent approval. Required
-GitHub approval must match current head; unresolved threads block even when outdated.
-Timeout alone cannot complete review. Recollect on head/base/conversation/CI changes;
-changed paths or PR wording invalidate receipts. Use the exact reviewed squash wording;
-automatic Issue closing references are rejected. See the completion protocol above.
+Templates and timeouts are not evidence; self review is not independent approval.
+Required GitHub approval must match current head. Unresolved threads always block.
+Recollect on head/base/conversation/CI changes; paths and wording bind receipts.
+Use reviewed squash wording without automatic Issue closing references.
 
 `delivery ... pr` requires stable collection, latest CI, Linux receipts, review coverage
 and required approval, with no adverse/pending checks. Plan/gate/Linux reports must

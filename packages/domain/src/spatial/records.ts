@@ -9,7 +9,12 @@ export const PhysicalVectorSchema = z.strictObject({
   y: z.number().min(-2000).max(2000),
   z: z.number().min(-2000).max(2000),
 });
-export const ResourceStateSchema = z.strictObject({ hp: count, mp: count, shield: count });
+export const ResourceStateSchema = z.strictObject({
+  hp: count,
+  mp: count,
+  shield: count,
+  stamina: count.optional(),
+});
 export type ResourceState = z.infer<typeof ResourceStateSchema>;
 export const EventSchema = z
   .strictObject({
@@ -27,6 +32,7 @@ export const EventSchema = z
       'heal',
       'shield',
       'cost',
+      'resource',
       'status-apply',
       'status-remove',
       'fizzle',

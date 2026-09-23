@@ -1,0 +1,49 @@
+import { describe, expect, it } from 'vite-plus/test';
+import { reference, sealRevision } from '@fantasy/engine/spatial';
+import { withRuntime } from '../test-support/runtime.ts';
+import { seekReplay, verifyReplay } from './replay-reader.ts';
+
+describe('stamina through Worker, SQLite and recorded replay', () => {
+  it('persists optional definitions and restores charged/recovered resources from verified artifacts', async () => {
+    await withRuntime(async ({ runtime, store, root, manifest, spec }) => {
+      const base = manifest.revisions.find((r) => r.kind === 'ability')!;
+      const startup = await sealRevision('ability', 'resource-startup', 1, {
+        ...base.definition,
+        trigger: 'battle-start',
+        target: 'self',
+        attack: { kind: 'direct' },
+        castSteps: 0,
+        condition: { kind: 'always' },
+        costs: { hp: 0, mp: 0, stamina: 8, uses: 1 },
+        effects: [{ kind: 'shield', amount: 1 }],
+      });
+      const old = manifest.revisions.find(
+        (r) => r.kind === 'character' && r.id === spec.participants[0].character.id,
+      )!;
+      if (old.kind !== 'character') throw Error('Missing fixture character');
+      const character = await sealRevision('character', 'resource-archer', 1, {
+        ...old.definition,
+        stamina: { max: 10, recoveryPerSecond: 3 },
+        abilities: [...old.definition.abilities, reference(startup)],
+      });
+      await store.seedRevisions([startup, character]);
+      spec.participants[0].character = reference(character);
+      const submitted = await runtime.submit(spec, 'resources', 'persist');
+      const done = await runtime.wait(submitted.id);
+      expect(done.state).toBe('completed');
+      const saved = store.getSpec(done.simulationHash)!;
+      expect(
+        saved.manifest.revisions.find((r) => r.id === character.id)?.definition,
+      ).toHaveProperty('stamina', { max: 10, recoveryPerSecond: 3 });
+      const result = runtime.jobs.result(done.resultId!)!;
+      const verified = await verifyReplay(root, result.replayId);
+      const restored = await seekReplay(root, result.replayId, verified.checkpoint.nextRecord);
+      expect(restored).toEqual(verified.checkpoint);
+      const actors = restored.state!.actors;
+      expect(actors.find((a) => a.id === spec.participants[0].actorId)?.resources.stamina).toBe(5);
+      expect(
+        actors.find((a) => a.id === spec.participants[1].actorId)?.resources,
+      ).not.toHaveProperty('stamina');
+    });
+  });
+});

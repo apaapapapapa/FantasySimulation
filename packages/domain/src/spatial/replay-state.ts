@@ -1,6 +1,7 @@
 import { canonicalJson, compareIds, contentHash, deepFreeze } from './canonical.ts';
 import { parseJson, type DefinitionKind, type RevisionRef } from './contracts.ts';
 import { type Outcome } from './records.ts';
+import { initialResources } from './resources.ts';
 import {
   RecordedManifestSchema,
   ReplayCheckpointSchema,
@@ -165,7 +166,11 @@ export class ReplayState {
       if (!definition) return fail('unknown actor');
       requireReplay(
         actor.resources.hp <= definition.character.stats.hp &&
-          actor.resources.mp <= definition.character.stats.mp,
+          actor.resources.mp <= definition.character.stats.mp &&
+          (definition.character.stamina
+            ? actor.resources.stamina !== undefined &&
+              actor.resources.stamina <= definition.character.stamina.max
+            : actor.resources.stamina === undefined),
         'actor resource range',
       );
       for (const status of actor.statuses) {
@@ -351,11 +356,7 @@ export class ReplayState {
         );
         const definition = this.context.actors.find((a) => a.participant.actorId === actor.id)!;
         requireReplay(
-          same(actor.resources, {
-            hp: definition.character.stats.hp,
-            mp: definition.character.stats.mp,
-            shield: definition.character.stats.shield,
-          }) &&
+          same(actor.resources, initialResources(definition.character)) &&
             same(actor.velocity, { x: 0, y: 0, z: 0 }) &&
             actor.statuses.length === 0 &&
             actor.action === null,

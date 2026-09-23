@@ -72,6 +72,21 @@ export async function isolatedCommand(
     maxBytes: 4 * 1024 * 1024,
   });
 }
+export function writableOutputs(workspace: string) {
+  const paths = [
+    '.generated',
+    'apps/web/dist',
+    'apps/api/dist',
+    'packages/domain/dist',
+    'packages/engine/dist',
+    'node_modules/.vite',
+    'node_modules/.vite-temp',
+  ];
+  ensure(!git(workspace, ['ls-files', '--', ...paths]), 'Writable output contains tracked source');
+  const outputs = paths.map((path) => regularPath(join(workspace, path)));
+  for (const output of outputs) mkdirSync(output, { recursive: true });
+  return outputs;
+}
 export async function evaluate(path: string, run: typeof runCommand = runCommand) {
   return operation(path, async () => {
     const j = readJournal(path),
@@ -81,16 +96,7 @@ export async function evaluate(path: string, run: typeof runCommand = runCommand
     scope(dirs.workspace, j.contract);
     const relative = `.generated/harness/loop-attempt-${view.attempts}`;
     // Only ignored build/cache outputs are writable. All tracked inputs and Git objects remain read-only.
-    const outputs = [
-      '.generated',
-      'apps/web/dist',
-      'apps/api/dist',
-      'packages/domain/dist',
-      'packages/engine/dist',
-      'node_modules/.vite',
-    ];
-    const writable = outputs.map((p) => regularPath(join(dirs.workspace, p)));
-    for (const output of writable) mkdirSync(output, { recursive: true });
+    const writable = writableOutputs(dirs.workspace);
     const before = git(dirs.workspace, ['status', '--porcelain=v1', '--untracked-files=all']);
     ensure(!before, 'Build output is not ignored');
     const runner: typeof runCommand = async (command, args, cwd) => {
@@ -132,7 +138,8 @@ export async function evaluate(path: string, run: typeof runCommand = runCommand
     const next = transition(path, j, 'evaluated', {
       candidateSha: view.candidateSha,
       outcome: assessed.exitCode === 0 ? 'pass' : assessed.exitCode === 1 ? 'fail' : 'unknown',
-      passed: assessed.report.checks.filter((c) => c.required && c.status === 'pass').length,
+      passed: assessed.report.checks.filter((c) => c.id === 'source-verify' && c.status === 'pass')
+        .length,
       evidence,
     });
     return { ...status(next), repairComplete: false, evidence };

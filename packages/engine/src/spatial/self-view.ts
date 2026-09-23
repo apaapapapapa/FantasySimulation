@@ -46,6 +46,7 @@ export function selfView(
   return {
     self: actor.motion,
     resources: actor.resources,
+    ...(actor.staminaClock ? { staminaExhausted: actor.staminaClock.exhausted } : {}),
     memory: actor.memory,
     statusIds: active.map((s) => s.revision.id),
     step,
