@@ -50,7 +50,7 @@ Issue #59の後続実装PRで一緒に決定・検証する。
 2. 判断変更ならrules/engine版と新rules IDを揃え、変更するサンプルを新IDへ分ける。
 3. 省略時の従来動作、旧定義の読み取り、未対応版の実行拒否を試験する。
 4. 前版で作った定義・完了試合/replay・未完了jobを含むDBで、起動・seed・API取得・失敗理由を検証する。
-5. 実装digestとコーパスの意図した変更をレビューし、既存のverify・source harness・両OS CI・main確認を完了する。
+5. 実装digestとコーパスの意図した変更をレビューし、既存のverify・source harness・Linux CI・main確認を完了する。
 
 このADRのPRは運用規則の文書化だけを扱う。旧版DBの回帰fixture、未完了job/再試行の明示拒否、
 rulesの実行可否表示、配布済みカタログ検査、`flat`・`pillars`の整理はIssue #59に残す。

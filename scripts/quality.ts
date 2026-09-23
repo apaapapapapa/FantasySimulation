@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { inspectContext } from './harness/context.ts';
 import { architecture } from './quality/architecture.ts';
 import {
   firstPartyJavaScript,
@@ -21,6 +22,7 @@ const required = [
   'quality:determinism',
   'quality:duplication',
   'quality:migrations',
+  'quality:context',
 ];
 const startedAt = new Date().toISOString();
 const checks: Check[] = [];
@@ -52,6 +54,11 @@ try {
       console.error(`${id}: ${reason}`);
     }
   };
+  await run('quality:context', () => {
+    const context = inspectContext(root, paths);
+    details.context = context;
+    return context.findings;
+  });
   await run('quality:typescript', () =>
     [...firstPartyJavaScript(paths), ...unsupportedTypeScriptModules(paths)].map((path) => ({
       path,

@@ -6,7 +6,7 @@ Cloudflare dependencies and vendored skills are not imported.
 
 Run `vp run check:quality`, or `node scripts/quality.ts` in the pinned environment.
 `vp run verify` includes this read-only command. Its failures, diagnostics and executed
-command are retained by the existing SHA-bound source harness and both-platform CI;
+command are retained by the existing SHA-bound source harness and Linux CI;
 `.generated/harness/quality/report.json` is an observation, not a substitute for the source report.
 Exit 1 means a violation; exit 2 means missing/invalid coverage or unavailable parsing.
 Focused checks may run while editing, but final delivery requires committed clean-source evidence.
@@ -87,7 +87,7 @@ changes must not bypass migration history with `drizzle-kit push`.
 ## Change workflow
 
 Use `vp test run scripts/quality` for guard fixtures and `vp test run apps/api` for
-Drizzle and persistence regressions. CI uses both Linux and Windows. Guard dependencies
+Drizzle and persistence regressions. CI uses Linux. Guard dependencies
 remain dev-only; Drizzle ORM and the SQLite driver are pinned API runtime dependencies.
 Manifest/lock changes conservatively affect the existing engine identity: restamp explicitly
 in the engineering PR, review the diff, and keep physics/rules/Golden values unchanged when

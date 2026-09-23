@@ -1,0 +1,2438 @@
+{
+  "schemaVersion": 1,
+  "purpose": "PR #60 integrated persistence performance acceptance; observed data, never new expected battle fixtures",
+  "sourceMappings": [
+    {
+      "localCommit": "77958ffb66c2183c8290002c8ed16eed73627ceb",
+      "tree": "2c003e76e5179d600fc500c11dcd947f42813e19",
+      "description": "Original PR #60 adapter merged with main d0ce3bc, before numeric optimization"
+    },
+    {
+      "localCommit": "6796273f73b93c1af64894dd868da65726a36f56",
+      "githubCommit": "170b020d63d56d4b375289fc28538b8cf12df769",
+      "tree": "735ce9467548a0fad54f8172675502ff5b600d38",
+      "description": "The measured local commit and published commit have exactly the same Git tree. Original report SHAs are retained; measured local commits are in the evidence bundle."
+    }
+  ],
+  "runs": [
+    {
+      "run": "p3-worker1-initial",
+      "summary": {
+        "source": {
+          "sha": "77958ffb66c2183c8290002c8ed16eed73627ceb",
+          "node": "24.19.0",
+          "platform": "linux",
+          "arch": "x64"
+        },
+        "environment": {
+          "cpu": "AMD EPYC 9V74 80-Core Processor",
+          "cores": 8,
+          "ram": 23109898240,
+          "platform": "linux",
+          "arch": "x64",
+          "node": "v24.19.0",
+          "storage": "container overlay; physical device and IOPS undisclosed"
+        },
+        "implementation": {
+          "digest": "sha256:fb3157df095e9f463f6c12795a3f3e2bcfc3f0ff0eefab74d99fa77289763bec",
+          "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+          "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+          "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+        },
+        "workers": 1,
+        "count": 100,
+        "failure": null,
+        "batchMs": 237553.69869200003,
+        "cacheMs": 33258.89536099997,
+        "newComputations": 100,
+        "complete": true,
+        "reused": 0,
+        "cold": [
+          {
+            "id": "b460d935-b9eb-492a-b57d-9edf979405c1",
+            "state": "completed",
+            "startedAt": 1790129849197,
+            "finishedAt": 1790129849835,
+            "metrics": {
+              "arrayBuffers": 2648457,
+              "backpressureMs": 102.96418199999607,
+              "cold": true,
+              "computeMs": 166.778093000019,
+              "elapsedMs": 350.1077010000008,
+              "external": 9758456,
+              "heapUsed": 35150296,
+              "initializationMs": 36.35065599999871,
+              "peakBatchBytes": 130526,
+              "threadId": 4,
+              "totalMs": 638.3880879999997,
+              "transferBytes": 282007,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "warmSavedMs": {
+          "count": 99,
+          "median": 483.4887529999978,
+          "p95": 6410.08905000001
+        },
+        "warmComputeMs": {
+          "count": 29,
+          "median": 148.33686100000705,
+          "p95": 1964.4164759999585
+        },
+        "computeWithoutSaveWallMs": {
+          "count": 29,
+          "median": 230.02628399999958,
+          "p95": 2987.1227130000007
+        },
+        "processRssPeak": 466186240,
+        "latterHalfRssGrowth": 0,
+        "workerHeapPeak": 42807536,
+        "workerExternalPeak": 9505498,
+        "workerArrayBuffersPeak": 2786636,
+        "workerWasmPeak": 1245184,
+        "artifactBytesPeak": 346826,
+        "artifactBytesTotal": 11710291,
+        "completedStressMatches": 20,
+        "unmeasured": {
+          "piscinaQueueMs": "Runtime dispatches only available slots; per-task Piscina queue latency is not exposed by this adapter",
+          "tsVersusWasmCpu": "Compute contains both TS and WASM; not separately instrumented"
+        },
+        "interpretation": "Worker compute excludes backpressure; totalMs includes formal logs, gzip and canonical SQLite/artifact persistence. Batch elapsed also includes bundle verification/export. RSS is sampled every 100ms; heap/external/arrayBuffers/WASM overlap and must not be summed. Cache verification is separate. Smaller counts are profiling only, never a 1000-match pass."
+      },
+      "report": {
+        "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb",
+        "candidateSha": "77958ffb66c2183c8290002c8ed16eed73627ceb",
+        "baselineSha": null,
+        "testMergeSha": null,
+        "schemaVersion": 1,
+        "producer": "integrated-benchmark",
+        "startedAt": "2026-09-23T02:17:04.033Z",
+        "finishedAt": "2026-09-23T02:22:00.345Z",
+        "checks": [
+          {
+            "id": "integrated:source",
+            "required": true,
+            "status": "pass",
+            "reason": "Clean unchanged source",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:complete",
+            "required": true,
+            "status": "pass",
+            "reason": "Every planned match must execute and finish; no cached/truncated/failed substitutions",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:cache",
+            "required": true,
+            "status": "pass",
+            "reason": "Every repeated immutable input must reuse a verified bundle",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:full-batch",
+            "required": true,
+            "status": "unknown",
+            "reason": "Actual 1000 new matches, at most 4 Workers, at most 30 minutes",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:latency",
+            "required": true,
+            "status": "pass",
+            "reason": "Warm formal logging, compression and persistence median <=4s, p95 <=8s",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:rss",
+            "required": true,
+            "status": "pass",
+            "reason": "Sampled whole-process RSS <=1.5 GiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:heap",
+            "required": true,
+            "status": "pass",
+            "reason": "Worker JS heap <=128 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:growth",
+            "required": true,
+            "status": "pass",
+            "reason": "Later-half RSS high-water growth <=64 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:storage",
+            "required": true,
+            "status": "pass",
+            "reason": "Compressed artifacts <=16 MiB/match and <=16 GiB total",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:stress",
+            "required": true,
+            "status": "pass",
+            "reason": "Both early outcomes and complete 6000-step inputs were measured",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          }
+        ]
+      },
+      "observations": {
+        "allAttemptMemoryPeaks": {
+          "heapUsed": 42807536,
+          "external": 9758456,
+          "arrayBuffers": 2786636,
+          "wasmLinearBytes": 1245184
+        },
+        "chronologicalQuarters": [
+          {
+            "quarter": 1,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 24,
+              "median": 1099.0171400000036,
+              "p95": 6460.354159000002
+            },
+            "peaks": {
+              "heapUsed": 42807536,
+              "external": 9758456,
+              "arrayBuffers": 2786636,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 2,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 510.3941070000001,
+              "p95": 6173.054488000023
+            },
+            "peaks": {
+              "heapUsed": 38948880,
+              "external": 9498529,
+              "arrayBuffers": 2786127,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 3,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 357.0877099999925,
+              "p95": 5854.950673000014
+            },
+            "peaks": {
+              "heapUsed": 38954080,
+              "external": 9498969,
+              "arrayBuffers": 2781354,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 4,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 477.26192399999127,
+              "p95": 6372.592222999985
+            },
+            "peaks": {
+              "heapUsed": 39338744,
+              "external": 9497145,
+              "arrayBuffers": 2780732,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "cases": [
+          {
+            "left": "swordsman",
+            "right": "swordsman",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 224.23473500000546,
+              "p95": 254.4140619999962
+            }
+          },
+          {
+            "left": "archer",
+            "right": "guardian",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 1091.2467449999822,
+              "p95": 1238.0759340000004
+            }
+          },
+          {
+            "left": "healer",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 1151.123820000008,
+              "p95": 1315.6645300000018
+            }
+          },
+          {
+            "left": "ice-mage",
+            "right": "lancer",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 276.2885529999912,
+              "p95": 294.722990000002
+            }
+          },
+          {
+            "left": "storm-mage",
+            "right": "arcane-archer",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 9,
+              "median": 219.71994400000403,
+              "p95": 245.50174800000968
+            }
+          },
+          {
+            "left": "water-observer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 510.3941070000001,
+              "p95": 623.5964099999983
+            }
+          },
+          {
+            "left": "fire-seer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 455.3790100000042,
+              "p95": 565.6519879999978
+            }
+          },
+          {
+            "left": "sky-mage",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 365.7722240000003,
+              "p95": 398.70747100000153
+            }
+          },
+          {
+            "left": "swordsman",
+            "right": "sky-mage",
+            "scenario": "pillars",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 6372.592222999985,
+              "p95": 6805.008088999999
+            }
+          },
+          {
+            "left": "guardian",
+            "right": "guardian",
+            "scenario": "pillars",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 5864.185537000012,
+              "p95": 6410.08905000001
+            }
+          }
+        ],
+        "warmStages": {
+          "initializationMs": {
+            "count": 99,
+            "median": 2.5538069999893196,
+            "p95": 4.911449000006542
+          },
+          "computeMs": {
+            "count": 99,
+            "median": 146.96219999997993,
+            "p95": 2016.9477140008385
+          },
+          "backpressureMs": {
+            "count": 99,
+            "median": 147.75654899995425,
+            "p95": 2017.414725999959
+          },
+          "elapsedMs": {
+            "count": 99,
+            "median": 367.7154379999847,
+            "p95": 5043.644549999997
+          },
+          "totalMs": {
+            "count": 99,
+            "median": 483.4887529999978,
+            "p95": 6410.08905000001
+          },
+          "workerEncodingAndOtherMs": {
+            "count": 99,
+            "median": 73.99402799995732,
+            "p95": 1003.1839739996649
+          },
+          "coordinatorSetupDispatchAndFinalizationMs": {
+            "count": 99,
+            "median": 116.23047199996654,
+            "p95": 1373.5148510000145
+          }
+        },
+        "processRssAtStart": 308244480,
+        "processRssAfterAllPoolsClosed": 387162112
+      }
+    },
+    {
+      "run": "p3-worker4-initial",
+      "summary": {
+        "source": {
+          "sha": "77958ffb66c2183c8290002c8ed16eed73627ceb",
+          "node": "24.19.0",
+          "platform": "linux",
+          "arch": "x64"
+        },
+        "environment": {
+          "cpu": "AMD EPYC 9V74 80-Core Processor",
+          "cores": 8,
+          "ram": 23109898240,
+          "platform": "linux",
+          "arch": "x64",
+          "node": "v24.19.0",
+          "storage": "container overlay; physical device and IOPS undisclosed"
+        },
+        "implementation": {
+          "digest": "sha256:fb3157df095e9f463f6c12795a3f3e2bcfc3f0ff0eefab74d99fa77289763bec",
+          "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+          "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+          "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+        },
+        "workers": 4,
+        "count": 100,
+        "failure": null,
+        "batchMs": 184671.233197,
+        "cacheMs": 36202.69437700001,
+        "newComputations": 100,
+        "complete": true,
+        "reused": 0,
+        "cold": [
+          {
+            "id": "4d70d299-8c0d-465a-9759-b6519049ae75",
+            "state": "completed",
+            "startedAt": 1790130195516,
+            "finishedAt": 1790130196656,
+            "metrics": {
+              "arrayBuffers": 2446598,
+              "backpressureMs": 232.0635680000014,
+              "cold": true,
+              "computeMs": 156.76132499999585,
+              "elapsedMs": 493.11414800000057,
+              "external": 9556597,
+              "heapUsed": 33600328,
+              "initializationMs": 51.00509999999849,
+              "peakBatchBytes": 130526,
+              "threadId": 6,
+              "totalMs": 1139.8674360000005,
+              "transferBytes": 282007,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "id": "4e110951-8031-4097-abd4-e321dbe8aa58",
+            "state": "completed",
+            "startedAt": 1790130195523,
+            "finishedAt": 1790130196782,
+            "metrics": {
+              "arrayBuffers": 2446819,
+              "backpressureMs": 316.6701519999988,
+              "cold": true,
+              "computeMs": 186.22563899999295,
+              "elapsedMs": 607.9458610000001,
+              "external": 9556818,
+              "heapUsed": 33777608,
+              "initializationMs": 46.6473819999992,
+              "peakBatchBytes": 130526,
+              "threadId": 5,
+              "totalMs": 1259.1740790000003,
+              "transferBytes": 282004,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "id": "e362289f-4d81-499c-90f4-dfaa4cce863a",
+            "state": "completed",
+            "startedAt": 1790130195666,
+            "finishedAt": 1790130211266,
+            "metrics": {
+              "arrayBuffers": 3962217,
+              "backpressureMs": 6079.221045000009,
+              "cold": true,
+              "computeMs": 2445.9183619999167,
+              "elapsedMs": 9684.788245,
+              "external": 9575767,
+              "heapUsed": 43248248,
+              "initializationMs": 46.61114699999962,
+              "peakBatchBytes": 130962,
+              "threadId": 7,
+              "totalMs": 15598.060353999997,
+              "transferBytes": 8763511,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "id": "b5981cf7-973e-4c04-9ee1-2af8e63a275d",
+            "state": "completed",
+            "startedAt": 1790130195685,
+            "finishedAt": 1790130196753,
+            "metrics": {
+              "arrayBuffers": 2595122,
+              "backpressureMs": 276.44207599999936,
+              "cold": true,
+              "computeMs": 174.94236499996623,
+              "elapsedMs": 553.0592949999991,
+              "external": 9705121,
+              "heapUsed": 33591608,
+              "initializationMs": 51.74235399999816,
+              "peakBatchBytes": 130645,
+              "threadId": 8,
+              "totalMs": 1067.8219209999988,
+              "transferBytes": 273315,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "warmSavedMs": {
+          "count": 96,
+          "median": 1225.5349239999996,
+          "p95": 14175.515607999994
+        },
+        "warmComputeMs": {
+          "count": 26,
+          "median": 288.9529340000013,
+          "p95": 2778.3037679999925
+        },
+        "computeWithoutSaveWallMs": {
+          "count": 26,
+          "median": 478.58925,
+          "p95": 4288.799575999999
+        },
+        "processRssPeak": 633126912,
+        "latterHalfRssGrowth": 29163520,
+        "workerHeapPeak": 43497592,
+        "workerExternalPeak": 9514195,
+        "workerArrayBuffersPeak": 3567869,
+        "workerWasmPeak": 1245184,
+        "artifactBytesPeak": 346826,
+        "artifactBytesTotal": 11710291,
+        "completedStressMatches": 20,
+        "unmeasured": {
+          "piscinaQueueMs": "Runtime dispatches only available slots; per-task Piscina queue latency is not exposed by this adapter",
+          "tsVersusWasmCpu": "Compute contains both TS and WASM; not separately instrumented"
+        },
+        "interpretation": "Worker compute excludes backpressure; totalMs includes formal logs, gzip and canonical SQLite/artifact persistence. Batch elapsed also includes bundle verification/export. RSS is sampled every 100ms; heap/external/arrayBuffers/WASM overlap and must not be summed. Cache verification is separate. Smaller counts are profiling only, never a 1000-match pass."
+      },
+      "report": {
+        "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb",
+        "candidateSha": "77958ffb66c2183c8290002c8ed16eed73627ceb",
+        "baselineSha": null,
+        "testMergeSha": null,
+        "schemaVersion": 1,
+        "producer": "integrated-benchmark",
+        "startedAt": "2026-09-23T02:22:59.607Z",
+        "finishedAt": "2026-09-23T02:26:56.793Z",
+        "checks": [
+          {
+            "id": "integrated:source",
+            "required": true,
+            "status": "pass",
+            "reason": "Clean unchanged source",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:complete",
+            "required": true,
+            "status": "pass",
+            "reason": "Every planned match must execute and finish; no cached/truncated/failed substitutions",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:cache",
+            "required": true,
+            "status": "pass",
+            "reason": "Every repeated immutable input must reuse a verified bundle",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:full-batch",
+            "required": true,
+            "status": "unknown",
+            "reason": "Actual 1000 new matches, at most 4 Workers, at most 30 minutes",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:latency",
+            "required": true,
+            "status": "fail",
+            "reason": "Warm formal logging, compression and persistence median <=4s, p95 <=8s",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:rss",
+            "required": true,
+            "status": "pass",
+            "reason": "Sampled whole-process RSS <=1.5 GiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:heap",
+            "required": true,
+            "status": "pass",
+            "reason": "Worker JS heap <=128 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:growth",
+            "required": true,
+            "status": "pass",
+            "reason": "Later-half RSS high-water growth <=64 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:storage",
+            "required": true,
+            "status": "pass",
+            "reason": "Compressed artifacts <=16 MiB/match and <=16 GiB total",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          },
+          {
+            "id": "integrated:stress",
+            "required": true,
+            "status": "pass",
+            "reason": "Both early outcomes and complete 6000-step inputs were measured",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-initial/summary.json",
+                "sourceSha": "77958ffb66c2183c8290002c8ed16eed73627ceb"
+              }
+            ]
+          }
+        ]
+      },
+      "observations": {
+        "allAttemptMemoryPeaks": {
+          "heapUsed": 43497592,
+          "external": 9705121,
+          "arrayBuffers": 3962217,
+          "wasmLinearBytes": 1245184
+        },
+        "chronologicalQuarters": [
+          {
+            "quarter": 1,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 21,
+              "median": 1917.0729189999984,
+              "p95": 14175.515607999994
+            },
+            "peaks": {
+              "heapUsed": 43497592,
+              "external": 9705121,
+              "arrayBuffers": 3962217,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 2,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 1066.264095000006,
+              "p95": 10688.572351000003
+            },
+            "peaks": {
+              "heapUsed": 38407632,
+              "external": 9510331,
+              "arrayBuffers": 3192178,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 3,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 876.6871060000121,
+              "p95": 12275.512837000002
+            },
+            "peaks": {
+              "heapUsed": 39100760,
+              "external": 9511131,
+              "arrayBuffers": 2925929,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 4,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 1302.1994390000182,
+              "p95": 18505.893099000008
+            },
+            "peaks": {
+              "heapUsed": 39081856,
+              "external": 9510698,
+              "arrayBuffers": 3567869,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "cases": [
+          {
+            "left": "swordsman",
+            "right": "swordsman",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 548.2357329999941,
+              "p95": 752.6334159999969
+            }
+          },
+          {
+            "left": "archer",
+            "right": "guardian",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 2495.0699849999983,
+              "p95": 3488.719394999993
+            }
+          },
+          {
+            "left": "healer",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 2372.5759400000097,
+              "p95": 3142.835610000002
+            }
+          },
+          {
+            "left": "ice-mage",
+            "right": "lancer",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 9,
+              "median": 579.9579729999969,
+              "p95": 1142.532342999999
+            }
+          },
+          {
+            "left": "storm-mage",
+            "right": "arcane-archer",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 8,
+              "median": 659.9874540000019,
+              "p95": 770.8839110000117
+            }
+          },
+          {
+            "left": "water-observer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 1259.782518,
+              "p95": 1669.1375249999983
+            }
+          },
+          {
+            "left": "fire-seer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 1111.202867,
+              "p95": 1880.229864999972
+            }
+          },
+          {
+            "left": "sky-mage",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 876.6871060000121,
+              "p95": 1232.2073079999973
+            }
+          },
+          {
+            "left": "swordsman",
+            "right": "sky-mage",
+            "scenario": "pillars",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 9,
+              "median": 14175.515607999994,
+              "p95": 18982.097754999995
+            }
+          },
+          {
+            "left": "guardian",
+            "right": "guardian",
+            "scenario": "pillars",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 11049.27244500001,
+              "p95": 12859.943683999998
+            }
+          }
+        ],
+        "warmStages": {
+          "initializationMs": {
+            "count": 96,
+            "median": 4.575096999993548,
+            "p95": 12.533236999996006
+          },
+          "computeMs": {
+            "count": 96,
+            "median": 189.27537600003416,
+            "p95": 3059.626454000012
+          },
+          "backpressureMs": {
+            "count": 96,
+            "median": 516.7134280000173,
+            "p95": 5875.029766000014
+          },
+          "elapsedMs": {
+            "count": 96,
+            "median": 776.1327429999947,
+            "p95": 10040.01425800001
+          },
+          "totalMs": {
+            "count": 96,
+            "median": 1225.5349239999996,
+            "p95": 14175.515607999994
+          },
+          "workerEncodingAndOtherMs": {
+            "count": 96,
+            "median": 96.52825699998357,
+            "p95": 1474.3252269999648
+          },
+          "coordinatorSetupDispatchAndFinalizationMs": {
+            "count": 96,
+            "median": 442.3133300000045,
+            "p95": 4949.7322050000075
+          }
+        },
+        "processRssAtStart": 242761728,
+        "processRssAfterAllPoolsClosed": 498819072
+      }
+    },
+    {
+      "run": "p3-worker2-full",
+      "summary": {
+        "source": {
+          "sha": "6796273f73b93c1af64894dd868da65726a36f56",
+          "node": "24.19.0",
+          "platform": "linux",
+          "arch": "x64"
+        },
+        "environment": {
+          "cpu": "AMD EPYC 9V74 80-Core Processor",
+          "cores": 8,
+          "ram": 23109898240,
+          "platform": "linux",
+          "arch": "x64",
+          "node": "v24.19.0",
+          "storage": "container overlay; physical device and IOPS undisclosed"
+        },
+        "implementation": {
+          "digest": "sha256:2a7f59f653d90bf5776e6435f5df7579d215629f8a71fc36895f3768ef30de50",
+          "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+          "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+          "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+        },
+        "workers": 2,
+        "count": 1000,
+        "failure": null,
+        "batchMs": 1504653.6972150002,
+        "cacheMs": 286829.87854199996,
+        "newComputations": 1000,
+        "complete": true,
+        "reused": 0,
+        "cold": [
+          {
+            "id": "9ac565e9-2f68-461b-826c-3dc1bf305b1d",
+            "state": "completed",
+            "startedAt": 1790130821820,
+            "finishedAt": 1790130822522,
+            "metrics": {
+              "arrayBuffers": 2446917,
+              "backpressureMs": 141.21141699999862,
+              "cold": true,
+              "computeMs": 189.04978599998503,
+              "elapsedMs": 408.40340200000355,
+              "external": 9556916,
+              "heapUsed": 33543744,
+              "initializationMs": 40.49860500000068,
+              "peakBatchBytes": 130645,
+              "threadId": 4,
+              "totalMs": 701.6903380000003,
+              "transferBytes": 273315,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "id": "fecf7e7c-0150-42a0-9fdc-5ba6a128a5d2",
+            "state": "completed",
+            "startedAt": 1790130821828,
+            "finishedAt": 1790130823348,
+            "metrics": {
+              "arrayBuffers": 2521175,
+              "backpressureMs": 345.3657149999999,
+              "cold": true,
+              "computeMs": 511.7899019999386,
+              "elapsedMs": 1015.549207,
+              "external": 9619692,
+              "heapUsed": 38866864,
+              "initializationMs": 40.96622099999877,
+              "peakBatchBytes": 131051,
+              "threadId": 5,
+              "totalMs": 1520.871869999999,
+              "transferBytes": 1427827,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "warmSavedMs": {
+          "count": 998,
+          "median": 547.8456099999603,
+          "p95": 7720.715372000006
+        },
+        "warmComputeMs": {
+          "count": 28,
+          "median": 159.99132600001576,
+          "p95": 1973.2440000001025
+        },
+        "computeWithoutSaveWallMs": {
+          "count": 28,
+          "median": 228.6839369999998,
+          "p95": 2723.4347880000005
+        },
+        "processRssPeak": 556040192,
+        "latterHalfRssGrowth": 0,
+        "workerHeapPeak": 54451304,
+        "workerExternalPeak": 9648253,
+        "workerArrayBuffersPeak": 2791366,
+        "workerWasmPeak": 1245184,
+        "artifactBytesPeak": 346919,
+        "artifactBytesTotal": 116624491,
+        "completedStressMatches": 200,
+        "unmeasured": {
+          "piscinaQueueMs": "Runtime dispatches only available slots; per-task Piscina queue latency is not exposed by this adapter",
+          "tsVersusWasmCpu": "Compute contains both TS and WASM; not separately instrumented"
+        },
+        "interpretation": "Worker compute excludes backpressure; totalMs includes formal logs, gzip and canonical SQLite/artifact persistence. Batch elapsed also includes bundle verification/export. RSS is sampled every 100ms; heap/external/arrayBuffers/WASM overlap and must not be summed. Cache verification is separate. Smaller counts are profiling only, never a 1000-match pass."
+      },
+      "report": {
+        "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56",
+        "candidateSha": "6796273f73b93c1af64894dd868da65726a36f56",
+        "baselineSha": null,
+        "testMergeSha": null,
+        "schemaVersion": 1,
+        "producer": "integrated-benchmark",
+        "startedAt": "2026-09-23T02:33:22.851Z",
+        "finishedAt": "2026-09-23T03:03:36.282Z",
+        "checks": [
+          {
+            "id": "integrated:source",
+            "required": true,
+            "status": "pass",
+            "reason": "Clean unchanged source",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:complete",
+            "required": true,
+            "status": "pass",
+            "reason": "Every planned match must execute and finish; no cached/truncated/failed substitutions",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:cache",
+            "required": true,
+            "status": "pass",
+            "reason": "Every repeated immutable input must reuse a verified bundle",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:full-batch",
+            "required": true,
+            "status": "pass",
+            "reason": "Actual 1000 new matches, at most 4 Workers, at most 30 minutes",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:latency",
+            "required": true,
+            "status": "pass",
+            "reason": "Warm formal logging, compression and persistence median <=4s, p95 <=8s",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:rss",
+            "required": true,
+            "status": "pass",
+            "reason": "Sampled whole-process RSS <=1.5 GiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:heap",
+            "required": true,
+            "status": "pass",
+            "reason": "Worker JS heap <=128 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:growth",
+            "required": true,
+            "status": "pass",
+            "reason": "Later-half RSS high-water growth <=64 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:storage",
+            "required": true,
+            "status": "pass",
+            "reason": "Compressed artifacts <=16 MiB/match and <=16 GiB total",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          },
+          {
+            "id": "integrated:stress",
+            "required": true,
+            "status": "pass",
+            "reason": "Both early outcomes and complete 6000-step inputs were measured",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker2-full/summary.json",
+                "sourceSha": "6796273f73b93c1af64894dd868da65726a36f56"
+              }
+            ]
+          }
+        ]
+      },
+      "observations": {
+        "allAttemptMemoryPeaks": {
+          "heapUsed": 54451304,
+          "external": 9648253,
+          "arrayBuffers": 2791366,
+          "wasmLinearBytes": 1245184
+        },
+        "chronologicalQuarters": [
+          {
+            "quarter": 1,
+            "attempts": 250,
+            "warmSavedMs": {
+              "count": 248,
+              "median": 478.8158279999989,
+              "p95": 6956.555806000004
+            },
+            "peaks": {
+              "heapUsed": 54451304,
+              "external": 9648253,
+              "arrayBuffers": 2791366,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 2,
+            "attempts": 250,
+            "warmSavedMs": {
+              "count": 250,
+              "median": 543.0830340000102,
+              "p95": 7118.398367999995
+            },
+            "peaks": {
+              "heapUsed": 40029800,
+              "external": 9510826,
+              "arrayBuffers": 2665674,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 3,
+            "attempts": 250,
+            "warmSavedMs": {
+              "count": 250,
+              "median": 540.8433309999527,
+              "p95": 7612.385333999991
+            },
+            "peaks": {
+              "heapUsed": 40138936,
+              "external": 9515475,
+              "arrayBuffers": 2784028,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 4,
+            "attempts": 250,
+            "warmSavedMs": {
+              "count": 250,
+              "median": 708.6291690000799,
+              "p95": 9055.838502000086
+            },
+            "peaks": {
+              "heapUsed": 40574248,
+              "external": 9511826,
+              "arrayBuffers": 2671324,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "cases": [
+          {
+            "left": "swordsman",
+            "right": "swordsman",
+            "scenario": "flat",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 100,
+              "median": 257.9659400000237,
+              "p95": 379.7065129999537
+            }
+          },
+          {
+            "left": "archer",
+            "right": "guardian",
+            "scenario": "flat",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 100,
+              "median": 1201.7006890000775,
+              "p95": 1666.7649920000695
+            }
+          },
+          {
+            "left": "healer",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 99,
+              "median": 1247.2385100000538,
+              "p95": 1972.1852620001882
+            }
+          },
+          {
+            "left": "ice-mage",
+            "right": "lancer",
+            "scenario": "flat",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 99,
+              "median": 295.6805630000017,
+              "p95": 462.3888329999754
+            }
+          },
+          {
+            "left": "storm-mage",
+            "right": "arcane-archer",
+            "scenario": "flat",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 100,
+              "median": 271.7247689999931,
+              "p95": 409.10487200005446
+            }
+          },
+          {
+            "left": "water-observer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 100,
+              "median": 530.0156870000064,
+              "p95": 794.4603329999372
+            }
+          },
+          {
+            "left": "fire-seer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 100,
+              "median": 483.3341059999075,
+              "p95": 837.5003919999581
+            }
+          },
+          {
+            "left": "sky-mage",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 100,
+              "median": 417.1998929999536,
+              "p95": 654.0996230000164
+            }
+          },
+          {
+            "left": "swordsman",
+            "right": "sky-mage",
+            "scenario": "pillars",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 100,
+              "median": 7344.281076999963,
+              "p95": 10072.293779999949
+            }
+          },
+          {
+            "left": "guardian",
+            "right": "guardian",
+            "scenario": "pillars",
+            "attempts": 100,
+            "warmSavedMs": {
+              "count": 100,
+              "median": 6559.178331000003,
+              "p95": 9122.059215000132
+            }
+          }
+        ],
+        "warmStages": {
+          "initializationMs": {
+            "count": 998,
+            "median": 2.6781260000025213,
+            "p95": 7.345881000044756
+          },
+          "computeMs": {
+            "count": 998,
+            "median": 150.55890199972782,
+            "p95": 2293.010494995513
+          },
+          "backpressureMs": {
+            "count": 998,
+            "median": 176.92579199979082,
+            "p95": 2850.620331000304
+          },
+          "elapsedMs": {
+            "count": 998,
+            "median": 390.8783499998972,
+            "p95": 5909.673887999961
+          },
+          "totalMs": {
+            "count": 998,
+            "median": 547.8456099999603,
+            "p95": 7720.715372000006
+          },
+          "workerEncodingAndOtherMs": {
+            "count": 998,
+            "median": 56.07414400001289,
+            "p95": 807.2621500018286
+          },
+          "coordinatorSetupDispatchAndFinalizationMs": {
+            "count": 998,
+            "median": 160.56389699992724,
+            "p95": 1926.586461000028
+          }
+        },
+        "processRssAtStart": 289411072,
+        "processRssAfterAllPoolsClosed": 445771776
+      }
+    },
+    {
+      "run": "p3-worker1-optimized",
+      "summary": {
+        "source": {
+          "sha": "170b020d63d56d4b375289fc28538b8cf12df769",
+          "node": "24.19.0",
+          "platform": "linux",
+          "arch": "x64"
+        },
+        "environment": {
+          "cpu": "AMD EPYC 9V74 80-Core Processor",
+          "cores": 8,
+          "ram": 23109898240,
+          "platform": "linux",
+          "arch": "x64",
+          "node": "v24.19.0",
+          "storage": "container overlay; physical device and IOPS undisclosed"
+        },
+        "implementation": {
+          "digest": "sha256:2a7f59f653d90bf5776e6435f5df7579d215629f8a71fc36895f3768ef30de50",
+          "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+          "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+          "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+        },
+        "workers": 1,
+        "count": 100,
+        "failure": null,
+        "batchMs": 223355.35085,
+        "cacheMs": 27596.87580800001,
+        "newComputations": 100,
+        "complete": true,
+        "reused": 0,
+        "cold": [
+          {
+            "id": "0c332871-8a80-4f5b-88aa-842130bb994c",
+            "state": "completed",
+            "startedAt": 1790132670325,
+            "finishedAt": 1790132671007,
+            "metrics": {
+              "arrayBuffers": 2646710,
+              "backpressureMs": 112.38506899999629,
+              "cold": true,
+              "computeMs": 183.4350650000124,
+              "elapsedMs": 372.7039599999989,
+              "external": 9756709,
+              "heapUsed": 34837600,
+              "initializationMs": 39.78046899999754,
+              "peakBatchBytes": 130645,
+              "threadId": 2,
+              "totalMs": 681.6707889999998,
+              "transferBytes": 273315,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "warmSavedMs": {
+          "count": 99,
+          "median": 461.3291889999964,
+          "p95": 6446.808682000003
+        },
+        "warmComputeMs": {
+          "count": 29,
+          "median": 166.9706349999924,
+          "p95": 2115.8834409999927
+        },
+        "computeWithoutSaveWallMs": {
+          "count": 29,
+          "median": 239.29223000000002,
+          "p95": 2943.8039009999993
+        },
+        "processRssPeak": 434905088,
+        "latterHalfRssGrowth": 0,
+        "workerHeapPeak": 49256944,
+        "workerExternalPeak": 9756709,
+        "workerArrayBuffersPeak": 2807545,
+        "workerWasmPeak": 1245184,
+        "artifactBytesPeak": 346838,
+        "artifactBytesTotal": 11709995,
+        "completedStressMatches": 20,
+        "unmeasured": {
+          "piscinaQueueMs": "Runtime dispatches only available slots; per-task Piscina queue latency is not exposed by this adapter",
+          "tsVersusWasmCpu": "Compute contains both TS and WASM; not separately instrumented"
+        },
+        "interpretation": "Worker compute excludes backpressure; totalMs includes formal logs, gzip and canonical SQLite/artifact persistence. Batch elapsed also includes bundle verification/export. RSS is sampled every 100ms; heap/external/arrayBuffers/WASM overlap and must not be summed. Cache verification is separate. Smaller counts are profiling only, never a 1000-match pass."
+      },
+      "report": {
+        "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769",
+        "candidateSha": "170b020d63d56d4b375289fc28538b8cf12df769",
+        "baselineSha": null,
+        "testMergeSha": null,
+        "schemaVersion": 1,
+        "producer": "integrated-benchmark",
+        "startedAt": "2026-09-23T03:04:05.358Z",
+        "finishedAt": "2026-09-23T03:08:41.620Z",
+        "checks": [
+          {
+            "id": "integrated:source",
+            "required": true,
+            "status": "pass",
+            "reason": "Clean unchanged source",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:complete",
+            "required": true,
+            "status": "pass",
+            "reason": "Every planned match must execute and finish; no cached/truncated/failed substitutions",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:cache",
+            "required": true,
+            "status": "pass",
+            "reason": "Every repeated immutable input must reuse a verified bundle",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:full-batch",
+            "required": true,
+            "status": "unknown",
+            "reason": "Actual 1000 new matches, at most 4 Workers, at most 30 minutes",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:latency",
+            "required": true,
+            "status": "pass",
+            "reason": "Warm formal logging, compression and persistence median <=4s, p95 <=8s",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:rss",
+            "required": true,
+            "status": "pass",
+            "reason": "Sampled whole-process RSS <=1.5 GiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:heap",
+            "required": true,
+            "status": "pass",
+            "reason": "Worker JS heap <=128 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:growth",
+            "required": true,
+            "status": "pass",
+            "reason": "Later-half RSS high-water growth <=64 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:storage",
+            "required": true,
+            "status": "pass",
+            "reason": "Compressed artifacts <=16 MiB/match and <=16 GiB total",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:stress",
+            "required": true,
+            "status": "pass",
+            "reason": "Both early outcomes and complete 6000-step inputs were measured",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker1-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          }
+        ]
+      },
+      "observations": {
+        "allAttemptMemoryPeaks": {
+          "heapUsed": 49256944,
+          "external": 9756709,
+          "arrayBuffers": 2807545,
+          "wasmLinearBytes": 1245184
+        },
+        "chronologicalQuarters": [
+          {
+            "quarter": 1,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 24,
+              "median": 354.9819860000025,
+              "p95": 6393.353815000002
+            },
+            "peaks": {
+              "heapUsed": 49256944,
+              "external": 9756709,
+              "arrayBuffers": 2807545,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 2,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 411.21770000000834,
+              "p95": 5437.909599999999
+            },
+            "peaks": {
+              "heapUsed": 39142136,
+              "external": 9498252,
+              "arrayBuffers": 2767401,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 3,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 471.7099009999947,
+              "p95": 5479.7049629999965
+            },
+            "peaks": {
+              "heapUsed": 39344392,
+              "external": 9510743,
+              "arrayBuffers": 2782102,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 4,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 1023.0998810000019,
+              "p95": 6769.054101999995
+            },
+            "peaks": {
+              "heapUsed": 39336224,
+              "external": 9502740,
+              "arrayBuffers": 2782830,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "cases": [
+          {
+            "left": "swordsman",
+            "right": "swordsman",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 199.55344299999706,
+              "p95": 261.3918049999993
+            }
+          },
+          {
+            "left": "archer",
+            "right": "guardian",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 1054.8748250000062,
+              "p95": 1449.2812149999954
+            }
+          },
+          {
+            "left": "healer",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 1010.1545209999895,
+              "p95": 1648.8132590000023
+            }
+          },
+          {
+            "left": "ice-mage",
+            "right": "lancer",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 9,
+              "median": 229.300321000017,
+              "p95": 599.0172789999997
+            }
+          },
+          {
+            "left": "storm-mage",
+            "right": "arcane-archer",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 212.81543200000306,
+              "p95": 294.9539349999977
+            }
+          },
+          {
+            "left": "water-observer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 471.7099009999947,
+              "p95": 617.2736329999898
+            }
+          },
+          {
+            "left": "fire-seer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 412.7151009999943,
+              "p95": 549.4863199999963
+            }
+          },
+          {
+            "left": "sky-mage",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 311.72148000000743,
+              "p95": 367.1355569999723
+            }
+          },
+          {
+            "left": "swordsman",
+            "right": "sky-mage",
+            "scenario": "pillars",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 5902.371929999994,
+              "p95": 7615.028102
+            }
+          },
+          {
+            "left": "guardian",
+            "right": "guardian",
+            "scenario": "pillars",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 5692.2532239999855,
+              "p95": 7183.442424000008
+            }
+          }
+        ],
+        "warmStages": {
+          "initializationMs": {
+            "count": 99,
+            "median": 2.8416229999857023,
+            "p95": 7.19278100001975
+          },
+          "computeMs": {
+            "count": 99,
+            "median": 154.03153900033794,
+            "p95": 2388.980405000155
+          },
+          "backpressureMs": {
+            "count": 99,
+            "median": 140.32403099993826,
+            "p95": 2054.0718489999854
+          },
+          "elapsedMs": {
+            "count": 99,
+            "median": 363.2095160000026,
+            "p95": 5440.7658489999885
+          },
+          "totalMs": {
+            "count": 99,
+            "median": 461.3291889999964,
+            "p95": 6446.808682000003
+          },
+          "workerEncodingAndOtherMs": {
+            "count": 99,
+            "median": 56.96007900006225,
+            "p95": 855.5588469997456
+          },
+          "coordinatorSetupDispatchAndFinalizationMs": {
+            "count": 99,
+            "median": 95.16003800001636,
+            "p95": 1150.001200000028
+          }
+        },
+        "processRssAtStart": 277667840,
+        "processRssAfterAllPoolsClosed": 345571328
+      }
+    },
+    {
+      "run": "p3-worker4-optimized",
+      "summary": {
+        "source": {
+          "sha": "170b020d63d56d4b375289fc28538b8cf12df769",
+          "node": "24.19.0",
+          "platform": "linux",
+          "arch": "x64"
+        },
+        "environment": {
+          "cpu": "AMD EPYC 9V74 80-Core Processor",
+          "cores": 8,
+          "ram": 23109898240,
+          "platform": "linux",
+          "arch": "x64",
+          "node": "v24.19.0",
+          "storage": "container overlay; physical device and IOPS undisclosed"
+        },
+        "implementation": {
+          "digest": "sha256:2a7f59f653d90bf5776e6435f5df7579d215629f8a71fc36895f3768ef30de50",
+          "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+          "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+          "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+        },
+        "workers": 4,
+        "count": 100,
+        "failure": null,
+        "batchMs": 158566.61338400003,
+        "cacheMs": 28407.261094999994,
+        "newComputations": 100,
+        "complete": true,
+        "reused": 0,
+        "cold": [
+          {
+            "id": "f8dc4eef-28ef-406f-a44c-7a854e1f9cce",
+            "state": "completed",
+            "startedAt": 1790132935919,
+            "finishedAt": 1790132936863,
+            "metrics": {
+              "arrayBuffers": 2455277,
+              "backpressureMs": 297.12007000000085,
+              "cold": true,
+              "computeMs": 165.13253699999223,
+              "elapsedMs": 543.1839810000001,
+              "external": 9565276,
+              "heapUsed": 32940280,
+              "initializationMs": 48.77280299999984,
+              "peakBatchBytes": 130845,
+              "threadId": 5,
+              "totalMs": 942.9326369999999,
+              "transferBytes": 280171,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "id": "c56a229f-ebfd-426b-b104-511ba3a67ec6",
+            "state": "completed",
+            "startedAt": 1790132935930,
+            "finishedAt": 1790132936885,
+            "metrics": {
+              "arrayBuffers": 2645650,
+              "backpressureMs": 287.95670099999916,
+              "cold": true,
+              "computeMs": 202.1697869999971,
+              "elapsedMs": 581.625967,
+              "external": 9755649,
+              "heapUsed": 34407760,
+              "initializationMs": 51.18095700000049,
+              "peakBatchBytes": 130645,
+              "threadId": 6,
+              "totalMs": 954.7813080000014,
+              "transferBytes": 273315,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "id": "931b0994-f01c-44a0-9756-4d887da404d4",
+            "state": "completed",
+            "startedAt": 1790132935938,
+            "finishedAt": 1790132947985,
+            "metrics": {
+              "arrayBuffers": 2911643,
+              "backpressureMs": 4823.129349000001,
+              "cold": true,
+              "computeMs": 2656.6639299999697,
+              "elapsedMs": 8332.479228000002,
+              "external": 9556476,
+              "heapUsed": 43514816,
+              "initializationMs": 45.64564000000064,
+              "peakBatchBytes": 130962,
+              "threadId": 7,
+              "totalMs": 12047.549065000001,
+              "transferBytes": 8763511,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "id": "f7a3e907-88f7-4737-9378-a5d8c9b099b0",
+            "state": "completed",
+            "startedAt": 1790132935944,
+            "finishedAt": 1790132936925,
+            "metrics": {
+              "arrayBuffers": 2516518,
+              "backpressureMs": 295.862024,
+              "cold": true,
+              "computeMs": 203.71827599998505,
+              "elapsedMs": 585.8362639999996,
+              "external": 9555509,
+              "heapUsed": 32969264,
+              "initializationMs": 42.95097299999907,
+              "peakBatchBytes": 130696,
+              "threadId": 8,
+              "totalMs": 980.6370600000009,
+              "transferBytes": 398081,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "warmSavedMs": {
+          "count": 96,
+          "median": 999.6481399999757,
+          "p95": 13585.808275000003
+        },
+        "warmComputeMs": {
+          "count": 26,
+          "median": 203.54729100000122,
+          "p95": 2189.296554999986
+        },
+        "computeWithoutSaveWallMs": {
+          "count": 26,
+          "median": 294.8306470000002,
+          "p95": 3118.8238770000007
+        },
+        "processRssPeak": 645013504,
+        "latterHalfRssGrowth": 3272704,
+        "workerHeapPeak": 43514816,
+        "workerExternalPeak": 9755649,
+        "workerArrayBuffersPeak": 3681419,
+        "workerWasmPeak": 1245184,
+        "artifactBytesPeak": 346838,
+        "artifactBytesTotal": 11709995,
+        "completedStressMatches": 20,
+        "unmeasured": {
+          "piscinaQueueMs": "Runtime dispatches only available slots; per-task Piscina queue latency is not exposed by this adapter",
+          "tsVersusWasmCpu": "Compute contains both TS and WASM; not separately instrumented"
+        },
+        "interpretation": "Worker compute excludes backpressure; totalMs includes formal logs, gzip and canonical SQLite/artifact persistence. Batch elapsed also includes bundle verification/export. RSS is sampled every 100ms; heap/external/arrayBuffers/WASM overlap and must not be summed. Cache verification is separate. Smaller counts are profiling only, never a 1000-match pass."
+      },
+      "report": {
+        "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769",
+        "candidateSha": "170b020d63d56d4b375289fc28538b8cf12df769",
+        "baselineSha": null,
+        "testMergeSha": null,
+        "schemaVersion": 1,
+        "producer": "integrated-benchmark",
+        "startedAt": "2026-09-23T03:08:42.957Z",
+        "finishedAt": "2026-09-23T03:12:03.337Z",
+        "checks": [
+          {
+            "id": "integrated:source",
+            "required": true,
+            "status": "pass",
+            "reason": "Clean unchanged source",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:complete",
+            "required": true,
+            "status": "pass",
+            "reason": "Every planned match must execute and finish; no cached/truncated/failed substitutions",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:cache",
+            "required": true,
+            "status": "pass",
+            "reason": "Every repeated immutable input must reuse a verified bundle",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:full-batch",
+            "required": true,
+            "status": "unknown",
+            "reason": "Actual 1000 new matches, at most 4 Workers, at most 30 minutes",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:latency",
+            "required": true,
+            "status": "fail",
+            "reason": "Warm formal logging, compression and persistence median <=4s, p95 <=8s",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:rss",
+            "required": true,
+            "status": "pass",
+            "reason": "Sampled whole-process RSS <=1.5 GiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:heap",
+            "required": true,
+            "status": "pass",
+            "reason": "Worker JS heap <=128 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:growth",
+            "required": true,
+            "status": "pass",
+            "reason": "Later-half RSS high-water growth <=64 MiB",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:storage",
+            "required": true,
+            "status": "pass",
+            "reason": "Compressed artifacts <=16 MiB/match and <=16 GiB total",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          },
+          {
+            "id": "integrated:stress",
+            "required": true,
+            "status": "pass",
+            "reason": "Both early outcomes and complete 6000-step inputs were measured",
+            "evidence": [
+              {
+                "uri": ".generated/harness/p3-worker4-optimized/summary.json",
+                "sourceSha": "170b020d63d56d4b375289fc28538b8cf12df769"
+              }
+            ]
+          }
+        ]
+      },
+      "observations": {
+        "allAttemptMemoryPeaks": {
+          "heapUsed": 43514816,
+          "external": 9755649,
+          "arrayBuffers": 3681419,
+          "wasmLinearBytes": 1245184
+        },
+        "chronologicalQuarters": [
+          {
+            "quarter": 1,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 21,
+              "median": 574.0126449999989,
+              "p95": 9702.766364
+            },
+            "peaks": {
+              "heapUsed": 43514816,
+              "external": 9755649,
+              "arrayBuffers": 2916008,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 2,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 906.9441690000021,
+              "p95": 13564.600062999998
+            },
+            "peaks": {
+              "heapUsed": 41109120,
+              "external": 9508662,
+              "arrayBuffers": 3036162,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 3,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 1130.8242889999965,
+              "p95": 14079.046627999996
+            },
+            "peaks": {
+              "heapUsed": 39716272,
+              "external": 9508021,
+              "arrayBuffers": 3681419,
+              "wasmLinearBytes": 1245184
+            }
+          },
+          {
+            "quarter": 4,
+            "attempts": 25,
+            "warmSavedMs": {
+              "count": 25,
+              "median": 1868.9959610000078,
+              "p95": 12607.646869000004
+            },
+            "peaks": {
+              "heapUsed": 38955680,
+              "external": 9506475,
+              "arrayBuffers": 3303272,
+              "wasmLinearBytes": 1245184
+            }
+          }
+        ],
+        "cases": [
+          {
+            "left": "swordsman",
+            "right": "swordsman",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 461.1724859999995,
+              "p95": 649.1645149999968
+            }
+          },
+          {
+            "left": "archer",
+            "right": "guardian",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 1884.8227650000008,
+              "p95": 2651.6205710000067
+            }
+          },
+          {
+            "left": "healer",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 1955.840016999995,
+              "p95": 3477.923066999996
+            }
+          },
+          {
+            "left": "ice-mage",
+            "right": "lancer",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 9,
+              "median": 693.6051800000023,
+              "p95": 1062.2200440000015
+            }
+          },
+          {
+            "left": "storm-mage",
+            "right": "arcane-archer",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 9,
+              "median": 516.9992109999985,
+              "p95": 747.9447609999916
+            }
+          },
+          {
+            "left": "water-observer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 9,
+              "median": 956.0482750000083,
+              "p95": 1572.5537699999986
+            }
+          },
+          {
+            "left": "fire-seer",
+            "right": "ember-duelist",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 906.9441690000021,
+              "p95": 1169.2391519999946
+            }
+          },
+          {
+            "left": "sky-mage",
+            "right": "fire-mage",
+            "scenario": "flat",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 783.4648470000247,
+              "p95": 1092.1451640000014
+            }
+          },
+          {
+            "left": "swordsman",
+            "right": "sky-mage",
+            "scenario": "pillars",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 9,
+              "median": 13564.600062999998,
+              "p95": 16002.307975999996
+            }
+          },
+          {
+            "left": "guardian",
+            "right": "guardian",
+            "scenario": "pillars",
+            "attempts": 10,
+            "warmSavedMs": {
+              "count": 10,
+              "median": 11641.140882999985,
+              "p95": 14079.046627999996
+            }
+          }
+        ],
+        "warmStages": {
+          "initializationMs": {
+            "count": 96,
+            "median": 4.139964999980293,
+            "p95": 13.039229999994859
+          },
+          "computeMs": {
+            "count": 96,
+            "median": 230.92386099999567,
+            "p95": 3250.6972259997856
+          },
+          "backpressureMs": {
+            "count": 96,
+            "median": 344.79537500001607,
+            "p95": 5448.78686399998
+          },
+          "elapsedMs": {
+            "count": 96,
+            "median": 671.9557450000138,
+            "p95": 10034.730201999992
+          },
+          "totalMs": {
+            "count": 96,
+            "median": 999.6481399999757,
+            "p95": 13585.808275000003
+          },
+          "workerEncodingAndOtherMs": {
+            "count": 96,
+            "median": 76.92226900003152,
+            "p95": 1086.9185570001864
+          },
+          "coordinatorSetupDispatchAndFinalizationMs": {
+            "count": 96,
+            "median": 359.08788999996614,
+            "p95": 4301.42985
+          }
+        },
+        "processRssAtStart": 277176320,
+        "processRssAfterAllPoolsClosed": 463368192
+      }
+    }
+  ],
+  "resultComparisons": [
+    {
+      "before": "p3-worker1-initial",
+      "after": "p3-worker4-initial",
+      "comparedInputs": 100,
+      "mismatches": [],
+      "comparedFields": [
+        "schemaVersion",
+        "outcome",
+        "steps",
+        "stats",
+        "eventHash",
+        "trajectoryHash",
+        "tsStateHash",
+        "physicsStateHash"
+      ],
+      "excluded": "simulationHash contains implementationDigest; an explicitly reviewed implementation change changes the input identity."
+    },
+    {
+      "before": "p3-worker4-initial",
+      "after": "p3-worker2-full",
+      "comparedInputs": 100,
+      "mismatches": [],
+      "comparedFields": [
+        "schemaVersion",
+        "outcome",
+        "steps",
+        "stats",
+        "eventHash",
+        "trajectoryHash",
+        "tsStateHash",
+        "physicsStateHash"
+      ],
+      "excluded": "simulationHash contains implementationDigest; an explicitly reviewed implementation change changes the input identity."
+    },
+    {
+      "before": "p3-worker1-optimized",
+      "after": "p3-worker4-optimized",
+      "comparedInputs": 100,
+      "mismatches": [],
+      "comparedFields": [
+        "schemaVersion",
+        "outcome",
+        "steps",
+        "stats",
+        "eventHash",
+        "trajectoryHash",
+        "tsStateHash",
+        "physicsStateHash"
+      ],
+      "excluded": "simulationHash contains implementationDigest; an explicitly reviewed implementation change changes the input identity."
+    },
+    {
+      "before": "p3-worker1-optimized",
+      "after": "p3-worker2-full",
+      "comparedInputs": 100,
+      "mismatches": [],
+      "comparedFields": [
+        "schemaVersion",
+        "outcome",
+        "steps",
+        "stats",
+        "eventHash",
+        "trajectoryHash",
+        "tsStateHash",
+        "physicsStateHash"
+      ],
+      "excluded": "simulationHash contains implementationDigest; an explicitly reviewed implementation change changes the input identity."
+    }
+  ],
+  "limits": [
+    "One baseline host/session; timing is not a guarantee for other CPUs, storage or inputs.",
+    "RSS is sampled every 100ms; per-Worker values are per-attempt observations, not OS-enforced total memory isolation.",
+    "Quarter summaries group attempts in start order, whereas the acceptance RSS growth uses time windows in the benchmark.",
+    "Worker initialization memory is included in derived peaks even for the original adapter, which summarized only warm memory.",
+    "The 100-match runs are profiling only; only the actual 1000-match run is eligible for integrated:full-batch."
+  ]
+}

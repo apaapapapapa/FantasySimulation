@@ -1,73 +1,62 @@
 # Development guide
 
-## Architecture
+## Start with the task
 
-- `apps/web`: React UI and API client. Never import SQLite or server modules here.
-- `apps/api`: HTTP boundary, validated configuration, database lifecycle and persistence.
-- `packages/domain`: shared Zod schemas and inferred TypeScript types. No platform-specific I/O.
-- `packages/engine`: bounded, deterministic battle logic. No HTTP, database, clocks or implicit randomness.
-- `data/spatial`: versioned sample JSON. Seeding inserts missing IDs without replacing user edits.
-- `apps/api/src/db/schema.ts`: Drizzle SQLite table definitions.
-- `db/drizzle`: Drizzle Kit SQL and snapshots; application startup uses the official Drizzle migrator. Never add a custom migration runner or history table.
+Read this file, then `node scripts/harness.ts context <topic>` for relevant source,
+tests and authoritative docs (`context list` lists topics). Read relevant sections
+only; do not preload the README, all ADRs, logs or history. Use `rg` for paths/symbols
+then bounded excerpts. Read owning schemas/tests and search helpers/`test-support`
+before behavior changes. See [context policy](docs/development/ai-context.md).
 
-## Workflow
+For implementation, fixes, CI recovery and PR delivery, apply
+[fantasy-delivery](.agents/skills/fantasy-delivery/SKILL.md). Read-only requests keep
+their scope. Preserve concurrent work and use small, reviewed changes.
 
-For implementation, fixes, CI recovery and unfinished PR delivery, apply
-[fantasy-delivery](.agents/skills/fantasy-delivery/SKILL.md). The existing source
-harness is the canonical acceptance runner: verify a clean committed tree, retain
-SHA-bound evidence, review the latest PR state, and confirm post-merge main CI.
-Explanation-only and read-only review requests retain their requested scope.
+## Boundaries
 
-1. Read the README and the relevant existing schemas and tests before changing behavior.
-2. Use the pinned Node.js, pnpm and Vite+ versions. Use `vp run dev` for both apps.
-3. Keep TypeScript strict. Validate untrusted JSON at the boundary with the domain schemas.
-4. Add meaningful tests for new battle behavior, persistence changes and regression fixes.
-5. Run `vp run verify` (or `pnpm verify`) before committing. Verify startup when changing build or runtime configuration.
-6. Keep commands and limitations in the README accurate.
-7. Use Conventional Commits for commits and PR titles (`feat`, `fix`, `perf`, `docs`, `chore`, etc.). Preserve the intended title and any `BREAKING CHANGE:` footer in the final squash commit. `main` releases automatically after Linux CI passes; do not manually bump package versions or create release tags.
-8. Use the existing source harness and finish Issue bookkeeping. Follow the Issue completion protocol below; a chat summary or merged PR alone is not completion.
+- `apps/web`: React/API client; never import server or SQLite code.
+- `apps/api`: HTTP validation, configuration, persistence and runtime lifecycle.
+- `packages/domain`: shared Zod schemas/types; no platform I/O. Validate untrusted JSON.
+- `packages/engine`: deterministic, bounded battles; no HTTP, DB, ambient clock or
+  implicit randomness. Unknown abilities fail; extend unions/exhaustive switches
+  together. Preserve definitions and result snapshots; finite termination and an
+  explicit draw are mandatory. Seed/version randomness. Contradictory abilities need
+  defined rules, not arbitrary precedence or universal-victory claims.
+- `data/spatial`: seed missing IDs without replacing edits. Follow
+  [ADR 0010](docs/adr/0010-battle-version-compatibility.md) for rules/schema/sample
+  changes: preserve readable saved data, version decision changes, add new rules/sample
+  IDs, reject unsupported execution, review digest/corpus/fixtures together. Never
+  add historical engine execution or silently convert old databases. Saved replays
+  use display records ([ADR 0006](docs/adr/0006-recorded-replay.md)).
+- `apps/api/src/db/schema.ts` and `db/drizzle`: official Drizzle only. Generate/commit
+  SQL and snapshots; never rewrite applied migrations or use `push` in CI. Retain
+  STRICT/triggers; follow [ADR 0005](docs/adr/0005-drizzle-kit.md).
 
-## Issue completion protocol
+## Verification and delivery
 
-- Read the live Issue body and discussion; check its full scope, acceptance criteria, linked PRs, sub-Issues and external setup. Keep partial progress and remaining work accurate in the Issue.
-- In the final PR, generate a draft with `node scripts/harness.ts issue-plan <number>`, then add `.github/issue-completions/<number>.json` with the reviewed body hash/timestamp, summary, every acceptance item's evidence and all related PR numbers including the final PR. Declare `complete: true` and `remainingWork: []` only when the entire Issue is done. Never waive an external setting or unchecked requirement just because code is merged.
-- Use `Refs #number` rather than `Closes`, `Fixes` or `Resolves` in PR/commit messages. The Issue must not close before post-merge main CI succeeds. Partial PRs must not contain a completion declaration.
-- After merging, confirm both main CI and the dedicated `Issue completion` workflow. The harness updates the checklist and completion evidence and closes the Issue as `completed`; confirm the live Issue state before telling the user it is complete.
-- On failures, missing permissions, changed requirements or incomplete work, leave the Issue open, record the blocker and repair/retry. Do not bypass the harness with a manual close. Respect intentionally reopened Issues and do not reclose them with old evidence.
-- See [docs/issue-completion.md](docs/issue-completion.md) for declaration, retry and evidence details.
+Use pinned Node/pnpm/Vite+, frozen installs, strict TypeScript and `vp run dev`.
+Follow [duplication policy](docs/development/duplication.md): reuse in the owning
+layer; keep test factories local/fresh and expected values independent of production.
+No clone baselines, blanket exclusions or threshold increases to pass a gate.
+Policy changes require explicit review and regression tests.
 
-## Reuse and duplication prevention
+Run focused checks while editing and `vp run check:quality` before staging new files.
+Add meaningful behavior/persistence/regression tests. Run `vp run verify` before
+committing, then the skill's clean-source harness. Verify startup for runtime/build
+changes. Linux CI, latest PR review and post-merge main CI remain required. Missing,
+interrupted or stale evidence never passes. Keep commands/limitations accurate.
+Intentional corpus inputs or mapped-test changes need a reason in the same PR;
+never regenerate expected outputs from the candidate just to pass.
 
-- Before implementing, search the owning module and `test-support` for an existing operation or fixture. Reuse it or extend its narrow contract; do not copy a sibling implementation.
-- Production helpers stay in the owning layer. Test factories belong in package-local `test-support`; production must never import them. Return fresh mutable test data, validate/reseal edited revisions, and retain explicit assertions/expected values in each test. Never derive expected results through the implementation under test.
-- Use table-driven tests for the same behavior with different inputs. Do not replace distinct behavior with a boolean-heavy universal helper or abstract unrelated code only to satisfy a metric.
-- Run `vp run check:quality` while editing, including before staging new files. `quality:duplication` is also required by `verify`, the source harness and Linux CI jobs. Fix the reported source/destination together; inspect other callers and add regression coverage.
-- Do not add a growing clone baseline, blanket test exclusions, suppression comments or higher thresholds to pass the gate. Parsing/coverage/budget failures are incomplete evidence, not success. Threshold changes require an explicit policy review and regression tests.
-- Follow [the duplication workflow](docs/development/duplication.md), then finish the normal source/PR delivery checks.
+Use Conventional Commits; preserve squash title/`BREAKING CHANGE:` wording.
+Main releases automatically; never manually bump versions or create release tags.
+Bind SQL values; never commit credentials, `.env` or local DBs. Public write APIs
+require authentication and deployment design; the current app is local-only.
 
-## Simulation invariants
-
-- Unknown abilities must fail validation; do not silently ignore them.
-- Extend discriminated unions and exhaustive switches together.
-- Preserve input character definitions. Record snapshots alongside results.
-- Every simulation must have a finite termination condition and an explicit draw outcome.
-- Any decision-affecting change requires a rules-version bump. The 3D replacement intentionally removes pre-3D runtime/API/schema compatibility (Issue #1). New replays use immutable saved display records, not historical engine execution (Issue #10). Do not add an old-engine registry or silently upgrade old databases.
-- Do not assert universal victory or create arbitrary precedence for contradictory abilities without defining the rules.
-- If randomness is added, require and persist a seed plus its PRNG algorithm/version.
-- `packages/engine/fixtures/spatial/corpus.json` pins fixed battle inputs and maps existing determinism tests (`vp run check:corpus`, part of `verify`). When an input or mapped test changes intentionally, update it in the same reviewed PR with the reason; never regenerate it from candidate output or mark planned coverage as done.
-
-## Battle-version compatibility
-
-- Follow [ADR 0010](docs/adr/0010-battle-version-compatibility.md) and the revised Issue #59. Keep saved definitions/results/replays readable in the same database. Extend schemas with optional fields or enum values, preserving existing meanings and omitted-field behavior.
-- For a decision change, bump rules/engine versions and add the new rules under a new ID. Review implementation digest, corpus, expected fixture changes and rule documentation together. Old rules remain readable but must never execute through either a historical or current engine.
-- Change distributed samples by adding new IDs, not rewriting existing IDs/revisions. Add catalog-history checks and previous-version DB fixtures with definitions, completed results/replays and unfinished jobs. Unsupported jobs must fail clearly; retry/replay recovery must return 409 rather than repeat a schema error.
-- A fresh DB is an exception for an unavoidable incompatible change, justified in that PR's ADR. Only then implement separate DB/artifact paths, retain old files and reject incompatible explicit paths before writing. Do not add a schema-generation declaration, checksum ledger, custom reset/migrator/history table.
-- Finish the usual verify, clean-source, PR review, Linux and main checks. Document incomplete compatibility work honestly and do not close its Issue on documentation evidence alone.
-
-## Data and toolchain
-
-- Bind values in SQL. Never commit local databases, credentials or `.env`.
-- Run `vp run db:generate` after schema changes and commit the SQL plus snapshots. Use `vp run db:migrate` to apply; never use `push` in CI or rewrite an applied migration. Review SQLite `STRICT` on every table rebuild; see ADR 0005.
-- Keep `vite-plus`, its `vite` alias, the peer-version allowance and the bundled Vitest pin aligned when upgrading.
-- Run Linux CI. Windows is outside the CI verification policy (owner request, 2026-09-23). Do not disable failing checks to make a change pass.
-- The initial app is for local development. Add authentication and a deployment design before exposing write APIs publicly.
+For associated Issues, follow [completion protocol](docs/issue-completion.md): read
+live scope/discussion, track remaining work, generate `harness issue-plan`, and
+commit a reviewed declaration only when all acceptance items are satisfied.
+Use `Refs #N`, never auto-closing wording. After merge confirm main CI, Issue
+completion workflow and live closed/completed state. Never manually close or waive
+external setup, failed checks or intentionally reopened work. Without an associated
+Issue, do not invent one.
