@@ -109,15 +109,21 @@ then retain a receipt containing actual reviewed facts:
   "completedAt": "ACTUAL_REVIEW_COMPLETION_ISO_TIMESTAMP",
   "method": "self",
   "summary": "Actual review findings and disposition",
-  "unresolvedFindings": 0
+  "unresolvedFindings": 0,
+  "squashTitle": "feat: reviewed change (#PR_NUMBER)",
+  "squashBody": "Refs #ISSUE_NUMBER"
 }
 ```
 
 This is a template, not passing evidence. Method is `self` or `human`; self review is
 not independent approval. GitHub-required external approval cannot be substituted.
-Changed head, paths or conversation invalidate receipts; a fresh identical snapshot
+Changed head, paths, PR title/body or conversation invalidate receipts; a fresh identical snapshot
 may reuse one. Unresolved threads block even if outdated. Approval must match the
 current head. A timeout alone never means review completion.
+The required Issue-completion policy checks PR title/body and the explicit final
+`squashTitle`/`squashBody` for automatic closing references. Missing squash wording
+is incomplete evidence. Use those exact reviewed fields for the authorized merge;
+the read-only harness does not supply defaults or execute that mutation.
 
 `delivery ... pr` requires complete stable collection, latest PR CI, both OS receipts,
 review resolution/coverage/approval and no adverse or pending observed checks.

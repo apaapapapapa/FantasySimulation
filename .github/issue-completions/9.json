@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "issue": 9,
   "issueBodySha256": "f2033d47fa2e19f980f7125b1b4c4ff8d2bfb5d2e3b912f2a9cbc37626064bf0",
-  "issueUpdatedAt": "2026-09-22T22:34:32Z",
+  "issueUpdatedAt": "2026-09-23T00:56:51Z",
   "complete": true,
-  "summary": "小PR #50/#56/#58で固定コーパス、実OS間digest突合、公平性、実Worker/SQLite状態遷移、決定的計算予算、同一runnerのpaired計測と実assertion回帰証跡を既存ハーネス/CIへ接続。追記のfast-checkも固定版・有限予算・seed/path/最小入力・manifest文脈・実行/再現コマンド・故意の不具合検出を実装。期待battle digestの一括再生成や旧runtime互換は追加せず、未計測/比較不能/中断はunknownとして保持。性能値は観測であり達成保証ではない。",
+  "summary": "小PR #50/#56/#58で固定コーパス、実OS間digest突合、公平性、実Worker/SQLite状態遷移、決定的計算予算、同一runnerのpaired計測と実assertion回帰証跡を既存ハーネス/CIへ接続。追記のfast-checkも固定版・有限予算・seed/path/最小入力・manifest文脈・実行/再現コマンド・故意の不具合検出を実装。期待battle digestの一括再生成や旧runtime互換は追加せず、未計測/比較不能/中断はunknownとして保持。性能値は観測であり達成保証ではない。 PR #63でPR本文による早期クローズを検出し、誤った閉鎖を取り消した同一要件の完了宣言を再レビュー。",
   "remainingWork": [],
-  "pullRequests": [50, 56, 58],
+  "pullRequests": [50, 56, 58, 63],
   "acceptance": [
     {
       "task": "対応中のengineについて、固定manifest・seed/PRNG・scenario revision・rules/schema version・実装digest・採用後のWASM hashを持つコーパスを定義する",
