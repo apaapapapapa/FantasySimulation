@@ -1,0 +1,156 @@
+// Explicit fixture preparation only. Static E2E never imports this module or starts an API/DB.
+import { mkdtemp, mkdir, readFile, readdir, writeFile, cp, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { gzipSync } from 'node:zlib';
+import {
+  BatchPlanSchema,
+  BundleReceiptSchema,
+  DEFAULT_BUDGET,
+  ReplayManifestSchema,
+  canonicalJson,
+  contentHash,
+  hashBytes,
+} from '../packages/domain/src/spatial/index.ts';
+import { BattleBundles } from '../apps/api/src/battle-bundle.ts';
+import { exportPublication } from '../apps/api/src/publication-export.ts';
+import {
+  expandPublicationPlan,
+  publicationFixture,
+  publicationIndex,
+  readPublication,
+} from '../apps/api/test-support/publication.ts';
+
+const root = await mkdtemp(join(tmpdir(), 'fantasy-public-fixture-'));
+try {
+  const saved = 'apps/web/test-fixtures/replays/swordsman-sky-mage-240';
+  const manifestBytes = await readFile(join(saved, 'manifest.json'));
+  const manifest = ReplayManifestSchema.parse(JSON.parse(manifestBytes.toString()));
+  if (manifest.end.kind !== 'result') throw new Error('Expected fixed complete recording');
+  const source = {
+    sha: 'add5a103f1685b3063f452dbdc49f28bc148952b',
+    node: '24.19.0',
+    platform: 'linux' as const,
+    arch: 'x64' as const,
+  };
+  const result = manifest.end.result;
+  const body = {
+    schemaVersion: 1 as const,
+    source,
+    simulationHash: manifest.simulationHash,
+    resultId: manifest.resultId,
+    attemptId: manifest.attemptId,
+    replayId: manifest.id,
+    resultHash: await contentHash(result),
+    manifestChecksum: await hashBytes(manifestBytes),
+    bytes:
+      manifestBytes.length +
+      [...manifest.chunks, ...manifest.checkpoints].reduce((sum, r) => sum + r.bytes, 0),
+    result,
+  };
+  const receipt = BundleReceiptSchema.parse({ ...body, objectHash: await contentHash(body) });
+  const bundlesRoot = join(root, 'saved');
+  const object = join(bundlesRoot, 'objects', receipt.objectHash.slice(7));
+  await mkdir(object, { recursive: true });
+  await cp(saved, object, { recursive: true });
+  await writeFile(join(object, 'receipt.json'), canonicalJson(receipt) + '\n');
+  const identity = { key: 'saved-240', simulationHash: manifest.simulationHash };
+  const { seed, participants, ruleset, scenario } = manifest.input;
+  const planBody = {
+    schemaVersion: 1 as const,
+    source,
+    engineVersion: manifest.input.engineVersion,
+    implementationDigest: manifest.input.implementationDigest,
+    revisions: manifest.input.revisions,
+    slots: [
+      {
+        ...identity,
+        id: await contentHash(identity),
+        spec: { seed, participants, ruleset, scenario },
+      },
+    ],
+    budget: DEFAULT_BUDGET,
+    estimatedBytesPerMatch: 1000000,
+    maxOutputBytes: 32000000,
+    maxWorkBytes: 256 * 1024 ** 2,
+  };
+  const plan = BatchPlanSchema.parse(
+    await expandPublicationPlan(
+      BatchPlanSchema.parse({ ...planBody, id: await contentHash(planBody) }),
+      1000,
+    ),
+  );
+  const index = await publicationIndex(
+    plan,
+    plan.slots.map((slot, i) => ({
+      slotId: slot.id,
+      simulationHash: slot.simulationHash,
+      state: slot.key === 'saved-240' ? 'complete' : i % 2 ? 'pending' : 'failed',
+      receipt: slot.key === 'saved-240' ? receipt : null,
+      reused: false,
+      reason: slot.key === 'saved-240' ? '' : 'Synthetic unexecuted fixture slot',
+    })),
+  );
+  const published = join(root, 'published');
+  await exportPublication(plan, [{ index, bundles: new BattleBundles(bundlesRoot) }], published);
+  for (const kind of ['unresolved', 'truncated'] as const) {
+    const fixture = await publicationFixture(
+      join(root, kind),
+      kind,
+      kind === 'unresolved' ? 8001 : 8002,
+    );
+    await exportPublication(
+      fixture.plan,
+      [{ index: fixture.index, bundles: fixture.bundles }],
+      published,
+    );
+  }
+  const data = await readPublication(published);
+  const fixtures = data.sets.map(({ ref, set, pages }) => ({
+    setHash: ref.setHash,
+    totalRows: set.totalRows,
+    rows: pages.flatMap((page) =>
+      page.rows
+        .filter((r) => r.replay)
+        .map((row) => ({
+          page: page.index,
+          slotId: row.slotId,
+          state: row.state,
+          replay: row.replay,
+        })),
+    ),
+  }));
+  const files: Record<string, string> = {};
+  async function collect(relative = '') {
+    for (const entry of await readdir(join(published, relative), { withFileTypes: true })) {
+      const path = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) await collect(path);
+      else files[path] = (await readFile(join(published, path))).toString('base64');
+    }
+  }
+  await collect();
+  const output = 'apps/web/test-fixtures/publication';
+  await mkdir(output, { recursive: true });
+  const archive = gzipSync(JSON.stringify(files), { level: 9 });
+  await writeFile(join(output, 'files.json.gz'), archive);
+  await writeFile(
+    join(output, 'provenance.json'),
+    JSON.stringify(
+      {
+        source,
+        archiveHash: await hashBytes(archive),
+        generator: 'e2e/generate-public-fixtures.ts via exportPublication',
+        policy:
+          'Saved 240-step replay bytes are unchanged. Partial endings and unexecuted rows are synthetic display fixtures, not engine correctness evidence. Regeneration requires review.',
+        fixtures,
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+  console.log(
+    `Saved ${Object.keys(files).length} public files (${archive.length} compressed bytes)`,
+  );
+} finally {
+  await rm(root, { recursive: true, force: true });
+}

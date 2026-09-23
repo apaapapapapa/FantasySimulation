@@ -1,8 +1,14 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReplayCheckpoint } from '@fantasy/domain/spatial';
 import { openReplay, type OpenedReplay, type ReplaySource } from './open-replay.ts';
 import { seekStep } from './seek-step.ts';
 import { errorText } from '../api-client.ts';
+import { SceneBoundary } from './SceneBoundary.tsx';
+import { playbackStep } from './playback-clock.ts';
+import type { CameraMode } from './Scene.tsx';
+import { ReplayEvents } from './ReplayEvents.tsx';
+
+const Scene = lazy(() => import('./Scene.tsx'));
 
 export function ReplayPanel({ source }: { source: ReplaySource }) {
   const [replay, setReplay] = useState<OpenedReplay | null>(null);
@@ -10,6 +16,25 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
   const [target, setTarget] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [cameraMode, setCameraMode] = useState<CameraMode>('overview');
+  const [overlays, setOverlays] = useState(false);
+  const panel = useRef<HTMLElement | null>(null);
+  const cursor = useRef({ target, loading });
+  useEffect(() => {
+    if (replay) {
+      panel.current?.focus({ preventScroll: true });
+      panel.current?.scrollIntoView({ block: 'start' });
+    }
+  }, [replay]);
+  useEffect(() => {
+    cursor.current = { target, loading };
+  }, [target, loading]);
+  function seek(step: number) {
+    setPlaying(false);
+    setTarget(step);
+  }
   useEffect(() => {
     const controller = new AbortController();
     setReplay(null);
@@ -17,6 +42,7 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
     setTarget(0);
     setError('');
     setLoading(true);
+    setPlaying(false);
     void openReplay(source, { signal: controller.signal })
       .then((opened) => {
         if (!controller.signal.aborted) setReplay(opened);
@@ -25,6 +51,7 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
         if (!controller.signal.aborted) {
           setError(errorText(e));
           setLoading(false);
+          setPlaying(false);
         }
       });
     return () => controller.abort();
@@ -45,15 +72,42 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
         if (!controller.signal.aborted) {
           setError(errorText(e));
           setLoading(false);
+          setPlaying(false);
         }
       });
     return () => controller.abort();
   }, [replay, target]);
+  useEffect(() => {
+    if (!playing || !replay) return;
+    const anchor = cursor.current.target,
+      started = performance.now();
+    const end = replay.manifest.lastVerifiedStep ?? 0;
+    let frame = 0;
+    const tick = (now: number) => {
+      if (!cursor.current.loading) {
+        const next = playbackStep(anchor, now - started, speed, end);
+        setTarget(next);
+        if (next === end) {
+          setPlaying(false);
+          return;
+        }
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    const hidden = () => {
+      if (document.hidden) setPlaying(false);
+    };
+    document.addEventListener('visibilitychange', hidden);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener('visibilitychange', hidden);
+    };
+  }, [playing, speed, replay]);
   const end = replay?.manifest.end;
   const last = replay?.manifest.lastVerifiedStep ?? 0;
-  const events = state?.lastRecord && 'events' in state.lastRecord ? state.lastRecord.events : [];
   return (
-    <section className="panel" aria-label="保存リプレイ">
+    <section ref={panel} tabIndex={-1} className="panel" aria-label="保存リプレイ">
       <h2>保存リプレイ</h2>
       {loading && (
         <p role="status" aria-label="読込状態">
@@ -81,6 +135,56 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
             <p>{end.result.outcome.reason}</p>
           )}
           {end?.kind !== 'result' && <p>{end?.reason}</p>}
+          {state && (
+            <SceneBoundary key={`scene:${replay.manifest.simulationHash}`}>
+              <Suspense fallback={<p>3D表示を準備しています</p>}>
+                <Scene
+                  context={replay.context}
+                  state={state}
+                  cameraMode={cameraMode}
+                  overlays={overlays}
+                />
+              </Suspense>
+            </SceneBoundary>
+          )}
+          <div className="actions">
+            <button
+              disabled={!playing && (loading || target >= last)}
+              onClick={() => setPlaying((value) => !value)}
+            >
+              {playing ? '一時停止' : '再生'}
+            </button>
+            <button onClick={() => seek(0)}>先頭へ</button>
+            <label>
+              再生速度
+              <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
+                <option value="0.5">0.5倍</option>
+                <option value="1">1倍</option>
+                <option value="2">2倍</option>
+                <option value="4">4倍</option>
+              </select>
+            </label>
+            <label>
+              カメラ
+              <select
+                value={cameraMode}
+                onChange={(e) => setCameraMode(e.target.value as CameraMode)}
+              >
+                <option value="overview">全体</option>
+                <option value="side">横</option>
+                <option value="follow">追従</option>
+                <option value="free">自由</option>
+              </select>
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={overlays}
+                onChange={(e) => setOverlays(e.target.checked)}
+              />
+              記録された軌跡・命中点と形状を表示
+            </label>
+          </div>
           <label>
             表示step
             <input
@@ -88,14 +192,27 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
               min="0"
               max={last}
               value={target}
-              onChange={(e) => setTarget(Number(e.target.value))}
+              onChange={(e) => seek(Number(e.target.value))}
             />
           </label>
           <div className="actions">
-            <button disabled={!target} onClick={() => setTarget((n) => n - 1)}>
+            <label>
+              表示stepを入力
+              <input
+                type="number"
+                min="0"
+                max={last}
+                value={target}
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  if (Number.isInteger(value) && value >= 0 && value <= last) seek(value);
+                }}
+              />
+            </label>
+            <button disabled={!target} onClick={() => seek(target - 1)}>
               1step戻る
             </button>
-            <button disabled={target >= last} onClick={() => setTarget((n) => n + 1)}>
+            <button disabled={target >= last} onClick={() => seek(target + 1)}>
               1step進む
             </button>
           </div>
@@ -132,20 +249,11 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
               ))}
             </tbody>
           </table>
-          <h3>この記録のイベント</h3>
-          <ul aria-label="イベントログ">
-            {events.map((event) => (
-              <li key={event.id}>
-                <details>
-                  <summary>
-                    {event.id} · {event.kind} ·{' '}
-                    {event.cognition ? 'AIの観測・判断' : '確定イベント'}
-                  </summary>
-                  <pre>{JSON.stringify(event, null, 2)}</pre>
-                </details>
-              </li>
-            ))}
-          </ul>
+          <ReplayEvents
+            key={`events:${replay.manifest.simulationHash}`}
+            replay={replay}
+            onSeek={seek}
+          />
           <details>
             <summary>保存結果のhash</summary>
             <pre aria-label="保存結果のhash">

@@ -2,36 +2,31 @@
 
 ```sh
 vp install --frozen-lockfile
-PLAYWRIGHT_BROWSERS_PATH=.generated/playwright vp exec playwright install --with-deps chromium --only-shell
-vp run test:e2e
+PLAYWRIGHT_BROWSERS_PATH=.generated/playwright vp exec playwright install --with-deps chromium webkit --only-shell
 vp run harness ui .generated/harness/ui-unique
 ```
 
-Linux/Chromium covers API health/errors, draft validation/publication, job cancellation/
-retry/results and saved-log steps. Dirty trees are diagnostic only. Runs seed revisions
-into a temporary SQLite DB and binds its own loopback API/web ports. Vite previews
-temporary builds without HMR or `.env`; child environments exclude DB/API overrides
-and credentials. Timeout/SIGINT/SIGTERM stops the owned process group before cleanup.
-Contexts block foreign HTTP origins, WebSockets and service workers; this is not OS
-sandboxing. Temporary DB/replays are never in the uploaded artifact directory.
+Linux/Chromium tests fresh SQLite samples, draft save/resume/validate/publish,
+async cancellation/retry/results and API errors. Separate Chromium/WebKit tests use
+`/FantasySimulation/` and a read-only localhost data origin without API/DB/engine.
+They cover 1000-row paging, direct URLs, reload, 3D play/pause/speed/seek/cameras,
+partial endings, damaged/missing/oversize/double-gzip logs, late cancellation and
+WebGL log fallback. State/hash and reducer tests verify display; #9 owns combat.
+Physical Safari/mobile devices and P5 rankings are not certified.
 
-`execution.json` records sample revisions, Playwright/browser revision and settings
-from `e2e/contract.ts`, including lockfile-pinned Noto Sans JP 400. Browser caches use
-OS/architecture/Playwright version. Full CI plans require UI; wording-only PRs skip it.
+Owned temporary DB/artifacts/ports only; no existing servers, `.env` or credentials.
+Timeout/abort kills owned processes. DB/replays are excluded from uploads.
+Contexts allow assigned origins, block WebSockets/service workers; not an OS sandbox.
+`execution.json` records lockfile-pinned Playwright/browser revisions, Noto Sans JP 400,
+locale/timezone/viewport and software-GL settings. Browser cache identity includes
+OS/architecture/Playwright. Full CI requires both suites; wording-only PRs skip them.
 
-Reports bind source SHA, CI attempt, test ID, retry, browser and raw artifact hashes.
-Failed first attempts and traces/screenshots survive retries; flaky, missing,
-skipped, unstarted or stale execution cannot pass. Relocated CI files are rechecked.
+Reports bind SHA/CI attempt/case/browser/retry/raw hashes and retain failed traces/images.
+Flaky, missing, skipped, unstarted or stale runs fail. The gate rechecks moved artifacts.
+Separate startup/timeout/crash probes require failure artifacts and cleanup.
+Their expected failures never satisfy normal coverage. Static coverage requires both
+browsers and API-free execution.
 
-Separate `diagnostics/startup`, `timeout` and `crash` probes exercise partial API/web
-startup failure, a real test timeout and Chromium process crash. The diagnostic
-checks require failure evidence, the pre-crash image, trace and successful cleanup.
-They cannot satisfy smoke coverage. Missing probes fail `ui:diagnostics` in the gate.
-
-`static-fixtures.ts` serves existing saved replay bytes through `ReplayManifestSchema`
-without API/DB/engine. Static browser coverage remains `unknown` until #81 publication
-schemas and #79/#80 screens land. Reuse those domain types and web's
-`ReplaySource`/`OpenedReplay`; add WebKit and selection/play/seek flows with the screens.
-#12 stays open for static playback/3D coverage. #9 owns engine correctness.
-
-Source: HiFiScout `36aaf69d3f7a61195af4e85a468514dfbb1ecc80` UI harness.
+Fixtures use #81 schemas and unchanged 240-step bytes. `provenance.json` pins the archive;
+partial/unexecuted slots are synthetic. Regeneration requires review.
+Source pattern: HiFiScout `36aaf69d3f7a61195af4e85a468514dfbb1ecc80` UI harness.

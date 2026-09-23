@@ -1,30 +1,20 @@
 import { createServer } from 'node:http';
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { ReplayManifestSchema } from '../packages/domain/src/spatial/index.ts';
 import { localOrigin } from './contract.ts';
+import { publicFixtures } from './publication-fixtures.ts';
 
-/** Saved display artifacts only: this server has no API, SQLite or engine imports.
- * #81 catalog/set/page files will be added through its shared schemas after that contract lands.
- */
-export async function startStaticFixtures(root: string, viewerOrigin: string) {
-  const origin = localOrigin(viewerOrigin);
-  const directory = join(root, 'apps/web/test-fixtures/replays/swordsman-sky-mage-240');
-  const manifest: unknown = JSON.parse(readFileSync(join(directory, 'manifest.json'), 'utf8'));
-  ReplayManifestSchema.parse(manifest);
-  const entries = readdirSync(directory).filter((name) =>
-    /^(?:manifest\.json|(?:chunk|checkpoint)-\d{5}\.(?:ndjson|json)\.gz)$/.test(name),
-  );
-  const files = new Map(
-    entries.map((name) => [`/fixtures/${name}`, readFileSync(join(directory, name))]),
-  );
+/** Read-only published fixtures; no API, SQLite or engine imports. */
+export async function startStaticFixtures(root: string, viewerOrigin: () => string | null) {
+  const files = publicFixtures(root);
   const server = createServer((request, response) => {
-    const bytes = files.get(request.url ?? '');
+    const bytes = request.url?.startsWith('/fixtures/')
+      ? files.get(request.url.slice('/fixtures/'.length))
+      : undefined;
     if (!['GET', 'HEAD'].includes(request.method ?? '') || !bytes) {
       response.writeHead(404).end();
       return;
     }
-    response.setHeader('Access-Control-Allow-Origin', origin);
+    const origin = viewerOrigin();
+    if (origin) response.setHeader('Access-Control-Allow-Origin', localOrigin(origin));
     response.setHeader('Vary', 'Origin');
     response.setHeader(
       'Content-Type',

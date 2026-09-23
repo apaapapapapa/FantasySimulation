@@ -10,8 +10,8 @@ compares a PR merge's actual first parent. Renames count as deletion plus additi
   run static checks, all tests, build, security/policy and the gate.
 - Other/unknown/empty diffs, main, manual and weekly runs include corpus and paired load too.
 
-Full plans also require `UI (Linux Chromium)` with its isolated local API/SQLite and
-browser evidence. Wording-only PRs explicitly skip it. See [browser evidence](e2e.md).
+Full plans also require `UI (Linux Chromium/WebKit)` with isolated API/SQLite flows and
+API-free static replay evidence. Wording-only PRs explicitly skip it. See [browser evidence](e2e.md).
 
 AGENTS, skills, harness/CI instructions, rules and ADRs are sensitive, not wording-only.
 Docs checks whitespace, local inline links and repository-wide context budgets.

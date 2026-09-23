@@ -11,6 +11,7 @@ import {
   StreamRecordSchema,
   canonicalJson,
   contentHash,
+  actorSeed,
   eventHashLine,
   trajectoryHashLine,
   compareIds,
@@ -30,10 +31,18 @@ import { sha256 } from '../src/replay-files.ts';
 export async function publicationFixture(
   root: string,
   kind: 'complete' | 'truncated' | 'unresolved' = 'complete',
+  syntheticSeed?: number,
 ) {
   const input = StoredManifestSchema.parse(recording.input),
     result = ResultSchema.parse(recording.result);
   const records = recording.records.map((r) => StreamRecordSchema.parse(r));
+  // Distinct display-only fixtures may coexist in a catalog without conflicting result IDs.
+  if (syntheticSeed !== undefined) {
+    input.seed = syntheticSeed;
+    for (const participant of input.participants)
+      participant.rngSeed = actorSeed(syntheticSeed, participant.rngStream);
+    result.simulationHash = await contentHash(input);
+  }
   if (kind !== 'complete') {
     const terminal = records.at(-1)!;
     if (terminal.kind !== 'terminal') throw new Error('Fixture terminal missing');

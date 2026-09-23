@@ -62,6 +62,16 @@ input {
   gap: 8px;
   margin: 16px 0;
 }
+.replay-canvas {
+  height: 480px;
+  margin: 16px 0;
+  border: 1px solid #354156;
+  border-radius: 8px;
+  overflow: hidden;
+}
+input[type='checkbox'] {
+  width: auto;
+}
 .revision-list {
   list-style: none;
   padding: 0;
@@ -102,6 +112,13 @@ button {
 summary {
   cursor: pointer;
   margin: 12px 0;
+}
+td small {
+  display: block;
+  color: #aeb9cb;
+}
+a {
+  color: #dfc994;
 }
 main {
   width: min(1240px, calc(100% - 64px));

@@ -8,6 +8,7 @@ import { loadReceipts } from './test-support/load.ts';
 import { corpusEvidence } from './test-support/corpus.ts';
 import { classify } from '../ci/plan.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
+import { UI_CHECKS } from '../../e2e/contract.ts';
 const HEAD = 'a'.repeat(40);
 const BASE = 'b'.repeat(40);
 const TESTED = 'c'.repeat(40);
@@ -293,12 +294,10 @@ function plannedFixture(full: boolean) {
     reports.ui = {
       ...sourceReport(),
       producer: 'ui-runner',
-      checks: ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup', 'ui:diagnostics'].map(
-        (id) => ({
-          ...sourceReport().checks[0]!,
-          id,
-        }),
-      ),
+      checks: UI_CHECKS.map((id) => ({
+        ...sourceReport().checks[0]!,
+        id,
+      })),
     };
   for (const [index, os] of ['ubuntu-latest'].entries()) {
     const report = sourceReport();

@@ -1,0 +1,76 @@
+{
+  "source": {
+    "sha": "add5a103f1685b3063f452dbdc49f28bc148952b",
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "archiveHash": "sha256:6a47f3b722f30a71218cf25265c232652d779a6a6769f9fd637587fe8c4bc094",
+  "generator": "e2e/generate-public-fixtures.ts via exportPublication",
+  "policy": "Saved 240-step replay bytes are unchanged. Partial endings and unexecuted rows are synthetic display fixtures, not engine correctness evidence. Regeneration requires review.",
+  "fixtures": [
+    {
+      "setHash": "sha256:4e89463a6287e95da98ea9a771902ba5e915a6599bced9044ac31d30513efc61",
+      "totalRows": 1,
+      "rows": [
+        {
+          "page": 0,
+          "slotId": "sha256:77af46d40a40979e5fc7fa8acd05b1dd45ddb00541ce68a0f9adbecd829c14c5",
+          "state": "truncated",
+          "replay": {
+            "objectHash": "sha256:eb772d9db024be97abc91969fbbfe668a05d0d405fb544af3cd24f017b515ed8",
+            "simulationHash": "sha256:ec84738dce8fa68706409b9dd728d066a045f9efd05fbd4aa115ce526f2f0b5f",
+            "resultId": "fixture-result",
+            "attemptId": "fixture-attempt",
+            "replayId": "fixture-replay",
+            "manifestChecksum": "sha256:53fa5c2ab427d906fc884bb78a0e3b764ff2760492c6dd9231392c70ba1c559b",
+            "receiptChecksum": "sha256:cf96fd26c0414a6edd58b4758d0ba49b7de2e9d7a999cea05d03be4fd7d869bd",
+            "receiptBytes": 1460
+          }
+        }
+      ]
+    },
+    {
+      "setHash": "sha256:71eea377f98a8600756ebafdb13cb3cc4fa2df88bdf9ee9b79e5018a4fbfa60a",
+      "totalRows": 1000,
+      "rows": [
+        {
+          "page": 1,
+          "slotId": "sha256:1823b7d49dc5e5d5207e037517369293f287e7fa1a01b7cf2d0b366a0b5a24d3",
+          "state": "complete",
+          "replay": {
+            "objectHash": "sha256:61ee4305c863ca688c0545f50f65dc872b3800e23da22c020dc678983dec0dc9",
+            "simulationHash": "sha256:19367b25829f4aa91c064e4bbf7e7f458cc27ecefe3ed1389280d93e49c3d494",
+            "resultId": "fixture-result",
+            "attemptId": "fixture-attempt",
+            "replayId": "swordsman-sky-mage-240",
+            "manifestChecksum": "sha256:ac5793726a35fc06066a0380d4274f8748f80fbcfef792e424967179448404fd",
+            "receiptChecksum": "sha256:ec4db150bd452e0292df07e0f061aed5a9c576f8875f1d227c4448195bfa1db9",
+            "receiptBytes": 1239
+          }
+        }
+      ]
+    },
+    {
+      "setHash": "sha256:9224e43f380afd04bf1ee9d2822c723c70354924a03c9fc8bc886639710cd69f",
+      "totalRows": 1,
+      "rows": [
+        {
+          "page": 0,
+          "slotId": "sha256:3a920cf02dcdbfbace4a2e700c0f5c957528144a697b8aa2ca9728df85dabed1",
+          "state": "unresolved",
+          "replay": {
+            "objectHash": "sha256:f34945abb2590560d5b2498145517981c5ea5cfd1aa4f1d9cbde3010df3a95de",
+            "simulationHash": "sha256:8644f26129d1c03bcd54239b075d4617577a80a591fae3ad931202c5482488af",
+            "resultId": "fixture-result",
+            "attemptId": "fixture-attempt",
+            "replayId": "fixture-replay",
+            "manifestChecksum": "sha256:826de210b9a4fd5225c82b0f5194eded71f263a1f8cf391a99419846d89dc192",
+            "receiptChecksum": "sha256:34b41e47745a01eb51a7a63ba55b547d06a86ff0cf23a0cc79d5fc92eed2e91a",
+            "receiptBytes": 1495
+          }
+        }
+      ]
+    }
+  ]
+}
