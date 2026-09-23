@@ -3,6 +3,7 @@ import type { ActorState } from './combat-state.ts';
 import type { DecisionView } from './perception.ts';
 import { effectiveStats } from './status.ts';
 import { damageAmounts } from './effects.ts';
+import { damageSource } from './damage.ts';
 
 /** Own resources and active statuses are proprioception, never a lookup of an opponent. */
 export function selfView(
@@ -59,7 +60,7 @@ export function selfView(
       ),
     silenced: stats.silenced,
     speedBps: stats.speedBps,
-    attack: stats.attack,
+    ...damageSource(stats),
     burnDamage: Math.max(0, burnDamage - actor.resources.shield),
     waterExtinguishable: active.some((s) => s.revision.definition.burning?.waterExtinguishable),
     rules,

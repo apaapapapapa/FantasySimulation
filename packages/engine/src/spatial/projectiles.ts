@@ -5,8 +5,9 @@ import type { AbilityRevision } from './combat-state.ts';
 import type { PerceptionMemory } from './perception.ts';
 import type { MotionState } from './movement.ts';
 import { bodyCapsule } from './terrain.ts';
+import type { DamageSource } from './damage.ts';
 
-export type ProjectileState = {
+export type ProjectileState = DamageSource & {
   id: string;
   ownerId: string;
   ability: AbilityRevision;
@@ -14,7 +15,6 @@ export type ProjectileState = {
   launchStep: number;
   position: Vec3;
   velocity: Vec3;
-  attack: number;
   target: Vec3 | null;
 };
 const shapeOf = (p: ProjectileState) => {

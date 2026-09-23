@@ -10,6 +10,7 @@ import type { Decision } from './policy.ts';
 import type { StatusCohort } from './status.ts';
 import type { Vec3 } from './math.ts';
 import type { DecisionRandom } from './decision-random.ts';
+import type { DamageSource } from './damage.ts';
 export type AbilityRevision = DeepReadonly<Extract<Revision, { kind: 'ability' }>>;
 export type ActionState = {
   id: string;
@@ -34,7 +35,7 @@ export type ActorState = {
   random: number;
   decisionRandom: DecisionRandom;
 };
-export type MeleeState = {
+export type MeleeState = DamageSource & {
   id: string;
   actorId: string;
   ability: AbilityRevision;
@@ -42,7 +43,6 @@ export type MeleeState = {
   launchStep: number;
   direction: Vec3;
   offset: Vec3;
-  attack: number;
   hits: number;
 };
 export const cloneActor = (state: ActorState): ActorState => ({

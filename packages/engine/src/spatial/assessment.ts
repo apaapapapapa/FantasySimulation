@@ -3,11 +3,13 @@ import {
   type CandidateAssessment,
   type DeepReadonly,
   type Definition,
+  type DamageDefense,
 } from '@fantasy/domain/spatial';
 import type { AbilityRevision } from './combat-state.ts';
 import type { DecisionView } from './perception.ts';
 import { length, sub } from './math.ts';
 import { actionClock } from './attacks.ts';
+import { damagePower, damageDefense } from './damage.ts';
 
 export const clampBps = (n: number) => Math.max(0, Math.min(10000, Math.round(n)));
 export const boundedWeight = (n: number) => Math.max(0, Math.min(1_000_000, Math.round(n)));
@@ -15,7 +17,12 @@ type DamageElement = Extract<
   Definition<'ability'>['effects'][number],
   { kind: 'damage' }
 >['element'];
-export function efficacy(view: DecisionView, element: DamageElement, power: number) {
+export function efficacy(
+  view: DecisionView,
+  element: DamageElement,
+  power: number,
+  defense: DamageDefense = 'physical',
+) {
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen,
     step = view.step ?? 0;
   const evidence = view.memory.knowledge.filter(
@@ -31,6 +38,7 @@ export function efficacy(view: DecisionView, element: DamageElement, power: numb
   const comparable = evidence.filter(
     (e) =>
       e.kind === 'impact' &&
+      (e.defense ?? 'physical') === defense &&
       e.range &&
       e.basePower > 0 &&
       Math.abs(e.basePower - power) <= Math.max(1, power * 0.2) &&
@@ -93,12 +101,17 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
     reasons: string[] = [];
   for (const effect of d.effects) {
     if (effect.kind === 'damage' && d.target === 'enemy') {
-      const base =
-        effect.amount +
-        Math.floor(
-          ((view.attack ?? view.self.actor.character.stats.attack) * effect.attackScaleBps) / 10000,
-        );
-      const known = efficacy(view, effect.element, base),
+      const base = Number(
+        damagePower(effect, {
+          attack: view.attack ?? view.self.actor.character.stats.attack,
+          magicPower:
+            view.magicPower ??
+            view.self.actor.character.stats.magicPower ??
+            view.attack ??
+            view.self.actor.character.stats.attack,
+        }),
+      );
+      const known = efficacy(view, effect.element, base, damageDefense(effect)),
         expected = (base * known.bps) / 10000;
       totalPower += base;
       totalExpected += expected;
