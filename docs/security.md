@@ -13,6 +13,11 @@ Markdown exclusion, old Actions pin or automatic merge policy was copied.
 ## Secret scan
 
 Every PR (including Markdown-only PRs) and main CI calls `security.yml`.
+Only conservatively verified wording-only PRs exclude CodeQL analysis. The job independently
+recomputes the exact merge diff and records `WORDING_ONLY_NO_CODE_CHANGE` with a planned-skip
+count. The common gate accepts that receipt only for the identical plan/source/run/attempt.
+Code, configuration, sensitive docs, uncertain diffs, main/manual/scheduled runs retain
+CodeQL. Secret scans and dependency audits remain mandatory even for wording changes.
 The same workflow can be started manually and runs weekly on main.
 It scans the full fetched Git history and the current working tree, including
 merge-resolution changes. `fetch-depth: 0` is mandatory. Remote refs not fetched
@@ -85,7 +90,7 @@ by the adapter.
 The official Renovate validator still runs with its existing exact pin and
 `--strict`. Its observed step outcome produces a receipt even after a failure;
 skipped, cancelled and missing execution never produce a passing receipt.
-The adapter also verifies positive canary, CodeQL rule and toolchain coverage
+The adapter also verifies positive canary, required CodeQL rule and toolchain coverage
 and the absence of blocking/high/critical findings where appropriate.
 
 `ci-gate` retains these files in its existing artifact (7 days):

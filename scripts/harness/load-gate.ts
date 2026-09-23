@@ -10,7 +10,10 @@ import {
   type Identity,
 } from './report.ts';
 
-export function costDigest(profile: unknown, corpusHash: string, observed: Capture): string {
+export type LoadSeries = Pick<Capture, 'samples' | 'fixtureHash'> & {
+  toolchain: Pick<Capture['toolchain'], 'node' | 'packageManager'>;
+};
+export function costDigest(profile: unknown, corpusHash: string, observed: LoadSeries): string {
   return bytesHash(
     JSON.stringify({
       profile,
@@ -32,6 +35,7 @@ export function loadChecks(
     profileHash: string;
     samples: number;
     requireCommitted?: boolean;
+    caseIds?: readonly string[];
   },
 ): Check[] {
   let status: Check['status'] = 'unknown',
@@ -42,10 +46,18 @@ export function loadChecks(
       throw new Error('Working-tree verification is not committed evidence');
     for (const key of ['sourceSha', 'driverSha', 'corpusHash', 'profileHash'] as const)
       if (observed[key] !== expected[key]) throw new Error(`Stale load identity: ${key}`);
-    if (observed.samples.length !== Object.keys(profile.limits).length * expected.samples)
+    const ids = expected.caseIds ?? Object.keys(profile.limits);
+    if (
+      !ids.length ||
+      new Set(ids).size !== ids.length ||
+      ids.some((id) => !profile.limits[id]) ||
+      observed.samples.some((sample) => !ids.includes(sample.id)) ||
+      observed.samples.length !== ids.length * expected.samples
+    )
       throw new Error('Incomplete sample coverage');
     const failures: string[] = [];
-    for (const [id, limits] of Object.entries(profile.limits)) {
+    for (const id of ids) {
+      const limits = profile.limits[id]!;
       const samples = observed.samples.filter((s) => s.id === id);
       if (samples.length !== expected.samples) throw new Error(`Missing/extra profile: ${id}`);
       if (
@@ -81,10 +93,10 @@ export function loadChecks(
 }
 
 /** Review is exact-base and observation/profile bound; it cannot convert missing/failed runs to success. */
-export function compareLoad(
+export function compareLoadSeries(
   info: Identity,
-  before: Capture,
-  after: Capture,
+  before: LoadSeries,
+  after: LoadSeries,
   beforeProfile: unknown,
   profile: LoadProfile,
   reviews: unknown,
@@ -97,35 +109,6 @@ export function compareLoad(
   let status: Check['status'] = 'unknown',
     reason = 'Missing paired comparison';
   try {
-    capture(before);
-    capture(after);
-    if (
-      before.runnerId !== after.runnerId ||
-      before.sourceSha !== info.baselineSha ||
-      after.sourceSha !== info.sourceSha ||
-      before.driverSha !== info.sourceSha ||
-      after.driverSha !== info.sourceSha ||
-      before.driverHash !== after.driverHash
-    )
-      throw new Error('Different SHA or driver');
-    for (const key of ['platform', 'arch', 'cpu', 'cores'] as const)
-      if (before.toolchain[key] !== after.toolchain[key])
-        throw new Error(`Unpaired execution environment: ${key}`);
-    for (const [observed, limits] of [
-      [before, beforeProfile ?? profile],
-      [after, profile],
-    ] as const) {
-      if (
-        loadChecks(observed, limits as LoadProfile, {
-          sourceSha: observed.sourceSha,
-          driverSha: info.sourceSha,
-          corpusHash: observed.corpusHash,
-          profileHash: observed.profileHash,
-          samples: (limits as LoadProfile).samples,
-        }).some((c) => c.status !== 'pass')
-      )
-        throw new Error('Failed or incomplete baseline/candidate cannot be reviewed away');
-    }
     const comparable =
       before.fixtureHash === after.fixtureHash &&
       isDeepStrictEqual(beforeProfile ?? profile, profile) &&
@@ -205,4 +188,68 @@ export function compareLoad(
   }
   checks.unshift({ id: 'load:comparison', required: true, status, reason, evidence });
   return checks;
+}
+
+export function validateLoadPair(
+  info: Identity,
+  before: Capture,
+  after: Capture,
+  beforeProfile: unknown,
+  profile: LoadProfile,
+  caseIds?: (profile: LoadProfile) => readonly string[],
+) {
+  capture(before);
+  capture(after);
+  if (
+    before.runnerId !== after.runnerId ||
+    before.sourceSha !== info.baselineSha ||
+    after.sourceSha !== info.sourceSha ||
+    before.driverSha !== info.sourceSha ||
+    after.driverSha !== info.sourceSha ||
+    before.driverHash !== after.driverHash
+  )
+    throw new Error('Different SHA or driver');
+  for (const key of ['platform', 'arch', 'cpu', 'cores'] as const)
+    if (before.toolchain[key] !== after.toolchain[key])
+      throw new Error(`Unpaired execution environment: ${key}`);
+  for (const [observed, limits] of [
+    [before, beforeProfile ?? profile],
+    [after, profile],
+  ] as const) {
+    if (
+      loadChecks(observed, limits as LoadProfile, {
+        sourceSha: observed.sourceSha,
+        driverSha: info.sourceSha,
+        corpusHash: observed.corpusHash,
+        profileHash: observed.profileHash,
+        samples: (limits as LoadProfile).samples,
+        ...(caseIds ? { caseIds: caseIds(limits as LoadProfile) } : {}),
+      }).some((c) => c.status !== 'pass')
+    )
+      throw new Error('Failed or incomplete baseline/candidate cannot be reviewed away');
+  }
+}
+export function compareLoad(
+  info: Identity,
+  before: Capture,
+  after: Capture,
+  beforeProfile: unknown,
+  profile: LoadProfile,
+  reviews: unknown,
+  boundary: unknown = null,
+): Check[] {
+  try {
+    validateLoadPair(info, before, after, beforeProfile, profile);
+  } catch (error) {
+    return [
+      {
+        id: 'load:comparison',
+        required: true,
+        status: 'unknown',
+        reason: error instanceof Error ? error.message : 'Invalid paired captures',
+        evidence: [],
+      },
+    ];
+  }
+  return compareLoadSeries(info, before, after, beforeProfile, profile, reviews, boundary);
 }

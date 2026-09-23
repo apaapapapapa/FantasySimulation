@@ -9,6 +9,8 @@ export interface Plan extends Identity {
   schemaVersion: 1;
   event: string;
   full: boolean;
+  simulation: boolean;
+  codeql: boolean;
   reason: string;
   paths: string[];
 }
@@ -30,13 +32,28 @@ export function wordingOnly(paths: readonly string[]): boolean {
 export function classify(info: Identity, event: string, paths: string[] | null): Plan {
   const full =
     event !== 'pull_request' || info.baselineSha === null || paths === null || !wordingOnly(paths);
+  // Only known presentation files may exclude engine checks. Manifests, shared code,
+  // configuration, deleted/renamed source outside this allowlist and uncertainty run everything.
+  const presentationOnly =
+    paths !== null &&
+    paths.length > 0 &&
+    paths.every(
+      (path) =>
+        wordingOnly([path]) ||
+        /^apps\/web\/(?:src\/[\w./-]+\.(?:tsx?|css)|index\.html)$/.test(path),
+    );
+  const simulation = event !== 'pull_request' || info.baselineSha === null || !presentationOnly;
   return {
     ...info,
     schemaVersion: 1,
     event,
     full,
+    simulation,
+    codeql: full,
     reason: full
-      ? 'Full verification: source/configuration, sensitive docs, main/dispatch or uncertain comparison'
+      ? simulation
+        ? 'All checks: source/configuration, main/dispatch/schedule or uncertain comparison'
+        : 'Presentation-only PR: static checks, all tests, builds and security; engine corpus/load excluded'
       : 'Known nonempty PR diff contains only wording documents',
     paths: paths ?? [],
   };
@@ -63,11 +80,20 @@ export function parsePlan(input: unknown): Plan {
       !wordingOnly(paths))
   )
     throw new Error('Unjustified CI short circuit');
+  const expected = classify(info, value.event, paths);
+  if (
+    value.full !== expected.full ||
+    value.simulation !== expected.simulation ||
+    value.codeql !== expected.codeql
+  )
+    throw new Error('CI scope differs from the conservative path policy');
   return {
     ...info,
     schemaVersion: 1,
     event: value.event,
     full: value.full,
+    simulation: expected.simulation,
+    codeql: expected.codeql,
     paths,
     reason: value.reason,
   };
@@ -102,6 +128,7 @@ export function collectPlan(root: string, env: NodeJS.ProcessEnv): Plan {
       testMergeSha = sourceSha;
     } else if (event === 'push') baselineSha = sha(payload.before);
     else if (event === 'workflow_dispatch') baselineSha = sha(record(payload.inputs).baseline);
+    else if (event === 'schedule') baselineSha = sha(git(root, ['rev-parse', 'HEAD^']).trim());
     if (!baselineSha) throw new Error('No comparison baseline');
     git(root, ['cat-file', '-e', `${baselineSha}^{commit}`]);
     const diff = git(root, [
@@ -130,7 +157,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (process.env.GITHUB_OUTPUT)
       appendFileSync(
         process.env.GITHUB_OUTPUT,
-        `full=${plan.full}\nbaseline=${plan.baselineSha ?? ''}\n`,
+        `full=${plan.full}\nsimulation=${plan.simulation}\ncodeql=${plan.codeql}\nbaseline=${plan.baselineSha ?? ''}\n`,
       );
     console.log(`FANTASY_CI_PLAN=${JSON.stringify(plan)}`);
   } catch (error) {

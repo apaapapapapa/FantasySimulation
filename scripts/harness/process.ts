@@ -25,6 +25,8 @@ export function safeEnvironment(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     'PNPM_HOME',
     'VITE_PLUS_HOME',
     'MIGRATION_BASE_SHA',
+    'GITHUB_RUN_ID',
+    'GITHUB_RUN_ATTEMPT',
   ]);
   return Object.fromEntries(Object.entries(env).filter(([key]) => allowed.has(key.toUpperCase())));
 }

@@ -45,15 +45,26 @@ try {
     let result;
     if (command === 'source' && args.length === 0)
       result = await collectSource(process.cwd(), input);
-    else if (command === 'corpus' && args.length === 0) {
+    else if (
+      command === 'corpus' &&
+      (args.length === 0 || (args.length === 2 && args[0] === '--tests'))
+    ) {
       const { collectCorpus } = await import('./harness/corpus.ts');
-      result = await collectCorpus(process.cwd(), input);
-    } else if (command === 'load' && args.length === 0) {
+      result = await collectCorpus(
+        process.cwd(),
+        input,
+        args.length ? { testShards: Number(args[1]) } : {},
+      );
+    } else if (
+      command === 'load' &&
+      (args.length === 0 || (args.length === 2 && args[0] === '--shard'))
+    ) {
       const { collectLoad } = await import('./harness/load.ts');
       result = await collectLoad(
         process.cwd(),
         ['current', 'verify'].includes(input) ? null : input,
         input === 'verify',
+        args.length ? Number(args[1]) : null,
       );
     } else if (command === 'issue-plan' && args.length === 0) {
       const { completionDraft } = await import('./harness/issue-completion-api.ts');

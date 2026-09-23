@@ -19,7 +19,7 @@ runs:
       id: dependencies
       with:
         path: .generated/pm-store
-        key: fantasy-deps-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'apps/*/package.json', 'packages/*/package.json', 'tsconfig.json', 'vite.config.ts', '.github/actions/setup-project/action.yml') }}
+        key: fantasy-deps-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'apps/*/package.json', 'packages/*/package.json', '.github/actions/setup-project/action.yml') }}
     - id: install
       shell: bash
       run: vp install --frozen-lockfile -- --store-dir .generated/pm-store

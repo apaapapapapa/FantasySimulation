@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '17 20 * * 0'
   workflow_dispatch:
     inputs:
       baseline:
@@ -30,6 +32,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       full: ${{ steps.plan.outputs.full }}
+      simulation: ${{ steps.plan.outputs.simulation }}
       baseline: ${{ steps.plan.outputs.baseline }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -81,22 +84,103 @@ jobs:
           path: .generated/harness/docs/
           if-no-files-found: error
           retention-days: 7
-  verify:
+  tasks:
     needs: changes
     if: needs.changes.outputs.full == 'true'
-    name: Verify (ubuntu-latest)
+    name: Source (${{ matrix.task }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [static, tests-1, tests-2, tests-3, build]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Read-only verification with source-bound evidence
+      - name: Run canonical verification task
         env:
           MIGRATION_BASE_SHA: ${{ needs.changes.outputs.baseline }}
-        run: vp exec node scripts/harness.ts source .generated/harness/source
+          SOURCE_TASK: ${{ matrix.task }}
+        run: vp exec node scripts/ci/verify.ts phase "$SOURCE_TASK"
+      - name: Preserve executed task and test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: harness-task-${{ matrix.task }}
+          path: .generated/harness/
+          retention-days: 7
+          if-no-files-found: error
+          include-hidden-files: true
+  corpus:
+    needs: [changes, tasks]
+    if: needs.changes.outputs.simulation == 'true'
+    name: Corpus (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: harness-task-tests-*
+          path: .generated/harness/
+          merge-multiple: true
+      - name: Reuse exact test receipts and execute independent corpus repetitions
+        run: vp exec node scripts/ci/verify.ts phase corpus
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: harness-corpus
+          path: .generated/harness/
+          retention-days: 7
+          if-no-files-found: error
+          include-hidden-files: true
+  verify:
+    needs: [changes, tasks, corpus]
+    if: always() && needs.changes.outputs.full == 'true'
+    name: Verify (ubuntu-latest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - name: Require all planned task jobs
+        env:
+          TASK_RESULT: ${{ needs.tasks.result }}
+          CORPUS_RESULT: ${{ needs.corpus.result }}
+          SIMULATION: ${{ needs.changes.outputs.simulation }}
+        run: |
+          test "$TASK_RESULT" = success
+          if [ "$SIMULATION" = true ]; then test "$CORPUS_RESULT" = success; else test "$CORPUS_RESULT" = skipped; fi
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ci-plan
+          path: .generated/harness/ci
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: harness-task-*
+          path: .generated/harness/
+          merge-multiple: true
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: needs.changes.outputs.simulation == 'true'
+        with:
+          name: harness-corpus
+          path: .generated/harness/
+      - name: Verify complete source task and test coverage
+        run: vp exec node scripts/ci/verify.ts aggregate
       - name: Preserve source evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -108,30 +192,31 @@ jobs:
           include-hidden-files: true
   load:
     needs: changes
-    if: needs.changes.outputs.full == 'true'
-    name: Paired load (ubuntu-latest)
+    if: needs.changes.outputs.simulation == 'true'
+    name: Paired load (ubuntu-latest, ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      # Transitions still need independent boundary evidence on this exact source.
-      - name: Collect corpus boundary evidence for paired comparisons
-        run: vp run check:corpus
-      - name: Compare exact baseline and candidate on one runner
+      - name: Compare assigned cases on one runner with five alternating pairs
         env:
           LOAD_BASE_SHA: ${{ needs.changes.outputs.baseline }}
-        shell: bash
-        run: vp exec node scripts/harness.ts load "$LOAD_BASE_SHA"
-      - name: Preserve paired load evidence
+          LOAD_SHARD: ${{ matrix.shard }}
+        run: vp exec node scripts/harness.ts load "$LOAD_BASE_SHA" --shard "$LOAD_SHARD"
+      - name: Preserve raw paired shard evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: harness-load
-          path: .generated/harness/
+          name: harness-load-${{ matrix.shard }}
+          path: .generated/harness/load-shards/${{ matrix.shard }}/
           retention-days: 7
           if-no-files-found: error
           include-hidden-files: true
@@ -160,10 +245,11 @@ jobs:
           name: harness-ubuntu-latest
           path: .generated/harness/ci/evidence/ubuntu-latest
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        if: always() && needs.changes.outputs.full == 'true'
+        if: always() && needs.changes.outputs.simulation == 'true'
         with:
-          name: harness-load
+          pattern: harness-load-*
           path: .generated/harness/ci/evidence/load
+          merge-multiple: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: always() && needs.changes.outputs.full == 'false'
         with:

@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 import { assessReport, record, sha, text, timestamp } from './report.ts';
+import { assessTasks, SOURCE_JOBS } from '../ci/verify.ts';
+import { parsePlan } from '../ci/plan.ts';
+import { LOAD_JOBS } from './load-contract.ts';
 
 export const repository = 'apaapapapapa/FantasySimulation';
 export const completionMarker = '<!-- harness:issue-completed:v1 -->';
@@ -7,7 +10,8 @@ export const requiredJobs = [
   'changes',
   'ci-gate',
   'Verify (ubuntu-latest)',
-  'Paired load (ubuntu-latest)',
+  ...SOURCE_JOBS,
+  ...LOAD_JOBS,
   'Security / Secret scan',
   'Security / Dependency audit',
   'Security / CodeQL and severity policy',
@@ -143,9 +147,30 @@ export function validateSource(value: unknown, commandValue: unknown, sourceSha:
     'INVALID_SOURCE_EVIDENCE',
   );
   const command = record(commandValue);
+  const aggregate =
+    JSON.stringify(command.command) ===
+    JSON.stringify(['node', 'scripts/ci/verify.ts', 'aggregate']);
+  if (aggregate) {
+    const plan = parsePlan(command.plan);
+    requireCompletion(
+      plan.sourceSha === sourceSha &&
+        plan.full &&
+        plan.simulation &&
+        Array.isArray(command.receipts),
+      'INVALID_VERIFY_TASK_PLAN',
+    );
+    requireCompletion(
+      typeof command.runId === 'string' && typeof command.runAttempt === 'string',
+      'INVALID_TASK_RUN',
+    );
+    assessTasks(plan, command.receipts as unknown[], {
+      runId: command.runId as string,
+      runAttempt: command.runAttempt as string,
+    });
+  }
   requireCompletion(
     command.sourceSha === sourceSha &&
-      JSON.stringify(command.command) === JSON.stringify(['vp', 'run', 'verify']) &&
+      (aggregate || JSON.stringify(command.command) === JSON.stringify(['vp', 'run', 'verify'])) &&
       command.exitCode === 0 &&
       command.signal === null &&
       command.bounded === false &&

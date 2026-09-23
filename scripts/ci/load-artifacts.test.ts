@@ -36,7 +36,7 @@ it('requires raw load trials and commands even when the summary reports success'
     write('evidence/commands.json', {
       runnerId: after.runnerId,
       errors: [],
-      commands: [{ output: 'capture.log' }],
+      commands: [{ output: 'capture.log', exitCode: 0, bounded: false }],
     });
     write('evidence/performance.json', { elapsedMs: 1 });
     write('evidence/capture.log', 'completed');

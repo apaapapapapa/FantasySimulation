@@ -72,12 +72,20 @@ jobs:
         run: echo "H4_REPORT_DIR=$RUNNER_TEMP/h4-reports" >> "$GITHUB_ENV"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
         with:
           node-version-file: .node-version
           run-install: false
+      - name: Plan CodeQL scope from the actual merge diff
+        id: scope
+        run: node scripts/ci/plan.ts "$RUNNER_TEMP/codeql-plan.json"
+      - name: Record verified wording-only scope
+        if: steps.scope.outputs.codeql == 'false'
+        run: node scripts/security/codeql-scope.ts
       - name: Initialize JavaScript and TypeScript analysis
+        if: steps.scope.outputs.codeql == 'true'
         uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
         with:
           languages: javascript-typescript
@@ -86,6 +94,7 @@ jobs:
           # An empty value uses the standard PR query suite.
           queries: ${{ github.event_name != 'pull_request' && 'security-extended' || '' }}
       - name: Analyze the complete workspace
+        if: steps.scope.outputs.codeql == 'true'
         id: analyze
         uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v4
         with:
@@ -94,6 +103,7 @@ jobs:
           upload-database: false
           category: /language:javascript-typescript
       - name: Enforce high and critical policy on all current results
+        if: steps.scope.outputs.codeql == 'true'
         run: node scripts/security/codeql.ts "$RUNNER_TEMP/codeql-results"
       - name: Publish analysis even when the severity policy blocks it
         if: ${{ !cancelled() && steps.analyze.outcome == 'success' }}
@@ -122,6 +132,7 @@ jobs:
         run: echo "H4_REPORT_DIR=$RUNNER_TEMP/h4-reports" >> "$GITHUB_ENV"
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          fetch-depth: 2
           persist-credentials: false
       - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6 # v1.21.1
         with:

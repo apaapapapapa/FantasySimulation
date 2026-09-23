@@ -5,27 +5,58 @@ Issue #6 adapts HiFiScout `36aaf69d3f7a61195af4e85a468514dfbb1ecc80`:
 The NUL-safe conservative comparison and explicit fan-in policy are retained; catalog/D1
 jobs, four-way sharding, automatic formatting and production deployment are not copied.
 
-The CI plan is bound to the tested checkout. A PR uses the synthetic merge's actual first
-parent, not a potentially old event base. Renames are inspected as deletion plus addition.
-An unknown comparison, empty diff, configuration/source change or sensitive documentation
-runs `Verify (ubuntu-latest)` and `Paired load (ubuntu-latest)` concurrently on separate
-Linux runners. Main push and manual runs always do so. Only known nonempty wording-only PRs run lightweight docs checks
-(diff whitespace, local inline links and repository-wide context budgets). AGENTS, skills, harness/CI instructions, rules and
-ADRs are not wording-only. The existing Security workflow still runs for Markdown changes.
+The CI plan is bound to the exact tested checkout. PRs compare the synthetic merge's
+actual first parent; renames are inspected as deletion plus addition. Unknown/empty
+diffs, shared source, configuration, manifests, sensitive documents and scripts run
+all checks. Only wording documents use the lightweight Docs job, which checks whitespace,
+local inline links and repository-wide context budgets. AGENTS, skills, harness/CI
+instructions, rules and ADRs are not wording-only. PR changes confined
+to `apps/web/src` TS/TSX/CSS and `apps/web/index.html` (plus wording documents) run
+static checks, all tests, builds and security, while excluding engine corpus/load.
+Main, manual and weekly scheduled CI always run every verification group. Scheduled
+comparisons use the exact previous main commit; manual runs require a baseline SHA.
 
-`ci-gate` always assesses the planned jobs and actual source reports. The Linux source and paired-load reports must
-exist and match the planned source/head/base. Missing, cancelled, failing or unexpected
-skipped work blocks the gate. Release requires full verification, Security and this gate on
-main. The source collector continues to execute the unchanged `vp run verify` entrypoint.
+## Shared execution and shards
 
-The setup action caches only the pnpm content store, never node_modules, app artifacts,
-verification results, replay or physics state. Keys include OS/architecture and exact Node,
-package-manager, lockfile, workspace manifests and configuration identity. No broad restore
-keys; PRs cannot save into main's cache. Frozen install is mandatory. Setup receipts record
-cache hit (null when unknown), source/run/attempt, runtime/OS and start/end timestamps.
-Source receipts record verification intervals. Use Actions job data for queue/setup/job
-durations; missing historical cache observations remain unknown. Do not infer a speedup or
-runtime regression from an unrelated runner's single sample.
+`Source (static)` executes the existing non-test/build/load commands extracted from
+`package.json`'s canonical `verify`; unrecognized shell syntax fails closed. The local
+`vp run verify` and clean source harness remain unchanged. CI additionally runs
+`Source (build)` and three `Source (tests-N)` jobs in parallel on Linux.
+The test inventory comes from the same include/exclude patterns as Vitest. JSON
+results bind content hashes, source/working-tree identity, run, attempt, shard and
+exit status. Missing files, duplicated shards, skipped assertions or altered results
+are rejected. Results are shared within that exact run, never cached as a future pass.
+
+`Corpus (ubuntu-latest)` consumes those test receipts instead of rerunning mapped
+files. It still executes each fixed input twice independently and verifies all input,
+contract, result, event, trajectory, TS state and physics digests. `Verify (ubuntu-latest)`
+collects successful task receipts and the complete test-file inventory. Its command
+receipt explicitly records `node scripts/ci/verify.ts aggregate`, not a fictitious
+execution of the serial local verify command. Issue completion validates the same tasks.
+
+Three `Paired load (ubuntu-latest, N/3)` jobs partition sorted fixed case IDs. Every
+case keeps five alternating baseline/candidate measurements and all warmups on one
+physical runner. Different cases may use different runners; raw identities are never
+combined into a fictitious common runner. The gate validates every raw sample, probe,
+command, hash and current run/attempt before comparing the complete deterministic
+cost profile. Profile/runtime transitions still require the shared independent corpus
+boundary and exact reviewed cost digests. The candidate side also supplies the normal
+CI load-budget proof, avoiding a second standalone measurement of identical cases.
+
+`ci-gate` requires the exact planned job outcomes and source/head/base identities.
+Cancelled, missing, failing or unexpectedly skipped work blocks release and delivery.
+CodeQL is excluded only for verified wording-only PRs; its job recomputes the exact
+scope and emits a distinct receipt, which the security adapter checks against the
+common plan. Code changes retain CodeQL; secret scanning and dependency auditing run
+for all PRs. No paid runner or branch-protection change is required.
+
+The setup action caches only pnpm's content store. Candidate and baseline frozen
+installs share that store while retaining their own pinned runtimes and lockfiles.
+Keys include OS/architecture, Node, package manager, manifests, lock and setup policy;
+TypeScript/lint configuration changes alone no longer invalidate dependency downloads.
+No broad restore keys or cached test passes; PRs cannot populate main's cache.
+Setup receipts retain observed cache hits and intervals. Compare equivalent PR/main
+runs and distinguish cold cache, queue time and runner variability from actual work.
 
 ## Required checks and rollout
 
@@ -39,10 +70,9 @@ PR jobs use read-only permissions except the already scoped security-result regi
 no production credentials are supplied. Plan/source artifacts are data only; no artifact
 scripts or PR build products execute in the release job. Artifacts expire after seven days.
 
-Local tests: `vp test run scripts/ci`. Source/config changes use the source harness. The canonical source verification is unchanged. The paired-load job additionally runs
-the existing corpus boundary checks, retaining evidence for profile/toolchain transitions.
-It uploads a separate artifact; `ci-gate` requires its successful job and exact-source/base
-raw trials before release or delivery can pass.
+Local focused tests: `vp test run scripts/ci` and `vp run security:test`. Finish with
+canonical verify and a clean committed source harness. Workflow artifacts retain raw
+results and source commands; stale-source and missing-shard regressions are required.
 
 The owner requested Linux-only verification on 2026-09-23. Docs and toolchain policy
 also run only on Linux. Windows jobs and receipts are no longer required; historical

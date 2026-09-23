@@ -4,7 +4,14 @@ import { join } from 'node:path';
 import { runCommand } from './process.ts';
 import { assessReport, sha, type Check, type Identity } from './report.ts';
 import { git, sourceIdentity, repositoryRoot, evidencePath } from './source.ts';
-import { loadProfile, bytesHash, capture, percentile, type Capture } from './load-contract.ts';
+import {
+  loadProfile,
+  loadShardCases,
+  bytesHash,
+  capture,
+  percentile,
+  type Capture,
+} from './load-contract.ts';
 import { loadChecks, compareLoad } from './load-gate.ts';
 
 export const PROFILE_PATH = '.github/harness/load-profile.json';
@@ -14,6 +21,7 @@ export async function collectLoad(
   inputRoot: string,
   baseline: string | null = null,
   verification = false,
+  shard: number | null = null,
 ) {
   const root = repositoryRoot(inputRoot),
     info = sourceIdentity(root),
@@ -21,17 +29,24 @@ export async function collectLoad(
   const dirty = Boolean(git(root, ['status', '--porcelain']));
   if (dirty && (baseline || !verification)) throw new Error('Load evidence needs a clean tree');
   const runnerId = randomUUID(),
-    relative = baseline
-      ? '.generated/harness/load-pair'
-      : dirty
-        ? '.generated/harness/load-verification'
-        : '.generated/harness/load';
+    relative =
+      shard !== null
+        ? `.generated/harness/load-shards/${shard}`
+        : baseline
+          ? '.generated/harness/load-pair'
+          : dirty
+            ? '.generated/harness/load-verification'
+            : '.generated/harness/load';
   const directory = evidencePath(root, relative);
   rmSync(directory, { recursive: true, force: true });
   mkdirSync(directory, { recursive: true });
   const corpusPath = join(root, CORPUS_PATH),
     profilePath = join(root, PROFILE_PATH);
   const profile = loadProfile(JSON.parse(readFileSync(profilePath, 'utf8')));
+  if (shard !== null) {
+    if (!baseline) throw new Error('Load shards require an exact baseline');
+    loadShardCases(profile, shard);
+  }
   const commands: unknown[] = [],
     captures: { before: Capture | null; after: Capture | null } = { before: null, after: null };
   const errors: string[] = [];
@@ -62,7 +77,12 @@ export async function collectLoad(
         root,
         'checkout',
       );
-      await execute('vp', ['install', '--frozen-lockfile'], baselineRoot, 'install');
+      await execute(
+        'vp',
+        ['install', '--frozen-lockfile', '--', '--store-dir', join(root, '.generated/pm-store')],
+        baselineRoot,
+        'install',
+      );
       await execute(
         'vp',
         ['exec', 'node', 'scripts/engine-identity.ts'],
@@ -135,6 +155,7 @@ export async function collectLoad(
             String(baseline ? 1 : profile.samples),
             runnerId,
             dirty ? 'verification' : 'evidence',
+            ...(shard === null ? [] : [String(shard)]),
           ],
           target,
           name,
@@ -189,6 +210,14 @@ export async function collectLoad(
       profileHash: side === 'before' ? previousProfileHash : bytesHash(readFileSync(profilePath)),
       samples: profile.samples,
       requireCommitted: !dirty,
+      ...(shard === null
+        ? {}
+        : {
+            caseIds: loadShardCases(
+              side === 'before' && previousProfile ? loadProfile(previousProfile) : profile,
+              shard,
+            ),
+          }),
     };
     checks.push(
       ...loadChecks(
@@ -202,7 +231,7 @@ export async function collectLoad(
       })),
     );
   }
-  if (baseline && captures.before && captures.after) {
+  if (shard === null && baseline && captures.before && captures.after) {
     let reviews: unknown = null;
     try {
       reviews = JSON.parse(readFileSync(join(root, '.github/harness/load-reviews.json'), 'utf8'));
@@ -247,7 +276,18 @@ export async function collectLoad(
     });
   writeFileSync(
     join(directory, 'commands.json'),
-    JSON.stringify({ runnerId, commands, errors }, null, 2) + '\n',
+    JSON.stringify(
+      {
+        runnerId,
+        commands,
+        errors,
+        shard,
+        runId: process.env.GITHUB_RUN_ID ?? null,
+        runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+      },
+      null,
+      2,
+    ) + '\n',
   );
   writeFileSync(
     join(directory, 'results.json'),
@@ -331,7 +371,13 @@ export async function collectLoad(
       checks,
     },
     baseline
-      ? ['load:budget:before', 'load:budget:after', 'load:comparison', 'load:collection']
+      ? [
+          'load:budget:before',
+          'load:budget:after',
+          ...(shard === null ? ['load:comparison'] : []),
+          'load:collection',
+          'load:regression',
+        ]
       : ['load:budget', 'load:collection'],
   );
   writeFileSync(join(directory, 'report.json'), JSON.stringify(assessed.report, null, 2) + '\n');
