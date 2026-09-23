@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { AbilitySchema, StatusSchema, type Definition } from '@fantasy/domain/spatial';
-import { abilityCategories, blockedBySilence, dispelSelects } from './categories.ts';
+import { abilityCategories, blockedBySilence, dispelMatchesCategory } from './categories.ts';
 import { initializePhysics } from './physics.ts';
 import { choosePolicy } from './policy.ts';
 import { runBattle } from './run.ts';
@@ -66,19 +66,13 @@ describe('ability and status categories (Issue #61 G-01)', () => {
       'physical',
       'magic',
     ]);
-    const status = {
-      id: 'hex',
-      definition: { ...initialStatus(), categories: ['debuff' as const] },
-    };
-    expect(dispelSelects({ kind: 'dispel', categories: ['debuff'] }, status)).toBe(true);
-    expect(dispelSelects({ kind: 'dispel', statusIds: ['hex'] }, status)).toBe(true);
-    expect(dispelSelects({ kind: 'dispel', categories: ['buff'] }, status)).toBe(false);
-    expect(
-      dispelSelects(
-        { kind: 'dispel', categories: ['debuff'] },
-        { ...status, definition: initialStatus() },
-      ),
-    ).toBe(false);
+    const debuff = { ...initialStatus(), categories: ['debuff' as const] };
+    expect(dispelMatchesCategory({ kind: 'dispel', categories: ['debuff'] }, debuff)).toBe(true);
+    expect(dispelMatchesCategory({ kind: 'dispel', categories: ['buff'] }, debuff)).toBe(false);
+    expect(dispelMatchesCategory({ kind: 'dispel', statusIds: ['hex'] }, debuff)).toBe(false);
+    expect(dispelMatchesCategory({ kind: 'dispel', categories: ['debuff'] }, initialStatus())).toBe(
+      false,
+    );
   });
   const fixture = () =>
     aiFixture({

@@ -41,7 +41,7 @@ rules.memorySamples（標準32）、標準TTL500step。容量/期限で失う既
 
 policy.prioritiesは条件付き使用候補の集合として解釈する。配列やIDの順にutilityを加点しない。
 自分のHP/MP・uses・cooldown・action phase・action speed・条件・観測上の射程/向きを先に検査する。
-silencedはMPコストを持つactionの開始/発動を禁じる。移動不能、詠唱中の移動制限も尊重する。
+silencedは`magic`分類のactionの開始/発動を禁じる（#61 G-01）。移動不能、詠唱中の移動制限も尊重する。
 開始時/発動時は共通戦闘処理で再検査し、未知の障害や状況変化による不発を許す。
 有益で実行可能な候補がなければ通常の移動/待機。単一候補なら判断乱数は消費しない。
 

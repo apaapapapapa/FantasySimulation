@@ -77,6 +77,31 @@ describe('simultaneous effects', () => {
       'curse',
       'plain',
     ]);
+    // Category matches keep revision identity: a buff revision of the same ID survives.
+    const hexes = await Promise.all([
+      sealRevision('status', 'hex', 1, {
+        ...definition('refresh'),
+        stackKey: 'hex-a',
+        categories: ['debuff'],
+      }),
+      sealRevision('status', 'hex', 2, {
+        ...definition('refresh'),
+        stackKey: 'hex-b',
+        categories: ['buff'],
+      }),
+    ]);
+    const hexed = await targets();
+    hexed[0]!.statuses = hexes.map((revision) => ({
+      revision,
+      startStep: 0,
+      endStep: 3,
+      stacks: 1,
+      causes: ['prior'],
+    }));
+    const kept = (apps: EffectApplication[]) =>
+      resolveEffects(hexed, apps, hexes, 0)[0]!.statuses.map((s) => s.revision.revision);
+    expect(kept([dispel('debuffs', { categories: ['debuff'] })])).toEqual([2]);
+    expect(kept([dispel('byId', { statusIds: ['hex'] })])).toEqual([]);
     const removed = resolveEffects(
       states,
       [dispel('debuffs', { categories: ['debuff'] })],

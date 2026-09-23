@@ -5,6 +5,7 @@ import type {
   Effect,
   StatusCategory,
 } from '@fantasy/domain/spatial';
+import type { StatusRevision } from './status.ts';
 
 type Ability = DeepReadonly<Definition<'ability'>>;
 type Status = DeepReadonly<Definition<'status'>>;
@@ -26,12 +27,22 @@ export const blockedBySilence = (ability: Ability) => hasAbilityCategory(ability
 
 export const statusCategories = (status: Status): readonly StatusCategory[] =>
   status.categories ?? NONE;
-/** A dispel selects a status by listed ID or by any shared category. */
-export function dispelSelects(
-  effect: DeepReadonly<Extract<Effect, { kind: 'dispel' }>>,
-  status: { id: string; definition: Status },
-): boolean {
-  if (effect.statusIds?.includes(status.id)) return true;
+type Dispel = DeepReadonly<Extract<Effect, { kind: 'dispel' }>>;
+/** True when a dispel's categories share at least one category with the status. */
+export function dispelMatchesCategory(effect: Dispel, status: Status): boolean {
   const wanted = effect.categories;
-  return !!wanted && statusCategories(status.definition).some((c) => wanted.includes(c));
+  return !!wanted && statusCategories(status).some((c) => wanted.includes(c));
+}
+/**
+ * Listed IDs remove every revision with that ID; a category match removes only the
+ * matching revision, so another revision of the same ID in a different category stays.
+ */
+export function dispelTargets(
+  effect: Dispel,
+  active: readonly StatusRevision[],
+): (string | StatusRevision)[] {
+  return [
+    ...(effect.statusIds ?? []),
+    ...active.filter((s) => dispelMatchesCategory(effect, s.definition)),
+  ];
 }
