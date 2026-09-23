@@ -24,7 +24,7 @@ vp run verify
 vp run harness source .generated/harness/source-unique-id
 ```
 
-`quality:duplication` は `verify` に含まれ、既存のLinux/Windows CIを失敗させます。
+`quality:duplication` は `verify` に含まれ、既存のLinux CIを失敗させます。
 別の検査workflowや修復ループは追加しません。通常の品質成果物に指摘の両側のパス・
 開始/終了行・ノード数・修正方針を保存します。
 `.generated/harness/quality/findings.json` の `details.duplicationCoverage` は選択した

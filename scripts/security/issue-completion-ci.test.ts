@@ -3,19 +3,19 @@ import { test } from 'node:test';
 import { requiredJobs, validateJobs } from '../harness/issue-completion.ts';
 
 const plannedDocs = {
-  name: 'Docs (${{ matrix.os }})',
+  name: 'Docs (ubuntu-latest)',
   status: 'completed',
   conclusion: 'skipped',
 };
 const passedJobs = () =>
   requiredJobs.map((name) => ({ name, status: 'completed', conclusion: 'success' }));
 
-await test('full main CI permits only the non-expanded docs matrix to be skipped', () => {
+await test('full main CI permits only the planned Linux docs job to be skipped', () => {
   validateJobs([...passedJobs(), plannedDocs]);
 });
 
 await test('the current CI planner and aggregate gate are mandatory successful checks', () => {
-  for (const name of ['changes', 'ci-gate']) {
+  for (const name of ['changes', 'ci-gate', 'Paired load (ubuntu-latest)']) {
     assert.ok(requiredJobs.includes(name));
     const other = passedJobs().filter((job) => job.name !== name);
     assert.throws(() => validateJobs([...other, plannedDocs]));
@@ -31,7 +31,7 @@ await test('docs failure, duplicate jobs and any unplanned skip still block comp
   for (const conclusion of ['failure', 'cancelled', null]) {
     assert.throws(() => validateJobs([...jobs, { ...plannedDocs, conclusion }]));
   }
-  for (const name of ['Unexpected check', 'Docs (ubuntu-latest)', 'Docs (windows-latest)']) {
+  for (const name of ['Unexpected check', 'Docs (${{ matrix.os }})', 'Docs (windows-latest)']) {
     assert.throws(() => validateJobs([...jobs, { ...plannedDocs, name }]));
   }
   assert.throws(() => validateJobs([...jobs, plannedDocs, plannedDocs]));

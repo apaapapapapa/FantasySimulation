@@ -4,9 +4,10 @@ import type { Check, Identity, Report } from './report.ts';
 import { parsePlan } from '../ci/plan.ts';
 import type { Plan } from '../ci/plan.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
+import { CORPUS_ARTIFACT_CHECK } from './corpus-compare.ts';
 
-export const VERIFY_JOBS = ['Verify (ubuntu-latest)', 'Verify (windows-latest)'] as const;
-export const DOCS_JOBS = ['Docs (ubuntu-latest)', 'Docs (windows-latest)'] as const;
+export const VERIFY_JOBS = ['Verify (ubuntu-latest)'] as const;
+export const DOCS_JOBS = ['Docs (ubuntu-latest)'] as const;
 export type DeliveryTarget = 'pr' | 'merge';
 export interface RunEvidence {
   before: unknown;
@@ -258,15 +259,16 @@ export function validateRun(
       return { status: 'unknown', reason: 'CI plan or aggregate evidence missing' };
     plan = parsePlan(evidence.plan.value);
     const gate = parseReport(evidence.gate.report);
-    const ids = ['changes', 'security', 'dependency-policy', 'verify', 'docs'].map(
+    const ids = ['changes', 'security', 'dependency-policy', 'verify', 'load', 'docs'].map(
       (name) => `ci-job:${name}`,
     );
     ids.push('ci-evidence:security', ...SECURITY_CHECKS);
+    if (plan.full)
+      ids.push(CORPUS_ARTIFACT_CHECK, 'ci-evidence:load-ubuntu-latest', 'ci-evidence:load-pair');
     ids.push(
-      ...(plan.full
-        ? ['ubuntu-latest', 'windows-latest']
-        : ['docs-ubuntu-latest', 'docs-windows-latest']
-      ).map((name) => `ci-evidence:${name}`),
+      ...(plan.full ? ['ubuntu-latest'] : ['docs-ubuntu-latest']).map(
+        (name) => `ci-evidence:${name}`,
+      ),
     );
     for (const [name, receipt] of [
       ['changes', evidence.plan],
@@ -322,7 +324,7 @@ export function validateRun(
       return { status: 'unknown', reason: `Source receipt missing for ${name}` };
     const source = parseReport(sources[0]!.report);
     if (testedSource !== null && testedSource !== source.sourceSha)
-      return { status: 'unknown', reason: 'OS jobs tested different source commits' };
+      return { status: 'unknown', reason: 'Jobs tested different source commits' };
     testedSource = source.sourceSha;
     if (
       !/^[a-f0-9]{64}$/.test(sources[0]!.logDigest) ||
@@ -339,7 +341,7 @@ export function validateRun(
         source.testMergeSha !== plan.testMergeSha ||
         (source.testMergeSha !== null && source.baselineSha !== plan.baselineSha))
     )
-      return { status: 'unknown', reason: 'OS receipt and CI plan disagree' };
+      return { status: 'unknown', reason: 'Source receipt and CI plan disagree' };
     if (source.candidateSha !== candidate)
       return { status: 'unknown', reason: 'Source receipt has stale candidate' };
     if (main) {
@@ -361,7 +363,7 @@ export function validateRun(
   }
   return {
     status: 'pass',
-    reason: 'Latest CI and both OS planned receipts match the evaluated revision',
+    reason: 'Latest CI and Linux planned receipts match the evaluated revision',
   };
 }
 export function assessDelivery(
@@ -450,8 +452,8 @@ export function assessDelivery(
   if (pr.status === 'pass' && snapshot.prRun?.plan) {
     const plan = parsePlan(snapshot.prRun.plan.value);
     const names: readonly string[] = plan.full
-      ? [...DOCS_JOBS, 'Docs (${{ matrix.os }})']
-      : [...VERIFY_JOBS, 'Verify (${{ matrix.os }})'];
+      ? DOCS_JOBS
+      : [...VERIFY_JOBS, 'Paired load (ubuntu-latest)'];
     for (const job of objects(snapshot.prRun.jobs))
       if (names.includes(String(job.name)) && job.conclusion === 'skipped')
         plannedSkips.add(String(job.name));

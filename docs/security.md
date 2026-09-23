@@ -33,7 +33,7 @@ node scripts/security/secrets.ts --self-test
 vp run security:secrets
 ```
 
-`security:test` also runs as part of `vp run verify` and Linux/Windows CI.
+`security:test` also runs as part of `vp run verify` and Linux CI.
 The real Gitleaks binary scan is a separate Linux job, not an offline unit test.
 Missing executables, incomplete history, scanner errors, missing or invalid
 reports and disagreeing exit codes are `unknown` (exit 2), never `pass`.
@@ -71,10 +71,9 @@ Each entry maps the common check ID to its artifact prefix and receipt filename:
 - `security:dependency-audit`: `security-audit` / `dependency-audit.json`.
 - `security:renovate-configuration`: `security-renovate` / `renovate-configuration.json`.
 - `security:toolchain-ubuntu-latest`: `security-toolchain-ubuntu-latest` / `toolchain-policy.json`.
-- `security:toolchain-windows-latest`: `security-toolchain-windows-latest` / `toolchain-policy.json`.
 
 Each artifact name ends with `-<runId>-<runAttempt>`. CI downloads only that
-run and attempt and keeps artifact directories separate, so the two platform
+run and attempt and keeps artifact directories separate, so independently produced
 receipts cannot overwrite each other. Receipts must match the exact tested
 source SHA, PR head, baseline, run and attempt, producer and check ID. PR
 source SHA remains the test-merge SHA, not the PR head. Invalid timestamps,
@@ -93,7 +92,7 @@ and the absence of blocking/high/critical findings where appropriate.
 
 - `plan.json`: the exact source/head/base and planned full or docs execution.
 - `security.json`: the common H4 report, including each original receipt URI.
-- `gate.json`: job outcomes, both platform reports and all required H4 checks.
+- `gate.json`: job outcomes, the Linux report and all required H4 checks.
 - `security-evidence/`: the original sanitized receipts, grouped by artifact.
 
 The original security artifacts remain available for 14 days. Setup failure
@@ -128,7 +127,7 @@ Remaining operational acceptance for Issue #8:
 2. Approve one suitable update from its Dependency Dashboard. Confirm the real
    bot PR has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
    correct lockfile. Preserve manual review, including vulnerability updates.
-   Run both OS verification and all security evidence; do not manufacture a
+   Run Linux verification and all security evidence; do not manufacture a
    bot-authored PR to claim acceptance. See the official
    [Renovate configuration reference](https://docs.renovatebot.com/configuration-options/).
 3. On an actual Rapier/WASM update, review physics version, WASM hash, engine

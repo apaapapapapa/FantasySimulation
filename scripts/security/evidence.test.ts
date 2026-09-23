@@ -49,12 +49,12 @@ function fixtures(target = info): Record<string, Record<string, unknown>> {
   );
 }
 
-await test('seven receipts bind to the common report and exact artifact paths', () => {
+await test('six receipts bind to the common report and exact artifact paths', () => {
   const result = assessSecurityEvidence(info, run, fixtures(), at);
   assert.equal(result.exitCode, 0);
   assert.equal(assessReport(result.report, SECURITY_CHECKS).exitCode, 0);
   assert.equal(result.report.producer, 'security-evidence');
-  assert.equal(result.report.checks.length, 7);
+  assert.equal(result.report.checks.length, 6);
   for (const check of result.report.checks) {
     assert.equal(check.required, true);
     assert.ok(check.evidence[0]?.uri.includes('-123-2/'));
@@ -116,7 +116,7 @@ await test('rejects invalid counts and inconsistent success claims', () => {
     ['dependency-audit', { high: 0, critical: 0 }],
     ['dependency-audit', { info: 0, low: 0, moderate: 0, high: 1, critical: 0 }],
     ['renovate-configuration', { validators: 0 }],
-    ['toolchain-windows-latest', { checks: 0 }],
+    ['toolchain-ubuntu-latest', { checks: 0 }],
     ['secret-scan', { detected: -1, excepted: -1, blocking: 0 }],
     ['secret-scan', { detected: 0.5, excepted: 0.5, blocking: 0 }],
     ['secret-scan', { detected: '0', excepted: '0', blocking: 0 }],

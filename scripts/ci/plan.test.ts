@@ -77,6 +77,7 @@ describe('fail-closed CI gate', () => {
     security: 'success',
     'dependency-policy': 'success',
     verify: 'success',
+    load: 'success',
     docs: 'skipped',
   };
   const corpus = corpusEvidence(info);
@@ -84,10 +85,9 @@ describe('fail-closed CI gate', () => {
   const reports = {
     ...loadReceipts(info),
     'ubuntu-latest': evidence(['source-clean', 'source-verify']),
-    'windows-latest': evidence(['source-clean', 'source-verify']),
     security,
   };
-  it('requires both operating systems and exact source identities', () => {
+  it('requires Linux evidence and exact source identities', () => {
     expect(assessGate(plan, results, reports, corpus).exitCode).toBe(0);
     expect(assessGate(plan, results, { 'ubuntu-latest': reports['ubuntu-latest'] }).exitCode).toBe(
       2,
@@ -95,15 +95,28 @@ describe('fail-closed CI gate', () => {
     expect(
       assessGate(plan, results, {
         ...reports,
-        'windows-latest': { ...reports['windows-latest'], candidateSha: 'd'.repeat(40) },
+        'ubuntu-latest': { ...reports['ubuntu-latest'], candidateSha: 'd'.repeat(40) },
       }).exitCode,
     ).toBe(2);
   });
   it('rejects job failure, cancellation, unplanned skip and absence', () => {
-    for (const value of ['failure', 'cancelled', 'skipped', undefined])
-      expect(assessGate(plan, { ...results, verify: value }, reports).exitCode).toBe(1);
+    for (const job of ['verify', 'load'])
+      for (const value of ['failure', 'cancelled', 'skipped', undefined])
+        expect(assessGate(plan, { ...results, [job]: value }, reports).exitCode).toBe(1);
     expect(assessGate(plan, { ...results, changes: 'failure' }, reports).exitCode).toBe(1);
     expect(assessGate(plan, { ...results, security: 'skipped' }, reports).exitCode).toBe(1);
+  });
+  it('requires independent paired evidence from the exact source and baseline', () => {
+    const paired = loadReceipts(info)['load-pair']!;
+    for (const invalid of [
+      null,
+      { ...paired, sourceSha: 'd'.repeat(40) },
+      { ...paired, baselineSha: 'd'.repeat(40) },
+      { ...paired, checks: paired.checks.filter((check) => check.id !== 'load:regression') },
+    ])
+      expect(assessGate(plan, results, { ...reports, 'load-pair': invalid }, corpus).exitCode).toBe(
+        2,
+      );
   });
   it('requires each H4 check even when every security job reports success', () => {
     expect(assessGate(plan, results, { ...reports, security: null }).exitCode).toBe(2);
@@ -135,11 +148,11 @@ describe('fail-closed CI gate', () => {
         security: 'success',
         'dependency-policy': 'success',
         verify: 'skipped',
+        load: 'skipped',
         docs: 'success',
       };
     const docReports = {
       'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']),
-      'docs-windows-latest': evidence(['docs:diff', 'docs:links']),
       security,
     };
     expect(assessGate(docs, observed, docReports).exitCode).toBe(0);
@@ -150,6 +163,7 @@ describe('fail-closed CI gate', () => {
         .exitCode,
     ).toBe(2);
     expect(assessGate(docs, { ...observed, docs: 'skipped' }, {}).exitCode).toBe(1);
+    expect(assessGate(docs, { ...observed, load: 'failure' }, docReports).exitCode).toBe(1);
   });
 });
 it(

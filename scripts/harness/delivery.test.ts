@@ -190,15 +190,15 @@ describe('delivery evidence', () => {
       assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
     }
   });
-  it('requires each OS, correct attempt and the same actual test source', () => {
+  it('requires Linux, correct attempt and the same actual test source', () => {
     const value = fixture();
     value.prRun!.sources.pop();
     assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
     const retry = fixture();
-    change(retry.prRun!.jobs[1], 'run_attempt', 2);
+    change(retry.prRun!.jobs[0], 'run_attempt', 2);
     assert.equal(assessDelivery(retry, 'pr', receipt(retry)).exitCode, 2);
     const other = fixture();
-    change(other.prRun!.sources[1]!.report, 'candidateSha', BASE);
+    change(other.prRun!.sources[0]!.report, 'candidateSha', BASE);
     assert.equal(assessDelivery(other, 'pr', receipt(other)).exitCode, 2);
   });
   it('rejects unrelated test-merge parents and stale base/head', () => {
@@ -289,7 +289,7 @@ function plannedFixture(full: boolean) {
     evidence: [{ uri: '.generated/harness/ci/security.json', sourceSha: TESTED }],
   }));
   const reports: Record<string, Report> = { security };
-  for (const [index, os] of ['ubuntu-latest', 'windows-latest'].entries()) {
+  for (const [index, os] of ['ubuntu-latest'].entries()) {
     const report = sourceReport();
     if (!full) {
       report.producer = 'docs-check';
@@ -305,6 +305,7 @@ function plannedFixture(full: boolean) {
     security: 'success',
     'dependency-policy': 'success',
     verify: full ? 'success' : 'skipped',
+    load: full ? 'success' : 'skipped',
     docs: full ? 'skipped' : 'success',
   };
   for (const [index, name] of ['changes', 'ci-gate'].entries())
@@ -323,7 +324,7 @@ function plannedFixture(full: boolean) {
       .report,
     logDigest: 'e'.repeat(64),
   };
-  const skipped = full ? 'Docs (${{ matrix.os }})' : 'Verify (${{ matrix.os }})';
+  const skipped = full ? 'Docs (ubuntu-latest)' : 'Verify (ubuntu-latest)';
   run.jobs.push({
     id: 5,
     name: skipped,
@@ -336,7 +337,7 @@ function plannedFixture(full: boolean) {
   return value;
 }
 describe('delivery with differential CI', () => {
-  it('accepts full and wording plans only with both OS receipts and the aggregate', () => {
+  it('accepts full and wording plans only with Linux receipts and the aggregate', () => {
     for (const full of [true, false]) {
       const value = plannedFixture(full);
       assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
@@ -355,6 +356,18 @@ describe('delivery with differential CI', () => {
       }
     }
   });
+  it('requires corpus and both load receipts even when CI claims success', () => {
+    for (const id of [
+      'corpus:artifacts',
+      'ci-evidence:load-ubuntu-latest',
+      'ci-evidence:load-pair',
+    ]) {
+      const value = plannedFixture(true);
+      const gate = value.prRun!.gate!.report as Report;
+      gate.checks = gate.checks.filter((check) => check.id !== id);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    }
+  });
   it('rejects missing, stale, failing and foreign-attempt plan/gate receipts', () => {
     for (const mutate of [
       (v: DeliverySnapshot) => {
@@ -370,7 +383,11 @@ describe('delivery with differential CI', () => {
         change(v.prRun!.gate!.report, 'candidateSha', BASE);
       },
       (v: DeliverySnapshot) => {
-        change(v.prRun!.jobs[3], 'run_attempt', 2);
+        change(
+          v.prRun!.jobs.find((job) => (job as { name: string }).name === 'ci-gate'),
+          'run_attempt',
+          2,
+        );
       },
       (v: DeliverySnapshot) => {
         change(v.prRun!.gate!, 'logDigest', 'invalid');
