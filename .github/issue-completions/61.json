@@ -4,7 +4,7 @@
   "issueBodySha256": "eabc21311f0f66191afe18395c853cc04706e9fd7a05eb49b2fdc54e91b1f3a5",
   "issueUpdatedAt": "2026-09-23T16:40:31Z",
   "complete": true,
-  "summary": "G-01〜G-08の能力基盤を共通schema・解決・資源・AI・観測・記録へ接続しました。今回のG-07はPR #95/#97で段階攻撃、連撃、弧／全周の薙ぎ払い、突進／跳躍／後退、接触に基づく押し引きを実装。G-08はPR #98で被弾前／被弾後／戦闘不能直前、受け流しと支払い済み遅延反撃、回数／深さ制限、同時効果と状態干渉の一括確定、原子的rollbackを実装しました。自己AI・遅延可視情報・判断／認識ログ・実際の表示状態とgeometry・ReplayState・実Worker／SQLite往復を検証済みです。792 tests、7固定入力／198対応回帰、clean-source、API起動、exact main 8bdf885との各35試行が成功。公開済みID/hash・旧記録・Golden期待値と既存上限を保持し、新判断をspatial-v1.18/standard-reactions-v1へ版付けしました。本文・全27コメント・関連PR・sub-issueなしを確認。承認済みP6の反射／吸収／蘇生とP4/P5描画等は本Issueの対象外です。CIの旧両OS表記は既存PR #64/#66のLinux方針に整合済みで、今回gateを変更していません。",
+  "summary": "G-01〜G-08の能力基盤を共通schema・解決・資源・AI・観測・記録へ接続しました。今回のG-07はPR #95/#97で段階攻撃、連撃、弧／全周の薙ぎ払い、突進／跳躍／後退、接触に基づく押し引きを実装。G-08はPR #98で被弾前／被弾後／戦闘不能直前、受け流しと支払い済み遅延反撃、回数／深さ制限、同時効果と状態干渉の一括確定、原子的rollbackを実装しました。自己AI・遅延可視情報・判断／認識ログ・実際の表示状態とgeometry・ReplayState・実Worker／SQLite往復を検証済みです。794 tests、7固定入力／200対応回帰、clean-source、API起動、exact main 8bdf885との各35試行が成功。公開済みID/hash・旧記録・Golden期待値と既存上限を保持し、新判断をspatial-v1.18/standard-reactions-v1へ版付けしました。本文・全27コメント・関連PR・sub-issueなしを確認。承認済みP6の反射／吸収／蘇生とP4/P5描画等は本Issueの対象外です。CIの旧両OS表記は既存PR #64/#66のLinux方針に整合済みで、今回gateを変更していません。",
   "remainingWork": [],
   "pullRequests": [68, 69, 70, 71, 72, 73, 78, 85, 86, 87, 89, 95, 97, 98],
   "acceptance": [
@@ -14,7 +14,7 @@
     },
     {
       "task": "魔力・魔法防御と、ダメージ効果の参照能力値・軽減する防御を定義できる。省略時は既存の全fixtureの結果が変わらない",
-      "evidence": "PR #69 (main e0e7363): damage.ts, damage.test.ts, damage-integration.test.ts and damage-formulas.json pin optional magicPower/magicDefense, mixed-stat ratios, defense selection, exact intermediate arithmetic and legacy fallback. Current fixed corpus and 792-test verification pass."
+      "evidence": "PR #69 (main e0e7363): damage.ts, damage.test.ts, damage-integration.test.ts and damage-formulas.json pin optional magicPower/magicDefense, mixed-stat ratios, defense selection, exact intermediate arithmetic and legacy fallback. Current fixed corpus and 794-test verification pass."
     },
     {
       "task": "魔法剣技（例: 燃焼付きの炎の斬撃）を、物理と魔法の両方の分類・両方の能力値を参照する威力で、データだけで定義できる。沈黙で使えなくなることを確認する",
@@ -66,7 +66,7 @@
     },
     {
       "task": "技の段・攻撃の形・自分の移動・相手の移動・反応型の発動について、設計ADRが#1のP6の処理順と整合する形で承認されている",
-      "evidence": "PR #86 (main e9325df): docs/adr/0012-stages-and-reactions.md was approved at https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5792777109 before implementation. It fixes shared clocks, transactions, wave order, P6 reflection/revival boundaries, limits and rollback. Current stages-motion.md/reactions.md document implemented contracts."
+      "evidence": "PR #86 (main e9325df): docs/adr/0012-stages-and-reactions.md was approved at https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5794777109 before implementation. It fixes shared clocks, transactions, wave order, P6 reflection/revival boundaries, limits and rollback. Current stages-motion.md/reactions.md document implemented contracts."
     },
     {
       "task": "連撃（2段以上）・突進斬り・薙ぎ払いを、データだけで定義して実対戦fixtureで再現できる。既存の技は段が1つとして同じ結果になる",
@@ -74,7 +74,7 @@
     },
     {
       "task": "反応型の発動で、受け流し（被弾前）または反撃（被弾後）を1つ以上定義でき、回数と深さの上限を超えると既存の診断になる",
-      "evidence": "PR #98: reactions.test.ts, reaction-interference.test.ts and reaction-observation.test.ts exercise before-hit parry and after-damage paid counters, before-defeat including exact HP costs, transaction/match counts, cross-interval depth, truncated diagnostics, unresolved status interference and atomic rollback. The additive parry-v1/riposte-v1/reaction-duelist-v1 samples execute through the common coordinator."
+      "evidence": "PR #98: reactions.test.ts, reaction-interference.test.ts and reaction-observation.test.ts exercise before-hit parry and after-damage paid counters, before-defeat including exact HP costs, transaction/match counts, cross-interval depth, truncated diagnostics, unresolved status interference and atomic rollback. The additive parry-v1/riposte-v1/reaction-duelist-v1 samples execute through the common coordinator. Owner-swapped lethal fixtures reproduce the reviewed false depth truncation before the fix; owner-scoped ancestry/cause IDs, depth limits 1/8, mutual defeat and recorded replay pass after the fix."
     },
     {
       "task": "新しい効果・状態を追加するPRが、§2-Iの完了条件（検証・解決・干渉・AI評価・観測・ログ・fixture・互換性）を満たしている",
@@ -82,7 +82,7 @@
     },
     {
       "task": "既存のハーネス・`vp run verify`・現行のLinux CI・固定コーパスで検証する",
-      "evidence": "Canonical vp run verify and committed clean-source pass 792 tests, 7 fixed inputs/198 mapped regressions/28 categories, security, typecheck, quality, load and build; built API/Drizzle startup passes. Exact 8bdf885 baseline/candidate paired runs (35 each) keep all result/count/byte vectors and ceilings. Linux CI is the established policy from PR #64/#66; existing Chromium/WebKit UI and all release/security/dependency/paired-load gates remain required. The writer must verify full exact-main CI/Release before closing."
+      "evidence": "Canonical vp run verify and committed clean-source pass 794 tests, 7 fixed inputs/200 mapped regressions/28 categories, security, typecheck, quality, load and build; built API/Drizzle startup passes. Exact 8bdf885 baseline/candidate paired runs (35 each) keep all result/count/byte vectors and ceilings. Linux CI is the established policy from PR #64/#66; existing Chromium/WebKit UI and all release/security/dependency/paired-load gates remain required. The writer must verify full exact-main CI/Release before closing."
     }
   ]
 }

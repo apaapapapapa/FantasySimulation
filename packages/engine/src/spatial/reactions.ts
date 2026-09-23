@@ -203,7 +203,10 @@ export function commitReactiveEffects(
         continue;
       }
       const plans = eligible.map((entry) => {
-        const basis = point === 'before-defeat' ? incoming : entry.matches;
+        const basis =
+          point === 'before-defeat'
+            ? incoming.filter((app) => app.targetId === idOf(actor))
+            : entry.matches;
         const depth = 1 + Math.max(0, ...basis.map((app) => app.reaction?.depth ?? 0));
         const causes = [
           ...new Set(

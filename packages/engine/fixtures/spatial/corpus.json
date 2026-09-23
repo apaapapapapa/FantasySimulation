@@ -804,6 +804,14 @@
     "g08-32": {
       "file": "packages/engine/src/spatial/reactions.test.ts",
       "name": "transactional reaction activations records a wide counter sweep center separately from its contact surface"
+    },
+    "g08-33": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement scopes before-defeat ancestry to owner 0 despite the opponent reaction wave"
+    },
+    "g08-34": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement scopes before-defeat ancestry to owner 1 despite the opponent reaction wave"
     }
   },
   "entries": [
@@ -1501,7 +1509,9 @@
         "g08-29",
         "g08-30",
         "g08-31",
-        "g08-32"
+        "g08-32",
+        "g08-33",
+        "g08-34"
       ],
       "title": "G-08: 反応点・受け流し・反撃・上限・原子性・観測・保存",
       "state": "implemented",

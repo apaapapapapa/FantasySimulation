@@ -74,6 +74,8 @@ Stable actor/ability order serializes commutative groups, not mechanical precede
 Logical point order and wave index differ from ancestry depth. Event `wave` is the
 current effect wave; `reaction.wave` identifies the activation's trigger wave.
 Causal event IDs precede children; ordinary phase/subtime display ordering remains.
+Before-defeat ancestry and causes include only applications targeting that owner;
+an opponent's unrelated reaction wave cannot increase its depth.
 Undefined accepted G-03 interference reports unresolved with revisions and bounded
 point/step/actor/causes. Unexpected errors remain failures.
 

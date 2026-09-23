@@ -32,6 +32,60 @@ const counter = (): Partial<Definition<'ability'>> => ({
   effects: [{ kind: 'damage', amount: 5, attackScaleBps: 0, element: 'physical', defense: 'none' }],
 });
 describe('reaction interference and old-cohort settlement', () => {
+  it.each([0, 1] as const)(
+    'scopes before-defeat ancestry to owner %i despite the opponent reaction wave',
+    async (owner) => {
+      const input = await reactionManifest({
+        character: { stats },
+        attack: lethalAttack,
+        reactions: [
+          {
+            trigger: 'before-defeat',
+            reaction: { response: { kind: 'effects' } },
+            effects: [{ kind: 'shield', amount: 7 }],
+          },
+          {
+            trigger: 'after-damage',
+            reaction: { response: { kind: 'effects' } },
+            effects: [{ kind: 'shield', amount: 1 }],
+          },
+        ],
+      });
+      for (const [index, participant] of input.participants.entries()) {
+        const before = input.revisions.find(
+          (r) => r.kind === 'character' && r.id === participant.character.id,
+        )!;
+        if (before.kind !== 'character') throw new Error('Character fixture required');
+        const character = await sealRevision('character', before.id, 1, {
+          ...before.definition,
+          abilities: before.definition.abilities.filter(
+            (a) => a.id !== (index === owner ? 'reaction-1' : 'reaction-0'),
+          ),
+        });
+        input.revisions = input.revisions.map((r) => (r === before ? character : r));
+        participant.character = reference(character);
+      }
+      for (const maxReactionDepth of [1, 8]) {
+        const full = await runBattle(input, { ...DEFAULT_BUDGET, maxReactionDepth });
+        expect(full.result.outcome).toEqual({ kind: 'draw', reason: 'mutual-defeat' });
+        const events = battleEvents(full.records),
+          actorId = input.participants[owner].actorId;
+        const activation = events.find(
+          (e) => e.ruleId === 'reaction.activated' && e.reaction?.point === 'before-defeat',
+        )!;
+        expect(activation.actorId).toBe(actorId);
+        expect(activation.reaction!.depth).toBe(1);
+        expect(activation.causes).toEqual(
+          events.filter((e) => e.kind === 'damage' && e.targetId === actorId).map((e) => e.id),
+        );
+        expect(full.result.stats.reactionAttempts).toBe(2);
+        const { replay } = await recordedCheckpoints(input, full);
+        expect(
+          replay.checkpoint().state!.actors.find((a) => a.id === actorId)!.resources.shield,
+        ).toBe(7);
+      }
+    },
+  );
   it.each(['action', 'battle-start'] as const)(
     'visits before-defeat after an exact HP %s cost',
     async (trigger) => {
