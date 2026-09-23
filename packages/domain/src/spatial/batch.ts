@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { BudgetSchema, HashSchema, IdSchema, RevisionSchema, ManifestSchema } from './contracts.ts';
+import {
+  BudgetSchema,
+  HashSchema,
+  IdSchema,
+  RevisionSchema,
+  StoredManifestSchema,
+} from './contracts.ts';
 import { SpecInputSchema } from './api.ts';
 import { ResultSchema } from './records.ts';
 
@@ -42,7 +48,7 @@ export const PlannedMatchSchema = z.strictObject({
 export const BatchPlanBodySchema = z.strictObject({
   schemaVersion: z.literal(1),
   source: ExecutionSourceSchema,
-  engineVersion: ManifestSchema.shape.engineVersion,
+  engineVersion: StoredManifestSchema.shape.engineVersion,
   implementationDigest: HashSchema,
   revisions: BatchInputSchema.shape.revisions,
   slots: z.array(PlannedMatchSchema).min(1).max(1000),

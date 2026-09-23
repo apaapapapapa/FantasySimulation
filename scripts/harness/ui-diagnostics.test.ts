@@ -20,7 +20,10 @@ function probe(root: string, scenario: 'startup' | 'timeout' | 'crash') {
   const artifacts: Record<string, unknown> = {
     'run.json': { ...identity, runId: run.id, runAttempt: run.attempt },
     'runner.log': 'expected failure log',
-    'lifecycle.json': [{ stage: 'api-ready' }, { stage: 'servers-stopped' }],
+    'lifecycle.json': (scenario === 'startup'
+      ? ['server-start', 'api-ready', 'servers-stopped', 'failure']
+      : ['server-start', 'api-ready', 'web-ready', 'browser', 'browser-finished', 'servers-stopped']
+    ).map((stage, index) => ({ stage, at: `2026-09-23T00:00:00.${index}00Z` })),
     'servers.json': {
       stopped: true,
       apiOrigin: 'http://127.0.0.1:1234',
@@ -121,6 +124,27 @@ it('requires all fault types, actual failure outcomes, retained artifacts and th
       expect(inspectUiDiagnostics(root, identity, run).status).toBe('unknown');
       writeFileSync(path, original);
     }
+    const path = join(root, 'diagnostics/crash/lifecycle.json');
+    const commandPath = join(root, 'diagnostics/crash/command.json');
+    const original = readFileSync(path, 'utf8');
+    const commandText = readFileSync(commandPath, 'utf8');
+    const sequence = JSON.parse(original) as { stage: string; at: string }[];
+    for (const value of [
+      [],
+      sequence.slice(1),
+      sequence.toReversed(),
+      sequence.map((entry, i) => (i === 2 ? { ...entry, at: '2026-09-24T00:00:00Z' } : entry)),
+    ]) {
+      writeFileSync(path, JSON.stringify(value));
+      const command = JSON.parse(commandText) as { digests: Record<string, string> };
+      command.digests['lifecycle.json'] = createHash('sha256')
+        .update(readFileSync(path))
+        .digest('hex');
+      writeFileSync(commandPath, JSON.stringify(command));
+      expect(inspectUiDiagnostics(root, identity, run).status).toBe('unknown');
+    }
+    writeFileSync(path, original);
+    writeFileSync(commandPath, commandText);
     rmSync(join(root, 'diagnostics/timeout/trace.zip'));
     expect(inspectUiDiagnostics(root, identity, run).status).toBe('unknown');
     rmSync(join(root, 'diagnostics/startup'), { recursive: true });

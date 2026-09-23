@@ -40,6 +40,17 @@ describe('UI evidence', () => {
       const runReceipt = { ...info, runId: '10', runAttempt: '2' };
       write('run.json', runReceipt);
       write('execution.json', { run: runReceipt });
+      write(
+        'lifecycle.json',
+        [
+          'server-start',
+          'api-ready',
+          'web-ready',
+          'browser',
+          'browser-finished',
+          'servers-stopped',
+        ].map((stage) => ({ stage, at: '2026-09-23T00:00:00Z' })),
+      );
       write('results.json', raw);
       write('coverage.json', uiCoverage(raw, directory, '/original/checkout/ui'));
       write('command.json', {

@@ -133,6 +133,33 @@ export function readUiRun(
       coverage.status !== 'pass')
   )
     throw new Error('UI summary contradicts its command/coverage');
+  const lifecycle = readBoundedJson(join(directory, 'lifecycle.json'));
+  const stages =
+    scenario === 'startup'
+      ? ['server-start', 'api-ready', 'servers-stopped', 'failure']
+      : [
+          'server-start',
+          'api-ready',
+          'web-ready',
+          'browser',
+          'browser-finished',
+          'servers-stopped',
+        ];
+  if (!Array.isArray(lifecycle) || lifecycle.length !== stages.length)
+    throw new Error('Missing UI lifecycle stages');
+  let previous = Date.parse(report.startedAt);
+  for (const [index, value] of lifecycle.entries()) {
+    const entry = record(value),
+      at = Date.parse(text(entry.at));
+    if (
+      entry.stage !== stages[index] ||
+      !Number.isFinite(at) ||
+      at < previous ||
+      at > Date.parse(report.finishedAt)
+    )
+      throw new Error('Invalid UI lifecycle stage order or timestamp');
+    previous = at;
+  }
   return assessment.report;
 }
 

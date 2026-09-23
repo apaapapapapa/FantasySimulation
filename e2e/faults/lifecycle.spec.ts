@@ -20,7 +20,14 @@ test(scenario, async ({ page, browser }, info) => {
       browser.once('disconnected', () => resolve()),
     );
     const session = await browser.newBrowserCDPSession();
-    await session.send('Browser.crash').catch(() => {});
+    // Browser.crash can hang in headless-shell. Kill only the browser owned by this fixture.
+    const { processInfo } = await session.send('SystemInfo.getProcessInfo');
+    const owned = processInfo.filter((entry) => entry.type === 'browser');
+    expect(owned).toHaveLength(1);
+    const pid = owned[0]!.id;
+    if (!Number.isSafeInteger(pid) || pid <= 1 || pid === process.pid)
+      throw new Error('Invalid isolated browser PID');
+    process.kill(pid, 'SIGKILL');
     await disconnected;
     expect(browser.isConnected()).toBe(false);
     await info.attach('fault-observed', {

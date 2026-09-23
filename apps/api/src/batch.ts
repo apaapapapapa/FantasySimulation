@@ -7,14 +7,13 @@ import {
   canonicalJson,
   type Revision,
 } from '@fantasy/domain/spatial';
-import { catalogManifest } from '@fantasy/engine/spatial';
-import { createBatchPlan, executionSource } from './batch-plan.ts';
-import { runBatch, reconcileBatch } from './batch-runner.ts';
+import { reconcileBatch } from './batch-check.ts';
+import { exportPublication } from './publication-export.ts';
 import { BattleBundles } from './battle-bundle.ts';
 import { readBoundedFile, publishImmutableFile } from './replay-files.ts';
 
-const readJson = async (path: string) =>
-  JSON.parse((await readBoundedFile(resolve(path), 8_000_000)).toString('utf8')) as unknown;
+const readJson = async (path: string, limit = 8_000_000) =>
+  JSON.parse((await readBoundedFile(resolve(path), limit)).toString('utf8')) as unknown;
 async function main() {
   const { positionals, values } = parseArgs({
     allowPositionals: true,
@@ -27,6 +26,7 @@ async function main() {
   });
   const [command, input, output, ...rest] = positionals;
   if (command === 'sample' && input && !output) {
+    const { catalogManifest } = await import('@fantasy/engine/spatial');
     const revisions = new Map<string, Revision>(),
       matches = [];
     for (const [index, pair] of [
@@ -57,6 +57,7 @@ async function main() {
     );
     console.log(resolve(input));
   } else if (command === 'plan' && input && output && !rest.length) {
+    const { createBatchPlan, executionSource } = await import('./batch-plan.ts');
     const plan = await createBatchPlan(await readJson(input), executionSource());
     await mkdir(dirname(resolve(output)), { recursive: true });
     await publishImmutableFile(resolve(output), canonicalJson(plan));
@@ -64,6 +65,8 @@ async function main() {
       canonicalJson({ planId: plan.id, slots: plan.slots.length, path: resolve(output) }),
     );
   } else if (command === 'run' && input && output && !rest.length) {
+    const { runBatch } = await import('./batch-runner.ts');
+    const { executionSource } = await import('./batch-plan.ts');
     const shard = (values.shard ?? '0/1').split('/').map(Number);
     if (shard.length !== 2) throw new Error('Shard must be index/count, with a zero-based index');
     const controller = new AbortController(),
@@ -93,20 +96,29 @@ async function main() {
       process.off('SIGINT', stop);
       process.off('SIGTERM', stop);
     }
-  } else if (command === 'check' && input && output && rest.length % 2 === 1) {
-    const files = [output, ...rest],
+  } else if (
+    input &&
+    output &&
+    ((command === 'check' && rest.length % 2 === 1) ||
+      (command === 'export' && rest.length >= 2 && rest.length % 2 === 0))
+  ) {
+    const files = command === 'export' ? rest : [output, ...rest],
       indexes = [];
+    if (files.length > 128) throw new Error('Expected at most 64 batch indexes');
     for (let i = 0; i < files.length; i += 2)
       indexes.push({
-        index: await readJson(files[i]!),
+        index: await readJson(files[i]!, 2_000_000),
         bundles: new BattleBundles(resolve(files[i + 1]!)),
       });
-    const result = await reconcileBatch(await readJson(input), indexes);
+    const result =
+      command === 'export'
+        ? await exportPublication(await readJson(input), indexes, resolve(output))
+        : await reconcileBatch(await readJson(input), indexes);
     console.log(canonicalJson(result));
     if (!result.complete) process.exitCode = 2;
   } else
     throw new Error(
-      'Usage: batch sample input.json | plan input.json plan.json | run plan.json output-dir [--workers 1 --shard 0/1 --deadline 1800000 --retry-failed] | check plan.json index.json bundle-root [index.json bundle-root ...]',
+      'Usage: batch sample input.json | plan input.json plan.json | run plan.json output-dir [--workers 1 --shard 0/1 --deadline 1800000 --retry-failed] | check plan.json index.json bundle-root [index.json bundle-root ...] | export plan.json public-dir index.json bundle-root [index.json bundle-root ...]',
     );
 }
 await main().catch((error: unknown) => {
