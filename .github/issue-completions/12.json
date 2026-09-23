@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "issue": 12,
+  "issueBodySha256": "61cf40d4fe8cd2c531267b4f57751a57f03a625f0c311f7febf2e15a52ba011d",
+  "issueUpdatedAt": "2026-09-23T14:33:22Z",
+  "complete": true,
+  "summary": "Linuxの使い捨てAPI/SQLiteによる編集・非同期対戦10ケースと、API不要の静的観戦7ケース×Chromium/WebKitを実装・検証しました。3D再生/シーク/速度/カメラ、保存状態・結果の不変性、公開JSON・artifact検証、WebGL fallback、遅着応答、異常表示を確認済みです。実起動失敗・timeout・browser crashの証跡/後始末と、SHA・run・attempt・browserごとの厳格なcoverage照合をCIへ接続しました。PR #96 CI https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 と最終機能head f801efb8007600b21de08ee7716fb54a3d32995e のclean-sourceが成功。本文・全4コメントを再確認し、P5ランキング/仮想化・実機Safari/モバイルは明示された後続範囲、戦闘正当性は#9の責務として区別しています。",
+  "remainingWork": [],
+  "pullRequests": [88, 90, 92, 94, 96],
+  "acceptance": [
+    {
+      "task": "PlaywrightからlocalのAPIとwebを起動し、専用の使い捨てSQLite DB・新schemaのsample revisionを使う",
+      "evidence": "PR #88/#94: e2e/servers.ts seeds readSampleRevisions into a fresh SQLite database, starts owned loopback API and production web preview, and checks readiness. PR #94 main CI 35874501835 passed ten real Chromium cases."
+    },
+    {
+      "task": "実行ごとにDB/artifact/portを分離し、失敗時もprocessを停止する。利用者DB、既存起動server、本番環境へ誤接続しない",
+      "evidence": "e2e/runner.ts and scripts/harness/ui.ts allocate separate temporary DB/artifact/port roots, stop owned process groups on timeout/abort and require server-stop plus temporaryRemoved receipts; ui-diagnostics.test.ts and real startup/timeout/crash probes verify cleanup."
+    },
+    {
+      "task": "CIでは既存serverの再利用を禁止し、許可したlocalhost以外への通信を拒否する。secretや外部サービスを必須にしない",
+      "evidence": "e2e/fixtures.ts permits only assigned exact localhost HTTP origins and blocks all WebSockets/service workers. e2e/web-server.ts uses configFile:false/envDir:false, no existing server reuse; safeEnvironment excludes credentials and user API/DB overrides."
+    },
+    {
+      "task": "Playwright package/browserをlockfileと整合する版に固定。locale/timezone/viewport/fontを固定し、browser cacheのidentityを明示する",
+      "evidence": "package.json/pnpm-lock.yaml pin Playwright 1.63.0 and Noto Sans JP 5.2.8; e2e/contract.ts fixes locale, timezone, viewport and rendering settings. setup-playwright/action.yml keys exact browser cache identity by Playwright/OS/architecture; execution.json records installed browser revisions."
+    },
+    {
+      "task": "最初はLinux/Chromiumの最小suiteから始める。現行のLinux CI方針を維持し、WebKitは#79/#80の受入に合わせて追加する。全browser×全OSのE2Eを無条件に増やさない",
+      "evidence": "PR #88 first required Linux/Chromium smoke; PR #96 adds Chromium/WebKit only to the independent implemented static viewer suite, preserving Linux CI and avoiding an all-browser/all-OS matrix. Physical Safari/mobile certification remains outside this Issue's stated scope. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "shared domain契約を使い、P4で実装済みになった新しい登録・検証・revision公開・非同期対戦・進捗/中止・結果/ログ閲覧を順次試験する",
+      "evidence": "PR #94 uses shared domain Draft/Revision/Job/Result contracts. e2e/specs/workbench.spec.ts exercises actual draft registration, validation, immutable revision publication, job progress/cancellation/retry/reopening, result and saved-log viewing."
+    },
+    {
+      "task": "入力不正、API失敗、unresolved/truncated、artifact欠落等の表示を、対応する機能の実装PRと合わせて追加する",
+      "evidence": "e2e/specs/workbench.spec.ts covers invalid draft, optimistic conflict, invalid bounds (400), API failures and truncated jobs. e2e/static/viewer.spec.ts covers unresolved/truncated publication and missing/corrupt/oversize/double-gzip artifacts; damaged results are never presented as confirmed wins. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "3Dリプレイのstep送り・表示速度・カメラ操作を検証する。描画fpsやカメラ操作が保存済みの対戦結果を変更しないことを確認する",
+      "evidence": "PR #96 static-replay-controls verifies real canvas rendering, play/pause/2x, backward/forward seek, four cameras and free-camera drag while comparing same-step state and saved result. playback-clock.test.ts independently checks 10/60/144 fps; existing reducer/seek tests verify recorded states. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "role/label等の安定した操作対象とkeyboard操作を使い、偶然のDOM順や長い文言一致だけへ依存しない",
+      "evidence": "UI exposes stable role/label targets and immutable slot IDs. Browser tests focus and activate publication, saved job and step controls with the keyboard; selection remains stable after TanStack sort/filter/page changes and direct-URL reload."
+    },
+    {
+      "task": "失敗trace・screenshot・test reportをsource SHA、test ID、attempt、設定と結び付け、#5のreportとCI artifactへ保存する",
+      "evidence": "scripts/harness/ui.ts/ui-results.ts bind source/candidate/test-merge SHA, CI run/attempt, test ID, browser, retry, settings and raw/attachment hashes. CI uploads all attempts and failure trace/screenshots; the gate revalidates relocated artifacts. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "retryで成功した場合も最初の失敗を追跡できるようにする。必要な試験の欠落やbrowser未起動を合格にしない",
+      "evidence": "UI coverage regressions reject missing/skipped/unstarted/duplicate browser cases, spoofed identity, missing retry history and stale/tampered artifacts. A failed first attempt stays failed after retry. Original PR #94 failed attempts remain in CI 35872805589; corrected head passes a new run. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup). PR #96 initial browser failures (35874829623) and the JSON coverage grouping failure (35877176181) retain original artifacts; fixes were validated in a new run without rewriting those reports."
+    },
+    {
+      "task": "新しいDBで起動→sample準備→最小操作→終了を再実行でき、利用者のデータに影響しない",
+      "evidence": "Repeated PR #88/#92/#94 main CI runs and PR #96 UI runs start and remove fresh isolated roots. Normal and injected-failure receipts require stopped servers and removed temporary data, with no user DB paths or reused server. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "新しいAPI/UIの実際のuser flowを試験し、旧同期201や旧結果schemaへの互換を要求しない",
+      "evidence": "PR #94's ten Chromium flows exercise current 202/200 asynchronous jobs and current shared result/revision schemas. No legacy synchronous battle route or result compatibility was introduced."
+    },
+    {
+      "task": "server起動失敗、API error、timeout、browser crashで原因と失敗artifactが残る",
+      "evidence": "PR #92 e2e/faults/lifecycle.spec.ts injects real partial API/web startup failure, a test timeout and owned Chromium PID crash. Separate diagnostics retain failure logs/trace/pre-crash image and cleanup chronology; API-error cases retain browser evidence."
+    },
+    {
+      "task": "reportに対象SHAと試験coverageがあり、未実行やstale evidenceはunknownとなる",
+      "evidence": "source-clean/source-verify and UI reports include exact source identity and complete required case/browser/attempt inventory. Unit tests reject stale source/run/attempt/settings and unknown or missing browser evidence; absent execution never passes. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "token/個人データ/利用者DBがartifactへ混入しない",
+      "evidence": "Only safe process settings/generated local paths reach E2E children; .env is disabled. Temporary DB/replay storage lies outside uploaded evidence, which contains fixed sample data and owned-run diagnostics. Token redaction and secret-scan tests remain mandatory."
+    },
+    {
+      "task": "render/replayの操作でengine結果が変わらないことを#9の証跡と区別して示す",
+      "evidence": "Scene.tsx consumes saved ReplayContext/ReplayCheckpoint only, without engine or Rapier imports. Static CI compares immutable result and same-step entity/resources after playback/seek/camera changes; independent reducer/clock tests support display evidence while #9 keeps combat/physics/determinism ownership. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "必須suiteの実行条件と予定skipを#6のgateへ登録する。P4開始前はこのIssueを未完了のまま残す",
+      "evidence": "e2e/contract.ts required inventories and scripts/harness/ui-results.ts are connected to scripts/ci plan/gate and delivery. Full CI requires local flows, three fault probes and static Chromium/WebKit; only observed wording-only PR skips are allowed. #12 stayed open through preparatory PRs. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "新しい一時DB/sampleと専用serverでChromium smokeを再実行できる",
+      "evidence": "PR #88's isolated Chromium smoke and PR #94's expanded ten-case suite were rerun successfully on PR and main. e2e/servers.ts creates samples/readiness from a new disposable database every time."
+    },
+    {
+      "task": "APIの異常、起動失敗、timeout時に原因・証跡が残り、processを回収できる",
+      "evidence": "Actual API failures plus independent startup/timeout/crash runs preserve failure artifacts and owned-process cleanup. PR #92 and #94 main CI validate their SHA-bound diagnostic receipts, separately from normal passing browser coverage."
+    },
+    {
+      "task": "既存DB/server・本番・許可外originへの誤接続を防げる",
+      "evidence": "e2e/contract.ts validates exact loopback origins, e2e/fixtures.ts blocks foreign HTTP/WebSockets, and server runners bind new port 0 listeners. Static E2E has a distinct read-only data origin and apiOrigin:null; no production or user server is reused. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    },
+    {
+      "task": "#81の共通契約とfixtureの参照先・役割分担がレビューされている",
+      "evidence": "PR #90 owns the shared public catalog/set/page/row/reference schemas and export. PR #96 consumes those schemas and existing ReplaySource/OpenedReplay/ReplayState, with checksum-bound fixed archive provenance and unchanged historical recording; no duplicated public contract or engine implementation."
+    },
+    {
+      "task": "必須suiteの実行結果と未実装の後続suiteを区別して報告できる",
+      "evidence": "Both implemented local P4 and static Chromium/WebKit inventories are now mandatory and individually recorded. Diagnostics cannot satisfy ordinary coverage. docs/development/e2e.md explicitly distinguishes physical devices, P5 rankings/virtualization and engine correctness from this Issue's implemented display tests. Verified CI: https://github.com/apaapapapapa/FantasySimulation/actions/runs/35878192417 (head f801efb8007600b21de08ee7716fb54a3d32995e; 10 local cases, 14 static case/browser pairs, three real fault probes; all normal cases passed on the first attempt; fault probes verified expected failures and cleanup)."
+    }
+  ]
+}
