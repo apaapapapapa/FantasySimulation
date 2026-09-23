@@ -7,7 +7,7 @@ if (scenario !== 'timeout' && scenario !== 'crash') throw new Error('Expected a 
 // These deliberately fail. The outer diagnostic verifies the failure evidence, never UI coverage.
 test(scenario, async ({ page, browser }, info) => {
   await page.goto('/');
-  await expect(page.getByRole('status')).toHaveText('APIに接続しました');
+  await expect(page.getByRole('status', { name: 'API接続' })).toHaveText('APIに接続しました');
   await info.attach('before-fault', {
     body: await page.screenshot(),
     contentType: 'image/png',

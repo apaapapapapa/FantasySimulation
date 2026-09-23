@@ -7,8 +7,8 @@ vp run test:e2e
 vp run harness ui .generated/harness/ui-unique
 ```
 
-Linux/Chromium covers the heading, API health/error responses and blocked external
-requests. Dirty trees are diagnostic only. Each run seeds current domain revisions
+Linux/Chromium covers API health/errors, draft validation/publication, job cancellation/
+retry/results and saved-log steps. Dirty trees are diagnostic only. Runs seed revisions
 into a temporary SQLite DB and binds its own loopback API/web ports. Vite previews
 temporary builds without HMR or `.env`; child environments exclude DB/API overrides
 and credentials. Timeout/SIGINT/SIGTERM stops the owned process group before cleanup.
@@ -32,7 +32,6 @@ They cannot satisfy smoke coverage. Missing probes fail `ui:diagnostics` in the 
 without API/DB/engine. Static browser coverage remains `unknown` until #81 publication
 schemas and #79/#80 screens land. Reuse those domain types and web's
 `ReplaySource`/`OpenedReplay`; add WebKit and selection/play/seek flows with the screens.
-P4 editor/job/cancel/result tests remain pending; #12 stays open. #9 owns engine
-correctness independently of screenshots.
+#12 stays open for static playback/3D coverage. #9 owns engine correctness.
 
 Source: HiFiScout `36aaf69d3f7a61195af4e85a468514dfbb1ecc80` UI harness.

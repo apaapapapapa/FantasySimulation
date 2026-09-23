@@ -4,6 +4,11 @@ export const UI_CASES = [
   'api-http-error',
   'api-invalid-json',
   'network-boundary',
+  'draft-revisions',
+  'draft-errors',
+  'battle-cancel-retry',
+  'battle-truncated-result',
+  'battle-api-error',
 ] as const;
 export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
 export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics'] as const;

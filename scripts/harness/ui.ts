@@ -215,11 +215,11 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
       },
       {
         id: 'ui:p4-editor-battle',
-        required: false,
-        status: 'unknown',
+        required: scenario === 'smoke',
+        status: scenario === 'smoke' ? coverage.status : 'unknown',
         reason:
-          'Registration, job/cancellation/result screens not implemented; engine correctness belongs to #9',
-        evidence: [],
+          'Required cases exercise draft validation/publication and real async battle/cancel/retry/result/replay; engine correctness belongs to #9',
+        evidence,
       },
     ],
   };
