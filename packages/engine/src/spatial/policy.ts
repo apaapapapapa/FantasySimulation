@@ -259,20 +259,23 @@ export function steerPolicy(
 ): { intent: MotionIntent; navigation: NavigationResult | null } {
   const character = view.self.actor.character,
     movement = character.movement.locomotion;
-  const gait = resourceReady(view) ? (decision.gait ?? 'walk') : 'slow';
+  const stamina = Math.max(
+    0,
+    (view.resources.stamina ?? 0) -
+      (view.self.actor.abilities.find((a) => a.id === decision.abilityId)?.definition.costs
+        .stamina ?? 0) -
+      (decision.cognition?.selection === 'dodge' ? (movement?.dodgeStamina ?? 0) : 0),
+  );
+  const ready = resourceReady({ ...view, resources: { ...view.resources, stamina } });
+  const gait = ready ? (decision.gait ?? 'walk') : 'slow';
   const profile = gaitProfile(character, gait);
   const speed = options.flight ? character.movement.flySpeedMmPerSecond : profile.speedMmPerSecond;
   const resources =
     movement || character.stamina || (view.flightStaminaPerSecond ?? 0) > 0
       ? {
           speedMmPerSecond: (speed * options.speedBps) / 10000,
-          stamina: Math.max(
-            0,
-            (view.resources.stamina ?? 0) -
-              (view.self.actor.abilities.find((a) => a.id === decision.abilityId)?.definition.costs
-                .stamina ?? 0),
-          ),
-          ready: resourceReady(view),
+          stamina,
+          ready,
           walkPerMeter: profile.staminaPerMeter,
           jumpStamina: movement?.jumpStamina ?? 0,
           stepPerMeter: movement?.stepStaminaPerMeter ?? 0,

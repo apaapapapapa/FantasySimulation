@@ -6,7 +6,8 @@ import { editScenario } from '../../test-support/fixtures.ts';
 import { sampleManifest } from './sample.ts';
 import { createBattleWorld } from './terrain.ts';
 import { Navigator } from './navigation.ts';
-import { steerPolicy } from './policy.ts';
+import { choosePolicy, steerPolicy } from './policy.ts';
+import { locomotion } from '../../test-support/locomotion.ts';
 import { initialMotion } from './movement.ts';
 import { emptyMemory, type DecisionView } from './perception.ts';
 beforeAll(initializePhysics);
@@ -287,6 +288,63 @@ describe('bounded body-aware support graphs', () => {
           options,
         ).navigation?.kind,
       ).toBe('path');
+      const dodgeView: DecisionView = {
+        ...view,
+        self: {
+          ...view.self,
+          actor: {
+            ...actor,
+            character: {
+              ...actor.character,
+              movement: { ...actor.character.movement, locomotion: locomotion() },
+            },
+          },
+        },
+        resources: { ...view.resources, stamina: 12 },
+      };
+      const dodge = {
+        ...decision,
+        gait: 'run' as const,
+        cognition: {
+          ...choosePolicy(dodgeView, new Set(), false).cognition!,
+          selection: 'dodge' as const,
+        },
+      };
+      const combinedShortage = steerPolicy(dodgeView, dodge, navigator, options);
+      expect(combinedShortage.navigation?.kind).toBe('resource-limited');
+      expect(combinedShortage.intent.direction).toEqual({ x: 0, y: 0, z: 0 });
+      expect(
+        steerPolicy(
+          { ...dodgeView, resources: { ...dodgeView.resources, stamina: 13 } },
+          dodge,
+          navigator,
+          options,
+        ).navigation?.kind,
+      ).toBe('path');
+      const ability = actor.abilities[0]!;
+      const spendingView: DecisionView = {
+        ...view,
+        resources: { ...view.resources, stamina: 20 },
+        self: {
+          ...view.self,
+          actor: {
+            ...actor,
+            abilities: [
+              {
+                ...ability,
+                definition: {
+                  ...ability.definition,
+                  costs: { ...ability.definition.costs, stamina: 20 },
+                },
+              },
+            ],
+          },
+        },
+      };
+      expect(
+        steerPolicy(spendingView, { ...decision, abilityId: ability.id }, navigator, options)
+          .navigation?.kind,
+      ).toBe('resource-limited');
     } finally {
       world.free();
     }
