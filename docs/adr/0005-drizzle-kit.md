@@ -32,6 +32,14 @@ API; unrelated tables/rows are not deleted. A new disposable database can be sel
 with DATABASE_PATH. No reset, automatic deletion or broad schema inference is added.
 Run schema changes serially. This does not add a custom distributed migration lock.
 
+For later battle-version changes, [ADR 0010](0010-battle-version-compatibility.md)
+preserves readable definitions/results/replays in the same database through additive
+schemas and new rules/sample IDs. A rules-version bump alone does not select a new
+database or reject the old one. An unavoidable incompatible change needs its own
+reviewed ADR before implementing separate DB/artifact paths and explicit-path rejection.
+Previous-version fixtures, unsupported-job handling and catalog-history checks remain
+implementation work under Issue #59; this decision does not claim they already pass.
+
 ## Generation and verification
 
 The relational source is apps/api/src/db/schema.ts. Kit generate writes SQL/snapshots

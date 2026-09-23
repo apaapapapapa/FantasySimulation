@@ -56,6 +56,14 @@ Explanation-only and read-only review requests retain their requested scope.
 - If randomness is added, require and persist a seed plus its PRNG algorithm/version.
 - `packages/engine/fixtures/spatial/corpus.json` pins fixed battle inputs and maps existing determinism tests (`vp run check:corpus`, part of `verify`). When an input or mapped test changes intentionally, update it in the same reviewed PR with the reason; never regenerate it from candidate output or mark planned coverage as done.
 
+## Battle-version compatibility
+
+- Follow [ADR 0010](docs/adr/0010-battle-version-compatibility.md) and the revised Issue #59. Keep saved definitions/results/replays readable in the same database. Extend schemas with optional fields or enum values, preserving existing meanings and omitted-field behavior.
+- For a decision change, bump rules/engine versions and add the new rules under a new ID. Review implementation digest, corpus, expected fixture changes and rule documentation together. Old rules remain readable but must never execute through either a historical or current engine.
+- Change distributed samples by adding new IDs, not rewriting existing IDs/revisions. Add catalog-history checks and previous-version DB fixtures with definitions, completed results/replays and unfinished jobs. Unsupported jobs must fail clearly; retry/replay recovery must return 409 rather than repeat a schema error.
+- A fresh DB is an exception for an unavoidable incompatible change, justified in that PR's ADR. Only then implement separate DB/artifact paths, retain old files and reject incompatible explicit paths before writing. Do not add a schema-generation declaration, checksum ledger, custom reset/migrator/history table.
+- Finish the usual verify, clean-source, PR review, both-OS and main checks. Document incomplete compatibility work honestly and do not close its Issue on documentation evidence alone.
+
 ## Data and toolchain
 
 - Bind values in SQL. Never commit local databases, credentials or `.env`.

@@ -59,6 +59,12 @@ DBスキーマ・変更履歴はDrizzleへ統一しました。既存の最新`s
 新しい開発用DBが必要なら`.env`の`DATABASE_PATH`を未使用のファイル名に変更してください。自前resetや世代管理はありません。
 [Drizzleの移行・制約](docs/adr/0005-drizzle-kit.md)を参照してください。
 
+戦闘ルールの版更新では、既存DBの定義・結果・replayを読めるまま残し、新しいrulesや変更するサンプルを別IDで追加する方針です。
+既定の保存先は引き続き`data/fantasy.sqlite`と`data/replays`です。旧engineの再実行や保存データの自動変換は行いません。
+新DBへの切替は、互換性を維持できない変更が避けられない場合だけADRで理由を定めます。
+[版更新の規則と未完了項目](docs/adr/0010-battle-version-compatibility.md)を参照してください。
+旧版DBの回帰試験、未完了jobの明示拒否、サンプル不変性の検査はIssue #59の後続実装です。
+
 ## 設定
 
 既定値のままで起動できます。変更する場合だけ、ルートの`.env.example`を`.env`にコピーしてください。
