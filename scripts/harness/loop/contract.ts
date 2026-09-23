@@ -51,8 +51,11 @@ export function parseContract(value: unknown): Contract {
   )
     throw new Error('Unsupported loop contract');
   const requiredChecks = strings(c.requiredChecks);
-  if (!['source-clean', 'source-verify'].every((id) => requiredChecks.includes(id)))
-    throw new Error('Source verification is mandatory');
+  if (
+    requiredChecks.length !== 2 ||
+    !['source-clean', 'source-verify'].every((id) => requiredChecks.includes(id))
+  )
+    throw new Error('Only source-clean and source-verify are supported');
   const result: Contract = {
     schemaVersion: 1,
     repository: repositoryName(text(c.repository)),
@@ -96,7 +99,8 @@ export function pathAllowed(contract: Contract, value: unknown): boolean {
     /^(?:scripts|db|data|evaluations|e2e|docs)(?:\/|$)/.test(path) ||
     /(?:^|\/)(?:fixtures|test-support|migrations)(?:\/|$)/.test(path) ||
     /(?:identity|digest|budget|expected|snapshot)/i.test(path) ||
-    path === 'apps/api/src/db/schema.ts'
+    path === 'apps/api/src/db/schema.ts' ||
+    path === 'packages/engine/src/spatial/implementation.json'
   )
     return false;
   return contract.allowedPaths.some((p) => path === p || path.startsWith(p + '/'));

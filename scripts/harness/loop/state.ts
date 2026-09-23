@@ -143,6 +143,10 @@ export function status(value: unknown, now = new Date().toISOString()) {
         phase = 'candidate';
         break;
       case 'interrupted':
+        ensure(
+          ['running', 'applying', 'candidate'].includes(phase),
+          'No active attempt to interrupt',
+        );
         text(d.reason);
         noProgress++;
         verifiedSha = null;

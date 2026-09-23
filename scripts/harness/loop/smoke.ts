@@ -42,7 +42,7 @@ const repo = testRepository({
 });
 const repository = repositoryProof ? 'apaapapapapa/FantasySimulation' : 'owner/repo';
 if (repositoryProof) {
-  const baseline = git(controllerRoot, ['rev-parse', 'origin/main']);
+  const baseline = git(controllerRoot, ['rev-parse', 'HEAD']);
   repo.git('fetch', controllerRoot, baseline);
   repo.git('reset', '--hard', baseline);
   writeFileSync(join(repo.root, 'apps/api/src/loop-proof-value.ts'), 'export const value = 0;\n');
@@ -95,6 +95,7 @@ const evidence: Record<string, unknown> = {
   fixtureOnly: true,
   repositoryProof,
   sourceMainSha: repositoryProof ? git(controllerRoot, ['rev-parse', 'origin/main']) : null,
+  sourceControllerSha: git(controllerRoot, ['rev-parse', 'HEAD']),
   repairedProduction: false,
   baselineSha,
   journal,
@@ -111,7 +112,9 @@ try {
     [
       process.execPath,
       '-e',
-      `const fs=require('node:fs');const a=require('node:assert/strict');a.equal(process.env.GH_TOKEN,undefined);a.equal(fs.existsSync(${JSON.stringify(canary)}),false);a.throws(()=>fs.writeFileSync(${JSON.stringify(file)},'tampered'));`,
+      "const fs=require('node:fs');const a=require('node:assert/strict');a.equal(process.env.GH_TOKEN,undefined);a.equal(fs.existsSync(process.argv[1]),false);a.throws(()=>fs.writeFileSync(process.argv[2],'tampered'));",
+      canary,
+      file,
     ],
     30_000,
   );

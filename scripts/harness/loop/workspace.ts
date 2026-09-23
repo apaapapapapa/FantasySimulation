@@ -112,7 +112,7 @@ export async function prepare(path: string, source: string) {
       !existsSync(dirs.repository) && !existsSync(dirs.workspace),
       'Interrupted prepare: preserve and reconcile existing workspace',
     );
-    git(dirs.root, ['clone', '--bare', '--no-hardlinks', root, dirs.repository]);
+    git(dirs.root, ['clone', '--bare', '--no-local', root, dirs.repository]);
     git(dirs.root, [
       '--git-dir',
       dirs.repository,

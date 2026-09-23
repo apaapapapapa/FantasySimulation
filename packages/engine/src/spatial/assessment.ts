@@ -10,6 +10,9 @@ import type { DecisionView } from './perception.ts';
 import { length, sub } from './math.ts';
 import { actionClock } from './attacks.ts';
 import { damagePower, damageDefense } from './damage.ts';
+import { assessStatusEffects, observedDamagePrior } from './status-assessment.ts';
+import { adjustedStatusValue, damageStatusBps } from './status-modifiers.ts';
+import { abilityCategories } from './categories.ts';
 
 export const clampBps = (n: number) => Math.max(0, Math.min(10000, Math.round(n)));
 export const boundedWeight = (n: number) => Math.max(0, Math.min(1_000_000, Math.round(n)));
@@ -29,10 +32,16 @@ export function efficacy(
     (e) => e.targetId === target?.id && e.element === element && e.expiresAt > step,
   );
   const revealed = evidence.filter((e) => e.kind === 'reveal').at(-1);
+  const statusPrior = observedDamagePrior(view, element);
   if (revealed?.range)
     return {
-      bps: Math.round(10000 - (revealed.range.low + revealed.range.high) / 2),
-      confidence: 10000,
+      bps: Math.min(
+        30000,
+        Math.round(
+          ((10000 - (revealed.range.low + revealed.range.high) / 2) * statusPrior) / 10000,
+        ),
+      ),
+      confidence: statusPrior === 10000 ? 10000 : 1000,
       evidence: [revealed.eventId],
     };
   const comparable = evidence.filter(
@@ -61,7 +70,7 @@ export function efficacy(
       ? 6500
       : 7500;
   return {
-    bps: prior,
+    bps: Math.min(30000, Math.round((prior * statusPrior) / 10000)),
     confidence: surface === 'red' || surface === 'blue' ? 1000 : 0,
     evidence: [],
   };
@@ -86,7 +95,9 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
   const exposure = Math.min(1, (observedThreat * duration) / rules.horizonSteps);
   const costBps = clampBps(
     10000 *
-      (d.costs.hp / Math.max(1, view.resources.hp) + d.costs.mp / Math.max(1, view.resources.mp)),
+      (d.costs.hp / Math.max(1, view.resources.hp) +
+        d.costs.mp / Math.max(1, view.resources.mp) +
+        (d.costs.stamina ?? 0) / Math.max(1, view.resources.stamina ?? 0)),
   );
   let utility = 0,
     success = 10000,
@@ -99,9 +110,13 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
     confidencePower = 0;
   const evidence: string[] = [],
     reasons: string[] = [];
+  const stateValue = assessStatusEffects(view, d.effects, d.target, (view.step ?? 0) + cast);
+  utility += stateValue.value * rules.actionWeight;
+  if (stateValue.reason) reasons.push(stateValue.reason);
   for (const effect of d.effects) {
+    if (stateValue.handled.has(effect)) continue;
     if (effect.kind === 'damage' && d.target === 'enemy') {
-      const base = Number(
+      const power = Number(
         damagePower(effect, {
           attack: view.attack ?? view.self.actor.character.stats.attack,
           magicPower:
@@ -110,6 +125,14 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
             view.attack ??
             view.self.actor.character.stats.attack,
         }),
+      );
+      const base = Math.floor(
+        (power *
+          damageStatusBps('damageDealt', view.ownStatuses ?? [], view.step ?? 0, {
+            element: effect.element,
+            categories: abilityCategories(d),
+          })) /
+          10000,
       );
       const known = efficacy(view, effect.element, base, damageDefense(effect)),
         expected = (base * known.bps) / 10000;
@@ -125,7 +148,17 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
     } else if (effect.kind === 'heal' && d.target === 'self') {
       utility +=
         (((rules.riskWeight *
-          Math.min(effect.amount, view.self.actor.character.stats.hp - view.resources.hp)) /
+          Math.min(
+            Math.floor(
+              (effect.amount *
+                Math.min(
+                  30000,
+                  adjustedStatusValue(10000, 'hpRecovery', view.ownStatuses ?? [], view.step ?? 0),
+                )) /
+                10000,
+            ),
+            view.self.actor.character.stats.hp - view.resources.hp,
+          )) /
           Math.max(1, view.resources.hp)) *
           weights.survivalBps) /
         10000;

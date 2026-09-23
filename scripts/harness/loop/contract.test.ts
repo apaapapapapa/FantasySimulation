@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import { DEFAULT_BUDGET, parseContract, pathAllowed } from './contract.ts';
 import { initialize, readJournal } from './journal.ts';
 import { begin, status, transition } from './state.ts';
+import { loopCommand } from './cli.ts';
 
 export const exampleContract = () => ({
   schemaVersion: 1,
@@ -34,6 +35,7 @@ describe('frozen manual loop contract', () => {
     'apps/web/src/AGENTS.md',
     'apps/web/src/fixtures',
     'apps/web/src/../x',
+    'packages/engine/src/spatial/implementation.json',
   ])('protects %s', (path) => {
     expect(() => parseContract({ ...exampleContract(), allowedPaths: [path] })).toThrow();
   });
@@ -44,6 +46,9 @@ describe('frozen manual loop contract', () => {
       parseContract({ ...contract, budget: { ...contract.budget, costMicros: 1 } }),
     ).toThrow();
     expect(() => parseContract({ ...contract, requiredChecks: ['custom'] })).toThrow();
+    expect(() =>
+      parseContract({ ...contract, requiredChecks: [...contract.requiredChecks, 'custom'] }),
+    ).toThrow();
   });
   it('reuses one journal and refuses reset or changed budgets', () => {
     const f = fixture();
@@ -85,6 +90,61 @@ describe('frozen manual loop contract', () => {
         begin(f.path, { hypothesis: 'locked', externalCalls: 1, costMicros: 0 }, time),
       ).toThrow();
       expect(readJournal(f.path).revision).toBe(2);
+    } finally {
+      f.dispose();
+    }
+  });
+  it('rejects oversized initial journals without poisoning future initialization', () => {
+    const root = mkdtempSync(join(tmpdir(), 'fantasy-loop-size-'));
+    try {
+      expect(() =>
+        initialize(
+          root,
+          { ...exampleContract(), allowedPaths: ['src/' + 'x'.repeat(4 * 1024 * 1024)] },
+          time,
+        ),
+      ).toThrow(/size/);
+      const path = initialize(root, exampleContract(), time);
+      expect(readJournal(path).revision).toBe(1);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it('cannot interrupt an unprepared journal into an active attempt', () => {
+    const f = fixture();
+    try {
+      expect(() => f.mutate('interrupted', { reason: 'Process exited' })).toThrow(/active/);
+      expect(status(readJournal(f.path), time).phase).toBe('initialized');
+      f.mutate('prepared', { workspace: '/owned' });
+      expect(status(readJournal(f.path), time).phase).toBe('ready');
+    } finally {
+      f.dispose();
+    }
+  });
+  it('reports completion consistently when init resumes a completed journal', async () => {
+    const f = fixture();
+    try {
+      f.mutate('prepared', { workspace: '/owned' });
+      begin(f.path, { hypothesis: 'Repair', externalCalls: 0, costMicros: 0 }, time);
+      const candidateSha = 'b'.repeat(40),
+        patchHash = 'c'.repeat(64);
+      f.mutate('applying', { baseSha: 'a'.repeat(40), patchHash });
+      f.mutate('applied', { candidateSha, patchHash });
+      f.mutate('evaluated', { candidateSha, outcome: 'pass', passed: 2, evidence: 'source' });
+      f.mutate('regression', { candidateSha, evidence: 'regression' });
+      f.mutate('reviewed', {
+        candidateSha,
+        method: 'human',
+        unresolvedFindings: 0,
+        evidence: 'review',
+      });
+      f.mutate('observed', { candidateSha, complete: true, evidence: 'ci' });
+      const input = join(f.root, 'contract.json');
+      writeFileSync(input, JSON.stringify(exampleContract()));
+      expect(await loopCommand(['init', f.root, input])).toMatchObject({
+        phase: 'completed',
+        repairComplete: true,
+      });
     } finally {
       f.dispose();
     }

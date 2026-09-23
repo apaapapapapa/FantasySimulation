@@ -5,7 +5,7 @@ import type { Journal } from './journal.ts';
 import type { MovedActor } from './movement.ts';
 import type { PreparedBattle } from './prepare.ts';
 import { at, type SpatialWorld } from './physics.ts';
-import { damageSource } from './damage.ts';
+import { copyDamageSnapshot } from './status-damage.ts';
 import { traceAttack } from './attacks.ts';
 import {
   clipProjectile,
@@ -99,7 +99,7 @@ export function stepProjectiles(
             actorId: projectile.ownerId,
             targetId,
             effect,
-            ...damageSource(projectile),
+            ...copyDamageSnapshot(projectile),
             parentEventId: hit.id,
             abilityId: projectile.ability.id,
             scaleBps,

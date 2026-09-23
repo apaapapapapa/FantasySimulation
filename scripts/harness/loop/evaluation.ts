@@ -87,8 +87,9 @@ export function writableOutputs(workspace: string) {
     'apps/api/dist',
     'packages/domain/dist',
     'packages/engine/dist',
-    'node_modules/.vite',
-    'node_modules/.vite-temp',
+    ...['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine'].flatMap((prefix) =>
+      ['.vite', '.vite-temp'].map((cache) => join(prefix, 'node_modules', cache)),
+    ),
   ];
   ensure(!git(workspace, ['ls-files', '--', ...paths]), 'Writable output contains tracked source');
   const outputs = paths.map((path) => regularPath(join(workspace, path)));
@@ -171,7 +172,8 @@ export async function evaluate(path: string, run: typeof runCommand = runCommand
     const next = transition(path, j, 'evaluated', {
       candidateSha: view.candidateSha,
       outcome: assessed.exitCode === 0 ? 'pass' : assessed.exitCode === 1 ? 'fail' : 'unknown',
-      passed: assessed.report.checks.filter((c) => c.required && c.status === 'pass').length,
+      passed: assessed.report.checks.filter((c) => c.id === 'source-verify' && c.status === 'pass')
+        .length,
       evidence,
     });
     return {
