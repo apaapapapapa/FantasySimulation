@@ -19,7 +19,16 @@ PATCHとpublishはexpectedVersionを要求する。非同期検証中の編集�
 BattleSpecは固定manifestとsimulationHashを一度保存する。予算・job/attempt・実時計は
 別データで、同じ意味の対戦を予算増加で再試行可能にする。
 
-新規DBへ切り替える場合は`.env`の`DATABASE_PATH`に未使用のファイル名を指定し、
-`pnpm db:migrate`を実行する。自前resetは廃止し、既存ファイルを削除しない。
+Issue #59以降は戦闘ルールの版ごとに新しいDB・artifact rootを使う。
+既定値は`data/<CURRENT_ENGINE_VERSION>/fantasy.sqlite`と同じディレクトリの`replays`。
+`DATABASE_PATH`と`ARTIFACT_PATH`を未指定にすると版更新へ自動追従する。
+新規DBは`pnpm dev`または`pnpm db:seed`で公式migrationとseedを実行して初期化する。
+明示したDBの保存済みrulesVersion/engineVersionが現在と違う、混在する、または不明なら
+書込み前に保存版・現在版・新規パスの案内を含む`StorageVersionError`で停止する。
+artifact rootも対応するDBの既存`.store-id`所有権を満たす必要がある。
+旧DB・下書き・artifactはそのまま残し、変換・取込み・旧engine実行を行わない。
+新版の一覧には旧結果を表示しない。対応schemaの保存記録はexport等の経路で扱う。
+不要な旧版ディレクトリはAPI停止とバックアップ後に手動削除する（READMEのOS別例参照）。
+自前resetやschema世代宣言は追加しない。
 サンプルは`data/spatial/catalog.json`の不変revisionを使用し、既存IDを上書きしない。
 Worker・job・artifactの永続化は同じ世代に後続migrationで追加する。

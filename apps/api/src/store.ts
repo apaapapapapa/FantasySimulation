@@ -33,6 +33,7 @@ import {
   type PreparedBattle,
 } from '@fantasy/engine/spatial';
 import { repositoryRoot } from './config.ts';
+import { inspectDatabaseVersion } from './storage-version.ts';
 
 export class StoreError extends Error {
   readonly statusCode: number;
@@ -46,6 +47,13 @@ export function jsonValue(value: unknown): unknown {
   return JSON.parse(value) as unknown;
 }
 type Dependency = { kind: DefinitionKind; ref: RevisionRef };
+function requireCurrentRules(revision: Revision) {
+  if (revision.kind === 'ruleset' && revision.definition.rulesVersion !== CURRENT_ENGINE_VERSION)
+    throw new StoreError(
+      400,
+      `Rules version ${revision.definition.rulesVersion} cannot be stored by ${CURRENT_ENGINE_VERSION}`,
+    );
+}
 function dependencies(revision: Revision): Dependency[] {
   switch (revision.kind) {
     case 'character':
@@ -106,6 +114,7 @@ export class Store {
   readonly db: Database.Database;
   readonly orm: BetterSQLite3Database;
   constructor(filename: string) {
+    inspectDatabaseVersion(filename);
     if (filename !== ':memory:') mkdirSync(dirname(filename), { recursive: true });
     this.db = new Database(filename);
     this.orm = drizzle(this.db);
@@ -209,6 +218,7 @@ export class Store {
     if (input.length > (mode === 'exact-revision' ? 4096 : 256))
       throw new StoreError(400, 'Revision import exceeds its limit');
     const revisions = input.map((r) => parseJson(RevisionSchema, r));
+    revisions.forEach(requireCurrentRules);
     if (new Set(revisions.map(revisionKey)).size !== revisions.length)
       throw new StoreError(400, 'Duplicate revision identity');
     for (const r of revisions)

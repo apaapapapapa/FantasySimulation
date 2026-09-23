@@ -7,6 +7,7 @@ import { runtimeOwner } from './db/schema.ts';
 import { JobStore } from './job-store.ts';
 import { StoreError } from './store.ts';
 import { readBoundedFile, GENERATED_UUID } from './replay-files.ts';
+import { assertArtifactVersion } from './storage-version.ts';
 
 function processAlive(pid: number) {
   if (pid <= 0) return false;
@@ -25,6 +26,7 @@ export async function ownRuntime(jobs: JobStore, inputRoot: string) {
     machine = hostname();
   let created = false,
     adopted = false;
+  await assertArtifactVersion(root, jobs.store.orm.select().from(runtimeOwner).get());
   const owner = jobs.store.transaction(() => {
     const existing = jobs.store.orm.select().from(runtimeOwner).get();
     created = !existing;

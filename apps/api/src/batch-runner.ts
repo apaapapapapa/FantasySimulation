@@ -15,6 +15,7 @@ import { BattleRuntime } from './battle-runtime.ts';
 import { BattleBundles } from './battle-bundle.ts';
 import { shardSlots, validateBatchPlan } from './batch-plan.ts';
 import { openStore, jsonValue } from './store.ts';
+import { assertStoragePaths } from './storage-version.ts';
 
 export async function runBatch(
   input: unknown,
@@ -43,6 +44,7 @@ export async function runBatch(
   const slots = options.reverse ? [...selected].reverse() : selected;
   const estimated = slots.length * plan.estimatedBytesPerMatch;
   if (estimated > plan.maxOutputBytes) throw new Error('Shard estimate exceeds output budget');
+  await assertStoragePaths(join(root, '.work', 'database.sqlite'), join(root, '.work', 'replays'));
   await mkdir(join(root, '.work'), { recursive: true });
   const store = openStore(join(root, '.work', 'database.sqlite'));
   let runtime: BattleRuntime | undefined;

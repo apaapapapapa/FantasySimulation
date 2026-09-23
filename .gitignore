@@ -13,4 +13,6 @@ coverage/
 !.env.example
 data/*.sqlite*
 data/*.db*
+data/spatial-v*/
+data/replays/
 .DS_Store

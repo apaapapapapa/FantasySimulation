@@ -156,11 +156,12 @@ describe('Drizzle Kit and spatial persistence integration', () => {
 
   it('shares official history between Kit, startup and repeated execution', async () => {
     const filename = join(temporary(), 'fresh.sqlite');
-    runKit(['migrate'], filename);
-    const first = new Database(filename);
-    const before = receipts(first);
+    const first = openStore(filename);
+    await first.seedRevisions(readSampleRevisions());
+    const before = receipts(first.db);
     first.close();
     expect(before.length).toBeGreaterThan(0);
+    runKit(['migrate'], filename);
     const store = openStore(filename);
     try {
       await store.seedRevisions(readSampleRevisions());

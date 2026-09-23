@@ -259,7 +259,7 @@ describe('3D revision API and Drizzle persistence', () => {
       second.store.db.prepare("UPDATE battle_specs SET manifest_json='{}'").run(),
     ).toThrow(/immutable/);
   });
-  it('initializes only current tables and preserves unrelated legacy data', async () => {
+  it('initializes only current tables and rejects unversioned legacy data unchanged', async () => {
     const { store } = await setup();
     expect(
       store.db
@@ -272,8 +272,7 @@ describe('3D revision API and Drizzle persistence', () => {
       "CREATE TABLE schema_generation(id INTEGER PRIMARY KEY,generation TEXT); INSERT INTO schema_generation VALUES(1,'local-v1'); CREATE TABLE schema_migrations(name TEXT,checksum TEXT); CREATE TABLE valuable(value TEXT); INSERT INTO valuable VALUES('keep');",
     );
     db.close();
-    const adopted = openStore(filename);
-    adopted.close();
+    expect(() => openStore(filename)).toThrow(/stored=unknown/);
     const read = new Database(filename);
     try {
       expect(read.prepare<[], { value: string }>('SELECT value FROM valuable').get()?.value).toBe(
