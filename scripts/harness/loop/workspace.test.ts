@@ -1,4 +1,12 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
@@ -6,13 +14,22 @@ import { testRepository } from '../test-support/repository.ts';
 import { DEFAULT_BUDGET } from './contract.ts';
 import { initialize, readJournal } from './journal.ts';
 import { status } from './state.ts';
-import { applyPatch, beginAttempt, locations, owned, prepare, recover } from './workspace.ts';
-import { isolatedCommand, sandboxCommand } from './evaluation.ts';
+import {
+  applyPatch,
+  beginAttempt,
+  copyDependencies,
+  locations,
+  owned,
+  prepare,
+  recover,
+} from './workspace.ts';
+import { evaluate, isolatedCommand, sandboxCommand } from './evaluation.ts';
 
 function fixture() {
   const repo = testRepository({
     'src/value.ts': 'export const value = 0;\n',
     'src/value.test.ts': 'old acceptance\n',
+    '.gitignore': '.generated/\nnode_modules/\n**/dist/\n',
   });
   repo.git('remote', 'add', 'origin', 'https://github.com/owner/repo.git');
   const store = mkdtempSync(join(tmpdir(), 'fantasy-loop-workspace-'));
@@ -138,6 +155,62 @@ describe('owned workspace and full baseline scope', () => {
       f.dispose();
     }
   });
+  it('blocks unavailable isolation without executing verification or refunding the attempt', async () => {
+    const f = fixture();
+    try {
+      await prepare(f.path, f.repo.root);
+      await beginAttempt(f.path, reservation);
+      const candidate = await applyPatch(f.path, f.proposal(change()));
+      let commands = 0;
+      const result = await evaluate(f.path, async (command, args) => {
+        commands++;
+        expect(command).toBe('bwrap');
+        expect(args.at(-1)).toBe('--version');
+        return { exitCode: 1, signal: null, bounded: false, output: 'Namespace unavailable' };
+      });
+      expect(commands).toBe(1);
+      expect(result).toMatchObject({
+        phase: 'blocked',
+        nextAction: 'recover',
+        evaluationExitCode: 2,
+        attempts: 1,
+        externalCalls: 1,
+        noProgress: 0,
+        verifiedSha: null,
+      });
+      expect(readFileSync(result.evidence, 'utf8')).toContain('Namespace unavailable');
+      await expect(beginAttempt(f.path, reservation)).rejects.toThrow();
+      const resumed = await recover(f.path, 'Isolation repaired; previous process ended');
+      expect(resumed).toMatchObject({
+        phase: 'candidate',
+        candidateSha: candidate.candidateSha,
+        attempts: 1,
+        externalCalls: 1,
+        deadline: candidate.deadline,
+      });
+      expect(f.repo.git('status', '--porcelain')).toBe('');
+    } finally {
+      f.dispose();
+    }
+  });
+});
+it('copies relative dependency links so the isolated workspace never points to the controller', () => {
+  const root = mkdtempSync(join(tmpdir(), 'fantasy-loop-dependencies-'));
+  try {
+    const source = join(root, 'source'),
+      candidate = join(root, 'candidate');
+    mkdirSync(join(source, 'node_modules/.pnpm/example'), { recursive: true });
+    writeFileSync(join(source, 'node_modules/.pnpm/example/index.js'), 'module.exports = 1;');
+    symlinkSync('.pnpm/example', join(source, 'node_modules/example'));
+    copyDependencies(source, candidate);
+    expect(readlinkSync(join(candidate, 'node_modules/example'))).toBe('.pnpm/example');
+    rmSync(source, { recursive: true });
+    expect(readFileSync(join(candidate, 'node_modules/example/index.js'), 'utf8')).toBe(
+      'module.exports = 1;',
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 it('bounds evaluation, filters host secrets, and never falls back on missing isolation', async () => {
   const args = sandboxCommand(

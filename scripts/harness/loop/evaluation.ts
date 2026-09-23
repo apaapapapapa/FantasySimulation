@@ -80,7 +80,7 @@ export async function isolatedCommand(
     },
   );
 }
-export async function evaluate(path: string) {
+export async function evaluate(path: string, run: typeof runCommand = runCommand) {
   return operation(path, async () => {
     const j = readJournal(path),
       view = status(j),
@@ -101,6 +101,25 @@ export async function evaluate(path: string) {
     for (const output of writable) mkdirSync(output, { recursive: true });
     const before = git(dirs.workspace, ['status', '--porcelain=v1', '--untracked-files=all']);
     ensure(!before, 'Build output is not ignored');
+    const isolation = await isolatedCommand(
+      dirs.workspace,
+      dirs.repository,
+      [process.execPath, '--version'],
+      Math.min(30_000, Math.max(1, Date.parse(view.deadline) - Date.now())),
+      [],
+      run,
+    );
+    if (isolation.exitCode !== 0 || isolation.bounded) {
+      const evidence = join(dirs.root, 'evidence', `isolation-${j.revision}.json`);
+      writeFileSync(evidence, JSON.stringify(isolation, null, 2), { flag: 'wx', mode: 0o600 });
+      if (Date.now() >= Date.parse(view.deadline))
+        return { ...status(j), repairComplete: false, evaluationExitCode: 2, evidence };
+      const blocked = transition(path, j, 'blocked', {
+        reason: 'Isolation unavailable; verification was not executed',
+        evidence,
+      });
+      return { ...status(blocked), repairComplete: false, evaluationExitCode: 2, evidence };
+    }
     const runner: typeof runCommand = async (command, args, cwd) => {
       ensure(
         command === 'vp' && JSON.stringify(args) === '["run","verify"]' && cwd === dirs.workspace,
@@ -114,9 +133,10 @@ export async function evaluate(path: string) {
         [command, ...args],
         Math.min(720_000, remaining),
         writable,
+        run,
       );
     };
-    const result = await collectSource(dirs.workspace, relative, runner, {});
+    const result = await collectSource(dirs.workspace, relative, runner, {}, dirs.root);
     owned(path, j);
     const evidence = join(dirs.root, 'evidence', `evaluation-${view.attempts}.json`);
     const assessed = assessReport(result.report, j.contract.requiredChecks);
@@ -126,8 +146,8 @@ export async function evaluate(path: string) {
       JSON.stringify(
         {
           report: assessed.report,
-          command: JSON.parse(readFileSync(join(dirs.workspace, relative, 'command.json'), 'utf8')),
-          log: readFileSync(join(dirs.workspace, relative, 'verify.log'), 'utf8'),
+          command: JSON.parse(readFileSync(join(dirs.root, relative, 'command.json'), 'utf8')),
+          log: readFileSync(join(dirs.root, relative, 'verify.log'), 'utf8'),
         },
         null,
         2,
@@ -135,13 +155,24 @@ export async function evaluate(path: string) {
       { flag: 'wx', mode: 0o600 },
     );
     const interrupted = Date.now() >= Date.parse(view.deadline);
-    if (interrupted) return { ...status(readJournal(path)), repairComplete: false, evidence };
+    if (interrupted)
+      return {
+        ...status(readJournal(path)),
+        repairComplete: false,
+        evaluationExitCode: 2,
+        evidence,
+      };
     const next = transition(path, j, 'evaluated', {
       candidateSha: view.candidateSha,
       outcome: assessed.exitCode === 0 ? 'pass' : assessed.exitCode === 1 ? 'fail' : 'unknown',
       passed: assessed.report.checks.filter((c) => c.required && c.status === 'pass').length,
       evidence,
     });
-    return { ...status(next), repairComplete: false, evidence };
+    return {
+      ...status(next),
+      repairComplete: false,
+      evaluationExitCode: assessed.exitCode,
+      evidence,
+    };
   });
 }

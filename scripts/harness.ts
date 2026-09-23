@@ -9,7 +9,10 @@ try {
   if (!input) throw new Error('Harness input is required');
   if (command === 'loop') {
     const { loopCommand } = await import('./harness/loop/cli.ts');
-    console.log(JSON.stringify(await loopCommand([input, ...args]), null, 2));
+    const result = await loopCommand([input, ...args]);
+    console.log(JSON.stringify(result, null, 2));
+    if ('evaluationExitCode' in result && typeof result.evaluationExitCode === 'number')
+      process.exitCode = result.evaluationExitCode;
   } else if (command === 'context' && args.length === 0) {
     const { contextPlan, inspectContext } = await import('./harness/context.ts');
     if (input === 'check') {
@@ -69,6 +72,9 @@ try {
         input === 'verify',
         args.length ? Number(args[1]) : null,
       );
+    } else if (command === 'intake-ci' && args.length === 0) {
+      const { intakeFromWorkflow } = await import('./harness/loop/intake.ts');
+      result = await intakeFromWorkflow(input);
     } else if (command === 'issue-plan' && args.length === 0) {
       const { completionDraft } = await import('./harness/issue-completion-api.ts');
       result = { report: await completionDraft(Number(input)), exitCode: 0 };

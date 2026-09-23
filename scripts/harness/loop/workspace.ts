@@ -85,7 +85,10 @@ export function copyDependencies(root: string, workspace: string) {
   for (const prefix of ['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine']) {
     const dependencies = join(root, prefix, 'node_modules');
     if (existsSync(dependencies))
-      cpSync(dependencies, join(workspace, prefix, 'node_modules'), { recursive: true });
+      cpSync(dependencies, join(workspace, prefix, 'node_modules'), {
+        recursive: true,
+        verbatimSymlinks: true,
+      });
   }
 }
 export async function prepare(path: string, source: string) {
@@ -253,6 +256,10 @@ export async function recover(path: string, reason: string) {
     const j = readJournal(path),
       dirs = locations(path),
       view = status(j);
+    if (view.phase === 'blocked') {
+      owned(path, j);
+      return status(transition(path, j, 'resumed', { reason: text(reason) }));
+    }
     ensure(['running', 'applying', 'candidate'].includes(view.phase), 'No interrupted attempt');
     // Validate identity before touching an owned checkout, permitting only this attempt's dirty index.
     const head = git(dirs.workspace, ['rev-parse', 'HEAD']);

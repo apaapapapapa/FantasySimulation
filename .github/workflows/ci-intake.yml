@@ -1,0 +1,47 @@
+name: CI failure intake
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+permissions: {}
+concurrency:
+  group: ci-intake-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+jobs:
+  collect:
+    if: >-
+      github.repository == 'apaapapapapa/FantasySimulation' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - name: Install the trusted collector without lifecycle scripts
+        run: vp install --frozen-lockfile --ignore-scripts
+      - name: Collect proposals only
+        run: node scripts/harness.ts intake-ci .generated/harness/ci-intake
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: ci-intake-${{ github.event.workflow_run.id }}-${{ github.event.workflow_run.run_attempt }}
+          path: .generated/harness/ci-intake/intake.json
+          if-no-files-found: error
+          retention-days: 30
+          include-hidden-files: true

@@ -1,0 +1,47 @@
+name: Repair loop smoke
+on:
+  pull_request:
+    paths:
+      - 'scripts/harness/loop/**'
+      - '.github/workflows/loop-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/harness/loop/**'
+      - '.github/workflows/loop-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  isolate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile --ignore-scripts
+      - name: Ensure isolation utility is available
+        run: |
+          if ! command -v bwrap; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends bubblewrap
+          fi
+      - name: Verify actual isolation and baseline assertion failure
+        run: node scripts/harness/loop/smoke.ts
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: repair-loop-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .generated/harness/loop-smoke/smoke.json
+            .generated/harness/loop-smoke/store/**/journal.json
+            .generated/harness/loop-smoke/store/**/evidence/**
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
