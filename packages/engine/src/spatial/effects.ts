@@ -6,20 +6,14 @@ import {
   type ResourceState,
   type BattleEvent,
 } from '@fantasy/domain/spatial';
-import {
-  calculateDamage,
-  damageDefense,
-  hasDamageFormula,
-  type DamageSource,
-  type DamageEffect,
-} from './damage.ts';
+import { calculateDamage, damageDefense, hasDamageFormula, type DamageEffect } from './damage.ts';
+import type { DamageSnapshot } from './status-damage.ts';
 import type { ResolvedActor } from './prepare.ts';
-import { dispelTargets } from './categories.ts';
+import { adjustedStatusValue, damageStatusBps, statusResistance } from './status-modifiers.ts';
+import { planStatusEffects, reactionDamageBps } from './status-reactions.ts';
 import {
   applyStatuses,
   effectiveStats,
-  type DispelTarget,
-  type StatusApplication,
   type StatusCohort,
   type StatusRevision,
   type StatusLimits,
@@ -41,12 +35,13 @@ export type EffectTarget = {
   resources: ResourceState;
   statuses: StatusCohort[];
 };
-export type EffectApplication = DamageSource & {
+export type EffectApplication = DamageSnapshot & {
   id: string;
   actorId: string | null;
   targetId: string;
   effect: DeepReadonly<Effect>;
   scaleBps?: number;
+  dealtBps?: number;
 };
 export type DamageDetail = NonNullable<BattleEvent['damage']> & {
   applicationId: string;
@@ -93,69 +88,80 @@ export function resolveEffects(
     .map((target) => {
       const incoming = applications.filter((a) => a.targetId === target.actor.participant.actorId);
       const stats = effectiveStats(target.actor, target.statuses, step);
+      const reactions = planStatusEffects(target.statuses, incoming, statuses, step);
       const damages: (ReturnType<typeof calculateDamage> & {
         applicationId: string;
         effect: DamageEffect;
+        statusModified: boolean;
       })[] = [];
       let heal = 0n,
         shield = BigInt(target.resources.shield);
-      const statusApplications: StatusApplication[] = [],
-        dispels: DispelTarget[] = [];
+      const healing: { applicationId: string; amount: number }[] = [];
       for (const application of incoming) {
         const effect = application.effect,
           scale = BigInt(application.scaleBps ?? 10000);
         if (scale < 0n || scale > 10000n) throw new Error('Invalid effect coverage');
         switch (effect.kind) {
           case 'damage': {
+            const dealtBps =
+              application.dealtByElement?.[effect.element] ?? application.dealtBps ?? 10000;
+            const resistance = statusResistance(
+              target.actor.character.stats.resistances,
+              target.statuses,
+              step,
+              effect.element,
+            );
+            const receivedBps = damageStatusBps(
+              'damageTaken',
+              target.statuses,
+              step,
+              { element: effect.element },
+              reactionDamageBps(target.statuses, step, effect.element),
+            );
             const amounts = calculateDamage(
               effect,
               application,
               {
                 ...stats,
-                resistance: target.actor.character.stats.resistances[effect.element] ?? 0,
+                resistance,
               },
               Number(scale),
+              { dealtBps, receivedBps },
             );
-            damages.push({ applicationId: application.id, effect, ...amounts });
+            damages.push({
+              applicationId: application.id,
+              effect,
+              ...amounts,
+              statusModified:
+                dealtBps !== 10000 ||
+                receivedBps !== 10000 ||
+                resistance !== (target.actor.character.stats.resistances[effect.element] ?? 0),
+            });
             break;
           }
-          case 'heal':
-            heal += (BigInt(effect.amount) * scale) / 10000n;
+          case 'heal': {
+            const amount =
+              (BigInt(effect.amount) *
+                scale *
+                BigInt(
+                  Math.min(30000, adjustedStatusValue(10000, 'hpRecovery', target.statuses, step)),
+                )) /
+              100000000n;
+            heal += amount;
+            healing.push({ applicationId: application.id, amount: checked(amount) });
             break;
+          }
           case 'shield':
             shield += (BigInt(effect.amount) * scale) / 10000n;
             break;
           case 'dispel':
-            if (scale > 0n)
-              dispels.push(
-                ...dispelTargets(
-                  effect,
-                  target.statuses.map((s) => s.revision),
-                ),
-              );
-            break;
           case 'water':
-            if (scale > 0n)
-              dispels.push(
-                ...target.statuses
-                  .filter((s) => s.revision.definition.burning?.waterExtinguishable)
-                  .map((s) => s.revision.id),
-              );
+          case 'apply-status':
+            // Collected together in the shared status transaction above.
             break;
           case 'reveal':
             // Information is extracted only by the observation boundary, after actual contact.
             break;
-          case 'apply-status': {
-            const revision = statuses.find(
-              (s) =>
-                s.id === effect.status.id &&
-                s.revision === effect.status.revision &&
-                s.contentHash === effect.status.contentHash,
-            );
-            if (!revision) throw new Error('Missing prepared status reference');
-            if (scale > 0n) statusApplications.push({ revision, cause: application.id });
-            break;
-          }
           default: {
             const impossible: never = effect;
             throw new Error(`Unknown effect: ${String(impossible)}`);
@@ -180,7 +186,7 @@ export function resolveEffects(
           defenseApplied: damage.defenseApplied,
           afterDefense: checked(damage.afterDefense),
           afterResistance: checked(damage.afterResistance),
-          ...(hasDamageFormula(damage.effect) && {
+          ...((hasDamageFormula(damage.effect) || damage.statusModified) && {
             calculation: {
               element: damage.effect.element,
               component:
@@ -196,9 +202,9 @@ export function resolveEffects(
           toHp: total ? fraction(hpDamage * damage.afterModifiers, total) : fraction(0n, 1n),
         }));
       const result = applyStatuses(
-        target.statuses,
-        statusApplications,
-        dispels,
+        reactions.statuses,
+        reactions.applications,
+        reactions.dispels,
         activationStep,
         limits,
       );
@@ -206,8 +212,10 @@ export function resolveEffects(
         actorId: target.actor.participant.actorId,
         resources,
         statuses: result.statuses,
-        changes: result.changes,
+        changes: [...reactions.changes, ...result.changes],
+        reactions: reactions.traces,
         damage: details,
+        healing,
         healed: checked(heal),
         hpDamage: checked(hpDamage),
         shieldAbsorbed: checked(absorbed),

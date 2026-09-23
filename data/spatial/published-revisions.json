@@ -326,6 +326,48 @@
       "id": "pillars-surveyed-v1",
       "revision": 1,
       "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-status-v1",
+      "revision": 1,
+      "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
+    },
+    {
+      "kind": "status",
+      "id": "battle-focus-v1",
+      "revision": 1,
+      "contentHash": "sha256:6cb16e112dca8137886442a1e5da33666a337647c55afe8e0ccdbabdb7ecc04e"
+    },
+    {
+      "kind": "status",
+      "id": "ice-bound-v1",
+      "revision": 1,
+      "contentHash": "sha256:e32a69c0a7e553f58269198ab1cb366822ce40716d710ad210b0f91c0df8bf19"
+    },
+    {
+      "kind": "status",
+      "id": "reactive-flame-v1",
+      "revision": 1,
+      "contentHash": "sha256:a29101b02b7b205e09eaa39b806c932930f1ee5577e39eca9387a455de90075b"
+    },
+    {
+      "kind": "status",
+      "id": "soaked-v1",
+      "revision": 1,
+      "contentHash": "sha256:d5102da8cd295791fca88a51b6203cc7087a853fb8430df4595f9f63aa8d6b33"
+    },
+    {
+      "kind": "status",
+      "id": "unquenchable-flame-v1",
+      "revision": 1,
+      "contentHash": "sha256:dbfc3610235d63616c5586ad86b6c9ded9c724b48139963941c4dd25b399c57b"
+    },
+    {
+      "kind": "status",
+      "id": "battle-replenishment-v1",
+      "revision": 1,
+      "contentHash": "sha256:3219833be4c51d3de3fcd1a52fe69b538d9e9e31f980b5ee73f69124e3bc0a5c"
     }
   ]
 }

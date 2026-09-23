@@ -41,18 +41,15 @@ big-endian hexへ変換し、-0を+0へ正規化、NaN/Infinityを拒否する�
 
 ## 型付き構成
 
-characterは能力・装備・方針revisionを参照する。装備は能力を参照でき、能力の
-apply-statusは状態revisionを参照する。状態は他revisionを参照しないため、型の依存関係は
-循環しない。JSON自体の循環は再帰schemaへ渡す前に拒否する。
+character references abilities/equipment/policy; equipment references abilities;
+apply-status and status transform reference exact status revisions. Preparation/storage collect
+and validate this bounded closure. JSON object cycles are rejected before schema parsing.
 
-能力はtrigger、condition、target、cost、cast/recovery/cooldown、攻撃形状、effectsを持つ。
-初版triggerはaction/battle-start。directはselfのみで、enemyはmelee/hitscan/projectileの
-幾何判定を必要とする。開始時効果はself・cast0のみ。未知のtrigger/effectや任意コードは
-拒否する。反射・蘇生・テレポートなどP6の型は未公開である。
-
-地形はbox（yaw/slopeで斜面も表現）またはpillar。movement/vision/attackの遮蔽フラグを
-分離する。経路は高さを含むground/air nodeとwalk/jump/fly edgeで構成し、幅・頭上空間を
-持つ。グラフに辺があっても、実際の身体sweepで通行を確認する。
+Abilities declare trigger/condition/target/cost/clocks/shape/effects. Triggers: action/battle-start;
+startup requires self/cast0; direct is self-only; enemy effects require melee/hitscan/projectile contact.
+Unknown triggers/effects/code are rejected. Reflection/revival/teleport remain P6.
+Terrain: box (yaw/slope) or pillar with independent movement/vision/attack flags.
+Ground/air nodes and walk/jump/fly edges carry elevation/width/headroom; body sweeps validate passage.
 
 ## revisionとhash
 
@@ -148,79 +145,88 @@ Rapierを使い、接線・離脱方向の凸地形を除外して次の接触�
 幾何位置で固定する。配列/IDの順を優先順にしない。edge判定cacheは不変戦場・身体ごと。
 探索上限はbudget-exceeded、到達経路がない場合はunreachableであり、両者を区別する。
 
-## 観測と行動方針（3D-05b）
+## 観測と行動方針（3D-05b / G-03）
 
-身体は直立し、ローカル+Xを前、+Zを右としてoffsetをyaw回転する。真上/真下の向きでは
-offset用の水平軸をworld +Xに固定する。視野は3D円錐で、目からの距離・角度・vision LOSを
-使う。攻撃遮蔽とは独立する。
+Upright offsets: +X forward/+Z right, yaw-rotated (vertical facing uses world +X).
+Sight: eye-origin cone, range/FOV/vision LOS independent of attack occlusion.
+Every reactionSteps, freeze position/velocity/facing/time; deliver after the same delay,
+including startup. Lost targets retain lastSeen for memorySteps. AI gets no hidden current/future state.
 
-知覚はreactionStepsごとに採取し、同じreactionStepsだけ遅れてAIへ渡す。初期境界の観測も
-この遅延を受ける。観測は位置・速度・向き・採取時刻をdeep freezeしたsnapshotであり、後の
-実体の移動で変わらない。見失った場合は最終観測をmemoryStepsまで保持し、相手の現在位置を
-policyへ渡さない。回避の候補は視認済みの敵弾だけで、未来の弾・乱数・未確定行動を使わない。
+Conditions use own resources/statuses, observed distance/visibility/projectiles, all/any/not.
+Costs/uses/cooldown/phase/range constrain integer-weighted candidates; combat revalidates
+start/release/contact. Probabilities/estimates differ from outcomes (ADR 0009).
+Movement: approach/keep-distance/evade/hold. Flight uses policy altitude unless dodging;
+lost flight returns to ground. Dodge is left/right, plus up/down in flight. Own geometry/
+acceleration, known terrain and constant-velocity observed bullets constrain weighted directions.
+Equal directions equiprobable; sole direction draws nothing. Physics resolves actual movement.
 
-条件は自己HP/MP、観測/記憶上の距離、観測上のvisible、自己状態、観測済み弾とall/any/not。
-自分の資源・使用回数・cooldown・phase・状態・観測射程から開始可能な候補を作り、
-経験と状況による整数重みで選ぶ。選択確率、成功/撃破の推定と、実際の結果は分ける。
-近接/射撃の実際の開始・発射・命中は攻撃層が再検証する。移動は接近、距離維持、回避、停止。
-飛行中の通常移動は設定高度へ向かうが、回避中は選んだ上下左右の目標を優先する。
-飛行権限を失えば地上経路に戻す。飛行維持は有限期間の状態と再使用コストで表す。
+Appearance/wounds/phase/impacts are delayed; impact sight uses contact positions and start facing,
+with delay from resolution. Exact enemy resources/resistance/unused abilities remain private;
+typed reveal exposes one field. Categories: ability physical/magic/technique/special
+(omission: magic iff MP>0); status buff/debuff/control/damage-over-time/permanent, without duplicates.
+Silence blocks magic start/release; dispel matches ID/category, subject to permanence.
 
-地上の回避は本人の向きに対する左右、飛行中は上下左右。観測した弾の等速予測、自己の身体・
-速度・加速度と既知の地形で候補を絞る。回避種別を選んだ後に方向の重み付き抽選を行い、
-同等方向は等確率、唯一方向は乱数消費なし。共通の移動・衝突が実際の成功を決める。
+## 効果と状態の同時解決（3D-06a / G-02 / G-03）
 
-外観・粗い負傷・見える行動phase・自分の可視命中反応を遅延して受け取る。命中の視認は
-接触時刻の両者の軌跡位置と区間開始時の向きを使い、移動後に遮蔽へ出入りした位置を使わない。
-結果は解決境界で記録し、そこから反応遅延を数える。敵の正確なHP/MP・耐性・未使用能力は
-通常観測へ渡さず、型付きrevealだけが発動条件を満たした一属性を限定開示する。
-水は既存の水で消せる燃焼を解除し、同時の新規燃焼は残す。silencedは`magic`分類を持つ
-主行動の開始/発動を禁じる。詳細と数値fixtureはADR 0009に固定する。
+Optional magicPower/magicDefense (0..1000000): omitted inherits adjusted attack/defense; explicit 0 is independent.
+Power = amount + floor(attack*attackScaleBps/10000) + sum(floor(stat*ratioBps/10000)).
+Scaling adds 1..2 unique attack/magicPower terms (ratios 0..100000). Each effect is one component.
+Defense physical(default)/magic/none is independent of element/category; none bypasses defense only.
+Order: max(0,power-defense) → coverage → resistance → dealt → received → shared shield → HP.
+BigInt intermediates; each multiply floors; safe outputs. Coverage/resistance clamp 0..10000;
+dealt/received default 10000, clamp 0..30000. Shield includes concurrent grants; exact proportional
+fractions attribute shield/HP without ID remainders. HP+healing-unshielded damage clamps once.
+damage.ts owns power/calculation; G-03 supplies adjusted stats/factors. Launch freezes source,
+including melee/projectiles; resolution reads old target states. New formula/adjustment emits
+damage.calculation; amount/impact include factors. AI compares own power and matching defense;
+reveal ignores defense. Fixtures: damage-formulas.json and status tests.
 
-分類（#61 G-01）: 能力`physical`/`magic`/`technique`/`special`、
-状態`buff`/`debuff`/`control`/`damage-over-time`を重複なく複数持てる。能力で省略時はMPが正なら
-`magic`とみなす。`dispel`は`statusIds`か`categories`で一致する既存状態を解除する。
+Statuses use [start,end): expire before per-stack pulses. Grants activate next boundary;
+dispel targets old states. Same revision/key/start shares a cohort; sum caps maxStacks;
+distinct starts keep deadlines. Refresh preserves origin/causes;
+replace resets; reject keeps old states. Conflicting revisions/key require explicit replacement.
+Legacy attack/defense add per stack (floor 0); speed sums deviations from 10000 (clamp 0..30000);
+flight/rooted use OR. Expired flight restores gravity. Status type/cause budget excess truncates.
 
-## 効果と状態の同時解決（3D-06a / G-02）
+Adjustments: {target,operation:add|multiply,amount,element?,category?}.
+Targets: attack/defense/magicPower/magicDefense/speed/damageDealt/damageTaken/resistance,
+hpRecovery/staminaRecovery, perceptionRange/perceptionFov/action/movement/vision/visibility.
+Add uses target units (stats/mm/millidegrees; stamina recovery units/sec; otherwise Bps).
+Sum add*stacks; sum (multiply-10000)*stacks with legacy speed deltas; clamp multiplier 0..30000,
+floor one BigInt product. Omitted magic inherits adjusted physical values.
+Resistance: element required, 0..10000; damage factors: 0..30000.
+Element limits damage/resistance; category limits dealt damage (mixed category matches once).
+Zero action blocks start/release/movement, but committed attacks persist. Zero movement/vision/
+visibility blocks moving/seeing/being seen. Perception clamps to 200000mm/360000 millidegrees.
 
-magicPower/magicDefense: optional integers 0..1,000,000; omitted = equipment/status-adjusted
-attack/defense. Explicit values (even 0) exclude physical modifiers.
-One effect = physical/elemental component. Magic swords: G-01 physical/magic categories,
-two effects, each using both stats.
+Reactions: {element,response,damageTakenBps?}, unique elements; response is
+none/remove/strengthen{stacks}/transform{status:exact revision}. Explicit water overrides
+burning.waterExtinguishable (true→remove, false→none). Coverage>0 water/damage contacts at 0 HP
+damage too. React once per old state/element/transaction; weakness applies to that hit, adding
+multiplier deviations to damageTaken. Remove beats strengthen; remove+transform or differing
+destinations are unresolved. Strengthen fills oldest cohort to maxStacks, keeps clocks/causes.
+Transform grants once, no recursion; dispel precedes grants. Diagnostics retain causes.
 
-Power = amount + floor(attack * attackScaleBps / 10000) + sum(floor(stat * ratioBps / 10000)).
-Optional scaling: 1..2 unique {stat: attack|magicPower, ratioBps: 0..100000} terms.
-Additive to legacy terms; use attackScaleBps=0 for scaling alone.
-Optional defense: physical (default), magic or none; independent of element/category.
+Permanent states use endStep=12000 (battle max 6000), ignoring duration and normal removal/transform.
+Replacing permanent states: same revision preserves clocks; others are unresolved. Sealing stays P6.
 
-Order: max(0,power-defense) → coverage → resistance → dealtBps → receivedBps → shared shield → HP.
-none skips defense only. Each multiplication floors; factors are Bps/10000, or
-(10000-resistance)/10000. Coverage/resistance clamp 0..10000; dealt/received default 10000,
-clamp 0..30000 each. BigInt intermediates, safe-integer outputs; invalid inputs rejected.
+Periodic {kind:resource,resource:mp|stamina,amount:signed integer,everySteps} calls G-04
+updateResources once per boundary; retains carry/exhaustion, leaves absent stamina absent.
+Resource pulses precede HP/declarations. recoverActorResources settles interval-start
+staminaRecovery at step+1; later removal/grants cannot alter elapsed recovery. No duplicate arithmetic.
 
-Sum components; consume initial + simultaneously granted shield. Shield/HP attribution uses
-reduced fractions total*contribution/sum, no ID-based remainders or per-component HP caps.
-Post-cost HP + healing - unshielded damage clamps once to 0..maxHP; no early healing clamp
-or cancellation by simultaneous damage/legal self-cost. Enumeration is irrelevant; ID sort is for records.
+Only visible states yield ≤64 sorted summaries after sight/reaction delay:
+ID/categories, benefit/adjustment direction, removability, reaction/damage direction; no hashes,
+quantities, stacks or deadlines. Own AI knows ability/held-state transform closures; enemy AI
+uses delayed summaries/impacts only. Self utility compares one shared transaction at launch+1,
+preserving pulse phase, displaced cohorts, caps and expiry (missing resources ignored). Weakness changes the coarse
+prior, never duplicates measured impact. Public changes retire prior/same-boundary impacts after
+delay; baseline reveals persist and use the public prior.
+Knowledge/decision logs use these summaries, never enemy truth.
 
-`damage.ts`: damagePower(effect,source); calculateDamage(effect,source,target,coverageBps?,modifiers?).
-G-03 supplies adjusted stats/resistance and modifiers {dealtBps,receivedBps}. Source freezes at launch
-(including melee/projectiles); target uses resolution snapshot. Fixtures: damage-formulas.json.
-Only new formulas add damage.calculation metadata.
-afterDefense includes coverage; amount includes modifiers. AI uses own power/observations,
-Impact comparisons match defense (legacy=physical); resistance reveals ignore defense.
-Omitted additions preserve legacy results/hashes.
-
-Statuses: [start,end); expiry before pulses, per-stack pulses from start, never at end.
-Cohorts do not change defense units. New action states activate next boundary; dispel touches
-existing snapshots only, not simultaneous grants or that interval's defense.
-Same key/revision/start forms a cohort; sum shares maxStacks; distinct starts retain ends.
-Refresh extends end, preserves pulse phase and all grant/refresh causes (counted to budget).
-Replace removes old/resets start; reject blocks active states; expired states cannot block grants.
-Conflicting simultaneous revisions/key: unresolved. Single replace: explicit replacement.
-Attack/defense add per stack, floor 0; speed adds deltas from 10000, clamps 0..30000.
-Flight/rooted: active-state OR; expired flight restores gravity next movement.
-maxStatusTypes/maxStatusCauses: increasable attempt budgets outside manifest/hash; overflow truncates.
+G-03 spatial-v1.12 / standard-status-v1 changes water extinguishing and status AI.
+ADR 0010: omissions preserve legacy arithmetic/hashes; old records remain readable without historical
+execution. Corpus changes only engine/rules identity; published sample IDs stay fixed.
 
 ## 行動時計と攻撃形状（3D-06b）
 
@@ -265,13 +271,12 @@ meleeは半径radiusMmの球を、有効activeStepsの間に武器起点からre
 battle-startはdirect selfのみ。同じ初期snapshotで条件を満たす群を主体ごとに一括予約し、
 合計不足なら全不発、成功なら支払い・効果を同時解決する。開始状態は境界0の継続効果より先に有効。
 
-`character.stamina?`は整数のmax/recoveryPerSecond、任意resumeAtを持つ。初期値max、下限0。
-各区間末で常時回復。端数を保持し、maxで破棄する。0まで枯渇すると、
-resumeAt（省略時ceil(max/10)）までスタミナ技を禁止。定義省略時は資源も回復イベントも追加しない。
-`costs.stamina?`省略は0、usesは従来どおり上限（0は無制限）。
-`updateResources`は符号付き増減群と回復を合算して一度clampし、実増減・端数を返す。
-回復量はmax(0, rate+add)×Bps/10000。
-`ResourceBudget`は区間内の共通残枠へ予約し、確定/取消は各予約1回。未確定予約を残して次の資源更新へ進めない。
+`character.stamina?`: integer max/recoveryPerSecond, optional resumeAt; starts at max, floor 0.
+Recover each interval end; retain fractions, discard at max. Reaching 0 blocks stamina skills until
+resumeAt (default ceil(max/10)). Omission adds no resource/events. Omitted costs.stamina=0;
+uses=0 remains unlimited. updateResources sums signed deltas/recovery, clamps once, returns actual
+delta/carry. Recovery=max(0,rate+add)*Bps/10000. ResourceBudget reserves shared remaining capacity;
+commit/cancel once per reservation, settle all before another update.
 
 境界と区間は独立トランザクション。予算超過/未定義干渉は未確定のコスト・乱数・移動・イベントを
 破棄し、最後の確定表示と理由を返す。入力不正/実装例外をunresolved/drawへ変換しない。
