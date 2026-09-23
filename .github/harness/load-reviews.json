@@ -2,6 +2,26 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "e9325df8ca62beba39b85d100265379e4c5ad2fb",
+      "beforeDigest": "2ac009a662471885ebeda8734507b3f59f390c3f3949bbc01062440a9ebdd2de",
+      "afterDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "The #45 prerequisite versions same-observation action/movement selection as spatial-v1.15 / standard-simultaneous-v1. Reviewed five actual alternating trials of all seven cases (35 observations per revision), exact main e9325df against clean candidate 62dcd02. All outcome/count/byte vectors are stable within each revision and pass unchanged ceilings. Separating dodge from the action distribution intentionally changes swordsman/sky-mage from a 6000-step draw to a right-side win at 434 steps, and seer/ember from a 250-step draw to a right-side win at 138 steps. The former has no paired cast (cast/movement compatibility still applies); the latter executes one paired shot/dodge. Neither has a pair-admission fizzle. Swordsman/sky-mage path nodes rise from 515 to 545, within 700. Fire/healer retains its outcome and 747 steps with casts +9, log bytes +8311 and trajectory bytes +182. Archer/guardian retains outcome and operation counts, with log bytes +17122 and trajectory bytes +61. The other three vectors are unchanged. Clean-source verification passes 632 tests and 112 mapped regressions, including joint costs, independent random purposes, actual movement and Worker/SQLite/replay. All seven recipes/seeds/characters and published definition hashes are preserved; only current engine/rules identities change. Golden expectations and profile/runtime limits are unchanged. Different input identities require independent transition review: these measurements do not establish same-input timing or RSS improvement, and no failed baseline is waived.",
+      "evidence": [
+        ".generated/harness/load-pair-slots-reviewed/0-before.json",
+        ".generated/harness/load-pair-slots-reviewed/0-after.json",
+        ".generated/harness/load-pair-slots-reviewed/results.json",
+        ".generated/harness/load-pair-slots-reviewed/commands.json",
+        ".generated/harness/load-pair-slots-reviewed/reviewed-comparison.json",
+        ".generated/harness/source-slots-62d/report.json",
+        "packages/engine/src/spatial/simultaneous-slots.test.ts",
+        "apps/api/src/simultaneous-persistence.test.ts",
+        "docs/rules/spatial-v1.md"
+      ]
+    },
+    {
       "baselineSha": "94896d4c3762d78a72e2abb8dfd1610a5cae49a4",
       "beforeDigest": "ebc58ce781d09662fd834f13344d3f710e1452b7061028771b5598fe79abfc24",
       "afterDigest": "ebc58ce781d09662fd834f13344d3f710e1452b7061028771b5598fe79abfc24",

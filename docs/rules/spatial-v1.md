@@ -223,8 +223,18 @@ Enemy estimates use public summaries only. Weakness alters priors, never duplica
 Impacts carry their visible status context; mismatches cannot train baseline resistance. Public
 changes retire prior/same-boundary impacts after delay; baseline reveals persist.
 Reasons, weight/total, seed draws and context persist in cognition.
-G-05 spatial-v1.14 / standard-general-ai-v1 persists appearance priors and versions these decisions.
-ADR0010 preserves published v1.11–13 rules/records for reading, rejecting historical execution.
+
+## 同時選択（#45、spatial-v1.15）
+
+standard-simultaneous-v1: optional ai.slots=simultaneous-v1 (omission preserves behavior).
+Same observation → action → cost/lock-feasible movement. Dodge competes with ordinary
+movement at actionWeight versus existing dodgeWeight/cost; direction is sampled separately.
+Movement seed uses actor seed xor 0x13198a2e; sole choices consume no draw.
+Before payment, shared ResourceBudget protects flight and admits skill+dodge+jump together.
+Failure preserves previous legal intent, costs/uses/deadlines; no skill-only fallback.
+Cast-stop excludes paired dodge. Actual collision/settlement remains authoritative.
+movementSlot saves candidates/exclusions/draw; existing cognition/locomotion saves the rest.
+No hidden enemy inputs.
 
 ## 行動時計と攻撃形状（3D-06b）
 

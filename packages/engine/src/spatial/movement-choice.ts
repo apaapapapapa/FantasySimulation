@@ -1,0 +1,114 @@
+import { AI_RULES, type CandidateAssessment, type Cognition } from '@fantasy/domain/spatial';
+import type { DecisionView } from './perception.ts';
+import { initialMovementRandom, weightedChoice } from './decision-random.ts';
+import type { AbilityRevision } from './combat-state.ts';
+import { payCost } from './attacks.ts';
+import { canMaintainFlight, resourceReady } from './locomotion.ts';
+import { dodgeOptions } from './dodge.ts';
+import type { KnownClearance } from './assessment.ts';
+
+export function dodgeAssessment(view: DecisionView): CandidateAssessment {
+  const cost = view.self.actor.character.movement.locomotion?.dodgeStamina ?? 0;
+  const costBps = Math.min(
+    10000,
+    Math.floor((cost * 10000) / Math.max(1, view.resources.stamina ?? 0)),
+  );
+  return {
+    key: 'dodge',
+    kind: 'dodge',
+    abilityId: null,
+    weight: Math.max(
+      1,
+      Math.floor(((view.rules ?? AI_RULES).dodgeWeight * 10000) / (10000 + costBps)),
+    ),
+    totalWeight: 1,
+    successBps: 7000,
+    killBps: 0,
+    survivalBps: 8000,
+    efficacyBps: 0,
+    confidenceBps: 5000,
+    durationSteps: 5,
+    costBps,
+    exploration: 0,
+    evidence: [],
+    reason: 'escape observed projectile paths; actual collision remains authoritative',
+  };
+}
+export function passiveAssessment(moving: boolean): CandidateAssessment {
+  return {
+    key: moving ? 'move' : 'wait',
+    kind: moving ? 'move' : 'wait',
+    abilityId: null,
+    weight: 1,
+    totalWeight: 1,
+    successBps: 10000,
+    killBps: 0,
+    survivalBps: 0,
+    efficacyBps: 0,
+    confidenceBps: 0,
+    durationSteps: 5,
+    costBps: 0,
+    exploration: 0,
+    evidence: [],
+    reason: 'no executable beneficial action',
+  };
+}
+
+/** The movement distribution is conditional on the selected action and the same observation. */
+export function chooseMovementSlot(
+  view: DecisionView,
+  ability: AbilityRevision | undefined,
+  flight: boolean,
+  moving: boolean,
+  state: number | undefined,
+  clear: KnownClearance,
+) {
+  const excluded: string[] = [];
+  const payment =
+    ability &&
+    payCost(ability.definition, view.resources, view.used?.[ability.id] ?? 0, resourceReady(view));
+  const resources = payment?.ok ? payment.resources : view.resources;
+  const blocks =
+    !!ability &&
+    ability.definition.castSteps > 0 &&
+    ability.definition.movementWhileCasting === 'stop';
+  const rate = flight ? (view.flightStaminaPerSecond ?? 0) : 0;
+  const maintained = canMaintainFlight(resources, rate, resourceReady(view));
+  if (blocks) excluded.push('selected action locks movement while casting');
+  if (!maintained) excluded.push('flight upkeep must remain payable');
+  // Flight is protected before both slots; dodgeOptions also budgets actual travel.
+  const available = {
+    ...resources,
+    ...(resources.stamina !== undefined
+      ? { stamina: Math.max(0, resources.stamina - Math.ceil(rate * 0.02)) }
+      : {}),
+  };
+  const directions = dodgeOptions(
+    { ...view, resources: available, canMove: view.canMove !== false && !blocks && maintained },
+    flight,
+    clear,
+  );
+  const fallback = passiveAssessment(moving);
+  fallback.weight = (view.rules ?? AI_RULES).actionWeight;
+  fallback.reason = 'retain ordinary movement and conserve evasion resources';
+  const candidates = [fallback];
+  if (directions.some((d) => d.weight > 0))
+    candidates.push(dodgeAssessment({ ...view, resources: available }));
+  else if (!excluded.length)
+    excluded.push('no feasible evasion for the selected action and remaining resources');
+  const before = state ?? initialMovementRandom(view.self.actor.participant.rngSeed);
+  const choice = weightedChoice(
+    candidates.map((c) => c.weight),
+    before,
+  );
+  const selected = candidates[choice.index!]!;
+  for (const candidate of candidates) candidate.totalWeight = choice.total;
+  const selection = selected.kind === 'dodge' ? 'dodge' : moving ? 'move' : 'wait';
+  const cognition: NonNullable<Extract<Cognition, { kind: 'decision' }>['movementSlot']> = {
+    selection,
+    candidates,
+    excluded,
+    draw: { purpose: 'movement', before, after: choice.state, draws: choice.draws, selection },
+  };
+  return { cognition, directions, random: choice.state, dodge: selection === 'dodge' };
+}

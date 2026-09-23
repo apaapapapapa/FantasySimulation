@@ -17,6 +17,8 @@ export function reserveMotion(
 ) {
   const character = actor.motion.actor.character,
     m = character.movement.locomotion;
+  const displayMotion =
+    !!character.stamina || !!actor.locomotion || actor.decision.dodge !== undefined;
   const ready = !staminaExhausted(
     budget.available,
     character.stamina,
@@ -126,13 +128,13 @@ export function reserveMotion(
         };
         changed = true;
       }
-      if (character.stamina && dodge && ready && intent.canMove && (!m || dodgePaid))
+      if (displayMotion && dodge && ready && intent.canMove && (!m || dodgePaid))
         actor.motionClock = {
           remainder: actor.motionClock?.remainder ?? 0,
           flightRemainder: actor.motionClock?.flightRemainder ?? 0,
           dodgeUntilStep: step + 5,
         };
-      if (character.stamina)
+      if (displayMotion)
         actor.locomotion = {
           mode: intent.flight
             ? 'flight'

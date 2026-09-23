@@ -5,19 +5,15 @@ Refs #61 G-06/§2-E,F, #45, #59, #1 P6. Docs only.
 
 ## 1. 採用案・前提
 
-Baseline main `d8a50814cb26a4aaa97c0033363d0dd66cf53571`: #59/#71,
-G-01/#68,G-02/#69,G-03/#70/#72,G-04/#73/#78,G-05/#85/#87.
-#45 simultaneous slots remain pending. Later #45/#59/#61 override old parent text.
-Recheck main/PRs before implementation; G-05 confirmed §7 separately.
+G-01–05 are merged; #45 simultaneous slots precede G-07. Recheck live main/PRs.
+Later #45/#59/#61 override parent text; G-05 confirmed §7.
 
-One20ms clock, staged instances/shared ledger, bounded transaction waves. Reject
-separate loops (duplicate owners), recursive callbacks (unbounded/order-dependent),
-contact-order HP (nonsimultaneous), character scripts (unvalidated), future-stage
-prepayment (blocks recovery use). Boundary interruption; finer timing needs versioning.
-
-Paths: engine `src/spatial/`. Reuse G-01 categories, G-02 damage, G-03 status, G-04
-resources/resource-step/motion-resources and geometry modules. Only simulate.ts
-orchestrates; G-05 owns assessment/perception/self-view.
+Use one20ms clock, stage instances/shared ledger and bounded transactional waves.
+Reject duplicate loops, recursive callbacks, contact-order HP, character scripts and
+future-stage prepayment: they break ownership, ordering, bounds or recovery usage.
+Interrupt at boundaries; finer timing needs versioning. simulate.ts alone orchestrates,
+reusing G-01 categories/G-02 damage/G-03 status/G-04 resources and geometry;
+G-05 owns assessment/perception/self-view.
 
 ## 2. 段・時計・中断
 
