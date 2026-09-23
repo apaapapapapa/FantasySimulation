@@ -4,6 +4,7 @@ import {
   type DeepReadonly,
   type Definition,
   type ObservedStatus,
+  type StatusAdjustment,
 } from '@fantasy/domain/spatial';
 import { permanentStatus, statusCategories } from './categories.ts';
 import { adjustedStatusValue } from './status-modifiers.ts';
@@ -21,12 +22,6 @@ export const copyPublicStatuses = (
     ...(adjustments && { adjustments: adjustments.map((a) => ({ ...a })) }),
     reactions: s.reactions.map((r) => ({ ...r })),
   }));
-export const generalizedStatus = (status: Status) =>
-  status.adjustments !== undefined ||
-  status.reactions !== undefined ||
-  status.visibility !== undefined ||
-  status.periodic.some((p) => p.kind === 'resource') ||
-  permanentStatus(status);
 /** A signed estimate of a status's benefit to its holder, never an opponent-state lookup. */
 export function statusBenefit(
   status: Status,
@@ -34,6 +29,8 @@ export function statusBenefit(
   remaining = status.durationSteps,
   resources: { mp?: boolean; stamina?: boolean } = {},
   phase?: { startStep: number; fromStep: number },
+  withoutDamage = false,
+  adjustmentApplies: (adjustment: DeepReadonly<StatusAdjustment>) => boolean = () => true,
 ) {
   const m = status.modifiers;
   let benefit =
@@ -44,6 +41,7 @@ export function statusBenefit(
     Number(m.rooted) -
     Number(m.silenced ?? false);
   for (const a of status.adjustments ?? []) {
+    if (!adjustmentApplies(a)) continue;
     if (a.target === 'staminaRecovery' && resources.stamina === false) continue;
     const divisor = ['attack', 'defense', 'magicPower', 'magicDefense', 'staminaRecovery'].includes(
       a.target,
@@ -60,6 +58,7 @@ export function statusBenefit(
   const duration = permanentStatus(status) ? horizon : Math.min(horizon, remaining);
   benefit *= Math.max(0, duration) / horizon;
   for (const p of status.periodic) {
+    if (withoutDamage && p.kind === 'damage') continue;
     if (p.kind === 'resource' && resources[p.resource] === false) continue;
     benefit +=
       (p.kind === 'damage' ? -1 : 1) *

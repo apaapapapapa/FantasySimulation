@@ -1,5 +1,6 @@
 import {
   AI_RULES,
+  canonicalJson,
   type CandidateAssessment,
   type DeepReadonly,
   type Definition,
@@ -48,6 +49,8 @@ export function efficacy(
   const comparable = evidence.filter(
     (e) =>
       e.kind === 'impact' &&
+      (e.observedStatuses === undefined ||
+        canonicalJson(e.observedStatuses) === canonicalJson(target?.statuses ?? [])) &&
       (e.defense ?? 'physical') === defense &&
       e.range &&
       e.basePower > 0 &&
@@ -108,7 +111,17 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
   const evidence: string[] = [],
     reasons: string[] = [];
   const stateValue = assessStatusEffects(view, d.effects, d.target, (view.step ?? 0) + cast);
-  utility += stateValue.value * rules.actionWeight;
+  utility += (stateValue.risk?.nonDamageValue ?? stateValue.value) * rules.actionWeight;
+  if (stateValue.risk) {
+    const { before, after } = stateValue.risk;
+    const reduction = (before - after) / Math.max(1, before, after);
+    const risk = Math.min(1, Math.max(before, after) / Math.max(1, view.resources.hp));
+    utility +=
+      (reduction *
+        (rules.actionWeight + rules.riskWeight * (0.65 + 2 * risk)) *
+        weights.survivalBps) /
+      10000;
+  }
   if (stateValue.reason) reasons.push(stateValue.reason);
   for (const effect of d.effects) {
     if (stateValue.handled.has(effect)) continue;
@@ -176,9 +189,6 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
           weights.explorationBps) /
         10000;
       reasons.push('bounded information acquisition');
-    } else if (effect.kind === 'apply-status' || effect.kind === 'dispel') {
-      utility += rules.actionWeight;
-      reasons.push('known status effect');
     }
   }
   if (totalPower > 0) {

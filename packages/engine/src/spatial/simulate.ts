@@ -335,10 +335,13 @@ export function* simulate(
               cognition: {
                 kind: 'knowledge',
                 perspective: 'subjective',
-                learned: actor.memory.learned.map((e) => ({
+                learned: actor.memory.learned.map(({ observedStatuses, ...e }) => ({
                   ...e,
                   ability: { ...e.ability },
                   range: e.range ? { ...e.range } : null,
+                  ...(observedStatuses && {
+                    observedStatuses: copyPublicStatuses(observedStatuses),
+                  }),
                 })),
                 expired: [...actor.memory.expired],
                 ...(changedStatuses &&

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.13",
-    "rulesVersion": "spatial-v1.13",
+    "engineVersion": "spatial-v1.14",
+    "rulesVersion": "spatial-v1.14",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -388,6 +388,42 @@
     "locomotion-published": {
       "file": "apps/api/src/resource-persistence.test.ts",
       "name": "stamina through Worker, SQLite and recorded replay reads published stamina-only v1.11 displays unchanged and refuses execution under current rules"
+    },
+    "general-ai-priors": {
+      "file": "packages/engine/src/spatial/observed-conditions.test.ts",
+      "name": "G-05 observation contracts extends vocabulary and elemental priors through validated rules data, independently of cue order"
+    },
+    "general-ai-conditions": {
+      "file": "packages/engine/src/spatial/observed-conditions.test.ts",
+      "name": "G-05 observation contracts conditions see delayed wounds, phase and relative geometry, never live opponent state"
+    },
+    "general-ai-visible": {
+      "file": "packages/engine/src/spatial/observed-conditions.test.ts",
+      "name": "G-05 observation contracts executes only the condition supported by a visible status and persists its evidence"
+    },
+    "general-ai-hidden": {
+      "file": "packages/engine/src/spatial/observed-conditions.test.ts",
+      "name": "G-05 observation contracts executes only the condition supported by a hidden status and persists its evidence"
+    },
+    "general-ai-signed-status": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts values legacy self buffs and enemy debuffs by magnitude and duration, excluding harmful self grants"
+    },
+    "general-ai-cleanse": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts uses shared periodic damage for the approved 659/740 cleanse probability and retires expired risk"
+    },
+    "general-ai-qualifiers": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts matches outgoing status qualifiers to known skills and retains permanent grants"
+    },
+    "general-ai-storage": {
+      "file": "apps/api/src/ai-delivery.test.ts",
+      "name": "observed AI delivery through persisted Workers round trips public status experience, observed conditions and weighted reasons through SQLite and replay"
+    },
+    "general-ai-risk-expiry": {
+      "file": "packages/engine/src/spatial/status-assessment.test.ts",
+      "name": "status transaction forecasts expires defensive modifiers within the periodic risk horizon before the next pulse"
     }
   },
   "entries": [
@@ -400,7 +436,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:8837a0fe3903ebbec669ccb8f897ecbe4727e7789b1eaa1ef9794c835cd187b8",
+        "inputHash": "sha256:bed33401bf4a7368b5842a9cac3c9f1614db9876d8220c9e8b2b1b1946a60eba",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -408,9 +444,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-locomotion-v1",
+          "id": "standard-general-ai-v1",
           "revision": 1,
-          "contentHash": "sha256:0fad0819ecdb79e120ef006006e2722de002f3614477d1b4cec784d9ae94f919"
+          "contentHash": "sha256:f7c73cd16ebf01380417b31df9c9bb70a33454969ae9bb32f6a2a7aa90f20963"
         },
         "participants": [
           {
@@ -445,7 +481,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:466891475c3cd70787558e94b41d1fbd88bfa699312ec52cad3368f993ac6f4e",
+        "inputHash": "sha256:191733f86d121e06ef245ba15f18d974ac348807e0c030b0b5bcdac4fdf727c5",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -453,9 +489,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-locomotion-v1",
+          "id": "standard-general-ai-v1",
           "revision": 1,
-          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
+          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
         },
         "participants": [
           {
@@ -490,7 +526,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:1d38f164e806ff620d3a28f76d802b9784364415fba266e553312e326455562a",
+        "inputHash": "sha256:631ad2cbb9fc23543202b05ab42ab35a4520c6ca93068e13e212ce1d10296ead",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -498,9 +534,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-locomotion-v1",
+          "id": "standard-general-ai-v1",
           "revision": 1,
-          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
+          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
         },
         "participants": [
           {
@@ -535,7 +571,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:be5b64abd079eb8b680f78d6fbb54404a77f34e7db77272f627b7eb1a1f73fc2",
+        "inputHash": "sha256:72f9d8b905dc38ab7ec4f30cd8d4999964cf2efb53611a72c7aaee1191e70946",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -543,9 +579,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-locomotion-v1",
+          "id": "standard-general-ai-v1",
           "revision": 1,
-          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
+          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
         },
         "participants": [
           {
@@ -580,7 +616,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:d7d3563e01c82c1818b273d86bab3f905a50cbee5e9f69bace6ac4fd0e898971",
+        "inputHash": "sha256:68669e77740a0b8fbe6fc2a01dd0c85ba336e12e07ec5f5625eb4a12448e22f6",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -588,9 +624,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-locomotion-v1",
+          "id": "standard-general-ai-v1",
           "revision": 1,
-          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
+          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
         },
         "participants": [
           {
@@ -625,7 +661,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:1970f2ba7ae185df2469ed1135f730fb7d0b950caab31e3447ed8e613cbd8942",
+        "inputHash": "sha256:4d164bf22d9437dd7b2c0de0741d53d58a0c12d165331846bbb697c3468bed03",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -633,9 +669,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-locomotion-v1",
+          "id": "standard-general-ai-v1",
           "revision": 1,
-          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
+          "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
         },
         "participants": [
           {
@@ -670,7 +706,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:a61ecf26360c50bb64c53b652738a9352f81e49f81b835ffa01c33246a25a458",
+        "inputHash": "sha256:346f5417a2f27d9e2b2d5000efb9963bde0d8e14aee404ee27edfae60dd8f0d8",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -678,9 +714,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-locomotion-v1",
+          "id": "standard-general-ai-v1",
           "revision": 1,
-          "contentHash": "sha256:dc06b4133c4362238fa8855bc55cb5922209c57fa005fd11a0651ecf246bf595"
+          "contentHash": "sha256:fde8890fa1b4f892ffe5df0c3c52aa247804ca14ae0e3d8e4e391946439cd37d"
         },
         "participants": [
           {
@@ -945,6 +981,23 @@
         "locomotion-both-exhausted",
         "locomotion-storage",
         "locomotion-published"
+      ]
+    },
+    {
+      "id": "generalized-ai",
+      "title": "G-05 外観データ・観測条件・状態効用・確率・保存",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "general-ai-priors",
+        "general-ai-conditions",
+        "general-ai-visible",
+        "general-ai-hidden",
+        "general-ai-signed-status",
+        "general-ai-cleanse",
+        "general-ai-qualifiers",
+        "general-ai-storage",
+        "general-ai-risk-expiry"
       ]
     }
   ]

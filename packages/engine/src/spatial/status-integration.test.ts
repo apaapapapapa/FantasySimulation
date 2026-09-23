@@ -267,14 +267,14 @@ describe('G-03 status combat and subjective observations', () => {
       const states = [
         { revision: hidden, startStep: 0, endStep: 20, stacks: 3, causes: ['secret-source'] },
       ];
-      const observe = (statuses: typeof states) => {
+      const observe = (statuses: typeof states, enemy = f.enemy) => {
         const visible = {
-          resources: { hp: 100, mp: 100, shield: 0 },
+          resources: { hp: enemy.actor.character.stats.hp, mp: 100, shield: 0 },
           action: 'idle' as const,
           statuses,
         };
-        const first = perceive(f.world, f.self, f.enemy, [], 0, emptyMemory(), visible);
-        return perceive(f.world, f.self, f.enemy, [], 5, first, visible);
+        const first = perceive(f.world, f.self, enemy, [], 0, emptyMemory(), visible);
+        return perceive(f.world, f.self, enemy, [], 5, first, visible);
       };
       const absent = observe([]),
         concealed = observe(states);
@@ -282,6 +282,34 @@ describe('G-03 status combat and subjective observations', () => {
       const ready = new Set(f.abilities.map((a) => a.id));
       expect(choosePolicy({ ...f.view, memory: concealed }, ready, false)).toEqual(
         choosePolicy({ ...f.view, memory: absent }, ready, false),
+      );
+      const privateEnemy = {
+        ...f.enemy,
+        actor: {
+          ...f.enemy.actor,
+          character: {
+            ...f.enemy.actor.character,
+            stamina: { max: 999, recoveryPerSecond: 200 },
+            stats: {
+              ...f.enemy.actor.character.stats,
+              hp: 9999,
+              defense: 900,
+              resistances: {
+                physical: 10000,
+                fire: 9000,
+                ice: 1000,
+                lightning: 8000,
+                arcane: 6000,
+              },
+            },
+          },
+        },
+      };
+      const changed = observe(states, privateEnemy);
+      expect(changed).toEqual(absent);
+      const knowledge = [impactEvidence(f.abilities[0]!)];
+      expect(choosePolicy({ ...f.view, memory: { ...changed, knowledge } }, ready, false)).toEqual(
+        choosePolicy({ ...f.view, memory: { ...absent, knowledge } }, ready, false),
       );
       const visibleRevision = await sealRevision('status', 'public', 1, {
         ...hidden.definition,
@@ -375,10 +403,18 @@ describe('G-03 status combat and subjective observations', () => {
           impact: 45,
           shield: false,
           partial: false,
+          statuses: visible.statuses,
+          statusStep: 9,
         },
         10,
       )!;
       expect(transitionHit).toMatchObject({ sampledAt: 10, availableAt: 15 });
+      expect(transitionHit.observedStatuses).toMatchObject([{ id: 'visible-weakness' }]);
+      const mismatched = {
+        ...f.view,
+        memory: { ...f.view.memory, knowledge: [transitionHit] },
+      };
+      expect(efficacy(mismatched, 'fire', 25)).toMatchObject({ bps: 7500, evidence: [] });
       const after = perceive(
         f.world,
         f.self,

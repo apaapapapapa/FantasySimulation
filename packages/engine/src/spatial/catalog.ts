@@ -10,7 +10,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { reference, sealRevision } from './prepare.ts';
 import { sampleManifest } from './sample.ts';
-import { observedRules, statusRules } from './published-rules.ts';
+import { observedRules, statusRules, locomotionRules } from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
 /** Versioned data examples, never character-specific branches in the simulator. */
@@ -26,6 +26,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
     rules,
     structuredClone(observedRules),
     structuredClone(statusRules),
+    structuredClone(locomotionRules),
   ];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);

@@ -68,6 +68,7 @@ export const ExperienceSchema = z
     distanceBand: z.number().int().min(0).max(200),
     range: EstimateRangeSchema.nullable(),
     confidenceBps: bps,
+    observedStatuses: ObservedStatusesSchema.optional(),
   })
   .superRefine((e, ctx) => {
     if (e.availableAt < e.sampledAt || e.expiresAt < e.sampledAt)
