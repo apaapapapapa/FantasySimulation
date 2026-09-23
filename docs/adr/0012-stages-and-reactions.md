@@ -1,17 +1,14 @@
 # ADR 0012: 技の段・攻撃形状・移動・反応型発動
 
 状態: **提案・設計承認待ち**。Refs #61 G-06/§2-E,F、#45、#59、#1 P6。
-Docs only. PR must record latest-head design review and maintainer/user approval
-before merge; self-review/green CI/bot silence is not approval. Keep #61 open;
-no automatic G-07/G-08.
+Docs only; no automatic G-07/G-08. Approval protocol: §10.
 
 ## 1. 採用案・前提
 
-Baseline main `d2560db7a633601060a6993c187a91e3776149e3` includes #59/#71,
-G-01/#68, G-02/#69, G-03/#70/#72 and G-04/#73/#78. #45 simultaneous selection
-is outstanding. G-05 PR #85 now proposes appearance/observed conditions, still
-rejecting future stages/triggers. Recheck main/PRs before coding.
-Later #45/#59/#61 decisions override conflicting parent text.
+Baseline main `ed847cf15b0556b297b18af244aa64d8bcf9a53c`: #59/#71,
+G-01/#68,G-02/#69,G-03/#70/#72,G-04/#73/#78,G-05 first PR #85.
+#45 simultaneous slots remain pending. Later #45/#59/#61 override old parent text.
+Recheck main/PRs before implementation; G-05 confirmed §7 on this PR, not whole-ADR approval.
 
 Adopt one20ms clock, staged instances/shared ledger, bounded waves in existing
 transactions. Alternatives rejected: separate loops (duplicate ownership), recursive
@@ -19,10 +16,9 @@ callbacks (unbounded/order-dependent), contact-order HP (breaks simultaneity),
 character scripts (unvalidated), future-stage prepayment (blocks recovery use).
 Boundary interruption is deliberate; finer timing needs a versioned decision.
 
-Paths below are engine `src/spatial/` unless prefixed. Reuse categories.ts; G-02
-damage.ts/status-damage.ts/effects.ts; G-03 status-reactions.ts/status.ts; G-04
-resources.ts/resource-step.ts/motion-resources.ts; existing geometry. Only simulate.ts
-orchestrates; G-05 owns assessment/perception, self-view.ts bounds self knowledge.
+Paths: engine `src/spatial/`. Reuse G-01 categories, G-02 damage, G-03 status, G-04
+resources/resource-step/motion-resources and geometry modules. Only simulate.ts
+orchestrates; G-05 owns assessment/perception/self-view.
 
 ## 2. 段・時計・中断
 
@@ -34,7 +30,8 @@ effects; explicit stage0 must equal them, executed once. No historical engine pa
 Each stage: unique local ID, offsetSteps, durationSteps, attack, effects, optional
 selfMotion, extra cost, start/interrupt conditions. Stage0 offset0; ordered owner
 windows cannot overlap; gaps wait. Later holds allow null attack/empty effects.
-Direct/hitscan/projectile releases once at start; melee duration=activeSteps.
+Direct/hitscan/projectile releases once; melee durationSteps MUST equal activeSteps
+(validate/reject mismatch). Remove attached hitboxes at exclusive stage end.
 Projectiles may outlive windows. Conditions reuse bounded AST and available self/
 observations, never enemy truth.
 
@@ -96,20 +93,25 @@ movementWhileCasting. Free-moving attacks allow dodge; authored motion+dodge can
 own the same interval. Disallow that pair, not every skill+dodge. Execution failure
 rejects the new pair atomically, retaining legal existing work; no silent slot drop.
 
-One G-04 ResourceBudget per actor/declaration+movement interval. Reserve new skill/
-stage+dodge/jump together or nothing. Then flight/locomotion use same available
-balance and run→walk→slow fallback. Ability cost/uses commit on declaration; extra
-costs at their stage start (stage0 prepaid at declaration, never charged again), no extra uses. Future costs
-are not held; later shortage interrupts. Started cost/cooldown survives fizzle;
-unreached stages cost0. HP-to-zero payment stays legal, nonreflectable, with defeat
-at existing interval end. Settle/cancel keys once, finish before effects/recovery;
-G-04 retains clamp/carry/exhaustion/actual-distance/start-snapshot recovery ownership.
+Reuse one G-04 ResourceBudget for declaration/movement. Without a new simultaneous
+pair retain skill→flight→dodge→jump→step→travel. Pair admission first protects
+required flight upkeep, then atomically reserves skill/stage+dodge/jump from the
+remainder; never fund dodge by cancelling maintainable flight. If the pair fails,
+cancel its holds (no skill-only fallback/payment); maintain flight and use existing
+run→walk→slow for ordinary motion. This new pair admission is versioned with #45;
+it does not redesign G-04's API or alter legacy single-slot order.
+
+Ability costs/uses commit on declaration; extra costs at stage start (stage0 prepaid,
+never twice), no extra uses. Future costs hold nothing; shortage interrupts. Started
+cost/cooldown survives fizzle, unreached stages cost0. HP-to-zero stays legal and
+nonreflectable; defeat at interval end. Settle/cancel once, finish before updates;
+G-04 owns clamp/carry/exhaustion/actual distance/start-snapshot recovery.
 
 At a reaction point use a settled ResourceBudget on current provisional resources,
 not an old balance. All eligible owner reactions at that point reserve together or
 all fail for cost. Commit once, cooldown from reaction boundary, one use/activation.
 Shortage/exhausted semantic uses is no-proc, not truncated. Deferred counter carries
-paid activation ID, never an open hold or second charge. No holds cross updates.
+paid activation ID, never an open hold or second charge. No cross-update holds.
 
 ## 5. 処理順・反応点
 
@@ -127,10 +129,8 @@ perceive/decide. No extra boundary pulses after final interval.
 - **before-defeat**: After all damage waves: gather provisional HP0 owners, bounded simultaneous revival waves
 - **Commit/verdict**: Statuses, next-interval interruption/forces, G-04 natural recovery, ledger/PRNG/knowledge/log/display; then win/draw
 
-Each wave is finalized only within provisional transaction state. Reaction definition
-has point, category/element filter, owner/target condition, cost/cooldown/uses and
-response. Mechanical trigger payload is combat-only, not AI foreknowledge. Register
-capabilities from pretransaction state; newly granted statuses cannot react yet.
+Each wave is finalized only within provisional transaction state. Reaction: point, category/element filter, condition, costs/clocks/uses,response.
+Combat-only trigger data; register pretransaction capabilities, not new statuses.
 
 G-03 evaluates each old revision/element once per whole transaction including later
 waves; damage keeps old status modifiers. Union accepted contacts/grants/removals,
@@ -142,8 +142,9 @@ shared Bps aggregation; conflicting replacements require a rule, not ID preceden
 
 Before-hit is a reducer, not another immediate attack or self-trigger recursion.
 Cooldown/uses eligibility is evaluated before that group; duplicate contacts cannot
-activate it again. after-damage counter requires positive finalized hostile damage; schedules spatial
-stages no earlier than n+1, rechecks owner/range/geometry. Death cancels, cost remains.
+activate it again. after-damage counter requires positive hostile damage; launch no earlier than the
+commit boundary (boundary transaction n→interval n; interval n→interval n+1),
+rechecking owner/range/geometry. Death cancels, cost remains.
 Reaction action slot coexists with main action but shares motion/ledger/budget;
 incompatible authored-motion counter fails activation.
 
@@ -191,27 +192,25 @@ Work counters retain attempted work; no budget refill or partial wave yield/chec
 
 ## 7. G-05・観測・ログ・保存
 
-G-05 receives own bounded stage summaries: timing, G-02 component power, G-03 known
-status value, shape/reach/coverage assumptions, displacement, compatible slots/
-postures, immediate/future cost/exposure, reaction points/limits. Reuse its evaluator
-and G-04 affordability. Bounded horizon, not guaranteed hits; opponent input only
-delayed public summaries/experience. Unknown reactions/resources/stages remain
-unknown, never zero or truth. Request contract review, not G-05 completion.
+G-05 consumes own stage timing/G-02 power/G-03 status value, shape/coverage/motion,
+slot/posture compatibility, costs/exposure and reaction limits. Bounded estimates,
+never guaranteed hits. Use DecisionView→assessAbility/assessStatusEffects→CandidateAssessment;
+observedCondition uses only latest delayed visible snapshot, including unknown propagation.
+G-05 confirmed this contract in PR discussion; no wait for all G-05 work.
 
-Perception exposes declared visible telegraph/phase/motion/shape/public status/impact
-after sight/delay. No hidden schedule, unused reactions, exact enemy resources/costs/
-revision/hash or definition reverse lookup. Trigger truth and omniscient display
-never feed DecisionView. Subjective logs: both slots, compatibility/exclusions,
-own allocation, estimates/confidence, sampled/available cues, weight/total/random
-purpose. Result logs separately: stage lifecycle, contact/group/dedupe, cost,
-component/shield/reflection basis, wave/causes, force result, revival/diagnostics.
+Enemy stage cues/phase/motion/status/impacts pass sight/delay. Hidden future stages,
+unused reactions, exact resources/costs/revision/hash remain private; no ID lookup.
+Unknown stays unknown, not zero. Mechanical triggers/omniscient replay never enter AI.
+Subjective cognition logs both slots/exclusions, own allocation, estimates/confidence,
+sampled/available cues, weight/total/PRNG purpose. Separate result events record stage
+lifecycle, contact/group/dedupe, costs, component/shield/reflection basis, waves/causes,
+force result/revival/diagnostics.
 
-Implemented extensions must update StreamRecord/ActorDisplay/checkpoints with actual
-stage/phase clocks, IDs, emitted geometry/paths, motion/discontinuity, reaction visuals
-and replacement resource/status deltas. Viewer never reruns engine/Rapier or infers
-stages. Hash stage/ledger/deferred counter/force/activation counters; checkpoints
-still cannot resume simulation. Require domain ReplayState forward/backward seek
-across stage/wave/terminal boundaries plus Worker/SQLite round trips.
+StreamRecord/ActorDisplay/checkpoints must store actual stage/phase clocks, IDs,
+emitted geometry/paths, motion/discontinuity/reaction visuals and replacement deltas.
+No viewer inference/engine/Rapier execution. Hash stages/ledger/deferred counters/
+forces/activation counts. Checkpoints do not resume simulation. Test domain ReplayState
+forward/backward seeks across stages/waves/terminal plus Worker/SQLite round trips.
 
 ## 8. データ例と机上受入（実装試験ではない）
 
@@ -236,8 +235,8 @@ Unless stated, defenses are zero; each case uses the common pipeline.
   fixed cost remains, force overrides next interval.
 - 薙ぎ払い: adjacent overlaps/multiple emitters give one shared-group hit;
   only explicit re-hit rules or a new stage permit another.
-- 回避＋射撃: movable cast/no authored motion, skill6+dodge8 with stamina20
-  reserves14/leaves6. With13 neither new slot starts or pays.
+- 回避＋射撃: stamina20,skill6+dodge8 reserves14. With13 neither pays.
+  Flight2,stamina10,skill6+dodge4: protect2, reject pair against8; no flight loss.
 - 受け流し／反撃: full parry consumes hit/cancels payload; positive-damage counter
   queues n+1, actual geometry decides its hit.
 - 同時致死: bothHP10/take15, A heals6 → A1/B0 after reactions/A wins;
@@ -259,13 +258,12 @@ domain schema and log adapters at a time. G-04 is published; G-05 need only revi
 - **G-08a (after G-07)**: New reactions.ts, same coordinator, combat-effects.ts/effects.ts planning adapter, domain triggers/records: reuse G-03/G-04, empty reactions preserve old results
 - **G-08b (after a)**: Declarative parry or counter, bounded waves/queue: lethality/heal/ledger/cost/cross-interval limits/atomic diagnostics/replay. No reflection/absorption/revival capability or P4/P5
 
-Each PR includes focused engine/domain/API persistence tests, independent fixture
-reasoning, documentation/new sample IDs, coordinated G-05 evaluator/perception edits.
-No mechanic merges without #61 §2-I: validation, shared resolution/interference,
-AI, observation, decision/result logs, saved display, regression and compatibility.
-P6 later implements its interference matrices and reflection/revival numeric fixture.
+Each PR must satisfy #61 §2-I: validation/resolution/interference/AI/observation/
+logs/saved display/tests/compatibility, plus independent fixtures/docs/new sample IDs.
+Coordinate G-05 evaluator/perception edits; one editor per shared file.
+P6 owns reflection/revival matrices/fixtures.
 
-Required tests: boundary0/final/end-contact, interruption before/after launch, exact
+Tests: boundary0/final/end-contact, melee duration mismatch, interruption, exact
 HP cost/stage shortage, expiry/transform, repeated contact, enumeration swaps,
 seed/hash/Worker equivalence, unseen-enemy mutation invariance, cast/queue/byte
 rollback, bidirectional replay seek and old DB/result/replay reading. CI is Linux. ADR changes require full CI, not wording shortcut:

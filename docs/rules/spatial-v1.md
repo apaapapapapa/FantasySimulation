@@ -133,7 +133,7 @@ route choice; only the shared execution budget authorizes consumption. Relative 
 ties, never input order/ID. Policy aerial goals project onto the first valid support below;
 explicit graph goals retain their levels.
 
-## 観測と行動方針（3D-05b / G-03）
+## 観測と行動方針（G-05）
 
 Upright offsets: +X forward/+Z right, yaw-rotated (vertical facing uses world +X).
 Sight: eye-origin cone, range/FOV/vision LOS independent of attack occlusion.
@@ -141,6 +141,16 @@ Every reactionSteps, freeze position/velocity/facing/time; deliver after the sam
 including startup. Lost targets retain lastSeen for memorySteps. AI gets no hidden current/future state.
 
 Conditions use own resources/statuses, observed distance/visibility/projectiles, all/any/not.
+G-05 adds observed-wounds/phase/status and relative-position using only the latest delivered
+visible snapshot (not lastSeen). Unknown propagates through not/all/any; only true admits use.
+Status absence means no visible matching status, never absence of hidden states. Relative self
+position uses observed enemy facing: front cosine ≥0.5, behind ≤−0.5, side otherwise;
+above/below require >100mm vertical separation. Coincident/vertical horizontal axes are unknown.
+Decision conditionObservation records observed phase/facing with the existing timestamps.
+Rules ai.appearancePriors stores matching silhouette/surface/equipment cues, element efficacy
+and confidence. Matches average elemental estimates, use maximum confidence, independent of order.
+Omission retains the published red/fire and blue/ice priors; [] disables cues. Earth resistance
+is optional (zero when absent); enums expand appearance without per-element AI branches.
 Costs/uses/cooldown/phase/range constrain integer-weighted candidates; combat revalidates
 start/release/contact. Probabilities/estimates differ from outcomes (ADR 0009).
 Movement: approach/keep-distance/evade/hold. Flight uses policy altitude unless dodging;
