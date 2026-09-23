@@ -1,0 +1,34 @@
+# Temporary development transport; remove before this PR is ready for review.
+name: Issue 45 workspace
+on:
+  pull_request:
+    paths: ['.github/workflows/issue-45-workspace.yml']
+permissions:
+  contents: read
+jobs:
+  workspace:
+    if: github.head_ref == 'work/issue-45-rational-candidates' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Package clean source and pinned installed tools only
+        shell: bash
+        run: |
+          mkdir -p /tmp/issue-45-workspace
+          tar --exclude='./.generated' --exclude='./.env' --exclude='./.env.*' --exclude='*.sqlite' --exclude='*.db' -czf /tmp/issue-45-workspace/repository.tgz .
+          cp "$(command -v node)" /tmp/issue-45-workspace/node
+          cp -L "$(command -v vp)" /tmp/issue-45-workspace/vp
+          git rev-parse HEAD > /tmp/issue-45-workspace/commit.txt
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: issue-45-workspace
+          path: /tmp/issue-45-workspace/
+          retention-days: 1
+          if-no-files-found: error
+          compression-level: 0
