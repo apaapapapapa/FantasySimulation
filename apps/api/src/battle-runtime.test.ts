@@ -20,6 +20,26 @@ import { battleSpecs } from './db/schema.ts';
 // Several cases start/stop multiple real Workers and SQLite roots. Windows cold
 // starts exceeded Vitest's 5s default; this bounds the integration, not game time.
 describe('persistent Worker/API orchestration', { timeout: 30000 }, () => {
+  it('returns an actionable client error for out-of-bounds spawns without persisting a job', async () => {
+    await withRuntime(async ({ runtime, store, spec }) => {
+      const app = createApp(store, false, runtime);
+      try {
+        spec.participants[0].position.x = 1000000;
+        const response = await app.inject({
+          method: 'POST',
+          url: '/api/battle-jobs',
+          headers: { 'x-client-id': 'bounds', 'idempotency-key': 'invalid' },
+          payload: { spec, budget: DEFAULT_BUDGET },
+        });
+        expect(response.statusCode).toBe(400);
+        expect(response.json()).toEqual({ error: 'Spawn body exceeds arena bounds' });
+        expect(store.orm.select().from(battleSpecs).all()).toHaveLength(0);
+        expect(runtime.jobs.request('POST/battle-jobs:bounds', 'invalid')).toBeUndefined();
+      } finally {
+        await app.close();
+      }
+    });
+  });
   it.each([
     { options: { queueLimit: 1 }, reason: /queue capacity/ },
     { options: { storageBytes: 40 * 1024 ** 2 }, reason: /storage capacity/ },

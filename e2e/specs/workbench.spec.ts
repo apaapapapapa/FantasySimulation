@@ -128,18 +128,18 @@ test('battle-cancel-retry', async ({ page }) => {
   await battle.getByRole('button', { name: '対戦を開始' }).click();
   await battle.getByRole('button', { name: '対戦を中止', exact: true }).click();
   await expect(battle.getByRole('status', { name: '対戦の状態' })).toHaveText('中止済み');
-  const id = await battle.getByLabel('対戦ID').textContent();
+  const id = await battle.getByLabel('対戦ID', { exact: true }).textContent();
   await battle.getByRole('button', { name: '対戦を再試行', exact: true }).click();
   await expect(battle.getByRole('status', { name: '対戦の状態' })).toHaveText('完了', {
     timeout: 15000,
   });
-  await expect(battle.getByLabel('対戦ID')).toHaveText(id!);
+  await expect(battle.getByLabel('対戦ID', { exact: true })).toHaveText(id!);
   await expect(battle.getByLabel('試行履歴')).toContainText('completed');
   await page.reload();
   await battle.getByText('保存した対戦を開く', { exact: true }).click();
   await battle.getByRole('button', { name: id!, exact: true }).focus();
   await page.keyboard.press('Enter');
-  await expect(battle.getByLabel('対戦ID')).toHaveText(id!);
+  await expect(battle.getByLabel('対戦ID', { exact: true })).toHaveText(id!);
   await expect(battle.getByRole('status', { name: '対戦の状態' })).toHaveText('完了');
   await battle.getByRole('button', { name: '結果のリプレイを見る' }).click();
   await expect(page.getByRole('table', { name: '記録された状態' }).getByRole('row')).toHaveCount(3);
