@@ -8,6 +8,7 @@ import {
   HashSchema,
   canonicalJson,
   contentHash,
+  MAX_REPLAY_MANIFEST_BYTES,
   parseJson,
   type ExecutionSource,
   type BundleReceipt,
@@ -47,7 +48,10 @@ export class BattleBundles {
     const { objectHash: recorded, ...body } = receipt;
     if (recorded !== objectHash || recorded !== (await contentHash(body)))
       throw new Error('Bundle receipt hash mismatch');
-    const manifestBytes = await readBoundedFile(join(directory, 'manifest.json'), 4_000_000);
+    const manifestBytes = await readBoundedFile(
+      join(directory, 'manifest.json'),
+      MAX_REPLAY_MANIFEST_BYTES,
+    );
     if (sha256(manifestBytes) !== receipt.manifestChecksum)
       throw new Error('Bundle manifest checksum mismatch');
     const manifest = parseJson(
