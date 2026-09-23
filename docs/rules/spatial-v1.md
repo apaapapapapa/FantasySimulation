@@ -285,9 +285,10 @@ AI knows its own resources, preserves near-term skill/jump/dodge funds, and runs
 horizon travel budget fits. Visible threats price dodge; skills preserve paid-flight upkeep.
 Opponent inputs remain delayed visible speed/appearance, never exact stamina. Decision logs
 record own gait/reserve, movement.cost records actual before/after; recovery has a boundary event.
+ActorDisplay.locomotion stores mode/jumping/dodging; old records/legacy actors may omit it.
 New sample IDs stamina-scout-v1/glider-v1: max100, recovery3/s, resume20; walk2m/s at2/m,
 run6m/s at6/m, slow0.5m/s free, jump12, dodge8, step10/m. Steady walk nets -1/s, run -33/s;
-stationary recovery is +3/s. Glider grant rate8/s is overridden to5/s by its takeoff ability.
+Stationary recovery: +3/s. Glider takeoff overrides its grant's rate8/s to5/s.
 
 境界と区間は独立トランザクション。予算超過/未定義干渉は未確定のコスト・乱数・移動・イベントを
 破棄し、最後の確定表示と理由を返す。入力不正/実装例外をunresolved/drawへ変換しない。

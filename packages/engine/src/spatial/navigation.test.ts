@@ -6,6 +6,9 @@ import { editScenario } from '../../test-support/fixtures.ts';
 import { sampleManifest } from './sample.ts';
 import { createBattleWorld } from './terrain.ts';
 import { Navigator } from './navigation.ts';
+import { steerPolicy } from './policy.ts';
+import { initialMotion } from './movement.ts';
+import { emptyMemory, type DecisionView } from './perception.ts';
 beforeAll(initializePhysics);
 const blocks = { movement: true, vision: true, attack: true };
 const wall: Definition<'scenario'>['obstacles'][number] = {
@@ -41,6 +44,67 @@ async function setup(edit: (scenario: Definition<'scenario'>) => void = () => {}
 const start = { x: -4, y: 0.902, z: 0 },
   goal = { x: 4, y: 0.902, z: 0 };
 describe('bounded body-aware support graphs', () => {
+  it('chooses a walk detour instead of an affordable but expensive jump', async () => {
+    const scene = await setup((s) => {
+      s.obstacles.push({
+        ...wall,
+        center: { x: 0, y: 100, z: 0 },
+        halfExtents: { x: 1000, y: 100, z: 100 },
+      });
+      s.navigation = {
+        version: 'support-graph-v1',
+        nodes: [
+          { id: 'near', mode: 'ground', position: { x: -1500, y: 902, z: 0 } },
+          { id: 'far', mode: 'ground', position: { x: 1500, y: 902, z: 0 } },
+          { id: 'around-a', mode: 'ground', position: { x: -1400, y: 902, z: 450 } },
+          { id: 'around-b', mode: 'ground', position: { x: 1400, y: 902, z: 450 } },
+        ],
+        edges: [
+          {
+            from: 'near',
+            to: 'far',
+            mode: 'jump',
+            widthMm: 1000,
+            headroomMm: 5000,
+            bidirectional: true,
+          },
+          {
+            from: 'around-a',
+            to: 'around-b',
+            mode: 'walk',
+            widthMm: 1000,
+            headroomMm: 5000,
+            bidirectional: true,
+          },
+        ],
+      };
+    });
+    try {
+      const resources = {
+        speedMmPerSecond: 6000,
+        stamina: 100,
+        ready: true,
+        walkPerMeter: 2,
+        stepPerMeter: 10,
+        flightPerSecond: 0,
+        jumpStamina: 1,
+      };
+      const cheap = scene.navigator.find(start, goal, false, 30, true, resources);
+      const costly = scene.navigator.find(start, goal, false, 30, true, {
+        ...resources,
+        jumpStamina: 90,
+      });
+      expect(cheap.kind).toBe('path');
+      expect(costly.kind).toBe('path');
+      if (cheap.kind !== 'path' || costly.kind !== 'path') throw Error('Expected both routes');
+      expect(cheap.waypoints.some((w) => w.mode === 'jump')).toBe(true);
+      expect(costly.waypoints.some((w) => w.mode === 'jump')).toBe(false);
+      expect(costly.estimatedStamina).toBeLessThan(25);
+      expect(costly.visited).toBeGreaterThanOrEqual(cheap.visited);
+    } finally {
+      scene.world.free();
+    }
+  });
   it('uses direct travel first, then detours around a solid obstruction independently of node enumeration', async () => {
     const flat = await setup();
     try {
@@ -147,7 +211,7 @@ describe('bounded body-aware support graphs', () => {
     }
   });
   it('requires support along walking edges and checks a jump arc across an unsupported gap', async () => {
-    const { world, navigator } = await setup((s) => {
+    const { world, navigator, battle } = await setup((s) => {
       s.obstacles = [-1, 1].map((sign) => ({
         ...wall,
         id: sign < 0 ? 'leftfloor' : 'rightfloor',
@@ -200,6 +264,29 @@ describe('bounded body-aware support graphs', () => {
       expect(navigator.find(start, goal, false, 30, true, { ...resources, stamina: 20 }).kind).toBe(
         'path',
       );
+      const actor = {
+        ...battle.actors[0],
+        character: { ...battle.actors[0].character, stamina: { max: 20, recoveryPerSecond: 2 } },
+      };
+      const view: DecisionView = {
+        self: initialMotion(world, actor),
+        resources: { hp: 100, mp: 100, shield: 0, stamina: 0 },
+        statusIds: [],
+        memory: emptyMemory(),
+      };
+      const decision = { abilityId: null, goal, facing: { x: 1, y: 0, z: 0 } };
+      const options = { flight: false, canMove: true, speedBps: 10000, maxPathNodes: 30 };
+      const exhausted = steerPolicy(view, decision, navigator, options);
+      expect(exhausted.navigation?.kind).toBe('resource-limited');
+      expect(exhausted.intent.direction).toEqual({ x: 0, y: 0, z: 0 });
+      expect(
+        steerPolicy(
+          { ...view, resources: { ...view.resources, stamina: 20 } },
+          decision,
+          navigator,
+          options,
+        ).navigation?.kind,
+      ).toBe('path');
     } finally {
       world.free();
     }

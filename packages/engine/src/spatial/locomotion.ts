@@ -9,9 +9,7 @@ export function gaitProfile(character: DeepReadonly<Definition<'character'>>, ga
   if (!m.locomotion)
     return {
       speedMmPerSecond:
-        character.stamina && gait === 'slow'
-          ? Math.floor(m.speedMmPerSecond / 4)
-          : m.speedMmPerSecond,
+        character.stamina && gait === 'slow' ? m.speedMmPerSecond / 4 : m.speedMmPerSecond,
       staminaPerMeter: 0,
     };
   return gait === 'slow'

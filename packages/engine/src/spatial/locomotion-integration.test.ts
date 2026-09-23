@@ -44,6 +44,13 @@ describe('resource-aware decisions and full matches', () => {
     for (const record of run.records)
       expect(StreamRecordSchema.safeParse(record).success).toBe(true);
     expect(
+      run.records.some(
+        (record) =>
+          record.kind === 'interval' &&
+          record.changes.some((actor) => actor.locomotion?.mode === 'run'),
+      ),
+    ).toBe(true);
+    expect(
       events
         .flatMap((event) => (event.after?.stamina === undefined ? [] : [event.after.stamina]))
         .every((value) => value >= 0),

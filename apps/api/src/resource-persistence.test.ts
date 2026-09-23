@@ -32,6 +32,7 @@ describe('stamina through Worker, SQLite and recorded replay', () => {
         const flyer = restored.state!.actors.find((a) => a.id === 'left')!;
         expect(flyer.resources.stamina).toBeLessThan(95);
         expect(flyer.statuses[0]?.flightStaminaPerSecond).toBe(5);
+        expect(flyer.locomotion).toEqual({ mode: 'flight', jumping: false, dodging: false });
         expect(flyer.position.y).toBeGreaterThan(1);
       },
       {},

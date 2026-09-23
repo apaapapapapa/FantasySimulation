@@ -263,7 +263,7 @@ export function steerPolicy(
   const profile = gaitProfile(character, gait);
   const speed = options.flight ? character.movement.flySpeedMmPerSecond : profile.speedMmPerSecond;
   const resources =
-    movement || (view.flightStaminaPerSecond ?? 0) > 0
+    movement || character.stamina || (view.flightStaminaPerSecond ?? 0) > 0
       ? {
           speedMmPerSecond: (speed * options.speedBps) / 10000,
           stamina: Math.max(

@@ -357,6 +357,8 @@ export class ReplayState {
         const definition = this.context.actors.find((a) => a.participant.actorId === actor.id)!;
         requireReplay(
           same(actor.resources, initialResources(definition.character)) &&
+            (!actor.locomotion ||
+              same(actor.locomotion, { mode: 'idle', jumping: false, dodging: false })) &&
             same(actor.velocity, { x: 0, y: 0, z: 0 }) &&
             actor.statuses.length === 0 &&
             actor.action === null,

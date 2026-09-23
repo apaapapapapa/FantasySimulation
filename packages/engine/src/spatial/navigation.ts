@@ -258,7 +258,7 @@ export class Navigator {
         }
       const id = chosen!,
         point = points.get(id)!;
-      if (resources && bestPath && score >= bestCost) return bestPath;
+      if (resources && bestPath && score >= bestCost) return { ...bestPath, visited };
       open.delete(id);
       closed.add(id);
       if (this.traversable(point, goal, mode)) {
@@ -292,6 +292,14 @@ export class Navigator {
           edge.headroomMm < this.actor.character.body.heightMm + 4
         )
           continue;
+        if (
+          edge.mode === 'jump' &&
+          resources &&
+          (!resources.ready || resources.stamina < resources.jumpStamina)
+        ) {
+          resourceLimited = true;
+          continue;
+        }
         const key = `${id}:${next}:${edge.mode}${resources ? `:${resources.speedMmPerSecond}` : ''}`;
         let usable = this.cache.get(key);
         if (usable === undefined) {
@@ -304,14 +312,6 @@ export class Navigator {
           this.cache.set(key, usable);
         }
         if (!usable) continue;
-        if (
-          edge.mode === 'jump' &&
-          resources &&
-          (!resources.ready || resources.stamina < resources.jumpStamina)
-        ) {
-          resourceLimited = true;
-          continue;
-        }
         const nextCost = costs.get(id)! + cost(point, points.get(next)!, edge.mode);
         if (nextCost < (costs.get(next) ?? Infinity)) {
           costs.set(next, nextCost);
@@ -320,7 +320,9 @@ export class Navigator {
         }
       }
     }
-    return bestPath ?? { kind: resourceLimited ? 'resource-limited' : 'unreachable', visited };
+    return bestPath
+      ? { ...bestPath, visited }
+      : { kind: resourceLimited ? 'resource-limited' : 'unreachable', visited };
   }
   knownClearance(from: Vec3, to: Vec3) {
     return this.clear(from, to);

@@ -30,6 +30,13 @@ export const ActorDisplaySchema = z.strictObject({
   facing: PhysicalVectorSchema,
   grounded: z.boolean(),
   resources: ResourceStateSchema,
+  locomotion: z
+    .strictObject({
+      mode: z.enum(['idle', 'walk', 'run', 'slow', 'flight']),
+      jumping: z.boolean(),
+      dodging: z.boolean(),
+    })
+    .optional(),
   statuses: z.array(StatusDisplaySchema).max(8192),
   action: ActionDisplaySchema.nullable(),
 });

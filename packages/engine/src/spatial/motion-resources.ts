@@ -93,6 +93,7 @@ export function reserveMotion(
       if (flightUnits > 0n) {
         budget.commit('flight', { stamina: Number(flightUnits / unit) });
         actor.motionClock = {
+          ...actor.motionClock,
           remainder: actor.motionClock?.remainder ?? 0,
           flightRemainder: Number(flightUnits % unit),
         };
@@ -120,11 +121,31 @@ export function reserveMotion(
         const burst = moved.jumped ? m.jumpStamina : 0;
         budget.commit('motion', { stamina: Number(actual / unit) + burst });
         actor.motionClock = {
+          ...actor.motionClock,
           remainder: Number(actual % unit),
           flightRemainder: actor.motionClock?.flightRemainder ?? 0,
         };
         changed = true;
       }
+      if (character.stamina && dodge && ready && intent.canMove && (!m || dodgePaid))
+        actor.motionClock = {
+          remainder: actor.motionClock?.remainder ?? 0,
+          flightRemainder: actor.motionClock?.flightRemainder ?? 0,
+          dodgeUntilStep: step + 5,
+        };
+      if (character.stamina)
+        actor.locomotion = {
+          mode: intent.flight
+            ? 'flight'
+            : length({ ...sub(moved.state.position, actor.motion.position), y: 0 }) > 1e-6
+              ? gait
+              : 'idle',
+          jumping:
+            !moved.state.grounded &&
+            !intent.flight &&
+            (moved.jumped || (actor.locomotion?.jumping ?? false)),
+          dodging: ready && (actor.motionClock?.dodgeUntilStep ?? 0) > step,
+        };
       const final = budget.finish();
       actor.resources = final.resources;
       actor.used = final.used;

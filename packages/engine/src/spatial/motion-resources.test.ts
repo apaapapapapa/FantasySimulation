@@ -8,7 +8,7 @@ import { reserveMotion } from './motion-resources.ts';
 import { moveActors } from './movement.ts';
 import { recoverActorResources } from './resource-step.ts';
 import { Journal } from './journal.ts';
-import { chooseGait } from './locomotion.ts';
+import { chooseGait, gaitProfile } from './locomotion.ts';
 import { selfView } from './self-view.ts';
 
 beforeAll(initializePhysics);
@@ -48,6 +48,27 @@ describe('one interval budget for physical locomotion', () => {
     expect(run.highest).toBeCloseTo(walk.highest, 4);
     expect(walk.stamina).toBe(88);
   });
+  it.each([true, false])(
+    'records a single dodge burst with locomotion configured=%s',
+    async (configured) => {
+      const f = await locomotionFixture();
+      try {
+        if (!configured) {
+          const character = CharacterSchema.parse(f.actor.motion.actor.character);
+          delete character.movement.locomotion;
+          f.actor.motion.actor = { ...f.actor.motion.actor, character };
+        }
+        advanceLocomotion(f, 0, { dodge: true });
+        expect(f.actor.locomotion?.dodging).toBe(true);
+        expect(f.actor.resources.stamina).toBe(configured ? 95 : 100);
+        for (let step = 1; step <= 5; step++) advanceLocomotion(f, step);
+        expect(f.actor.locomotion?.dodging).toBe(false);
+        expect(f.actor.resources.stamina).toBe(configured ? 95 : 100);
+      } finally {
+        f.world.free();
+      }
+    },
+  );
   it.each([
     { multiplierBps: 3000, final: 49 },
     { multiplierBps: 10000, final: 56 },
@@ -145,6 +166,9 @@ describe('one interval budget for physical locomotion', () => {
       expect(CharacterSchema.safeParse({ ...c, stamina: undefined }).success).toBe(false);
       c.movement.locomotion!.run.staminaPerMeter = 1;
       expect(CharacterSchema.safeParse(c).success).toBe(false);
+      delete c.movement.locomotion;
+      c.movement.speedMmPerSecond = 1;
+      expect(gaitProfile(c, 'slow').speedMmPerSecond).toBe(0.25);
     } finally {
       f.world.free();
     }
