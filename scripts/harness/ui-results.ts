@@ -315,22 +315,29 @@ export function uiCoverage(
       }
     }
     visit(result.suites);
-    const observed = specs.map((spec) => text(spec.title));
+    // Playwright may emit a separate spec ID for each project. Coverage belongs
+    // to the case/browser pair, not to the JSON reporter's grouping of specs.
+    const observed = specs.flatMap((spec) => {
+      if (!Array.isArray(spec.tests) || !spec.tests.length)
+        throw new Error('Missing browser test inventory');
+      return spec.tests.map((test) => ({
+        caseId: text(spec.title),
+        browser: text(record(test).projectName),
+      }));
+    });
     if (
-      observed.length !== cases.length ||
-      cases.some((id) => observed.filter((title) => title === id).length !== 1)
+      observed.length !== cases.length * browsers.length ||
+      cases.some((id) =>
+        browsers.some(
+          (browser) =>
+            observed.filter((test) => test.caseId === id && test.browser === browser).length !== 1,
+        ),
+      )
     )
-      throw new Error('Required case missing/duplicated or unexpected case');
+      throw new Error('Required case/browser missing, duplicated or unexpected');
     for (const spec of specs) {
       const projects = spec.tests;
-      if (
-        !Array.isArray(projects) ||
-        projects.length !== browsers.length ||
-        browsers.some(
-          (name) => projects.filter((test) => record(test).projectName === name).length !== 1,
-        )
-      )
-        throw new Error('Missing, duplicated or unexpected browser project');
+      if (!Array.isArray(projects)) throw new Error('Missing browser project');
       for (const project of projects) {
         const test = record(project);
         if (

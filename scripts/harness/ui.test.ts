@@ -179,12 +179,17 @@ describe('UI evidence', () => {
     expect(uiCoverage(raw, '/tmp', '/tmp', UI_STATIC_CASES, uiBrowsers('static')).status).toBe(
       'pass',
     );
+    const duplicated = structuredClone(raw);
+    duplicated.suites[0]!.specs.push(duplicated.suites[0]!.specs[1]!);
+    expect(
+      uiCoverage(duplicated, '/tmp', '/tmp', UI_STATIC_CASES, uiBrowsers('static')).status,
+    ).toBe('unknown');
     raw.suites[0]!.specs[0]!.tests.pop();
     expect(uiCoverage(raw, '/tmp', '/tmp', UI_STATIC_CASES, uiBrowsers('static')).status).toBe(
       'unknown',
     );
     const spoofed = results(UI_STATIC_CASES, uiBrowsers('static'));
-    spoofed.suites[0]!.specs[0]!.tests[1]!.results[0]!.attachments[0]!.body = Buffer.from(
+    spoofed.suites[0]!.specs[1]!.tests[0]!.results[0]!.attachments[0]!.body = Buffer.from(
       '{"name":"chromium","version":"123.0"}',
     ).toString('base64');
     expect(uiCoverage(spoofed, '/tmp', '/tmp', UI_STATIC_CASES, uiBrowsers('static')).status).toBe(

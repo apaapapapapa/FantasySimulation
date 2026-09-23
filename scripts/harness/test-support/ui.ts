@@ -8,29 +8,33 @@ export function uiResults(
     errors: [],
     suites: [
       {
-        specs: cases.map((title) => ({
-          id: `stable-${title}`,
-          title,
-          tests: browsers.map((name) => ({
-            projectName: name,
-            expectedStatus: 'passed',
-            results: [
+        specs: cases.flatMap((title) =>
+          browsers.map((name) => ({
+            id: `stable-${title}-${name}`,
+            title,
+            tests: [
               {
-                retry: 0,
-                status: 'passed',
-                attachments: [
+                projectName: name,
+                expectedStatus: 'passed',
+                results: [
                   {
-                    name: 'browser-identity',
-                    body: Buffer.from(JSON.stringify({ name, version: '123.0' })).toString(
-                      'base64',
-                    ),
-                    path: undefined as string | undefined,
+                    retry: 0,
+                    status: 'passed',
+                    attachments: [
+                      {
+                        name: 'browser-identity',
+                        body: Buffer.from(JSON.stringify({ name, version: '123.0' })).toString(
+                          'base64',
+                        ),
+                        path: undefined as string | undefined,
+                      },
+                    ],
                   },
                 ],
               },
             ],
           })),
-        })),
+        ),
       },
     ],
   };
