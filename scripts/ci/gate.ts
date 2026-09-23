@@ -12,7 +12,7 @@ import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { parsePlan } from './plan.ts';
 import { DOCS_CHECKS } from './docs.ts';
 import type { Plan } from './plan.ts';
-import { readLoadArtifacts } from './load-artifacts.ts';
+import { readPairedShards } from './load-artifacts.ts';
 const osNames = ['ubuntu-latest'] as const;
 export function assessGate(
   plan: Plan,
@@ -28,7 +28,7 @@ export function assessGate(
     security: 'success',
     'dependency-policy': 'success',
     verify: plan.full ? 'success' : 'skipped',
-    load: plan.full ? 'success' : 'skipped',
+    load: plan.simulation ? 'success' : 'skipped',
     docs: plan.full ? 'skipped' : 'success',
   };
   for (const [job, result] of Object.entries(expected))
@@ -73,12 +73,12 @@ export function assessGate(
     checks.push({ id: `ci-evidence:${key}`, required: true, status, reason, evidence });
   }
   const at = new Date().toISOString();
-  if (plan.full)
+  if (plan.simulation)
     checks.push(
       compareCorpus(plan, corpus?.definition, corpus?.sha256 ?? '', corpus?.artifacts ?? {}),
     );
-  if (plan.full) {
-    for (const key of ['load-ubuntu-latest', 'load-pair']) {
+  if (plan.simulation) {
+    for (const key of ['load-pair']) {
       let status: Check['status'] = 'unknown',
         reason = 'Missing load receipt';
       try {
@@ -159,21 +159,18 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         /* Missing artifacts remain unknown, including a missing operating system. */
       }
     }
-    for (const [key, path] of [
-      ['load-ubuntu-latest', 'ubuntu-latest/load'],
-      ['load-pair', 'load/load-pair'],
-    ]) {
+    if (plan.simulation) {
       try {
-        reports[key!] = readLoadArtifacts(
+        reports['load-pair'] = readPairedShards(
           process.cwd(),
-          `.generated/harness/ci/evidence/${path}`,
+          '.generated/harness/ci/evidence/load',
           plan,
-          key === 'load-pair',
+          json('.generated/harness/ci/evidence/ubuntu-latest/corpus/report.json'),
         );
       } catch (error) {
-        reports[key!] = null;
+        reports['load-pair'] = null;
         console.error(
-          `Incomplete load artifacts ${key}: ${error instanceof Error ? error.message : 'invalid evidence'}`,
+          `Incomplete load shards: ${error instanceof Error ? error.message : 'invalid evidence'}`,
         );
       }
     }

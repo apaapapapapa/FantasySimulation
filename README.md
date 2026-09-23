@@ -59,5 +59,6 @@ Nodeは[.node-version](.node-version)、pnpmと依存版は[package.json](packag
 | CI・リリース                  | [CI](docs/development/ci.md)、[リリース](docs/development/release.md)                            |
 | セキュリティ、依存更新        | [Security](docs/security.md)、[dependency updates](docs/dependency-updates.md)                   |
 
-Linux CIで通常検証と性能比較を別ジョブで実行します。baseline/candidateの比較は同じrunner内です。
+Linux CIは静的検査・ビルド・分割テスト・性能比較を並列実行し、同じ実行のテスト結果を共有します。
+性能比較の各対戦は同じrunnerで5回測定します。実行条件は[CI](docs/development/ci.md)を参照してください。
 mainのゲート成功後にsemantic-releaseが必要なタグとGitHub Releaseを作成します。

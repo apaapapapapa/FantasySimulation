@@ -4,6 +4,7 @@ import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { collectPlan } from '../ci/plan.ts';
 
 export type Status = 'pass' | 'fail' | 'unknown';
 export type Outcome = {
@@ -108,13 +109,18 @@ export function writeReceipt(checkId: string, outcome: Outcome): void {
   if (process.env.GITHUB_SHA) {
     requireCondition(sourceSha === process.env.GITHUB_SHA, 'CHECKOUT_SHA_MISMATCH');
   }
+  const plan = process.env.GITHUB_EVENT_PATH ? collectPlan(process.cwd(), process.env) : null;
   const receipt = {
     schemaVersion: 1,
     producer: 'fantasy-security-h4',
     checkId,
     sourceSha,
-    prHeadSha: process.env.H4_PR_HEAD_SHA || null,
-    baselineSha: process.env.H4_BASE_SHA || null,
+    prHeadSha: plan
+      ? plan.testMergeSha
+        ? plan.candidateSha
+        : null
+      : process.env.H4_PR_HEAD_SHA || null,
+    baselineSha: plan ? plan.baselineSha : process.env.H4_BASE_SHA || null,
     runId: process.env.GITHUB_RUN_ID || null,
     runAttempt: process.env.GITHUB_RUN_ATTEMPT || null,
     completedAt: new Date().toISOString(),

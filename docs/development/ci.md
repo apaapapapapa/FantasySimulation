@@ -1,70 +1,64 @@
 # CI plans and evidence
 
-Issue #6 adapts HiFiScout `36aaf69d3f7a61195af4e85a468514dfbb1ecc80`:
-`.github/actions/change-scope/action.yml` and `.github/workflows/ci.yml`.
-The NUL-safe conservative comparison and explicit fan-in policy are retained; catalog/D1
-jobs, four-way sharding, automatic formatting and production deployment are not copied.
+## Scope
 
-The CI plan is bound to the tested checkout. A PR uses the synthetic merge's actual first
-parent, not a potentially old event base. Renames are inspected as deletion plus addition.
-An unknown comparison, empty diff, configuration/source change or sensitive documentation
-runs `Verify (ubuntu-latest)` and `Paired load (ubuntu-latest)` concurrently on separate
-Linux runners. Main push and manual runs always do so. Only known nonempty wording-only PRs run lightweight docs checks
-(diff whitespace, local inline links and repository-wide context budgets). AGENTS, skills, harness/CI instructions, rules and
-ADRs are not wording-only. The existing Security workflow still runs for Markdown changes.
+CI runs on Linux only. `scripts/ci/plan.ts` binds the plan to the tested SHA and
+compares a PR merge's actual first parent. Renames count as deletion plus addition.
 
-`ci-gate` always assesses the planned jobs and actual source reports. The Linux source and paired-load reports must
-exist and match the planned source/head/base. Missing, cancelled, failing or unexpected
-skipped work blocks the gate. Release requires full verification, Security and this gate on
-main. The source collector continues to execute the unchanged `vp run verify` entrypoint.
+- Known nonempty wording-only PRs run Docs, secret scan, dependency audit/policy and the gate.
+- PRs confined to `apps/web/src` TS/TSX/CSS or `apps/web/index.html`, plus wording,
+  run static checks, all tests, build, security/policy and the gate.
+- Other/unknown/empty diffs, main, manual and weekly runs include corpus and paired load too.
 
-The setup action caches only the pnpm content store, never node_modules, app artifacts,
-verification results, replay or physics state. Keys include OS/architecture and exact Node,
-package-manager, lockfile, workspace manifests and configuration identity. No broad restore
-keys; PRs cannot save into main's cache. Frozen install is mandatory. Setup receipts record
-cache hit (null when unknown), source/run/attempt, runtime/OS and start/end timestamps.
-Source receipts record verification intervals. Use Actions job data for queue/setup/job
-durations; missing historical cache observations remain unknown. Do not infer a speedup or
-runtime regression from an unrelated runner's single sample.
+AGENTS, skills, harness/CI instructions, rules and ADRs are sensitive, not wording-only.
+Docs checks whitespace, local inline links and repository-wide context budgets.
+CodeQL independently recomputes wording scope; its distinct exclusion receipt must
+match the common plan/source/run/attempt. Code changes retain CodeQL.
+Manual runs require a full baseline SHA; scheduled comparisons use the previous main commit.
 
-## Required checks and rollout
+## Execution and evidence
 
-Keep the existing Linux Verify check name. Configure `ci-gate` as the stable required check when
-adopting docs-only PRs: individual Verify checks deliberately skip in that plan. Keep
-security checks independently required. Workflow code does not change branch protection
-or bypass required reviews. Repository administrator settings must be separately verified;
-without administration access their application is **unconfirmed**, not completed.
+`Source (static)` extracts non-test/build/load commands from the canonical `verify`
+script; unsupported shell syntax fails closed. Build and three test shards run in
+parallel. Test-file inventory uses Vitest's own include/exclude configuration.
+Receipts bind source/working-tree identity, run, attempt, shard, exit status and hashes.
+Missing/extra/duplicate files, skipped assertions and altered results are rejected.
 
-PR jobs use read-only permissions except the already scoped security-result registration;
-no production credentials are supplied. Plan/source artifacts are data only; no artifact
-scripts or PR build products execute in the release job. Artifacts expire after seven days.
+`Corpus (ubuntu-latest)` reuses those exact test results. It still checks engine/input
+identity and executes every fixed input twice, comparing all deterministic digests.
+`Verify (ubuntu-latest)` collects task outcomes, logs and complete test coverage; its
+receipt truthfully records `node scripts/ci/verify.ts aggregate`. Issue completion
+validates the same tasks. Local `vp run verify` and the clean source harness are unchanged.
 
-Local tests: `vp test run scripts/ci`. Source/config changes use the source harness. The canonical source verification is unchanged. The paired-load job additionally runs
-the existing corpus boundary checks, retaining evidence for profile/toolchain transitions.
-It uploads a separate artifact; `ci-gate` requires its successful job and exact-source/base
-raw trials before release or delivery can pass.
+Three load jobs partition sorted fixed case IDs. Each case keeps five alternating
+baseline/candidate measurements and warmups on one physical runner. The candidate
+samples also prove normal load budgets. `ci-gate` validates every raw shard, command,
+probe, SHA, run/attempt and sample before combining deterministic costs; runner
+identities remain distinct. Profile/runtime transitions retain independent corpus
+boundary evidence and exact reviewed cost digests. See
+[simulation evidence](simulation-evidence.md) for budget and comparison contracts.
 
-The owner requested Linux-only verification on 2026-09-23. Docs and toolchain policy
-also run only on Linux. Windows jobs and receipts are no longer required; historical
-receipts below describe the earlier policy. Security, frozen installs, strict source
-checks, fixed battle inputs, regression budgets and release gates remain mandatory.
+Missing, cancelled, failing, stale or unexpectedly skipped work blocks delivery and
+release. No successful test results are cached for future runs. Artifacts expire after
+seven days; PR artifacts remain data and are never executed by release.
 
-## Parallel load rollout (2026-09-23)
+## Setup and gates
 
-Before the change, main run [35806010160](https://github.com/apaapapapapa/FantasySimulation/actions/runs/35806010160)
-took 392 seconds from creation to completion. Its Linux Verify job took 322 seconds:
-154 seconds for source verification and 149 seconds for the subsequent paired-load
-step. Windows Verify took 299 seconds. Main run
-[35803891198](https://github.com/apaapapapapa/FantasySimulation/actions/runs/35803891198)
-took 538 seconds, with Linux Verify at 325 seconds and Windows Verify at 440 seconds.
-These observations identify the critical path; they are not controlled benchmarks.
-The new graph removes the Windows jobs and overlaps source and paired-load work on
-separate runners. Paired baseline/candidate trials still share one runner, alternate
-in sequence, and keep the same five samples, warmups and acceptance criteria.
+Only pnpm's content store is cached. Candidate and baseline frozen installs share it
+while retaining their own runtime/lockfile pins. Keys include OS/architecture, Node,
+package manager, manifests, lock and setup policy; lint/TypeScript config alone does
+not invalidate downloads. No broad restore keys; only main populates its cache.
+Setup receipts retain observed hits and intervals.
 
-## Earlier observations
+Keep `ci-gate`, Security and Dependency policy gates required. The existing Linux
+Verify name remains; it deliberately skips for wording-only PRs. Workflow changes do
+not alter branch protection or required reviews; verify repository settings separately.
+PR jobs are read-only except scoped security-result registration; no production
+credentials or paid runners are added. Main release requires every gate.
 
-[ci-measurements.json](ci-measurements.json) retains the pre-Linux-only rollout's
-SHAs, attempts, job/step timings and cache observations. These are historical,
-uncontrolled samples, not proof of current performance. Compare repeated like-for-like
-runs; distinguish queue/setup/check intervals and cache hit/miss/unknown.
+Run focused `vp test run scripts/ci` and `vp run security:test`, then canonical verify
+and the clean committed source harness. See the [delivery guide](../../.github/harness/README.md).
+
+Compare equivalent PR/main runs including queue, setup and cache observations.
+[Historical measurements](ci-measurements.json) predate Linux-only CI (2026-09-23)
+and do not establish current Windows compatibility or performance.

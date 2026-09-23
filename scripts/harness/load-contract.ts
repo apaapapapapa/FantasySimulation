@@ -18,6 +18,21 @@ export interface LoadProfile {
   samples: number;
   limits: Record<string, Costs>;
 }
+export const LOAD_SHARDS = 3;
+export const LOAD_JOBS = Array.from(
+  { length: LOAD_SHARDS },
+  (_, index) => `Paired load (ubuntu-latest, ${index + 1}/${LOAD_SHARDS})`,
+);
+export const LOAD_MATRIX_JOB = 'Paired load (ubuntu-latest, ${{ matrix.shard }}/3)';
+export function loadShardCases(profile: LoadProfile, shard: number): string[] {
+  if (!Number.isInteger(shard) || shard < 1 || shard > LOAD_SHARDS)
+    throw new Error('Invalid load shard');
+  const cases = Object.keys(profile.limits)
+    .sort()
+    .filter((_, index) => index % LOAD_SHARDS === shard - 1);
+  if (!cases.length) throw new Error('Load profile has too few cases for its shards');
+  return cases;
+}
 export const bytesHash = (value: Uint8Array | string) =>
   createHash('sha256').update(value).digest('hex');
 export function fixtureHash(value: unknown): string {

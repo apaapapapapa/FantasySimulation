@@ -32,6 +32,31 @@ function evidence(ids: readonly string[]): Report {
   };
 }
 describe('conservative CI planning', () => {
+  it('excludes simulation only for presentation-only PRs and CodeQL only for wording', () => {
+    const presentation = classify(info, 'pull_request', [
+      'apps/web/src/App.tsx',
+      'apps/web/src/main.css',
+    ]);
+    expect(presentation).toMatchObject({ full: true, simulation: false, codeql: true });
+    expect(classify(info, 'pull_request', ['README.md'])).toMatchObject({
+      full: false,
+      simulation: false,
+      codeql: false,
+    });
+    for (const path of [
+      'apps/web/package.json',
+      'apps/web/vite.config.ts',
+      'packages/domain/src/index.ts',
+      'data/spatial/catalog.json',
+      'scripts/harness/load.ts',
+      'unknown.file',
+    ])
+      expect(classify(info, 'pull_request', ['apps/web/src/App.tsx', path]).simulation).toBe(true);
+    for (const event of ['push', 'workflow_dispatch', 'schedule'])
+      expect(classify(info, event, ['README.md']).simulation).toBe(true);
+    for (const field of ['full', 'simulation', 'codeql'] as const)
+      expect(() => parsePlan({ ...presentation, [field]: !presentation[field] })).toThrow(Error);
+  });
   it('shortcuts only nonempty wording-only PRs', () => {
     expect(classify(info, 'pull_request', ['README.md', 'docs/usage.md']).full).toBe(false);
     for (const path of [
@@ -98,6 +123,16 @@ describe('fail-closed CI gate', () => {
         'ubuntu-latest': { ...reports['ubuntu-latest'], candidateSha: 'd'.repeat(40) },
       }).exitCode,
     ).toBe(2);
+  });
+  it('accepts only the planned presentation scope while retaining source and security checks', () => {
+    const presentation = classify(info, 'pull_request', ['apps/web/src/App.tsx']);
+    const observed = { ...results, load: 'skipped' };
+    expect(
+      assessGate(presentation, observed, { 'ubuntu-latest': reports['ubuntu-latest'], security })
+        .exitCode,
+    ).toBe(0);
+    expect(assessGate(plan, observed, reports, corpus).exitCode).toBe(1);
+    expect(assessGate(presentation, { ...observed, verify: 'skipped' }, reports).exitCode).toBe(1);
   });
   it('rejects job failure, cancellation, unplanned skip and absence', () => {
     for (const job of ['verify', 'load'])
@@ -238,6 +273,13 @@ it(
       expect(manual.baselineSha).toBe(base);
       expect(manual.paths).toEqual(['apps/source.ts', 'docs/renamed.md']);
       expect(manual.full).toBe(true);
+      const scheduled = collectPlan(root, { ...env, GITHUB_EVENT_NAME: 'schedule' });
+      expect(scheduled).toMatchObject({
+        baselineSha: base,
+        full: true,
+        simulation: true,
+        codeql: true,
+      });
       for (const baseline of [undefined, 'main', '']) {
         writeFileSync(eventPath, JSON.stringify({ inputs: { baseline } }));
         expect(collectPlan(root, dispatch).baselineSha).toBeNull();

@@ -4,6 +4,7 @@ import { assessReport } from '../harness/report.ts';
 import type { Identity } from '../harness/report.ts';
 import { assessSecurityEvidence, SECURITY_CHECKS, securityInputs } from './evidence.ts';
 import { validatorOutcome } from './validator.ts';
+import { classify } from '../ci/plan.ts';
 
 const info: Identity = {
   sourceSha: 'a'.repeat(40),
@@ -59,6 +60,30 @@ await test('six receipts bind to the common report and exact artifact paths', ()
     assert.equal(check.required, true);
     assert.ok(check.evidence[0]?.uri.includes('-123-2/'));
   }
+});
+
+await test('CodeQL scope exclusion requires an exact independently validated wording-only plan', () => {
+  const receipts = fixtures();
+  receipts['codeql-severity'] = {
+    ...receipts['codeql-severity'],
+    reason: 'WORDING_ONLY_NO_CODE_CHANGE',
+    counts: { plannedSkip: 1 },
+  };
+  const docs = classify(info, 'pull_request', ['README.md']);
+  assert.equal(assessSecurityEvidence(info, run, receipts, at, docs).exitCode, 0);
+  for (const path of ['apps/web/src/App.tsx', 'scripts/security/codeql.ts', 'pnpm-lock.yaml'])
+    assert.equal(
+      assessSecurityEvidence(info, run, receipts, at, classify(info, 'pull_request', [path]))
+        .exitCode,
+      2,
+    );
+  assert.equal(assessSecurityEvidence(info, run, receipts, at).exitCode, 2);
+  assert.throws(() =>
+    assessSecurityEvidence(info, run, receipts, at, { ...docs, paths: ['apps/api/src/main.ts'] }),
+  );
+  assert.throws(() =>
+    assessSecurityEvidence(info, run, receipts, at, { ...docs, sourceSha: 'd'.repeat(40) }),
+  );
 });
 
 await test('main and manual runs never invent PR identities', () => {

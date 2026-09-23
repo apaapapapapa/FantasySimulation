@@ -15,7 +15,7 @@ await test('full main CI permits only the planned Linux docs job to be skipped',
 });
 
 await test('the current CI planner and aggregate gate are mandatory successful checks', () => {
-  for (const name of ['changes', 'ci-gate', 'Paired load (ubuntu-latest)']) {
+  for (const name of requiredJobs) {
     assert.ok(requiredJobs.includes(name));
     const other = passedJobs().filter((job) => job.name !== name);
     assert.throws(() => validateJobs([...other, plannedDocs]));

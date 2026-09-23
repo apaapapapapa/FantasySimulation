@@ -4,7 +4,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { cpus, availableParallelism } from 'node:os';
 import { performance } from 'node:perf_hooks';
 import { git } from './source.ts';
-import { loadProfile, bytesHash, fixtureHash, type Capture, type Sample } from './load-contract.ts';
+import {
+  loadProfile,
+  loadShardCases,
+  bytesHash,
+  fixtureHash,
+  type Capture,
+  type Sample,
+} from './load-contract.ts';
 import type * as Engine from '../../packages/engine/src/spatial/index.ts';
 import type * as Domain from '../../packages/domain/src/spatial/index.ts';
 import type { Recipe } from './corpus.ts';
@@ -18,6 +25,7 @@ export async function measure(
   samples: number,
   runnerId: string,
   verification = false,
+  shard: number | null = null,
 ): Promise<Capture> {
   const dirty = Boolean(git(root, ['status', '--porcelain']));
   if (git(root, ['rev-parse', 'HEAD']) !== expectedSha || (dirty && !verification))
@@ -45,7 +53,8 @@ export async function measure(
     pathToFileURL(join(root, 'packages/domain/src/spatial/index.ts')).href
   )) as typeof Domain;
   const rows: Sample[] = [];
-  for (const entry of corpus.entries) {
+  const selected = shard === null ? Object.keys(profile.limits) : loadShardCases(profile, shard);
+  for (const entry of corpus.entries.filter((entry) => selected.includes(entry.id))) {
     const r = entry.recipe;
     const manifest =
       r.kind === 'sample'
@@ -126,7 +135,8 @@ export async function measure(
   };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const [root, source, corpus, profile, output, count, runnerId, mode] = process.argv.slice(2);
+  const [root, source, corpus, profile, output, count, runnerId, mode, shard] =
+    process.argv.slice(2);
   if (!root || !source || !corpus || !profile || !output || !runnerId)
     throw new Error('Missing capture arguments');
   const result = await measure(
@@ -137,6 +147,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     Number(count),
     runnerId,
     mode === 'verification',
+    shard === undefined ? null : Number(shard),
   );
   writeFileSync(output, JSON.stringify(result, null, 2) + '\n');
 }

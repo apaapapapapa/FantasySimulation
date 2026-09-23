@@ -344,6 +344,36 @@ describe('delivery with differential CI', () => {
     report.checks = report.checks.filter((check) => check.id !== 'docs:context');
     assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
   });
+  it('accepts only observed matrix skips authorized by the exact wording plan', () => {
+    for (const name of [
+      'Source (${{ matrix.task }})',
+      'Corpus (ubuntu-latest)',
+      'Paired load (ubuntu-latest, ${{ matrix.shard }}/3)',
+    ]) {
+      const value = plannedFixture(false);
+      value.prRun!.jobs.push({
+        id: 20,
+        name,
+        run_id: 10,
+        run_attempt: 1,
+        status: 'completed',
+        conclusion: 'skipped',
+      });
+      value.checks.push({ id: 20, name, status: 'completed', conclusion: 'skipped' });
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+      const full = plannedFixture(true);
+      full.prRun!.jobs.push({
+        id: 20,
+        name,
+        run_id: 10,
+        run_attempt: 1,
+        status: 'completed',
+        conclusion: 'skipped',
+      });
+      full.checks.push({ id: 20, name, status: 'completed', conclusion: 'skipped' });
+      assert.equal(assessDelivery(full, 'pr', receipt(full)).exitCode, 2);
+    }
+  });
   it('accepts full and wording plans only with Linux receipts and the aggregate', () => {
     for (const full of [true, false]) {
       const value = plannedFixture(full);
@@ -363,12 +393,8 @@ describe('delivery with differential CI', () => {
       }
     }
   });
-  it('requires corpus and both load receipts even when CI claims success', () => {
-    for (const id of [
-      'corpus:artifacts',
-      'ci-evidence:load-ubuntu-latest',
-      'ci-evidence:load-pair',
-    ]) {
+  it('requires corpus and the complete paired load receipt even when CI claims success', () => {
+    for (const id of ['corpus:artifacts', 'ci-evidence:load-pair']) {
       const value = plannedFixture(true);
       const gate = value.prRun!.gate!.report as Report;
       gate.checks = gate.checks.filter((check) => check.id !== id);

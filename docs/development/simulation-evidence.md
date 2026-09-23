@@ -15,10 +15,11 @@ run and kept with the normal source artifact. `packages/engine/fixtures/spatial/
   not change the corpus, while data, rules, WASM or table changes do;
 - the existing determinism/regression tests, mapped to Issue #1 fixture categories such
   as simultaneous defeat, occlusion, thin walls, high speed and observation limits;
-- coverage categories for cross-OS comparison, fairness, Worker order, job outcomes,
+- coverage categories for Linux corpus artifacts, fairness, Worker order, job outcomes,
   load/budget and regression; the adapters described below now implement the original plans.
 
-`corpus:engine-identity` executes the existing `engine:check`. `corpus:tests` executes
+`corpus:engine-identity` executes the existing `engine:check`. In CI, `corpus:tests`
+validates same-tree/run/attempt JSON receipts from all three test shards. The standalone command executes
 only the mapped existing test files through the project-local Vite+ with the Vitest JSON
 reporter; it does not copy their assertions. `corpus:identity` rebuilds every fixed input
 through the engine's own builders and compares it with the pinned identity and contract.
@@ -81,7 +82,7 @@ performance measurement.
 and five measured runs, including before committing. Dirty-tree verification writes
 `load-verification/` with producer `load-verification` and `sourceState: working-tree`;
 it checks budgets but is never accepted as SHA-bound evidence. Clean `verify` writes
-`load/`, included in the Linux source artifact. `harness load current` and paired
+`load/` for local verification. In CI the paired candidate samples supply the same budget check. `harness load current` and paired
 collection still require a clean committed checkout. Counts and canonical log/trajectory bytes
 have reviewed per-case ceilings in `load-profile.json`; zero counters are measured
 zeros, never substitutes for a missing instrument. The initial ceilings allow
@@ -119,13 +120,14 @@ from these initial noisy observations. Commands, setup logs, raw trial files,
 profile and common reports are retained together; interrupted/missing/failed
 baseline execution remains incomplete and cannot be waived by a review file.
 
-A separate Linux CI load job performs the paired run against the CI plan's exact base;
-manual `workflow_dispatch` requires the full `baseline` commit SHA input as well.
-The load job runs the existing corpus checks before measurement so reviewed
-profile/toolchain transitions retain independent boundary evidence. It runs concurrently
-with source verification on a separate runner; paired trials remain sequential.
-`ci-gate` requires the Linux budget report and this paired report including the
-regression probe. No Cloudflare, external model or production data is used. New/changed fixtures, profiles, runtime pins or deterministic costs require an exact-base review in
+Three Linux CI load jobs partition the fixed cases against the exact planned base.
+Each case keeps five alternating pairs and warmups on one runner. The shared corpus
+job supplies independent transition evidence without repeating its test suite.
+`ci-gate` requires every raw shard, exact current run/attempt, budget and regression
+probe before aggregating deterministic costs; timings retain their physical runner
+identity. Main, manual and scheduled runs always include the simulation checks.
+See [CI plans](ci.md) for conservative PR exclusions and source receipt collection.
+No Cloudflare, external model or production data is used. New/changed fixtures, profiles, runtime pins or deterministic costs require an exact-base review in
 `load-reviews.json` binding `beforeDigest`/`afterDigest`, a reason, reviewer and
 before/after evidence and `comparison: paired` or `independent`. A review is an auditable PR artifact, not an independent
 approval or automatic waiver. Do not generate it automatically in CI. The first

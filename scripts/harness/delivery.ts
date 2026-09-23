@@ -6,6 +6,8 @@ import { DOCS_CHECKS } from '../ci/docs.ts';
 import type { Plan } from '../ci/plan.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { CORPUS_ARTIFACT_CHECK } from './corpus-compare.ts';
+import { SOURCE_JOBS, SOURCE_MATRIX_JOB } from '../ci/verify.ts';
+import { LOAD_JOBS, LOAD_MATRIX_JOB } from './load-contract.ts';
 
 export const VERIFY_JOBS = ['Verify (ubuntu-latest)'] as const;
 export const DOCS_JOBS = ['Docs (ubuntu-latest)'] as const;
@@ -264,8 +266,7 @@ export function validateRun(
       (name) => `ci-job:${name}`,
     );
     ids.push('ci-evidence:security', ...SECURITY_CHECKS);
-    if (plan.full)
-      ids.push(CORPUS_ARTIFACT_CHECK, 'ci-evidence:load-ubuntu-latest', 'ci-evidence:load-pair');
+    if (plan.simulation) ids.push(CORPUS_ARTIFACT_CHECK, 'ci-evidence:load-pair');
     ids.push(
       ...(plan.full ? ['ubuntu-latest'] : ['docs-ubuntu-latest']).map(
         (name) => `ci-evidence:${name}`,
@@ -450,9 +451,10 @@ export function assessDelivery(
   const plannedSkips = new Set<string>();
   if (pr.status === 'pass' && snapshot.prRun?.plan) {
     const plan = parsePlan(snapshot.prRun.plan.value);
-    const names: readonly string[] = plan.full
-      ? DOCS_JOBS
-      : [...VERIFY_JOBS, 'Paired load (ubuntu-latest)'];
+    const names: readonly string[] = [
+      ...(plan.full ? DOCS_JOBS : [...VERIFY_JOBS, ...SOURCE_JOBS, SOURCE_MATRIX_JOB]),
+      ...(plan.simulation ? [] : ['Corpus (ubuntu-latest)', ...LOAD_JOBS, LOAD_MATRIX_JOB]),
+    ];
     for (const job of objects(snapshot.prRun.jobs))
       if (names.includes(String(job.name)) && job.conclusion === 'skipped')
         plannedSkips.add(String(job.name));

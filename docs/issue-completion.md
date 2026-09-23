@@ -47,7 +47,7 @@ has only repository/actions/PR read and Issue write permissions. PR workflows
 never invoke this writer; no production secrets, new PAT or package install
 is required. It checks the completed CI's path, repository, event, branch,
 SHA and attempt, all required successful jobs (including `changes`
-and `ci-gate`, plus the independent paired-load job), the Linux source-runner report and actual `vp run verify` command
+and `ci-gate`, plus all source tasks and three paired-load shards), the Linux source-runner report and actual local `vp run verify` or CI task-aggregation command
 receipts through the existing report contract. Main always runs full CI;
 only the `Docs (ubuntu-latest)` job may have its planned skip.
 Unknown skips, duplicated jobs and failed required checks still block writes.

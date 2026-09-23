@@ -25,6 +25,7 @@ import { runCommand, type CommandResult } from './process.ts';
 import { assessReport, evidenceUri, record, text } from './report.ts';
 import type { Check, CheckStatus, Report } from './report.ts';
 import { evidencePath, repositoryRoot, sourceIdentity } from './source.ts';
+import { sharedTests } from '../ci/tests.ts';
 
 export const CORPUS_OUTPUT = '.generated/harness/corpus';
 export const CORPUS_CHECKS = [
@@ -402,6 +403,7 @@ function combined(statuses: readonly CheckStatus[]): CheckStatus {
   return statuses.length && statuses.every((status) => status === 'pass') ? 'pass' : 'unknown';
 }
 export interface TestRun {
+  shared?: boolean;
   command: CommandResult | null;
   outcomes: ReadonlyMap<string, string[]> | null;
   failedFiles: number;
@@ -504,7 +506,7 @@ export function corpusChecks(observation: CorpusObservation): Check[] {
   } else if (missing.length) {
     status = 'unknown';
     reason = `Required tests missing, renamed or not passed: ${missing.join(', ')}`;
-  } else if (runner?.exitCode !== 0 || runner.bounded) {
+  } else if (!tests.shared && (runner?.exitCode !== 0 || runner.bounded)) {
     status = 'unknown';
     reason = `Vitest exit=${runner?.exitCode}; bounded=${runner?.bounded}`;
   }
@@ -543,6 +545,7 @@ export function corpusChecks(observation: CorpusObservation): Check[] {
 }
 
 export interface CorpusOptions {
+  testShards?: number;
   run?: typeof runCommand;
   build?: RecipeBuilder;
   battle?: BattleRunner;
@@ -581,7 +584,19 @@ export async function collectCorpus(
   writeFileSync(output('engine-check.log'), engineCheck.output);
   const tests: TestRun = { command: null, outcomes: null, failedFiles: 0, error: null };
   let testArgs: string[] = [];
-  if (corpus) {
+  if (corpus && options.testShards !== undefined) {
+    try {
+      const result = sharedTests(root, options.testShards);
+      writeFileSync(output('vitest.json'), JSON.stringify(result) + '\n');
+      writeFileSync(
+        output('tests.log'),
+        `Validated current-tree/current-run test receipts (${options.testShards} shards); no tests re-executed.\n`,
+      );
+      Object.assign(tests, vitestOutcomes(root, result), { shared: true });
+    } catch (error) {
+      tests.error = message(error);
+    }
+  } else if (corpus) {
     const files = [...new Set([...corpus.tests.values()].map((test) => test.file))].sort();
     testArgs = [
       join(root, 'node_modules', 'vite-plus', 'bin', 'vp'),
@@ -629,6 +644,7 @@ export async function collectCorpus(
         corpus: { path, sha256: corpusSha256 },
         engine: implementation,
         commands: {
+          sharedTestShards: tests.shared ? options.testShards : null,
           engineCheck: {
             command: [process.execPath, 'scripts/engine-identity.ts'],
             exitCode: engineCheck.exitCode,

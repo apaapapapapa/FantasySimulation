@@ -4,6 +4,7 @@ import { readBoundedJson } from '../harness/files.ts';
 import { assessReport, identity, record, timestamp } from '../harness/report.ts';
 import type { Check, Identity, Report } from '../harness/report.ts';
 import { isMain } from './common.ts';
+import { parsePlan, type Plan } from '../ci/plan.ts';
 
 const definitions = [
   ['secret-canary', 'secrets', 'secret-canary'],
@@ -66,8 +67,16 @@ export function assessSecurityEvidence(
   run: SecurityRun,
   receipts: Record<string, unknown>,
   now = new Date().toISOString(),
+  plan?: Plan,
 ) {
   info = identity(info);
+  if (
+    plan &&
+    Object.entries(identity(parsePlan(plan))).some(
+      ([key, value]) => info[key as keyof Identity] !== value,
+    )
+  )
+    throw new Error('Security scope belongs to another revision');
   const at = timestamp(now);
   const checks: Check[] = securityInputs(run).map(({ key, checkId, uri }) => {
     let status: Check['status'] = 'unknown';
@@ -93,7 +102,18 @@ export function assessSecurityEvidence(
         );
       if (matches) {
         if (receipt.status === 'fail') status = 'fail';
-        else if (receipt.status === 'pass' && passingCounts(checkId, counts)) status = 'pass';
+        else if (receipt.status === 'pass') {
+          const scoped =
+            checkId === 'codeql-severity' && plan !== undefined && !parsePlan(plan).codeql;
+          if (
+            scoped
+              ? receipt.reason === 'WORDING_ONLY_NO_CODE_CHANGE' &&
+                counts.plannedSkip === 1 &&
+                Object.keys(counts).length === 1
+              : passingCounts(checkId, counts)
+          )
+            status = 'pass';
+        }
         reason = `Bound ${key} receipt: ${status}`;
       }
     } catch {
@@ -119,7 +139,8 @@ export function assessSecurityEvidence(
 }
 if (isMain(import.meta.url)) {
   try {
-    const info = identity(readBoundedJson('.generated/harness/ci/plan.json'));
+    const plan = parsePlan(readBoundedJson('.generated/harness/ci/plan.json'));
+    const info = identity(plan);
     if (process.env.GITHUB_SHA !== info.sourceSha) throw new Error('Security plan SHA mismatch');
     const run = {
       runId: process.env.GITHUB_RUN_ID ?? '',
@@ -133,7 +154,7 @@ if (isMain(import.meta.url)) {
         receipts[input.key] = null;
       }
     }
-    const assessment = assessSecurityEvidence(info, run, receipts);
+    const assessment = assessSecurityEvidence(info, run, receipts, new Date().toISOString(), plan);
     const output = '.generated/harness/ci/security.json';
     mkdirSync(dirname(output), { recursive: true });
     writeFileSync(output, JSON.stringify(assessment.report, null, 2) + '\n');
