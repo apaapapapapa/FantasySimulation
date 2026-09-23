@@ -5,7 +5,7 @@ import { readBoundedJson } from '../files.ts';
 import { record, text } from '../report.ts';
 import { git } from '../source.ts';
 import { digest, isTestPath, relativePath } from './contract.ts';
-import { isolatedCommand } from './evaluation.ts';
+import { isolatedCommand, writableOutputs } from './evaluation.ts';
 import { readJournal, regularPath } from './journal.ts';
 import { ensure, status, transition } from './state.ts';
 import { copyDependencies, operation, owned, scope } from './workspace.ts';
@@ -117,6 +117,7 @@ export async function regression(path: string, selection: unknown) {
       ['baseline', baseline],
       ['candidate', dirs.workspace],
     ] as const) {
+      const writable = writableOutputs(root);
       const output = regularPath(join(root, '.generated', 'loop-regression'));
       mkdirSync(output, { recursive: true });
       const reportPath = join(output, 'vitest.json');
@@ -143,7 +144,7 @@ export async function regression(path: string, selection: unknown) {
         dirs.repository,
         command,
         Math.min(120_000, remaining),
-        [join(root, '.generated')],
+        writable,
         undefined,
         [reporterPath],
       );
