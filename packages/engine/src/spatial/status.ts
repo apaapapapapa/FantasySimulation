@@ -14,8 +14,13 @@ export type StatusCohort = {
   endStep: number;
   stacks: number;
   causes: string[];
+  flightStaminaPerSecond?: number;
 };
-export type StatusApplication = { revision: StatusRevision; cause: string };
+export type StatusApplication = {
+  revision: StatusRevision;
+  cause: string;
+  flightStaminaPerSecond?: number;
+};
 export type StatusChange = {
   kind: 'apply' | 'remove' | 'refresh' | 'reject';
   revision: StatusRevision;
@@ -96,6 +101,13 @@ export function applyStatuses(
       );
     const old = statuses.filter((s) => s.revision.definition.stackKey === key);
     const causes = [...new Set(group.map((a) => a.cause))].sort(compareIds);
+    const flightCosts = group.map(
+      (a) => a.flightStaminaPerSecond ?? definition.flightStaminaPerSecond ?? 0,
+    );
+    const flightCost = Math.min(...flightCosts);
+    const flightOverride = group.some((a) => a.flightStaminaPerSecond !== undefined)
+      ? { flightStaminaPerSecond: flightCost }
+      : {};
     const change = (kind: StatusChange['kind'], stacks: number, reason: string) =>
       changes.push({ kind, revision, stacks, causes, reason });
     if (definition.stacking === 'reject' && old.length) {
@@ -115,6 +127,13 @@ export function applyStatuses(
               ...s,
               endStep: Math.max(s.endStep, nextStep + definition.durationSteps),
               causes: [...new Set([...s.causes, ...causes])].sort(compareIds),
+              ...((s.flightStaminaPerSecond !== undefined ||
+                Object.keys(flightOverride).length) && {
+                flightStaminaPerSecond: Math.min(
+                  s.flightStaminaPerSecond ?? definition.flightStaminaPerSecond ?? 0,
+                  flightCost,
+                ),
+              }),
             }
           : s,
       );
@@ -150,6 +169,11 @@ export function applyStatuses(
     if (sameStart) {
       sameStart.stacks += stacks;
       sameStart.causes = [...new Set([...sameStart.causes, ...causes])].sort(compareIds);
+      if (sameStart.flightStaminaPerSecond !== undefined || Object.keys(flightOverride).length)
+        sameStart.flightStaminaPerSecond = Math.min(
+          sameStart.flightStaminaPerSecond ?? definition.flightStaminaPerSecond ?? 0,
+          flightCost,
+        );
     } else
       statuses.push({
         revision,
@@ -157,6 +181,7 @@ export function applyStatuses(
         endStep: nextStep + definition.durationSteps,
         stacks,
         causes,
+        ...flightOverride,
       });
     change('apply', stacks, stacks < group.length ? 'simultaneous-cohort-capped' : 'next-boundary');
   }

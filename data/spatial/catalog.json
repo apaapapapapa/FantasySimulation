@@ -602,6 +602,91 @@
   },
   {
     "kind": "ability",
+    "id": "stamina-strike-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc",
+    "definition": {
+      "name": "踏み込む斬撃",
+      "originalText": "踏み込む斬撃",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 10,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 2000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 1800,
+        "radiusMm": 200,
+        "activeSteps": 2,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 10,
+          "attackScaleBps": 10000,
+          "element": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "stamina-takeoff-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:74bdae414167ea17a3f92a0489148d03d5a60fd624ae3f97ca73eb0ca950485c",
+    "definition": {
+      "name": "省力飛行",
+      "originalText": "省力飛行",
+      "trigger": "battle-start",
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 5,
+        "uses": 1
+      },
+      "castSteps": 0,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "stamina-wings-v1",
+            "revision": 1,
+            "contentHash": "sha256:c49f480d72eda771c15552ae74cfda8f813be5c3a72b1974afacfa5ca5eea761"
+          },
+          "flightStaminaPerSecond": 5
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "sword",
     "revision": 1,
     "schemaVersion": 1,
@@ -1470,6 +1555,195 @@
   },
   {
     "kind": "character",
+    "id": "stamina-glider-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:db4d57a8f991b003531254daf590fa8b462f2e6cf396daea93350f3bdfe9bd27",
+    "definition": {
+      "name": "滞空時間を選ぶ射手",
+      "originalText": "滞空時間を選ぶ射手。能力・装備・方針はすべて公開revisionで固定する。",
+      "stamina": {
+        "max": 100,
+        "recoveryPerSecond": 3,
+        "resumeAt": 20
+      },
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000,
+        "locomotion": {
+          "walk": {
+            "speedMmPerSecond": 2000,
+            "staminaPerMeter": 2
+          },
+          "run": {
+            "speedMmPerSecond": 6000,
+            "staminaPerMeter": 6
+          },
+          "exhaustedSpeedMmPerSecond": 500,
+          "jumpStamina": 12,
+          "dodgeStamina": 8,
+          "stepStaminaPerMeter": 10
+        }
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "arrow",
+          "revision": 1,
+          "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81"
+        },
+        {
+          "id": "stamina-takeoff-v1",
+          "revision": 1,
+          "contentHash": "sha256:74bdae414167ea17a3f92a0489148d03d5a60fd624ae3f97ca73eb0ca950485c"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "stamina-glider-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:99e9d3dbf8fa27c3fec7299dd4a9edb87ae5cb87cf66d2fea69c9a2d15b96afc"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "stamina-scout-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e7a4b6231dbf28572760bf3e17af0c29276e1b71c7f48488116889cf3bad7f03",
+    "definition": {
+      "name": "体力を配分する斥候",
+      "originalText": "体力を配分する斥候。能力・装備・方針はすべて公開revisionで固定する。",
+      "stamina": {
+        "max": 100,
+        "recoveryPerSecond": 3,
+        "resumeAt": 20
+      },
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000,
+        "locomotion": {
+          "walk": {
+            "speedMmPerSecond": 2000,
+            "staminaPerMeter": 2
+          },
+          "run": {
+            "speedMmPerSecond": 6000,
+            "staminaPerMeter": 6
+          },
+          "exhaustedSpeedMmPerSecond": 500,
+          "jumpStamina": 12,
+          "dodgeStamina": 8,
+          "stepStaminaPerMeter": 10
+        }
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "stamina-strike-v1",
+          "revision": 1,
+          "contentHash": "sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "stamina-scout-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:7e37dbc35065f99612fa6e8e41fe8bea2ac9b9fccdf0a3ae00220053f702df34"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "storm-mage",
     "revision": 1,
     "schemaVersion": 1,
@@ -2012,6 +2286,52 @@
       ],
       "movement": "keep-distance",
       "preferredDistanceMm": 6000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "stamina-glider-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:99e9d3dbf8fa27c3fec7299dd4a9edb87ae5cb87cf66d2fea69c9a2d15b96afc",
+    "definition": {
+      "name": "滞空時間を選ぶ射手の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "arrow"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "stamina-scout-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:7e37dbc35065f99612fa6e8e41fe8bea2ac9b9fccdf0a3ae00220053f702df34",
+    "definition": {
+      "name": "体力を配分する斥候の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "stamina-strike-v1"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
       "flightAltitudeMm": 6000,
       "jumpWhenBlocked": true
     }
@@ -2646,6 +2966,30 @@
           "element": "arcane"
         }
       ]
+    }
+  },
+  {
+    "kind": "status",
+    "id": "stamina-wings-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:c49f480d72eda771c15552ae74cfda8f813be5c3a72b1974afacfa5ca5eea761",
+    "definition": {
+      "name": "体力で維持する飛行",
+      "originalText": "体力で維持する飛行",
+      "stackKey": "wings",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 1000,
+      "flightStaminaPerSecond": 8,
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": true,
+        "rooted": false
+      },
+      "periodic": []
     }
   }
 ]

@@ -40,6 +40,8 @@ export type MotionIntent = {
   flight: boolean;
   canMove: boolean;
   speedBps: number;
+  speedMmPerSecond?: number;
+  canStep?: boolean;
 };
 export type MovedActor = {
   state: MotionState;
@@ -47,6 +49,8 @@ export type MovedActor = {
   landed: boolean;
   fallDamage: number;
   contactTime: number | undefined;
+  stepped: boolean;
+  jumped: boolean;
 };
 const STEP_SECONDS = 0.02;
 const horizontal = (v: Vec3): Vec3 => ({ x: v.x, y: 0, z: v.z });
@@ -152,7 +156,9 @@ export function moveActors(
     let requested = intent.flight ? intent.direction : horizontal(intent.direction);
     if (ground) requested = sub(requested, mul(ground.normal1, dot(requested, ground.normal1)));
     const speed =
-      (((intent.flight ? movement.flySpeedMmPerSecond : movement.speedMmPerSecond) / 1000) *
+      (((intent.speedMmPerSecond ??
+        (intent.flight ? movement.flySpeedMmPerSecond : movement.speedMmPerSecond)) /
+        1000) *
         intent.speedBps) /
       10000;
     const desired = intent.canMove ? mul(unit(requested), speed) : { ...ZERO };
@@ -177,7 +183,13 @@ export function moveActors(
       body = bodyCapsule(state.actor.character.body);
     let trace = world.trace(state.position, delta, body, maxSegments, minGround(state));
     const normalTrace = trace;
-    if (state.grounded && !intent.flight && !intent.jump && intent.canMove)
+    if (
+      state.grounded &&
+      !intent.flight &&
+      !intent.jump &&
+      intent.canMove &&
+      intent.canStep !== false
+    )
       trace = stepTrace(world, state, delta, trace, maxSegments);
     return {
       state,
@@ -243,6 +255,8 @@ export function moveActors(
       landed,
       fallDamage,
       contactTime: plan.contactTime,
+      stepped: plan.stepped && trace.some((s) => s.end.y > s.start.y + 1e-6),
+      jumped: intent.canMove && intent.jump && !intent.flight && state.grounded,
     };
   });
 }

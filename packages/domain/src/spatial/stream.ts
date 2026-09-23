@@ -9,6 +9,7 @@ import {
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const step = z.number().int().min(0).max(6000);
 export const StatusDisplaySchema = z.strictObject({
+  flightStaminaPerSecond: z.number().int().min(0).max(1_000_000).optional(),
   revision: RefSchema,
   startStep: step,
   endStep: z.number().int().min(1).max(12000),

@@ -4,13 +4,16 @@ import {
   type ResourceState,
   type Revision,
 } from '@fantasy/domain/spatial';
-import type { MotionIntent, MotionState } from './movement.ts';
-import type { PerceptionMemory } from './perception.ts';
+import { initialMotion, type MotionIntent, type MotionState } from './movement.ts';
+import { emptyMemory, type PerceptionMemory } from './perception.ts';
 import type { Decision } from './policy.ts';
 import type { StatusCohort } from './status.ts';
 import type { Vec3 } from './math.ts';
-import type { DecisionRandom } from './decision-random.ts';
+import { initialDecisionRandom, type DecisionRandom } from './decision-random.ts';
 import type { DamageSource } from './damage.ts';
+import type { SpatialWorld } from './physics.ts';
+import type { ResolvedActor } from './prepare.ts';
+import { initialResources } from './resources.ts';
 export type AbilityRevision = DeepReadonly<Extract<Revision, { kind: 'ability' }>>;
 export type ActionState = {
   id: string;
@@ -25,6 +28,7 @@ export type ActorState = {
   motion: MotionState;
   resources: ResourceState;
   staminaClock?: { remainder: number; exhausted: boolean };
+  motionClock?: { remainder: number; flightRemainder: number };
   statuses: StatusCohort[];
   memory: PerceptionMemory;
   decision: Decision;
@@ -46,6 +50,30 @@ export type MeleeState = DamageSource & {
   offset: Vec3;
   hits: number;
 };
+export function initialActor(world: SpatialWorld, actor: ResolvedActor): ActorState {
+  return {
+    motion: initialMotion(world, actor),
+    resources: initialResources(actor.character),
+    ...(actor.character.stamina ? { staminaClock: { remainder: 0, exhausted: false } } : {}),
+    statuses: [],
+    memory: emptyMemory(),
+    decision: { abilityId: null, goal: null, facing: actor.participant.facing },
+    intent: {
+      direction: { x: 0, y: 0, z: 0 },
+      facing: actor.participant.facing,
+      jump: false,
+      flight: false,
+      canMove: true,
+      speedBps: 10000,
+    },
+    action: null,
+    readyAt: 0,
+    used: {},
+    cooldowns: {},
+    random: actor.participant.rngSeed,
+    decisionRandom: initialDecisionRandom(actor.participant.rngSeed),
+  };
+}
 export const cloneActor = (state: ActorState): ActorState => ({
   ...state,
   motion: {
@@ -56,6 +84,7 @@ export const cloneActor = (state: ActorState): ActorState => ({
   },
   resources: { ...state.resources },
   ...(state.staminaClock ? { staminaClock: { ...state.staminaClock } } : {}),
+  ...(state.motionClock ? { motionClock: { ...state.motionClock } } : {}),
   statuses: state.statuses.map((s) => ({ ...s, causes: [...s.causes] })),
   used: { ...state.used },
   cooldowns: { ...state.cooldowns },
@@ -84,6 +113,9 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
       startStep: s.startStep,
       endStep: s.endStep,
       stacks: s.stacks,
+      ...(s.flightStaminaPerSecond !== undefined && {
+        flightStaminaPerSecond: s.flightStaminaPerSecond,
+      }),
     })),
     action:
       action && step < action.recoveryUntil

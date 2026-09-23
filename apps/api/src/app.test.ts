@@ -45,9 +45,9 @@ describe('3D revision API and Drizzle persistence', () => {
     const next = RevisionPageSchema.parse(
       (await app.inject({ url: '/api/characters?limit=100&cursor=' + page.nextCursor })).json(),
     );
-    expect(next.items).toHaveLength(9);
+    expect(next.items).toHaveLength(11);
     expect(next.nextCursor).toBeNull();
-    expect(new Set([...page.items, ...next.items].map((r) => r.id)).size).toBe(13);
+    expect(new Set([...page.items, ...next.items].map((r) => r.id)).size).toBe(15);
     expect((await app.inject({ url: '/api/characters?limit=101' })).statusCode).toBe(400);
     expect((await app.inject({ url: '/api/characters/missing' })).statusCode).toBe(404);
     for (const path of ['rulesets', 'scenarios', 'revisions/ability'])

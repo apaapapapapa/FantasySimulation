@@ -10,9 +10,9 @@ import { runBattle } from './run.ts';
 beforeAll(initializePhysics);
 const events = (records: StreamRecord[]) => records.flatMap((r) => ('events' in r ? r.events : []));
 describe('data-composed 3D sample catalog', () => {
-  it('keeps thirteen published character examples and their transitive references reproducible', async () => {
+  it('keeps published character examples and their transitive references reproducible', async () => {
     const catalog = await sampleCatalog();
-    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(13);
+    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(15);
     for (const revision of catalog) expect(RevisionSchema.safeParse(revision).success).toBe(true);
     const saved = JSON.parse(
       readFileSync(new URL('../../../../data/spatial/catalog.json', import.meta.url), 'utf8'),
@@ -53,6 +53,8 @@ describe('data-composed 3D sample catalog', () => {
     'water-observer',
     'fire-seer',
     'ember-duelist',
+    'stamina-scout-v1',
+    'stamina-glider-v1',
   ])('runs %s through the common rules without character-specific execution', async (id) => {
     const run = await runBattle(await catalogManifest(id, 'swordsman', 'flat', 400));
     expect(['win', 'draw']).toContain(run.result.outcome.kind);

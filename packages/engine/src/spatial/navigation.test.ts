@@ -178,6 +178,28 @@ describe('bounded body-aware support graphs', () => {
       if (path.kind !== 'path') throw new Error('Expected a jump route');
       expect(path.waypoints.some((p) => p.mode === 'jump')).toBe(true);
       expect(navigator.find(start, goal, false, 30, false).kind).toBe('unreachable');
+      const resources = {
+        speedMmPerSecond: 6000,
+        stamina: 7,
+        ready: true,
+        walkPerMeter: 2,
+        jumpStamina: 8,
+        stepPerMeter: 10,
+        flightPerSecond: 0,
+      };
+      expect(navigator.find(start, goal, false, 30, true, resources).kind).toBe('resource-limited');
+      const recovered = navigator.find(start, goal, false, 30, true, { ...resources, stamina: 20 });
+      expect(recovered).toMatchObject({ kind: 'path', estimatedStamina: 24 });
+      expect(
+        navigator.find(start, goal, false, 30, true, {
+          ...resources,
+          stamina: 20,
+          speedMmPerSecond: 2000,
+        }).kind,
+      ).toBe('unreachable');
+      expect(navigator.find(start, goal, false, 30, true, { ...resources, stamina: 20 }).kind).toBe(
+        'path',
+      );
     } finally {
       world.free();
     }

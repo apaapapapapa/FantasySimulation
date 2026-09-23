@@ -15,11 +15,11 @@ import {
   launchDirection,
   meleeTrace,
   muzzleBlocked,
-  payCost,
   traceAttack,
 } from './attacks.ts';
 import {
   cloneActor,
+  initialActor,
   decisionState,
   displayActor,
   type ActorState,
@@ -28,16 +28,17 @@ import {
 } from './combat-state.ts';
 import { commitEffects, contactObservation, type PendingEffect } from './combat-effects.ts';
 import { displayChanges, Journal, recordBytes } from './journal.ts';
-import { mul, sub, ZERO } from './math.ts';
-import { initialMotion, moveActors } from './movement.ts';
-import { initialResources, ResourceBudget } from './resources.ts';
+import { mul, sub } from './math.ts';
+import { moveActors } from './movement.ts';
+import { ResourceBudget } from './resources.ts';
 import { recoverActorResources } from './resource-step.ts';
+import { canMaintainFlight, resourceReady } from './locomotion.ts';
+import { reserveMotion } from './motion-resources.ts';
 import { Navigator } from './navigation.ts';
 import { knownTerrainWorld } from './known-terrain.ts';
 import { selfView } from './self-view.ts';
 import { blockedBySilence } from './categories.ts';
-import { initialDecisionRandom } from './decision-random.ts';
-import { bodyPoint, conditionMatches, emptyMemory, perceive } from './perception.ts';
+import { bodyPoint, conditionMatches, perceive } from './perception.ts';
 import { SpatialBudgetError } from './physics.ts';
 import { choosePolicy, steerPolicy } from './policy.ts';
 import type { PreparedBattle } from './prepare.ts';
@@ -114,28 +115,7 @@ export function* simulate(
   try {
     actors = [...battle.actors]
       .sort((a, b) => compareIds(a.participant.actorId, b.participant.actorId))
-      .map((actor) => ({
-        motion: initialMotion(world, actor),
-        resources: initialResources(actor.character),
-        ...(actor.character.stamina ? { staminaClock: { remainder: 0, exhausted: false } } : {}),
-        statuses: [],
-        memory: emptyMemory(),
-        decision: { abilityId: null, goal: null, facing: actor.participant.facing },
-        intent: {
-          direction: { ...ZERO },
-          facing: actor.participant.facing,
-          jump: false,
-          flight: false,
-          canMove: true,
-          speedBps: 10000,
-        },
-        action: null,
-        readyAt: 0,
-        used: {},
-        cooldowns: {},
-        random: actor.participant.rngSeed,
-        decisionRandom: initialDecisionRandom(actor.participant.rngSeed),
-      }));
+      .map((actor) => initialActor(world, actor));
     const navigators = new Map(
       actors.map((a) => [
         actorId(a),
@@ -315,6 +295,13 @@ export function* simulate(
           if (actor.action && actor.action.recoveryUntil <= step) actor.action = null;
           const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
           const view = selfView(actor, step, battle.rules.ai!);
+          const flight =
+            stats.flight &&
+            canMaintainFlight(
+              view.resources,
+              view.flightStaminaPerSecond ?? 0,
+              resourceReady(view),
+            );
           const ready = new Set(
             actor.motion.actor.abilities
               .filter(
@@ -347,7 +334,7 @@ export function* simulate(
               step < actor.action.launchAt &&
               actor.action.ability.definition.movementWhileCasting === 'stop'
             );
-          if (aiBoundary || actor.intent.flight !== stats.flight) {
+          if (aiBoundary || actor.intent.flight !== flight) {
             const knownWorld =
               battle.scenario.terrainKnowledge === 'surveyed'
                 ? null
@@ -370,7 +357,7 @@ export function* simulate(
               actor.decision = choosePolicy(
                 view,
                 aiBoundary ? ready : new Set(),
-                stats.flight,
+                flight,
                 actor.decisionRandom,
                 (from, to) => navigator.knownClearance(from, to),
               );
@@ -384,7 +371,7 @@ export function* simulate(
                 cognition: actor.decision.cognition!,
               });
               const steering = steerPolicy(view, actor.decision, navigator, {
-                flight: stats.flight,
+                flight,
                 canMove,
                 speedBps: stats.speedBps,
                 maxPathNodes: budget.maxPathNodes,
@@ -404,9 +391,19 @@ export function* simulate(
             ...actor.intent,
             canMove,
             speedBps: stats.speedBps,
-            flight: stats.flight,
+            flight,
           };
         }
+        const resourceBudgets = new Map(
+          next.map((actor) => [
+            actorId(actor),
+            new ResourceBudget(
+              actor.resources,
+              actor.used,
+              resourceReady(selfView(actor, step, battle.rules.ai!)),
+            ),
+          ]),
+        );
         for (const actor of next) {
           const view = selfView(actor, step, battle.rules.ai!);
           if (aiBoundary && step >= actor.readyAt && actor.decision.abilityId) {
@@ -420,14 +417,13 @@ export function* simulate(
               step,
             );
             if (clock) {
-              const payment = payCost(
-                definition,
-                actor.resources,
-                actor.used[ability.id] ?? 0,
-                !view.staminaExhausted,
-              );
+              const resources = resourceBudgets.get(actorId(actor))!;
+              const payment = resources.reserve('action', [
+                { ...definition.costs, uses: { id: ability.id, limit: definition.costs.uses } },
+              ]);
               const silenced = !!view.silenced && blockedBySilence(definition);
               if (!inObservedRange(definition, view) || !payment.ok || silenced) {
+                if (payment.ok) resources.cancel('action');
                 actor.readyAt =
                   step +
                   Math.max(
@@ -451,6 +447,7 @@ export function* simulate(
                       : 'observed-range-or-facing',
                 });
               } else {
+                const paid = resources.commit('action');
                 const start = journal.emit({
                   kind: 'cast-start',
                   step,
@@ -468,10 +465,10 @@ export function* simulate(
                   parentEventId: start.id,
                   ruleId: 'action.cost',
                   before: { ...actor.resources },
-                  after: { ...payment.resources },
+                  after: { ...paid.after },
                 });
-                actor.resources = payment.resources;
-                actor.used[ability.id] = (actor.used[ability.id] ?? 0) + 1;
+                actor.resources = paid.after;
+                actor.used = resources.finish().used;
                 actor.cooldowns[ability.id] = clock.cooldownUntil;
                 actor.readyAt = clock.recoveryUntil;
                 actor.action = {
@@ -624,6 +621,15 @@ export function* simulate(
             spawns.push(displayProjectile(projectile));
           }
         }
+        const motionPlans = next.map((actor) =>
+          reserveMotion(
+            actor,
+            resourceBudgets.get(actorId(actor))!,
+            step,
+            aiBoundary && actor.decision.cognition?.selection === 'dodge',
+          ),
+        );
+        for (const [index, actor] of next.entries()) actor.intent = motionPlans[index]!.intent;
         const moved = moveActors(
           world,
           next.map((a) => a.motion),
@@ -631,6 +637,8 @@ export function* simulate(
           battle.rules,
           budget.maxMoveSegments,
         );
+        for (const [index, movement] of moved.entries())
+          motionPlans[index]!.settle(movement, journal);
         const surviving: MeleeState[] = [];
         const projectileStep = stepProjectiles(
           bullets,

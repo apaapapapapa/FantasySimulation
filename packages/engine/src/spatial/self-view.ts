@@ -4,6 +4,7 @@ import type { DecisionView } from './perception.ts';
 import { effectiveStats } from './status.ts';
 import { damageAmounts } from './effects.ts';
 import { damageSource } from './damage.ts';
+import { flightRate } from './locomotion.ts';
 
 /** Own resources and active statuses are proprioception, never a lookup of an opponent. */
 export function selfView(
@@ -47,6 +48,9 @@ export function selfView(
     self: actor.motion,
     resources: actor.resources,
     ...(actor.staminaClock ? { staminaExhausted: actor.staminaClock.exhausted } : {}),
+    ...(stats.flight && flightRate(actor.statuses, step) > 0
+      ? { flightStaminaPerSecond: flightRate(actor.statuses, step) }
+      : {}),
     memory: actor.memory,
     statusIds: active.map((s) => s.revision.id),
     step,

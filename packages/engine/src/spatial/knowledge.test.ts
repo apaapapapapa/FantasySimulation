@@ -225,6 +225,8 @@ describe('private delayed bounded cognition', () => {
           landed: false,
           fallDamage: 0,
           contactTime: undefined,
+          jumped: false,
+          stepped: false,
         }));
         const contact = contactObservation(moved, f.self, f.enemy, 0.25);
         const detail = {

@@ -326,6 +326,48 @@
       "id": "pillars-surveyed-v1",
       "revision": 1,
       "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
+    },
+    {
+      "kind": "ability",
+      "id": "stamina-strike-v1",
+      "revision": 1,
+      "contentHash": "sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc"
+    },
+    {
+      "kind": "ability",
+      "id": "stamina-takeoff-v1",
+      "revision": 1,
+      "contentHash": "sha256:74bdae414167ea17a3f92a0489148d03d5a60fd624ae3f97ca73eb0ca950485c"
+    },
+    {
+      "kind": "character",
+      "id": "stamina-glider-v1",
+      "revision": 1,
+      "contentHash": "sha256:db4d57a8f991b003531254daf590fa8b462f2e6cf396daea93350f3bdfe9bd27"
+    },
+    {
+      "kind": "character",
+      "id": "stamina-scout-v1",
+      "revision": 1,
+      "contentHash": "sha256:e7a4b6231dbf28572760bf3e17af0c29276e1b71c7f48488116889cf3bad7f03"
+    },
+    {
+      "kind": "policy",
+      "id": "stamina-glider-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:99e9d3dbf8fa27c3fec7299dd4a9edb87ae5cb87cf66d2fea69c9a2d15b96afc"
+    },
+    {
+      "kind": "policy",
+      "id": "stamina-scout-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:7e37dbc35065f99612fa6e8e41fe8bea2ac9b9fccdf0a3ae00220053f702df34"
+    },
+    {
+      "kind": "status",
+      "id": "stamina-wings-v1",
+      "revision": 1,
+      "contentHash": "sha256:c49f480d72eda771c15552ae74cfda8f813be5c3a72b1974afacfa5ca5eea761"
     }
   ]
 }

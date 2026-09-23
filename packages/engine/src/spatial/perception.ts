@@ -338,6 +338,7 @@ export type DecisionView = {
   canAct?: boolean;
   canMove?: boolean;
   speedBps?: number;
+  flightStaminaPerSecond?: number;
   silenced?: boolean;
   burnDamage?: number;
   waterExtinguishable?: boolean;

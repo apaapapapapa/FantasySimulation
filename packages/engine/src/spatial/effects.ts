@@ -153,7 +153,14 @@ export function resolveEffects(
                 s.contentHash === effect.status.contentHash,
             );
             if (!revision) throw new Error('Missing prepared status reference');
-            if (scale > 0n) statusApplications.push({ revision, cause: application.id });
+            if (scale > 0n)
+              statusApplications.push({
+                revision,
+                cause: application.id,
+                ...(effect.flightStaminaPerSecond !== undefined && {
+                  flightStaminaPerSecond: effect.flightStaminaPerSecond,
+                }),
+              });
             break;
           }
           default: {
