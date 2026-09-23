@@ -17,8 +17,14 @@ import { evaluate, isolatedCommand } from './evaluation.ts';
 import { regression } from './regression.ts';
 import { handoff, review } from './handoff.ts';
 import { status } from './state.ts';
+import { git } from '../source.ts';
 
-const output = join(controllerRoot, '.generated/harness/loop-smoke');
+const repositoryProof = process.argv[2] === 'repository';
+assert(process.argv.length === 2 || (process.argv.length === 3 && repositoryProof));
+const output = join(
+  controllerRoot,
+  `.generated/harness/${repositoryProof ? 'repository-loop-proof' : 'loop-smoke'}`,
+);
 mkdirSync(output, { recursive: true });
 const repo = testRepository({
   '.gitignore': '.generated/\nnode_modules/\n',
@@ -34,15 +40,51 @@ const repo = testRepository({
     "import { defineConfig } from 'vite-plus'; export default defineConfig({ test: { include: ['src/*.test.ts'] } });\n",
   'src/value.ts': 'export const value = 0;\n',
 });
-repo.git('remote', 'add', 'origin', 'https://github.com/owner/repo.git');
+const repository = repositoryProof ? 'apaapapapapa/FantasySimulation' : 'owner/repo';
+if (repositoryProof) {
+  const baseline = git(controllerRoot, ['rev-parse', 'origin/main']);
+  repo.git('fetch', controllerRoot, baseline);
+  repo.git('reset', '--hard', baseline);
+  writeFileSync(join(repo.root, 'apps/api/src/loop-proof-value.ts'), 'export const value = 0;\n');
+  repo.git('add', 'apps/api/src/loop-proof-value.ts');
+  repo.git('commit', '-m', 'test: add an isolated repair proof fixture');
+}
+repo.git('remote', 'add', 'origin', `https://github.com/${repository}.git`);
 copyDependencies(controllerRoot, repo.root);
 const baselineSha = repo.git('rev-parse', 'HEAD').trim();
+const file = repositoryProof ? 'apps/api/src/loop-proof-value.ts' : 'src/value.ts';
+const testFile = repositoryProof ? 'apps/api/src/loop-proof-value.test.ts' : 'src/value.test.ts';
+const testName = 'returns one';
+const original = readFileSync(join(repo.root, file), 'utf8');
+const candidateText = 'export const value = 1;\n';
+const testText = `import { it, expect } from 'vite-plus/test';
+import { value } from './${repositoryProof ? 'loop-proof-value' : 'value'}.ts';
+it('${testName}', () => {
+  expect(value).toBe(1);
+});
+`;
+function diff(path: string, before: string | null, after: string) {
+  const old = before === null ? [] : before.slice(0, -1).split('\n');
+  const next = after.slice(0, -1).split('\n');
+  return [
+    `diff --git a/${path} b/${path}`,
+    ...(before === null ? ['new file mode 100644'] : []),
+    `--- ${before === null ? '/dev/null' : 'a/' + path}`,
+    `+++ b/${path}`,
+    `@@ -${old.length ? '1,' + old.length : '0,0'} +1,${next.length} @@`,
+    ...old.map((line) => '-' + line),
+    ...next.map((line) => '+' + line),
+    '',
+  ].join('\n');
+}
 const journal = initialize(join(output, 'store'), {
   schemaVersion: 1,
-  repository: 'owner/repo',
+  repository,
   baselineSha,
-  goal: 'Disposable integration sample returns one',
-  allowedPaths: ['src'],
+  goal: repositoryProof
+    ? 'Full repository integration sample returns one'
+    : 'Disposable integration sample returns one',
+  allowedPaths: [file, testFile],
   requiredChecks: ['source-clean', 'source-verify'],
   budget: DEFAULT_BUDGET,
   review: 'self',
@@ -51,6 +93,8 @@ const journal = initialize(join(output, 'store'), {
 });
 const evidence: Record<string, unknown> = {
   fixtureOnly: true,
+  repositoryProof,
+  sourceMainSha: repositoryProof ? git(controllerRoot, ['rev-parse', 'origin/main']) : null,
   repairedProduction: false,
   baselineSha,
   journal,
@@ -67,68 +111,48 @@ try {
     [
       process.execPath,
       '-e',
-      `const fs=require('node:fs');const a=require('node:assert/strict');a.equal(process.env.GH_TOKEN,undefined);a.equal(fs.existsSync(${JSON.stringify(canary)}),false);a.throws(()=>fs.writeFileSync('src/value.ts','tampered'));`,
+      `const fs=require('node:fs');const a=require('node:assert/strict');a.equal(process.env.GH_TOKEN,undefined);a.equal(fs.existsSync(${JSON.stringify(canary)}),false);a.throws(()=>fs.writeFileSync(${JSON.stringify(file)},'tampered'));`,
     ],
     30_000,
   );
   evidence.isolationProbe = probe;
   assert.equal(probe.exitCode, 0, 'Real namespace/read-only isolation must work; no fallback');
   await beginAttempt(journal, {
-    hypothesis: 'The sample constant should be one',
+    hypothesis: 'The deliberately injected sample constant should be one',
     externalCalls: 0,
     costMicros: 0,
   });
   const patch = join(output, 'sample.diff');
-  writeFileSync(
-    patch,
-    [
-      'diff --git a/src/value.ts b/src/value.ts',
-      '--- a/src/value.ts',
-      '+++ b/src/value.ts',
-      '@@ -1 +1 @@',
-      '-export const value = 0;',
-      '+export const value = 1;',
-      'diff --git a/src/value.test.ts b/src/value.test.ts',
-      'new file mode 100644',
-      '--- /dev/null',
-      '+++ b/src/value.test.ts',
-      '@@ -0,0 +1,3 @@',
-      "+import { it, expect } from 'vite-plus/test';",
-      "+import { value } from './value.ts';",
-      "+it('returns one', () => { expect(value).toBe(1); });",
-      '',
-    ].join('\n'),
-  );
+  writeFileSync(patch, diff(file, original, candidateText) + diff(testFile, null, testText));
   const candidate = await applyPatch(journal, { patch, attempt: 1, baseSha: baselineSha });
   const evaluated = await evaluate(journal);
   evidence.evaluation = evaluated;
   assert.equal(evaluated.phase, 'review');
   evidence.regression = await regression(journal, {
-    file: 'src/value.test.ts',
-    name: 'returns one',
+    file: testFile,
+    name: testName,
   });
   // This exercises receipt handling for the sample only; it is not an independent human approval.
-  assert.equal(
-    readFileSync(join(dirs.workspace, 'src/value.ts'), 'utf8'),
-    'export const value = 1;\n',
-  );
-  assert.match(
-    readFileSync(join(dirs.workspace, 'src/value.test.ts'), 'utf8'),
-    /expect\(value\)\.toBe\(1\)/,
-  );
+  assert.equal(readFileSync(join(dirs.workspace, file), 'utf8'), candidateText);
+  assert.equal(readFileSync(join(dirs.workspace, testFile), 'utf8'), testText);
   await review(journal, {
     candidateSha: candidate.candidateSha,
     completedAt: new Date().toISOString(),
     method: 'self',
-    reviewedPaths: ['src/value.ts', 'src/value.test.ts'],
+    reviewedPaths: [file, testFile],
     unresolvedFindings: 0,
     summary:
-      'Integration fixture inspection: only constant and independent assertion changed; this is not human approval.',
+      'Integration profile inspection: exact proposed source and independent assertion checked; this is not independent human approval.',
   });
   evidence.handoff = handoff(journal);
   assert.equal(repo.git('rev-parse', 'HEAD').trim(), baselineSha);
   assert.equal(repo.git('status', '--porcelain'), '');
-  assert.equal(readFileSync(join(repo.root, 'src/value.ts'), 'utf8'), 'export const value = 0;\n');
+  assert.equal(readFileSync(join(repo.root, file), 'utf8'), original);
+  if (repositoryProof) {
+    const bundle = join(dirs.root, 'evidence', 'candidate.bundle');
+    git(dirs.workspace, ['bundle', 'create', bundle, 'HEAD']);
+    evidence.candidateBundle = bundle;
+  }
   evidence.status = 'pass';
 } catch (error) {
   evidence.status = 'unknown';
