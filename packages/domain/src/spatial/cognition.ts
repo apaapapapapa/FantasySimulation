@@ -124,6 +124,14 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
   }),
   z.strictObject({
     kind: z.literal('decision'),
+    locomotion: z
+      .strictObject({
+        gait: z.enum(['walk', 'run', 'slow']),
+        stamina: quantity,
+        exhausted: z.boolean(),
+        reserveStamina: quantity,
+      })
+      .optional(),
     perspective: z.literal('subjective'),
     sampledAt: tick.nullable(),
     availableAt: tick.nullable(),

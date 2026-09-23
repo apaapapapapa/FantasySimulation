@@ -1,9 +1,57 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { reference, sealRevision } from '@fantasy/engine/spatial';
-import { withRuntime } from '../test-support/runtime.ts';
+import { ReplayState, replayContext } from '@fantasy/domain/spatial';
+import { catalogManifest, prepareBattle, reference, sealRevision } from '@fantasy/engine/spatial';
+import priorStamina from '../fixtures/compatibility/stamina-v1.11.json' with { type: 'json' };
+import { specInput, withRuntime } from '../test-support/runtime.ts';
 import { seekReplay, verifyReplay } from './replay-reader.ts';
 
 describe('stamina through Worker, SQLite and recorded replay', () => {
+  it('reads published stamina-only v1.11 displays unchanged and refuses execution under current rules', async () => {
+    const replay = new ReplayState(
+      await replayContext(priorStamina.input, priorStamina.result.simulationHash),
+    );
+    for (const record of priorStamina.records) replay.apply(record);
+    const actors = replay.checkpoint().state!.actors;
+    expect(actors.map((actor) => actor.resources.stamina)).toEqual([0, 0]);
+    expect(actors.every((actor) => actor.locomotion === undefined)).toBe(true);
+    expect(actors[0]!.position.x).toBeGreaterThan(-4);
+    await expect(prepareBattle(priorStamina.input)).rejects.toThrow(/Unsupported engine version/);
+  });
+  it('saves new locomotion and paid-flight definitions and reconstructs resource and grant displays', async () => {
+    await withRuntime(
+      async ({ runtime, store, root }) => {
+        const input = await catalogManifest(
+          'stamina-glider-v1',
+          'stamina-scout-v1',
+          'flat-surveyed-v1',
+          100,
+        );
+        await store.seedRevisions(input.revisions);
+        const job = await runtime.submit(specInput(input), 'locomotion', 'persist');
+        const done = await runtime.wait(job.id);
+        expect(done.state).toBe('completed');
+        const saved = store.getSpec(done.simulationHash)!;
+        const character = saved.manifest.revisions.find(
+          (r) => r.kind === 'character' && r.id === 'stamina-glider-v1',
+        );
+        expect(character?.definition).toHaveProperty(
+          'movement.locomotion.run.speedMmPerSecond',
+          6000,
+        );
+        const result = runtime.jobs.result(done.resultId!)!;
+        const verified = await verifyReplay(root, result.replayId);
+        const restored = await seekReplay(root, result.replayId, verified.checkpoint.nextRecord);
+        expect(restored).toEqual(verified.checkpoint);
+        const flyer = restored.state!.actors.find((a) => a.id === 'left')!;
+        expect(flyer.resources.stamina).toBeLessThan(95);
+        expect(flyer.statuses[0]?.flightStaminaPerSecond).toBe(5);
+        expect(flyer.locomotion).toEqual({ mode: 'flight', jumping: false, dodging: false });
+        expect(flyer.position.y).toBeGreaterThan(1);
+      },
+      {},
+      100,
+    );
+  });
   it('persists optional definitions and restores charged/recovered resources from verified artifacts', async () => {
     await withRuntime(async ({ runtime, store, root, manifest, spec }) => {
       const base = manifest.revisions.find((r) => r.kind === 'ability')!;

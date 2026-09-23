@@ -104,10 +104,11 @@ export function displayChanges(
         'facing',
         'grounded',
         'resources',
+        'locomotion',
         'statuses',
         'action',
       ] as const)
-        if (canonicalJson(previous[key]) !== canonicalJson(actor[key]))
+        if (canonicalJson(previous[key] ?? null) !== canonicalJson(actor[key] ?? null))
           Object.assign(delta, { [key]: actor[key] });
       return Object.keys(delta).length > 1 ? [delta] : [];
     })

@@ -50,7 +50,14 @@ export function planStatusEffects(
         (s) => s.id === ref.id && s.revision === ref.revision && s.contentHash === ref.contentHash,
       );
       if (!revision) throw new Error('Missing prepared status reference');
-      if ((a.scaleBps ?? 10000) > 0) applications.push({ revision, cause: a.id });
+      if ((a.scaleBps ?? 10000) > 0)
+        applications.push({
+          revision,
+          cause: a.id,
+          ...(a.effect.flightStaminaPerSecond !== undefined && {
+            flightStaminaPerSecond: a.effect.flightStaminaPerSecond,
+          }),
+        });
     } else if (a.effect.kind === 'dispel' && (a.scaleBps ?? 10000) > 0)
       dispels.push(
         ...dispelTargets(

@@ -373,6 +373,7 @@ export type DecisionView = {
   canAct?: boolean;
   canMove?: boolean;
   speedBps?: number;
+  flightStaminaPerSecond?: number;
   silenced?: boolean;
   incapacitated?: boolean;
   ownStatuses?: readonly StatusCohort[];

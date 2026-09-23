@@ -10,7 +10,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { reference, sealRevision } from './prepare.ts';
 import { sampleManifest } from './sample.ts';
-import { observedRules } from './published-rules.ts';
+import { observedRules, statusRules } from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
 /** Versioned data examples, never character-specific branches in the simulator. */
@@ -20,7 +20,13 @@ export async function sampleCatalog(): Promise<Revision[]> {
   const fighter = base.revisions.find((r) => r.kind === 'character')!;
   const flat = base.revisions.find((r) => r.kind === 'scenario')!;
   const rules = base.revisions.find((r) => r.kind === 'ruleset')!;
-  const revisions: Revision[] = [sword, flat, rules, structuredClone(observedRules)];
+  const revisions: Revision[] = [
+    sword,
+    flat,
+    rules,
+    structuredClone(observedRules),
+    structuredClone(statusRules),
+  ];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);
     revisions.push(revision);
@@ -282,6 +288,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
       equipment?: RevisionRef[];
       appearance?: Definition<'character'>['appearance'];
       body?: Definition<'character'>['body'];
+      stamina?: Definition<'character'>['stamina'];
     } = {},
   ) {
     const extras = options.extras ?? [];
@@ -322,6 +329,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
       ...fighter.definition,
       ...(options.appearance ? { appearance: options.appearance } : {}),
       ...(options.body ? { body: options.body } : {}),
+      ...(options.stamina ? { stamina: options.stamina } : {}),
       name,
       originalText: name + '。能力・装備・方針はすべて公開revisionで固定する。',
       stats: { ...fighter.definition.stats, ...options.stats },
@@ -332,6 +340,46 @@ export async function sampleCatalog(): Promise<Revision[]> {
     });
   }
   await character('swordsman', '剣士', [sword], 1200);
+  const staminaStrike = await add(
+    'ability',
+    'stamina-strike-v1',
+    ability('踏み込む斬撃', {
+      costs: { hp: 0, mp: 0, stamina: 10, uses: 0 },
+    }),
+  );
+  const wings = await add('status', 'stamina-wings-v1', {
+    ...status('体力で維持する飛行', 'wings', { flight: true }),
+    durationSteps: 1000,
+    flightStaminaPerSecond: 8,
+  });
+  const staminaTakeoff = await add(
+    'ability',
+    'stamina-takeoff-v1',
+    ability('省力飛行', {
+      ...self,
+      trigger: 'battle-start',
+      costs: { hp: 0, mp: 0, stamina: 5, uses: 1 },
+      effects: [{ kind: 'apply-status', status: reference(wings), flightStaminaPerSecond: 5 }],
+    }),
+  );
+  const staminaMovement: NonNullable<Definition<'character'>['movement']['locomotion']> = {
+    walk: { speedMmPerSecond: 2000, staminaPerMeter: 2 },
+    run: { speedMmPerSecond: 6000, staminaPerMeter: 6 },
+    exhaustedSpeedMmPerSecond: 500,
+    jumpStamina: 12,
+    dodgeStamina: 8,
+    stepStaminaPerMeter: 10,
+  };
+  const stamina = { max: 100, recoveryPerSecond: 3, resumeAt: 20 };
+  await character('stamina-scout-v1', '体力を配分する斥候', [staminaStrike], 1200, {
+    stamina,
+    movement: { locomotion: staminaMovement },
+  });
+  await character('stamina-glider-v1', '滞空時間を選ぶ射手', [arrow], 7000, {
+    stamina,
+    movement: { locomotion: staminaMovement },
+    extras: [staminaTakeoff],
+  });
   await character('lancer', '槍兵', [spear], 2200, { equipment: [reference(lance)] });
   await character('guardian', '重装騎士', [sword], 1200, {
     stats: { hp: 160 },

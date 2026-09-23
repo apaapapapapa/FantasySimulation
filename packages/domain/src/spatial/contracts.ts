@@ -3,7 +3,7 @@ import { assertJson } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.12' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.13' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -51,6 +51,26 @@ export const BodySchema = z
       )
         ctx.addIssue({ code: 'custom', message: 'Body offset outside supported bounds' });
   });
+const GaitSchema = z.strictObject({
+  speedMmPerSecond: positive(100_000),
+  staminaPerMeter: positive(1_000_000),
+});
+export const LocomotionSchema = z
+  .strictObject({
+    walk: GaitSchema,
+    run: GaitSchema,
+    exhaustedSpeedMmPerSecond: positive(100_000),
+    jumpStamina: positive(1_000_000),
+    dodgeStamina: positive(1_000_000),
+    stepStaminaPerMeter: positive(1_000_000),
+  })
+  .refine(
+    (m) =>
+      m.run.speedMmPerSecond > m.walk.speedMmPerSecond &&
+      m.run.staminaPerMeter > m.walk.staminaPerMeter &&
+      m.exhaustedSpeedMmPerSecond < m.walk.speedMmPerSecond,
+    'Running must be faster and costlier than walking; exhausted walking must be slower',
+  );
 export const MovementSchema = z.strictObject({
   speedMmPerSecond: uint(100_000),
   accelerationMmPerSecond2: uint(100_000),
@@ -59,6 +79,7 @@ export const MovementSchema = z.strictObject({
   stepHeightMm: uint(2_000),
   maxSlopeMilliDegrees: uint(60_000),
   flySpeedMmPerSecond: uint(100_000),
+  locomotion: LocomotionSchema.optional(),
 });
 export const PerceptionSchema = z.strictObject({
   rangeMm: positive(200_000),
@@ -178,7 +199,11 @@ export const EffectSchema = z.discriminatedUnion('kind', [
   }),
   z.strictObject({ kind: z.literal('heal'), amount: uint(1_000_000) }),
   z.strictObject({ kind: z.literal('shield'), amount: uint(1_000_000) }),
-  z.strictObject({ kind: z.literal('apply-status'), status: RefSchema }),
+  z.strictObject({
+    kind: z.literal('apply-status'),
+    status: RefSchema,
+    flightStaminaPerSecond: uint(1_000_000).optional(),
+  }),
   z.strictObject({
     kind: z.literal('dispel'),
     statusIds: z.array(IdSchema).min(1).max(16).optional(),
@@ -254,6 +279,7 @@ export const StatusSchema = z.strictObject({
   durationSteps: positive(6_000),
   categories: categoryList(StatusCategorySchema).optional(),
   burning: z.strictObject({ waterExtinguishable: z.boolean() }).optional(),
+  flightStaminaPerSecond: uint(1_000_000).optional(),
   adjustments: z.array(StatusAdjustmentSchema).max(32).optional(),
   reactions: z
     .array(StatusReactionSchema)
@@ -396,29 +422,34 @@ export const StaminaSchema = z
     resumeAt: positive(1_000_000).optional(),
   })
   .refine((s) => (s.resumeAt ?? 1) <= s.max, 'Stamina resume threshold exceeds maximum');
-export const CharacterSchema = z.strictObject({
-  name: z.string().min(1).max(100),
-  originalText: z.string().max(20_000),
-  appearance: AppearanceSchema.optional(),
-  stamina: StaminaSchema.optional(),
-  stats: z.strictObject({
-    hp: positive(1_000_000),
-    mp: uint(1_000_000),
-    attack: uint(1_000_000),
-    defense: uint(1_000_000),
-    magicPower: uint(1_000_000).optional(),
-    magicDefense: uint(1_000_000).optional(),
-    actionSpeedBps: uint(100_000),
-    shield: uint(1_000_000),
-    resistances: ResistancesSchema,
-  }),
-  body: BodySchema,
-  movement: MovementSchema,
-  perception: PerceptionSchema,
-  abilities: z.array(RefSchema).max(32),
-  equipment: z.array(RefSchema).max(8),
-  policy: RefSchema,
-});
+export const CharacterSchema = z
+  .strictObject({
+    name: z.string().min(1).max(100),
+    originalText: z.string().max(20_000),
+    appearance: AppearanceSchema.optional(),
+    stamina: StaminaSchema.optional(),
+    stats: z.strictObject({
+      hp: positive(1_000_000),
+      mp: uint(1_000_000),
+      attack: uint(1_000_000),
+      defense: uint(1_000_000),
+      magicPower: uint(1_000_000).optional(),
+      magicDefense: uint(1_000_000).optional(),
+      actionSpeedBps: uint(100_000),
+      shield: uint(1_000_000),
+      resistances: ResistancesSchema,
+    }),
+    body: BodySchema,
+    movement: MovementSchema,
+    perception: PerceptionSchema,
+    abilities: z.array(RefSchema).max(32),
+    equipment: z.array(RefSchema).max(8),
+    policy: RefSchema,
+  })
+  .refine(
+    (c) => !c.movement.locomotion || !!c.stamina,
+    'Locomotion costs require a stamina definition',
+  );
 
 const BlocksSchema = z.strictObject({
   movement: z.boolean(),

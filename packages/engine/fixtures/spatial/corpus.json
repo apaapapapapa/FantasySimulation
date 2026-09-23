@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.12",
-    "rulesVersion": "spatial-v1.12",
+    "engineVersion": "spatial-v1.13",
+    "rulesVersion": "spatial-v1.13",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -364,6 +364,30 @@
     "status-transaction-forecast": {
       "file": "packages/engine/src/spatial/status-assessment.test.ts",
       "name": "status transaction forecasts groups duplicate grants, capped stacks and overlapping cleanses into one transaction"
+    },
+    "locomotion-gaits": {
+      "file": "packages/engine/src/spatial/motion-resources.test.ts",
+      "name": "one interval budget for physical locomotion charges both gaits by travelled metres, and running is faster and more costly"
+    },
+    "locomotion-exhaustion": {
+      "file": "packages/engine/src/spatial/motion-resources.test.ts",
+      "name": "one interval budget for physical locomotion shares the remaining skill budget and falls back to slow walk through exhaustion, then resumes"
+    },
+    "locomotion-route": {
+      "file": "packages/engine/src/spatial/navigation.test.ts",
+      "name": "bounded body-aware support graphs chooses a walk detour instead of an affordable but expensive jump"
+    },
+    "locomotion-both-exhausted": {
+      "file": "packages/engine/src/spatial/locomotion-integration.test.ts",
+      "name": "resource-aware decisions and full matches keeps both exhausted actors moving even with zero recovery"
+    },
+    "locomotion-storage": {
+      "file": "apps/api/src/resource-persistence.test.ts",
+      "name": "stamina through Worker, SQLite and recorded replay saves new locomotion and paid-flight definitions and reconstructs resource and grant displays"
+    },
+    "locomotion-published": {
+      "file": "apps/api/src/resource-persistence.test.ts",
+      "name": "stamina through Worker, SQLite and recorded replay reads published stamina-only v1.11 displays unchanged and refuses execution under current rules"
     }
   },
   "entries": [
@@ -376,7 +400,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:8613aee3226b77271ee16ba83203de8298af4d27b942999c891f209c92579d7f",
+        "inputHash": "sha256:8837a0fe3903ebbec669ccb8f897ecbe4727e7789b1eaa1ef9794c835cd187b8",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -384,9 +408,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-status-v1",
+          "id": "standard-locomotion-v1",
           "revision": 1,
-          "contentHash": "sha256:e29c8030c49e960ac47eace52dcdfa9f1306d75ad38dca3abe9f3eb5e2389e43"
+          "contentHash": "sha256:0fad0819ecdb79e120ef006006e2722de002f3614477d1b4cec784d9ae94f919"
         },
         "participants": [
           {
@@ -421,7 +445,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:1b64339b675177e16bc5d2f14be052317e69d0af8ca64784354ea0b523c47fe4",
+        "inputHash": "sha256:466891475c3cd70787558e94b41d1fbd88bfa699312ec52cad3368f993ac6f4e",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -429,9 +453,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-status-v1",
+          "id": "standard-locomotion-v1",
           "revision": 1,
-          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
+          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
         },
         "participants": [
           {
@@ -466,7 +490,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:f66d50a83c56ea621412826bc03c7a44b92dbac1e45bf84498464d9d163228ea",
+        "inputHash": "sha256:1d38f164e806ff620d3a28f76d802b9784364415fba266e553312e326455562a",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -474,9 +498,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-status-v1",
+          "id": "standard-locomotion-v1",
           "revision": 1,
-          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
+          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
         },
         "participants": [
           {
@@ -511,7 +535,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:e29b5223181b2a594d20722c96e7a5e7d2fbee3f8d6490f32d360670793156c1",
+        "inputHash": "sha256:be5b64abd079eb8b680f78d6fbb54404a77f34e7db77272f627b7eb1a1f73fc2",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -519,9 +543,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-status-v1",
+          "id": "standard-locomotion-v1",
           "revision": 1,
-          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
+          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
         },
         "participants": [
           {
@@ -556,7 +580,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:01cebc835540f91fba4643b3f6d37faa35db84789c5641e1a656687d275c64c1",
+        "inputHash": "sha256:d7d3563e01c82c1818b273d86bab3f905a50cbee5e9f69bace6ac4fd0e898971",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -564,9 +588,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-status-v1",
+          "id": "standard-locomotion-v1",
           "revision": 1,
-          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
+          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
         },
         "participants": [
           {
@@ -601,7 +625,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:97a4d0f9cd9ac7337634c82f8d4648c5922737a0c7c26903ab7d94fb670e76c9",
+        "inputHash": "sha256:1970f2ba7ae185df2469ed1135f730fb7d0b950caab31e3447ed8e613cbd8942",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -609,9 +633,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-status-v1",
+          "id": "standard-locomotion-v1",
           "revision": 1,
-          "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea"
+          "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
         },
         "participants": [
           {
@@ -646,7 +670,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:4f119e03d19142d6ce2f71f2b0927c9e61b21088837d35b2c18f283e4b52da34",
+        "inputHash": "sha256:a61ecf26360c50bb64c53b652738a9352f81e49f81b835ffa01c33246a25a458",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -654,9 +678,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-status-v1",
+          "id": "standard-locomotion-v1",
           "revision": 1,
-          "contentHash": "sha256:3ec19be8fb068733175e48744d2ea5ccd90b848871d4b29ca1733158eeb9ed89"
+          "contentHash": "sha256:dc06b4133c4362238fa8855bc55cb5922209c57fa005fd11a0651ecf246bf595"
         },
         "participants": [
           {
@@ -907,6 +931,20 @@
         "status-pulse-forecast",
         "status-launch-forecast",
         "status-transaction-forecast"
+      ]
+    },
+    {
+      "id": "locomotion-resources",
+      "title": "歩走・残枠共有・枯渇・経路・保存互換",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "locomotion-gaits",
+        "locomotion-exhaustion",
+        "locomotion-route",
+        "locomotion-both-exhausted",
+        "locomotion-storage",
+        "locomotion-published"
       ]
     }
   ]

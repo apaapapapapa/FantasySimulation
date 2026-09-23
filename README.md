@@ -21,7 +21,7 @@ vp run dev
 Nodeは[.node-version](.node-version)、pnpmと依存版は[package.json](package.json)が正本です。
 グローバルVite+を使わない場合は固定版Node/pnpmで`pnpm install --frozen-lockfile`→`pnpm dev`。
 
-初回起動でSQLite DB、Drizzle migration、サンプル13体を登録します。
+初回起動でSQLite DB、Drizzle migration、サンプル15体を登録します。
 既定の保存先は`data/fantasy.sqlite`と`data/replays`。変更時だけ[.env.example](.env.example)を
 `.env`へコピーします。既存DBの移行前にはAPI停止・バックアップを行い、
 [移行制約](docs/adr/0005-drizzle-kit.md)と[保存互換性の未完了事項](docs/adr/0010-battle-version-compatibility.md)を確認してください。

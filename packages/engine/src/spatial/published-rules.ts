@@ -22,3 +22,10 @@ export const observedRules = {
     simultaneousConflict: 'unresolved',
   },
 } satisfies Revision;
+
+export const statusRules = {
+  ...observedRules,
+  id: 'standard-status-v1',
+  contentHash: 'sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea',
+  definition: { ...observedRules.definition, rulesVersion: 'spatial-v1.12' },
+} satisfies Revision;

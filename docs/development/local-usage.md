@@ -56,7 +56,7 @@ SQLiteのネイティブビルドが必要な環境ではPythonとC++ツール�
 `pnpm demo:spatial archer guardian flat` のように2体と戦場を指定できます。
 画面・DBなしで同じmanifest/seedの対戦を再現します。
 
-`data/spatial/catalog.json` は13体と能力・装備・方針・状態・戦場・ルールの52revisionです。
+`data/spatial/catalog.json` は15体と能力・装備・方針・状態・戦場・ルールの69revisionです。
 剣士、槍兵、重装騎士、弓使い、魔法弓使い、炎術師、氷術師、雷術師、飛行術師、治癒剣士を
 同じ型付き部品で構成しています。キャラクターごとの実行分岐はありません。
 `pnpm catalog:spatial` で生成元との一致を確認し、変更時は

@@ -15,6 +15,13 @@ import { blockedBySilence } from './categories.ts';
 import { assessAbility, type KnownClearance } from './assessment.ts';
 import { dodgeOptions } from './dodge.ts';
 import { initialDecisionRandom, weightedChoice, type DecisionRandom } from './decision-random.ts';
+import {
+  canMaintainFlight,
+  chooseGait,
+  gaitProfile,
+  resourceReady,
+  type Gait,
+} from './locomotion.ts';
 
 export type Decision = {
   abilityId: string | null;
@@ -22,6 +29,7 @@ export type Decision = {
   facing: Vec3;
   cognition?: Extract<Cognition, { kind: 'decision' }>;
   random?: DecisionRandom;
+  gait?: Gait;
 };
 function movementGoal(view: DecisionView, facing: Vec3, flight: boolean): Vec3 | null {
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen,
@@ -79,15 +87,22 @@ export function choosePolicy(
           ? 'cooldown'
           : !payment.ok
             ? `insufficient-${payment.reason}`
-            : view.silenced && blockedBySilence(d)
-              ? 'silenced'
-              : !enabled || !conditionMatches(d.condition, view)
-                ? 'condition'
-                : !actor.character.stats.actionSpeedBps
-                  ? 'action-speed'
-                  : !inObservedRange(d, view)
-                    ? 'observed-range-or-facing'
-                    : null;
+            : flight &&
+                !canMaintainFlight(
+                  payment.resources,
+                  view.flightStaminaPerSecond ?? 0,
+                  resourceReady(view),
+                )
+              ? 'flight-reserve'
+              : view.silenced && blockedBySilence(d)
+                ? 'silenced'
+                : !enabled || !conditionMatches(d.condition, view)
+                  ? 'condition'
+                  : !actor.character.stats.actionSpeedBps
+                    ? 'action-speed'
+                    : !inObservedRange(d, view)
+                      ? 'observed-range-or-facing'
+                      : null;
     if (reason) {
       excluded.push({ abilityId: ability.id, reason });
       continue;
@@ -98,12 +113,20 @@ export function choosePolicy(
   }
   const directions = dodgeOptions(view, flight, clear),
     available = directions.filter((d) => d.weight > 0);
+  const dodgeCost = actor.character.movement.locomotion?.dodgeStamina ?? 0;
+  const dodgeCostBps = Math.min(
+    10000,
+    Math.floor((dodgeCost * 10000) / Math.max(1, view.resources.stamina ?? 0)),
+  );
   if (available.length)
     candidates.push({
       key: 'dodge',
       kind: 'dodge',
       abilityId: null,
-      weight: (view.rules ?? AI_RULES).dodgeWeight,
+      weight: Math.max(
+        1,
+        Math.floor(((view.rules ?? AI_RULES).dodgeWeight * 10000) / (10000 + dodgeCostBps)),
+      ),
       totalWeight: 1,
       successBps: 7000,
       killBps: 0,
@@ -111,7 +134,7 @@ export function choosePolicy(
       efficacyBps: 0,
       confidenceBps: 5000,
       durationSteps: 5,
-      costBps: 0,
+      costBps: dodgeCostBps,
       exploration: 0,
       evidence: [],
       reason: 'escape observed projectile paths; actual collision remains authoritative',
@@ -168,14 +191,30 @@ export function choosePolicy(
     });
   }
   const observation = view.memory.observation;
+  const allocation = chooseGait(
+    view,
+    actor.abilities.find((a) => a.id === selected.abilityId)?.definition.costs.stamina ?? 0,
+    selected.kind === 'dodge',
+  );
   return {
     abilityId: selected.abilityId,
     goal,
     facing,
     random: nextRandom,
+    ...(allocation ? { gait: selected.kind === 'dodge' ? ('run' as const) : allocation.gait } : {}),
     cognition: {
       kind: 'decision',
       perspective: 'subjective',
+      ...(allocation
+        ? {
+            locomotion: {
+              ...allocation,
+              gait: selected.kind === 'dodge' ? ('run' as const) : allocation.gait,
+              stamina: view.resources.stamina ?? 0,
+              exhausted: !resourceReady(view),
+            },
+          }
+        : {}),
       sampledAt: observation?.sampledAt ?? null,
       availableAt: observation?.availableAt ?? null,
       targetId: target?.id ?? null,
@@ -221,6 +260,31 @@ export function steerPolicy(
   navigator: Navigator,
   options: { flight: boolean; canMove: boolean; speedBps: number; maxPathNodes: number },
 ): { intent: MotionIntent; navigation: NavigationResult | null } {
+  const character = view.self.actor.character,
+    movement = character.movement.locomotion;
+  const stamina = Math.max(
+    0,
+    (view.resources.stamina ?? 0) -
+      (view.self.actor.abilities.find((a) => a.id === decision.abilityId)?.definition.costs
+        .stamina ?? 0) -
+      (decision.cognition?.selection === 'dodge' ? (movement?.dodgeStamina ?? 0) : 0),
+  );
+  const ready = resourceReady({ ...view, resources: { ...view.resources, stamina } });
+  const gait = ready ? (decision.gait ?? 'walk') : 'slow';
+  const profile = gaitProfile(character, gait);
+  const speed = options.flight ? character.movement.flySpeedMmPerSecond : profile.speedMmPerSecond;
+  const resources =
+    movement || character.stamina || (view.flightStaminaPerSecond ?? 0) > 0
+      ? {
+          speedMmPerSecond: (speed * options.speedBps) / 10000,
+          stamina,
+          ready,
+          walkPerMeter: profile.staminaPerMeter,
+          jumpStamina: movement?.jumpStamina ?? 0,
+          stepPerMeter: movement?.stepStaminaPerMeter ?? 0,
+          flightPerSecond: view.flightStaminaPerSecond ?? 0,
+        }
+      : undefined;
   const navigation =
     decision.goal && options.canMove
       ? navigator.find(
@@ -229,6 +293,7 @@ export function steerPolicy(
           options.flight,
           options.maxPathNodes,
           view.self.actor.policy.jumpWhenBlocked,
+          resources,
         )
       : null;
   const first =
@@ -243,6 +308,7 @@ export function steerPolicy(
       flight: options.flight,
       canMove: options.canMove,
       speedBps: options.speedBps,
+      ...(movement && !options.flight ? { speedMmPerSecond: profile.speedMmPerSecond } : {}),
     },
     navigation,
   };

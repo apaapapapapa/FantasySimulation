@@ -2,6 +2,7 @@ import type { Cognition } from '@fantasy/domain/spatial';
 import { add, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
 import type { DecisionView } from './perception.ts';
 import type { KnownClearance } from './assessment.ts';
+import { resourceReady } from './locomotion.ts';
 
 type Direction = Extract<Cognition, { kind: 'decision' }>['directions'][number];
 export type DodgeOption = Direction & { goal: Vec3 };
@@ -13,11 +14,27 @@ export function dodgeOptions(
 ): DodgeOption[] {
   const observation = view.memory.observation;
   if (!observation?.projectiles.length) return [];
+  const locomotion = view.self.actor.character.movement.locomotion;
+  if (
+    !resourceReady(view) ||
+    (locomotion &&
+      (view.resources.stamina ?? 0) <
+        locomotion.dodgeStamina +
+          Math.ceil(
+            (flight
+              ? (view.flightStaminaPerSecond ?? 0)
+              : (locomotion.run.staminaPerMeter * locomotion.run.speedMmPerSecond) / 1000) * 0.1,
+          ))
+  )
+    return [];
   const self = view.self,
     body = self.actor.character.body,
     movement = self.actor.character.movement;
   const speed =
-    (((flight ? movement.flySpeedMmPerSecond : movement.speedMmPerSecond) / 1000) *
+    (((flight
+      ? movement.flySpeedMmPerSecond
+      : (locomotion?.run.speedMmPerSecond ?? movement.speedMmPerSecond)) /
+      1000) *
       (view.speedBps ?? 10000)) /
     10000;
   const acceleration = movement.accelerationMmPerSecond2 / 1000;
