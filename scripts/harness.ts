@@ -7,7 +7,10 @@ const json = (path: string) => readBoundedJson(path, 32 * 1024 * 1024);
 try {
   const [command, input, ...args] = process.argv.slice(2);
   if (!input) throw new Error('Harness input is required');
-  if (command === 'context' && args.length === 0) {
+  if (command === 'loop') {
+    const { loopCommand } = await import('./harness/loop/cli.ts');
+    console.log(JSON.stringify(await loopCommand([input, ...args]), null, 2));
+  } else if (command === 'context' && args.length === 0) {
     const { contextPlan, inspectContext } = await import('./harness/context.ts');
     if (input === 'check') {
       const { qualityPaths } = await import('./quality/files.ts');
