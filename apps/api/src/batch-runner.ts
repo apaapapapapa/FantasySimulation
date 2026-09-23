@@ -2,10 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
   BatchIndexBodySchema,
-  BatchIndexSchema,
-  BatchPlanSchema,
   compareIds,
-  canonicalJson,
   contentHash,
   parseJson,
   type BatchIndex,
@@ -13,7 +10,8 @@ import {
 } from '@fantasy/domain/spatial';
 import { BattleRuntime } from './battle-runtime.ts';
 import { BattleBundles } from './battle-bundle.ts';
-import { shardSlots, validateBatchPlan } from './batch-plan.ts';
+import { validateBatchPlan } from './batch-plan.ts';
+import { shardSlots } from './batch-check.ts';
 import { openStore, jsonValue } from './store.ts';
 
 export async function runBatch(
@@ -155,58 +153,4 @@ export async function runBatch(
   }
 }
 
-export async function reconcileBatch(
-  input: unknown,
-  indexes: { index: unknown; bundles: BattleBundles }[],
-) {
-  const plan = parseJson(BatchPlanSchema, input);
-  const { id: planId, ...planBody } = plan;
-  if (planId !== (await contentHash(planBody))) throw new Error('Plan checksum mismatch');
-  const expected = new Map(plan.slots.map((s) => [s.id, s.simulationHash]));
-  const found = new Map<string, BatchIndex['slots'][number]>();
-  for (const value of indexes) {
-    const index = parseJson(BatchIndexSchema, value.index),
-      { id, ...body } = index;
-    if (
-      index.planId !== plan.id ||
-      canonicalJson(index.source) !== canonicalJson(plan.source) ||
-      id !== (await contentHash(body))
-    )
-      throw new Error('Batch index identity mismatch');
-    const selected = new Set(shardSlots(plan, index.shardIndex, index.shardCount).map((s) => s.id));
-    if (
-      index.slots.length !== selected.size ||
-      index.complete !== index.slots.every((s) => s.state === 'complete')
-    )
-      throw new Error('Incomplete or inconsistent shard declaration');
-    for (const slot of index.slots) {
-      if (
-        !selected.has(slot.slotId) ||
-        expected.get(slot.slotId) !== slot.simulationHash ||
-        found.has(slot.slotId)
-      )
-        throw new Error('Missing, duplicate or unexpected planned slot');
-      found.set(slot.slotId, slot);
-      if (slot.receipt) {
-        if (
-          slot.receipt.simulationHash !== slot.simulationHash ||
-          canonicalJson(await value.bundles.verify(slot.receipt.objectHash)) !==
-            canonicalJson(slot.receipt)
-        )
-          throw new Error('Index replay reference mismatch');
-      }
-      if (
-        slot.state === 'complete' &&
-        (!slot.receipt || !['win', 'draw'].includes(slot.receipt.result.outcome.kind))
-      )
-        throw new Error('Unverified or nondefinitive slot cannot be complete');
-    }
-  }
-  return {
-    planned: expected.size,
-    recorded: found.size,
-    complete:
-      found.size === expected.size && [...found.values()].every((s) => s.state === 'complete'),
-    missing: [...expected.keys()].filter((id) => !found.has(id)),
-  };
-}
+export { reconcileBatch } from './batch-check.ts';
