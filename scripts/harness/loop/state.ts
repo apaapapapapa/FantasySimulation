@@ -157,7 +157,7 @@ export function status(value: unknown, now = new Date().toISOString()) {
   };
   return {
     revision: j.revision,
-    phase,
+    phase: phase as Phase,
     reason,
     candidateSha,
     verifiedSha,

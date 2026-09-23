@@ -35,6 +35,7 @@ describe('frozen manual loop contract', () => {
     'apps/web/src/AGENTS.md',
     'apps/web/src/fixtures',
     'apps/web/src/../x',
+    'packages/engine/src/spatial/implementation.json',
   ])('protects %s', (path) => {
     expect(() => parseContract({ ...exampleContract(), allowedPaths: [path] })).toThrow();
   });

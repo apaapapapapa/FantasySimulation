@@ -37,7 +37,7 @@ export function regularPath(path: string): string {
   let current = parse(absolute).root;
   for (const part of absolute.slice(current.length).split('/')) {
     current = join(current, part);
-    if (existsSync(current) && lstatSync(current).isSymbolicLink())
+    if (lstatSync(current, { throwIfNoEntry: false })?.isSymbolicLink())
       throw new Error('Symlink in state path');
   }
   return absolute;
