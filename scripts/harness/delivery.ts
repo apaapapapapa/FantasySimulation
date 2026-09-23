@@ -86,6 +86,8 @@ function pullIdentity(value: unknown) {
     updated: timestamp(pull.updated_at),
     state: text(pull.state),
     merged: pull.merged,
+    title: pull.title,
+    body: pull.body,
   };
 }
 function stable(a: unknown, b: unknown): boolean {
@@ -97,6 +99,8 @@ export function conversationDigest(snapshot: DeliverySnapshot): string {
     .update(
       JSON.stringify({
         candidateSha: pullIdentity(snapshot.pull).head,
+        title: record(snapshot.pull).title,
+        body: record(snapshot.pull).body,
         comments: snapshot.comments,
         reviews: snapshot.reviews,
         threads: snapshot.threads,
@@ -151,6 +155,7 @@ export function parseSnapshot(value: unknown): DeliverySnapshot {
 }
 function reviewInputsChangedAt(snapshot: DeliverySnapshot): number {
   const dates = [
+    record(snapshot.pull).updated_at,
     ...objects(snapshot.comments).map((comment) => comment.updated_at),
     ...objects(snapshot.reviews).map((review) => review.submitted_at),
     ...objects(snapshot.threads).flatMap((thread) =>
@@ -372,6 +377,17 @@ export function assessDelivery(
     'snapshot-stable',
     stable(snapshot.pull, snapshot.pullAfter) ? 'pass' : 'unknown',
     'PR head/base/merge/update identity must remain unchanged',
+  );
+  const closingReference =
+    /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\b\s*:?\s*(?:(?:[\w.-]+\/[\w.-]+)?#\d+|https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/issues\/\d+)/i;
+  add(
+    'issue-completion-policy',
+    pull.body !== null && typeof pull.body !== 'string'
+      ? 'unknown'
+      : typeof pull.body === 'string' && closingReference.test(pull.body)
+        ? 'fail'
+        : 'pass',
+    'Collect the PR body and use non-closing references; Issue completion follows main CI',
   );
   const pr = validateRun(snapshot, snapshot.prRun, false);
   add('pr-ci', pr.status, pr.reason);

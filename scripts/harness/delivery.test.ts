@@ -66,6 +66,8 @@ function evidence(main = false): RunEvidence {
 export function fixture(merged = false): DeliverySnapshot {
   const pull = {
     number: 13,
+    title: 'feat: tested change',
+    body: 'Refs #9',
     updated_at: AT,
     state: merged ? 'closed' : 'open',
     merged,
@@ -115,6 +117,40 @@ function change(obj: unknown, key: string, value: unknown) {
   (obj as Record<string, unknown>)[key] = value;
 }
 describe('delivery evidence', () => {
+  it('blocks automatic Issue closure even inside explanatory prose', () => {
+    for (const body of [
+      'The declaration only closes #9 after successful main CI.',
+      'CLOSES: #9',
+      'Fixed owner/repo#9',
+      'Resolves https://github.com/owner/repo/issues/9',
+    ]) {
+      const value = fixture();
+      change(value.pull, 'body', body);
+      change(value.pullAfter, 'body', body);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 1);
+    }
+    for (const body of ['Refs #9', 'Completion follows main CI for Issue #9.', null]) {
+      const value = fixture();
+      change(value.pull, 'body', body);
+      change(value.pullAfter, 'body', body);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+    }
+    const missing = fixture();
+    change(missing.pull, 'body', undefined);
+    change(missing.pullAfter, 'body', undefined);
+    assert.equal(assessDelivery(missing, 'pr', receipt(missing)).exitCode, 2);
+  });
+  it('binds PR wording to review receipts and snapshot stability', () => {
+    for (const field of ['title', 'body']) {
+      const value = fixture();
+      const reviewed = receipt(value);
+      change(value.pullAfter, field, 'Revised wording');
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+      change(value.pull, field, 'Revised wording');
+      assert.equal(assessDelivery(value, 'pr', reviewed).exitCode, 2);
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+    }
+  });
   it('separates collection, review coverage and PR completion', () => {
     const value = fixture();
     assert.equal(assessDelivery(value, 'pr').exitCode, 2);
