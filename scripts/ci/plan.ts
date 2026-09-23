@@ -11,6 +11,7 @@ export interface Plan extends Identity {
   full: boolean;
   simulation: boolean;
   codeql: boolean;
+  ui: boolean;
   reason: string;
   paths: string[];
 }
@@ -50,6 +51,7 @@ export function classify(info: Identity, event: string, paths: string[] | null):
     full,
     simulation,
     codeql: full,
+    ui: full,
     reason: full
       ? simulation
         ? 'All checks: source/configuration, main/dispatch/schedule or uncertain comparison'
@@ -84,7 +86,8 @@ export function parsePlan(input: unknown): Plan {
   if (
     value.full !== expected.full ||
     value.simulation !== expected.simulation ||
-    value.codeql !== expected.codeql
+    value.codeql !== expected.codeql ||
+    value.ui !== expected.ui
   )
     throw new Error('CI scope differs from the conservative path policy');
   return {
@@ -94,6 +97,7 @@ export function parsePlan(input: unknown): Plan {
     full: value.full,
     simulation: expected.simulation,
     codeql: expected.codeql,
+    ui: expected.ui,
     paths,
     reason: value.reason,
   };
@@ -157,7 +161,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (process.env.GITHUB_OUTPUT)
       appendFileSync(
         process.env.GITHUB_OUTPUT,
-        `full=${plan.full}\nsimulation=${plan.simulation}\ncodeql=${plan.codeql}\nbaseline=${plan.baselineSha ?? ''}\n`,
+        `full=${plan.full}\nsimulation=${plan.simulation}\ncodeql=${plan.codeql}\nui=${plan.ui}\nbaseline=${plan.baselineSha ?? ''}\n`,
       );
     console.log(`FANTASY_CI_PLAN=${JSON.stringify(plan)}`);
   } catch (error) {

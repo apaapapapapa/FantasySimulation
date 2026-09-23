@@ -9,6 +9,7 @@ import { loadReceipts } from '../harness/test-support/load.ts';
 import { corpusEvidence } from '../harness/test-support/corpus.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import type { Identity, Report } from '../harness/report.ts';
+import { UI_CHECKS } from '../../e2e/contract.ts';
 const info: Identity = {
   sourceSha: 'a'.repeat(40),
   candidateSha: 'b'.repeat(40),
@@ -54,7 +55,7 @@ describe('conservative CI planning', () => {
       expect(classify(info, 'pull_request', ['apps/web/src/App.tsx', path]).simulation).toBe(true);
     for (const event of ['push', 'workflow_dispatch', 'schedule'])
       expect(classify(info, event, ['README.md']).simulation).toBe(true);
-    for (const field of ['full', 'simulation', 'codeql'] as const)
+    for (const field of ['full', 'simulation', 'codeql', 'ui'] as const)
       expect(() => parsePlan({ ...presentation, [field]: !presentation[field] })).toThrow(Error);
   });
   it('shortcuts only nonempty wording-only PRs', () => {
@@ -104,6 +105,7 @@ describe('fail-closed CI gate', () => {
     verify: 'success',
     load: 'success',
     docs: 'skipped',
+    ui: 'success',
   };
   const corpus = corpusEvidence(info);
   const security = { ...evidence(SECURITY_CHECKS), producer: 'security-evidence' };
@@ -111,6 +113,7 @@ describe('fail-closed CI gate', () => {
     ...loadReceipts(info),
     'ubuntu-latest': evidence(['source-clean', 'source-verify']),
     security,
+    ui: { ...evidence(UI_CHECKS), producer: 'ui-runner' },
   };
   it('requires Linux evidence and exact source identities', () => {
     expect(assessGate(plan, results, reports, corpus).exitCode).toBe(0);
@@ -128,14 +131,17 @@ describe('fail-closed CI gate', () => {
     const presentation = classify(info, 'pull_request', ['apps/web/src/App.tsx']);
     const observed = { ...results, load: 'skipped' };
     expect(
-      assessGate(presentation, observed, { 'ubuntu-latest': reports['ubuntu-latest'], security })
-        .exitCode,
+      assessGate(presentation, observed, {
+        'ubuntu-latest': reports['ubuntu-latest'],
+        security,
+        ui: reports.ui,
+      }).exitCode,
     ).toBe(0);
     expect(assessGate(plan, observed, reports, corpus).exitCode).toBe(1);
     expect(assessGate(presentation, { ...observed, verify: 'skipped' }, reports).exitCode).toBe(1);
   });
   it('rejects job failure, cancellation, unplanned skip and absence', () => {
-    for (const job of ['verify', 'load'])
+    for (const job of ['verify', 'load', 'ui'])
       for (const value of ['failure', 'cancelled', 'skipped', undefined])
         expect(assessGate(plan, { ...results, [job]: value }, reports).exitCode).toBe(1);
     expect(assessGate(plan, { ...results, changes: 'failure' }, reports).exitCode).toBe(1);
@@ -152,6 +158,15 @@ describe('fail-closed CI gate', () => {
       expect(assessGate(plan, results, { ...reports, 'load-pair': invalid }, corpus).exitCode).toBe(
         2,
       );
+  });
+  it('requires current-source UI coverage rather than trusting a green browser job', () => {
+    for (const ui of [
+      null,
+      { ...reports.ui, producer: 'fixture' },
+      { ...reports.ui, candidateSha: 'd'.repeat(40) },
+      { ...reports.ui, checks: reports.ui.checks.filter((check) => check.id !== 'ui:coverage') },
+    ])
+      expect(assessGate(plan, results, { ...reports, ui }, corpus).exitCode).toBe(2);
   });
   it('requires each H4 check even when every security job reports success', () => {
     expect(assessGate(plan, results, { ...reports, security: null }).exitCode).toBe(2);
@@ -185,6 +200,7 @@ describe('fail-closed CI gate', () => {
         verify: 'skipped',
         load: 'skipped',
         docs: 'success',
+        ui: 'skipped',
       };
     const docReports = {
       'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links', 'docs:context']),
