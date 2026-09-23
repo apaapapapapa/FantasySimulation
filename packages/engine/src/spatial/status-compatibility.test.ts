@@ -39,9 +39,13 @@ describe('G-03 legacy status compatibility before generalized fields', () => {
     const definition = initialStatus({ burning: { waterExtinguishable: false } });
     const parsed = StatusSchema.parse(definition);
     expect(parsed).toEqual(definition);
-    const old = await sealRevision('status', 'unchanged-legacy', 1, definition);
     const read = await sealRevision('status', 'unchanged-legacy', 1, parsed);
-    expect(reference(read)).toEqual(reference(old));
+    // Captured from pre-G-03 main e42a991, independently of the implementation under test.
+    expect(reference(read)).toEqual({
+      id: 'unchanged-legacy',
+      revision: 1,
+      contentHash: 'sha256:a2a3e78a94fe589730cc51f3956b71ff1d17de07456f07399b37733e0c52743e',
+    });
     for (const invalid of [{ futureModifier: true }, { visibility: 'omniscient' }])
       expect(StatusSchema.safeParse({ ...definition, ...invalid }).success).toBe(false);
   });
