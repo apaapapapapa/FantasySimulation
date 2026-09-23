@@ -18,6 +18,7 @@ import {
   generalAiRules,
   simultaneousRules,
   stagedRules,
+  motionRules,
 } from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
@@ -38,6 +39,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
     structuredClone(generalAiRules),
     structuredClone(simultaneousRules),
     structuredClone(stagedRules),
+    structuredClone(motionRules),
   ];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);
@@ -488,6 +490,45 @@ export async function sampleCatalog(): Promise<Revision[]> {
   await character('stage-vanguard-v1', '突進と薙ぎ払いの前衛', [dash, sweep], 1400, {
     stamina,
     movement: { locomotion: staminaMovement },
+  });
+  const parry = await add(
+    'ability',
+    'parry-v1',
+    ability('受け流し', {
+      trigger: 'before-hit',
+      categories: ['technique'],
+      target: 'self',
+      attack: { kind: 'direct' },
+      castSteps: 0,
+      recoverySteps: 6,
+      cooldownSteps: 60,
+      rangeMm: 0,
+      costs: { hp: 0, mp: 0, stamina: 4, uses: 0 },
+      effects: [],
+      reaction: { response: { kind: 'parry', scope: 'all' }, categories: ['physical'] },
+    }),
+  );
+  const counter = await add(
+    'ability',
+    'riposte-v1',
+    ability('被弾後の反撃', {
+      trigger: 'after-damage',
+      categories: ['technique'],
+      target: 'enemy',
+      attack: { kind: 'hitscan', radiusMm: 80 },
+      castSteps: 0,
+      recoverySteps: 4,
+      cooldownSteps: 30,
+      rangeMm: 3000,
+      costs: { hp: 0, mp: 0, stamina: 3, uses: 8 },
+      effects: [{ kind: 'damage', amount: 12, attackScaleBps: 5000, element: 'physical' }],
+      reaction: { response: { kind: 'counter' } },
+    }),
+  );
+  await character('reaction-duelist-v1', '受け流しと反撃の剣士', [sword], 1200, {
+    stamina,
+    movement: { locomotion: staminaMovement },
+    extras: [parry, counter],
   });
   await character('stamina-scout-v1', '体力を配分する斥候', [staminaStrike], 1200, {
     stamina,

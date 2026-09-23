@@ -13,6 +13,7 @@ import {
   type VectorMm,
   type ObservedStatus,
   type ObservedStage,
+  type ObservedReaction,
 } from '@fantasy/domain/spatial';
 import { add, cosDegrees, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
 import type { MotionState } from './movement.ts';
@@ -34,6 +35,7 @@ export type ObservedActor = {
   size?: { radiusMm: number; heightMm: number };
   statuses?: ObservedStatus[];
   stage?: ObservedStage;
+  reaction?: ObservedReaction;
 };
 export type ObservableProjectile = {
   id: string;
@@ -246,6 +248,7 @@ export function perceive(
     action: NonNullable<ObservedActor['action']>;
     statuses?: readonly StatusCohort[];
     stage?: ObservedStage | undefined;
+    reaction?: ObservedReaction | undefined;
   },
   terrainMode: 'surveyed' | 'observed' = 'surveyed',
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
@@ -306,6 +309,14 @@ export function perceive(
                 }
               : {}),
             ...(statusKnown && { statuses: observedStatuses }),
+            ...(visibleState?.reaction
+              ? {
+                  reaction: {
+                    point: visibleState.reaction.point,
+                    response: visibleState.reaction.response,
+                  },
+                }
+              : {}),
             size: {
               radiusMm: enemy.actor.character.body.radiusMm,
               heightMm: enemy.actor.character.body.heightMm,
@@ -387,6 +398,7 @@ export type DecisionView = {
   memory: PerceptionMemory;
   step?: number;
   used?: Readonly<Record<string, number>>;
+  reactionReadyAt?: Readonly<Record<string, number>>;
   canAct?: boolean;
   canMove?: boolean;
   stageOwnsMotion?: boolean;

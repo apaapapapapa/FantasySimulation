@@ -4,6 +4,7 @@ import type {
   DeepReadonly,
   Effect,
   StageContact,
+  ReactionContext,
 } from '@fantasy/domain/spatial';
 import { resolveEffects } from './effects.ts';
 import { damagePower } from './damage.ts';
@@ -15,6 +16,9 @@ import { observeImpact, observeReveal, rememberExperience } from './perception.t
 import { at, type SpatialWorld } from './physics.ts';
 import type { MotionState, MovedActor } from './movement.ts';
 import { queueForce } from './forces.ts';
+import { planStatusEffects } from './status-reactions.ts';
+import { applyStatuses, UnresolvedRuleError } from './status.ts';
+import type { EffectApplication } from './effects.ts';
 const effectEventKinds = {
   damage: 'damage',
   heal: 'heal',
@@ -34,6 +38,8 @@ export type PendingEffect = DamageSnapshot & {
   causes?: readonly string[];
   scaleBps?: number;
   stage?: StageContact;
+  reaction?: ReactionContext;
+  damageCancelled?: boolean;
   observation?: { self: MotionState; target: MotionState };
 };
 /** Keep the contact geometry even though simultaneous effects commit after movement. */
@@ -53,18 +59,25 @@ export function contactObservation(
   };
   return { self: motion(self), target: motion(target) };
 }
+export type EffectContext = {
+  aliveAtStart?: ReadonlySet<string>;
+  battle: PreparedBattle;
+  journal: Journal;
+  step: number;
+  activationStep: number;
+  phase: BattleEvent['phase'];
+  budget: Budget;
+  world: SpatialWorld;
+};
 /** Emit causal applications, then commit every target from the same defense/status snapshot. */
 export function commitEffects(
   actors: ActorState[],
   effects: PendingEffect[],
-  battle: PreparedBattle,
-  journal: Journal,
-  step: number,
-  activationStep: number,
-  phase: BattleEvent['phase'],
-  budget: Budget,
-  world: SpatialWorld,
+  context: EffectContext,
+  deferStatuses = false,
+  waveIndex = 0,
 ) {
+  const { battle, journal, step, activationStep, phase, budget, world } = context;
   const applications = effects.map((effect) => {
     const event = journal.emit({
       step: activationStep,
@@ -78,6 +91,8 @@ export function commitEffects(
       causes: [...(effect.causes ?? [])],
       reason: effect.effect.kind,
       ...(effect.stage ? { stage: effect.stage } : {}),
+      ...(effect.reaction ? { reaction: effect.reaction } : {}),
+      ...(deferStatuses ? { wave: waveIndex } : {}),
     });
     return { ...effect, id: event.id, event };
   });
@@ -88,6 +103,7 @@ export function commitEffects(
     step,
     activationStep,
     budget,
+    deferStatuses,
   );
   for (const result of resolved) {
     const actor = actors.find((a) => a.motion.actor.participant.actorId === result.actorId)!;
@@ -100,7 +116,9 @@ export function commitEffects(
         app.event.damage = damage;
         app.event.amount = detail.calculation?.afterModifiers ?? detail.afterResistance;
         app.event.ruleId = 'damage.defense-resistance-shield';
-        app.event.reason = 'shared-shield-and-single-hp-clamp';
+        app.event.reason = app.damageCancelled
+          ? 'parried-damage-retains-element-contact'
+          : 'shared-shield-and-single-hp-clamp';
       } else if (app.effect.kind === 'heal') {
         app.event.amount = result.healing.find((h) => h.applicationId === app.id)!.amount;
       } else if (app.effect.kind === 'shield') {
@@ -166,7 +184,8 @@ export function commitEffects(
                     ...(app.effect.defense !== undefined && { defense: app.effect.defense }),
                     impact: detail.calculation?.afterModifiers ?? detail.afterResistance,
                     shield: BigInt(detail.absorbed.numerator) > 0n,
-                    partial: (app.scaleBps ?? 10000) !== 10000,
+                    // A defended contact cannot establish permanent elemental efficacy.
+                    partial: !!app.damageCancelled || (app.scaleBps ?? 10000) !== 10000,
                     statuses: actor.statuses,
                     statusStep: step,
                   },
@@ -177,35 +196,84 @@ export function commitEffects(
         if (experience) observer.memory = rememberExperience(observer.memory, experience);
       }
     }
-    for (const reaction of result.reactions)
-      journal.emit({
-        step: activationStep,
-        phase,
-        kind: 'diagnostic',
-        targetId: result.actorId,
-        causes: reaction.causes,
-        ruleId: 'status.reaction',
-        amount: reaction.multiplier,
-        reason: `${reaction.statusId}:${reaction.element}:${reaction.response}`,
-      });
-    for (const change of result.changes)
-      journal.emit({
-        step: activationStep,
-        phase,
-        kind:
-          change.kind === 'remove'
-            ? 'status-remove'
-            : change.kind === 'reject'
-              ? 'diagnostic'
-              : 'status-apply',
-        actorId: result.actorId,
-        targetId: result.actorId,
-        causes: [...change.causes],
-        ruleId: `status.${change.kind}`,
-        amount: change.stacks,
-        reason: `${change.revision.id}:${change.reason}`,
-      });
+    emitStatusChanges(result, journal, activationStep, phase);
     actor.resources = result.resources;
     actor.statuses = result.statuses;
+  }
+  return { applications, resolved };
+}
+function emitStatusChanges(
+  result: Pick<ReturnType<typeof resolveEffects>[number], 'actorId' | 'changes' | 'reactions'>,
+  journal: Journal,
+  activationStep: number,
+  phase: BattleEvent['phase'],
+) {
+  for (const reaction of result.reactions)
+    journal.emit({
+      step: activationStep,
+      phase,
+      kind: 'diagnostic',
+      targetId: result.actorId,
+      causes: reaction.causes,
+      ruleId: 'status.reaction',
+      amount: reaction.multiplier,
+      reason: `${reaction.statusId}:${reaction.element}:${reaction.response}`,
+    });
+  for (const change of result.changes)
+    journal.emit({
+      step: activationStep,
+      phase,
+      kind:
+        change.kind === 'remove'
+          ? 'status-remove'
+          : change.kind === 'reject'
+            ? 'diagnostic'
+            : 'status-apply',
+      actorId: result.actorId,
+      targetId: result.actorId,
+      causes: [...change.causes],
+      ruleId: `status.${change.kind}`,
+      amount: change.stacks,
+      reason: `${change.revision.id}:${change.reason}`,
+    });
+}
+/** One old-cohort plan for the union of accepted applications across every wave. */
+export function commitTransactionStatuses(
+  actors: ActorState[],
+  applications: readonly EffectApplication[],
+  context: EffectContext,
+) {
+  const { battle, journal, step, activationStep, phase, budget } = context;
+  for (const actor of actors) {
+    const id = actor.motion.actor.participant.actorId;
+    const incoming = applications.filter((a) => a.targetId === id);
+    let plan: ReturnType<typeof planStatusEffects>;
+    try {
+      plan = planStatusEffects(actor.statuses, incoming, battle.statuses, step);
+    } catch (error) {
+      if (!(error instanceof UnresolvedRuleError)) throw error;
+      throw new UnresolvedRuleError(
+        error.ruleId,
+        error.revisions,
+        `${error.message}; point=status-commit; step=${activationStep}; actor=${id}; causes=${incoming
+          .slice(0, 8)
+          .map((a) => a.id)
+          .join(',')}; total=${incoming.length}`,
+      );
+    }
+    const applied = applyStatuses(
+      plan.statuses,
+      plan.applications,
+      plan.dispels,
+      activationStep,
+      budget,
+    );
+    emitStatusChanges(
+      { actorId: id, reactions: plan.traces, changes: [...plan.changes, ...applied.changes] },
+      journal,
+      activationStep,
+      phase,
+    );
+    actor.statuses = applied.statuses;
   }
 }

@@ -104,6 +104,7 @@ export function displayChanges(
         'facing',
         'grounded',
         'force',
+        'reactions',
         'resources',
         'locomotion',
         'statuses',

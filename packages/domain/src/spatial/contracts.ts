@@ -3,7 +3,7 @@ import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.17' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.18' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -145,6 +145,12 @@ export const LEGACY_APPEARANCE_PRIORS = deepFreeze(
 );
 export const WoundStageSchema = z.enum(['unknown', 'unhurt', 'hurt', 'severe', 'critical']);
 export const ObservedPhaseSchema = z.enum(['idle', 'cast', 'active', 'recovery']);
+export const ReactionPointSchema = z.enum(['before-hit', 'after-damage', 'before-defeat']);
+export const ObservedReactionSchema = z.strictObject({
+  point: ReactionPointSchema,
+  response: z.enum(['parry', 'effects', 'counter']),
+});
+export type ObservedReaction = z.infer<typeof ObservedReactionSchema>;
 export const ObservedStageSchema = z.strictObject({
   shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'arc', 'radial', 'hold']),
   state: z.enum(['active', 'waiting', 'interrupted']),
@@ -482,11 +488,21 @@ export function abilityEffects<T>(ability: {
   return ability.stages?.flatMap((s) => s.effects) ?? ability.effects;
 }
 
+export const ReactionSchema = z.strictObject({
+  response: z.discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('parry'), scope: z.enum(['all', 'damage']) }),
+    z.strictObject({ kind: z.literal('effects') }),
+    z.strictObject({ kind: z.literal('counter') }),
+  ]),
+  categories: categoryList(AbilityCategorySchema).optional(),
+  elements: categoryList(ElementSchema).optional(),
+});
 export const AbilitySchema = z
   .strictObject({
     name: z.string().min(1).max(100),
     originalText: z.string().max(20_000),
-    trigger: z.enum(['action', 'battle-start']),
+    trigger: z.enum(['action', 'battle-start', ...ReactionPointSchema.options]),
+    reaction: ReactionSchema.optional(),
     categories: categoryList(AbilityCategorySchema).optional(),
     target: z.enum(['self', 'enemy']),
     condition: ConditionSchema,
@@ -503,10 +519,61 @@ export const AbilitySchema = z
     rangeMm: uint(200_000),
     aimErrorMilliDegrees: uint(45_000),
     attack: AttackSchema,
-    effects: z.array(EffectSchema).min(1).max(16),
+    effects: z.array(EffectSchema).max(16),
     stages: z.array(StageSchema).min(1).max(16).optional(),
   })
   .superRefine((ability, ctx) => {
+    const reaction = ability.reaction;
+    const reactive = ReactionPointSchema.safeParse(ability.trigger).success;
+    const response = reaction?.response;
+    if (reactive !== !!reaction)
+      ctx.addIssue({ code: 'custom', message: 'Reaction triggers require an explicit response' });
+    if (!ability.effects.length && response?.kind !== 'parry')
+      ctx.addIssue({ code: 'custom', message: 'Only parry may omit payload effects' });
+    if (reaction) {
+      if (ability.castSteps !== 0 || ability.stages)
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Reactions are immediate and have no authored stages/motion',
+        });
+      if (response?.kind === 'counter') {
+        if (
+          ability.trigger !== 'after-damage' ||
+          ability.target !== 'enemy' ||
+          ability.attack.kind !== 'hitscan'
+        )
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Deferred counters require after-damage enemy hitscan',
+          });
+      } else {
+        if (ability.target !== 'self' || ability.attack.kind !== 'direct')
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Defensive reactions require direct self targeting',
+          });
+        if (
+          response?.kind === 'parry' &&
+          (ability.trigger !== 'before-hit' || ability.effects.length)
+        )
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Parry is a before-hit reducer without a payload',
+          });
+        if (
+          ability.effects.some(
+            (e) => e.kind === 'damage' || (e.kind === 'heal' && ability.trigger !== 'before-hit'),
+          )
+        )
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              'Immediate reaction attacks and post-damage restoration require unsupported rules',
+          });
+      }
+      if (ability.trigger === 'before-defeat' && (reaction.categories || reaction.elements))
+        ctx.addIssue({ code: 'custom', message: 'Before-defeat has no contact filter' });
+    }
     const plans = ability.stages ?? [{ attack: ability.attack, effects: ability.effects }];
     if (!ability.stages && (ability.attack.kind === 'arc' || ability.attack.kind === 'radial'))
       ctx.addIssue({
@@ -865,6 +932,9 @@ export const BudgetSchema = z.strictObject({
   maxStatusTypes: positive(256),
   maxStatusCauses: positive(65_536),
   maxForces: positive(256).optional(),
+  maxReactionsPerTransaction: positive(64).optional(),
+  maxReactionsPerMatch: positive(1024).optional(),
+  maxReactionDepth: positive(8).optional(),
 });
 export type Budget = z.infer<typeof BudgetSchema>;
 export const DEFAULT_BUDGET: Readonly<Budget> = Object.freeze({

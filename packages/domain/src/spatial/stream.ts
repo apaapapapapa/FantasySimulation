@@ -7,6 +7,7 @@ import {
   ResourceStateSchema,
   ForceContributionSchema,
   MotionProjectionSchema,
+  ReactionContextSchema,
 } from './records.ts';
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const step = z.number().int().min(0).max(6000);
@@ -35,6 +36,18 @@ export const AttackGeometrySchema = z.union([
   }),
 ]);
 export type AttackGeometry = z.infer<typeof AttackGeometrySchema>;
+export const ReactionDisplaySchema = z.strictObject({
+  context: ReactionContextSchema,
+  abilityId: IdSchema,
+  targetId: IdSchema,
+  activatedAt: step,
+  readyAt: step,
+  recoveryUntil: count,
+  cooldownUntil: count,
+  state: z.enum(['applied', 'queued', 'released', 'cancelled']),
+  geometry: AttackGeometrySchema.optional(),
+});
+export type ReactionDisplay = z.infer<typeof ReactionDisplaySchema>;
 export const StageDisplaySchema = z.strictObject({
   contact: StageContactSchema,
   startAt: count,
@@ -76,6 +89,7 @@ export const ActorDisplaySchema = z.strictObject({
   velocity: PhysicalVectorSchema,
   facing: PhysicalVectorSchema,
   grounded: z.boolean(),
+  reactions: z.array(ReactionDisplaySchema).max(160).optional(),
   force: z
     .strictObject({
       fromStep: step,

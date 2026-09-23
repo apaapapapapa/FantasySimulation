@@ -42,6 +42,7 @@ export type EffectApplication = DamageSnapshot & {
   effect: DeepReadonly<Effect>;
   scaleBps?: number;
   dealtBps?: number;
+  damageCancelled?: boolean;
 };
 export type DamageDetail = NonNullable<BattleEvent['damage']> & {
   applicationId: string;
@@ -75,6 +76,7 @@ export function resolveEffects(
   step: number,
   activationStep = step + 1,
   limits: StatusLimits = DEFAULT_BUDGET,
+  deferStatuses = false,
 ) {
   const ids = new Set(targets.map((t) => t.actor.participant.actorId));
   if (
@@ -88,7 +90,9 @@ export function resolveEffects(
     .map((target) => {
       const incoming = applications.filter((a) => a.targetId === target.actor.participant.actorId);
       const stats = effectiveStats(target.actor, target.statuses, step);
-      const reactions = planStatusEffects(target.statuses, incoming, statuses, step);
+      const reactions = deferStatuses
+        ? null
+        : planStatusEffects(target.statuses, incoming, statuses, step);
       const damages: (ReturnType<typeof calculateDamage> & {
         applicationId: string;
         effect: DamageEffect;
@@ -132,7 +136,9 @@ export function resolveEffects(
               applicationId: application.id,
               effect,
               ...amounts,
+              ...(application.damageCancelled ? { afterModifiers: 0n } : {}),
               statusModified:
+                !!application.damageCancelled ||
                 dealtBps !== 10000 ||
                 receivedBps !== 10000 ||
                 resistance !== (target.actor.character.stats.resistances[effect.element] ?? 0),
@@ -204,19 +210,21 @@ export function resolveEffects(
           absorbed: total ? fraction(absorbed * damage.afterModifiers, total) : fraction(0n, 1n),
           toHp: total ? fraction(hpDamage * damage.afterModifiers, total) : fraction(0n, 1n),
         }));
-      const result = applyStatuses(
-        reactions.statuses,
-        reactions.applications,
-        reactions.dispels,
-        activationStep,
-        limits,
-      );
+      const result = reactions
+        ? applyStatuses(
+            reactions.statuses,
+            reactions.applications,
+            reactions.dispels,
+            activationStep,
+            limits,
+          )
+        : { statuses: target.statuses, changes: [] };
       return {
         actorId: target.actor.participant.actorId,
         resources,
         statuses: result.statuses,
-        changes: [...reactions.changes, ...result.changes],
-        reactions: reactions.traces,
+        changes: [...(reactions?.changes ?? []), ...result.changes],
+        reactions: reactions?.traces ?? [],
         damage: details,
         healing,
         healed: checked(heal),

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.17",
-    "rulesVersion": "spatial-v1.17",
+    "engineVersion": "spatial-v1.18",
+    "rulesVersion": "spatial-v1.18",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -676,6 +676,142 @@
     "blade-wall-termination-melee": {
       "file": "packages/engine/src/spatial/blades.test.ts",
       "name": "rotating whole-blade contact keeps the first body hit but terminates a multi-hit melee at its later wall"
+    },
+    "g08-01": {
+      "file": "apps/api/src/simultaneous-persistence.test.ts",
+      "name": "simultaneous slots through persisted Workers preserves reaction decisions, costs and replacement displays across forward and backward seeks"
+    },
+    "g08-02": {
+      "file": "packages/engine/src/spatial/catalog.test.ts",
+      "name": "data-composed 3D sample catalog runs reaction-duelist-v1 through the common rules without character-specific execution"
+    },
+    "g08-03": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement awards the survivor after simultaneous lethal damage and one owner healing"
+    },
+    "g08-04": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement cancels a defeated owner counter after paying, without refund or launch"
+    },
+    "g08-05": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement defers conflicting transformations across waves to unresolved and preserves the startup boundary"
+    },
+    "g08-06": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement does not activate reactions blocked by old capabilities and keeps exhausted uses a no-proc"
+    },
+    "g08-07": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement includes instant shields in shared attribution and does not counter fully absorbed damage"
+    },
+    "g08-08": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement matches declared categories and element components without inferring magic from MP"
+    },
+    "g08-09": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement preserves the G03 element boundary under all parry"
+    },
+    "g08-10": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement preserves the G03 element boundary under damage parry"
+    },
+    "g08-11": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement retains bounded diagnostics and rolls back reaction costs when record bytes overflow"
+    },
+    "g08-12": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement settles same-wave healing before defeat, without treating ordinary healing as revival"
+    },
+    "g08-13": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement unions later reaction waves before strengthening each old revision/element once"
+    },
+    "g08-14": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement uses positive post-shield damage before HP clipping or simultaneous healing"
+    },
+    "g08-15": {
+      "file": "packages/engine/src/spatial/reaction-observation.test.ts",
+      "name": "reaction information and release validation assesses only own reactions and reserves advisory stamina outside the action lottery"
+    },
+    "g08-16": {
+      "file": "packages/engine/src/spatial/reaction-observation.test.ts",
+      "name": "reaction information and release validation exposes only an actual activation cue after sight and observation delay"
+    },
+    "g08-17": {
+      "file": "packages/engine/src/spatial/reaction-observation.test.ts",
+      "name": "reaction information and release validation rechecks incapacity after a paid activation without a second payment"
+    },
+    "g08-18": {
+      "file": "packages/engine/src/spatial/reaction-observation.test.ts",
+      "name": "reaction information and release validation rechecks range after a paid activation without a second payment"
+    },
+    "g08-19": {
+      "file": "packages/engine/src/spatial/reaction-observation.test.ts",
+      "name": "reaction information and release validation rejects forged queue identity/clocks and geometry while replaying saved records without an engine"
+    },
+    "g08-20": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations checks eligible transaction and match ceilings, while exhausted uses simply stop"
+    },
+    "g08-21": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations consumes a staged contact ledger even when the first hit is fully parried"
+    },
+    "g08-22": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations counts ancestry across intervals and rolls back the entire overflowing interval"
+    },
+    "g08-23": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations damage-only parry keeps the nondamage contact and zero exact damage attribution"
+    },
+    "g08-24": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations keeps reaction events and state hashes invariant under input enumeration"
+    },
+    "g08-25": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations parries a whole contact once, cancels all payloads and records actual costs"
+    },
+    "g08-26": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations rejects unimplemented response geometry and restoration instead of guessing"
+    },
+    "g08-27": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations releases a paid counter at the next commit boundary, alongside the main slot"
+    },
+    "g08-28": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations reserves all eligible owner reactions together without partial payment"
+    },
+    "g08-29": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement visits before-defeat after an exact HP action cost"
+    },
+    "g08-30": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement visits before-defeat after an exact HP battle-start cost"
+    },
+    "g08-31": {
+      "file": "packages/engine/src/spatial/reaction-observation.test.ts",
+      "name": "reaction information and release validation does not learn permanent resistance from a parried visible impact"
+    },
+    "g08-32": {
+      "file": "packages/engine/src/spatial/reactions.test.ts",
+      "name": "transactional reaction activations records a wide counter sweep center separately from its contact surface"
+    },
+    "g08-33": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement scopes before-defeat ancestry to owner 0 despite the opponent reaction wave"
+    },
+    "g08-34": {
+      "file": "packages/engine/src/spatial/reaction-interference.test.ts",
+      "name": "reaction interference and old-cohort settlement scopes before-defeat ancestry to owner 1 despite the opponent reaction wave"
     }
   },
   "entries": [
@@ -688,7 +824,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:422ffe620e54be8bcf41b10bb16dbf966647dcfafa0eb655a9295cd14cc5f954",
+        "inputHash": "sha256:ffcd1ed449067d84f90b7e8d0e97c48f1ec8f2c8ec1eff0c90d0f029fe0a2a6a",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -696,9 +832,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-motion-v1",
+          "id": "standard-reactions-v1",
           "revision": 1,
-          "contentHash": "sha256:98a5775720e7ebf19c9c202d3e3675bfa66605d05124e2d832e305b4d38bb054"
+          "contentHash": "sha256:0aa60aa2042bef300644a0e45336696b6060713a24091f5b556b02d8231e897f"
         },
         "participants": [
           {
@@ -733,7 +869,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:6f95c458b8a504f2044df89552c4fb9bd60933f774f16c9898fd85dfbd1e5735",
+        "inputHash": "sha256:3915dbf69d3bc50eb1b5e5ae9121f5953a2128ef30e391e9e966e3062e61cd27",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -741,9 +877,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-motion-v1",
+          "id": "standard-reactions-v1",
           "revision": 1,
-          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
+          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
         },
         "participants": [
           {
@@ -778,7 +914,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:86bf7b1b61a66398af05a95842f9ea0a89ec188cb84c9956424a0fc937ee6e94",
+        "inputHash": "sha256:64406fd1a04a051d25bb62a5a8c5c7e24463bcc050293d29346030fb7ce417d1",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -786,9 +922,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-motion-v1",
+          "id": "standard-reactions-v1",
           "revision": 1,
-          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
+          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
         },
         "participants": [
           {
@@ -823,7 +959,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:662f67eb33eea60d0df6413342d06c66893f88a59ade94c732a976ab9a3c33e7",
+        "inputHash": "sha256:cf9036c899d7f98b298e101d594734054205261f0ef33d9d2e9e9850066edc07",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -831,9 +967,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-motion-v1",
+          "id": "standard-reactions-v1",
           "revision": 1,
-          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
+          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
         },
         "participants": [
           {
@@ -868,7 +1004,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:a15938429eae508f111c6ee7153f50025fa2f1b4af0df8ceb3f8bad6d5065a7e",
+        "inputHash": "sha256:1112a04eacc9a16c23471fcf9e3ebbfe59145e66bf608dfb9129111c1b24b667",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -876,9 +1012,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-motion-v1",
+          "id": "standard-reactions-v1",
           "revision": 1,
-          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
+          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
         },
         "participants": [
           {
@@ -913,7 +1049,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:f3da46818393eb25c49cc8079ea6dc82542f61152faac7b4076f0f0b489a6dcb",
+        "inputHash": "sha256:f11341fc0d53d4d124ca6c53c5a9e89553ac92cf5d7f344306c72bf238124fe0",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -921,9 +1057,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-motion-v1",
+          "id": "standard-reactions-v1",
           "revision": 1,
-          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
+          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
         },
         "participants": [
           {
@@ -958,7 +1094,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:f5e85a051e248de77c045cbdc15fdeb4273f9ba1273a15db96d50127ec8157fb",
+        "inputHash": "sha256:bb58c08a4e2fb35b6a4854a9a89d1b10351abe89c2262673555b3b5baf75e894",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -966,9 +1102,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-motion-v1",
+          "id": "standard-reactions-v1",
           "revision": 1,
-          "contentHash": "sha256:476686c2f359a1bf59657ea53ec368c44ce3ab5472d13b372cc08929a8c853a5"
+          "contentHash": "sha256:76657bb08c2c01b5957232591d0b0bbf233999d19b5846c044e1d6a4ad641e28"
         },
         "participants": [
           {
@@ -1336,6 +1472,48 @@
         "force-cue-windows"
       ],
       "title": "G-07b: 回転刃・段階移動・強制移動・費用・保存",
+      "state": "implemented",
+      "owner": null
+    },
+    {
+      "id": "reactive-activations",
+      "tests": [
+        "g08-01",
+        "g08-02",
+        "g08-03",
+        "g08-04",
+        "g08-05",
+        "g08-06",
+        "g08-07",
+        "g08-08",
+        "g08-09",
+        "g08-10",
+        "g08-11",
+        "g08-12",
+        "g08-13",
+        "g08-14",
+        "g08-15",
+        "g08-16",
+        "g08-17",
+        "g08-18",
+        "g08-19",
+        "g08-20",
+        "g08-21",
+        "g08-22",
+        "g08-23",
+        "g08-24",
+        "g08-25",
+        "g08-26",
+        "g08-27",
+        "g08-28",
+        "g08-29",
+        "g08-30",
+        "g08-31",
+        "g08-32",
+        "g08-33",
+        "g08-34"
+      ],
+      "title": "G-08: 反応点・受け流し・反撃・上限・原子性・観測・保存",
       "state": "implemented",
       "owner": null
     }

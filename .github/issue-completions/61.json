@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "issue": 61,
+  "issueBodySha256": "eabc21311f0f66191afe18395c853cc04706e9fd7a05eb49b2fdc54e91b1f3a5",
+  "issueUpdatedAt": "2026-09-23T16:40:31Z",
+  "complete": true,
+  "summary": "G-01〜G-08の能力基盤を共通schema・解決・資源・AI・観測・記録へ接続しました。今回のG-07はPR #95/#97で段階攻撃、連撃、弧／全周の薙ぎ払い、突進／跳躍／後退、接触に基づく押し引きを実装。G-08はPR #98で被弾前／被弾後／戦闘不能直前、受け流しと支払い済み遅延反撃、回数／深さ制限、同時効果と状態干渉の一括確定、原子的rollbackを実装しました。自己AI・遅延可視情報・判断／認識ログ・実際の表示状態とgeometry・ReplayState・実Worker／SQLite往復を検証済みです。794 tests、7固定入力／200対応回帰、clean-source、API起動、exact main 8bdf885との各35試行が成功。公開済みID/hash・旧記録・Golden期待値と既存上限を保持し、新判断をspatial-v1.18/standard-reactions-v1へ版付けしました。本文・全27コメント・関連PR・sub-issueなしを確認。承認済みP6の反射／吸収／蘇生とP4/P5描画等は本Issueの対象外です。CIの旧両OS表記は既存PR #64/#66のLinux方針に整合済みで、今回gateを変更していません。",
+  "remainingWork": [],
+  "pullRequests": [68, 69, 70, 71, 72, 73, 78, 85, 86, 87, 89, 95, 97, 98],
+  "acceptance": [
+    {
+      "task": "技と状態に分類があり、沈黙・解除の対象を分類で指定できる。MPを使う剣技は沈黙で封じられず、MPを使わない魔法は封じられる。分類のない既存定義は現行と同じ結果になる",
+      "evidence": "PR #68 (main e42a991): packages/engine/src/spatial/categories.ts and categories.test.ts share ability/status classification, silence and category-based dispel. Explicit physical MP users and zero-MP magic, mixed classifications, and legacy omissions are covered in the current passing suite."
+    },
+    {
+      "task": "魔力・魔法防御と、ダメージ効果の参照能力値・軽減する防御を定義できる。省略時は既存の全fixtureの結果が変わらない",
+      "evidence": "PR #69 (main e0e7363): damage.ts, damage.test.ts, damage-integration.test.ts and damage-formulas.json pin optional magicPower/magicDefense, mixed-stat ratios, defense selection, exact intermediate arithmetic and legacy fallback. Current fixed corpus and 794-test verification pass."
+    },
+    {
+      "task": "魔法剣技（例: 燃焼付きの炎の斬撃）を、物理と魔法の両方の分類・両方の能力値を参照する威力で、データだけで定義できる。沈黙で使えなくなることを確認する",
+      "evidence": "PR #69: damage-integration.test.ts defines a burning fire sword from ordinary damage/status components, both physical/magic categories and attack/magicPower scaling. Melee, hitscan, projectile and silence behavior share the normal resolver; no character-specific code."
+    },
+    {
+      "task": "状態の側の属性反応で、水属性の攻撃でも水魔法でも「水で消える燃焼」が消え、「水では消えない炎」は消えない。現行の`water`効果・`burning.waterExtinguishable`で作った定義も同じ結果になる",
+      "evidence": "PR #72 (main c8fe929): status-generalization.test.ts, status-integration.test.ts and status-compatibility.test.ts cover water-element damage, water effects, explicit reactions and waterExtinguishable fallback. G8 reaction-interference.test.ts additionally distinguishes whole-contact parry from damage-only parry while preserving accepted water contact."
+    },
+    {
+      "task": "状態による弱点（例: 濡れの間は雷の被害が増える）を、データだけで定義できる。状態が終わると戻る",
+      "evidence": "PR #72: effects.ts/status.ts and status-generalization.test.ts apply elemental damageTakenBps from old status cohorts, remove modifiers at expiry and retain deterministic simultaneous interference. G8 applies the union of accepted contacts once across reaction waves."
+    },
+    {
+      "task": "補正の一覧形式で、行動不能・与ダメージ補正・耐性補正・知覚の補正の少なくとも1つずつを、データだけで定義できる",
+      "evidence": "PR #72: status adjustments and effectiveStats cover incapacity, dealt/received damage, elemental resistance and perception/visibility restrictions. status-generalization.test.ts and status-integration.test.ts test data-defined add/multiply composition, boundaries and common capability checks."
+    },
+    {
+      "task": "解除されない常時効果（例: 剣技の威力+20%）を定義でき、通常の解除効果では消えない",
+      "evidence": "PR #72: permanent status classification and common dispel/element-reaction rules preserve continuous buffs against ordinary removal/replacement. status-generalization.test.ts and status-compatibility.test.ts cover permanence and contradictory transforms; dedicated sealing remains the declared P6 scope."
+    },
+    {
+      "task": "スタミナを技のコストに使え、回復は常に続き、消費との差し引きで増減する。回避・ジャンプでも消費し、足りなければ回避・ジャンプできない。省略時は既存の全fixtureの結果が変わらない",
+      "evidence": "PR #73/#78 (main add5a103/d2560db): resources.test.ts, resource-integration.test.ts, motion-resources.test.ts and locomotion-integration.test.ts cover HP/MP/stamina/uses group reservations, continuous recovery, dodge/jump admission and old omission behavior. PR #89 and G7 admission regressions verify atomic simultaneous-slot costs."
+    },
+    {
+      "task": "歩行と走行を分けて速度と消費量を定義でき、どちらでもスタミナを消費する。走行は歩行より速く、消費も多い。AIが状況に応じて歩行と走行を選ぶ",
+      "evidence": "PR #78: motion-resources.ts/navigation.ts and locomotion-integration.test.ts define walk/run speeds and charge actual horizontal distance, refund blocked movement, and let AI allocate own resources to threat/route demand. Current legacy corpus vectors match the exact G8 baseline."
+    },
+    {
+      "task": "スタミナが尽きると、走行・回避・ジャンプ・スタミナを使う技はできず、定義した遅い速度でだけ歩ける。スタミナを定義したキャラクター同士でも、双方が止まったまま時間切れになる試合がない",
+      "evidence": "PR #78: stamina exhaustion persists until resumeAt; common capability/movement rules disable costly run/dodge/jump/abilities while permitting free slow walking and recovery. locomotion-integration.test.ts covers both exhausted participants, recovery and reservation shortages without permanent route failure."
+    },
+    {
+      "task": "飛行の能力・状態の定義で、飛行中の移動でスタミナを消費するかと量を指定できる。省略時は消費しない",
+      "evidence": "PR #78: flight-resources.test.ts and motion-resources.ts cover per-status/per-grant flight maintenance, default zero cost, hovering, cast intervals, expiry, remainder arithmetic and multiple grants without double charging. Old stamina/flight omissions remain readable."
+    },
+    {
+      "task": "スタミナの消費が経路の評価に含まれ、スタミナが足りず一時的に使えない経路を、恒久的な到達不能として扱わない",
+      "evidence": "PR #78: navigation.test.ts and locomotion-integration.test.ts include resource-sensitive route costs, higher-speed jump reach, insufficient-stamina route reevaluation and distinct resource-limited versus geometric failure; temporary shortage does not become permanent unreachable cache."
+    },
+    {
+      "task": "新しい属性（例: 土）を、列挙への追加と省略可能な耐性だけで追加でき、既存の保存データが読めたままになる。AI評価と外観推測にコード変更が要らない",
+      "evidence": "PR #85/#87: optional earth resistance and appearance vocabulary plus rules.ai.appearancePriors are data-driven in contracts.ts/assessment.ts. observed-conditions.test.ts, assessment.test.ts, catalog compatibility and stored-replay tests preserve old omitted fields and public revision hashes."
+    },
+    {
+      "task": "状態の付与・解除のAI評価が、状態の定義から計算される。自己強化・相手への弱体・自己への弱体で評価が変わり、自己への弱体を選ばない",
+      "evidence": "PR #87 (main d8a5081): status-assessment.test.ts evaluates modifiers, duration, target, replacement/stacking and periodic effects from known definitions; harmful self-effects receive zero weight. G7/G8 reuse those assessments, with private-information and contextual-experience regressions."
+    },
+    {
+      "task": "技の段・攻撃の形・自分の移動・相手の移動・反応型の発動について、設計ADRが#1のP6の処理順と整合する形で承認されている",
+      "evidence": "PR #86 (main e9325df): docs/adr/0012-stages-and-reactions.md was approved at https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5794777109 before implementation. It fixes shared clocks, transactions, wave order, P6 reflection/revival boundaries, limits and rollback. Current stages-motion.md/reactions.md document implemented contracts."
+    },
+    {
+      "task": "連撃（2段以上）・突進斬り・薙ぎ払いを、データだけで定義して実対戦fixtureで再現できる。既存の技は段が1つとして同じ結果になる",
+      "evidence": "PR #95/#97 (main 61a7a30/8bdf885): stages.test.ts, stage-admission.test.ts, stage-motion.test.ts, blades.test.ts, forces.test.ts and forced-movement.test.ts reproduce multi-stage combos, dash and swept arc/radial blades from data; shared-ledger, interruption, wall/body, movement cost and old single-stage behavior pass. Worker/SQLite/replay round trips are covered."
+    },
+    {
+      "task": "反応型の発動で、受け流し（被弾前）または反撃（被弾後）を1つ以上定義でき、回数と深さの上限を超えると既存の診断になる",
+      "evidence": "PR #98: reactions.test.ts, reaction-interference.test.ts and reaction-observation.test.ts exercise before-hit parry and after-damage paid counters, before-defeat including exact HP costs, transaction/match counts, cross-interval depth, truncated diagnostics, unresolved status interference and atomic rollback. The additive parry-v1/riposte-v1/reaction-duelist-v1 samples execute through the common coordinator. Owner-swapped lethal fixtures reproduce the reviewed false depth truncation before the fix; owner-scoped ancestry/cause IDs, depth limits 1/8, mutual defeat and recorded replay pass after the fix."
+    },
+    {
+      "task": "新しい効果・状態を追加するPRが、§2-Iの完了条件（検証・解決・干渉・AI評価・観測・ログ・fixture・互換性）を満たしている",
+      "evidence": "PR #95/#97/#98 implement every section 2-I layer: strict domain definitions and unknown rejection; shared damage/resource/collision/status resolution and interference; own AI estimates, delayed whitelisted observations and cognition; actual stage/motion/reaction displays, validated ReplayState and real Worker/SQLite bidirectional seeks; mapped fixtures and canonical rules. ADR0010 compatibility retains all published IDs/hashes and old recorded data, rejects unsupported old execution and versions new decisions explicitly."
+    },
+    {
+      "task": "既存のハーネス・`vp run verify`・現行のLinux CI・固定コーパスで検証する",
+      "evidence": "Canonical vp run verify and committed clean-source pass 794 tests, 7 fixed inputs/200 mapped regressions/28 categories, security, typecheck, quality, load and build; built API/Drizzle startup passes. Exact 8bdf885 baseline/candidate paired runs (35 each) keep all result/count/byte vectors and ceilings. Linux CI is the established policy from PR #64/#66; existing Chromium/WebKit UI and all release/security/dependency/paired-load gates remain required. The writer must verify full exact-main CI/Release before closing."
+    }
+  ]
+}

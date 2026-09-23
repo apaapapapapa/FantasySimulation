@@ -374,3 +374,8 @@ explosionRadiusMm>0なら接触時点で球形範囲に一度だけ作用し、�
 Catalog fixtures cover grounded pursuit, pillar detours and aerial attacks through common rules.
 Reversing participant/revision enumeration preserves event/trajectory/TS hashes. These are
 behavioral fixtures, not win-rate estimates or persistence-inclusive performance evidence.
+
+## 反応型発動
+
+spatial-v1.18 / standard-reactions-v1 adds [transactional reactions](reactions.md).
+Published rules/revisions remain readable; old execution is rejected under ADR 0010.
