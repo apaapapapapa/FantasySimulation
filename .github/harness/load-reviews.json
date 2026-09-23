@@ -2,6 +2,24 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "71c022b55b09175f203995ee89a99bd6bf2f3913",
+      "beforeDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
+      "afterDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Revalidated the pnpm 11.19.0 to 11.27.1 transition after PR #92 merged into exact main 71c022b. The existing local collector measured clean candidate 390c5d9 against that exact base with real frozen installs, warmups and five alternating trials of all seven cases (35 observations per revision). Node v24.19.0, lockfile and WASM remain unchanged. All observed outcome kinds and deterministic operation/count/byte vectors are stable and equal, and both revisions pass unchanged budgets and the regression probe. The current candidate corpus independently passes all seven inputs and 114 mapped regressions; merged-source verification passes 687 tests. No commands failed or evidence identities were rewritten. Actual cost digests reproduce the previously reviewed transition, while paired comparability remains unknown because package-manager pins differ. This exact-base independent review makes no timing/RSS improvement claim and changes no limits, fixtures or expectations. CI must reproduce the measurements on its own current source and attempt.",
+      "evidence": [
+        ".generated/harness/load-pair/0-before.json",
+        ".generated/harness/load-pair/0-after.json",
+        ".generated/harness/load-pair/results.json",
+        ".generated/harness/load-pair/commands.json",
+        ".generated/harness/load-pair/baseline-corpus.json",
+        ".generated/harness/load-pair/boundary.json",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/artifacts/10751266361"
+      ]
+    },
+    {
       "baselineSha": "cb0f525894fa91eae421e99c30ad050da3f98420",
       "beforeDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
       "afterDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",

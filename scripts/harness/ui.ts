@@ -7,10 +7,53 @@ import { artifactDirectory, git, repositoryRoot, sourceIdentity } from './source
 import { runCommand, safeEnvironment } from './process.ts';
 import { assessReport } from './report.ts';
 import type { Report } from './report.ts';
-import { uiCoverage } from './ui-results.ts';
-import { UI_CHECKS, UI_SETTINGS } from '../../e2e/contract.ts';
+import { inspectUiDiagnostics, uiCoverage } from './ui-results.ts';
+import {
+  UI_CHECKS,
+  UI_RUN_CHECKS,
+  UI_FAULTS,
+  UI_SETTINGS,
+  type UiScenario,
+} from '../../e2e/contract.ts';
 
 export async function collectUi(input: string, relative = `.generated/harness/ui-${randomUUID()}`) {
+  const result = await runUiOnce(input, relative, 'smoke');
+  let diagnostics;
+  try {
+    if (result.interrupted) throw new Error('UI execution interrupted');
+    for (const scenario of UI_FAULTS) {
+      const probe = await runUiOnce(input, `${relative}/diagnostics/${scenario}`, scenario);
+      if (probe.interrupted) throw new Error('UI diagnostics interrupted');
+    }
+    diagnostics = inspectUiDiagnostics(join(input, relative), result.report, {
+      id: process.env.GITHUB_RUN_ID ?? null,
+      attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+    });
+  } catch (error) {
+    diagnostics = {
+      status: 'unknown' as const,
+      reason: error instanceof Error ? error.message : 'Missing diagnostic evidence',
+    };
+  }
+  result.report.checks.push({
+    id: 'ui:diagnostics',
+    required: true,
+    ...diagnostics,
+    evidence: UI_FAULTS.map((scenario) => ({
+      uri: `${relative}/diagnostics/${scenario}/command.json`,
+      sourceSha: result.report.sourceSha,
+    })),
+  });
+  result.report.finishedAt = new Date().toISOString();
+  const assessment = assessReport(result.report, UI_CHECKS);
+  writeFileSync(
+    join(input, relative, 'report.json'),
+    JSON.stringify(assessment.report, null, 2) + '\n',
+  );
+  return assessment;
+}
+
+async function runUiOnce(input: string, relative: string, scenario: UiScenario) {
   const root = repositoryRoot(input);
   const info = sourceIdentity(root);
   const before = git(root, ['status', '--porcelain=v1', '--untracked-files=all']);
@@ -42,12 +85,17 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
   let removed = false;
   let result;
   try {
-    result = await runCommand(process.execPath, ['--import', loader, 'e2e/runner.ts'], root, {
-      env,
-      timeoutMs: UI_SETTINGS.globalTimeout + 60_000,
-      maxBytes: 4 * 1024 * 1024,
-      signal: controller.signal,
-    });
+    result = await runCommand(
+      process.execPath,
+      ['--import', loader, 'e2e/runner.ts', scenario],
+      root,
+      {
+        env,
+        timeoutMs: UI_SETTINGS.globalTimeout + 60_000,
+        maxBytes: 4 * 1024 * 1024,
+        signal: controller.signal,
+      },
+    );
   } finally {
     process.removeListener('SIGINT', abort);
     process.removeListener('SIGTERM', abort);
@@ -59,14 +107,19 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
     }
   }
   writeFileSync(join(directory, 'runner.log'), result.output);
-  if (result.exitCode !== 0) console.error(result.output);
+  if (scenario === 'smoke' && result.exitCode !== 0) console.error(result.output);
   let results: unknown = null;
   try {
     results = JSON.parse(readFileSync(join(directory, 'results.json'), 'utf8')) as unknown;
   } catch {
     /* Unstarted browser remains unknown. */
   }
-  const coverage = uiCoverage(results, directory);
+  const coverage = uiCoverage(
+    results,
+    directory,
+    directory,
+    scenario === 'smoke' ? undefined : [scenario],
+  );
   save('coverage.json', coverage);
   let serversStopped = false;
   try {
@@ -77,7 +130,16 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
     /* Startup failure/forced exit has no successful graceful shutdown receipt. */
   }
   const digests = Object.fromEntries(
-    ['run.json', 'runner.log', 'execution.json', 'results.json', 'coverage.json', 'servers.json']
+    [
+      'run.json',
+      'runner.log',
+      'execution.json',
+      'results.json',
+      'coverage.json',
+      'servers.json',
+      'lifecycle.json',
+      'failure.json',
+    ]
       .filter((file) => existsSync(join(directory, file)))
       .map((file) => [
         file,
@@ -91,7 +153,8 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
     startedAt,
     runId: process.env.GITHUB_RUN_ID ?? null,
     runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
-    command: ['node', '--import', 'tsx', 'e2e/runner.ts'],
+    command: ['node', '--import', 'tsx', 'e2e/runner.ts', scenario],
+    scenario,
     exitCode: result.exitCode,
     signal: result.signal,
     bounded: result.bounded,
@@ -110,7 +173,7 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
   const report: Report = {
     ...info,
     schemaVersion: 1,
-    producer: 'ui-runner',
+    producer: scenario === 'smoke' ? 'ui-runner' : 'ui-diagnostic',
     startedAt,
     finishedAt: new Date().toISOString(),
     checks: [
@@ -160,8 +223,8 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
       },
     ],
   };
-  const assessment = assessReport(report, UI_CHECKS);
+  const assessment = assessReport(report, UI_RUN_CHECKS);
   save('report.json', assessment.report);
   console.log(`UI evidence: ${relative}`);
-  return assessment;
+  return { ...assessment, interrupted: controller.signal.aborted };
 }
