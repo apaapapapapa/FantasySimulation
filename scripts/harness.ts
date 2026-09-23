@@ -49,7 +49,10 @@ try {
     process.exitCode = snapshot.errors.length ? 2 : 0;
   } else {
     let result;
-    if (command === 'source' && args.length === 0)
+    if (command === 'ui' && args.length === 0) {
+      const { collectUi } = await import('./harness/ui.ts');
+      result = await collectUi(process.cwd(), input === 'auto' ? undefined : input);
+    } else if (command === 'source' && args.length === 0)
       result = await collectSource(process.cwd(), input);
     else if (
       command === 'corpus' &&

@@ -2,6 +2,25 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "604d359c31645e2d956958ffed21b6ecd2dbd20e",
+      "beforeDigest": "2ac009a662471885ebeda8734507b3f59f390c3f3949bbc01062440a9ebdd2de",
+      "afterDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Revalidated the simultaneous-slot prerequisite after the E2E preparation PR #88 merged into exact main 604d359. Five actual alternating trials of all seven cases (35 observations per revision), with clean candidate ecbe633, preserve the reviewed e9325df/62dcd02 transition: swordsman/sky-mage changes from a 6000-step draw to a 434-step win, seer/ember from a 250-step draw to a 138-step win; fire/healer retains 747 steps with casts +9, log bytes +8311 and trajectory bytes +182; archer/guardian retains operation counts with log bytes +17122 and trajectory bytes +61. Remaining three vectors are unchanged. Every per-revision vector is stable and both revisions pass unchanged ceilings. The rejected-pair gait fix restores previous movement and is covered for explicit/default walking with actual distance and stamina assertions. The fresh ecbe633 corpus independently passes seven inputs and 114 mapped regressions; the combined working-tree verification passed 643 tests. Published rules/catalog IDs and Golden expectations are preserved. The versioned action/movement distribution deliberately changes input identities, so this is independent transition evidence, not a same-input timing or RSS claim. No thresholds or runtime pins are relaxed.",
+      "evidence": [
+        ".generated/harness/load-pair-slots-604d/0-before.json",
+        ".generated/harness/load-pair-slots-604d/0-after.json",
+        ".generated/harness/load-pair-slots-604d/results.json",
+        ".generated/harness/load-pair-slots-604d/commands.json",
+        ".generated/harness/load-pair-slots-604d/reviewed-boundary.json",
+        ".generated/harness/load-pair-slots-604d/reviewed-comparison.json",
+        "packages/engine/src/spatial/simultaneous-slots.test.ts",
+        "apps/api/src/simultaneous-persistence.test.ts"
+      ]
+    },
+    {
       "baselineSha": "e9325df8ca62beba39b85d100265379e4c5ad2fb",
       "beforeDigest": "2ac009a662471885ebeda8734507b3f59f390c3f3949bbc01062440a9ebdd2de",
       "afterDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",

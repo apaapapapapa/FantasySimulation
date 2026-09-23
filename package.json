@@ -14,6 +14,7 @@
     "format": "vp fmt",
     "test": "vp test",
     "test:watch": "vp test watch",
+    "test:e2e": "node scripts/harness.ts ui auto",
     "build": "vp run -r build",
     "db:migrate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs migrate",
     "db:seed": "vp run --filter @fantasy/api db:seed",
@@ -37,8 +38,10 @@
     "check:load": "node scripts/harness.ts load verify"
   },
   "devDependencies": {
+    "@fontsource/noto-sans-jp": "5.2.8",
     "@octokit/core": "7.0.8",
     "@octokit/plugin-paginate-rest": "14.0.0",
+    "@playwright/test": "1.63.0",
     "@semantic-release/commit-analyzer": "13.0.1",
     "@semantic-release/github": "12.0.9",
     "@semantic-release/release-notes-generator": "14.1.1",

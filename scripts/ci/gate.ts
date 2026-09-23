@@ -13,6 +13,8 @@ import { parsePlan } from './plan.ts';
 import { DOCS_CHECKS } from './docs.ts';
 import type { Plan } from './plan.ts';
 import { readPairedShards } from './load-artifacts.ts';
+import { UI_CHECKS } from '../../e2e/contract.ts';
+import { readUiEvidence } from '../harness/ui-results.ts';
 const osNames = ['ubuntu-latest'] as const;
 export function assessGate(
   plan: Plan,
@@ -30,6 +32,7 @@ export function assessGate(
     verify: plan.full ? 'success' : 'skipped',
     load: plan.simulation ? 'success' : 'skipped',
     docs: plan.full ? 'skipped' : 'success',
+    ui: plan.ui ? 'success' : 'skipped',
   };
   for (const [job, result] of Object.entries(expected))
     checks.push({
@@ -40,13 +43,19 @@ export function assessGate(
       evidence,
     });
   const platforms = plan.full ? osNames : osNames.map((os) => `docs-${os}`);
-  for (const key of [...platforms, 'security']) {
+  for (const key of [...platforms, 'security', ...(plan.ui ? ['ui'] : [])]) {
     let status: Check['status'] = 'unknown',
       reason = 'Missing or invalid evidence';
     try {
       const assessed = assessReport(
         reports[key],
-        key === 'security' ? SECURITY_CHECKS : plan.full ? SOURCE_CHECKS : DOCS_CHECKS,
+        key === 'security'
+          ? SECURITY_CHECKS
+          : key === 'ui'
+            ? UI_CHECKS
+            : plan.full
+              ? SOURCE_CHECKS
+              : DOCS_CHECKS,
       );
       const report = assessed.report;
       const matches =
@@ -54,6 +63,7 @@ export function assessGate(
         report.candidateSha === plan.candidateSha &&
         report.testMergeSha === plan.testMergeSha &&
         (!plan.testMergeSha || report.baselineSha === plan.baselineSha) &&
+        (key !== 'ui' || report.producer === 'ui-runner') &&
         (key !== 'security' ||
           (report.producer === 'security-evidence' && report.baselineSha === plan.baselineSha));
       status = !matches
@@ -146,6 +156,16 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       reports.security = json('.generated/harness/ci/security.json');
     } catch {
       reports.security = null;
+    }
+    if (plan.ui) {
+      try {
+        reports.ui = readUiEvidence('.generated/harness/ci/evidence/ui', plan, {
+          id: process.env.GITHUB_RUN_ID ?? '',
+          attempt: process.env.GITHUB_RUN_ATTEMPT ?? '',
+        });
+      } catch {
+        reports.ui = null;
+      }
     }
     const artifacts: Record<string, unknown> = {};
     for (const [os, platform] of [['ubuntu-latest', 'linux']] as const) {
