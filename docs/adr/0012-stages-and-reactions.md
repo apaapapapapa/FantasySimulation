@@ -1,7 +1,7 @@
 # ADR 0012: 技の段・攻撃形状・移動・反応型発動
 
 状態: **設計承認済み**（[承認](https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5792777109)）。
-Refs #61 G-06/§2-E,F, #45, #59, #1 P6. Docs only.
+Refs #61 G-06/§2-E,F, #45, #59, #1 P6.
 
 ## 1. 採用案・前提
 
@@ -16,83 +16,16 @@ Interruption is boundary-based; finer timing needs versioning.
 ## 2. 段・時計・中断
 
 G-07a implements the stage clocks, costs and interruption contract in
-[spatial rules](../rules/spatial-v1.md#段階攻撃g-07aspatial-v116).
-G-07b adds the shape/motion adapters below; G-08 owns reaction waves.
+[canonical rules](../rules/stages-motion.md). G-07b extends them; G-08 owns reaction waves.
 
 ## 3. 形状・命中・移動
 
-Contact carries action/stage/emitter/group/target, trace fraction/point/coverage/cause.
-Arc shape adds reachMm/bladeRadiusMm/startAngleMilliDegrees/sweepMilliDegrees:
-a capsule from muzzle to tip rotates uniformly in launch-frozen local horizontal
-plane during durationSteps; radial is a full360-degree sweep. Fixed-table geometry
-sweeps the whole blade along actual bent body traces, not only its tip. Keep
-muzzle occlusion, first blocking wall and existing wall/body epsilon tie. Radial
-contacts check individual occlusion; endpoint cones cannot replace sweeps.
-Future emitters/beams/areas use this scheduler/ledger and declare offsets/lifetime/
-pulses/coverage/walls. Reject until #61 §2-I is complete.
-
-Ledger key=(actionInstance,stageId,hitGroup,targetId). Default stage emitters share
-max1; explicit independent groups allow multiple bolts. Legacy melee retains
-maxHitsPerTarget and≤1 hit/target/interval. Explicit re-hit needs maxHits and
-minIntervalSteps≥1; requireSeparation adds a full intervening non-overlap interval.
-New stage=new key. Zero-damage/parried contact consumes hit; miss does not. Roll
-back ledger with transaction; collider order/replay/retry cannot create extra hits.
-
-Motion ownership: collision/gravity → forced → stage → dodge → locomotion.
-G-07b effect (strict, integers): `{kind:force,profile:linear-v1,direction:away|toward,
-speedMmPerSecond:1..100000,durationSteps:1..100}`. Freeze source actor→target center unit
-vector at contact (negate for toward); coincident=zero/logged. Multiply by speed,
-round each mm/s component, ties away from0. Active[n+1,n+1+duration); BigInt sum
-active vectors; F is the sum clamped to optional `rules.forcedSpeedCapMmPerSecond`
-(integer1..100000; omitted100000) by Euclidean norm. Log contributors/cap. §10 versioning;
-never character-speed cap/retargeting. No force=unchanged legacy path.
-
-Nonzero F: force mode; suppress voluntary movement/jump/step. On entry:
-G=(0,previousVelocity.y,0). Each step: flying→G=0, else add gravity to G.y.
-Convert capped F to m/s and add G. Shared trace supplies each collision's effective
-normal n (horizontal normal for steep-wall branch). If the combined velocity is
-inward, apply P=I-nnᵀ to BOTH G,F, not separate sign tests. Apply in trace order,
-including endpoint hits; body-contact/no-progress collision stop uses P=0.
-Unblocked cancellation G+F=0 uses identity. Carry only projected G; rebuild F from
-active definitions next step. At zero F/last expiry hand G to normal movement, never
-actualVelocity. Landing damage uses combined incident y before ground projection.
-Hash G; record projections/incident speed. Ceiling: G.y=4,F.y=12m/s → both0
-at impact; expiry starts falling from0 under gravity, without retained force.
-Root/action lock blocks voluntary motion, not gravity/force.
-Dash/retreat supplies velocity/acceleration to shared movement, leap uses real
-support/jump/ceiling checks. Authored motion replaces gait: stage cost replaces gait
-travel cost; G-04 flight/jump/step charges remain. No duplicate distance charging.
-Force adds no target cost. Dodge pays burst+actual travel; cancel a
-suppressed unstarted hold, never refund a committed burst. Walls clip travel,
-not stage time/fixed skill cost.
-
-#45 owns posture geometry/timing; completed boundary transition precedes stage
-checks/launch using actual capsule/eye/muzzle/headroom. Unsupported pairs are infeasible.
-Teleport remains future P6 vocabulary: validated destination/discontinuous trace,
-no swept-path damage. Reject until collision/force semantics exist; accepted
-undefined interference is unresolved, never invented priority.
+G-07 implements the [shape/force/motion contract](../rules/stages-motion.md).
+Future emitter/beam/area/teleport and posture capabilities remain rejected until their own acceptance work.
 
 ## 4. 同時選択・資源
 
-#45 returns both slots from one observation; G-05 evaluates feasible pairs.
-Explicit stages declare movement/postures, default follows existing
-movementWhileCasting. Free-moving attacks allow dodge; authored motion+dodge cannot
-own the same interval. Disallow that pair, not every skill+dodge. Execution failure
-rejects the new pair atomically, retaining legal existing work; no silent slot drop.
-
-Reuse one G-04 ResourceBudget for declaration/movement. Without a new simultaneous
-pair retain skill→flight→dodge→jump→step→travel. Pair admission first protects
-required flight upkeep, then atomically reserves skill/stage+dodge/jump from the
-remainder; never fund dodge by cancelling maintainable flight. If the pair fails,
-cancel its holds (no skill-only fallback/payment); maintain flight and use existing
-run→walk→slow for ordinary motion. This new pair admission is versioned with #45;
-it does not redesign G-04's API or alter legacy single-slot order.
-
-Ability costs/uses commit on declaration; extra costs at stage start (stage0 prepaid,
-never twice), no extra uses. Future costs hold nothing; shortage interrupts. Started
-cost/cooldown survives fizzle, unreached stages cost0. HP-to-zero stays legal and
-nonreflectable; defeat at interval end. Settle/cancel once, finish before updates;
-G-04 owns clamp/carry/exhaustion/actual distance/start-snapshot recovery.
+Stage/movement admission uses the [shared resource contract](../rules/stages-motion.md#同時選択資源).
 
 At a reaction point use a settled ResourceBudget on current provisional resources,
 not an old balance. All eligible owner reactions at that point reserve together or
@@ -200,29 +133,9 @@ stage/wave/terminal and Worker/SQLite round trips.
 
 ## 8. データ例と机上受入（実装試験ではない）
 
-Proposed notation, not JSON/macros. Keep required attack/effects=stage0;
-extra cost defaults0, top-level cost paid once.
+G-07 numerical acceptance is executable in the mapped stage/motion/force/blade tests.
+Reaction examples below use zero defenses unless stated.
 
-```text
-costs={hp:0,mp:0,stamina:6,uses:0}; castSteps=2
-shape={kind:melee,activeSteps:2,reachMm:1500,radiusMm:150,maxHitsPerTarget:1}
-D(n)={kind:damage,element:physical,amount:n,attackScaleBps:0}
-stages=[
- {id:cut,offsetSteps:0,durationSteps:2,attack:shape,effects:[D(10)]},
- {id:return,offsetSteps:3,durationSteps:2,attack:shape,effects:[D(15)],cost:{stamina:4}}
-]
-```
-
-Zero defenses unless specified.
-
-- 連撃: declaration10/speed10000 → L12, windows[12,14),[15,17), hits10+15,
-  no duplicate at13. Extra4 paid15; shortage cancels second, retains6.
-- 突進斬り: +X dash/melee clips/bends at wall, no through-wall hit; fixed cost remains.
-  Next-interval forces +80000/+80000 clamp to100000; +80000/-80000 cancel.
-- 薙ぎ払い: adjacent overlaps/multiple emitters give one shared-group hit;
-  only explicit re-hit rules or a new stage permit another.
-- 回避＋射撃: stamina20,skill6+dodge8 reserves14. With13 neither pays.
-  Flight2,stamina10,skill6+dodge4: protect2, reject pair against8; no flight loss.
 - 受け流し／反撃: full parry consumes hit/cancels payload; positive-damage counter
   queues n+1, actual geometry decides its hit.
 - 同時致死: bothHP10/take15, A heals6 → A1/B0 after reactions/A wins;
@@ -265,4 +178,4 @@ record/profile needs explicit version rejection while preserving old readers.
 
 PR records reviewer/head/decision/findings. Self-review is not approval. Require
 maintainer/user approval and main CI; update only #61 G-06 design approval.
-Implementation/Issue remain open; no subsequent work is authorized.
+Design approval is separate from implementation delivery, tracked in #61.

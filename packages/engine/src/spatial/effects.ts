@@ -162,6 +162,9 @@ export function resolveEffects(
           case 'reveal':
             // Information is extracted only by the observation boundary, after actual contact.
             break;
+          case 'force':
+            // Contact geometry freezes the next-interval motion in the coordinator adapter.
+            break;
           default: {
             const impossible: never = effect;
             throw new Error(`Unknown effect: ${String(impossible)}`);

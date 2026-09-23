@@ -297,7 +297,13 @@ export function perceive(
               : 'unknown',
             action: visibleState?.action ?? 'idle',
             ...(visibleState?.stage
-              ? { stage: { shape: visibleState.stage.shape, state: visibleState.stage.state } }
+              ? {
+                  stage: {
+                    shape: visibleState.stage.shape,
+                    state: visibleState.stage.state,
+                    ...(visibleState.stage.motion ? { motion: visibleState.stage.motion } : {}),
+                  },
+                }
               : {}),
             ...(statusKnown && { statuses: observedStatuses }),
             size: {
@@ -383,6 +389,7 @@ export type DecisionView = {
   used?: Readonly<Record<string, number>>;
   canAct?: boolean;
   canMove?: boolean;
+  stageOwnsMotion?: boolean;
   speedBps?: number;
   flightStaminaPerSecond?: number;
   silenced?: boolean;

@@ -12,7 +12,7 @@ const events = (records: StreamRecord[]) => records.flatMap((r) => ('events' in 
 describe('data-composed 3D sample catalog', () => {
   it('keeps published character examples and their transitive references reproducible', async () => {
     const catalog = await sampleCatalog();
-    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(16);
+    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(17);
     for (const revision of catalog) expect(RevisionSchema.safeParse(revision).success).toBe(true);
     const saved = JSON.parse(
       readFileSync(new URL('../../../../data/spatial/catalog.json', import.meta.url), 'utf8'),
@@ -55,6 +55,7 @@ describe('data-composed 3D sample catalog', () => {
     'ember-duelist',
     'stamina-scout-v1',
     'stamina-glider-v1',
+    'stage-vanguard-v1',
   ])('runs %s through the common rules without character-specific execution', async (id) => {
     const run = await runBattle(await catalogManifest(id, 'swordsman', 'flat', 400));
     expect(['win', 'draw']).toContain(run.result.outcome.kind);

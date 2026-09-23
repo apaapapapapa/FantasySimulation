@@ -17,6 +17,7 @@ import {
   locomotionRules,
   generalAiRules,
   simultaneousRules,
+  stagedRules,
 } from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
@@ -36,6 +37,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
     structuredClone(locomotionRules),
     structuredClone(generalAiRules),
     structuredClone(simultaneousRules),
+    structuredClone(stagedRules),
   ];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);
@@ -412,6 +414,81 @@ export async function sampleCatalog(): Promise<Revision[]> {
     stepStaminaPerMeter: 10,
   };
   const stamina = { max: 100, recoveryPerSecond: 3, resumeAt: 20 };
+  const dashAttack: Definition<'ability'>['attack'] = {
+    kind: 'melee',
+    reachMm: 1800,
+    radiusMm: 200,
+    activeSteps: 8,
+    maxHitsPerTarget: 1,
+  };
+  const dashEffects: Definition<'ability'>['effects'] = [
+    { kind: 'damage', element: 'physical', amount: 14, attackScaleBps: 0 },
+    {
+      kind: 'force',
+      profile: 'linear-v1',
+      direction: 'away',
+      speedMmPerSecond: 12000,
+      durationSteps: 3,
+    },
+  ];
+  const dash = await add(
+    'ability',
+    'dash-cut-v1',
+    ability('突進斬り', {
+      rangeMm: 4000,
+      castSteps: 2,
+      recoverySteps: 10,
+      cooldownSteps: 30,
+      costs: { hp: 0, mp: 0, stamina: 6, uses: 0 },
+      attack: dashAttack,
+      effects: dashEffects,
+      stages: [
+        {
+          id: 'dash-cut',
+          offsetSteps: 0,
+          durationSteps: 8,
+          attack: dashAttack,
+          effects: dashEffects,
+          selfMotion: { kind: 'dash', speedMmPerSecond: 8000, accelerationMmPerSecond2: 100000 },
+        },
+      ],
+    }),
+  );
+  const sweepAttack: Definition<'ability'>['attack'] = {
+    kind: 'radial',
+    reachMm: 2000,
+    bladeRadiusMm: 100,
+    startAngleMilliDegrees: -90000,
+  };
+  const sweepEffects: Definition<'ability'>['effects'] = [
+    { kind: 'damage', element: 'physical', amount: 18, attackScaleBps: 0 },
+  ];
+  const sweep = await add(
+    'ability',
+    'wide-sweep-v1',
+    ability('全周の薙ぎ払い', {
+      rangeMm: 2400,
+      castSteps: 3,
+      recoverySteps: 8,
+      cooldownSteps: 30,
+      costs: { hp: 0, mp: 0, stamina: 8, uses: 0 },
+      attack: sweepAttack,
+      effects: sweepEffects,
+      stages: [
+        {
+          id: 'sweep',
+          offsetSteps: 0,
+          durationSteps: 20,
+          attack: sweepAttack,
+          effects: sweepEffects,
+        },
+      ],
+    }),
+  );
+  await character('stage-vanguard-v1', '突進と薙ぎ払いの前衛', [dash, sweep], 1400, {
+    stamina,
+    movement: { locomotion: staminaMovement },
+  });
   await character('stamina-scout-v1', '体力を配分する斥候', [staminaStrike], 1200, {
     stamina,
     movement: { locomotion: staminaMovement },

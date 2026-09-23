@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.16",
-    "rulesVersion": "spatial-v1.16",
+    "engineVersion": "spatial-v1.17",
+    "rulesVersion": "spatial-v1.17",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -568,6 +568,114 @@
     "stage-admit-blocked-motion": {
       "file": "packages/engine/src/spatial/stage-admission.test.ts",
       "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":false,\"dodge\":true,\"jump\":true,\"total\":6,\"blocked\":true}"
+    },
+    "force-1": {
+      "file": "packages/engine/src/spatial/forces.test.ts",
+      "name": "contact-frozen forces validates bounded fields and freezes direction, including symmetric ties and coincidence"
+    },
+    "force-2": {
+      "file": "packages/engine/src/spatial/forces.test.ts",
+      "name": "contact-frozen forces sums before the Euclidean cap, cancels independent of order, and respects half-open windows"
+    },
+    "force-3": {
+      "file": "packages/engine/src/spatial/forces.test.ts",
+      "name": "contact-frozen forces queues the next boundary, retains only gravity on expiry, and truncates excess contributions"
+    },
+    "force-4": {
+      "file": "packages/engine/src/spatial/forces.test.ts",
+      "name": "contact-frozen forces moves freely from n+1, saves projections, seeks through expiry and rolls back force overflow"
+    },
+    "force-physics-1": {
+      "file": "packages/engine/src/spatial/forced-movement.test.ts",
+      "name": "shared forced-motion projections projects both components from their combined incidence and preserves unblocked cancellation"
+    },
+    "force-physics-2": {
+      "file": "packages/engine/src/spatial/forced-movement.test.ts",
+      "name": "shared forced-motion projections reports a wall at the exact trace endpoint without changing the legacy path"
+    },
+    "force-physics-3": {
+      "file": "packages/engine/src/spatial/forced-movement.test.ts",
+      "name": "shared forced-motion projections uses shared collision geometry while bypassing voluntary speed, jump and step requests"
+    },
+    "force-physics-4": {
+      "file": "packages/engine/src/spatial/forced-movement.test.ts",
+      "name": "shared forced-motion projections clears upward force and gravity at a ceiling, so normal movement falls from zero velocity"
+    },
+    "force-physics-5": {
+      "file": "packages/engine/src/spatial/forced-movement.test.ts",
+      "name": "shared forced-motion projections stops both components at body contact and discards wall projections after that stop"
+    },
+    "force-physics-6": {
+      "file": "packages/engine/src/spatial/forced-movement.test.ts",
+      "name": "shared forced-motion projections uses combined incident speed for landing damage and suppresses only gravity during flight"
+    },
+    "blade-1": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact hits an interior shaft crossing that neither endpoint nor the tip path touches"
+    },
+    "blade-2": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact clips at a blocking wall before the target, with stable collider order and zero-time wall ties"
+    },
+    "blade-3": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact retains bent root paths during a full radial sweep and enforces the shared work budgets"
+    },
+    "blade-4": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact executes a staged radial sweep once per target and restores recorded blade geometry"
+    },
+    "authored-motion-1": {
+      "file": "packages/engine/src/spatial/stage-motion.test.ts",
+      "name": "authored movement through shared physics and resources replaces gait travel cost and suppresses an unstarted dodge while retaining wall collision"
+    },
+    "authored-motion-2": {
+      "file": "packages/engine/src/spatial/stage-motion.test.ts",
+      "name": "authored movement through shared physics and resources charges a real leap once, clips against the ceiling and falls without reapplying the jump"
+    },
+    "authored-motion-3": {
+      "file": "packages/engine/src/spatial/stage-motion.test.ts",
+      "name": "authored movement through shared physics and resources gives force priority over authored movement and keeps its target free of movement charges"
+    },
+    "authored-motion-4": {
+      "file": "packages/engine/src/spatial/stage-motion.test.ts",
+      "name": "authored movement through shared physics and resources rejects same-interval dash plus dodge but allows a present dodge before a future dash"
+    },
+    "authored-motion-5": {
+      "file": "packages/engine/src/spatial/stage-motion.test.ts",
+      "name": "authored movement through shared physics and resources records fixed stage time and cost, actual dash and force ownership, and seeks after expiry"
+    },
+    "motion-shape-ai": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary estimates own blade coverage, force duration and motion exposure without enemy definition access"
+    },
+    "motion-worker-persistence": {
+      "file": "apps/api/src/simultaneous-persistence.test.ts",
+      "name": "simultaneous slots through persisted Workers preserves motion decisions, costs and replacement displays across forward and backward seeks"
+    },
+    "motion-catalog": {
+      "file": "packages/engine/src/spatial/catalog.test.ts",
+      "name": "data-composed 3D sample catalog runs stage-vanguard-v1 through the common rules without character-specific execution"
+    },
+    "blade-later-wall-single": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact clips a later wall after a body hit, split trace=false"
+    },
+    "blade-later-wall-split": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact clips a later wall after a body hit, split trace=true"
+    },
+    "force-cue-windows": {
+      "file": "packages/engine/src/spatial/forces.test.ts",
+      "name": "contact-frozen forces samples one-step force onset and expiry from current forces before delayed delivery"
+    },
+    "blade-wall-termination-arc": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact keeps the first body hit but terminates a multi-hit arc at its later wall"
+    },
+    "blade-wall-termination-melee": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact keeps the first body hit but terminates a multi-hit melee at its later wall"
     }
   },
   "entries": [
@@ -580,7 +688,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:e8eb01d271d23c13a9e502d1c49b29e8e2d2c0fe8e35742c930becd76dc1c14f",
+        "inputHash": "sha256:422ffe620e54be8bcf41b10bb16dbf966647dcfafa0eb655a9295cd14cc5f954",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -588,9 +696,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-stages-v1",
+          "id": "standard-motion-v1",
           "revision": 1,
-          "contentHash": "sha256:90fa451fbe5104007901dd11ddf5a1b04cd77bd58d1fffeec9fd1aecc34bbdb4"
+          "contentHash": "sha256:98a5775720e7ebf19c9c202d3e3675bfa66605d05124e2d832e305b4d38bb054"
         },
         "participants": [
           {
@@ -625,7 +733,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:58b51100a0ba8862c2cd2d16e35ceaba1370683bafd5deecb9319c3ff067d0ee",
+        "inputHash": "sha256:6f95c458b8a504f2044df89552c4fb9bd60933f774f16c9898fd85dfbd1e5735",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -633,9 +741,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-stages-v1",
+          "id": "standard-motion-v1",
           "revision": 1,
-          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
+          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
         },
         "participants": [
           {
@@ -670,7 +778,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:062466ea531931a5ee14632b5e844a2dec48088a3214074561665780c7b1dc07",
+        "inputHash": "sha256:86bf7b1b61a66398af05a95842f9ea0a89ec188cb84c9956424a0fc937ee6e94",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -678,9 +786,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-stages-v1",
+          "id": "standard-motion-v1",
           "revision": 1,
-          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
+          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
         },
         "participants": [
           {
@@ -715,7 +823,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:f11d00f9d5743ce565bff4ac86e9e296db00d802fe67007e11435557029a5063",
+        "inputHash": "sha256:662f67eb33eea60d0df6413342d06c66893f88a59ade94c732a976ab9a3c33e7",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -723,9 +831,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-stages-v1",
+          "id": "standard-motion-v1",
           "revision": 1,
-          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
+          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
         },
         "participants": [
           {
@@ -760,7 +868,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:ce36f5e5fa2ef4a0dd10e1cff4d1670185d4d4e2e7a35747a5913d8b2997bb2d",
+        "inputHash": "sha256:a15938429eae508f111c6ee7153f50025fa2f1b4af0df8ceb3f8bad6d5065a7e",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -768,9 +876,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-stages-v1",
+          "id": "standard-motion-v1",
           "revision": 1,
-          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
+          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
         },
         "participants": [
           {
@@ -805,7 +913,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:2af58a07fc513d23ec1051381a589e29bc521366e8e0942f9a9736594bea33ee",
+        "inputHash": "sha256:f3da46818393eb25c49cc8079ea6dc82542f61152faac7b4076f0f0b489a6dcb",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -813,9 +921,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-stages-v1",
+          "id": "standard-motion-v1",
           "revision": 1,
-          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
+          "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
         },
         "participants": [
           {
@@ -850,7 +958,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:ff6a07dbfbaebc99030b518a4f91f2c03d33147cc2ee586b890f246ccea839ee",
+        "inputHash": "sha256:f5e85a051e248de77c045cbdc15fdeb4273f9ba1273a15db96d50127ec8157fb",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -858,9 +966,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-stages-v1",
+          "id": "standard-motion-v1",
           "revision": 1,
-          "contentHash": "sha256:a3fe38375e68358faa9af0e6f063aa4347f5632ab7937a4d2b8d12e29f043fb7"
+          "contentHash": "sha256:476686c2f359a1bf59657ea53ec368c44ce3ab5472d13b372cc08929a8c853a5"
         },
         "participants": [
           {
@@ -1195,6 +1303,41 @@
         "stage-flight-shortage",
         "stage-admit-blocked-motion"
       ]
+    },
+    {
+      "id": "shape-motion-forces",
+      "tests": [
+        "force-1",
+        "force-2",
+        "force-3",
+        "force-4",
+        "force-physics-1",
+        "force-physics-2",
+        "force-physics-3",
+        "force-physics-4",
+        "force-physics-5",
+        "force-physics-6",
+        "blade-1",
+        "blade-2",
+        "blade-3",
+        "blade-4",
+        "authored-motion-1",
+        "authored-motion-2",
+        "authored-motion-3",
+        "authored-motion-4",
+        "authored-motion-5",
+        "motion-shape-ai",
+        "motion-worker-persistence",
+        "motion-catalog",
+        "blade-later-wall-single",
+        "blade-later-wall-split",
+        "blade-wall-termination-arc",
+        "blade-wall-termination-melee",
+        "force-cue-windows"
+      ],
+      "title": "G-07b: 回転刃・段階移動・強制移動・費用・保存",
+      "state": "implemented",
+      "owner": null
     }
   ]
 }

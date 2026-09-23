@@ -83,6 +83,90 @@
   },
   {
     "kind": "ability",
+    "id": "dash-cut-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c",
+    "definition": {
+      "name": "突進斬り",
+      "originalText": "突進斬り",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 6,
+        "uses": 0
+      },
+      "castSteps": 2,
+      "recoverySteps": 10,
+      "cooldownSteps": 30,
+      "movementWhileCasting": "allow",
+      "rangeMm": 4000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 1800,
+        "radiusMm": 200,
+        "activeSteps": 8,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 14,
+          "attackScaleBps": 0,
+          "element": "physical"
+        },
+        {
+          "kind": "force",
+          "profile": "linear-v1",
+          "direction": "away",
+          "speedMmPerSecond": 12000,
+          "durationSteps": 3
+        }
+      ],
+      "stages": [
+        {
+          "id": "dash-cut",
+          "offsetSteps": 0,
+          "durationSteps": 8,
+          "attack": {
+            "kind": "melee",
+            "reachMm": 1800,
+            "radiusMm": 200,
+            "activeSteps": 8,
+            "maxHitsPerTarget": 1
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 14,
+              "attackScaleBps": 0,
+              "element": "physical"
+            },
+            {
+              "kind": "force",
+              "profile": "linear-v1",
+              "direction": "away",
+              "speedMmPerSecond": 12000,
+              "durationSteps": 3
+            }
+          ],
+          "selfMotion": {
+            "kind": "dash",
+            "speedMmPerSecond": 8000,
+            "accelerationMmPerSecond2": 100000
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "fireball",
     "revision": 1,
     "schemaVersion": 1,
@@ -851,6 +935,69 @@
             "revision": 1,
             "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944"
           }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "wide-sweep-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18",
+    "definition": {
+      "name": "全周の薙ぎ払い",
+      "originalText": "全周の薙ぎ払い",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 8,
+        "uses": 0
+      },
+      "castSteps": 3,
+      "recoverySteps": 8,
+      "cooldownSteps": 30,
+      "movementWhileCasting": "allow",
+      "rangeMm": 2400,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "radial",
+        "reachMm": 2000,
+        "bladeRadiusMm": 100,
+        "startAngleMilliDegrees": -90000
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 18,
+          "attackScaleBps": 0,
+          "element": "physical"
+        }
+      ],
+      "stages": [
+        {
+          "id": "sweep",
+          "offsetSteps": 0,
+          "durationSteps": 20,
+          "attack": {
+            "kind": "radial",
+            "reachMm": 2000,
+            "bladeRadiusMm": 100,
+            "startAngleMilliDegrees": -90000
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 18,
+              "attackScaleBps": 0,
+              "element": "physical"
+            }
+          ]
         }
       ]
     }
@@ -1638,6 +1785,103 @@
         "id": "sky-mage-policy",
         "revision": 1,
         "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "stage-vanguard-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a3fb9906fc16ad1d20b5c898713d26448154704bd2d6b0c82cf5666c4dbc9c78",
+    "definition": {
+      "name": "突進と薙ぎ払いの前衛",
+      "originalText": "突進と薙ぎ払いの前衛。能力・装備・方針はすべて公開revisionで固定する。",
+      "stamina": {
+        "max": 100,
+        "recoveryPerSecond": 3,
+        "resumeAt": 20
+      },
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000,
+        "locomotion": {
+          "walk": {
+            "speedMmPerSecond": 2000,
+            "staminaPerMeter": 2
+          },
+          "run": {
+            "speedMmPerSecond": 6000,
+            "staminaPerMeter": 6
+          },
+          "exhaustedSpeedMmPerSecond": 500,
+          "jumpStamina": 12,
+          "dodgeStamina": 8,
+          "stepStaminaPerMeter": 10
+        }
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "dash-cut-v1",
+          "revision": 1,
+          "contentHash": "sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c"
+        },
+        {
+          "id": "wide-sweep-v1",
+          "revision": 1,
+          "contentHash": "sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "stage-vanguard-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:9d74211f70745ea4fac5dfe60724ef0496b42edd8fbe75c951e1959c976f1949"
       }
     }
   },
@@ -2457,6 +2701,35 @@
   },
   {
     "kind": "policy",
+    "id": "stage-vanguard-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:9d74211f70745ea4fac5dfe60724ef0496b42edd8fbe75c951e1959c976f1949",
+    "definition": {
+      "name": "突進と薙ぎ払いの前衛の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "dash-cut-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "wide-sweep-v1"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1400,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
     "id": "staged-duelist-v1-policy",
     "revision": 1,
     "schemaVersion": 1,
@@ -2694,6 +2967,72 @@
         "killWeight": 2400,
         "actionWeight": 100,
         "dodgeWeight": 600
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard-motion-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd",
+    "definition": {
+      "name": "標準3D",
+      "rulesVersion": "spatial-v1.17",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1"
       },
       "stepMs": 20,
       "maxSteps": 6000,

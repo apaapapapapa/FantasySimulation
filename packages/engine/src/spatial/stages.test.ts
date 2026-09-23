@@ -115,7 +115,9 @@ describe('staged action transactions', () => {
     const active = checkpoints.find((c) =>
       c.state?.actors.some((a) => a.action?.stage?.state === 'active'),
     )!;
-    expect(active.state!.actors[0]!.action!.stage!.geometry?.segments.length).toBeGreaterThan(0);
+    const geometry = active.state!.actors[0]!.action!.stage!.geometry!;
+    if (geometry.kind === 'blade') throw Error('Expected thrust sphere');
+    expect(geometry.segments.length).toBeGreaterThan(0);
     for (const checkpoint of [checkpoints.at(-1)!, active, checkpoints[0]!]) {
       const restored = new ReplayState(context, checkpoint);
       for (const record of records.slice(restored.nextRecord)) restored.apply(record);

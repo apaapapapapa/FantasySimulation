@@ -5,6 +5,8 @@ import {
   OutcomeSchema,
   PhysicalVectorSchema,
   ResourceStateSchema,
+  ForceContributionSchema,
+  MotionProjectionSchema,
 } from './records.ts';
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const step = z.number().int().min(0).max(6000);
@@ -17,19 +19,39 @@ export const SegmentSchema = z
     to: fraction,
   })
   .refine((p) => p.from <= p.to, 'Reversed segment');
-export const AttackGeometrySchema = z.strictObject({
-  kind: z.enum(['sphere', 'ray']),
-  radiusMm: z.number().int().min(0).max(5000),
-  segments: z.array(SegmentSchema).min(1).max(256),
-});
+export const AttackGeometrySchema = z.union([
+  z.strictObject({
+    kind: z.enum(['sphere', 'ray']),
+    radiusMm: z.number().int().min(0).max(5000),
+    segments: z.array(SegmentSchema).min(1).max(256),
+  }),
+  z.strictObject({
+    kind: z.literal('blade'),
+    radiusMm: z.number().int().min(1).max(5000),
+    poses: z
+      .array(z.strictObject({ fraction, root: PhysicalVectorSchema, tip: PhysicalVectorSchema }))
+      .min(1)
+      .max(257),
+  }),
+]);
 export type AttackGeometry = z.infer<typeof AttackGeometrySchema>;
 export const StageDisplaySchema = z.strictObject({
   contact: StageContactSchema,
   startAt: count,
   endAt: count,
   state: z.enum(['preparing', 'active', 'waiting', 'complete', 'interrupted']),
-  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'hold']),
+  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'arc', 'radial', 'hold']),
   geometry: AttackGeometrySchema.optional(),
+  motion: z
+    .strictObject({
+      fromStep: step,
+      kind: z.enum(['dash', 'retreat', 'leap']),
+      applied: z.boolean(),
+      direction: PhysicalVectorSchema,
+      speedMmPerSecond: z.number().int().min(1).max(100000),
+      accelerationMmPerSecond2: z.number().int().min(1).max(1000000),
+    })
+    .optional(),
 });
 export const StatusDisplaySchema = z.strictObject({
   flightStaminaPerSecond: z.number().int().min(0).max(1_000_000).optional(),
@@ -54,6 +76,22 @@ export const ActorDisplaySchema = z.strictObject({
   velocity: PhysicalVectorSchema,
   facing: PhysicalVectorSchema,
   grounded: z.boolean(),
+  force: z
+    .strictObject({
+      fromStep: step,
+      active: z.boolean(),
+      contributors: z.array(ForceContributionSchema).max(256),
+      capMmPerSecond: z.number().int().min(1).max(100000),
+      capped: z.boolean(),
+      applied: PhysicalVectorSchema,
+      gravityBefore: PhysicalVectorSchema.nullable(),
+      gravityAfter: PhysicalVectorSchema.nullable(),
+      incident: PhysicalVectorSchema.nullable(),
+      projectedForce: PhysicalVectorSchema.nullable(),
+      projections: z.array(MotionProjectionSchema).max(129),
+    })
+    .nullable()
+    .optional(),
   resources: ResourceStateSchema,
   locomotion: z
     .strictObject({

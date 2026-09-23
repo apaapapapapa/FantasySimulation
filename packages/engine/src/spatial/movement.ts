@@ -22,6 +22,7 @@ import {
   stopAt,
   straight,
   type Trace,
+  type MotionProjection,
 } from './physics.ts';
 import type { ResolvedActor } from './prepare.ts';
 import { bodyCapsule, metres } from './terrain.ts';
@@ -43,6 +44,15 @@ export type MotionIntent = {
   speedBps: number;
   speedMmPerSecond?: number;
   canStep?: boolean;
+  /** External force mode supplies separate carry and force; only gravity is retained. */
+  forced?: { gravity: Vec3; force: Vec3 };
+  accelerationMmPerSecond2?: number;
+  authored?: {
+    direction: Vec3;
+    speedMmPerSecond: number;
+    accelerationMmPerSecond2: number;
+    jump: boolean;
+  };
 };
 export type MovedActor = {
   state: MotionState;
@@ -52,11 +62,38 @@ export type MovedActor = {
   contactTime: number | undefined;
   stepped: boolean;
   jumped: boolean;
+  forced?: ReturnType<typeof projectForcedMotion>;
 };
 const STEP_SECONDS = 0.02;
 const horizontal = (v: Vec3): Vec3 => ({ x: v.x, y: 0, z: v.z });
 const minGround = (state: MotionState) =>
   cosDegrees(state.actor.character.movement.maxSlopeMilliDegrees / 1000);
+
+/** Project BOTH components according to the combined incident velocity, in collision order. */
+export function projectForcedMotion(
+  gravity: Vec3,
+  force: Vec3,
+  projections: readonly MotionProjection[],
+  minGroundY: number,
+) {
+  let g = { ...gravity },
+    f = { ...force };
+  const incident = add(g, f);
+  let landingVelocityY = incident.y;
+  for (const projection of projections) {
+    const normal = projection.normal,
+      combined = add(g, f);
+    if (!normal) {
+      g = { ...ZERO };
+      f = { ...ZERO };
+    } else if (dot(combined, normal) < 0) {
+      if (normal.y >= minGroundY) landingVelocityY = combined.y;
+      g = sub(g, mul(normal, dot(g, normal)));
+      f = sub(f, mul(normal, dot(f, normal)));
+    }
+  }
+  return { gravity: g, force: f, incident, landingVelocityY, projections: [...projections] };
+}
 function support(world: SpatialWorld, state: MotionState, position: Vec3, distance = 0.01) {
   const hit = world.sweep(
     position,
@@ -154,10 +191,12 @@ export function moveActors(
     const movement = state.actor.character.movement;
     const ground =
       state.grounded && !intent.flight ? support(world, state, state.position) : undefined;
-    let requested = intent.flight ? intent.direction : horizontal(intent.direction);
+    const direction = intent.authored?.direction ?? intent.direction;
+    let requested = intent.flight ? direction : horizontal(direction);
     if (ground) requested = sub(requested, mul(ground.normal1, dot(requested, ground.normal1)));
     const speed =
-      (((intent.speedMmPerSecond ??
+      (((intent.authored?.speedMmPerSecond ??
+        intent.speedMmPerSecond ??
         (intent.flight ? movement.flySpeedMmPerSecond : movement.speedMmPerSecond)) /
         1000) *
         intent.speedBps) /
@@ -168,10 +207,24 @@ export function moveActors(
       ? approachVelocity(
           current,
           desired,
-          (movement.accelerationMmPerSecond2 / 1000) * STEP_SECONDS,
+          ((intent.authored?.accelerationMmPerSecond2 ??
+            intent.accelerationMmPerSecond2 ??
+            movement.accelerationMmPerSecond2) /
+            1000) *
+            STEP_SECONDS,
         )
       : { ...ZERO };
-    if (!intent.flight) {
+    const forcedGravity = intent.forced
+      ? intent.flight
+        ? { ...ZERO }
+        : add(intent.forced.gravity, {
+            x: 0,
+            y: (rules.gravityMmPerSecond2 / 1000) * STEP_SECONDS,
+            z: 0,
+          })
+      : undefined;
+    if (intent.forced) velocity = add(forcedGravity!, intent.forced.force);
+    if (!intent.flight && !intent.forced) {
       const jumping = intent.canMove && intent.jump && state.grounded;
       velocity = {
         ...velocity,
@@ -182,11 +235,20 @@ export function moveActors(
     }
     const delta = mul(velocity, STEP_SECONDS),
       body = bodyCapsule(state.actor.character.body);
-    let trace = world.trace(state.position, delta, body, maxSegments, minGround(state));
+    const projections: MotionProjection[] | undefined = intent.forced ? [] : undefined;
+    let trace = world.trace(
+      state.position,
+      delta,
+      body,
+      maxSegments,
+      minGround(state),
+      projections,
+    );
     const normalTrace = trace;
     if (
       state.grounded &&
       !intent.flight &&
+      !intent.forced &&
       !intent.jump &&
       intent.canMove &&
       intent.canStep !== false
@@ -199,6 +261,8 @@ export function moveActors(
       trace,
       stepped: trace !== normalTrace,
       contactTime: undefined as number | undefined,
+      projections,
+      forcedGravity,
     };
   });
   if (plans.length === 2) {
@@ -220,6 +284,21 @@ export function moveActors(
     if (plan.trace.length > maxSegments) throw new SpatialBudgetError('movement-segments');
     const { state, intent, trace } = plan,
       position = at(trace, 1);
+    const forced = intent.forced
+      ? projectForcedMotion(
+          plan.forcedGravity!,
+          intent.forced.force,
+          [
+            ...plan.projections!.filter(
+              (p) => plan.contactTime === undefined || p.fraction <= plan.contactTime,
+            ),
+            ...(plan.contactTime === undefined
+              ? []
+              : [{ fraction: plan.contactTime, kind: 'body' as const, normal: null }]),
+          ],
+          minGround(state),
+        )
+      : undefined;
     const ground = !intent.flight ? support(world, state, position) : undefined;
     const grounded =
       !!ground &&
@@ -235,8 +314,11 @@ export function moveActors(
           : last.to === last.from
             ? { ...ZERO }
             : mul(sub(last.end, last.start), 1 / ((last.to - last.from) * STEP_SECONDS));
-    const velocity = actualVelocity;
-    const excessFall = Math.max(0, -plan.velocity.y * 1000 - rules.fallSafeSpeedMmPerSecond);
+    const velocity = forced ? add(forced.gravity, forced.force) : actualVelocity;
+    const excessFall = Math.max(
+      0,
+      -(forced?.landingVelocityY ?? plan.velocity.y) * 1000 - rules.fallSafeSpeedMmPerSecond,
+    );
     const fallDamage = landed
       ? Math.floor((excessFall * rules.fallDamagePerMeterPerSecond) / 1000)
       : 0;
@@ -257,7 +339,8 @@ export function moveActors(
       fallDamage,
       contactTime: plan.contactTime,
       stepped: plan.stepped && trace.some((s) => s.end.y > s.start.y + 1e-6),
-      jumped: intent.canMove && intent.jump && !intent.flight && state.grounded,
+      jumped: intent.canMove && intent.jump && !intent.flight && !intent.forced && state.grounded,
+      ...(forced ? { forced } : {}),
     };
   });
 }

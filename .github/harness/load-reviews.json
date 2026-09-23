@@ -2,6 +2,48 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "2308f9728c860ef2a2ff9e81b1de5d32b1be90c3",
+      "beforeDigest": "8d2cfab6e7d8c39fdfc34dd8eee5ee38439a961e43ca40993be9dbf5a879e04b",
+      "afterDigest": "a67a7dbffdddede5f3a54ca9d6851c2f0370fc2cfd9a8ca8bf4df23920237fe8",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Revalidated G-07b against exact main 2308f97 after the recorded-viewer PR #96, with clean candidate 4f80c2b and the review corrections. Five actual alternating trials of all seven cases (35 per revision) preserve every outcome and deterministic step/cast/candidate/path-node/event/log-byte/trajectory-byte vector; all trials are stable and both revisions pass unchanged ceilings. Both sides use real frozen installs and no bounded command failed. The fresh source passes 760 tests, seven corpus inputs and 166 mapped regressions. Five added regressions reproduce the reviewed failures before their fixes: continue wall search after body contact across trace pieces, preserve the hit but clip and terminate attached arc/melee at a later wall, and sample force onset/expiry from current windows with delayed observation. Existing blade, force/gravity, motion/resource, rollback, privacy and Worker/SQLite replay tests remain green. All prior published revision ID/hash pairs and Golden expectations remain unchanged. Engine/rules identity transitions require independent evidence; no same-input timing/RSS claim or increase to runtime/profile/simulation budgets.",
+      "evidence": [
+        ".generated/harness/load-g7b-2308/0-before.json",
+        ".generated/harness/load-g7b-2308/0-after.json",
+        ".generated/harness/load-g7b-2308/results.json",
+        ".generated/harness/load-g7b-2308/commands.json",
+        ".generated/harness/load-g7b-2308/boundary.json",
+        ".generated/harness/load-g7b-2308/reviewed-comparison.json",
+        "packages/engine/src/spatial/blades.test.ts",
+        "packages/engine/src/spatial/forces.test.ts",
+        "apps/api/src/simultaneous-persistence.test.ts"
+      ]
+    },
+    {
+      "baselineSha": "201ec9f5aa25d82b05e1f9555ad920925f8fa2cc",
+      "beforeDigest": "8d2cfab6e7d8c39fdfc34dd8eee5ee38439a961e43ca40993be9dbf5a879e04b",
+      "afterDigest": "a67a7dbffdddede5f3a54ca9d6851c2f0370fc2cfd9a8ca8bf4df23920237fe8",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "G-07b adds swept arc/radial blades, authored stage movement and contact-frozen forces under spatial-v1.17 / standard-motion-v1. Reviewed five actual alternating trials of seven fixed cases (35 observations per revision), exact main 201ec9f against clean candidate 16f2d96. Every outcome and deterministic step/cast/candidate/path-node/event/log-byte/trajectory-byte vector is unchanged across revisions and stable across all trials. Both revisions pass unchanged ceilings with real pinned frozen installs; no command failed. Clean-source verification passes 744 tests, seven fixed inputs and 161 mapped regressions. Added regressions cover full blade-shaft collision and actual wall surface contact, radial deduplication, bent paths and bounded sweeps; forced sum/cap, expiry gravity, wall/ceiling/body projection and landing; atomic dash/leap costs and simultaneous-slot suppression; delayed visible cues, domain replay seeks and real Worker/SQLite persistence. All 75 published revision ID/hash pairs and Golden expectations remain unchanged; five sample/rules revisions are additive. Only the current engine/rules identities change in the seven corpus inputs, requiring independent transition evidence and making no same-input timing/RSS claim. No runtime pins, profile limits or simulation budgets were relaxed.",
+      "evidence": [
+        ".generated/harness/load-g7b-201ec9f/0-before.json",
+        ".generated/harness/load-g7b-201ec9f/0-after.json",
+        ".generated/harness/load-g7b-201ec9f/results.json",
+        ".generated/harness/load-g7b-201ec9f/commands.json",
+        ".generated/harness/load-g7b-201ec9f/boundary.json",
+        ".generated/harness/load-g7b-201ec9f/reviewed-comparison.json",
+        "packages/engine/src/spatial/blades.test.ts",
+        "packages/engine/src/spatial/forces.test.ts",
+        "packages/engine/src/spatial/forced-movement.test.ts",
+        "packages/engine/src/spatial/stage-motion.test.ts",
+        "apps/api/src/simultaneous-persistence.test.ts"
+      ]
+    },
+    {
       "baselineSha": "01086988e4e5c05e5c43bbb0c2b52896a7ea2ecd",
       "beforeDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",
       "afterDigest": "8d2cfab6e7d8c39fdfc34dd8eee5ee38439a961e43ca40993be9dbf5a879e04b",

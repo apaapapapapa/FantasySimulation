@@ -452,6 +452,36 @@
       "id": "standard-stages-v1",
       "revision": 1,
       "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
+    },
+    {
+      "kind": "ability",
+      "id": "dash-cut-v1",
+      "revision": 1,
+      "contentHash": "sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c"
+    },
+    {
+      "kind": "ability",
+      "id": "wide-sweep-v1",
+      "revision": 1,
+      "contentHash": "sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18"
+    },
+    {
+      "kind": "character",
+      "id": "stage-vanguard-v1",
+      "revision": 1,
+      "contentHash": "sha256:a3fb9906fc16ad1d20b5c898713d26448154704bd2d6b0c82cf5666c4dbc9c78"
+    },
+    {
+      "kind": "policy",
+      "id": "stage-vanguard-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:9d74211f70745ea4fac5dfe60724ef0496b42edd8fbe75c951e1959c976f1949"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-motion-v1",
+      "revision": 1,
+      "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
     }
   ]
 }

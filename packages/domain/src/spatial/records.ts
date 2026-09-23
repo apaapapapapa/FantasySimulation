@@ -22,6 +22,39 @@ export const ResourceStateSchema = z.strictObject({
   stamina: count.optional(),
 });
 export type ResourceState = z.infer<typeof ResourceStateSchema>;
+export const MotionProjectionSchema = z
+  .strictObject({
+    fraction: z.number().min(0).max(1),
+    kind: z.enum(['wall', 'body', 'stop']),
+    normal: PhysicalVectorSchema.nullable(),
+    obstacleId: IdSchema.optional(),
+  })
+  .refine(
+    (p) =>
+      p.kind === 'wall'
+        ? !!p.normal &&
+          !!p.obstacleId &&
+          Math.abs(p.normal.x ** 2 + p.normal.y ** 2 + p.normal.z ** 2 - 1) < 1e-6
+        : p.normal === null,
+    'Collision projection normal',
+  );
+export type MotionProjection = z.infer<typeof MotionProjectionSchema>;
+export const ForceContributionSchema = z
+  .strictObject({
+    id: IdSchema,
+    actorId: IdSchema.nullable(),
+    abilityId: IdSchema.nullable(),
+    startAt: z.number().int().min(1).max(6000),
+    endAt: z.number().int().min(2).max(6100),
+    velocityMmPerSecond: z.strictObject({
+      x: z.number().int().min(-100000).max(100000),
+      y: z.number().int().min(-100000).max(100000),
+      z: z.number().int().min(-100000).max(100000),
+    }),
+    stage: StageContactSchema.optional(),
+  })
+  .refine((f) => f.endAt > f.startAt && f.endAt <= f.startAt + 100, 'Force duration');
+export type ForceContribution = z.infer<typeof ForceContributionSchema>;
 export const EventSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
@@ -53,6 +86,7 @@ export const EventSchema = z
       'stage-start',
       'stage-end',
       'stage-interrupt',
+      'force',
     ]),
     actorId: IdSchema.nullable(),
     targetId: IdSchema.nullable(),
@@ -92,8 +126,19 @@ export const EventSchema = z
     reason: z.string().max(500),
     cognition: CognitionSchema.optional(),
     stage: StageContactSchema.optional(),
+    force: ForceContributionSchema.optional(),
   })
   .superRefine((event, ctx) => {
+    if (
+      (event.kind === 'force') !== !!event.force ||
+      (event.force &&
+        (event.force.id !== event.id ||
+          event.force.actorId !== event.actorId ||
+          event.force.abilityId !== event.abilityId ||
+          event.force.startAt !== event.step ||
+          !event.targetId))
+    )
+      ctx.addIssue({ code: 'custom', message: 'Force must match its accepted contact event' });
     const subjective = event.kind === 'decision' || event.kind === 'knowledge';
     if (
       subjective !== !!event.cognition ||

@@ -236,38 +236,10 @@ Cast-stop excludes paired dodge. Actual collision/settlement remains authoritati
 movementSlot saves candidates/exclusions/draw; existing cognition/locomotion saves the rest.
 No hidden enemy inputs.
 
-## 段階攻撃（G-07a、spatial-v1.16）
+## 段階攻撃・移動（G-07）
 
-standard-stages-v1: omitted stages preserve costs/aim/events/hits/PRNG.
-Required attack/effects=stage0, executed once. Action only; 1–16 unique IDs,
-first offset0, ordered nonoverlapping windows, offset≤6000, duration1–100,
-last end≤6000. Melee duration=activeSteps; hold=null attack/empty effects.
-Other releases emit once; projectiles may outlive stages.
-
-L is the speed-scaled release; stage windows are [L+offset,L+offset+duration),
-with physical offsets/duration. Recovery follows the last planned end; cooldown starts
-at L. Failure/interruption never shortens either. At each start recheck capabilities,
-condition/startCondition/interruptWhen and observed range; failure cancels all remaining
-stages without retry. Conditions use bounded own/delayed observation ASTs.
-
-Top cost/uses + stage0 extra pay at declaration; later extras use ResourceBudget at
-start, without future holds/uses. Before paying, admit due cost plus flight upkeep and
-selected dodge/jump together. Shortage cancels stage/new burst, preserves flight and
-existing gait, and retains committed cost.
-Boundary death/incapacity/silence cancels explicit sequences. Declared damage interruption
-uses positive attributed HP damage, including simultaneous healing. Interval effects commit
-at n+1 without rewinding gathered contacts. Attached shapes end/cancel; detached shots keep
-snapshots. Legacy launched melee persists. No pulse runs beyond the final interval.
-
-The shared ledger keys action/stage/group/target. Default max1; explicit hit policy sets
-maxHits≤16, minIntervalSteps≥1 and optional full intervening separation. Zero damage consumes
-a contact; miss does not. Clone/hash/rollback ledger, stage, cost and PRNG together.
-AI estimates own stages/cost/exposure/timing; enemy cues contain delayed visible shape/state.
-Recorded geometry/clocks/causes support ReplayState seek and Worker/SQLite storage.
-return-cut-v1 / staged-duelist-v1: 10+15 damage, 6+4 stamina.
-
-Corpus changes only engine/rules identities; new tests cover stages, motion admission,
-rollback, privacy and storage. G-07b/G-08 shape/motion/force/reactions remain pending.
+[段階・形状・強制移動・費用・保存の契約](stages-motion.md)は spatial-v1.17 / standard-motion-v1。
+G-08反応処理は別工程。
 
 ## 行動時計と攻撃形状（3D-06b）
 

@@ -3,21 +3,27 @@ import { StreamRecordSchema } from '@fantasy/domain/spatial';
 import { describe, expect, it } from 'vite-plus/test';
 import { runBattle } from '@fantasy/engine/spatial';
 import { simultaneousManifest } from '../../../packages/engine/test-support/simultaneous.ts';
-import { stagedManifest } from '../../../packages/engine/test-support/stages.ts';
+import { stagedManifest, movingSweepStages } from '../../../packages/engine/test-support/stages.ts';
 import { initialStatus } from '../../../packages/engine/test-support/ai.ts';
 import { battleEvents } from '../../../packages/engine/test-support/fixtures.ts';
 import { specInput, withRuntime } from '../test-support/runtime.ts';
 import { readReplayChunk, readReplayManifest, seekReplay, verifyReplay } from './replay-reader.ts';
 
 describe('simultaneous slots through persisted Workers', () => {
-  it.each(['joint', 'staged'] as const)(
+  it.each(['joint', 'staged', 'motion'] as const)(
     'preserves %s decisions, costs and replacement displays across forward and backward seeks',
     async (mode) => {
       await withRuntime(
         async ({ runtime, store, root }) => {
           const input = await (mode === 'joint'
             ? simultaneousManifest()
-            : stagedManifest({ status: initialStatus() }));
+            : mode === 'staged'
+              ? stagedManifest({ status: initialStatus() })
+              : stagedManifest({
+                  stages: movingSweepStages(),
+                  steps: 20,
+                  ability: { castSteps: 0 },
+                }));
           await store.seedRevisions(input.revisions);
           const direct = await runBattle(input);
           const submitted = await runtime.submit(specInput(input), 'simultaneous', 'persist');
@@ -34,7 +40,8 @@ describe('simultaneous slots through persisted Workers', () => {
               ),
             )
           ).flat();
-          const events = battleEvents(records.map((r) => StreamRecordSchema.parse(r)));
+          const parsed = records.map((r) => StreamRecordSchema.parse(r));
+          const events = battleEvents(parsed);
           if (mode === 'joint')
             expect(
               events.filter(
@@ -43,7 +50,7 @@ describe('simultaneous slots through persisted Workers', () => {
                   e.cognition.movementSlot?.selection === 'dodge',
               ),
             ).not.toHaveLength(0);
-          else {
+          else if (mode === 'staged') {
             expect(events.filter((e) => e.kind === 'hit').map((e) => e.stage?.stageId)).toEqual([
               'cut',
               'cut',
@@ -55,6 +62,16 @@ describe('simultaneous slots through persisted Workers', () => {
             expect(
               events.filter((e) => e.reason === 'apply-status').map((e) => e.stage?.stageId),
             ).toEqual(['return', 'return']);
+          } else {
+            expect(events.filter((e) => e.kind === 'force')).toHaveLength(2);
+            expect(
+              parsed.some(
+                (r) =>
+                  r.kind === 'interval' &&
+                  r.changes.some((a) => a.action?.stage?.geometry?.kind === 'blade'),
+              ),
+            ).toBe(true);
+            expect(store.getSpec(done.simulationHash)?.manifest).toEqual(manifest.input);
           }
           for (const cursor of [manifest.records, 1, manifest.records]) {
             const state = await seekReplay(root, manifest.id, cursor);
@@ -63,7 +80,7 @@ describe('simultaneous slots through persisted Workers', () => {
           }
         },
         {},
-        mode === 'joint' ? 50 : 25,
+        mode === 'joint' ? 50 : mode === 'staged' ? 25 : 20,
       );
     },
   );

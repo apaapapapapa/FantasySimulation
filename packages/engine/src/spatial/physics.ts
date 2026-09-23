@@ -1,4 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
+import type { MotionProjection } from '@fantasy/domain/spatial';
+export type { MotionProjection } from '@fantasy/domain/spatial';
 import {
   capsuleOverlapsObstacle,
   capsuleObstacleContact,
@@ -34,8 +36,8 @@ export function firstImpact(wall: number | undefined, body: number | undefined) 
 }
 export class SpatialBudgetError extends Error {
   readonly resource: string;
-  constructor(resource: string) {
-    super(`Spatial budget exceeded: ${resource}`);
+  constructor(resource: string, detail?: string) {
+    super(`Spatial budget exceeded: ${resource}${detail ? `; ${detail}` : ''}`);
     this.resource = resource;
   }
 }
@@ -220,6 +222,13 @@ export class SpatialWorld {
   private readonly materials = new Map<number, Obstacle>();
   private readonly bounds = new Map<Layer, { center: Vec3; radius: Vec3 }>();
   casts = 0;
+  /** Stable authored obstacle order; adapters share the world's layer and work budget. */
+  obstacles(layer: Layer): readonly Obstacle[] {
+    return [...this.materials.values()].filter((obstacle) => obstacle.blocks[layer]);
+  }
+  countCast() {
+    if (++this.casts > this.castLimit) throw new SpatialBudgetError('casts');
+  }
   castLimit: number;
   constructor(obstacles: Obstacle[], castLimit = 1_000_000) {
     this.castLimit = castLimit;
@@ -270,7 +279,7 @@ export class SpatialWorld {
     this.world.free();
   }
   private count() {
-    if (++this.casts > this.castLimit) throw new SpatialBudgetError('casts');
+    this.countCast();
   }
   sweep(start: Vec3, velocity: Vec3, shape: RAPIER.Shape, layer: Layer, maxTime = 1, skin = 0) {
     this.count();
@@ -423,7 +432,14 @@ export class SpatialWorld {
     return blocked;
   }
   /** Move-and-slide with retained contact times and segments, unlike an endpoint-only controller. */
-  trace(start: Vec3, requested: Vec3, body: Capsule, maxSegments = 8, minGroundY = 0): Trace {
+  trace(
+    start: Vec3,
+    requested: Vec3,
+    body: Capsule,
+    maxSegments = 8,
+    minGroundY = 0,
+    projections?: MotionProjection[],
+  ): Trace {
     const shape = capsuleShape(body);
     const trace: Trace = [];
     let position = start,
@@ -441,16 +457,31 @@ export class SpatialWorld {
       if (duration > 0) trace.push({ start: position, end, from: time, to: time + duration });
       position = end;
       time += duration;
-      if (!hit || time >= 1) return trace;
+      if (!hit || (time >= 1 && !projections)) return trace;
       // World shape-cast normals are transformed by Rapier to world coordinates.
-      const normal = hit.normal1;
+      let normal = hit.normal1;
       const into = dot(velocity, normal);
       let slid = sub(velocity, mul(normal, Math.min(0, into)));
       if (normal.y > 0 && normal.y < minGroundY && slid.y > Math.max(0, velocity.y)) {
         const wallNormal = unit({ x: normal.x, y: 0, z: normal.z });
         slid = sub(velocity, mul(wallNormal, Math.min(0, dot(velocity, wallNormal))));
+        normal = wallNormal;
       }
+      if (dot(velocity, normal) < 0)
+        projections?.push({
+          fraction: time,
+          kind: 'wall',
+          normal: { ...normal },
+          obstacleId: hit.obstacleId,
+        });
+      if (time >= 1) return trace;
       if (length(sub(slid, velocity)) < 1e-10) {
+        projections?.push({
+          fraction: time,
+          kind: 'stop',
+          normal: null,
+          obstacleId: hit.obstacleId,
+        });
         trace.push({ start: position, end: position, from: time, to: 1 });
         return trace;
       }

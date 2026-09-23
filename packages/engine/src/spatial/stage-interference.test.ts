@@ -6,7 +6,7 @@ import { prepareBattle, reference, sealRevision } from './prepare.ts';
 import { assessAbility } from './assessment.ts';
 import { choosePolicy } from './policy.ts';
 import { emptyMemory, perceive } from './perception.ts';
-import { comboStages, stagedManifest } from '../../test-support/stages.ts';
+import { comboStages, stagedManifest, movingSweepStages } from '../../test-support/stages.ts';
 import { battleEvents, editScenario, glassWall } from '../../test-support/fixtures.ts';
 import { aiFixture, initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 
@@ -53,6 +53,7 @@ describe('stage interference and information boundary', () => {
     const interval = records.find((r) => r.kind === 'interval' && r.fromStep === 7)!;
     if (interval.kind !== 'interval') throw Error('Expected release interval');
     const geometry = interval.changes.find((a) => a.id === 'left')!.action!.stage!.geometry!;
+    if (geometry.kind === 'blade') throw Error('Expected thrust sphere');
     expect(geometry.segments.at(-1)!.to).toBeLessThan(1);
     expect(geometry.segments.at(-1)!.end.x).toBeCloseTo(-0.205, 4);
   });
@@ -208,6 +209,7 @@ describe('stage interference and information boundary', () => {
         stage: {
           shape: 'melee' as const,
           state: 'active' as const,
+          motion: 'dash' as const,
           futureCost: 999,
           abilityId: 'private-plan',
         },
@@ -215,14 +217,70 @@ describe('stage interference and information boundary', () => {
       const sampled = perceive(f.world, f.self, f.enemy, [], 0, emptyMemory(), visible);
       expect(sampled.observation).toBeNull();
       const memory = perceive(f.world, f.self, f.enemy, [], 5, sampled, visible);
-      expect(memory.observation!.enemy!.stage).toEqual({ shape: 'melee', state: 'active' });
+      expect(memory.observation!.enemy!.stage).toEqual({
+        shape: 'melee',
+        state: 'active',
+        motion: 'dash',
+      });
       const delayed = { ...view, memory },
         ready = new Set([ability.id]);
       const before = choosePolicy(delayed, ready, false);
       f.enemy.position.x = 999;
       visible.stage.futureCost = 1;
       expect(choosePolicy(delayed, ready, false)).toEqual(before);
-      expect(before.cognition?.observedStage).toEqual({ shape: 'melee', state: 'active' });
+      expect(before.cognition?.observedStage).toEqual({
+        shape: 'melee',
+        state: 'active',
+        motion: 'dash',
+      });
+    } finally {
+      f.world.free();
+    }
+  });
+  it('estimates own blade coverage, force duration and motion exposure without enemy definition access', async () => {
+    const stages = movingSweepStages(),
+      first = stages[0]!;
+    const f = await aiFixture({
+      abilities: [
+        {
+          stages,
+          attack: first.attack!,
+          effects: first.effects,
+          costs: { hp: 0, mp: 0, stamina: 6, uses: 0 },
+        },
+      ],
+      character: { stamina: { max: 20, recoveryPerSecond: 0 } },
+    });
+    try {
+      const view = { ...f.view, resources: { ...f.view.resources, stamina: 20 } };
+      const distant = assessAbility(view, f.abilities[0]!);
+      const memory = {
+        ...view.memory,
+        observation: {
+          ...view.memory.observation!,
+          enemy: {
+            ...view.memory.observation!.enemy!,
+            position: { ...f.self.position, x: f.self.position.x + 1 },
+          },
+        },
+      };
+      const near = assessAbility({ ...view, memory }, f.abilities[0]!);
+      expect(near.weight).toBeGreaterThan(distant.weight);
+      expect(near.successBps).toBeGreaterThan(distant.successBps);
+      expect(near.reason).toContain('own shape/coverage and motion');
+      f.enemy.position.x = -999;
+      expect(assessAbility({ ...view, memory }, f.abilities[0]!)).toEqual(near);
+      const forceOnly = {
+        ...f.abilities[0]!,
+        definition: {
+          ...f.abilities[0]!.definition,
+          stages: undefined,
+          effects: first.effects.filter((e) => e.kind === 'force'),
+          attack: { kind: 'hitscan' as const, radiusMm: 0 },
+        },
+      };
+      expect(assessAbility({ ...view, memory }, forceOnly).reason).toContain('away force 2 steps');
+      expect(assessAbility({ ...view, memory }, forceOnly).weight).toBeGreaterThan(0);
     } finally {
       f.world.free();
     }

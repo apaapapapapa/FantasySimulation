@@ -3,7 +3,7 @@ import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.16' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.17' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -146,8 +146,9 @@ export const LEGACY_APPEARANCE_PRIORS = deepFreeze(
 export const WoundStageSchema = z.enum(['unknown', 'unhurt', 'hurt', 'severe', 'critical']);
 export const ObservedPhaseSchema = z.enum(['idle', 'cast', 'active', 'recovery']);
 export const ObservedStageSchema = z.strictObject({
-  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'hold']),
+  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'arc', 'radial', 'hold']),
   state: z.enum(['active', 'waiting', 'interrupted']),
+  motion: z.enum(['dash', 'retreat', 'leap', 'forced']).optional(),
 });
 export type ObservedStage = z.infer<typeof ObservedStageSchema>;
 const RelativePositionSchema = z.enum(['front', 'behind', 'side', 'above', 'below']);
@@ -257,6 +258,13 @@ const DamageScalingSchema = z
   );
 
 export const EffectSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('force'),
+    profile: z.literal('linear-v1'),
+    direction: z.enum(['away', 'toward']),
+    speedMmPerSecond: positive(100_000),
+    durationSteps: positive(100),
+  }),
   z.strictObject({
     kind: z.literal('damage'),
     amount: uint(1_000_000),
@@ -388,6 +396,24 @@ export const StatusSchema = z.strictObject({
 export const AttackSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('direct') }),
   z.strictObject({
+    kind: z.literal('arc'),
+    reachMm: positive(20000),
+    bladeRadiusMm: positive(5000),
+    startAngleMilliDegrees: z.number().int().min(-180000).max(180000),
+    sweepMilliDegrees: z
+      .number()
+      .int()
+      .min(-360000)
+      .max(360000)
+      .refine((n) => n !== 0, 'Nonzero arc sweep'),
+  }),
+  z.strictObject({
+    kind: z.literal('radial'),
+    reachMm: positive(20000),
+    bladeRadiusMm: positive(5000),
+    startAngleMilliDegrees: z.number().int().min(-180000).max(180000),
+  }),
+  z.strictObject({
     kind: z.literal('melee'),
     reachMm: positive(20_000),
     radiusMm: positive(5_000),
@@ -430,6 +456,13 @@ export const StageSchema = z.strictObject({
   interruptWhen: ConditionSchema.optional(),
   interruptOnDamage: z.boolean().optional(),
   hit: StageHitSchema.optional(),
+  selfMotion: z
+    .strictObject({
+      kind: z.enum(['dash', 'retreat', 'leap']),
+      speedMmPerSecond: positive(100000),
+      accelerationMmPerSecond2: positive(1000000),
+    })
+    .optional(),
 });
 export type Stage = z.infer<typeof StageSchema>;
 export const StageContactSchema = z.strictObject({
@@ -475,6 +508,21 @@ export const AbilitySchema = z
   })
   .superRefine((ability, ctx) => {
     const plans = ability.stages ?? [{ attack: ability.attack, effects: ability.effects }];
+    if (!ability.stages && (ability.attack.kind === 'arc' || ability.attack.kind === 'radial'))
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Rotating blades require an explicit stage duration',
+      });
+    if (
+      plans.some(
+        (p) =>
+          (p.attack?.kind === 'arc' || p.attack?.kind === 'radial') &&
+          p.attack.reachMm > ability.rangeMm,
+      )
+    )
+      ctx.addIssue({ code: 'custom', message: 'Blade reach exceeds the declared range' });
+    if (abilityEffects(ability).some((e) => e.kind === 'force') && ability.target !== 'enemy')
+      ctx.addIssue({ code: 'custom', message: 'Force requires an enemy contact' });
     if (ability.stages) {
       const stages = ability.stages,
         first = stages[0]!;
@@ -707,6 +755,7 @@ export const RulesetSchema = z.strictObject({
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),
   fallSafeSpeedMmPerSecond: uint(30_000),
   fallDamagePerMeterPerSecond: uint(100_000),
+  forcedSpeedCapMmPerSecond: positive(100_000).optional(),
   curveErrorMm: positive(10),
   bodyContact: z.literal('symmetric-stop'),
   aoeOcclusion: z.literal('five-samples-equal-linear-v1'),
@@ -815,6 +864,7 @@ export const BudgetSchema = z.strictObject({
   maxCurveSegments: positive(256),
   maxStatusTypes: positive(256),
   maxStatusCauses: positive(65_536),
+  maxForces: positive(256).optional(),
 });
 export type Budget = z.infer<typeof BudgetSchema>;
 export const DEFAULT_BUDGET: Readonly<Budget> = Object.freeze({
@@ -829,6 +879,7 @@ export const DEFAULT_BUDGET: Readonly<Budget> = Object.freeze({
   maxCurveSegments: 64,
   maxStatusTypes: 64,
   maxStatusCauses: 2_048,
+  maxForces: 64,
 });
 export function parseJson<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
   assertJson(input);

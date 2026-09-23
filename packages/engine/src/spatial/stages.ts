@@ -12,6 +12,8 @@ import { blockedBySilence } from './categories.ts';
 import type { ResourceBudget } from './resources.ts';
 import type { Journal } from './journal.ts';
 import { admitMotionCost, rejectPair } from './pair-admission.ts';
+import { mul, unit } from './math.ts';
+import { hasForcedMotion } from './forces.ts';
 
 export type StageRuntime = {
   index: number;
@@ -20,6 +22,7 @@ export type StageRuntime = {
   cause: string;
   interruptedAt?: number;
   geometry?: AttackGeometry;
+  motion?: NonNullable<NonNullable<ActorDisplay['action']>['stage']>['motion'];
 };
 /** Attached volumes disappear with their owner window; detached projectiles use their snapshots. */
 export function attachedStageAlive(attack: MeleeState, actors: readonly ActorState[], at: number) {
@@ -67,6 +70,7 @@ export function stageDisplay(
               : 'waiting',
     shape: stage.attack?.kind ?? 'hold',
     ...(runtime.geometry ? { geometry: runtime.geometry } : {}),
+    ...(runtime.motion ? { motion: structuredClone(runtime.motion) } : {}),
   };
 }
 export function interruptStage(
@@ -97,9 +101,16 @@ export function interruptStage(
 }
 /** A visible cue has no plan IDs, future windows, costs or definition references. */
 export function visibleStageCue(actor: ActorState, step: number): ObservedStage | undefined {
+  if (hasForcedMotion(actor, step)) return { shape: 'hold', state: 'active', motion: 'forced' };
   const display = actor.action && stageDisplay(actor.action, step);
   if (!display || display.state === 'preparing' || display.state === 'complete') return undefined;
-  return { shape: display.state === 'active' ? display.shape : 'hold', state: display.state };
+  return {
+    shape: display.state === 'active' ? display.shape : 'hold',
+    state: display.state,
+    ...(display.state === 'active' && display.motion?.applied
+      ? { motion: display.motion.kind }
+      : {}),
+  };
 }
 /** Conditions inspect the owner's available view. Recovery/cooldown never move on cancellation. */
 export function checkStageInterruption(
@@ -207,21 +218,41 @@ export function releaseStage(
         : !conditionMatches(definition.condition, view) ||
             (stage.startCondition && !conditionMatches(stage.startCondition, view))
           ? 'start-condition'
-          : stage.attack && !inObservedRange(definition, view)
+          : stage.attack && !inObservedRange({ ...definition, attack: stage.attack }, view)
             ? 'observed-range-or-facing'
             : null;
   if (reason) {
     interruptStage(actor, step, journal, 'launch', reason);
     return null;
   }
-  if (index > 0 && stage.cost) {
+  if (
+    stage.selfMotion?.kind === 'leap' &&
+    (!view.canMove || !actor.motion.grounded || actor.intent.flight)
+  ) {
+    interruptStage(actor, step, journal, 'launch', 'leap-requires-supported-voluntary-motion');
+    return null;
+  }
+  if (stage.selfMotion && movement.dodge && actor.intent.canMove) {
+    rejectPair(actor, movement.previous);
+    movement = { ...movement, dodge: false };
+    journal.emit({
+      kind: 'fizzle',
+      step,
+      phase: 'launch',
+      actorId: actor.motion.actor.participant.actorId,
+      ruleId: 'stage.motion-slot',
+      reason: 'Existing stage owns this interval; new dodge is infeasible',
+    });
+  }
+  if ((index > 0 && stage.cost) || stage.selfMotion) {
     const admission = admitMotionCost(
       actor,
       budget,
       step,
       'stage-admission',
-      [stage.cost],
+      index > 0 && stage.cost ? [stage.cost] : [],
       movement.dodge,
+      stage.selfMotion?.kind === 'leap',
     );
     if (!admission.ok) {
       if (movement.dodge || actor.intent.jump) {
@@ -231,6 +262,8 @@ export function releaseStage(
       interruptStage(actor, step, journal, 'launch', `insufficient-${admission.reason}`);
       return null;
     }
+  }
+  if (index > 0 && stage.cost) {
     const payment = budget.reserve('stage', [stage.cost]);
     if (!payment.ok) {
       interruptStage(actor, step, journal, 'launch', `insufficient-${payment.reason}`);
@@ -263,6 +296,16 @@ export function releaseStage(
   });
   action.released = true;
   action.stages = { index, next: index + 1, active: true, cause: start.id };
+  if (stage.selfMotion) {
+    const direction = unit({ ...actor.motion.facing, y: 0 });
+    if (direction.x === 0 && direction.z === 0) direction.x = 1;
+    action.stages.motion = {
+      ...stage.selfMotion,
+      fromStep: step,
+      applied: false,
+      direction: mul(direction, stage.selfMotion.kind === 'retreat' ? -1 : 1),
+    };
+  }
   const ability: AbilityRevision | null = stage.attack
     ? {
         ...action.ability,

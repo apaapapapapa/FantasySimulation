@@ -2,6 +2,7 @@ import type { ActorState, AbilityRevision } from './combat-state.ts';
 import type { ResourceBudget, ResourceRequest } from './resources.ts';
 import { flightRate } from './locomotion.ts';
 import { declarationCost } from './attacks.ts';
+import { ownsStageMotion } from './stage-motion.ts';
 
 /** Keep the attempted choice in cognition, but restore every input used by motion settlement. */
 export function rejectPair(actor: ActorState, previous: Pick<ActorState, 'intent' | 'decision'>) {
@@ -33,6 +34,8 @@ export function admitPair(
   const definition = ability.definition;
   if (
     !actor.intent.canMove ||
+    ownsStageMotion(actor.action, step) ||
+    (definition.castSteps === 0 && !!definition.stages?.[0]?.selfMotion) ||
     (definition.castSteps > 0 && definition.movementWhileCasting === 'stop')
   )
     return { ok: false as const, reason: 'incompatible-motion' };
@@ -57,11 +60,12 @@ export function admitMotionCost(
   key: string,
   requests: readonly ResourceRequest[],
   dodge: boolean,
+  authoredJump = false,
 ) {
   const movement = actor.motion.actor.character.movement.locomotion;
   const flight = actor.intent.flight ? Math.ceil(flightRate(actor.statuses, step) * 0.02) : 0;
   const jump =
-    actor.intent.canMove && actor.intent.jump && actor.motion.grounded
+    actor.intent.canMove && (authoredJump || actor.intent.jump) && actor.motion.grounded
       ? (movement?.jumpStamina ?? 0)
       : 0;
   const result = budget.reserve(key, [

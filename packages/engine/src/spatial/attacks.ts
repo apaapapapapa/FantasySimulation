@@ -87,7 +87,12 @@ export function inObservedRange(ability: Ability, view: DecisionView): boolean {
     target.position,
     bodyPoint(view.self, view.self.actor.character.body.muzzleOffset),
   );
-  return length(delta) <= ability.rangeMm / 1000 && dot(view.self.facing, delta) >= -1e-12;
+  return (
+    length(delta) <= ability.rangeMm / 1000 &&
+    (ability.attack.kind === 'arc' ||
+      ability.attack.kind === 'radial' ||
+      dot(view.self.facing, delta) >= -1e-12)
+  );
 }
 /** Two explicit PRNG samples per released spatial attack, including zero-error shots. */
 export function launchDirection(facing: Vec3, errorMilliDegrees: number, random: number) {
@@ -117,6 +122,7 @@ export function traceAttack(
   radius: number,
   target: MotionState,
   targetTrace: Trace,
+  blocking?: { wall: AttackContact | null },
 ): AttackContact | null {
   let wall: number | undefined;
   let wallPoint: Vec3 | undefined;
@@ -143,6 +149,11 @@ export function traceAttack(
     true,
   );
   const hit = firstImpact(wall, body);
+  if (blocking)
+    blocking.wall =
+      wall === undefined
+        ? null
+        : { kind: 'wall', time: wall, point: wallPoint!, center: at(trace, wall) };
   if (!hit) return null;
   const center = at(trace, hit.time);
   const targetPosition = at(targetTrace, hit.time);

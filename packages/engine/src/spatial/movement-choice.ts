@@ -69,12 +69,18 @@ export function chooseMovementSlot(
     payCost(ability.definition, view.resources, view.used?.[ability.id] ?? 0, resourceReady(view));
   const resources = payment?.ok ? payment.resources : view.resources;
   const blocks =
-    !!ability &&
-    ability.definition.castSteps > 0 &&
-    ability.definition.movementWhileCasting === 'stop';
+    view.stageOwnsMotion ||
+    (!!ability &&
+      ((ability.definition.castSteps === 0 && !!ability.definition.stages?.[0]?.selfMotion) ||
+        (ability.definition.castSteps > 0 && ability.definition.movementWhileCasting === 'stop')));
   const rate = flight ? (view.flightStaminaPerSecond ?? 0) : 0;
   const maintained = canMaintainFlight(resources, rate, resourceReady(view));
-  if (blocks) excluded.push('selected action locks movement while casting');
+  if (blocks)
+    excluded.push(
+      ability?.definition.castSteps && ability.definition.movementWhileCasting === 'stop'
+        ? 'selected action locks movement while casting'
+        : 'own stage owns this interval movement',
+    );
   if (!maintained) excluded.push('flight upkeep must remain payable');
   // Flight is protected before both slots; dodgeOptions also budgets actual travel.
   const available = {
