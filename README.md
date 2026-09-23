@@ -304,8 +304,8 @@ vp run batch check .generated/batch-plan.json path/to/index.json .generated/batc
 ### 対戦の回帰・負荷ハーネス（Issue #9）
 
 `verify`は固定コーパスの再現性、実Workerの並列数・投入順、左右交換の公平性、
-SQLiteの状態遷移、計算回数とログ容量の上限を検証します。負荷計測を含むため、
-最終検証は変更をcommitしたcleanな作業コピーで実行してください。
+SQLiteの状態遷移、計算回数とログ容量の上限をコミット前にも検証できます。
+作業中の結果は未コミットの診断として保存し、最終証跡はcleanなcommitに固定します。
 CIはLinux/Windowsの出力digestを自動照合し、固定baseline SHAとcandidateを
 同じrunnerで交互に測定します。時間・メモリは観測値として別reportへ保存します。
 再現手順、制約、予算変更reviewは[ハーネス手順](.github/harness/README.md)を参照してください。

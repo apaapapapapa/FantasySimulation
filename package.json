@@ -34,7 +34,7 @@
     "catalog:spatial": "node scripts/spatial-catalog.ts",
     "db:generate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs generate",
     "db:check": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs check",
-    "check:load": "node scripts/harness.ts load current"
+    "check:load": "node scripts/harness.ts load verify"
   },
   "devDependencies": {
     "@octokit/core": "7.0.8",

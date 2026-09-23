@@ -3,9 +3,10 @@
   "reviews": [
     {
       "baselineSha": "aea8f6fc5c37b5bb2ad47ac911a684d822161ffe",
-      "beforeDigest": "5e90a41046c3a1dba6681d242274358b24674cc4ca866ef727b5c9fef0b85398",
-      "afterDigest": "5e90a41046c3a1dba6681d242274358b24674cc4ca866ef727b5c9fef0b85398",
+      "beforeDigest": "62244c0bdd34d35f9278548922bb77f8c937b7407afe77fefde913bf7024544e",
+      "afterDigest": "62244c0bdd34d35f9278548922bb77f8c937b7407afe77fefde913bf7024544e",
       "introduction": true,
+      "comparison": "paired",
       "reviewer": "Codex self-review; not independent approval",
       "reason": "Initial six-case fixed profile. Reviewed five actual paired trials against the merged PR #56 baseline: all seven deterministic counters and bytes are identical before/after and below the proposed ceilings. Most positive operation ceilings retain 20-50% headroom; tiny counts round up, zero paths/candidates stay strict, and the 6000-step boundary stays exact. Canonical trajectory storage allows approximately twice measured bytes. These are regression ceilings, not product capacity or wall-time/RSS guarantees. Existing boundary fixtures and the new missing/over-budget metric canaries remain required; no failed baseline or missing observation is waived.",
       "evidence": [
@@ -13,6 +14,9 @@
         ".generated/harness/load-pair/0-after.json",
         ".generated/harness/load-pair/results.json",
         ".generated/harness/load-pair/commands.json",
+        ".generated/harness/load-pair/baseline-corpus.json",
+        ".generated/harness/load-pair/baseline-profile.json",
+        ".generated/harness/load-pair/boundary.json",
         "scripts/harness/load-gate.test.ts",
         "scripts/ci/load-artifacts.test.ts"
       ]

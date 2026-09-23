@@ -1,12 +1,21 @@
 import { isDeepStrictEqual } from 'node:util';
 import { COST_KEYS, capture, bytesHash, type Capture, type LoadProfile } from './load-contract.ts';
-import { record, text, sha, evidenceUri, type Check, type Identity } from './report.ts';
+import {
+  assessReport,
+  record,
+  text,
+  sha,
+  evidenceUri,
+  type Check,
+  type Identity,
+} from './report.ts';
 
 export function costDigest(profile: unknown, corpusHash: string, observed: Capture): string {
   return bytesHash(
     JSON.stringify({
       profile,
       corpusHash,
+      runtime: { node: observed.toolchain.node, packageManager: observed.toolchain.packageManager },
       costs: Object.keys(record(record(profile).limits))
         .sort()
         .map((id) => ({ id, costs: observed.samples.find((s) => s.id === id)?.costs ?? null })),
@@ -22,12 +31,15 @@ export function loadChecks(
     corpusHash: string;
     profileHash: string;
     samples: number;
+    requireCommitted?: boolean;
   },
 ): Check[] {
   let status: Check['status'] = 'unknown',
     reason = 'Missing load evidence';
   try {
     const observed = capture(value);
+    if (expected.requireCommitted !== false && observed.sourceState !== 'clean')
+      throw new Error('Working-tree verification is not committed evidence');
     for (const key of ['sourceSha', 'driverSha', 'corpusHash', 'profileHash'] as const)
       if (observed[key] !== expected[key]) throw new Error(`Stale load identity: ${key}`);
     if (observed.samples.length !== Object.keys(profile.limits).length * expected.samples)
@@ -76,6 +88,7 @@ export function compareLoad(
   beforeProfile: unknown,
   profile: LoadProfile,
   reviews: unknown,
+  boundary: unknown = null,
 ): Check[] {
   const evidence = [
     { uri: '.generated/harness/load-pair/results.json', sourceSha: info.sourceSha },
@@ -92,12 +105,10 @@ export function compareLoad(
       after.sourceSha !== info.sourceSha ||
       before.driverSha !== info.sourceSha ||
       after.driverSha !== info.sourceSha ||
-      before.driverHash !== after.driverHash ||
-      before.profileHash !== after.profileHash ||
-      before.corpusHash !== after.corpusHash
+      before.driverHash !== after.driverHash
     )
-      throw new Error('Different SHA, driver, corpus or profile');
-    for (const key of ['node', 'packageManager', 'platform', 'arch', 'cpu', 'cores'] as const)
+      throw new Error('Different SHA or driver');
+    for (const key of ['platform', 'arch', 'cpu', 'cores'] as const)
       if (before.toolchain[key] !== after.toolchain[key])
         throw new Error(`Unpaired execution environment: ${key}`);
     for (const [observed, limits] of [
@@ -108,25 +119,46 @@ export function compareLoad(
         loadChecks(observed, limits as LoadProfile, {
           sourceSha: observed.sourceSha,
           driverSha: info.sourceSha,
-          corpusHash: after.corpusHash,
-          profileHash: after.profileHash,
-          samples: profile.samples,
+          corpusHash: observed.corpusHash,
+          profileHash: observed.profileHash,
+          samples: (limits as LoadProfile).samples,
         }).some((c) => c.status !== 'pass')
       )
         throw new Error('Failed or incomplete baseline/candidate cannot be reviewed away');
     }
-    for (const id of Object.keys(profile.limits)) {
-      const left = before.samples.filter((s) => s.id === id),
-        right = after.samples.filter((s) => s.id === id);
-      if (left.length !== profile.samples || right.length !== profile.samples)
-        throw new Error(`Incomplete paired trials: ${id}`);
-      if (left.some((s) => s.inputHash !== right[0]!.inputHash))
-        throw new Error(`Different fixed input: ${id}`);
-    }
-    const beforeDigest = costDigest(beforeProfile ?? profile, before.corpusHash, before);
-    const afterDigest = costDigest(profile, after.corpusHash, after);
+    const comparable =
+      before.fixtureHash === after.fixtureHash &&
+      isDeepStrictEqual(beforeProfile ?? profile, profile) &&
+      before.toolchain.node === after.toolchain.node &&
+      before.toolchain.packageManager === after.toolchain.packageManager;
+    if (comparable)
+      for (const id of Object.keys(profile.limits)) {
+        const left = before.samples.filter((s) => s.id === id),
+          right = after.samples.filter((s) => s.id === id);
+        if (left.length !== profile.samples || right.length !== profile.samples)
+          throw new Error(`Incomplete paired trials: ${id}`);
+        if (left.some((s) => s.inputHash !== right[0]!.inputHash))
+          throw new Error(`Different fixed input: ${id}`);
+      }
+    const beforeDigest = costDigest(beforeProfile ?? profile, before.fixtureHash, before);
+    const afterDigest = costDigest(profile, after.fixtureHash, after);
     const introduction = beforeProfile === null;
-    const changed = introduction || beforeDigest !== afterDigest;
+    const changed = introduction || !comparable || beforeDigest !== afterDigest;
+    if (introduction || !comparable) {
+      const coverage = assessReport(boundary, [
+        'corpus:definition',
+        'corpus:engine-identity',
+        'corpus:identity',
+        'corpus:repeat',
+        'corpus:tests',
+      ]);
+      if (
+        coverage.exitCode !== 0 ||
+        coverage.report.producer !== 'corpus-runner' ||
+        coverage.report.sourceSha !== info.sourceSha
+      )
+        throw new Error('Introduction/transition requires current independent boundary evidence');
+    }
     if (changed) {
       if (reviews === null) throw new Error('Missing profile/cost review');
       const data = record(reviews);
@@ -139,7 +171,8 @@ export function compareLoad(
             sha(review.baselineSha) === info.baselineSha &&
             review.beforeDigest === beforeDigest &&
             review.afterDigest === afterDigest &&
-            review.introduction === introduction,
+            review.introduction === introduction &&
+            review.comparison === (comparable ? 'paired' : 'independent'),
         );
       if (matches.length !== 1) throw new Error('Unreviewed profile or cost change');
       const review = matches[0]!;
@@ -154,11 +187,22 @@ export function compareLoad(
     }
     status = 'pass';
     reason = changed
-      ? 'Exact-baseline review binds observed before/after counts and ceilings'
+      ? comparable
+        ? 'Exact-baseline review binds observed before/after counts and ceilings'
+        : 'Reviewed independent profile/toolchain transition; each revision passes its own pinned inputs and budgets, with candidate boundary evidence'
       : 'Same profile and deterministic costs; paired raw timings retained for observation';
+    checks.push({
+      id: 'load:paired-comparability',
+      required: false,
+      status: comparable ? 'pass' : 'unknown',
+      reason: comparable
+        ? 'Identical fixed inputs, profile and runtime pins'
+        : 'Different fixed inputs, profile or runtime pins: no same-input or timing regression claim; no invented before values for new cases',
+      evidence,
+    });
   } catch (error) {
     reason = error instanceof Error ? error.message : reason;
   }
-  checks.push({ id: 'load:comparison', required: true, status, reason, evidence });
+  checks.unshift({ id: 'load:comparison', required: true, status, reason, evidence });
   return checks;
 }

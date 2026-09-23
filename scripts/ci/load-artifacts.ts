@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { readBoundedJson } from '../harness/files.ts';
 import { record, type Identity } from '../harness/report.ts';
-import { capture, loadProfile, bytesHash } from '../harness/load-contract.ts';
+import { capture, loadProfile, bytesHash, fixtureHash } from '../harness/load-contract.ts';
 import { loadChecks, compareLoad } from '../harness/load-gate.ts';
 
 /** A passing summary cannot substitute for the raw trial/command artifacts it cites. */
@@ -17,9 +17,7 @@ export function readLoadArtifacts(
   const raw = record(json('results.json'));
   const profileBytes = readFileSync(join(root, '.github/harness/load-profile.json'));
   const profile = loadProfile(JSON.parse(profileBytes.toString('utf8')));
-  const corpusHash = bytesHash(
-    readFileSync(join(root, 'packages/engine/fixtures/spatial/corpus.json')),
-  );
+  const corpusBytes = readFileSync(join(root, 'packages/engine/fixtures/spatial/corpus.json'));
   const driverHash = bytesHash(readFileSync(join(root, 'scripts/harness/load-capture.ts')));
   const commands = record(json('commands.json'));
   if (
@@ -38,16 +36,22 @@ export function readLoadArtifacts(
   json('performance.json');
   for (const side of paired ? ['before', 'after'] : ['after']) {
     const observed = capture(raw[side]);
+    const inputBytes =
+      side === 'before' ? readFileSync(join(directory, 'baseline-corpus.json')) : corpusBytes;
+    const budgetBytes =
+      side === 'before' ? readFileSync(join(directory, 'baseline-profile.json')) : profileBytes;
     if (observed.driverHash !== driverHash || observed.runnerId !== commands.runnerId)
       throw new Error('Wrong driver or runner artifacts');
+    if (observed.fixtureHash !== fixtureHash(JSON.parse(inputBytes.toString('utf8'))))
+      throw new Error('Wrong fixed input identity');
     const checks = loadChecks(
       observed,
       side === 'before' && raw.previousProfile ? loadProfile(raw.previousProfile) : profile,
       {
         sourceSha: side === 'before' ? info.baselineSha! : info.sourceSha,
         driverSha: info.sourceSha,
-        corpusHash,
-        profileHash: bytesHash(profileBytes),
+        corpusHash: bytesHash(inputBytes),
+        profileHash: bytesHash(budgetBytes),
         samples: profile.samples,
       },
     );
@@ -78,7 +82,8 @@ export function readLoadArtifacts(
         raw.previousProfile,
         profile,
         reviews,
-      ).some((check) => check.status !== 'pass')
+        json('boundary.json'),
+      ).some((check) => check.required && check.status !== 'pass')
     )
       throw new Error('Invalid raw paired comparison');
     for (const side of ['before', 'after']) {

@@ -260,6 +260,14 @@
     "load-artifacts": {
       "file": "scripts/ci/load-artifacts.test.ts",
       "name": "requires raw load trials and commands even when the summary reports success"
+    },
+    "load-working-tree": {
+      "file": "scripts/harness/load-gate.test.ts",
+      "name": "load evidence gate keeps working-tree verification separate from committed evidence"
+    },
+    "load-transitions": {
+      "file": "scripts/harness/load-gate.test.ts",
+      "name": "load evidence gate requires review and independent boundaries for corpus profile or runtime transitions"
     }
   },
   "entries": [
@@ -696,7 +704,15 @@
       "title": "計算量・ログ容量の計測と上限、同一runnerでのpaired比較",
       "state": "implemented",
       "owner": null,
-      "tests": ["load-counters", "load-missing", "load-review", "load-pair", "load-artifacts"]
+      "tests": [
+        "load-counters",
+        "load-missing",
+        "load-review",
+        "load-pair",
+        "load-artifacts",
+        "load-working-tree",
+        "load-transitions"
+      ]
     },
     {
       "id": "baseline-regression",

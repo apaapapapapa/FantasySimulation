@@ -14,7 +14,7 @@
     },
     {
       "task": "既存のengine:check・固定fixture・単体/結合試験を呼ぶadapterを作る。検証ロジックをコピーして二重管理しない",
-      "evidence": "既存 corpus.ts adapter・scripts/engine-identity.ts・62件の対応テストを再利用。別エンジンを作らず、実行は packages/engine/src/spatial/index.ts と既存 BattlePool/JobStore に接続。"
+      "evidence": "既存 corpus.ts adapter・scripts/engine-identity.ts・64件の対応テストを再利用。別エンジンを作らず、実行は packages/engine/src/spatial/index.ts と既存 BattlePool/JobStore に接続。"
     },
     {
       "task": "同じ入力の反復、Linux/Windows、利用可能になったWorker数・投入順の違いで、result/event/必要な物理state digestを比較する",
@@ -54,7 +54,7 @@
     },
     {
       "task": "exact baseline SHAとcandidate SHAを固定し、同じコーパス・profileで比較する。各実行物の固定toolchainを記録し、計測driverと対象ソースのidentityも残す",
-      "evidence": "load.tsがfull baseline SHAの使い捨てworktreeを作り、両engine identityを検証。同じcandidate-pinned corpus/profile/driverを使い、target SHA、driver SHA/hash、Node、pnpm、lock hash、CPU/OSを記録。"
+      "evidence": "load.ts がexact baselineとcandidateを同一runnerへ固定し、各版の固定Node/pnpmをvp経由で実行。同一入力/profileはpaired比較。意図的なルール・fixture・profile・runtime変更は各版自身の実測、候補版の境界試験とexact-base independent reviewを要求し、比較可能性はunknownと明示。target/driver SHA、fixture/profile hash、実コマンドを記録。"
     },
     {
       "task": "CPU時間の比較は同一runner上のpaired実行、warmup、複数回試行を基本にする。無関係なCI実行間の時間差だけで退行と判定しない",
@@ -98,7 +98,7 @@
     },
     {
       "task": "未完成のP2/P3機能に依存する試験は未完了のまま管理し、既存fixtureの合格で代用しない",
-      "evidence": "現行P2/P3の実engine、実Worker、永続JobStoreに対応するテストのみimplementedとして登録。未対応機能・異なる新契約はunknown/比較不能とし、旧runtime互換や既存fixtureの代用を追加しない。"
+      "evidence": "現行P2/P3の実engine、実Worker、永続JobStoreに対応するテストのみimplementedとして登録。未対応機能・異なる新契約はunknown/比較不能とし、旧runtime互換や既存fixtureの代用を追加しない。 load:paired-comparabilityがunknownになる承認済み遷移でも、各版の実入力・予算と候補版境界試験は必須。存在しないbefore値を作らない。"
     }
   ]
 }

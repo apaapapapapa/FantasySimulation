@@ -212,17 +212,21 @@ ordered-priority and enumeration tests stay separate. The fixed generated inputs
 and fixed corpus run identically on both OS; generated-suite timing is not a battle
 performance measurement.
 
-The engine digest change in this PR is solely from the reviewed root development
-dependency/lockfile. No engine rule, pinned input or expected battle digest changed.
+The engine identity includes the reviewed root manifest and toolchain: adding the
+development dependency and verification scripts changes that digest. No engine
+rule, pinned input or expected battle digest changed.
 Provenance: HiFiScout `replay.ts` and `load-gate.ts` at the Issue #9 pinned SHA were
 read for coverage and exact-baseline review principles; no catalog or D1 adapter
 was imported. Upstream API reference: <https://fast-check.dev/docs/core-blocks/runners/>.
 
 ### H5 deterministic budgets and exact paired comparisons
 
-On a clean committed checkout, `vp run check:load` runs the real engine for every
-fixed corpus case with one warmup and five measured runs. `verify` and both OS
-source artifacts include this report. Counts and canonical log/trajectory bytes
+`vp run check:load` runs the real engine for every fixed corpus case with one warmup
+and five measured runs, including before committing. Dirty-tree verification writes
+`load-verification/` with producer `load-verification` and `sourceState: working-tree`;
+it checks budgets but is never accepted as SHA-bound evidence. Clean `verify` writes
+`load/`, included in both OS source artifacts. `harness load current` and paired
+collection still require a clean committed checkout. Counts and canonical log/trajectory bytes
 have reviewed per-case ceilings in `load-profile.json`; zero counters are measured
 zeros, never substitutes for a missing instrument. The initial ceilings allow
 roughly 20–50% headroom for most positive operation counters; tiny counts round up,
@@ -233,8 +237,12 @@ regression budgets for these six cases, not product scalability promises.
 `vp run harness load <FULL_BASELINE_SHA>` creates a disposable local worktree,
 installs that revision's frozen dependencies, checks both revisions' engine identity,
 and alternates five baseline/candidate pairs on this runner. Each trial warms its
-engine before measurement. Both targets
-receive the same candidate-pinned fixed corpus/profile and the same driver. Capture
+engine before measurement. Each target uses its own pinned corpus/profile (the
+initial introduction uses the new profile for the baseline's existing fixed inputs).
+Unchanged fixed inputs/profile use the same driver for a direct paired comparison.
+`vp exec node` in each target selects that revision's pinned Node, and `vp install`
+selects its frozen package manager/dependencies; the candidate executable is not
+silently reused for an older runtime pin. Capture
 records target SHA, driver SHA/hash, input hash, implementation/WASM identity, Node,
 installed pnpm marker, lock hash, CPU/OS/architecture and raw metrics. Preparation,
 input generation and shrinking are outside the measured interval; actual simulation,
@@ -254,14 +262,20 @@ The Linux CI source job performs the paired run against the CI plan's exact base
 manual `workflow_dispatch` requires the full `baseline` commit SHA input as well.
 `ci-gate` requires both OS budget reports and this paired report including the
 regression probe. No extra job, Cloudflare, external model or production data is
-used. New/changed profiles or deterministic costs require an exact-base review in
+used. New/changed fixtures, profiles, runtime pins or deterministic costs require an exact-base review in
 `load-reviews.json` binding `beforeDigest`/`afterDigest`, a reason, reviewer and
-before/after evidence. A review is an auditable PR artifact, not an independent
+before/after evidence and `comparison: paired` or `independent`. A review is an auditable PR artifact, not an independent
 approval or automatic waiver. Do not generate it automatically in CI. The first
 profile introduction is marked explicitly; its baseline engine can run the same
-fixed inputs, so real before values are retained. If a future baseline cannot run
-a changed contract, report it as incomparable/unknown; introduce that profile in
-a separate reviewed change with independent boundary tests and measurements.
+fixed inputs, so real before values are retained. When rules, fixtures, profile or
+runtime pins change intentionally, each revision must still complete its own pinned
+inputs within its own budgets. The candidate must also have a current successful
+corpus boundary report. An exact-base `independent` review can then accept the
+transition while `load:paired-comparability` remains explicitly unknown: timings and
+different-input counts are not a same-input regression comparison, and new cases
+have no invented before values. Subsequent same-profile changes require normal
+paired comparison. Missing, interrupted or failed baseline execution cannot use
+this transition path. No historical runtime registry or old Golden equality is required.
 Never copy old numbers or regenerate Golden results to claim compatibility.
 
 The paired collector also runs the same assertion probe against each target. The

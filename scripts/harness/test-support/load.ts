@@ -1,5 +1,57 @@
-import type { Identity } from '../report.ts';
+import type { Identity, Report } from '../report.ts';
 import type { Capture, LoadProfile } from '../load-contract.ts';
+import { costDigest } from '../load-gate.ts';
+
+export function loadReview(
+  info: Identity,
+  before: Capture,
+  after: Capture,
+  beforeProfile: LoadProfile,
+  profile: LoadProfile,
+  comparison: 'paired' | 'independent' = 'paired',
+) {
+  return {
+    schemaVersion: 1,
+    reviews: [
+      {
+        baselineSha: info.baselineSha,
+        beforeDigest: costDigest(beforeProfile, before.fixtureHash, before),
+        afterDigest: costDigest(profile, after.fixtureHash, after),
+        introduction: false,
+        comparison,
+        reviewer: 'test reviewer',
+        reason:
+          'Reviewed intentional profile/runtime change with actual before and after observations.',
+        evidence: [
+          '.generated/harness/load-pair/0-before.json',
+          '.generated/harness/load-pair/0-after.json',
+        ],
+      },
+    ],
+  };
+}
+export function loadBoundary(info: Identity): Report {
+  return {
+    ...info,
+    schemaVersion: 1,
+    producer: 'corpus-runner',
+    startedAt: '2026-09-22T00:00:00Z',
+    finishedAt: '2026-09-22T00:00:01Z',
+    checks: [
+      'corpus:definition',
+      'corpus:engine-identity',
+      'corpus:identity',
+      'corpus:repeat',
+      'corpus:tests',
+    ].map((id) => ({
+      id,
+      required: true,
+      status: 'pass',
+      reason: 'Synthetic independent boundary evidence',
+      evidence: [{ uri: '.generated/harness/corpus/results.json', sourceSha: info.sourceSha }],
+    })),
+  };
+}
 
 export function loadReceipts(info: Identity) {
   return Object.fromEntries(
@@ -66,11 +118,13 @@ export function loadFixture() {
   };
   const after: Capture = {
     schemaVersion: 1,
+    sourceState: 'clean',
     runnerId: 'paired-session',
     sourceSha: info.sourceSha,
     driverSha: info.sourceSha,
     driverHash: 'c'.repeat(64),
     corpusHash: 'd'.repeat(64),
+    fixtureHash: 'd'.repeat(64),
     profileHash: 'e'.repeat(64),
     engine: { digest: 'engine' },
     toolchain: {

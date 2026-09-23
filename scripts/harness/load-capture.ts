@@ -4,7 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { cpus, availableParallelism } from 'node:os';
 import { performance } from 'node:perf_hooks';
 import { git } from './source.ts';
-import { loadProfile, bytesHash, type Capture, type Sample } from './load-contract.ts';
+import { loadProfile, bytesHash, fixtureHash, type Capture, type Sample } from './load-contract.ts';
 import type * as Engine from '../../packages/engine/src/spatial/index.ts';
 import type * as Domain from '../../packages/domain/src/spatial/index.ts';
 import type { Recipe } from './corpus.ts';
@@ -17,8 +17,10 @@ export async function measure(
   profilePath: string,
   samples: number,
   runnerId: string,
+  verification = false,
 ): Promise<Capture> {
-  if (git(root, ['rev-parse', 'HEAD']) !== expectedSha || git(root, ['status', '--porcelain']))
+  const dirty = Boolean(git(root, ['status', '--porcelain']));
+  if (git(root, ['rev-parse', 'HEAD']) !== expectedSha || (dirty && !verification))
     throw new Error('Load target must be the exact clean SHA');
   if (!Number.isSafeInteger(samples) || samples < 1 || samples > 5)
     throw new Error('Invalid trial count');
@@ -102,11 +104,13 @@ export async function measure(
     throw new Error('Pinned target Node unavailable');
   return {
     schemaVersion: 1,
+    sourceState: dirty ? 'working-tree' : 'clean',
     runnerId,
     sourceSha: expectedSha,
     driverSha: git(driverRoot, ['rev-parse', 'HEAD']),
     driverHash: bytesHash(readFileSync(fileURLToPath(import.meta.url))),
     corpusHash: bytesHash(corpusBytes),
+    fixtureHash: fixtureHash(corpus),
     profileHash: bytesHash(profileBytes),
     engine: engine.implementation,
     toolchain: {
@@ -122,9 +126,17 @@ export async function measure(
   };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const [root, source, corpus, profile, output, count, runnerId] = process.argv.slice(2);
+  const [root, source, corpus, profile, output, count, runnerId, mode] = process.argv.slice(2);
   if (!root || !source || !corpus || !profile || !output || !runnerId)
     throw new Error('Missing capture arguments');
-  const result = await measure(root, source, corpus, profile, Number(count), runnerId);
+  const result = await measure(
+    root,
+    source,
+    corpus,
+    profile,
+    Number(count),
+    runnerId,
+    mode === 'verification',
+  );
   writeFileSync(output, JSON.stringify(result, null, 2) + '\n');
 }

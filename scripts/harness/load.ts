@@ -10,13 +10,22 @@ import { loadChecks, compareLoad } from './load-gate.ts';
 export const PROFILE_PATH = '.github/harness/load-profile.json';
 const CORPUS_PATH = 'packages/engine/fixtures/spatial/corpus.json';
 
-export async function collectLoad(inputRoot: string, baseline: string | null = null) {
+export async function collectLoad(
+  inputRoot: string,
+  baseline: string | null = null,
+  verification = false,
+) {
   const root = repositoryRoot(inputRoot),
     info = sourceIdentity(root),
     startedAt = new Date().toISOString();
-  if (git(root, ['status', '--porcelain'])) throw new Error('Load collection needs a clean tree');
+  const dirty = Boolean(git(root, ['status', '--porcelain']));
+  if (dirty && (baseline || !verification)) throw new Error('Load evidence needs a clean tree');
   const runnerId = randomUUID(),
-    relative = baseline ? '.generated/harness/load-pair' : '.generated/harness/load';
+    relative = baseline
+      ? '.generated/harness/load-pair'
+      : dirty
+        ? '.generated/harness/load-verification'
+        : '.generated/harness/load';
   const directory = evidencePath(root, relative);
   rmSync(directory, { recursive: true, force: true });
   mkdirSync(directory, { recursive: true });
@@ -28,6 +37,9 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
   const errors: string[] = [];
   const regressions: Record<string, unknown> = {};
   let previousProfile: unknown = null;
+  let previousCorpusHash = '',
+    previousProfileHash = '';
+  let boundary: unknown = null;
   const identity: Identity = { ...info, baselineSha: baseline ? sha(baseline) : null };
   const baselineRoot = join(directory, 'baseline');
   const execute = async (command: string, args: string[], cwd: string, name: string) => {
@@ -52,8 +64,8 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
       );
       await execute('vp', ['install', '--frozen-lockfile'], baselineRoot, 'install');
       await execute(
-        process.execPath,
-        ['scripts/engine-identity.ts'],
+        'vp',
+        ['exec', 'node', 'scripts/engine-identity.ts'],
         baselineRoot,
         'engine-check-before',
       );
@@ -62,14 +74,37 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
         previousProfile = loadProfile(
           JSON.parse(git(root, ['show', `${baseline}:${PROFILE_PATH}`])),
         );
+      const previousCorpusBytes = readFileSync(join(baselineRoot, CORPUS_PATH));
+      const previousProfileBytes = previousProfile
+        ? readFileSync(join(baselineRoot, PROFILE_PATH))
+        : readFileSync(profilePath);
+      previousCorpusHash = bytesHash(previousCorpusBytes);
+      previousProfileHash = bytesHash(previousProfileBytes);
+      writeFileSync(join(directory, 'baseline-corpus.json'), previousCorpusBytes);
+      writeFileSync(join(directory, 'baseline-profile.json'), previousProfileBytes);
+      try {
+        boundary = JSON.parse(
+          readFileSync(join(root, '.generated/harness/corpus/report.json'), 'utf8'),
+        );
+      } catch {
+        /* Transitions require current independent boundary evidence. */
+      }
+      writeFileSync(join(directory, 'boundary.json'), JSON.stringify(boundary, null, 2) + '\n');
       for (const [side, target, source] of [
         ['before', baselineRoot, baseline],
         ['after', root, info.sourceSha],
       ] as const) {
         const output = join(directory, `regression-${side}.json`);
-        const args = [join(root, 'scripts/harness/regression-probe.ts'), target, source, output];
-        const command = await runCommand(process.execPath, args, root, { timeoutMs: 30000 });
-        commands.push({ command: [process.execPath, ...args], cwd: root, ...command });
+        const args = [
+          'exec',
+          'node',
+          join(root, 'scripts/harness/regression-probe.ts'),
+          target,
+          source,
+          output,
+        ];
+        const command = await runCommand('vp', args, target, { timeoutMs: 30000 });
+        commands.push({ command: ['vp', ...args], cwd: target, ...command });
         if (command.bounded || (command.exitCode !== 0 && command.exitCode !== 1))
           throw new Error('Regression setup/import failed');
         regressions[side] = JSON.parse(readFileSync(output, 'utf8')) as unknown;
@@ -87,18 +122,21 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
         const name = `${pair}-${side}`,
           output = join(directory, `${name}.json`);
         await execute(
-          process.execPath,
+          'vp',
           [
+            'exec',
+            'node',
             join(root, 'scripts/harness/load-capture.ts'),
             target,
             source,
-            corpusPath,
-            profilePath,
+            side === 'before' ? join(directory, 'baseline-corpus.json') : corpusPath,
+            side === 'before' ? join(directory, 'baseline-profile.json') : profilePath,
             output,
             String(baseline ? 1 : profile.samples),
             runnerId,
+            dirty ? 'verification' : 'evidence',
           ],
-          root,
+          target,
           name,
         );
         const observed = capture(JSON.parse(readFileSync(output, 'utf8')));
@@ -147,9 +185,10 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
     const expected = {
       sourceSha: side === 'before' ? baseline! : info.sourceSha,
       driverSha: info.sourceSha,
-      corpusHash: bytesHash(readFileSync(corpusPath)),
-      profileHash: bytesHash(readFileSync(profilePath)),
+      corpusHash: side === 'before' ? previousCorpusHash : bytesHash(readFileSync(corpusPath)),
+      profileHash: side === 'before' ? previousProfileHash : bytesHash(readFileSync(profilePath)),
       samples: profile.samples,
+      requireCommitted: !dirty,
     };
     checks.push(
       ...loadChecks(
@@ -171,7 +210,15 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
       /* No change waiver. */
     }
     checks.push(
-      ...compareLoad(identity, captures.before, captures.after, previousProfile, profile, reviews),
+      ...compareLoad(
+        identity,
+        captures.before,
+        captures.after,
+        previousProfile,
+        profile,
+        reviews,
+        boundary,
+      ),
     );
   }
   checks.push({
@@ -180,10 +227,17 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
     status: errors.length ? 'unknown' : 'pass',
     reason:
       errors.join('; ') ||
-      'Completed bounded commands on the same runner with alternating pairs and warmups',
+      (baseline
+        ? 'Completed bounded commands on the same runner with alternating pairs and warmups'
+        : dirty
+          ? 'Working-tree verification only; completed bounded samples after warmup, not committed evidence'
+          : 'Completed bounded samples after warmup on the committed source'),
     evidence: [{ uri: `${relative}/commands.json`, sourceSha: info.sourceSha }],
   });
-  if (git(root, ['rev-parse', 'HEAD']) !== info.sourceSha || git(root, ['status', '--porcelain']))
+  if (
+    git(root, ['rev-parse', 'HEAD']) !== info.sourceSha ||
+    (!dirty && git(root, ['status', '--porcelain']))
+  )
     checks.push({
       id: 'load:source-stable',
       required: true,
@@ -197,14 +251,28 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
   );
   writeFileSync(
     join(directory, 'results.json'),
-    JSON.stringify({ ...identity, runnerId, profile, previousProfile, ...captures }, null, 2) +
-      '\n',
+    JSON.stringify(
+      {
+        ...identity,
+        sourceState: dirty ? 'working-tree' : 'clean',
+        runnerId,
+        profile,
+        previousProfile,
+        ...captures,
+      },
+      null,
+      2,
+    ) + '\n',
   );
   const performance = Object.fromEntries(
     Object.entries(captures).map(([side, raw]) => [
       side,
       raw &&
-        Object.keys(profile.limits).map((id) => {
+        Object.keys(
+          side === 'before' && previousProfile
+            ? loadProfile(previousProfile).limits
+            : profile.limits,
+        ).map((id) => {
           const rows = raw.samples.filter((s) => s.id === id);
           return {
             id,
@@ -257,7 +325,7 @@ export async function collectLoad(inputRoot: string, baseline: string | null = n
     {
       ...identity,
       schemaVersion: 1,
-      producer: 'load-runner',
+      producer: dirty ? 'load-verification' : 'load-runner',
       startedAt,
       finishedAt: new Date().toISOString(),
       checks,

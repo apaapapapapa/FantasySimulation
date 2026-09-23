@@ -20,6 +20,10 @@ export interface LoadProfile {
 }
 export const bytesHash = (value: Uint8Array | string) =>
   createHash('sha256').update(value).digest('hex');
+export function fixtureHash(value: unknown): string {
+  const corpus = record(value);
+  return bytesHash(JSON.stringify({ contract: corpus.contract, entries: corpus.entries }));
+}
 export function counts(value: unknown): Costs {
   const data = record(value);
   if (Object.keys(data).sort().join() !== [...COST_KEYS].sort().join())
@@ -52,11 +56,13 @@ export interface Sample {
 }
 export interface Capture {
   schemaVersion: 1;
+  sourceState: 'clean' | 'working-tree';
   runnerId: string;
   sourceSha: string;
   driverSha: string;
   driverHash: string;
   corpusHash: string;
+  fixtureHash: string;
   profileHash: string;
   toolchain: {
     node: string;
@@ -74,6 +80,7 @@ export function capture(value: unknown): Capture {
   const data = record(value);
   if (
     data.schemaVersion !== 1 ||
+    !['clean', 'working-tree'].includes(String(data.sourceState)) ||
     !Array.isArray(data.samples) ||
     !data.samples.length ||
     data.samples.length > 640
@@ -82,11 +89,13 @@ export function capture(value: unknown): Capture {
   sha(data.sourceSha);
   sha(data.driverSha);
   text(data.runnerId);
-  for (const key of ['driverHash', 'corpusHash', 'profileHash'])
+  for (const key of ['driverHash', 'corpusHash', 'fixtureHash', 'profileHash'])
     if (!/^[a-f0-9]{64}$/.test(text(data[key]))) throw new Error(`Invalid ${key}`);
   const environment = record(data.toolchain);
   for (const key of ['node', 'packageManager', 'lockHash', 'platform', 'arch', 'cpu'])
     text(environment[key]);
+  if (!Number.isSafeInteger(environment.cores) || Number(environment.cores) < 1)
+    throw new Error('Missing CPU observations');
   record(data.engine);
   for (const row of data.samples) {
     const sample = record(row);

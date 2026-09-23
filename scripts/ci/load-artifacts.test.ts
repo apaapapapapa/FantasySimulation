@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { it, expect } from 'vite-plus/test';
 import { readLoadArtifacts } from './load-artifacts.ts';
 import { loadFixture, loadReceipts } from '../harness/test-support/load.ts';
-import { bytesHash } from '../harness/load-contract.ts';
+import { bytesHash, fixtureHash } from '../harness/load-contract.ts';
 
 it('requires raw load trials and commands even when the summary reports success', () => {
   const root = mkdtempSync(join(tmpdir(), 'fantasy-load-artifacts-'));
@@ -28,6 +28,7 @@ it('requires raw load trials and commands even when the summary reports success'
       ['driverHash', 'scripts/harness/load-capture.ts'],
     ] as const)
       after[key] = bytesHash(readFileSync(join(root, path)));
+    after.fixtureHash = fixtureHash({ fixed: 'input' });
     const report = loadReceipts(info)['load-ubuntu-latest'];
     write('evidence/report.json', report);
     write('evidence/results.json', { after, before: null, previousProfile: null });
