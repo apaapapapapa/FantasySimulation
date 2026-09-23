@@ -6,6 +6,7 @@ import {
   type ResourceState,
 } from '@fantasy/domain/spatial';
 import type { ResolvedActor } from './prepare.ts';
+import { dispelSelects } from './categories.ts';
 import {
   applyStatuses,
   effectiveStats,
@@ -117,7 +118,12 @@ export function resolveEffects(
             shield += (BigInt(effect.amount) * scale) / 10000n;
             break;
           case 'dispel':
-            if (scale > 0n) dispels.push(...effect.statusIds);
+            if (scale > 0n)
+              dispels.push(
+                ...target.statuses
+                  .filter((s) => dispelSelects(effect, s.revision))
+                  .map((s) => s.revision.id),
+              );
             break;
           case 'water':
             if (scale > 0n)
