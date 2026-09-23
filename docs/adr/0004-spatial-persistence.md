@@ -23,3 +23,8 @@ BattleSpecは固定manifestとsimulationHashを一度保存する。予算・job
 `pnpm db:migrate`を実行する。自前resetは廃止し、既存ファイルを削除しない。
 サンプルは`data/spatial/catalog.json`の不変revisionを使用し、既存IDを上書きしない。
 Worker・job・artifactの永続化は同じ世代に後続migrationで追加する。
+
+その後の戦闘版更新は[ADR 0010](0010-battle-version-compatibility.md)に従う。
+省略可能なschema拡張と別IDのrules/サンプル追加を基本とし、保存データは同じDBで読めるまま残す。
+新規DBの選択は利用者が別環境を作る場合、またはADRで説明した非互換変更が避けられない場合に限る。
+判断版の更新だけを理由に既定パスを変更したり、旧DBを拒否したりしない。
