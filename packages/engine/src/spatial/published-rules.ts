@@ -29,3 +29,10 @@ export const statusRules = {
   contentHash: 'sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea',
   definition: { ...observedRules.definition, rulesVersion: 'spatial-v1.12' },
 } satisfies Revision;
+
+export const locomotionRules = {
+  ...observedRules,
+  id: 'standard-locomotion-v1',
+  contentHash: 'sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba',
+  definition: { ...observedRules.definition, rulesVersion: 'spatial-v1.13' },
+} satisfies Revision;

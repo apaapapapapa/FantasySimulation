@@ -147,12 +147,11 @@ Status absence means no visible matching status, never absence of hidden states.
 position uses observed enemy facing: front cosine ≥0.5, behind ≤−0.5, side otherwise;
 above/below require >100mm vertical separation. Coincident/vertical horizontal axes are unknown.
 Decision conditionObservation records observed phase/facing with the existing timestamps.
-Rules ai.appearancePriors stores matching silhouette/surface/equipment cues, element efficacy
-and confidence. Matches average elemental estimates, use maximum confidence, independent of order.
+Rules ai.appearancePriors maps silhouette/surface/equipment to element estimates:
+order-independent average efficacy, maximum confidence.
 Omission retains the published red/fire and blue/ice priors; [] disables cues. Earth resistance
 is optional (zero when absent); enums expand appearance without per-element AI branches.
-Costs/uses/cooldown/phase/range constrain integer-weighted candidates; combat revalidates
-start/release/contact. Probabilities/estimates differ from outcomes (ADR 0009).
+Execution constraints filter candidates; seeded integer weights select them (ADR 0009).
 Movement: approach/keep-distance/evade/hold. Flight uses policy altitude unless dodging;
 lost flight returns to ground. Dodge is left/right, plus up/down in flight. Own geometry/
 acceleration, known terrain and constant-velocity observed bullets constrain weighted directions.
@@ -213,18 +212,19 @@ updateResources once per boundary; retains carry/exhaustion, leaves absent stami
 Resource pulses precede HP/declarations. recoverActorResources settles interval-start
 staminaRecovery at step+1; later removal/grants cannot alter elapsed recovery. No duplicate arithmetic.
 
-Only visible states yield ≤64 sorted summaries after sight/reaction delay:
-ID/categories, benefit/adjustment direction, removability, reaction/damage direction; no hashes,
-quantities, stacks or deadlines. Own AI knows ability/held-state transform closures; enemy AI
-uses delayed summaries/impacts only. Self utility compares one shared transaction at launch+1,
-preserving pulse phase, displaced cohorts, caps and expiry (missing resources ignored). Weakness changes the coarse
-prior, never duplicates measured impact. Public changes retire prior/same-boundary impacts after
-delay; baseline reveals persist and use the public prior.
-Knowledge/decision logs use these summaries, never enemy truth.
-
-G-03 spatial-v1.12 / standard-status-v1 changes water extinguishing and status AI.
-ADR 0010: omissions preserve legacy arithmetic/hashes; old records remain readable without historical
-execution. Corpus changes only engine/rules identity; published sample IDs stay fixed.
+Visible states yield ≤64 delayed summaries: ID/categories, benefit/adjustment/reaction direction,
+removability; no hashes, quantities, stacks or deadlines. Self knows held/ability transform closures.
+All status grants/removals compare the shared transaction at launch+1: magnitude, duration,
+category/element, target, displaced cohorts, stacks and expiry. Absent resources and unmatched
+outgoing skill qualifiers give no benefit. Harmful-only self grants have zero candidate weight.
+Own risk replays combat expiry/pulses/reactions/shields; cleanse competes by risk reduction,
+cost and exposure (standard attack81/cleanse659). Permanent effects use the evaluation horizon.
+Enemy estimates use public summaries only. Weakness alters priors, never duplicates measured damage.
+Impacts carry their visible status context; mismatches cannot train baseline resistance. Public
+changes retire prior/same-boundary impacts after delay; baseline reveals persist.
+Reasons, weight/total, seed draws and context persist in cognition.
+G-05 spatial-v1.14 / standard-general-ai-v1 persists appearance priors and versions these decisions.
+ADR0010 preserves published v1.11–13 rules/records for reading, rejecting historical execution.
 
 ## 行動時計と攻撃形状（3D-06b）
 
@@ -296,7 +296,7 @@ Free flight persists; displays retain override, decision state fractions.
 `updateResources` sums signed deltas and max(0,rate+add)×Bps/10000 recovery before one clamp;
 recovery fractions persist, discarded at max. G-03 supplies interval-start modifiers.
 
-AI reserves skill/jump/dodge costs and runs if horizon travel fits.
+AI reserves skill/jump/dodge costs; run requires horizon funds and observed travel/threat urgency.
 Visible threats price dodge; skills preserve paid-flight upkeep.
 Enemy inputs: delayed visible speed/appearance, never exact stamina. Logs record own gait/reserve,
 movement.cost before/after and boundary recovery.

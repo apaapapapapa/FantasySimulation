@@ -1,9 +1,11 @@
 import type { DeepReadonly, Effect } from '@fantasy/domain/spatial';
-import { generalizedStatus, statusBenefit } from './status-observation.ts';
+import { statusBenefit } from './status-observation.ts';
 import { planStatusEffects } from './status-reactions.ts';
 import { applyStatuses, UnresolvedRuleError, type StatusCohort } from './status.ts';
+import { knownPeriodicDamage } from './status-risk.ts';
 import { SpatialBudgetError } from './physics.ts';
 import type { DecisionView } from './perception.ts';
+import { abilityCategories } from './categories.ts';
 
 /** Forecast one ability transaction using self knowledge or delayed public summaries only. */
 export function assessStatusEffects(
@@ -26,13 +28,12 @@ export function assessStatusEffects(
       return revision ? [[effect, revision] as const] : [];
     }),
   );
-  const generalized =
-    (target === 'self'
-      ? own.some((s) => generalizedStatus(s.revision.definition))
-      : observed.length > 0) ||
-    [...knownApplications.values()].some((s) => generalizedStatus(s.definition));
   const handled = new Set<DeepReadonly<Effect>>();
-  const result = (value: number) => ({
+  const result = (
+    value: number,
+    risk?: { before: number; after: number; nonDamageValue: number },
+  ) => ({
+    risk,
     value,
     handled,
     reason:
@@ -40,14 +41,14 @@ export function assessStatusEffects(
         ? 'defined status benefit/reaction from own knowledge or observed public state'
         : '',
   });
-  if (!generalized) return result(0);
   for (const effect of effects)
     if (
       effect.kind === 'dispel' ||
-      effect.kind === 'water' ||
-      (effect.kind === 'apply-status' && knownApplications.has(effect))
+      (effect.kind === 'water' && (target === 'enemy' || view.ownStatuses !== undefined)) ||
+      effect.kind === 'apply-status'
     )
       handled.add(effect);
+  if (!own.length && !observed.length && !knownApplications.size) return result(0);
   const resources =
     target === 'self'
       ? {
@@ -56,14 +57,34 @@ export function assessStatusEffects(
         }
       : {};
   const activationStep = launchStep + 1;
-  const benefit = (states: readonly StatusCohort[]) =>
+  const benefit = (states: readonly StatusCohort[], withoutDamage = false) =>
     states.reduce(
       (sum, s) =>
         sum +
-        statusBenefit(s.revision.definition, horizon, s.endStep - activationStep, resources, {
-          startStep: s.startStep,
-          fromStep: activationStep,
-        }) *
+        statusBenefit(
+          s.revision.definition,
+          horizon,
+          s.endStep - activationStep,
+          resources,
+          {
+            startStep: s.startStep,
+            fromStep: activationStep,
+          },
+          withoutDamage,
+          (adjustment) =>
+            target === 'enemy' ||
+            adjustment.target !== 'damageDealt' ||
+            view.self.actor.abilities.some(
+              ({ definition }) =>
+                (!adjustment.category ||
+                  abilityCategories(definition).includes(adjustment.category)) &&
+                definition.effects.some(
+                  (e) =>
+                    e.kind === 'damage' &&
+                    (!adjustment.element || e.element === adjustment.element),
+                ),
+            ),
+        ) *
           s.stacks,
       0,
     );
@@ -74,10 +95,33 @@ export function assessStatusEffects(
     if (target === 'self') {
       const active = own.filter((s) => s.startStep <= launchStep && launchStep < s.endStep);
       const plan = planStatusEffects(active, forecastEffects, definitions, launchStep);
+      const after = applyStatuses(
+        plan.statuses,
+        plan.applications,
+        plan.dispels,
+        activationStep,
+      ).statuses;
+      const damage = (states: readonly StatusCohort[]) =>
+        knownPeriodicDamage(
+          view.self.actor,
+          states,
+          view.resources,
+          activationStep,
+          horizon,
+          activationStep,
+        );
+      const beforeDamage = damage(active),
+        afterDamage = damage(after);
+      if (beforeDamage === undefined || afterDamage === undefined) return result(0);
       return result(
-        benefit(
-          applyStatuses(plan.statuses, plan.applications, plan.dispels, activationStep).statuses,
-        ) - benefit(active),
+        benefit(after) - benefit(active),
+        beforeDamage || afterDamage
+          ? {
+              before: beforeDamage,
+              after: afterDamage,
+              nonDamageValue: benefit(after, true) - benefit(active, true),
+            }
+          : undefined,
       );
     }
     // Incoming definitions are known; enemy stack counts, clocks and transform destinations are not.

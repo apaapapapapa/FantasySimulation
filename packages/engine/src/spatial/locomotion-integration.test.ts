@@ -13,6 +13,27 @@ describe('resource-aware decisions and full matches', () => {
   it('reserves skill and jump resources before switching from walking to running', async () => {
     const f = await locomotionFixture();
     try {
+      const unseen = choosePolicy(
+        selfView(f.actor, 0, f.battle.rules.ai!, f.battle.statuses),
+        new Set(),
+        false,
+      );
+      expect(unseen.gait).toBe('walk');
+      f.actor.memory = {
+        ...f.actor.memory,
+        observation: {
+          sampledAt: 0,
+          availableAt: 5,
+          enemy: {
+            id: 'right',
+            step: 0,
+            position: { x: 4, y: 0.902, z: 0 },
+            velocity: { x: 0, y: 0, z: 0 },
+            facing: { x: -1, y: 0, z: 0 },
+          },
+          projectiles: [],
+        },
+      };
       const decide = (stamina: number) => {
         f.actor.resources.stamina = stamina;
         return choosePolicy(

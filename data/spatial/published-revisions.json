@@ -416,6 +416,12 @@
       "id": "standard-locomotion-v1",
       "revision": 1,
       "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-general-ai-v1",
+      "revision": 1,
+      "contentHash": "sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76"
     }
   ]
 }

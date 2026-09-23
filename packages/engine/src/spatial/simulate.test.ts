@@ -206,7 +206,14 @@ describe('fixed-step battle stream', () => {
   });
   it('activates action statuses at the next boundary, pulses at activation, and removes them before the expiry pulse', async () => {
     const run = await runBattle(
-      await fixture(5, { statuses: [aura()], policy: { movement: 'hold' } }),
+      await fixture(5, {
+        statuses: [aura()],
+        // Test the action clock with a character willing to trade HP for brief flight.
+        policy: {
+          movement: 'hold',
+          evaluation: { attackBps: 10000, survivalBps: 1, explorationBps: 0 },
+        },
+      }),
     );
     expect(
       events(run.records)
