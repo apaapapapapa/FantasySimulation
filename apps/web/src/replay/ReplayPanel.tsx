@@ -136,7 +136,7 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
           )}
           {end?.kind !== 'result' && <p>{end?.reason}</p>}
           {state && (
-            <SceneBoundary key={replay.manifest.simulationHash}>
+            <SceneBoundary key={`scene:${replay.manifest.simulationHash}`}>
               <Suspense fallback={<p>3D表示を準備しています</p>}>
                 <Scene
                   context={replay.context}
@@ -249,7 +249,11 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
               ))}
             </tbody>
           </table>
-          <ReplayEvents key={replay.manifest.simulationHash} replay={replay} onSeek={seek} />
+          <ReplayEvents
+            key={`events:${replay.manifest.simulationHash}`}
+            replay={replay}
+            onSeek={seek}
+          />
           <details>
             <summary>保存結果のhash</summary>
             <pre aria-label="保存結果のhash">

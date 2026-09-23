@@ -38,12 +38,14 @@ test('static-replay-controls', async ({ page }, info) => {
   const result = await page.getByLabel('保存結果のhash').textContent();
   await page.getByLabel('表示stepを入力').fill('120');
   await expect(page.getByLabel('現在のstep')).toHaveText('120');
+  await expect(page.locator('canvas')).toHaveCount(1);
+  await expect(canvas).toHaveAttribute('data-rendered', 'true');
   const savedState = await state.textContent();
   const image = await canvas.screenshot();
-  await page.getByLabel('カメラ', { exact: true }).selectOption('side');
+  await page.getByRole('combobox', { name: 'カメラ', exact: true }).selectOption('side');
   await expect.poll(async () => (await canvas.screenshot()).equals(image)).toBe(false);
   for (const mode of ['follow', 'free'])
-    await page.getByLabel('カメラ', { exact: true }).selectOption(mode);
+    await page.getByRole('combobox', { name: 'カメラ', exact: true }).selectOption(mode);
   const beforeDrag = await canvas.screenshot();
   const box = (await canvas.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -68,6 +70,7 @@ test('static-replay-controls', async ({ page }, info) => {
   await page.getByRole('button', { name: '一時停止', exact: true }).click();
   await page.getByLabel('表示stepを入力').fill('120');
   await expect(page.getByLabel('現在のstep')).toHaveText('120');
+  await expect(page.locator('canvas')).toHaveCount(1);
   await expect(state).toHaveText(savedState!);
   await page.getByText('イベントログを開く', { exact: true }).click();
   await page
@@ -83,11 +86,17 @@ test('static-replay-controls', async ({ page }, info) => {
 
 test('static-partials', async ({ page }) => {
   for (const kind of ['unresolved', 'truncated'] as const) {
-    await page.goto(match(kind).url);
+    const partial = match(kind);
+    await page.goto(partial.url);
     await expect(page.getByLabel('リプレイ結果')).toHaveText(kind);
     await expect(page.getByLabel('現在のstep')).toHaveText('0');
     await expect(page.getByRole('region', { name: '保存リプレイ' })).toContainText('記録済み範囲');
+    await page.getByLabel('表示stepを入力').fill(String(partial.manifest.lastVerifiedStep));
+    await expect(page.getByLabel('現在のstep')).toHaveText(
+      String(partial.manifest.lastVerifiedStep),
+    );
     await expect(page.getByRole('button', { name: '1step進む' })).toBeDisabled();
+    await expect(page.getByLabel('リプレイ結果')).toHaveText(kind);
     await expect(page.getByRole('alert')).toHaveCount(0);
   }
 });
@@ -104,7 +113,12 @@ test('static-errors', async ({ page }) => {
               status: 200,
               headers: {
                 'content-type': 'application/gzip',
-                ...(failure === 'http-gzip' ? { 'content-encoding': 'gzip' } : {}),
+                ...(failure === 'http-gzip'
+                  ? {
+                      'content-encoding': 'gzip',
+                      'access-control-expose-headers': 'content-encoding',
+                    }
+                  : {}),
               },
               body:
                 failure === 'http-gzip'
@@ -147,7 +161,9 @@ test('static-stale-navigation', async ({ page }) => {
   });
   await page.goto(complete.url);
   await started;
-  await page.getByLabel('試合集', { exact: true }).selectOption(match('truncated').setHash);
+  await page
+    .getByRole('combobox', { name: '試合集', exact: true })
+    .selectOption(match('truncated').setHash);
   const truncated = match('truncated');
   await page.getByRole('link', { name: `リプレイを開く ${truncated.row.slotId}` }).click();
   await expect(page.getByLabel('リプレイ結果')).toHaveText('truncated');
