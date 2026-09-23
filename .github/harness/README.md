@@ -3,7 +3,7 @@
 Apply [fantasy-delivery](../../.agents/skills/fantasy-delivery/SKILL.md) for changes.
 Collectors are read-only, with no merge/deploy authority. Application runtime must
 not import the harness. The separate [Issue completion writer](../../docs/issue-completion.md)
-requires successful main CI. [Manual repair loops](../../docs/development/repair-loop.md)
+requires successful main CI. [Manual repair loops](../../.agents/skills/fantasy-loop/SKILL.md)
 retain a frozen contract and budget; operation success is not completion.
 
 ## Source verification
@@ -37,13 +37,11 @@ vp run harness github-snapshot OWNER/REPOSITORY 22 .generated/harness/pr-22-1
 vp run harness delivery .generated/harness/pr-22-1/github-snapshot.json pr REVIEW.json
 ```
 
-The collector reads all files, conversation/review/thread pages (including nested
-comments), latest attempt-specific jobs, source/docs reports and CI plan/gate from
-GitHub logs. It checks commit parents, rereads PR/run identity and separately collects
-main CI after merge. Retain original command artifacts and log digests; discussions
-can be sensitive. Budget: 200 requests, 16 MiB, 120 seconds, bounded pages/rows, zero
-automatic retries. Partial pages, changed identity, rate limits and missing permissions
-stay unknown. Collection exit 0 is not delivery approval (`deliveryAssessed: false`).
+Collection covers all file/discussion/nested-thread pages, attempt-specific jobs,
+log reports/plan/gate, commit parents and reread identities, plus main CI after merge.
+Retain artifacts/log digests; discussion can be sensitive. Limits: 200 requests, 16 MiB,
+120 seconds, bounded pages/rows, zero retries. Incomplete/changed/unauthorized data stays
+unknown. Collection exit 0 is not delivery approval (`deliveryAssessed: false`).
 
 Read all changed files and discussion, resolve findings, then record actual review:
 
@@ -61,18 +59,14 @@ Read all changed files and discussion, resolve findings, then record actual revi
 }
 ```
 
-This template is not evidence. Self review is not independent approval. Required
-GitHub approval must match current head; unresolved threads block even when outdated.
-Timeout alone cannot complete review. Recollect on head/base/conversation/CI changes;
-changed paths or PR wording invalidate receipts. Use the exact reviewed squash wording;
-automatic Issue closing references are rejected. See the completion protocol above.
+Self review cannot replace required current-head approval. Unresolved threads block,
+even when outdated. Timeouts cannot complete review. Head/base/conversation/CI/path/wording
+changes invalidate evidence. Use reviewed squash wording without auto-closing references.
 
-`delivery ... pr` requires stable collection, latest CI, Linux receipts, review coverage
-and required approval, with no adverse/pending checks. Plan/gate/Linux reports must
-agree on source, head, base and attempt. Only observed planned skips are allowed.
-Docs-only PRs require Linux docs evidence; main and pre-plan runs require full source.
-`delivery ... merge` also requires actual main merge and its successful CI. Release is
-reported separately: absence of a new tag alone is not failure. Deployment is separate.
+`delivery ... pr` requires current stable CI, Linux evidence and review. Plan/gate/reports
+must agree on SHAs/attempt; only observed planned skips pass. Docs-only PRs need docs
+reports; main/pre-plan runs need full source. `merge` additionally requires actual main
+merge/CI. Release and deployment are separate; no new tag alone is not release failure.
 
 ## Connector fallback
 
