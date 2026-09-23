@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vite-plus/test';
 import { classify, collectPlan, parsePlan, wordingOnly } from './plan.ts';
 import { assessGate } from './gate.ts';
+import { loadReceipts } from '../harness/test-support/load.ts';
 import { corpusEvidence } from '../harness/test-support/corpus.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import type { Identity, Report } from '../harness/report.ts';
@@ -81,6 +82,7 @@ describe('fail-closed CI gate', () => {
   const corpus = corpusEvidence(info);
   const security = { ...evidence(SECURITY_CHECKS), producer: 'security-evidence' };
   const reports = {
+    ...loadReceipts(info),
     'ubuntu-latest': evidence(['source-clean', 'source-verify']),
     'windows-latest': evidence(['source-clean', 'source-verify']),
     security,
@@ -202,6 +204,16 @@ it(
         true,
       );
       expect(() => collectPlan(root, { ...env, GITHUB_SHA: 'e'.repeat(40) })).toThrow(Error);
+      const dispatch = { ...env, GITHUB_EVENT_NAME: 'workflow_dispatch' };
+      writeFileSync(eventPath, JSON.stringify({ inputs: { baseline: base } }));
+      const manual = collectPlan(root, dispatch);
+      expect(manual.baselineSha).toBe(base);
+      expect(manual.paths).toEqual(['apps/source.ts', 'docs/renamed.md']);
+      expect(manual.full).toBe(true);
+      for (const baseline of [undefined, 'main', '']) {
+        writeFileSync(eventPath, JSON.stringify({ inputs: { baseline } }));
+        expect(collectPlan(root, dispatch).baselineSha).toBeNull();
+      }
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

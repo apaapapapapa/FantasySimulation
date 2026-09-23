@@ -4,6 +4,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      baseline:
+        description: Exact baseline commit SHA for migration and paired load evidence
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -100,6 +105,12 @@ jobs:
         env:
           MIGRATION_BASE_SHA: ${{ needs.changes.outputs.baseline }}
         run: vp exec node scripts/harness.ts source .generated/harness/source
+      - name: Compare exact baseline and candidate on one runner
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          LOAD_BASE_SHA: ${{ needs.changes.outputs.baseline }}
+        shell: bash
+        run: vp exec node scripts/harness.ts load "$LOAD_BASE_SHA"
       - name: Preserve source evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

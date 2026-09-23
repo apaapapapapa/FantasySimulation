@@ -11,6 +11,7 @@ import { SOURCE_CHECKS } from '../harness/source.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { parsePlan } from './plan.ts';
 import type { Plan } from './plan.ts';
+import { readLoadArtifacts } from './load-artifacts.ts';
 const osNames = ['ubuntu-latest', 'windows-latest'] as const;
 export function assessGate(
   plan: Plan,
@@ -78,6 +79,38 @@ export function assessGate(
     checks.push(
       compareCorpus(plan, corpus?.definition, corpus?.sha256 ?? '', corpus?.artifacts ?? {}),
     );
+  if (plan.full) {
+    for (const key of ['load-ubuntu-latest', 'load-windows-latest', 'load-pair']) {
+      let status: Check['status'] = 'unknown',
+        reason = 'Missing load receipt';
+      try {
+        const pair = key === 'load-pair';
+        const receipt = assessReport(
+          reports[key],
+          pair
+            ? [
+                'load:budget:before',
+                'load:budget:after',
+                'load:comparison',
+                'load:regression',
+                'load:collection',
+              ]
+            : ['load:budget', 'load:collection'],
+        );
+        if (
+          receipt.report.producer !== 'load-runner' ||
+          receipt.report.sourceSha !== plan.sourceSha ||
+          (pair && receipt.report.baselineSha !== plan.baselineSha)
+        )
+          throw new Error('Stale load source/baseline');
+        status = receipt.exitCode === 0 ? 'pass' : receipt.exitCode === 1 ? 'fail' : 'unknown';
+        reason = `Bound ${key} receipt; exit=${receipt.exitCode}`;
+      } catch {
+        /* Fail closed on absent/malformed raw capture report. */
+      }
+      checks.push({ id: `ci-evidence:${key}`, required: true, status, reason, evidence });
+    }
+  }
   const report: Report = {
     schemaVersion: 1,
     producer: 'ci-gate',
@@ -129,6 +162,25 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
         };
       } catch {
         /* Missing artifacts remain unknown, including a missing operating system. */
+      }
+    }
+    for (const [key, path] of [
+      ['load-ubuntu-latest', 'ubuntu-latest/load'],
+      ['load-windows-latest', 'windows-latest/load'],
+      ['load-pair', 'ubuntu-latest/load-pair'],
+    ]) {
+      try {
+        reports[key!] = readLoadArtifacts(
+          process.cwd(),
+          `.generated/harness/ci/evidence/${path}`,
+          plan,
+          key === 'load-pair',
+        );
+      } catch (error) {
+        reports[key!] = null;
+        console.error(
+          `Incomplete load artifacts ${key}: ${error instanceof Error ? error.message : 'invalid evidence'}`,
+        );
       }
     }
     const bytes = readFileSync('packages/engine/fixtures/spatial/corpus.json');

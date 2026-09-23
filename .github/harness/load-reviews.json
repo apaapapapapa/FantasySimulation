@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "reviews": [
+    {
+      "baselineSha": "94896d4c3762d78a72e2abb8dfd1610a5cae49a4",
+      "beforeDigest": "ebc58ce781d09662fd834f13344d3f710e1452b7061028771b5598fe79abfc24",
+      "afterDigest": "ebc58ce781d09662fd834f13344d3f710e1452b7061028771b5598fe79abfc24",
+      "introduction": true,
+      "comparison": "paired",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Initial seven-case profile against merged PR #57 observed-AI rules. Reviewed all five actual alternating pairs (35 measurements per revision): all seven deterministic counters and bytes match before/after and both revisions complete within the proposed ceilings. Compared with the earlier unmerged six-case proposal, main now emits decision/knowledge events and swordsman/sky-mage reaches its configured 6000-step draw (2460 events; 8763519 log bytes). The new seer/ember case completes its configured 250-step draw (221 events; 690710 log bytes). This preserves approved main behavior and all existing Golden/boundary expectations. Most positive operation ceilings retain roughly 20-50% headroom; tiny counts round up, zero counters stay strict, configured 6000/250-step boundaries remain exact, and trajectory ceilings allow roughly twice measured encoding bytes. These are regression ceilings, not product capacity or wall-time/RSS guarantees. Failed/missing baseline observations cannot be waived.",
+      "evidence": [
+        ".generated/harness/load-pair/0-before.json",
+        ".generated/harness/load-pair/0-after.json",
+        ".generated/harness/load-pair/results.json",
+        ".generated/harness/load-pair/commands.json",
+        ".generated/harness/load-pair/baseline-corpus.json",
+        ".generated/harness/load-pair/baseline-profile.json",
+        ".generated/harness/load-pair/boundary.json",
+        "scripts/harness/load-gate.test.ts",
+        "scripts/ci/load-artifacts.test.ts",
+        "docs/adr/0009-observed-ai.md"
+      ]
+    }
+  ]
+}

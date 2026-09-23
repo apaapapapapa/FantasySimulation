@@ -11,6 +11,7 @@ export async function checkProperty<T extends [unknown, ...unknown[]]>(
   file: string,
   property: IAsyncProperty<T>,
   options: PropertyParameters<T> = {},
+  battleContext: { manifestHash: string; battleSeed: number } | null = null,
 ) {
   assert.match(id, /^[a-z0-9-]+$/);
   const parameters = {
@@ -49,7 +50,13 @@ export async function checkProperty<T extends [unknown, ...unknown[]]>(
     minimizedInput: result.counterexample,
     error: result.errorInstance instanceof Error ? result.errorInstance.message : null,
     parameters,
+    battleContext,
+    contextReason: battleContext
+      ? 'Prepared base manifest; generated overrides are in minimizedInput'
+      : 'Unit or ownership-model property without a battle manifest',
     command: ['pnpm', 'exec', 'vp', 'test', 'run', file],
+    commandKind: 'reproduction',
+    launch: { executable: process.execPath, argv: process.argv, execArgv: process.execArgv },
     replay: { seed: result.seed, path: result.counterexamplePath, input: result.counterexample },
   };
   const directory = '.generated/harness/properties';
