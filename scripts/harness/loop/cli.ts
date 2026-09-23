@@ -32,5 +32,15 @@ export async function loopCommand(args: string[]) {
     const { evaluate } = await import('./evaluation.ts');
     return evaluate(path);
   }
-  throw new Error('Supported: init, status, prepare, begin, apply, evaluate, recover');
+  if (command === 'regression' && input) {
+    const { regression } = await import('./regression.ts');
+    return regression(path, readBoundedJson(input));
+  }
+  const { review, handoff, observe } = await import('./handoff.ts');
+  if (command === 'review' && input) return review(path, readBoundedJson(input));
+  if (command === 'handoff' && !input) return handoff(path);
+  if (command === 'observe' && input) return observe(path, readBoundedJson(input));
+  throw new Error(
+    'Supported: init, status, prepare, begin, apply, evaluate, recover, regression, review, handoff, observe',
+  );
 }

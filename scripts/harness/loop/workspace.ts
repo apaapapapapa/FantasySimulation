@@ -81,6 +81,16 @@ export function owned(path: string, journal = readJournal(path), requireClean = 
   if (requireClean) clean(dirs.workspace);
   return dirs;
 }
+export function copyDependencies(root: string, workspace: string) {
+  for (const prefix of ['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine']) {
+    const dependencies = join(root, prefix, 'node_modules');
+    if (existsSync(dependencies))
+      cpSync(dependencies, join(workspace, prefix, 'node_modules'), {
+        recursive: true,
+        verbatimSymlinks: true,
+      });
+  }
+}
 export async function prepare(path: string, source: string) {
   return operation(path, () => {
     const j = readJournal(path),
@@ -128,15 +138,7 @@ export async function prepare(path: string, source: string) {
       dirs.workspace,
       j.contract.baselineSha,
     ]);
-    // Only already installed dependencies from the trusted baseline; never source .env, HOME or hooks.
-    for (const prefix of ['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine']) {
-      const dependencies = join(root, prefix, 'node_modules');
-      if (existsSync(dependencies))
-        cpSync(dependencies, join(dirs.workspace, prefix, 'node_modules'), {
-          recursive: true,
-          verbatimSymlinks: true,
-        });
-    }
+    copyDependencies(root, dirs.workspace);
     atomicWrite(dirs.owner, {
       contractHash: j.contractHash,
       controllerRoot,

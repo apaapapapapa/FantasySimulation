@@ -30,6 +30,8 @@ export function status(value: unknown, now = new Date().toISOString()) {
   let candidateSha = c.baselineSha,
     verifiedSha: string | null = null,
     patchHash: string | null = null;
+  let externalSpent = 0,
+    regressionSha: string | null = null;
   let bestPassed = 0,
     reason = 'Not prepared',
     reviewAt: string | null = null;
@@ -61,6 +63,7 @@ export function status(value: unknown, now = new Date().toISOString()) {
           'Reservation exceeds budget',
         );
         verifiedSha = null;
+        regressionSha = null;
         patchHash = null;
         reviewAt = null;
         phase = 'running';
@@ -96,8 +99,19 @@ export function status(value: unknown, now = new Date().toISOString()) {
         }
         break;
       }
+      case 'regression':
+        ensure(phase === 'review' && d.candidateSha === verifiedSha, 'Stale regression');
+        text(d.evidence);
+        regressionSha = sha(d.candidateSha);
+        break;
+      case 'collection-reserved':
+        ensure(phase === 'delivery', 'Collection before review');
+        externalSpent += natural(d.calls);
+        ensure(externalSpent <= externalCalls, 'External call reservation exhausted');
+        break;
       case 'reviewed':
         ensure(phase === 'review' && d.candidateSha === verifiedSha, 'Stale review');
+        ensure(regressionSha === verifiedSha, 'Regression proof missing');
         ensure(d.method === 'self' || d.method === 'human', 'Unknown review method');
         ensure(d.method !== 'self' || c.review !== 'required', 'Required review cannot fall back');
         ensure(
@@ -167,6 +181,8 @@ export function status(value: unknown, now = new Date().toISOString()) {
     attempts,
     noProgress,
     externalCalls,
+    externalSpent,
+    regressionSha,
     costMicros,
     nextAction: nextAction[phase],
     remaining: {

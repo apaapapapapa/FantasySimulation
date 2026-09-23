@@ -131,6 +131,7 @@ describe('frozen manual loop contract', () => {
       f.mutate('applying', { baseSha: 'a'.repeat(40), patchHash });
       f.mutate('applied', { candidateSha, patchHash });
       f.mutate('evaluated', { candidateSha, outcome: 'pass', passed: 2, evidence: 'source' });
+      f.mutate('regression', { candidateSha, evidence: 'regression' });
       f.mutate('reviewed', {
         candidateSha,
         method: 'human',
