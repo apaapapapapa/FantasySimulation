@@ -161,6 +161,8 @@ export function observeImpact(
     impact: number;
     shield: boolean;
     partial: boolean;
+    statuses?: readonly StatusCohort[];
+    statusStep?: number;
   },
   step: number,
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
@@ -173,6 +175,7 @@ export function observeImpact(
   const uncertain = detail.partial,
     shield = detail.shield,
     low = Math.floor(detail.impact / rules.damageQuantum) * rules.damageQuantum;
+  const observedStatuses = publicStatuses(detail.statuses ?? [], detail.statusStep ?? step);
   return {
     eventId: detail.eventId,
     ability: {
@@ -191,6 +194,7 @@ export function observeImpact(
     distanceBand: Math.min(200, Math.floor(length(sub(self.position, target.position)) / 2)),
     range: uncertain || shield ? null : { low, high: low + rules.damageQuantum },
     confidenceBps: uncertain || shield ? 0 : 2500,
+    ...(observedStatuses.length && { observedStatuses }),
   };
 }
 /** This is the sole information-ability exception: one named field, after an actual successful activation. */

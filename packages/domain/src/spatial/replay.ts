@@ -38,6 +38,16 @@ export const ArtifactRefSchema = z.strictObject({
   rawBytes: z.number().int().min(1).max(4_000_001),
   checksum: HashSchema,
 });
+export type ArtifactRef = z.infer<typeof ArtifactRefSchema>;
+/** Readers bound a manifest before parsing it, whatever transport delivered it. */
+export const MAX_REPLAY_MANIFEST_BYTES = 4_000_000;
+/** Split one verified, expanded NDJSON chunk; validation happens when ReplayState applies it. */
+export function replayChunkRecords(text: string, chunk: { records: number }): unknown[] {
+  if (!text.endsWith('\n')) throw new Error('Invalid replay: incomplete NDJSON chunk');
+  const lines = text.slice(0, -1).split('\n');
+  if (lines.length !== chunk.records) throw new Error('Invalid replay: chunk record count');
+  return lines.map((line): unknown => JSON.parse(line));
+}
 export const ReplayChunkSchema = z.strictObject({
   ...ArtifactRefSchema.shape,
   index: recordIndex,

@@ -1,0 +1,16 @@
+{
+  "swordsman-sky-mage-240": {
+    "sourceSha": "add5a103f1685b3063f452dbdc49f28bc148952b",
+    "node": "24.19.0",
+    "writer": "apps/api/src/replay-writer.ts ReplayWriter (display-ndjson-gzip-v1)",
+    "battle": "catalogManifest('swordsman', 'sky-mage', 'pillars-surveyed-v1', 240, 42) -> prepareBattle -> runPreparedBattle",
+    "ids": {
+      "replay": "swordsman-sky-mage-240",
+      "attempt": "fixture-attempt",
+      "result": "fixture-result"
+    },
+    "contents": "243 records in 4 chunks/checkpoints: one boundary record, flight, projectiles, a hit, a status and AI decisions; time-limit draw at step 240",
+    "bytes": "Chunk/checkpoint .gz files are the writer's bytes; manifest.json is the same JSON value formatted by vp fmt.",
+    "policy": "Fixed saved data for replay readers. Never regenerate to make a reader pass; regeneration needs separate review."
+  }
+}

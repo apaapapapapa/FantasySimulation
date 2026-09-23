@@ -4,7 +4,12 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
-import { DEFAULT_BUDGET, actorSeed, SpecInputSchema } from '@fantasy/domain/spatial';
+import {
+  DEFAULT_BUDGET,
+  actorSeed,
+  SpecInputSchema,
+  type ReplayManifest,
+} from '@fantasy/domain/spatial';
 import { withRuntime } from '../test-support/runtime.ts';
 import { BattleRuntime } from './battle-runtime.ts';
 import { openStore, jsonValue } from './store.ts';
@@ -171,6 +176,32 @@ describe('persistent Worker/API orchestration', { timeout: 30000 }, () => {
           (await app.inject({ method: 'POST', url: '/api/battle-jobs', payload: { spec } }))
             .statusCode,
         ).toBe(400);
+      } finally {
+        await app.close();
+      }
+    });
+  });
+  it('serves one replay file for a seek without re-reading the others and holds a damaged one', async () => {
+    await withRuntime(async ({ runtime, spec, store, root }) => {
+      const app = createApp(store, false, runtime);
+      try {
+        const done = await runtime.wait((await runtime.submit(spec, 'seek', 'one')).id);
+        const { replayId } = runtime.jobs.result(done.resultId!)!;
+        const files = `/api/replays/${replayId}/files`;
+        const opened = (await app.inject(`/api/replays/${replayId}`)).json<ReplayManifest>();
+        const [chunk, checkpoint] = [opened.chunks[0]!, opened.checkpoints[0]!];
+        await writeFile(join(root, replayId, chunk.file), 'damaged after opening');
+        // Only the requested file is read; the damaged chunk is found when it is requested.
+        const served = await app.inject(`${files}/${checkpoint.file}`);
+        expect([served.statusCode, served.rawPayload.length]).toEqual([200, checkpoint.bytes]);
+        expect((await app.inject(`${files}/chunk-99999.ndjson.gz`)).statusCode).toBe(404);
+        const damaged = await app.inject(`${files}/${chunk.file}`);
+        expect([damaged.statusCode, damaged.json().error]).toEqual([
+          503,
+          'Replay is corrupt; result held',
+        ]);
+        expect(runtime.jobs.artifact(replayId)?.state).toBe('corrupt');
+        expect((await app.inject(`${files}/${checkpoint.file}`)).statusCode).toBe(503);
       } finally {
         await app.close();
       }

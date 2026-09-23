@@ -2,6 +2,8 @@ import {
   contentHash,
   CURRENT_ENGINE_VERSION,
   AI_RULES,
+  AppearancePriorsSchema,
+  LEGACY_APPEARANCE_PRIORS,
   actorSeed,
   PhysicsProfileSchema,
   type Definition,
@@ -87,10 +89,10 @@ export async function sampleManifest(maxSteps = 6000): Promise<Manifest> {
     ],
     navigation: { version: 'support-graph-v1', nodes: [], edges: [] },
   });
-  const ruleset = await sealRevision('ruleset', 'standard-locomotion-v1', 1, {
+  const ruleset = await sealRevision('ruleset', 'standard-general-ai-v1', 1, {
     name: '標準3D',
     rulesVersion: CURRENT_ENGINE_VERSION,
-    ai: { ...AI_RULES },
+    ai: { ...AI_RULES, appearancePriors: AppearancePriorsSchema.parse(LEGACY_APPEARANCE_PRIORS) },
     stepMs: 20,
     maxSteps,
     gravityMmPerSecond2: -9807,

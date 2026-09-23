@@ -1,7 +1,8 @@
 import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { canonicalJson, type ReplayManifest } from '@fantasy/domain/spatial';
 import { JobStore, type StoredArtifact } from './job-store.ts';
-import { replayDirectory, sha256 } from './replay-files.ts';
+import { readBoundedFile, replayDirectory, sha256 } from './replay-files.ts';
 import { readReplayManifest, verifyReplayDirectory } from './replay-reader.ts';
 import { StoreError } from './store.ts';
 
@@ -23,20 +24,46 @@ export class ArtifactStore {
         [...manifest.chunks, ...manifest.checkpoints].reduce((n, r) => n + r.bytes, 0),
     };
   }
-  async verified(id: string) {
+  /** Every file is re-verified before a replay is opened or its result is adopted. */
+  verified(id: string) {
+    return this.bound(id, true);
+  }
+  /**
+   * One stored file for random access: a seek reads only what it needs (ADR 0006). The
+   * manifest stays bound to the DB reference and the requested file to its own size and
+   * checksum; other files are checked when they are read or the replay is opened again.
+   */
+  async file(id: string, file: string) {
+    const manifest = await this.bound(id, false);
+    const ref = [...manifest.chunks, ...manifest.checkpoints].find((r) => r.file === file);
+    if (!ref) throw new StoreError(404, 'Replay file not found');
+    return this.held(id, async () => {
+      const bytes = await readBoundedFile(join(replayDirectory(this.root, id), file), ref.bytes);
+      if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
+        throw new Error('Replay file size or checksum mismatch');
+      return bytes;
+    });
+  }
+  private async bound(id: string, full: boolean) {
     const artifact = this.jobs.artifact(id);
     if (!artifact) throw new StoreError(404, 'Replay not found');
     if (artifact.state !== 'ready')
       throw new StoreError(503, `Replay is ${artifact.state}; result held`);
-    try {
+    return this.held(id, async () => {
       const manifest = await readReplayManifest(this.root, id, artifact.manifestChecksum);
-      await verifyReplayDirectory(replayDirectory(this.root, id), manifest);
+      if (full) await verifyReplayDirectory(replayDirectory(this.root, id), manifest);
       if (
         manifest.attemptId !== artifact.attemptId ||
         this.metadata(manifest).bytes !== artifact.bytes
       )
         throw new Error('Replay reference binding mismatch');
       return manifest;
+    });
+  }
+  /** Missing or damaged stored data holds the artifact and the result that refers to it. */
+  private async held<T>(id: string, read: () => Promise<T>): Promise<T> {
+    try {
+      return await read();
     } catch (error) {
       const state = (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'missing' : 'corrupt';
       this.jobs.markArtifact(id, state);

@@ -134,6 +134,8 @@ export function commitEffects(
                     impact: detail.calculation?.afterModifiers ?? detail.afterResistance,
                     shield: BigInt(detail.absorbed.numerator) > 0n,
                     partial: (app.scaleBps ?? 10000) !== 10000,
+                    statuses: actor.statuses,
+                    statusStep: step,
                   },
                   activationStep,
                   battle.rules.ai,

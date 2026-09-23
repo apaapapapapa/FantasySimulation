@@ -2,6 +2,7 @@ import type { DeepReadonly, Definition, ResourceState } from '@fantasy/domain/sp
 import type { DecisionView } from './perception.ts';
 import type { StatusCohort } from './status.ts';
 import { staminaExhausted } from './resources.ts';
+import { length, sub } from './math.ts';
 
 export type Gait = 'walk' | 'run' | 'slow';
 export function gaitProfile(character: DeepReadonly<Definition<'character'>>, gait: Gait) {
@@ -80,6 +81,21 @@ export function chooseGait(view: DecisionView, selectedCost: number, dodge = fal
       (view.speedBps ?? 10000)) /
       10000,
   );
-  const gait: Gait = !resourceReady(view) ? 'slow' : stamina - reserve >= runCost ? 'run' : 'walk';
+  const target = view.memory.observation?.enemy ?? view.memory.lastSeen;
+  const policy = view.self.actor.policy;
+  const distance = target ? length(sub(target.position, view.self.position)) : null;
+  const preferred = policy.preferredDistanceMm / 1000;
+  const urgent =
+    dodge ||
+    !!view.memory.observation?.projectiles.length ||
+    (policy.movement !== 'hold' &&
+      distance !== null &&
+      (distance > preferred + 0.1 ||
+        (policy.movement !== 'approach' && distance < preferred - 0.1)));
+  const gait: Gait = !resourceReady(view)
+    ? 'slow'
+    : urgent && stamina - reserve >= runCost
+      ? 'run'
+      : 'walk';
   return { gait, reserveStamina: reserve };
 }
