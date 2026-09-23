@@ -6,6 +6,7 @@ export * from './random.ts';
 export * from './stream.ts';
 export * from './api.ts';
 export * from './batch.ts';
+export * from './publication.ts';
 export * from './cognition.ts';
 export * from './status-references.ts';
 export * from './numeric.ts';

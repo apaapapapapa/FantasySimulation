@@ -108,6 +108,13 @@ vp run batch check .generated/batch-plan.json path/to/index.json .generated/batc
 ```
 
 不完全なshardや破損を成功として数えません。不完全ならexit 2、入力/整合性エラーはexit 1です。
+公開用directoryの生成（未完了なら全枠を残してexit 2、不正ならexit 1）:
+
+```sh
+vp run batch export .generated/batch-plan.json .generated/public path/to/index.json .generated/batch-output
+```
+
+R2書込みや画面への接続は後続です。公開layout/理由コード/容量は[ADR 0008](../adr/0008-headless-batch.md)。
 配布ビルドでは`node apps/api/dist/batch.mjs`を使用できます。
 出力の`.work/`はローカルDB/作業記録です。必要ディスク容量は最終出力上限＋作業replay上限＋256 MiB。
 [計画・保存・再開の契約](../adr/0008-headless-batch.md)を参照してください。

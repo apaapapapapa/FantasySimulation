@@ -97,15 +97,4 @@ export async function validateBatchPlan(input: unknown, source: ExecutionSource)
     throw new Error('Planned simulation/slot identity mismatch');
   return plan;
 }
-export function shardSlots(plan: BatchPlan, index: number, count: number) {
-  if (
-    !Number.isInteger(count) ||
-    count < 1 ||
-    count > 64 ||
-    !Number.isInteger(index) ||
-    index < 0 ||
-    index >= count
-  )
-    throw new Error('Invalid bounded shard selection');
-  return plan.slots.filter((slot) => Number.parseInt(slot.id.slice(7, 15), 16) % count === index);
-}
+export { shardSlots } from './batch-check.ts';
