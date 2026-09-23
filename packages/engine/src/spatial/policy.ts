@@ -64,7 +64,12 @@ export function choosePolicy(
     const enabled = actor.policy.priorities.some(
       (p) => p.abilityId === ability.id && conditionMatches(p.when, view),
     );
-    const payment = payCost(d, view.resources, view.used?.[ability.id] ?? 0);
+    const payment = payCost(
+      d,
+      view.resources,
+      view.used?.[ability.id] ?? 0,
+      !view.staminaExhausted,
+    );
     const reason =
       view.canAct === false
         ? 'action-phase'

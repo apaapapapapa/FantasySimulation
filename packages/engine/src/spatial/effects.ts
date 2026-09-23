@@ -168,6 +168,7 @@ export function resolveEffects(
         unclamped = BigInt(target.resources.hp) + heal - hpDamage,
         maxHp = BigInt(target.actor.character.stats.hp);
       const resources = {
+        ...target.resources,
         hp: checked(unclamped < 0n ? 0n : unclamped > maxHp ? maxHp : unclamped),
         mp: target.resources.mp,
         shield: checked(shield - absorbed),
