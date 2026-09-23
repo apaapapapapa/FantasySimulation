@@ -12,7 +12,7 @@ import {
   type Revision,
 } from '@fantasy/domain/spatial';
 import { api, apiRevisionPage, errorText, reference } from '../api-client.ts';
-import { spawnPositions } from './spawn-position.ts';
+import { facingToward, spawnPositions } from './spawn-position.ts';
 import { recentIdentities, rememberIdentity } from './recent-identities.ts';
 
 function required(items: Revision[], id: string) {
@@ -281,7 +281,7 @@ export function BattlePanel({
                     actorId: index === 0 ? 'left' : 'right',
                     character: reference(required(catalog.characters, id)),
                     position: positions[index],
-                    facing: { x: index === 0 ? 1000 : -1000, y: 0, z: 0 },
+                    facing: facingToward(positions[index]!, positions[1 - index]!),
                     rngSeed: actorSeed(seed, index as 0 | 1),
                     rngStream: index,
                   })),

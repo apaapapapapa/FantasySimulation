@@ -103,8 +103,18 @@ test('draft-resume-tall-character', async ({ page }, info) => {
   await positions.fill('[{"x":1000000,"y":3020,"z":0},{"x":4000,"y":1200,"z":0}]');
   await battle.getByRole('button', { name: '対戦を開始' }).click();
   await expect(battle.getByRole('alert')).toContainText('Spawn body exceeds arena bounds');
-  await positions.fill('[{"x":-4000,"y":3020,"z":2000},{"x":4000,"y":1200,"z":0}]');
+  await positions.fill('[{"x":0,"y":3020,"z":-4000},{"x":0,"y":3020,"z":4000}]');
+  const submission = page.waitForRequest(
+    (request) =>
+      request.method() === 'POST' && new URL(request.url()).pathname === '/api/battle-jobs',
+  );
   await battle.getByRole('button', { name: '対戦を開始' }).click();
+  expect(
+    (await submission).postDataJSON().spec.participants.map((p: { facing: unknown }) => p.facing),
+  ).toEqual([
+    { x: 0, y: 0, z: 1000 },
+    { x: 0, y: 0, z: -1000 },
+  ]);
   await expect(battle.getByLabel('結果の種類')).toHaveText('truncated');
   await expect(battle.getByRole('alert')).toHaveCount(0);
 });

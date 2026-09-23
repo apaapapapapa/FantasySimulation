@@ -236,13 +236,45 @@ Cast-stop excludes paired dodge. Actual collision/settlement remains authoritati
 movementSlot saves candidates/exclusions/draw; existing cognition/locomotion saves the rest.
 No hidden enemy inputs.
 
+## 段階攻撃（G-07a、spatial-v1.16）
+
+standard-stages-v1: omitted stages preserve costs/aim/events/hits/PRNG.
+Required attack/effects=stage0, executed once. Action only; 1–16 unique IDs,
+first offset0, ordered nonoverlapping windows, offset≤6000, duration1–100,
+last end≤6000. Melee duration=activeSteps; hold=null attack/empty effects.
+Other releases emit once; projectiles may outlive stages.
+
+L is the speed-scaled release; stage windows are [L+offset,L+offset+duration),
+with physical offsets/duration. Recovery follows the last planned end; cooldown starts
+at L. Failure/interruption never shortens either. At each start recheck capabilities,
+condition/startCondition/interruptWhen and observed range; failure cancels all remaining
+stages without retry. Conditions use bounded own/delayed observation ASTs.
+
+Top cost/uses + stage0 extra pay at declaration; later extras use ResourceBudget at
+start, without future holds/uses. Before paying, admit due cost plus flight upkeep and
+selected dodge/jump together. Shortage cancels stage/new burst, preserves flight and
+existing gait, and retains committed cost.
+Boundary death/incapacity/silence cancels explicit sequences. Declared damage interruption
+uses positive attributed HP damage, including simultaneous healing. Interval effects commit
+at n+1 without rewinding gathered contacts. Attached shapes end/cancel; detached shots keep
+snapshots. Legacy launched melee persists. No pulse runs beyond the final interval.
+
+The shared ledger keys action/stage/group/target. Default max1; explicit hit policy sets
+maxHits≤16, minIntervalSteps≥1 and optional full intervening separation. Zero damage consumes
+a contact; miss does not. Clone/hash/rollback ledger, stage, cost and PRNG together.
+AI estimates own stages/cost/exposure/timing; enemy cues contain delayed visible shape/state.
+Recorded geometry/clocks/causes support ReplayState seek and Worker/SQLite storage.
+return-cut-v1 / staged-duelist-v1: 10+15 damage, 6+4 stamina.
+
+Corpus changes only engine/rules identities; new tests cover stages, motion admission,
+rollback, privacy and storage. G-07b/G-08 shape/motion/force/reactions remain pending.
+
 ## 行動時計と攻撃形状（3D-06b）
 
-行動速度0では新規主行動を開始しない。正なら詠唱・硬直・cooldownは
-`ceil(定義step × 10000 / actionSpeedBps)`。硬直は最低1stepで、攻撃の有効区間を終えてから
-始まる。cooldownは発射予定境界から数える。物理移動と攻撃の有効時間は行動速度で縮めない。
-costs.uses=0は無制限、正ならその能力の試合中の成功宣言回数上限。HP/MP不足時に部分消費は
-行わず、HPをちょうど0にする支払いは合法。消費後の詠唱・発射不成立でも返金しない。
+Action speed0 forbids new actions; positive speed scales cast/recovery/cooldown by
+ceil(steps×10000/speed), minimum recovery1. Recovery follows physical active time;
+cooldown starts at release. uses0=unlimited, positive=declaration limit. Insufficient
+HP/MP rejects the whole payment; exact HP-to-zero is legal. No refund after fizzle.
 
 宣言・発射時の射程は観測/記憶上の相手中心と武器起点で確認し、後方への開始を認めない。
 照準は発射境界の身体の向きに固定し、相手の現在位置へ瞬間的に向き直らない。照準誤差は

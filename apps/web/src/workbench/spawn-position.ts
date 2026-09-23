@@ -1,4 +1,17 @@
-import type { Revision } from '@fantasy/domain/spatial';
+import type { Revision, VectorMm } from '@fantasy/domain/spatial';
+
+export function facingToward(position: VectorMm, target: VectorMm): VectorMm {
+  const x = target.x - position.x,
+    y = target.y - position.y,
+    z = target.z - position.z;
+  const distance = Math.hypot(x, y, z);
+  if (distance === 0) throw new Error('開始位置を離して配置してください');
+  return {
+    x: Math.round((x / distance) * 1000),
+    y: Math.round((y / distance) * 1000),
+    z: Math.round((z / distance) * 1000),
+  };
+}
 
 /** Place both bodies relative to the arena, keeping a gap without running physics in the UI. */
 export function spawnPositions(characters: readonly [Revision, Revision], scenario: Revision) {

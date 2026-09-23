@@ -8,6 +8,7 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { battleSpecs, definitionDrafts, publishedRevisions } from './db/schema.ts';
 import {
+  abilityEffects,
   canonicalJson,
   contentHash,
   CURRENT_ENGINE_VERSION,
@@ -60,7 +61,7 @@ function dependencies(revision: Revision): Dependency[] {
     case 'equipment':
       return revision.definition.abilities.map((ref) => ({ kind: 'ability', ref }));
     case 'ability':
-      return revision.definition.effects.flatMap((e) =>
+      return abilityEffects(revision.definition).flatMap((e) =>
         e.kind === 'apply-status' ? [{ kind: 'status' as const, ref: e.status }] : [],
       );
     case 'status':

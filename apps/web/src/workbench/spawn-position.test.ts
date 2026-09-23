@@ -1,7 +1,26 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vite-plus/test';
 import { ReplayManifestSchema } from '@fantasy/domain/spatial';
-import { spawnPositions } from './spawn-position.ts';
+import { facingToward, spawnPositions } from './spawn-position.ts';
+
+it('faces the opponent for z-axis, reversed and three-dimensional custom placements', () => {
+  expect(facingToward({ x: 11000, y: 8000, z: 21000 }, { x: 11000, y: 8000, z: 29000 })).toEqual({
+    x: 0,
+    y: 0,
+    z: 1000,
+  });
+  expect(facingToward({ x: 4000, y: 1200, z: 0 }, { x: -4000, y: 1200, z: 0 })).toEqual({
+    x: -1000,
+    y: 0,
+    z: 0,
+  });
+  expect(
+    facingToward({ x: -1000000, y: -1000000, z: -1000000 }, { x: 1000000, y: 1000000, z: 1000000 }),
+  ).toEqual({ x: 577, y: 577, z: 577 });
+  expect(() => facingToward({ x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0 })).toThrow(
+    '開始位置を離して',
+  );
+});
 
 it('fits tall bodies and translated arena bounds, rejecting bodies that cannot fit', () => {
   const manifest = ReplayManifestSchema.parse(

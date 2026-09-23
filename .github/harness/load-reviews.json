@@ -2,37 +2,44 @@
   "schemaVersion": 1,
   "reviews": [
     {
-      "baselineSha": "71c022b55b09175f203995ee89a99bd6bf2f3913",
-      "beforeDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
-      "afterDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",
+      "baselineSha": "01086988e4e5c05e5c43bbb0c2b52896a7ea2ecd",
+      "beforeDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",
+      "afterDigest": "8d2cfab6e7d8c39fdfc34dd8eee5ee38439a961e43ca40993be9dbf5a879e04b",
       "introduction": false,
       "comparison": "independent",
       "reviewer": "Codex self-review; not independent approval",
-      "reason": "Revalidated the pnpm 11.19.0 to 11.27.1 transition after PR #92 merged into exact main 71c022b. The existing local collector measured clean candidate 390c5d9 against that exact base with real frozen installs, warmups and five alternating trials of all seven cases (35 observations per revision). Node v24.19.0, lockfile and WASM remain unchanged. All observed outcome kinds and deterministic operation/count/byte vectors are stable and equal, and both revisions pass unchanged budgets and the regression probe. The current candidate corpus independently passes all seven inputs and 114 mapped regressions; merged-source verification passes 687 tests. No commands failed or evidence identities were rewritten. Actual cost digests reproduce the previously reviewed transition, while paired comparability remains unknown because package-manager pins differ. This exact-base independent review makes no timing/RSS improvement claim and changes no limits, fixtures or expectations. CI must reproduce the measurements on its own current source and attempt.",
+      "reason": "Revalidated G-07a on exact main 0108698 after its pnpm update, with clean candidate 08cab10 and the review fix for atomic later-stage/movement admission. Five actual alternating trials of seven cases (35 measurements per revision) preserve every outcome and deterministic step/cast/candidate/path-node/event/log-byte/trajectory-byte vector, stable in every trial and within unchanged ceilings. Both revisions use pinned Node v24.19.0 and pnpm 11.27.1 with real frozen installs. The fresh committed corpus independently passes seven inputs and 139 mapped regressions; full verification passes 712 tests. Six added regressions cover exact and insufficient stage-plus-dodge/jump/flight balances, blocked movement, actual flight preservation and recorded replay. Existing one-stage equivalence, rollback, privacy and Worker/SQLite coverage remains green. Published catalog ID/hash pairs and Golden expectations are unchanged. The deliberate spatial-v1.16 / standard-stages-v1 input identity transition requires independent comparison; this makes no same-input timing/RSS claim. No runtime pins, profile limits or simulation budgets are changed relative to this base.",
       "evidence": [
-        ".generated/harness/load-pair/0-before.json",
-        ".generated/harness/load-pair/0-after.json",
-        ".generated/harness/load-pair/results.json",
-        ".generated/harness/load-pair/commands.json",
-        ".generated/harness/load-pair/baseline-corpus.json",
-        ".generated/harness/load-pair/boundary.json",
-        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/artifacts/10751266361"
+        ".generated/harness/load-g07a-010869/0-before.json",
+        ".generated/harness/load-g07a-010869/0-after.json",
+        ".generated/harness/load-g07a-010869/results.json",
+        ".generated/harness/load-g07a-010869/commands.json",
+        ".generated/harness/load-g07a-010869/boundary.json",
+        ".generated/harness/load-g07a-010869/reviewed-comparison.json",
+        "packages/engine/src/spatial/stage-admission.test.ts",
+        "packages/engine/src/spatial/stage-interference.test.ts",
+        "apps/api/src/simultaneous-persistence.test.ts"
       ]
     },
     {
-      "baselineSha": "cb0f525894fa91eae421e99c30ad050da3f98420",
+      "baselineSha": "71c022b55b09175f203995ee89a99bd6bf2f3913",
       "beforeDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
-      "afterDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",
+      "afterDigest": "7055f27075903b45792b00dc331c63e11e86c94ba476b15fbce3175bc93e54fb",
       "introduction": false,
       "comparison": "independent",
       "reviewer": "Codex self-review; not independent approval",
-      "reason": "Issue #8 updates pnpm from 11.19.0 to 11.27.1 with Node v24.19.0 and the lockfile unchanged. Reviewed CI run 35862327313 attempt 1, exact main cb0f525 against test merge 0d2534f of candidate 1feed8a. All three real shards validate their raw alternating trials, commands, regression probes and unchanged budgets. Every one of seven cases has five before and five after observations (35 per revision); all outcome and deterministic operation/count/byte vectors are stable and equal across both revisions. The candidate's independent corpus report passes all seven inputs and 114 mapped regressions. The initial aggregate gate correctly rejected the missing runtime-transition review. This entry binds the actual observed cost digests, which include the different package-manager pins; it does not change limits, runtime checks, fixtures, expectations or evidence identities. The normal independent-transition path is used, retaining unknown paired comparability and making no timing/RSS improvement claim. New CI must reproduce these costs on its own current source and attempt.",
+      "reason": "G-07a introduces optional stages under spatial-v1.16 / standard-stages-v1. Reviewed five actual alternating trials of all seven fixed cases (35 per revision), exact main 71c022b against clean bddb07f. Every outcome, step, cast, candidate, path-node, event and byte vector is identical across revisions and stable in every trial; both revisions pass unchanged ceilings. Stages are absent from these seven legacy inputs. The candidate also passes 706 tests and 133 mapped regressions, including explicit one-stage equivalence for all four attack primitives, two-stage payments/hits, interruption, rollback, wall geometry, delayed private-state exclusion and real Worker/SQLite/replay seeks. All previously published ID/hash pairs and Golden expectations are preserved; new sample IDs are additive. Only current engine/rules identities change in the seven corpus inputs; different identities require this independent transition review and make same-input timing/RSS claims inappropriate. Source parsing capacity was independently changed by merged prerequisite PR #91; this PR changes no detector threshold, runtime pin or simulation budget.",
       "evidence": [
-        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/artifacts/10751266361",
-        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185391113",
-        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185391177",
-        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185391410",
-        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185783958"
+        ".generated/harness/load-g07a-71c022b/0-before.json",
+        ".generated/harness/load-g07a-71c022b/0-after.json",
+        ".generated/harness/load-g07a-71c022b/results.json",
+        ".generated/harness/load-g07a-71c022b/commands.json",
+        ".generated/harness/load-g07a-71c022b/boundary.json",
+        ".generated/harness/load-g07a-71c022b/reviewed-comparison.json",
+        ".generated/harness/source-g07a-initial/report.json",
+        "packages/engine/src/spatial/stages.test.ts",
+        "packages/engine/src/spatial/stage-interference.test.ts",
+        "apps/api/src/simultaneous-persistence.test.ts"
       ]
     },
     {
@@ -190,6 +197,40 @@
         "packages/engine/src/spatial/simulate.test.ts",
         "apps/api/src/ai-delivery.test.ts",
         "docs/adr/0010-battle-version-compatibility.md"
+      ]
+    },
+    {
+      "baselineSha": "71c022b55b09175f203995ee89a99bd6bf2f3913",
+      "beforeDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
+      "afterDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Revalidated the pnpm 11.19.0 to 11.27.1 transition after PR #92 merged into exact main 71c022b. The existing local collector measured clean candidate 390c5d9 against that exact base with real frozen installs, warmups and five alternating trials of all seven cases (35 observations per revision). Node v24.19.0, lockfile and WASM remain unchanged. All observed outcome kinds and deterministic operation/count/byte vectors are stable and equal, and both revisions pass unchanged budgets and the regression probe. The current candidate corpus independently passes all seven inputs and 114 mapped regressions; merged-source verification passes 687 tests. No commands failed or evidence identities were rewritten. Actual cost digests reproduce the previously reviewed transition, while paired comparability remains unknown because package-manager pins differ. This exact-base independent review makes no timing/RSS improvement claim and changes no limits, fixtures or expectations. CI must reproduce the measurements on its own current source and attempt.",
+      "evidence": [
+        ".generated/harness/load-pair/0-before.json",
+        ".generated/harness/load-pair/0-after.json",
+        ".generated/harness/load-pair/results.json",
+        ".generated/harness/load-pair/commands.json",
+        ".generated/harness/load-pair/baseline-corpus.json",
+        ".generated/harness/load-pair/boundary.json",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/artifacts/10751266361"
+      ]
+    },
+    {
+      "baselineSha": "cb0f525894fa91eae421e99c30ad050da3f98420",
+      "beforeDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
+      "afterDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Issue #8 updates pnpm from 11.19.0 to 11.27.1 with Node v24.19.0 and the lockfile unchanged. Reviewed CI run 35862327313 attempt 1, exact main cb0f525 against test merge 0d2534f of candidate 1feed8a. All three real shards validate their raw alternating trials, commands, regression probes and unchanged budgets. Every one of seven cases has five before and five after observations (35 per revision); all outcome and deterministic operation/count/byte vectors are stable and equal across both revisions. The candidate's independent corpus report passes all seven inputs and 114 mapped regressions. The initial aggregate gate correctly rejected the missing runtime-transition review. This entry binds the actual observed cost digests, which include the different package-manager pins; it does not change limits, runtime checks, fixtures, expectations or evidence identities. The normal independent-transition path is used, retaining unknown paired comparability and making no timing/RSS improvement claim. New CI must reproduce these costs on its own current source and attempt.",
+      "evidence": [
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/artifacts/10751266361",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185391113",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185391177",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185391410",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35862327313/job/107185783958"
       ]
     }
   ]

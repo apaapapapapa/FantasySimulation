@@ -8,40 +8,16 @@ Refs #61 G-06/§2-E,F, #45, #59, #1 P6. Docs only.
 G-01–05 are merged; #45 simultaneous slots precede G-07. Recheck live main/PRs.
 Later #45/#59/#61 override parent text; G-05 confirmed §7.
 
-Use one20ms clock, stage instances/shared ledger and bounded transactional waves.
-Reject duplicate loops, recursive callbacks, contact-order HP, character scripts and
-future-stage prepayment: they break ownership, ordering, bounds or recovery usage.
-Interrupt at boundaries; finer timing needs versioning. simulate.ts alone orchestrates,
-reusing G-01 categories/G-02 damage/G-03 status/G-04 resources and geometry;
-G-05 owns assessment/perception/self-view.
+One20ms clock, stage/shared ledger and bounded transactional waves; simulate.ts orchestrates
+G-01 categories/G-02 damage/G-03 status/G-04 resources/geometry and G-05 views.
+No duplicate loops, recursive callbacks, contact-order HP, character scripts or future prepayment.
+Interruption is boundary-based; finer timing needs versioning.
 
 ## 2. 段・時計・中断
 
-Proposed optional `stages` compiles into one plan. Omission creates stage0 from
-existing attack/effects: offset0, melee duration=activeSteps, others=1, no authored
-motion; preserve old costs/aim/hit limits/events/order/PRNG. Keep required attack/
-effects; explicit stage0 must equal them, executed once. No historical engine path.
-
-Each stage: unique local ID, offsetSteps, durationSteps, attack, effects, optional
-selfMotion, extra cost, start/interrupt conditions. Stage0 offset0; ordered owner
-windows cannot overlap; gaps wait. Later holds allow null attack/empty effects.
-Direct/hitscan/projectile releases once; melee durationSteps MUST equal activeSteps
-(validate/reject mismatch). Remove attached hitboxes at exclusive stage end.
-Projectiles may outlive windows. Conditions reuse bounded AST and available self/
-observations, never enemy truth.
-
-L=existing actionClock release after scaled cast. Start[i]=L+offset[i], end exclusive
-=start+duration. Snapshot action speed at declaration; offsets/active motion are
-physical steps, not scaled again. Recovery starts after the last planned stage;
-cooldown=L+scaledCooldown. Interruption never shortens either deadline.
-Recheck category/capability, posture, condition and cost at every start; failure
-cancels remaining stages, never retries/skips. Default start is unconditional
-apart from these checks. Damage interrupts only if declared; death/capability loss
-cancels explicit sequences. Interrupts from interval n commit at n+1: cancel future
-stages/attached hitboxes/motion, preserve gathered contacts/effects. No trace rewind
-or early next stage on wall contact. Omitted legacy launched melee keeps its existing
-persistence. Detached projectiles retain snapshots after interruption/death; verdict
-still ends the match without waiting for distant projectiles.
+G-07a implements the stage clocks, costs and interruption contract in
+[spatial rules](../rules/spatial-v1.md#段階攻撃g-07aspatial-v116).
+G-07b adds the shape/motion adapters below; G-08 owns reaction waves.
 
 ## 3. 形状・命中・移動
 

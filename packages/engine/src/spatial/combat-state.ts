@@ -3,6 +3,8 @@ import {
   type DeepReadonly,
   type ResourceState,
   type Revision,
+  type StageContact,
+  type Stage,
 } from '@fantasy/domain/spatial';
 import { initialMotion, type MotionIntent, type MotionState } from './movement.ts';
 import { emptyMemory, type PerceptionMemory } from './perception.ts';
@@ -14,6 +16,7 @@ import type { DamageSnapshot } from './status-damage.ts';
 import type { SpatialWorld } from './physics.ts';
 import type { ResolvedActor } from './prepare.ts';
 import { initialResources } from './resources.ts';
+import { stageDisplay, type StageRuntime } from './stages.ts';
 export type AbilityRevision = DeepReadonly<Extract<Revision, { kind: 'ability' }>>;
 export type ActionState = {
   id: string;
@@ -23,6 +26,7 @@ export type ActionState = {
   launchAt: number;
   recoveryUntil: number;
   released: boolean;
+  stages?: StageRuntime;
 };
 export type ActorState = {
   motion: MotionState;
@@ -50,6 +54,8 @@ export type MeleeState = DamageSnapshot & {
   direction: Vec3;
   offset: Vec3;
   hits: number;
+  stage?: StageContact;
+  hit?: DeepReadonly<Stage['hit']>;
 };
 export function initialActor(world: SpatialWorld, actor: ResolvedActor): ActorState {
   return {
@@ -93,11 +99,15 @@ export const cloneActor = (state: ActorState): ActorState => ({
   statuses: state.statuses.map((s) => ({ ...s, causes: [...s.causes] })),
   used: { ...state.used },
   cooldowns: { ...state.cooldowns },
-  action: state.action ? { ...state.action } : null,
+  action: state.action
+    ? { ...state.action, ...(state.action.stages ? { stages: { ...state.action.stages } } : {}) }
+    : null,
   intent: { ...state.intent },
 });
 export function displayActor(state: ActorState, step: number): ActorDisplay {
   const { motion, action } = state;
+  const stage = action ? stageDisplay(action, step) : undefined;
+  const last = action?.ability.definition.stages?.at(-1);
   const active =
     action?.ability.definition.attack.kind === 'melee'
       ? action.ability.definition.attack.activeSteps
@@ -131,10 +141,17 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
             startedAt: action.startedAt,
             launchAt: action.launchAt,
             recoveryUntil: action.recoveryUntil,
+            ...(stage && last
+              ? { stage, activeUntil: action.launchAt + last.offsetSteps + last.durationSteps }
+              : {}),
             phase:
               step < action.launchAt
                 ? 'cast'
-                : action.released && step < action.launchAt + active
+                : (
+                      stage
+                        ? stage.state === 'active'
+                        : action.released && step < action.launchAt + active
+                    )
                   ? 'active'
                   : 'recovery',
           }

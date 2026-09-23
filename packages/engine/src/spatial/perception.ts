@@ -12,6 +12,7 @@ import {
   type ResourceState,
   type VectorMm,
   type ObservedStatus,
+  type ObservedStage,
 } from '@fantasy/domain/spatial';
 import { add, cosDegrees, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
 import type { MotionState } from './movement.ts';
@@ -32,6 +33,7 @@ export type ObservedActor = {
   action?: 'idle' | 'cast' | 'active' | 'recovery';
   size?: { radiusMm: number; heightMm: number };
   statuses?: ObservedStatus[];
+  stage?: ObservedStage;
 };
 export type ObservableProjectile = {
   id: string;
@@ -243,6 +245,7 @@ export function perceive(
     resources: ResourceState;
     action: NonNullable<ObservedActor['action']>;
     statuses?: readonly StatusCohort[];
+    stage?: ObservedStage | undefined;
   },
   terrainMode: 'surveyed' | 'observed' = 'surveyed',
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
@@ -293,6 +296,9 @@ export function perceive(
               ? wounds(visibleState.resources.hp, enemy.actor.character.stats.hp)
               : 'unknown',
             action: visibleState?.action ?? 'idle',
+            ...(visibleState?.stage
+              ? { stage: { shape: visibleState.stage.shape, state: visibleState.stage.state } }
+              : {}),
             ...(statusKnown && { statuses: observedStatuses }),
             size: {
               radiusMm: enemy.actor.character.body.radiusMm,
