@@ -97,7 +97,7 @@ export async function openReplay(
     };
   });
   const cache = new Map<string, unknown>();
-  async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+  async function cached<T>(key: string, load: () => Promise<T>, signal?: AbortSignal): Promise<T> {
     if (cache.has(key)) {
       const value = cache.get(key) as T;
       cache.delete(key);
@@ -105,6 +105,8 @@ export async function openReplay(
       return value;
     }
     const value = await load();
+    // A file still loading when its request was cancelled is neither delivered nor kept.
+    signal?.throwIfAborted();
     cache.set(key, value);
     for (const oldest of cache.keys()) {
       if (cache.size <= limit) break;
@@ -119,8 +121,10 @@ export async function openReplay(
     const ref = manifest.chunks[index];
     if (!ref) throw new RangeError(`Replay chunk ${index} does not exist`);
     return guarded(requestSignal, 'damaged', () =>
-      cached(`chunk ${index}`, async () =>
-        deepFreeze(replayChunkRecords(await expand(ref, requestSignal), ref)),
+      cached(
+        `chunk ${index}`,
+        async () => deepFreeze(replayChunkRecords(await expand(ref, requestSignal), ref)),
+        requestSignal,
       ),
     );
   }
@@ -130,10 +134,13 @@ export async function openReplay(
     return guarded(requestSignal, 'damaged', () =>
       seekReplayState(context, manifest, nextRecord, {
         checkpoint: (index) =>
-          cached(`checkpoint ${index}`, async () =>
-            deepFreeze(
-              JSON.parse(await expand(manifest.checkpoints[index]!, requestSignal)) as unknown,
-            ),
+          cached(
+            `checkpoint ${index}`,
+            async () =>
+              deepFreeze(
+                JSON.parse(await expand(manifest.checkpoints[index]!, requestSignal)) as unknown,
+              ),
+            requestSignal,
           ),
         records: (index) => records(index, requestSignal),
       }),

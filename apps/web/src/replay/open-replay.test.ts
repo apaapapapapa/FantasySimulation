@@ -264,7 +264,7 @@ describe('saved replay loading through the local API adapter', () => {
       });
     expect(() => apiReplaySource('../other')).toThrow(ReplayLoadError);
   });
-  it('never delivers a cancelled load and keeps nothing from it', async () => {
+  it('never delivers a cancelled load and refetches the file it interrupted', async () => {
     const saved = await savedReplay();
     const early = fakeApi(saved);
     await expect(
@@ -284,5 +284,24 @@ describe('saved replay loading through the local API adapter', () => {
     // The interrupted chunk was not cached; a later seek fetches and verifies it again.
     expect((await opened.seek(100)).nextRecord).toBe(100);
     expect(api.requests.filter((url) => url.endsWith('chunk-00001.ndjson.gz'))).toHaveLength(2);
+  });
+  it('does not keep a file whose request is cancelled while it is being verified', async () => {
+    const api = fakeApi(await savedReplay()),
+      transport = apiReplaySource(ID, { fetch: api.fetch }),
+      controller = new AbortController();
+    const opened = await openReplay({
+      manifest: (signal) => transport.manifest(signal),
+      async file(ref, signal) {
+        const bytes = await transport.file(ref, signal);
+        // Delivered in full; the checksum, gzip and record checks have not run yet.
+        if (ref.file === 'chunk-00002.ndjson.gz') controller.abort();
+        return bytes;
+      },
+    });
+    await expect(opened.seek(170, controller.signal)).rejects.toMatchObject({ kind: 'aborted' });
+    expect((await opened.seek(170)).nextRecord).toBe(170);
+    // The checkpoint finished before the cancellation and is reused; the chunk is fetched again.
+    const fetched = (file: string) => api.requests.filter((url) => url.endsWith(file)).length;
+    expect([fetched('checkpoint-00002.json.gz'), fetched('chunk-00002.ndjson.gz')]).toEqual([1, 2]);
   });
 });
