@@ -142,15 +142,7 @@ export async function dodgeFixture() {
         sampledAt: 0,
         availableAt: 5,
         enemy: null,
-        projectiles: [
-          {
-            id: 'arrow',
-            ownerId: 'right',
-            position: { ...f.self.position, x: f.self.position.x + 8 },
-            velocity: { x: -10, y: 0, z: 0 },
-            radiusMm: 80,
-          },
-        ],
+        projectiles: [incomingArrow(f.self.position)],
       },
     },
   };
@@ -198,4 +190,12 @@ export const initialStatus = (edit: Partial<Definition<'status'>> = {}): Definit
   modifiers: { attack: 0, defense: 0, speedBps: 10000, flight: false, rooted: false },
   periodic: [],
   ...edit,
+});
+
+export const incomingArrow = (position: { x: number; y: number; z: number }) => ({
+  id: 'arrow',
+  ownerId: 'right',
+  position: { ...position, x: position.x + 8 },
+  velocity: { x: -10, y: 0, z: 0 },
+  radiusMm: 80,
 });

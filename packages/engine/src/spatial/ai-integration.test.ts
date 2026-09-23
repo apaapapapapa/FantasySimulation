@@ -203,7 +203,7 @@ describe('common engine cognition and effects', () => {
         (e) =>
           e.actorId === 'left' &&
           e.cognition?.kind === 'decision' &&
-          e.cognition.selection === 'dodge' &&
+          e.cognition.movementSlot?.selection === 'dodge' &&
           e.cognition.directions.every((d) => d.weight === 100),
       );
       expect(dodge).toBeDefined();

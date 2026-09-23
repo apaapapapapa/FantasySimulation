@@ -41,7 +41,8 @@ import { selfView } from './self-view.ts';
 import { blockedBySilence } from './categories.ts';
 import { bodyPoint, conditionMatches, perceive } from './perception.ts';
 import { SpatialBudgetError } from './physics.ts';
-import { choosePolicy, steerPolicy } from './policy.ts';
+import { choosePolicy, steerPolicy, isDodgeDecision } from './policy.ts';
+import { admitPair, rejectPair } from './pair-admission.ts';
 import type { PreparedBattle } from './prepare.ts';
 import { effectiveStats, statusBoundary, UnresolvedRuleError } from './status.ts';
 import { createBattleWorld } from './terrain.ts';
@@ -277,6 +278,12 @@ export function* simulate(
         const journal = new Journal(sequence, bytes, budget),
           effects: PendingEffect[] = [];
         const aiBoundary = step % (battle.manifest.physicsProfile.aiMs / battle.rules.stepMs) === 0;
+        const previousMovement = new Map(
+          next.map((actor) => [
+            actorId(actor),
+            { intent: { ...actor.intent }, decision: actor.decision },
+          ]),
+        );
         // Observe and choose before either participant pays or declares anything.
         for (const actor of next) {
           const enemy = actors.find((a) => actorId(a) !== actorId(actor))!;
@@ -452,6 +459,26 @@ export function* simulate(
             );
             if (clock) {
               const resources = resourceBudgets.get(actorId(actor))!;
+              if (actor.decision.dodge) {
+                const admission = admitPair(actor, ability, resources, step);
+                const legal =
+                  inObservedRange(definition, view) &&
+                  conditionMatches(definition.condition, view) &&
+                  !(view.silenced && blockedBySilence(definition));
+                if (!admission.ok || !legal) {
+                  rejectPair(actor, previousMovement.get(actorId(actor))!);
+                  journal.emit({
+                    kind: 'fizzle',
+                    step,
+                    phase: 'declaration',
+                    actorId: actorId(actor),
+                    abilityId: ability.id,
+                    ruleId: 'action.pair',
+                    reason: admission.ok ? 'pair-condition' : `pair-${admission.reason}`,
+                  });
+                  continue;
+                }
+              }
               const payment = resources.reserve('action', [
                 { ...definition.costs, uses: { id: ability.id, limit: definition.costs.uses } },
               ]);
@@ -668,7 +695,7 @@ export function* simulate(
             actor,
             resourceBudgets.get(actorId(actor))!,
             step,
-            aiBoundary && actor.decision.cognition?.selection === 'dodge',
+            aiBoundary && isDodgeDecision(actor.decision),
           ),
         );
         for (const [index, actor] of next.entries()) actor.intent = motionPlans[index]!.intent;

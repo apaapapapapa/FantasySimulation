@@ -49,6 +49,6 @@ TS以外のファイルはこのAST検査の対象ではなく、既存のソー
 これは構文的な重複検出であり、変数名を変えたコピー、閾値より短い共通処理、意味的に
 同じ別実装までゼロである証明ではありません。そのため実装前の検索とレビューも必須です。
 検出を回避するための変数名・整形変更、テスト全除外、抑制コメント、閾値引き上げはしません。
-解析失敗、空/不足した入力、ノード数や比較回数の上限超過は `unknown` とし合格させません。
-検出ありはexit 1、証跡不十分はexit 2です。閾値や範囲の変更は独立したポリシーレビューと
-陽性・陰性・失敗時の回帰テストを必要とします。
+Limits: 250,000 nodes/file, 500,000/repository, 1,000,000 comparisons, recorded in policy evidence.
+Invalid/incomplete analysis or exhausted limits stays `unknown` (exit 2); clones fail (exit 1).
+Policy changes require separate review and positive/negative/failure regression tests.
