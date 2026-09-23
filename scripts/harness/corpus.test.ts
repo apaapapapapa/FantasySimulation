@@ -239,6 +239,16 @@ describe('existing test adapter and coverage checks', () => {
     const planned = result.checks.find((check) => check.id === 'coverage:cross-os')!;
     assert.deepEqual([planned.required, planned.status], [false, 'unknown']);
   });
+  it('never passes missing or duplicate fixed execution entries', () => {
+    for (const duplicate of [false, true]) {
+      const result = observation((value) => {
+        value.entries = duplicate ? [value.entries[0]!, value.entries[0]!] : [];
+      });
+      assert.equal(result.status('corpus:identity'), 'unknown');
+      assert.equal(result.status('corpus:repeat'), 'unknown');
+      assert.equal(result.exitCode, 2);
+    }
+  });
   it.each([
     ['a failed required test', {}, { golden: 'failed' }, 'corpus:tests', 'fail', 1],
     ['a renamed required test', {}, { order: 'missing' }, 'coverage:order', 'unknown', 2],

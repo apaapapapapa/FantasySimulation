@@ -444,6 +444,9 @@ export function corpusChecks(observation: CorpusObservation): Check[] {
     },
   ];
   if (!corpus) return checks;
+  const expectedIds = corpus.entries.map((entry) => entry.id).sort();
+  const actualIds = entries.map((entry) => entry.id).sort();
+  const completeEntries = JSON.stringify(expectedIds) === JSON.stringify(actualIds);
   const drift = entries.filter(
     (entry) =>
       entry.inputError || entry.contractDifferences.length || entry.identityDifferences.length,
@@ -451,7 +454,7 @@ export function corpusChecks(observation: CorpusObservation): Check[] {
   checks.push({
     id: 'corpus:identity',
     required: true,
-    status: drift.length ? 'fail' : 'pass',
+    status: drift.length ? 'fail' : completeEntries ? 'pass' : 'unknown',
     reason: drift.length
       ? bounded(
           `Fixed input or engine contract differs from the reviewed corpus: ${drift
@@ -461,7 +464,9 @@ export function corpusChecks(observation: CorpusObservation): Check[] {
             )
             .join('; ')}`,
         )
-      : `${entries.length} fixed inputs match their pinned manifest identity and engine contract`,
+      : completeEntries
+        ? `${entries.length} fixed inputs match their pinned manifest identity and engine contract`
+        : 'Missing, duplicate or extra fixed inputs',
     evidence: evidence(corpusPath, 'results.json'),
   });
   const unstable = entries.filter((entry) => entry.repeatDifferences.length);
@@ -469,7 +474,7 @@ export function corpusChecks(observation: CorpusObservation): Check[] {
   checks.push({
     id: 'corpus:repeat',
     required: true,
-    status: unstable.length ? 'fail' : incomplete.length ? 'unknown' : 'pass',
+    status: unstable.length ? 'fail' : incomplete.length || !completeEntries ? 'unknown' : 'pass',
     reason: unstable.length
       ? bounded(
           `Determinism violation: ${unstable.map((entry) => `${entry.id} (${entry.repeatDifferences.join(', ')})`).join('; ')}`,
@@ -575,21 +580,21 @@ export async function collectCorpus(
   });
   writeFileSync(output('engine-check.log'), engineCheck.output);
   const tests: TestRun = { command: null, outcomes: null, failedFiles: 0, error: null };
+  let testArgs: string[] = [];
   if (corpus) {
     const files = [...new Set([...corpus.tests.values()].map((test) => test.file))].sort();
-    tests.command = await run(
-      process.execPath,
-      [
-        join(root, 'node_modules', 'vite-plus', 'bin', 'vp'),
-        'test',
-        'run',
-        ...files,
-        '--reporter=json',
-        `--outputFile=${output('vitest.json')}`,
-      ],
-      root,
-      { timeoutMs: 10 * 60 * 1000, maxBytes: 4 * 1024 * 1024 },
-    );
+    testArgs = [
+      join(root, 'node_modules', 'vite-plus', 'bin', 'vp'),
+      'test',
+      'run',
+      ...files,
+      '--reporter=json',
+      `--outputFile=${output('vitest.json')}`,
+    ];
+    tests.command = await run(process.execPath, testArgs, root, {
+      timeoutMs: 10 * 60 * 1000,
+      maxBytes: 4 * 1024 * 1024,
+    });
     writeFileSync(output('tests.log'), tests.command.output);
     try {
       Object.assign(
@@ -624,8 +629,13 @@ export async function collectCorpus(
         corpus: { path, sha256: corpusSha256 },
         engine: implementation,
         commands: {
-          engineCheck: { exitCode: engineCheck.exitCode, bounded: engineCheck.bounded },
+          engineCheck: {
+            command: [process.execPath, 'scripts/engine-identity.ts'],
+            exitCode: engineCheck.exitCode,
+            bounded: engineCheck.bounded,
+          },
           tests: tests.command && {
+            command: [process.execPath, ...testArgs],
             exitCode: tests.command.exitCode,
             bounded: tests.command.bounded,
           },

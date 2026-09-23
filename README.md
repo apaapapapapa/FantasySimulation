@@ -245,8 +245,8 @@ PRの成功、mainの成功、release結果、Issue完了はそれぞれ確認�
 対戦の決定性・回帰は `vp run check:corpus` で検査します。
 `packages/engine/fixtures/spatial/corpus.json` の固定入力を2回実行してdigestの一致を確認し、
 入力identityの変化と、既存の決定性テストの実行結果をカテゴリ別に記録します。
-両OSの出力はCIで突合し、公平性、Worker数・投入順、SQLiteの状態遷移も検証します。
-負荷・baseline比較はIssue #9の小PR 3で追加するため、現時点では `unknown` として報告します。
+両OS間の出力突合、公平性、Worker投入順、計算量・容量の上限と同一runnerでの負荷比較も検証します。
+実測の欠落・比較不能・中断は `unknown` とし、未完了の証跡を合格に数えません。
 固定入力や対応テストを意図して変更する場合は、同じPRでコーパスを更新し理由を記載します。
 
 ソース・テストの重複は `vp run check:quality` の `quality:duplication` で検査します。
@@ -312,6 +312,15 @@ vp run batch check .generated/batch-plan.json path/to/index.json .generated/batc
 配布ビルドでは`node apps/api/dist/batch.mjs`を使用できます。
 出力の`.work/`はローカルDB/作業記録です。必要ディスク容量は最終出力上限＋作業replay上限＋256 MiB。
 [計画・保存・再開の契約](docs/adr/0008-headless-batch.md)を参照してください。
+
+### 対戦の回帰・負荷ハーネス（Issue #9）
+
+`verify`は固定コーパスの再現性、実Workerの並列数・投入順、左右交換の公平性、
+SQLiteの状態遷移、計算回数とログ容量の上限をコミット前にも検証できます。
+作業中の結果は未コミットの診断として保存し、最終証跡はcleanなcommitに固定します。
+CIはLinux/Windowsの出力digestを自動照合し、固定baseline SHAとcandidateを
+同じrunnerで交互に測定します。時間・メモリは観測値として別reportへ保存します。
+再現手順、制約、予算変更reviewは[ハーネス手順](.github/harness/README.md)を参照してください。
 
 ## 観測・経験に基づくAI（P2/P3）
 

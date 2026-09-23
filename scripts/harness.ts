@@ -40,6 +40,13 @@ try {
     else if (command === 'corpus' && args.length === 0) {
       const { collectCorpus } = await import('./harness/corpus.ts');
       result = await collectCorpus(process.cwd(), input);
+    } else if (command === 'load' && args.length === 0) {
+      const { collectLoad } = await import('./harness/load.ts');
+      result = await collectLoad(
+        process.cwd(),
+        ['current', 'verify'].includes(input) ? null : input,
+        input === 'verify',
+      );
     } else if (command === 'issue-plan' && args.length === 0) {
       const { completionDraft } = await import('./harness/issue-completion-api.ts');
       result = { report: await completionDraft(Number(input)), exitCode: 0 };
