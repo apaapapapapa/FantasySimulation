@@ -7,6 +7,7 @@ import {
   ReplayCheckpointSchema,
   type RecordedManifest,
   type ReplayCheckpoint,
+  type ReplayManifest,
 } from './replay.ts';
 import {
   StreamRecordSchema,
@@ -155,6 +156,9 @@ export class ReplayState {
   }
   get step() {
     return this.value.step;
+  }
+  get nextRecord() {
+    return this.value.nextRecord;
   }
   get ended() {
     return this.value.lastRecord?.kind === 'terminal';
@@ -454,4 +458,40 @@ export class ReplayState {
     };
     return structuredClone(record);
   }
+}
+/** Loads one independent checkpoint/chunk; the caller owns transport, sizes and checksums. */
+export interface ReplaySeekSource {
+  checkpoint(index: number): Promise<unknown>;
+  records(index: number): Promise<readonly unknown[]>;
+}
+/**
+ * Restore the display state after `nextRecord` records, shared by the API and browser readers.
+ * The same step before and after its boundary record is distinguished by the record cursor.
+ */
+export async function seekReplayState(
+  context: ReplayContext,
+  manifest: ReplayManifest,
+  nextRecord: number,
+  source: ReplaySeekSource,
+): Promise<ReplayState> {
+  requireReplay(manifest.simulationHash === context.simulationHash, 'seek manifest binding');
+  requireReplay(
+    Number.isSafeInteger(nextRecord) && nextRecord >= 0 && nextRecord <= manifest.records,
+    'seek cursor',
+  );
+  const index = manifest.chunks.findLastIndex((chunk) => chunk.firstRecord <= nextRecord);
+  // Without chunks the manifest records nothing, so only the empty cursor 0 is valid.
+  if (index < 0) return new ReplayState(context);
+  const chunk = manifest.chunks[index]!;
+  const replay = new ReplayState(context, await source.checkpoint(index));
+  requireReplay(
+    replay.nextRecord === chunk.firstRecord && replay.step === chunk.fromStep,
+    'seek checkpoint index',
+  );
+  if (nextRecord > chunk.firstRecord) {
+    const records = await source.records(index);
+    requireReplay(records.length === chunk.records, 'seek chunk record count');
+    for (const record of records.slice(0, nextRecord - chunk.firstRecord)) replay.apply(record);
+  }
+  return replay;
 }
