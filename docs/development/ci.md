@@ -10,6 +10,9 @@ compares a PR merge's actual first parent. Renames count as deletion plus additi
   run static checks, all tests, build, security/policy and the gate.
 - Other/unknown/empty diffs, main, manual and weekly runs include corpus and paired load too.
 
+Full plans also require `UI (Linux Chromium)` with its isolated local API/SQLite and
+browser evidence. Wording-only PRs explicitly skip it. See [browser evidence](e2e.md).
+
 AGENTS, skills, harness/CI instructions, rules and ADRs are sensitive, not wording-only.
 Docs checks whitespace, local inline links and repository-wide context budgets.
 CodeQL independently recomputes wording scope; its distinct exclusion receipt must
@@ -44,7 +47,8 @@ seven days; PR artifacts remain data and are never executed by release.
 
 ## Setup and gates
 
-Only pnpm's content store is cached. Candidate and baseline frozen installs share it
+The pnpm content store and separately keyed Playwright browser downloads are cached.
+Candidate and baseline frozen installs share the content store
 while retaining their own runtime/lockfile pins. Keys include OS/architecture, Node,
 package manager, manifests, lock and setup policy; lint/TypeScript config alone does
 not invalidate downloads. No broad restore keys; only main populates its cache.
