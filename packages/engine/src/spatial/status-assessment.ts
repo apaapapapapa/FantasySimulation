@@ -1,7 +1,9 @@
 import type { DeepReadonly, Effect } from '@fantasy/domain/spatial';
-import { permanentStatus, dispelTargets } from './categories.ts';
+import { dispelTargets } from './categories.ts';
 import { generalizedStatus, statusBenefit } from './status-observation.ts';
-import { statusReactions } from './status-reactions.ts';
+import { planStatusReactions } from './status-reactions.ts';
+import { applyStatuses, UnresolvedRuleError, type StatusCohort } from './status.ts';
+import { SpatialBudgetError } from './physics.ts';
 import type { DecisionView } from './perception.ts';
 
 /** Only own definitions/active states and delayed public opponent summaries enter status utility. */
@@ -25,6 +27,24 @@ export function assessStatusEffect(
       : {};
   let value = 0,
     handled = false;
+  const activationStep = step + 1;
+  const benefit = (states: readonly StatusCohort[]) =>
+    states.reduce(
+      (sum, s) =>
+        sum +
+        statusBenefit(s.revision.definition, horizon, s.endStep - activationStep, resources) *
+          s.stacks,
+      0,
+    );
+  const marginal = (resolve: () => readonly StatusCohort[]) => {
+    try {
+      return benefit(resolve()) - benefit(own);
+    } catch (error) {
+      // This is a self-only forecast. Actual resolution still reports these failures normally.
+      if (error instanceof UnresolvedRuleError || error instanceof SpatialBudgetError) return 0;
+      throw error;
+    }
+  };
   if (effect.kind === 'apply-status') {
     const status = definitions.find(
       (s) =>
@@ -35,25 +55,17 @@ export function assessStatusEffect(
     if (status && generalizedStatus(status.definition)) {
       handled = true;
       value =
-        statusBenefit(status.definition, horizon, status.definition.durationSteps, resources) *
-        (target === 'self' ? 1 : -1);
-      const current = own.filter(
-        (s) => s.revision.definition.stackKey === status.definition.stackKey,
-      );
-      if (
-        target === 'self' &&
-        current.length &&
-        ((permanentStatus(status.definition) && status.definition.stacking !== 'sum') ||
-          status.definition.stacking === 'reject' ||
-          (status.definition.stacking === 'sum' &&
-            current.reduce((n, s) => n + s.stacks, 0) >= status.definition.maxStacks))
-      )
-        value = 0;
-      if (target === 'self' && current.length && status.definition.stacking === 'refresh')
-        value *= Math.max(
-          0,
-          1 - Math.min(...current.map((s) => (s.endStep - step) / status.definition.durationSteps)),
-        );
+        target === 'self'
+          ? marginal(
+              () =>
+                applyStatuses(
+                  own,
+                  [{ revision: status, cause: 'decision.status' }],
+                  [],
+                  activationStep,
+                ).statuses,
+            )
+          : -statusBenefit(status.definition, horizon, status.definition.durationSteps, resources);
     }
   } else if (effect.kind === 'dispel') {
     if (target === 'self' && own.some((s) => generalizedStatus(s.revision.definition))) {
@@ -62,13 +74,7 @@ export function assessStatusEffect(
         effect,
         own.map((s) => s.revision),
       );
-      for (const s of own)
-        if (
-          !permanentStatus(s.revision.definition) &&
-          matches.some((t) => (typeof t === 'string' ? t === s.revision.id : t === s.revision))
-        )
-          value -=
-            statusBenefit(s.revision.definition, horizon, s.endStep - step, resources) * s.stacks;
+      value = marginal(() => applyStatuses(own, [], matches, activationStep).statuses);
     } else if (target === 'enemy' && observed.length) {
       handled = true;
       for (const s of observed)
@@ -83,39 +89,17 @@ export function assessStatusEffect(
     const element = effect.kind === 'water' ? 'water' : effect.element;
     if (target === 'self' && own.some((s) => generalizedStatus(s.revision.definition))) {
       handled = effect.kind === 'water';
-      for (const s of own) {
-        if (!includeReaction) continue;
-        const reaction = statusReactions(s.revision.definition).find((r) => r.element === element);
-        if (!reaction) continue;
-        const benefit = statusBenefit(s.revision.definition, horizon, s.endStep - step, resources);
-        if (reaction.response.kind === 'strengthen')
-          value +=
-            benefit *
-            Math.min(
-              reaction.response.stacks,
-              Math.max(0, s.revision.definition.maxStacks - s.stacks),
-            );
-        else if (
-          !permanentStatus(s.revision.definition) &&
-          (reaction.response.kind === 'remove' || reaction.response.kind === 'transform')
-        ) {
-          value -= benefit * s.stacks;
-          if (reaction.response.kind === 'transform') {
-            const ref = reaction.response.status;
-            const destination = definitions.find(
-              (s) =>
-                s.id === ref.id && s.revision === ref.revision && s.contentHash === ref.contentHash,
-            );
-            if (destination)
-              value += statusBenefit(
-                destination.definition,
-                horizon,
-                destination.definition.durationSteps,
-                resources,
-              );
-          }
-        }
-      }
+      if (includeReaction)
+        value = marginal(() => {
+          const plan = planStatusReactions(
+            own,
+            [{ id: 'decision.status', element }],
+            definitions,
+            step,
+          );
+          return applyStatuses(plan.statuses, plan.applications, plan.dispels, activationStep)
+            .statuses;
+        });
     } else if (target === 'enemy') {
       handled = effect.kind === 'water' && observed.length > 0;
       for (const s of observed) {

@@ -344,6 +344,14 @@
     "status-received-knowledge": {
       "file": "packages/engine/src/spatial/status-integration.test.ts",
       "name": "G-03 status combat and subjective observations learns only the transform closure of a received own status and rejects a worsening self reaction"
+    },
+    "status-replacement-value": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations subtracts displaced cohorts from self replacement utility and installs an incoming permanent revision"
+    },
+    "status-strengthening-value": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations values strengthening once against total stacks with the oldest deadline regardless of cohort order"
     }
   },
   "entries": [
@@ -881,7 +889,9 @@
         "status-resource-3",
         "status-resource-4",
         "status-revealed-context",
-        "status-received-knowledge"
+        "status-received-knowledge",
+        "status-replacement-value",
+        "status-strengthening-value"
       ]
     }
   ]

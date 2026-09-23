@@ -22,6 +22,8 @@ import { assessAbility, efficacy } from './assessment.ts';
 import { assessStatusEffect } from './status-assessment.ts';
 import { statusVision } from './status-observation.ts';
 import { selfView } from './self-view.ts';
+import { applyStatuses } from './status.ts';
+import { planStatusReactions } from './status-reactions.ts';
 
 beforeAll(initializePhysics);
 const water: Effect = { kind: 'damage', amount: 25, attackScaleBps: 0, element: 'water' };
@@ -586,8 +588,11 @@ describe('G-03 status combat and subjective observations', () => {
         assessStatusEffect(view, { kind: 'apply-status', status: reference(buff) }, 'self').value,
       ).toBe(1);
       expect(
-        assessStatusEffect(view, { kind: 'apply-status', status: reference(harmful) }, 'self')
-          .value,
+        assessStatusEffect(
+          { ...view, ownStatuses: [] },
+          { kind: 'apply-status', status: reference(harmful) },
+          'self',
+        ).value,
       ).toBeLessThan(0);
       expect(assessStatusEffect(view, { kind: 'water', extinguish: true }, 'self').value).toBe(2);
       expect(
@@ -606,6 +611,139 @@ describe('G-03 status combat and subjective observations', () => {
         },
       };
       expect(assessAbility(view, selfHarm).weight).toBe(0);
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it('subtracts displaced cohorts from self replacement utility and installs an incoming permanent revision', async () => {
+    const f = await aiFixture();
+    try {
+      const revisions = await Promise.all(
+        [50, 5, 25].map((amount, index) =>
+          sealRevision(
+            'status',
+            `replacement-${index}`,
+            1,
+            initialStatus({
+              stackKey: 'replacement',
+              stacking: 'replace',
+              durationSteps: 100,
+              ...(index === 2 && { categories: ['permanent'] }),
+              adjustments: [{ target: 'attack', operation: 'add', amount }],
+            }),
+          ),
+        ),
+      );
+      const [strong, weak, permanent] = revisions;
+      const ownStatuses = [0, 5].map((startStep) => ({
+        revision: strong!,
+        startStep,
+        endStep: startStep + 100,
+        stacks: 1,
+        causes: [],
+      }));
+      const view = {
+        ...f.view,
+        step: 10,
+        ownStatuses,
+        self: { ...f.self, actor: { ...f.self.actor, knownStatuses: revisions } },
+      };
+      const effect = { kind: 'apply-status' as const, status: reference(weak!) };
+      expect(assessStatusEffect(view, effect, 'self').value).toBeCloseTo(-3.8);
+      expect(
+        assessAbility(view, {
+          ...f.abilities[0]!,
+          definition: { ...f.abilities[0]!.definition, target: 'self', effects: [effect] },
+        }).weight,
+      ).toBe(0);
+      const replaced = applyStatuses(ownStatuses, [{ revision: weak!, cause: 'replace' }], [], 11);
+      expect(replaced.statuses).toMatchObject([
+        { revision: weak, startStep: 11, endStep: 111, stacks: 1 },
+      ]);
+      const next = { ...view, ownStatuses: replaced.statuses };
+      expect(
+        assessStatusEffect(next, { kind: 'apply-status', status: reference(permanent!) }, 'self')
+          .value,
+      ).toBeCloseTo(0.8);
+      const installed = applyStatuses(
+        replaced.statuses,
+        [{ revision: permanent!, cause: 'permanent' }],
+        [],
+        12,
+      );
+      expect(installed.statuses).toMatchObject([
+        { revision: permanent, startStep: 12, endStep: 12000, stacks: 1 },
+      ]);
+      expect(applyStatuses(installed.statuses, [], [permanent!], 13).statuses).toEqual(
+        installed.statuses,
+      );
+      expect(
+        assessStatusEffect(
+          { ...view, ownStatuses: ownStatuses.map((s) => ({ ...s, endStep: 11 })) },
+          effect,
+          'self',
+        ).value,
+      ).toBeCloseTo(0.2);
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it('values strengthening once against total stacks with the oldest deadline regardless of cohort order', async () => {
+    const f = await aiFixture();
+    try {
+      const revision = await sealRevision(
+        'status',
+        'strengthened',
+        1,
+        initialStatus({
+          stacking: 'sum',
+          maxStacks: 3,
+          durationSteps: 20,
+          adjustments: [{ target: 'attack', operation: 'add', amount: 25 }],
+          reactions: [{ element: 'water', response: { kind: 'strengthen', stacks: 2 } }],
+        }),
+      );
+      const cohorts = [0, 5].map((startStep) => ({
+        revision,
+        startStep,
+        endStep: startStep + 20,
+        stacks: 1,
+        causes: [],
+      }));
+      const view = {
+        ...f.view,
+        step: 10,
+        self: { ...f.self, actor: { ...f.self.actor, knownStatuses: [revision] } },
+      };
+      for (const ownStatuses of [cohorts, [...cohorts].reverse()]) {
+        expect(
+          assessStatusEffect({ ...view, ownStatuses }, { kind: 'water', extinguish: true }, 'self')
+            .value,
+        ).toBeCloseTo(0.18);
+        const plan = planStatusReactions(
+          ownStatuses,
+          [{ id: 'water', element: 'water' }],
+          [revision],
+          10,
+        );
+        const resolved = applyStatuses(plan.statuses, plan.applications, plan.dispels, 11).statuses;
+        expect(
+          resolved.map(({ startStep, endStep, stacks }) => ({ startStep, endStep, stacks })),
+        ).toEqual([
+          { startStep: 0, endStep: 20, stacks: 2 },
+          { startStep: 5, endStep: 25, stacks: 1 },
+        ]);
+        expect(
+          assessStatusEffect(
+            { ...view, ownStatuses: resolved },
+            { kind: 'water', extinguish: true },
+            'self',
+          ).value,
+        ).toBe(0);
+      }
+      expect(cohorts.map((s) => s.stacks)).toEqual([1, 1]);
     } finally {
       f.world.free();
     }

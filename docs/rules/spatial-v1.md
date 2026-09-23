@@ -208,7 +208,7 @@ destinations are unresolved. Strengthen fills oldest cohort to maxStacks, keeps 
 Transform grants once, no recursion; dispel precedes grants. Diagnostics retain causes.
 
 Permanent states use endStep=12000 (battle max 6000), ignoring duration and normal removal/transform.
-Same-revision replace preserves clocks; other replacement is unresolved. Dedicated sealing stays P6.
+Replacing permanent states: same revision preserves clocks; others are unresolved. Sealing stays P6.
 
 Periodic {kind:resource,resource:mp|stamina,amount:signed integer,everySteps} calls G-04
 updateResources once per boundary; retains carry/exhaustion, leaves absent stamina absent.
@@ -218,8 +218,8 @@ staminaRecovery at step+1; later removal/grants cannot alter elapsed recovery. N
 Only visible states yield ≤64 sorted summaries after sight/reaction delay:
 ID/categories, benefit/adjustment direction, removability, reaction/damage direction; no hashes,
 quantities, stacks or deadlines. Own AI knows ability/held-state transform closures; enemy AI
-uses delayed summaries/impacts only. Apply/cleanse/reaction estimates follow holder benefit,
-including resource pulses/recovery (missing own resources ignored). Weakness changes the coarse
+uses delayed summaries/impacts only. Self utility compares shared runtime transitions, including
+displaced cohorts, stack caps, clocks and resources (missing resources ignored). Weakness changes the coarse
 prior, never duplicates measured impact. Public changes retire prior/same-boundary impacts after
 delay; baseline reveals persist and use the public prior.
 Knowledge/decision logs use these summaries, never enemy truth.

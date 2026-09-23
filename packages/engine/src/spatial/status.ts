@@ -147,7 +147,9 @@ export function applyStatuses(
       );
     if (
       (definition.stacking === 'refresh' ||
-        (permanentStatus(definition) && definition.stacking === 'replace')) &&
+        (permanentStatus(definition) &&
+          definition.stacking === 'replace' &&
+          old.every((s) => sameRevision(s.revision, revision)))) &&
       old.length
     ) {
       statuses = statuses.map((s) =>
