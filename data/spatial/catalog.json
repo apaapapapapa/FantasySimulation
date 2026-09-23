@@ -2556,6 +2556,72 @@
   },
   {
     "kind": "ruleset",
+    "id": "standard-simultaneous-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125",
+    "definition": {
+      "name": "標準3D",
+      "rulesVersion": "spatial-v1.15",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1"
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
     "id": "standard-status-v1",
     "revision": 1,
     "schemaVersion": 1,

@@ -64,26 +64,46 @@ export async function combatManifest(
     ability?: Partial<Definition<'ability'>>;
     policy?: Partial<Definition<'policy'>>;
     character?: Partial<Definition<'character'>>;
+    ids?: { ability: string; policy: string; character: string };
   } = {},
 ): Promise<Manifest> {
   const manifest = await sampleManifest(maxSteps);
   const baseAbility = manifest.revisions.find((r) => r.kind === 'ability')!;
-  const ability = await sealRevision('ability', baseAbility.id, baseAbility.revision, {
-    ...baseAbility.definition,
-    ...edit.ability,
-  });
+  const ability = await sealRevision(
+    'ability',
+    edit.ids?.ability ?? baseAbility.id,
+    baseAbility.revision,
+    {
+      ...baseAbility.definition,
+      ...edit.ability,
+    },
+  );
   const basePolicy = manifest.revisions.find((r) => r.kind === 'policy')!;
-  const policy = await sealRevision('policy', basePolicy.id, basePolicy.revision, {
-    ...basePolicy.definition,
-    ...edit.policy,
-  });
+  const policy = await sealRevision(
+    'policy',
+    edit.ids?.policy ?? basePolicy.id,
+    basePolicy.revision,
+    {
+      ...basePolicy.definition,
+      priorities: basePolicy.definition.priorities.map((p) => ({
+        ...p,
+        abilityId: p.abilityId === baseAbility.id ? ability.id : p.abilityId,
+      })),
+      ...edit.policy,
+    },
+  );
   const baseCharacter = manifest.revisions.find((r) => r.kind === 'character')!;
-  const character = await sealRevision('character', baseCharacter.id, baseCharacter.revision, {
-    ...baseCharacter.definition,
-    ...edit.character,
-    abilities: [reference(ability)],
-    policy: reference(policy),
-  });
+  const character = await sealRevision(
+    'character',
+    edit.ids?.character ?? baseCharacter.id,
+    baseCharacter.revision,
+    {
+      ...baseCharacter.definition,
+      ...edit.character,
+      abilities: [reference(ability)],
+      policy: reference(policy),
+    },
+  );
   manifest.revisions = manifest.revisions.map((r) =>
     r.kind === 'ability'
       ? ability

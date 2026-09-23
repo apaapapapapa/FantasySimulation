@@ -1,7 +1,9 @@
 import { nextRandom } from '@fantasy/domain/spatial';
 import { SpatialBudgetError } from './physics.ts';
 
-export type DecisionRandom = { action: number; dodge: number };
+export type DecisionRandom = { action: number; dodge: number; movement?: number };
+export const initialMovementRandom = (actorSeed: number) =>
+  nextRandom((actorSeed ^ 0x13198a2e) >>> 0 || 1);
 export function initialDecisionRandom(actorSeed: number): DecisionRandom {
   return {
     action: nextRandom((actorSeed ^ 0x243f6a88) >>> 0 || 1),

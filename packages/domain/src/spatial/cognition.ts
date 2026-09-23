@@ -98,7 +98,7 @@ export const CandidateAssessmentSchema = z.strictObject({
 });
 export type CandidateAssessment = z.infer<typeof CandidateAssessmentSchema>;
 const RandomDrawSchema = z.strictObject({
-  purpose: z.enum(['action', 'dodge']),
+  purpose: z.enum(['action', 'dodge', 'movement']),
   before: quantity,
   after: quantity,
   draws: z.number().int().min(0).max(128),
@@ -157,6 +157,14 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
       .array(z.strictObject({ abilityId: IdSchema, reason: z.string().max(100) }))
       .max(160),
     selection: z.string().max(100),
+    movementSlot: z
+      .strictObject({
+        selection: z.enum(['dodge', 'move', 'wait']),
+        candidates: z.array(CandidateAssessmentSchema).max(2),
+        excluded: z.array(z.string().max(100)).max(4),
+        draw: DrawSchema,
+      })
+      .optional(),
     method: z.enum(['sole', 'weighted', 'exploration', 'equal', 'none']),
     draws: z.array(DrawSchema).max(2),
     directions: z

@@ -1,4 +1,9 @@
-import { AI_RULES, type Revision } from '@fantasy/domain/spatial';
+import {
+  AI_RULES,
+  AppearancePriorsSchema,
+  LEGACY_APPEARANCE_PRIORS,
+  type Revision,
+} from '@fantasy/domain/spatial';
 
 /** Immutable distributed definition; retained for reading, never historical engine execution. */
 export const observedRules = {
@@ -35,4 +40,15 @@ export const locomotionRules = {
   id: 'standard-locomotion-v1',
   contentHash: 'sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba',
   definition: { ...observedRules.definition, rulesVersion: 'spatial-v1.13' },
+} satisfies Revision;
+
+export const generalAiRules = {
+  ...observedRules,
+  id: 'standard-general-ai-v1',
+  contentHash: 'sha256:3ca4c7ddbe757d26ccf9d096051e1c930940596e2e15eac46847e1557f9cdb76',
+  definition: {
+    ...observedRules.definition,
+    rulesVersion: 'spatial-v1.14',
+    ai: { ...AI_RULES, appearancePriors: AppearancePriorsSchema.parse(LEGACY_APPEARANCE_PRIORS) },
+  },
 } satisfies Revision;
