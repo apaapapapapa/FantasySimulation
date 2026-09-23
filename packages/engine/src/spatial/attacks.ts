@@ -87,7 +87,12 @@ export function inObservedRange(ability: Ability, view: DecisionView): boolean {
     target.position,
     bodyPoint(view.self, view.self.actor.character.body.muzzleOffset),
   );
-  return length(delta) <= ability.rangeMm / 1000 && dot(view.self.facing, delta) >= -1e-12;
+  return (
+    length(delta) <= ability.rangeMm / 1000 &&
+    (ability.attack.kind === 'arc' ||
+      ability.attack.kind === 'radial' ||
+      dot(view.self.facing, delta) >= -1e-12)
+  );
 }
 /** Two explicit PRNG samples per released spatial attack, including zero-error shots. */
 export function launchDirection(facing: Vec3, errorMilliDegrees: number, random: number) {

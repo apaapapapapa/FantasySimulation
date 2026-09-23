@@ -62,6 +62,9 @@ import {
   visibleStageCue,
 } from './stages.ts';
 import { HitLedger } from './hit-ledger.ts';
+import { beginForcedInterval, settleForcedInterval } from './forces.ts';
+import { sweepBlade } from './blades.ts';
+import { applyStageMotion } from './stage-motion.ts';
 
 export type SimulationEnd = {
   steps: number;
@@ -298,6 +301,16 @@ export function* simulate(
         const next = actors.map(cloneActor),
           attacks = melees.map((m) => ({ ...m }));
         const nextLedger = ledger.clone();
+        const forcePlans = new Map(
+          next.map((actor) => {
+            delete actor.intent.forced;
+            delete actor.intent.authored;
+            return [
+              actorId(actor),
+              beginForcedInterval(actor, step, battle.rules.forcedSpeedCapMmPerSecond ?? 100000),
+            ];
+          }),
+        );
         let nextSerial = serial;
         const bullets = [...projectiles],
           spawns: ProjectileDisplay[] = [];
@@ -391,6 +404,7 @@ export function* simulate(
               },
             });
           const canMove =
+            !forcePlans.get(actorId(actor))?.active &&
             !stats.rooted &&
             !stats.incapacitated &&
             !(
@@ -652,7 +666,10 @@ export function* simulate(
           );
           actor.random = aim.random;
           if (
-            (definition.attack.kind === 'melee' || definition.attack.kind === 'projectile') &&
+            (definition.attack.kind === 'melee' ||
+              definition.attack.kind === 'projectile' ||
+              definition.attack.kind === 'arc' ||
+              definition.attack.kind === 'radial') &&
             muzzleBlocked(world, actor.motion)
           ) {
             journal.emit({
@@ -717,7 +734,11 @@ export function* simulate(
                   ),
                 );
             }
-          } else if (definition.attack.kind === 'melee') {
+          } else if (
+            definition.attack.kind === 'melee' ||
+            definition.attack.kind === 'arc' ||
+            definition.attack.kind === 'radial'
+          ) {
             attacks.push({
               id: staged?.id ?? action.id,
               actorId: actorId(actor),
@@ -769,6 +790,11 @@ export function* simulate(
             spawns.push(displayProjectile(projectile));
           }
         }
+        for (const actor of next) {
+          const force = forcePlans.get(actorId(actor));
+          if (force?.active) actor.intent.forced = { gravity: force.gravity!, force: force.force };
+          applyStageMotion(actor, step);
+        }
         const motionPlans = next.map((actor) =>
           reserveMotion(
             actor,
@@ -812,31 +838,56 @@ export function* simulate(
           )
             continue;
           const shape = attack.ability.definition.attack;
-          if (shape.kind !== 'melee') throw new Error('Invalid active melee');
+          if (shape.kind !== 'melee' && shape.kind !== 'arc' && shape.kind !== 'radial')
+            throw new Error('Invalid attached attack');
           const owner = moved.find((a) => a.state.actor.participant.actorId === attack.actorId)!;
           const enemy = moved.find((a) => a.state.actor.participant.actorId !== attack.actorId)!;
-          const trace = meleeTrace(
-            owner.trace,
-            attack.offset,
-            attack.direction,
-            Math.min(shape.reachMm, attack.ability.definition.rangeMm) / 1000,
-            step - attack.launchStep,
-            shape.activeSteps,
-          );
+          const activeSteps =
+            shape.kind === 'melee'
+              ? shape.activeSteps
+              : ownerActor.action!.ability.definition.stages![attack.stage!.stageIndex]!
+                  .durationSteps;
           if (++candidates > budget.maxCandidates) throw new SpatialBudgetError('candidates');
-          const contact = traceAttack(
-            world,
-            trace,
-            shape.radiusMm / 1000,
-            enemy.state,
-            enemy.trace,
-          );
+          const blade =
+            shape.kind !== 'melee'
+              ? sweepBlade(
+                  world,
+                  owner.trace,
+                  attack.offset,
+                  attack.direction,
+                  shape,
+                  step - attack.launchStep,
+                  activeSteps,
+                  enemy.state,
+                  enemy.trace,
+                  battle.rules,
+                  budget,
+                )
+              : null;
+          const trace =
+            shape.kind === 'melee'
+              ? meleeTrace(
+                  owner.trace,
+                  attack.offset,
+                  attack.direction,
+                  Math.min(shape.reachMm, attack.ability.definition.rangeMm) / 1000,
+                  step - attack.launchStep,
+                  shape.activeSteps,
+                )
+              : [];
+          const contact =
+            shape.kind === 'melee'
+              ? traceAttack(world, trace, shape.radiusMm / 1000, enemy.state, enemy.trace)
+              : blade!.contact;
           if (attack.stage)
-            ownerActor.action!.stages!.geometry = {
-              kind: 'sphere',
-              radiusMm: shape.radiusMm,
-              segments: contact?.kind === 'wall' ? clipTrace(trace, contact.time) : trace,
-            };
+            ownerActor.action!.stages!.geometry =
+              shape.kind === 'melee'
+                ? {
+                    kind: 'sphere',
+                    radiusMm: shape.radiusMm,
+                    segments: contact?.kind === 'wall' ? clipTrace(trace, contact.time) : trace,
+                  }
+                : blade!.geometry;
           if (contact) {
             const admission =
               contact.kind === 'body' && attack.stage
@@ -862,7 +913,7 @@ export function* simulate(
               abilityId: attack.ability.id,
               parentEventId: attack.cause,
               point: contact.point,
-              ruleId: 'melee.first-contact',
+              ruleId: `${shape.kind}.first-contact`,
               reason: admission?.reason ?? contact.kind,
               ...(attack.stage ? { stage: attack.stage } : {}),
             });
@@ -888,14 +939,15 @@ export function* simulate(
           }
           if (
             contact?.kind !== 'wall' &&
-            (attack.stage || attack.hits < shape.maxHitsPerTarget) &&
-            step + 1 < attack.launchStep + shape.activeSteps
+            (attack.stage || (shape.kind === 'melee' && attack.hits < shape.maxHitsPerTarget)) &&
+            step + 1 < attack.launchStep + activeSteps
           )
             surviving.push(attack);
         }
         for (const actor of next) {
           const movement = moved.find((m) => m.state.actor.participant.actorId === actorId(actor))!;
           actor.motion = movement.state;
+          settleForcedInterval(actor, forcePlans.get(actorId(actor)) ?? null, movement, step);
           if (movement.landed) {
             const land = journal.emit({
               kind: 'land',

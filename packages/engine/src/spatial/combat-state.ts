@@ -5,6 +5,7 @@ import {
   type Revision,
   type StageContact,
   type Stage,
+  type ForceContribution,
 } from '@fantasy/domain/spatial';
 import { initialMotion, type MotionIntent, type MotionState } from './movement.ts';
 import { emptyMemory, type PerceptionMemory } from './perception.ts';
@@ -34,6 +35,9 @@ export type ActorState = {
   staminaClock?: { remainder: number; exhausted: boolean };
   motionClock?: { remainder: number; flightRemainder: number; dodgeUntilStep?: number };
   locomotion?: ActorDisplay['locomotion'];
+  forces?: ForceContribution[];
+  forceGravity?: Vec3;
+  forceDisplay?: ActorDisplay['force'];
   statuses: StatusCohort[];
   memory: PerceptionMemory;
   decision: Decision;
@@ -96,6 +100,11 @@ export const cloneActor = (state: ActorState): ActorState => ({
   ...(state.staminaClock ? { staminaClock: { ...state.staminaClock } } : {}),
   ...(state.motionClock ? { motionClock: { ...state.motionClock } } : {}),
   ...(state.locomotion ? { locomotion: { ...state.locomotion } } : {}),
+  ...(state.forces ? { forces: structuredClone(state.forces) } : {}),
+  ...(state.forceGravity ? { forceGravity: { ...state.forceGravity } } : {}),
+  ...(state.forceDisplay !== undefined
+    ? { forceDisplay: structuredClone(state.forceDisplay) }
+    : {}),
   statuses: state.statuses.map((s) => ({ ...s, causes: [...s.causes] })),
   used: { ...state.used },
   cooldowns: { ...state.cooldowns },
@@ -118,6 +127,7 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
     velocity: { ...motion.velocity },
     facing: { ...motion.facing },
     grounded: motion.grounded,
+    ...(state.forceDisplay !== undefined ? { force: structuredClone(state.forceDisplay) } : {}),
     resources: { ...state.resources },
     ...(state.locomotion ? { locomotion: { ...state.locomotion } } : {}),
     statuses: state.statuses.map((s) => ({

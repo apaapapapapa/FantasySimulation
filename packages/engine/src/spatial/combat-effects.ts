@@ -14,6 +14,7 @@ import type { Journal } from './journal.ts';
 import { observeImpact, observeReveal, rememberExperience } from './perception.ts';
 import { at, type SpatialWorld } from './physics.ts';
 import type { MotionState, MovedActor } from './movement.ts';
+import { queueForce } from './forces.ts';
 const effectEventKinds = {
   damage: 'damage',
   heal: 'heal',
@@ -22,6 +23,7 @@ const effectEventKinds = {
   dispel: 'diagnostic',
   water: 'diagnostic',
   reveal: 'diagnostic',
+  force: 'force',
 } satisfies Record<Effect['kind'], BattleEvent['kind']>;
 export type PendingEffect = DamageSnapshot & {
   actorId: string | null;
@@ -105,6 +107,29 @@ export function commitEffects(
         app.event.amount = Math.floor((app.effect.amount * (app.scaleBps ?? 10000)) / 10000);
       }
       const observer = actors.find((a) => a.motion.actor.participant.actorId === app.actorId);
+      if (app.effect.kind === 'force') {
+        const geometry = app.observation ?? {
+          self: observer?.motion ?? actor.motion,
+          target: actor.motion,
+        };
+        app.event.force = queueForce(
+          actor,
+          app.effect,
+          geometry.self.position,
+          geometry.target.position,
+          {
+            id: app.id,
+            actorId: app.actorId,
+            abilityId: app.abilityId,
+            ...(app.stage ? { stage: app.stage } : {}),
+          },
+          step,
+          budget,
+        );
+        app.event.reason = Object.values(app.event.force.velocityMmPerSecond).every((n) => n === 0)
+          ? 'coincident-zero-force'
+          : 'contact-frozen-linear-force';
+      }
       const ability = observer?.motion.actor.abilities.find((a) => a.id === app.abilityId);
       if (observer && ability && observer !== actor) {
         const geometry = app.observation ?? { self: observer.motion, target: actor.motion };

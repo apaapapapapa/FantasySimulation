@@ -2,6 +2,28 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "201ec9f5aa25d82b05e1f9555ad920925f8fa2cc",
+      "beforeDigest": "8d2cfab6e7d8c39fdfc34dd8eee5ee38439a961e43ca40993be9dbf5a879e04b",
+      "afterDigest": "a67a7dbffdddede5f3a54ca9d6851c2f0370fc2cfd9a8ca8bf4df23920237fe8",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "G-07b adds swept arc/radial blades, authored stage movement and contact-frozen forces under spatial-v1.17 / standard-motion-v1. Reviewed five actual alternating trials of seven fixed cases (35 observations per revision), exact main 201ec9f against clean candidate 16f2d96. Every outcome and deterministic step/cast/candidate/path-node/event/log-byte/trajectory-byte vector is unchanged across revisions and stable across all trials. Both revisions pass unchanged ceilings with real pinned frozen installs; no command failed. Clean-source verification passes 744 tests, seven fixed inputs and 161 mapped regressions. Added regressions cover full blade-shaft collision and actual wall surface contact, radial deduplication, bent paths and bounded sweeps; forced sum/cap, expiry gravity, wall/ceiling/body projection and landing; atomic dash/leap costs and simultaneous-slot suppression; delayed visible cues, domain replay seeks and real Worker/SQLite persistence. All 75 published revision ID/hash pairs and Golden expectations remain unchanged; five sample/rules revisions are additive. Only the current engine/rules identities change in the seven corpus inputs, requiring independent transition evidence and making no same-input timing/RSS claim. No runtime pins, profile limits or simulation budgets were relaxed.",
+      "evidence": [
+        ".generated/harness/load-g7b-201ec9f/0-before.json",
+        ".generated/harness/load-g7b-201ec9f/0-after.json",
+        ".generated/harness/load-g7b-201ec9f/results.json",
+        ".generated/harness/load-g7b-201ec9f/commands.json",
+        ".generated/harness/load-g7b-201ec9f/boundary.json",
+        ".generated/harness/load-g7b-201ec9f/reviewed-comparison.json",
+        "packages/engine/src/spatial/blades.test.ts",
+        "packages/engine/src/spatial/forces.test.ts",
+        "packages/engine/src/spatial/forced-movement.test.ts",
+        "packages/engine/src/spatial/stage-motion.test.ts",
+        "apps/api/src/simultaneous-persistence.test.ts"
+      ]
+    },
+    {
       "baselineSha": "01086988e4e5c05e5c43bbb0c2b52896a7ea2ecd",
       "beforeDigest": "9b281b8ecfed5b392069d5cb2344ea59b938b29eadc9a60f07f8065d1d8cf9ff",
       "afterDigest": "8d2cfab6e7d8c39fdfc34dd8eee5ee38439a961e43ca40993be9dbf5a879e04b",

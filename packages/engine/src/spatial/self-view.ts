@@ -6,12 +6,22 @@ import { damageSource } from './damage.ts';
 import { statusReactions } from './status-reactions.ts';
 import { knownPeriodicDamage } from './status-risk.ts';
 import { flightRate } from './locomotion.ts';
+import { hasForcedMotion } from './forces.ts';
+import { ownsStageMotion } from './stage-motion.ts';
 
 /** Own resources and active statuses are proprioception, never a lookup of an opponent. */
 export function selfView(
   actor: Pick<
     ActorState,
-    'motion' | 'statuses' | 'resources' | 'memory' | 'used' | 'readyAt' | 'action' | 'staminaClock'
+    | 'motion'
+    | 'statuses'
+    | 'resources'
+    | 'memory'
+    | 'used'
+    | 'readyAt'
+    | 'action'
+    | 'staminaClock'
+    | 'forces'
   >,
   step: number,
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>>,
@@ -46,7 +56,9 @@ export function selfView(
     ownStatuses: active,
     incapacitated: stats.incapacitated,
     canAct: step >= actor.readyAt && !actor.action && !stats.incapacitated,
+    ...(ownsStageMotion(actor.action, step) ? { stageOwnsMotion: true } : {}),
     canMove:
+      !hasForcedMotion(actor, step) &&
       !stats.rooted &&
       !stats.incapacitated &&
       !(

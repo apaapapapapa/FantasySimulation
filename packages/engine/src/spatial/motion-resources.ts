@@ -25,6 +25,8 @@ export function reserveMotion(
     actor.staminaClock?.exhausted,
   );
   let intent: MotionIntent = { ...actor.intent };
+  if (intent.forced) intent = { ...intent, canMove: false, jump: false, canStep: false };
+  else if (intent.authored) intent.jump = intent.authored.jump;
   if (!m && ready && !intent.flight) delete intent.speedMmPerSecond;
   const rate = intent.flight ? flightRate(actor.statuses, step) : 0;
   let flightUnits = 0n;
@@ -40,7 +42,7 @@ export function reserveMotion(
   }
   if (intent.flight) delete intent.speedMmPerSecond;
   let dodgePaid = false;
-  if (dodge && m && ready && intent.canMove) {
+  if (dodge && m && ready && intent.canMove && !intent.authored && !intent.forced) {
     dodgePaid = budget.reserve('dodge', [{ stamina: m.dodgeStamina }]).ok;
     if (!dodgePaid) intent.canMove = false;
   }
@@ -49,13 +51,15 @@ export function reserveMotion(
     motionUnits = 0n,
     stepRate = 0;
   let profile = gaitProfile(character, gait);
-  const charged = !!m && !intent.flight;
+  const charged = !!m && !intent.flight && !intent.forced;
   if (character.stamina && !ready) intent.jump = false;
   if (charged) {
     const carry = BigInt(actor.motionClock?.remainder ?? 0);
     for (const choice of [gait, 'walk', 'slow'] as const) {
       gait = choice;
-      profile = gaitProfile(character, gait);
+      profile = intent.authored
+        ? { speedMmPerSecond: intent.authored.speedMmPerSecond, staminaPerMeter: 0 }
+        : gaitProfile(character, gait);
       const jump = intent.canMove && intent.jump && actor.motion.grounded && ready;
       fixed = jump ? m.jumpStamina : 0;
       const canStep = intent.canMove && actor.motion.grounded && !jump && gait !== 'slow';
@@ -128,7 +132,15 @@ export function reserveMotion(
         };
         changed = true;
       }
-      if (displayMotion && dodge && ready && intent.canMove && (!m || dodgePaid))
+      if (
+        displayMotion &&
+        dodge &&
+        ready &&
+        intent.canMove &&
+        !intent.authored &&
+        !intent.forced &&
+        (!m || dodgePaid)
+      )
         actor.motionClock = {
           remainder: actor.motionClock?.remainder ?? 0,
           flightRemainder: actor.motionClock?.flightRemainder ?? 0,
@@ -145,7 +157,11 @@ export function reserveMotion(
             !moved.state.grounded &&
             !intent.flight &&
             (moved.jumped || (actor.locomotion?.jumping ?? false)),
-          dodging: ready && (actor.motionClock?.dodgeUntilStep ?? 0) > step,
+          dodging:
+            ready &&
+            !intent.forced &&
+            !intent.authored &&
+            (actor.motionClock?.dodgeUntilStep ?? 0) > step,
         };
       const final = budget.finish();
       actor.resources = final.resources;

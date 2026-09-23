@@ -55,7 +55,65 @@ function segmentBoxClosest(start: Vec3, end: Vec3, half: Vec3) {
     y: point.y - Math.max(-half.y, Math.min(half.y, point.y)),
     z: point.z - Math.max(-half.z, Math.min(half.z, point.z)),
   };
-  return { squared: best, delta };
+  return { squared: best, delta, point };
+}
+/** Whole horizontal blade, including its shaft, against boxes/ramps and upright pillars. */
+export function bladeObstacleContact(start: Vec3, end: Vec3, radius: number, obstacle: Obstacle) {
+  if (obstacle.kind === 'pillar') {
+    const axis = closestHorizontal(start, end, obstacle.position);
+    const delta = sub(axis, obstacle.position);
+    const radial = Math.sqrt(delta.x ** 2 + delta.z ** 2);
+    const horizontal = Math.max(0, radial - obstacle.halfExtents.x);
+    const vertical = Math.max(0, Math.abs(delta.y) - obstacle.halfExtents.y);
+    const gap = {
+      x: radial ? (delta.x * horizontal) / radial : 0,
+      y: Math.sign(delta.y) * vertical,
+      z: radial ? (delta.z * horizontal) / radial : 0,
+    };
+    return {
+      distance: Math.sqrt(horizontal ** 2 + vertical ** 2) - radius,
+      point: sub(axis, mul(unit(gap), radius)),
+    };
+  }
+  const local = (p: Vec3) =>
+    obstacle.rotation
+      ? rotate(sub(p, obstacle.position), inverse(obstacle.rotation))
+      : sub(p, obstacle.position);
+  const closest = segmentBoxClosest(local(start), local(end), obstacle.halfExtents);
+  const axis = add(
+    obstacle.position,
+    obstacle.rotation ? rotate(closest.point, obstacle.rotation) : closest.point,
+  );
+  const gap = obstacle.rotation ? rotate(closest.delta, obstacle.rotation) : closest.delta;
+  return {
+    distance: Math.sqrt(closest.squared) - radius,
+    point: sub(axis, mul(unit(gap), radius)),
+  };
+}
+function closestHorizontal(start: Vec3, end: Vec3, position: Vec3) {
+  const delta = { ...sub(end, start), y: 0 },
+    square = dot(delta, delta);
+  const time =
+    square === 0 ? 0 : Math.max(0, Math.min(1, dot(sub(position, start), delta) / square));
+  return add(start, mul(delta, time));
+}
+export function bladeBodyContact(
+  start: Vec3,
+  end: Vec3,
+  radius: number,
+  position: Vec3,
+  body: Capsule,
+) {
+  const axis = closestHorizontal(start, end, position);
+  const nearest = {
+    ...position,
+    y: Math.max(position.y - body.halfHeight, Math.min(position.y + body.halfHeight, axis.y)),
+  };
+  const delta = sub(axis, nearest);
+  return {
+    distance: Math.sqrt(dot(delta, delta)) - radius - body.radius,
+    point: sub(axis, mul(unit(delta), radius)),
+  };
 }
 export function capsuleObstacleContact(position: Vec3, body: Capsule, obstacle: Obstacle) {
   const local = sub(position, obstacle.position);

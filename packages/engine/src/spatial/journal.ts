@@ -103,6 +103,7 @@ export function displayChanges(
         'velocity',
         'facing',
         'grounded',
+        'force',
         'resources',
         'locomotion',
         'statuses',

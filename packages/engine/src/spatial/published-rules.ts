@@ -63,3 +63,10 @@ export const simultaneousRules = {
     ai: { ...generalAiRules.definition.ai, slots: 'simultaneous-v1' },
   },
 } satisfies Revision;
+
+export const stagedRules = {
+  ...simultaneousRules,
+  id: 'standard-stages-v1',
+  contentHash: 'sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868',
+  definition: { ...simultaneousRules.definition, rulesVersion: 'spatial-v1.16' },
+} satisfies Revision;

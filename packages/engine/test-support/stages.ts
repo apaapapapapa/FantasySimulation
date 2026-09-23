@@ -66,3 +66,32 @@ export async function stagedManifest(
   manifest.participants[1].position.x = 750;
   return manifest;
 }
+
+/** One authored dash, rotating blade and contact-frozen push, shared by engine/storage fixtures. */
+export function movingSweepStages(): Stage[] {
+  return [
+    {
+      id: 'moving-sweep',
+      offsetSteps: 0,
+      durationSteps: 10,
+      selfMotion: { kind: 'dash', speedMmPerSecond: 4000, accelerationMmPerSecond2: 200000 },
+      attack: {
+        kind: 'arc',
+        reachMm: 2000,
+        bladeRadiusMm: 100,
+        startAngleMilliDegrees: -90000,
+        sweepMilliDegrees: 180000,
+      },
+      effects: [
+        { kind: 'damage', amount: 10, attackScaleBps: 0, element: 'physical', defense: 'none' },
+        {
+          kind: 'force',
+          profile: 'linear-v1',
+          direction: 'away',
+          speedMmPerSecond: 10000,
+          durationSteps: 2,
+        },
+      ],
+    },
+  ];
+}

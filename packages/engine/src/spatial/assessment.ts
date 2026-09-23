@@ -16,6 +16,7 @@ import { assessStatusEffects, observedDamagePrior } from './status-assessment.ts
 import { adjustedStatusValue, damageStatusBps } from './status-modifiers.ts';
 import { abilityCategories } from './categories.ts';
 import { appearancePrior } from './appearance.ts';
+import { shapeEstimate, stageMotionEstimate } from './shape-assessment.ts';
 
 export const clampBps = (n: number) => Math.max(0, Math.min(10000, Math.round(n)));
 export const boundedWeight = (n: number) => Math.max(0, Math.min(1_000_000, Math.round(n)));
@@ -188,6 +189,14 @@ function assessSingle(
         Math.min(2, effect.amount / Math.max(1, view.resources.shield + 10)) *
         (view.memory.observation?.projectiles.length ? 2 : 1);
       reasons.push('self protection');
+    } else if (effect.kind === 'force') {
+      const displacement = (effect.speedMmPerSecond / 1000) * effect.durationSteps * 0.02;
+      utility += rules.actionWeight * Math.min(1, displacement / 4) * (target ? 0.5 : 0.1);
+      confidence = Math.min(confidence, 1000);
+      success = Math.min(success, Math.round(6500 * shapeEstimate(view, d.attack)));
+      reasons.push(
+        `own ${effect.direction} force ${effect.durationSteps} steps; capped displacement, collisions unknown`,
+      );
     } else if (effect.kind === 'reveal') {
       const known = efficacy(view, effect.element, 1);
       utility +=
@@ -211,6 +220,7 @@ function assessSingle(
         motion * 150 -
         (view.memory.observation?.enemy ? 0 : 2500),
     );
+    success = clampBps(success * shapeEstimate(view, d.attack));
     const healthFraction =
       target?.wounds === 'critical'
         ? 0.25
@@ -268,7 +278,8 @@ function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAs
       ...sum,
       hp: sum.hp + (stage.cost?.hp ?? 0),
       mp: sum.mp + (stage.cost?.mp ?? 0),
-      stamina: (sum.stamina ?? 0) + (stage.cost?.stamina ?? 0),
+      stamina:
+        (sum.stamina ?? 0) + (stage.cost?.stamina ?? 0) + stageMotionEstimate(view, stage).jumpCost,
     }),
     { ...definition.costs },
   );
@@ -282,17 +293,25 @@ function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAs
   const parts: ReturnType<typeof assessSingle>[] = [];
   if (initial.ok)
     for (const [index, stage] of plan.entries()) {
+      const motion = stageMotionEstimate(view, stage);
+      if (!motion.feasible) break;
       if (stage.startCondition && !conditionMatches(stage.startCondition, { ...view, resources }))
         break;
       if (stage.interruptWhen && conditionMatches(stage.interruptWhen, { ...view, resources }))
         break;
-      if (index > 0 && stage.cost) {
+      if ((index > 0 && stage.cost) || motion.jumpCost) {
         const budget = new ResourceBudget(
           resources,
           {},
           !staminaExhausted(resources, view.self.actor.character.stamina, view.staminaExhausted),
         );
-        if (!budget.reserve('estimate', [stage.cost]).ok) break;
+        if (
+          !budget.reserve('estimate', [
+            ...(index > 0 && stage.cost ? [stage.cost] : []),
+            { stamina: motion.jumpCost },
+          ]).ok
+        )
+          break;
         resources = budget.commit('estimate').after;
       }
       if (!stage.attack) continue;
@@ -306,6 +325,7 @@ function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAs
           { cast: (clock?.launchAt ?? 8000) + stage.offsetSteps, duration },
         ),
       );
+      if (stage.selfMotion) parts.at(-1)!.score *= 1 - motion.exposure;
     }
   const fallback = assessSingle(
     view,
@@ -325,7 +345,7 @@ function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAs
     survivalBps: Math.min(fallback.survivalBps, ...parts.map((p) => p.assessment.survivalBps)),
     costBps: Math.max(fallback.costBps, ...parts.map((p) => p.assessment.costBps)),
     evidence: [...new Set(parts.flatMap((p) => p.assessment.evidence))].slice(-32),
-    reason: `${plan.length} own stages, ${parts.length} presently affordable releases; physical timing, combined cost and exposure estimate`,
+    reason: `${plan.length} own stages, ${parts.length} presently affordable releases; physical timing, combined cost and exposure estimate${plan.some((s) => s.selfMotion || s.attack?.kind === 'arc' || s.attack?.kind === 'radial') ? '; own shape/coverage and motion estimate' : ''}`,
   };
 }
 
