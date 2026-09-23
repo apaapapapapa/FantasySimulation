@@ -30,6 +30,86 @@ const definition = (stacking: Definition<'status'>['stacking'] = 'sum'): Definit
   periodic: [{ kind: 'damage', amount: 4, element: 'fire', everySteps: 2 }],
 });
 describe('simultaneous effects', () => {
+  it('dispels existing statuses by listed ID or shared category and keeps uncategorized ones', async () => {
+    const states = await targets();
+    const make = (id: string, stackKey: string, categories?: Definition<'status'>['categories']) =>
+      sealRevision('status', id, 1, {
+        ...definition('refresh'),
+        stackKey,
+        ...(categories && { categories }),
+      });
+    const revisions = await Promise.all([
+      make('ward', 'ward', ['buff']),
+      make('curse', 'curse', ['debuff', 'damage-over-time']),
+      make('plain', 'plain'),
+      make('named', 'named', ['buff']),
+    ]);
+    states[0]!.statuses = revisions.map((revision) => ({
+      revision,
+      startStep: 0,
+      endStep: 3,
+      stacks: 1,
+      causes: ['prior'],
+    }));
+    const dispel = (
+      id: string,
+      effect: Omit<Extract<EffectApplication['effect'], { kind: 'dispel' }>, 'kind'>,
+    ): EffectApplication => ({
+      id,
+      actorId: 'right',
+      targetId: 'left',
+      attack: 0,
+      effect: { kind: 'dispel', ...effect },
+    });
+    const remaining = (apps: EffectApplication[]) =>
+      resolveEffects(states, apps, revisions, 0)[0]!
+        .statuses.map((s) => s.revision.id)
+        .sort();
+    expect(remaining([dispel('debuffs', { categories: ['debuff'] })])).toEqual([
+      'named',
+      'plain',
+      'ward',
+    ]);
+    expect(
+      remaining([dispel('mixed', { statusIds: ['named'], categories: ['damage-over-time'] })]),
+    ).toEqual(['plain', 'ward']);
+    expect(remaining([dispel('buffs', { categories: ['buff', 'control'] })])).toEqual([
+      'curse',
+      'plain',
+    ]);
+    // Category matches keep revision identity: a buff revision of the same ID survives.
+    const hexes = await Promise.all([
+      sealRevision('status', 'hex', 1, {
+        ...definition('refresh'),
+        stackKey: 'hex-a',
+        categories: ['debuff'],
+      }),
+      sealRevision('status', 'hex', 2, {
+        ...definition('refresh'),
+        stackKey: 'hex-b',
+        categories: ['buff'],
+      }),
+    ]);
+    const hexed = await targets();
+    hexed[0]!.statuses = hexes.map((revision) => ({
+      revision,
+      startStep: 0,
+      endStep: 3,
+      stacks: 1,
+      causes: ['prior'],
+    }));
+    const kept = (apps: EffectApplication[]) =>
+      resolveEffects(hexed, apps, hexes, 0)[0]!.statuses.map((s) => s.revision.revision);
+    expect(kept([dispel('debuffs', { categories: ['debuff'] })])).toEqual([2]);
+    expect(kept([dispel('byId', { statusIds: ['hex'] })])).toEqual([]);
+    const removed = resolveEffects(
+      states,
+      [dispel('debuffs', { categories: ['debuff'] })],
+      revisions,
+      0,
+    )[0]!.changes.filter((c) => c.kind === 'remove');
+    expect(removed.map((c) => [c.revision.id, c.reason])).toEqual([['curse', 'dispel-existing']]);
+  });
   it('water removes only existing extinguishable burning while simultaneous new burning remains', async () => {
     const states = await targets();
     const burn = await sealRevision('status', 'ordinary-burn', 1, {

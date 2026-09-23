@@ -6,9 +6,11 @@ import {
   type ResourceState,
 } from '@fantasy/domain/spatial';
 import type { ResolvedActor } from './prepare.ts';
+import { dispelTargets } from './categories.ts';
 import {
   applyStatuses,
   effectiveStats,
+  type DispelTarget,
   type StatusApplication,
   type StatusCohort,
   type StatusRevision,
@@ -92,7 +94,7 @@ export function resolveEffects(
       let heal = 0n,
         shield = BigInt(target.resources.shield);
       const statusApplications: StatusApplication[] = [],
-        dispels: string[] = [];
+        dispels: DispelTarget[] = [];
       for (const application of incoming) {
         const effect = application.effect,
           scale = BigInt(application.scaleBps ?? 10000);
@@ -117,7 +119,13 @@ export function resolveEffects(
             shield += (BigInt(effect.amount) * scale) / 10000n;
             break;
           case 'dispel':
-            if (scale > 0n) dispels.push(...effect.statusIds);
+            if (scale > 0n)
+              dispels.push(
+                ...dispelTargets(
+                  effect,
+                  target.statuses.map((s) => s.revision),
+                ),
+              );
             break;
           case 'water':
             if (scale > 0n)

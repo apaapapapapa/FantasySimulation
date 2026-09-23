@@ -56,19 +56,21 @@ export function statusBoundary(statuses: readonly StatusCohort[], step: number) 
   });
   return { statuses: statuses.filter((s) => s.endStep > step).map(clone), removed, pulses };
 }
+/** A dispel target is a whole status ID or one exact revision (e.g. a category match). */
+export type DispelTarget = string | StatusRevision;
 /** Dispel affects the pre-existing snapshot; simultaneous new applications become active nextStep. */
 export function applyStatuses(
   existing: readonly StatusCohort[],
   incoming: readonly StatusApplication[],
-  dispelIds: readonly string[],
+  dispel: readonly DispelTarget[],
   nextStep: number,
   limits: StatusLimits = DEFAULT_BUDGET,
 ): { statuses: StatusCohort[]; changes: StatusChange[] } {
-  let statuses = existing
-    .filter((s) => s.endStep > nextStep && !dispelIds.includes(s.revision.id))
-    .map(clone);
+  const dispelled = (s: StatusCohort) =>
+    dispel.some((t) => (typeof t === 'string' ? t === s.revision.id : sameRevision(t, s.revision)));
+  let statuses = existing.filter((s) => s.endStep > nextStep && !dispelled(s)).map(clone);
   const changes: StatusChange[] = existing
-    .filter((s) => s.endStep <= nextStep || dispelIds.includes(s.revision.id))
+    .filter((s) => s.endStep <= nextStep || dispelled(s))
     .map((s) => ({
       kind: 'remove',
       revision: s.revision,

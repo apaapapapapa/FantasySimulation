@@ -10,6 +10,7 @@ import type { MotionIntent } from './movement.ts';
 import { Navigator, type NavigationResult } from './navigation.ts';
 import { conditionMatches, type DecisionView } from './perception.ts';
 import { inObservedRange, payCost } from './attacks.ts';
+import { blockedBySilence } from './categories.ts';
 import { assessAbility, type KnownClearance } from './assessment.ts';
 import { dodgeOptions } from './dodge.ts';
 import { initialDecisionRandom, weightedChoice, type DecisionRandom } from './decision-random.ts';
@@ -71,7 +72,7 @@ export function choosePolicy(
           ? 'cooldown'
           : !payment.ok
             ? `insufficient-${payment.reason}`
-            : view.silenced && d.costs.mp > 0
+            : view.silenced && blockedBySilence(d)
               ? 'silenced'
               : !enabled || !conditionMatches(d.condition, view)
                 ? 'condition'

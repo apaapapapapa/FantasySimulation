@@ -33,6 +33,7 @@ import { initialMotion, moveActors } from './movement.ts';
 import { Navigator } from './navigation.ts';
 import { knownTerrainWorld } from './known-terrain.ts';
 import { selfView } from './self-view.ts';
+import { blockedBySilence } from './categories.ts';
 import { initialDecisionRandom } from './decision-random.ts';
 import { bodyPoint, conditionMatches, emptyMemory, perceive } from './perception.ts';
 import { SpatialBudgetError } from './physics.ts';
@@ -412,11 +413,8 @@ export function* simulate(
             );
             if (clock) {
               const payment = payCost(definition, actor.resources, actor.used[ability.id] ?? 0);
-              if (
-                !inObservedRange(definition, view) ||
-                !payment.ok ||
-                (view.silenced && definition.costs.mp > 0)
-              ) {
+              const silenced = !!view.silenced && blockedBySilence(definition);
+              if (!inObservedRange(definition, view) || !payment.ok || silenced) {
                 actor.readyAt =
                   step +
                   Math.max(
@@ -433,9 +431,11 @@ export function* simulate(
                   actorId: actorId(actor),
                   abilityId: ability.id,
                   ruleId: 'action.start',
-                  reason: payment.ok
-                    ? 'observed-range-or-facing'
-                    : `insufficient-${payment.reason}`,
+                  reason: !payment.ok
+                    ? `insufficient-${payment.reason}`
+                    : silenced
+                      ? 'silenced'
+                      : 'observed-range-or-facing',
                 });
               } else {
                 const start = journal.emit({
@@ -483,7 +483,7 @@ export function* simulate(
           if (
             !inObservedRange(definition, selfView(actor, step, battle.rules.ai!)) ||
             !conditionMatches(definition.condition, selfView(actor, step, battle.rules.ai!)) ||
-            (selfView(actor, step, battle.rules.ai!).silenced && definition.costs.mp > 0)
+            (selfView(actor, step, battle.rules.ai!).silenced && blockedBySilence(definition))
           ) {
             journal.emit({
               kind: 'fizzle',

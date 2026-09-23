@@ -138,6 +138,17 @@ function conditionAt(depth: number): z.ZodType<Condition> {
   ]);
 }
 export const ConditionSchema = conditionAt(4);
+// Issue #61 G-01: extend these enums additively; omitted categories keep legacy meaning.
+export const AbilityCategorySchema = z.enum(['physical', 'magic', 'technique', 'special']);
+export const StatusCategorySchema = z.enum(['buff', 'debuff', 'control', 'damage-over-time']);
+export type AbilityCategory = z.infer<typeof AbilityCategorySchema>;
+export type StatusCategory = z.infer<typeof StatusCategorySchema>;
+const categoryList = <T extends z.ZodType<string>>(item: T) =>
+  z
+    .array(item)
+    .min(1)
+    .max(8)
+    .refine((values) => new Set(values).size === values.length, 'Categories must be unique');
 
 export const EffectSchema = z.discriminatedUnion('kind', [
   z.strictObject({
@@ -149,7 +160,11 @@ export const EffectSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('heal'), amount: uint(1_000_000) }),
   z.strictObject({ kind: z.literal('shield'), amount: uint(1_000_000) }),
   z.strictObject({ kind: z.literal('apply-status'), status: RefSchema }),
-  z.strictObject({ kind: z.literal('dispel'), statusIds: z.array(IdSchema).min(1).max(16) }),
+  z.strictObject({
+    kind: z.literal('dispel'),
+    statusIds: z.array(IdSchema).min(1).max(16).optional(),
+    categories: categoryList(StatusCategorySchema).optional(),
+  }),
   z.strictObject({ kind: z.literal('water'), extinguish: z.literal(true) }),
   z.strictObject({
     kind: z.literal('reveal'),
@@ -170,6 +185,7 @@ export const StatusSchema = z.strictObject({
   stacking: z.enum(['sum', 'replace', 'refresh', 'reject']),
   maxStacks: positive(32),
   durationSteps: positive(6_000),
+  categories: categoryList(StatusCategorySchema).optional(),
   burning: z.strictObject({ waterExtinguishable: z.boolean() }).optional(),
   modifiers: z.strictObject({
     attack: z.number().int().min(-100_000).max(100_000),
@@ -217,6 +233,7 @@ export const AbilitySchema = z
     name: z.string().min(1).max(100),
     originalText: z.string().max(20_000),
     trigger: z.enum(['action', 'battle-start']),
+    categories: categoryList(AbilityCategorySchema).optional(),
     target: z.enum(['self', 'enemy']),
     condition: ConditionSchema,
     costs: z.strictObject({ hp: uint(1_000_000), mp: uint(1_000_000), uses: uint(6_000) }),
@@ -230,6 +247,11 @@ export const AbilitySchema = z
     effects: z.array(EffectSchema).min(1).max(16),
   })
   .superRefine((ability, ctx) => {
+    if (ability.effects.some((e) => e.kind === 'dispel' && !e.statusIds && !e.categories))
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Dispel requires status IDs or status categories',
+      });
     if (
       ability.effects.some((e) => e.kind === 'reveal') &&
       (ability.target !== 'enemy' ||
