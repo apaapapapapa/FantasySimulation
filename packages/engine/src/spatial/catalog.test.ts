@@ -12,7 +12,7 @@ const events = (records: StreamRecord[]) => records.flatMap((r) => ('events' in 
 describe('data-composed 3D sample catalog', () => {
   it('keeps published character examples and their transitive references reproducible', async () => {
     const catalog = await sampleCatalog();
-    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(15);
+    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(16);
     for (const revision of catalog) expect(RevisionSchema.safeParse(revision).success).toBe(true);
     const saved = JSON.parse(
       readFileSync(new URL('../../../../data/spatial/catalog.json', import.meta.url), 'utf8'),

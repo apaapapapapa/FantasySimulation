@@ -52,6 +52,14 @@ export function at(trace: Trace, time: number): Vec3 {
       );
 }
 export const straight = (start: Vec3, end: Vec3): Trace => [{ start, end, from: 0, to: 1 }];
+/** Keep only the emitted path up to contact, without a synthetic stationary tail. */
+export function clipTrace(trace: Trace, time: number): Trace {
+  const point = at(trace, time);
+  const pieces = trace
+    .filter((s) => s.from < time)
+    .map((s) => (s.to <= time ? s : { ...s, end: point, to: time }));
+  return pieces.length ? pieces : [{ start: point, end: point, from: 0, to: 0 }];
+}
 export function stopAt(trace: Trace, time: number): Trace {
   const end = at(trace, time);
   const result = trace

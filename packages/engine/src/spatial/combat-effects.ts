@@ -1,4 +1,10 @@
-import type { BattleEvent, Budget, DeepReadonly, Effect } from '@fantasy/domain/spatial';
+import type {
+  BattleEvent,
+  Budget,
+  DeepReadonly,
+  Effect,
+  StageContact,
+} from '@fantasy/domain/spatial';
 import { resolveEffects } from './effects.ts';
 import { damagePower } from './damage.ts';
 import type { DamageSnapshot } from './status-damage.ts';
@@ -25,6 +31,7 @@ export type PendingEffect = DamageSnapshot & {
   abilityId: string | null;
   causes?: readonly string[];
   scaleBps?: number;
+  stage?: StageContact;
   observation?: { self: MotionState; target: MotionState };
 };
 /** Keep the contact geometry even though simultaneous effects commit after movement. */
@@ -68,6 +75,7 @@ export function commitEffects(
       parentEventId: effect.parentEventId,
       causes: [...(effect.causes ?? [])],
       reason: effect.effect.kind,
+      ...(effect.stage ? { stage: effect.stage } : {}),
     });
     return { ...effect, id: event.id, event };
   });

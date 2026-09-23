@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IdSchema, RefSchema } from './contracts.ts';
+import { IdSchema, RefSchema, StageContactSchema } from './contracts.ts';
 import {
   EventSchema,
   OutcomeSchema,
@@ -8,6 +8,29 @@ import {
 } from './records.ts';
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const step = z.number().int().min(0).max(6000);
+const fraction = z.number().min(0).max(1);
+export const SegmentSchema = z
+  .strictObject({
+    start: PhysicalVectorSchema,
+    end: PhysicalVectorSchema,
+    from: fraction,
+    to: fraction,
+  })
+  .refine((p) => p.from <= p.to, 'Reversed segment');
+export const AttackGeometrySchema = z.strictObject({
+  kind: z.enum(['sphere', 'ray']),
+  radiusMm: z.number().int().min(0).max(5000),
+  segments: z.array(SegmentSchema).min(1).max(256),
+});
+export type AttackGeometry = z.infer<typeof AttackGeometrySchema>;
+export const StageDisplaySchema = z.strictObject({
+  contact: StageContactSchema,
+  startAt: count,
+  endAt: count,
+  state: z.enum(['preparing', 'active', 'waiting', 'complete', 'interrupted']),
+  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'hold']),
+  geometry: AttackGeometrySchema.optional(),
+});
 export const StatusDisplaySchema = z.strictObject({
   flightStaminaPerSecond: z.number().int().min(0).max(1_000_000).optional(),
   revision: RefSchema,
@@ -22,6 +45,8 @@ export const ActionDisplaySchema = z.strictObject({
   launchAt: count,
   recoveryUntil: count,
   phase: z.enum(['cast', 'active', 'recovery']),
+  activeUntil: count.optional(),
+  stage: StageDisplaySchema.optional(),
 });
 export const ActorDisplaySchema = z.strictObject({
   id: IdSchema,
@@ -52,6 +77,7 @@ export const ProjectileDisplaySchema = z.strictObject({
   radiusMm: z.number().int().min(1).max(5000),
   launchStep: step,
   endStep: z.number().int().min(1).max(12000),
+  stage: StageContactSchema.optional(),
 });
 export type ProjectileDisplay = z.infer<typeof ProjectileDisplaySchema>;
 export const ProjectileDeltaSchema = ProjectileDisplaySchema.pick({
@@ -73,15 +99,6 @@ export const ProjectileChangesSchema = z.strictObject({
     .max(256),
 });
 export type ProjectileChanges = z.infer<typeof ProjectileChangesSchema>;
-const fraction = z.number().min(0).max(1);
-export const SegmentSchema = z
-  .strictObject({
-    start: PhysicalVectorSchema,
-    end: PhysicalVectorSchema,
-    from: fraction,
-    to: fraction,
-  })
-  .refine((p) => p.from <= p.to, 'Reversed segment');
 export const PathSchema = z.strictObject({
   entityId: IdSchema,
   segments: z.array(SegmentSchema).min(1).max(256),

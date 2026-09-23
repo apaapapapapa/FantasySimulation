@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.15",
-    "rulesVersion": "spatial-v1.15",
+    "engineVersion": "spatial-v1.16",
+    "rulesVersion": "spatial-v1.16",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -468,6 +468,106 @@
     "slot-rejected-gait-false": {
       "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
       "name": "simultaneous action and evasion restores prior walking and its actual cost after a rejected jump pair, explicit gait=false"
+    },
+    "stage-clocks": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions keeps physical stage offsets and full recovery after speed-scaled preparation"
+    },
+    "stage-combo-replay": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions executes two independent hits, pays future cost at its boundary and replays actual stage geometry"
+    },
+    "stage-shortage": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions retains declaration cost and deadlines when a later stage is unaffordable"
+    },
+    "stage-damage-interrupt": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions interrupts after collected damage while keeping that interval simultaneous"
+    },
+    "stage-rollback": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions rolls back stage payments, hits and IDs when the interval exceeds its record budget"
+    },
+    "stage-detached": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary keeps detached shots after boundary interruption and remains enumeration independent"
+    },
+    "stage-zero-contact": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary consumes zero-damage contacts and pays holds without creating attack geometry"
+    },
+    "stage-privacy": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary estimates own future timing and affordability while delayed cues omit private stage plans"
+    },
+    "stage-storage": {
+      "file": "apps/api/src/simultaneous-persistence.test.ts",
+      "name": "simultaneous slots through persisted Workers preserves staged decisions, costs and replacement displays across forward and backward seeks"
+    },
+    "stage-single-direct": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions preserves the one-stage direct mechanics and timing"
+    },
+    "stage-single-melee": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions preserves the one-stage melee mechanics and timing"
+    },
+    "stage-single-hitscan": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions preserves the one-stage hitscan mechanics and timing"
+    },
+    "stage-single-projectile": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions preserves the one-stage projectile mechanics and timing"
+    },
+    "stage-schema": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions validates stage zero, windows, duration, references and unsupported fields"
+    },
+    "stage-prepayment": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "staged action transactions prepays stage zero once and allows exact-HP cost with same-interval healing"
+    },
+    "stage-ledger": {
+      "file": "packages/engine/src/spatial/stages.test.ts",
+      "name": "shared stage hit ledger shares emitters, consumes zero-damage contacts and requires a full separation interval"
+    },
+    "stage-cancel-condition": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary cancels future stages on condition without paying their extra cost"
+    },
+    "stage-cancel-incapacity": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary cancels future stages on incapacity without paying their extra cost"
+    },
+    "stage-wall-display": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary records melee geometry only as far as the first blocking wall"
+    },
+    "stage-admit-dodge": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":false,\"dodge\":true,\"jump\":false,\"total\":11}"
+    },
+    "stage-admit-flight-dodge": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":true,\"dodge\":true,\"jump\":false,\"total\":13}"
+    },
+    "stage-admit-jump": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":false,\"dodge\":false,\"jump\":true,\"total\":14}"
+    },
+    "stage-admit-flight": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":true,\"dodge\":false,\"jump\":false,\"total\":8}"
+    },
+    "stage-flight-shortage": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary interrupts an unaffordable later stage while preserving paid flight in the actual interval"
+    },
+    "stage-admit-blocked-motion": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":false,\"dodge\":true,\"jump\":true,\"total\":6,\"blocked\":true}"
     }
   },
   "entries": [
@@ -480,7 +580,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:5d12682a554b8159f7b76689d4fb26523af97ea2c31ad869b68ee93f70dd6d8b",
+        "inputHash": "sha256:e8eb01d271d23c13a9e502d1c49b29e8e2d2c0fe8e35742c930becd76dc1c14f",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -488,9 +588,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-simultaneous-v1",
+          "id": "standard-stages-v1",
           "revision": 1,
-          "contentHash": "sha256:c8444157deeb5e88b46b4b54a4f2eb23a2dae7aaf652820ca5a64e0d3f3157bd"
+          "contentHash": "sha256:90fa451fbe5104007901dd11ddf5a1b04cd77bd58d1fffeec9fd1aecc34bbdb4"
         },
         "participants": [
           {
@@ -525,7 +625,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:d1b9180c94017ca6bc9ef3685bf60d08c957565b91a0e6de8deec30f2dafecb4",
+        "inputHash": "sha256:58b51100a0ba8862c2cd2d16e35ceaba1370683bafd5deecb9319c3ff067d0ee",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -533,9 +633,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-simultaneous-v1",
+          "id": "standard-stages-v1",
           "revision": 1,
-          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
+          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
         },
         "participants": [
           {
@@ -570,7 +670,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:69bbc2e99d749a6b8d8c3df14eeaad72c0146809e7899270b25c3a887a054ff6",
+        "inputHash": "sha256:062466ea531931a5ee14632b5e844a2dec48088a3214074561665780c7b1dc07",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -578,9 +678,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-simultaneous-v1",
+          "id": "standard-stages-v1",
           "revision": 1,
-          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
+          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
         },
         "participants": [
           {
@@ -615,7 +715,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:4b5d8273309fe8c920b709185e708cfd6e02a274a6343bd98514b59ae4cae17a",
+        "inputHash": "sha256:f11d00f9d5743ce565bff4ac86e9e296db00d802fe67007e11435557029a5063",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -623,9 +723,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-simultaneous-v1",
+          "id": "standard-stages-v1",
           "revision": 1,
-          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
+          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
         },
         "participants": [
           {
@@ -660,7 +760,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:1ae03d080a3bd0463b6809c5d169a7ee65542d3561c56a5d52d32fce668dd92e",
+        "inputHash": "sha256:ce36f5e5fa2ef4a0dd10e1cff4d1670185d4d4e2e7a35747a5913d8b2997bb2d",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -668,9 +768,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-simultaneous-v1",
+          "id": "standard-stages-v1",
           "revision": 1,
-          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
+          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
         },
         "participants": [
           {
@@ -705,7 +805,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:092155feeba8c006182152e107dafb7223343de92784d062aed4742964ffbaa3",
+        "inputHash": "sha256:2af58a07fc513d23ec1051381a589e29bc521366e8e0942f9a9736594bea33ee",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -713,9 +813,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-simultaneous-v1",
+          "id": "standard-stages-v1",
           "revision": 1,
-          "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
+          "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
         },
         "participants": [
           {
@@ -750,7 +850,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:59bb78fc3ea9dc898171d5628ba0b7645ebb19d2461c43514b1be2a06d87d051",
+        "inputHash": "sha256:ff6a07dbfbaebc99030b518a4f91f2c03d33147cc2ee586b890f246ccea839ee",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -758,9 +858,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-simultaneous-v1",
+          "id": "standard-stages-v1",
           "revision": 1,
-          "contentHash": "sha256:54da911fe9ba660cd0de35039e0616e5cac3ba4248e2a914c7aa1e1e0b392de3"
+          "contentHash": "sha256:a3fe38375e68358faa9af0e6f063aa4347f5632ab7937a4d2b8d12e29f043fb7"
         },
         "participants": [
           {
@@ -1061,6 +1161,39 @@
         "slot-storage",
         "slot-rejected-gait-true",
         "slot-rejected-gait-false"
+      ]
+    },
+    {
+      "id": "staged-actions",
+      "title": "段階攻撃・段ごとの資源・中断・共有命中・保存",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "stage-clocks",
+        "stage-combo-replay",
+        "stage-shortage",
+        "stage-damage-interrupt",
+        "stage-rollback",
+        "stage-detached",
+        "stage-zero-contact",
+        "stage-privacy",
+        "stage-storage",
+        "stage-single-direct",
+        "stage-single-melee",
+        "stage-single-hitscan",
+        "stage-single-projectile",
+        "stage-schema",
+        "stage-prepayment",
+        "stage-ledger",
+        "stage-cancel-condition",
+        "stage-cancel-incapacity",
+        "stage-wall-display",
+        "stage-admit-dodge",
+        "stage-admit-flight-dodge",
+        "stage-admit-jump",
+        "stage-admit-flight",
+        "stage-flight-shortage",
+        "stage-admit-blocked-motion"
       ]
     }
   ]

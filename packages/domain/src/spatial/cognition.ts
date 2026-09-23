@@ -10,6 +10,7 @@ import {
   AdjustmentTargetSchema,
   AbilityCategorySchema,
   ObservedPhaseSchema,
+  ObservedStageSchema,
 } from './contracts.ts';
 
 const tick = z.number().int().min(0).max(8000),
@@ -165,6 +166,7 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
         draw: DrawSchema,
       })
       .optional(),
+    observedStage: ObservedStageSchema.optional(),
     method: z.enum(['sole', 'weighted', 'exploration', 'equal', 'none']),
     draws: z.array(DrawSchema).max(2),
     directions: z

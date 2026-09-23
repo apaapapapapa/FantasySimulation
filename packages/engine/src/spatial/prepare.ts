@@ -1,4 +1,5 @@
 import {
+  abilityEffects,
   contentHash,
   deepFreeze,
   type DeepReadonly,
@@ -122,13 +123,13 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     for (const ability of abilities) {
       if (ids.has(ability.id)) throw new Error(`Duplicate actor ability: ${ability.id}`);
       ids.add(ability.id);
-      for (const effect of ability.definition.effects)
+      for (const effect of abilityEffects(ability.definition))
         if (effect.kind === 'apply-status') get('status', effect.status);
     }
     const policy = get('policy', character.policy).definition;
     const knownStatuses = statusKnowledge(
       abilities.flatMap((a) =>
-        a.definition.effects.flatMap((e) =>
+        abilityEffects(a.definition).flatMap((e) =>
           e.kind === 'apply-status' ? [get('status', e.status)] : [],
         ),
       ),
@@ -157,7 +158,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
         for (const ref of revision.definition.abilities) get('ability', ref);
         break;
       case 'ability':
-        for (const effect of revision.definition.effects)
+        for (const effect of abilityEffects(revision.definition))
           if (effect.kind === 'apply-status') get('status', effect.status);
         break;
       case 'status':

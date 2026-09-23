@@ -1,6 +1,7 @@
 import type { ActorState, AbilityRevision } from './combat-state.ts';
-import type { ResourceBudget } from './resources.ts';
+import type { ResourceBudget, ResourceRequest } from './resources.ts';
 import { flightRate } from './locomotion.ts';
+import { declarationCost } from './attacks.ts';
 
 /** Keep the attempted choice in cognition, but restore every input used by motion settlement. */
 export function rejectPair(actor: ActorState, previous: Pick<ActorState, 'intent' | 'decision'>) {
@@ -35,13 +36,40 @@ export function admitPair(
     (definition.castSteps > 0 && definition.movementWhileCasting === 'stop')
   )
     return { ok: false as const, reason: 'incompatible-motion' };
+  return admitMotionCost(
+    actor,
+    budget,
+    step,
+    'pair-admission',
+    [{ ...declarationCost(definition), uses: { id: ability.id, limit: definition.costs.uses } }],
+    true,
+  );
+}
+
+/** A due stage uses the same interval admission as a newly declared action.
+ * Keep maintainable flight and selected bursts affordable before paying either slot.
+ * The guard holds nothing across calls; the coordinator consumes this budget synchronously.
+ */
+export function admitMotionCost(
+  actor: ActorState,
+  budget: ResourceBudget,
+  step: number,
+  key: string,
+  requests: readonly ResourceRequest[],
+  dodge: boolean,
+) {
   const movement = actor.motion.actor.character.movement.locomotion;
   const flight = actor.intent.flight ? Math.ceil(flightRate(actor.statuses, step) * 0.02) : 0;
-  const jump = actor.intent.jump && actor.motion.grounded ? (movement?.jumpStamina ?? 0) : 0;
-  const result = budget.reserve('pair-admission', [
-    { ...definition.costs, uses: { id: ability.id, limit: definition.costs.uses } },
-    { stamina: flight + jump + (movement?.dodgeStamina ?? 0) },
+  const jump =
+    actor.intent.canMove && actor.intent.jump && actor.motion.grounded
+      ? (movement?.jumpStamina ?? 0)
+      : 0;
+  const result = budget.reserve(key, [
+    ...requests,
+    {
+      stamina: flight + jump + (dodge && actor.intent.canMove ? (movement?.dodgeStamina ?? 0) : 0),
+    },
   ]);
-  if (result.ok) budget.cancel('pair-admission');
+  if (result.ok) budget.cancel(key);
   return result;
 }

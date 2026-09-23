@@ -157,7 +157,7 @@ export async function withInitialStatus(
 ) {
   const status = await sealRevision('status', `initial-status-${index}`, 1, definition);
   const base = manifest.revisions.find((r) => r.kind === 'ability')!;
-  const ability = await sealRevision('ability', `initial-grant-${index}`, 1, {
+  const startup: Definition<'ability'> = {
     ...base.definition,
     trigger: 'battle-start',
     condition: { kind: 'always' },
@@ -166,7 +166,9 @@ export async function withInitialStatus(
     castSteps: 0,
     costs: { hp: 0, mp: 0, uses: 1 },
     effects: [{ kind: 'apply-status', status: reference(status) }],
-  });
+  };
+  delete startup.stages;
+  const ability = await sealRevision('ability', `initial-grant-${index}`, 1, startup);
   const participant = manifest.participants[index];
   const old = manifest.revisions.find(
     (r) => r.kind === 'character' && r.id === participant.character.id,

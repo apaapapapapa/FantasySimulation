@@ -1,9 +1,9 @@
 import { z } from 'zod';
-import { assertJson, deepFreeze } from './canonical.ts';
+import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.15' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.16' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -145,6 +145,11 @@ export const LEGACY_APPEARANCE_PRIORS = deepFreeze(
 );
 export const WoundStageSchema = z.enum(['unknown', 'unhurt', 'hurt', 'severe', 'critical']);
 export const ObservedPhaseSchema = z.enum(['idle', 'cast', 'active', 'recovery']);
+export const ObservedStageSchema = z.strictObject({
+  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'hold']),
+  state: z.enum(['active', 'waiting', 'interrupted']),
+});
+export type ObservedStage = z.infer<typeof ObservedStageSchema>;
 const RelativePositionSchema = z.enum(['front', 'behind', 'side', 'above', 'below']);
 export const AiRulesSchema = z.strictObject({
   profile: z.literal('observed-utility-v1'),
@@ -402,6 +407,48 @@ export const AttackSchema = z.discriminatedUnion('kind', [
     maxHitsPerTarget: z.literal(1),
   }),
 ]);
+export const StageHitSchema = z.strictObject({
+  group: IdSchema,
+  maxHits: positive(16),
+  minIntervalSteps: positive(6000),
+  requireSeparation: z.boolean(),
+});
+export const StageSchema = z.strictObject({
+  id: IdSchema,
+  offsetSteps: uint(6000),
+  durationSteps: positive(100),
+  attack: AttackSchema.nullable(),
+  effects: z.array(EffectSchema).max(16),
+  cost: z
+    .strictObject({
+      hp: uint(1_000_000).optional(),
+      mp: uint(1_000_000).optional(),
+      stamina: uint(1_000_000).optional(),
+    })
+    .optional(),
+  startCondition: ConditionSchema.optional(),
+  interruptWhen: ConditionSchema.optional(),
+  interruptOnDamage: z.boolean().optional(),
+  hit: StageHitSchema.optional(),
+});
+export type Stage = z.infer<typeof StageSchema>;
+export const StageContactSchema = z.strictObject({
+  actionId: IdSchema,
+  stageId: IdSchema,
+  stageIndex: uint(15),
+  emitterId: uint(15),
+  hitGroupId: IdSchema,
+});
+export type StageContact = z.infer<typeof StageContactSchema>;
+
+/** The explicit first stage replaces the required legacy surface; never count it twice. */
+export function abilityEffects<T>(ability: {
+  effects: readonly T[];
+  stages?: readonly { effects: readonly T[] }[] | undefined;
+}): readonly T[] {
+  return ability.stages?.flatMap((s) => s.effects) ?? ability.effects;
+}
+
 export const AbilitySchema = z
   .strictObject({
     name: z.string().min(1).max(100),
@@ -424,27 +471,66 @@ export const AbilitySchema = z
     aimErrorMilliDegrees: uint(45_000),
     attack: AttackSchema,
     effects: z.array(EffectSchema).min(1).max(16),
+    stages: z.array(StageSchema).min(1).max(16).optional(),
   })
   .superRefine((ability, ctx) => {
-    if (ability.effects.some((e) => e.kind === 'dispel' && !e.statusIds && !e.categories))
+    const plans = ability.stages ?? [{ attack: ability.attack, effects: ability.effects }];
+    if (ability.stages) {
+      const stages = ability.stages,
+        first = stages[0]!;
+      if (!first) return;
+      if (
+        ability.trigger !== 'action' ||
+        first.offsetSteps !== 0 ||
+        canonicalJson(first.attack) !== canonicalJson(ability.attack) ||
+        canonicalJson(first.effects) !== canonicalJson(ability.effects)
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Action stage zero must match the required attack/effects at offset zero',
+        });
+      if (new Set(stages.map((s) => s.id)).size !== stages.length)
+        ctx.addIssue({ code: 'custom', message: 'Stage IDs must be unique' });
+      for (const [i, stage] of stages.entries()) {
+        const previous = stages[i - 1];
+        if (
+          stage.offsetSteps + stage.durationSteps > 6000 ||
+          (previous && stage.offsetSteps < previous.offsetSteps + previous.durationSteps)
+        )
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Stage windows must be ordered, disjoint and end within 6000 steps',
+          });
+        if (
+          (stage.attack === null) !== (stage.effects.length === 0) ||
+          (stage.attack?.kind === 'melee' && stage.attack.activeSteps !== stage.durationSteps)
+        )
+          ctx.addIssue({
+            code: 'custom',
+            message: 'Holds have no effects; melee duration must match its active window',
+          });
+      }
+    }
+    if (abilityEffects(ability).some((e) => e.kind === 'dispel' && !e.statusIds && !e.categories))
       ctx.addIssue({
         code: 'custom',
         message: 'Dispel requires status IDs or status categories',
       });
     if (
-      ability.effects.some((e) => e.kind === 'reveal') &&
-      (ability.target !== 'enemy' ||
-        ability.attack.kind !== 'hitscan' ||
-        ability.attack.radiusMm !== 0)
+      plans.some(
+        (p) =>
+          p.effects.some((e) => e.kind === 'reveal') &&
+          (ability.target !== 'enemy' || p.attack?.kind !== 'hitscan' || p.attack.radiusMm !== 0),
+      )
     )
       ctx.addIssue({
         code: 'custom',
         message:
           'Reveal requires an enemy-targeted zero-radius hitscan; unsupported acquisition modes are rejected',
       });
-    if (ability.target === 'self' && ability.attack.kind !== 'direct')
+    if (ability.target === 'self' && plans.some((p) => p.attack && p.attack.kind !== 'direct'))
       ctx.addIssue({ code: 'custom', message: 'Self effects require direct targeting' });
-    if (ability.attack.kind === 'direct' && ability.target !== 'self')
+    if (ability.target !== 'self' && plans.some((p) => p.attack?.kind === 'direct'))
       ctx.addIssue({
         code: 'custom',
         message: 'Direct effects are self-only; enemy attacks require geometry',

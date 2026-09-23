@@ -7,9 +7,10 @@ import {
   type DamageDefense,
 } from '@fantasy/domain/spatial';
 import type { AbilityRevision } from './combat-state.ts';
-import type { DecisionView } from './perception.ts';
+import { conditionMatches, type DecisionView } from './perception.ts';
 import { length, sub } from './math.ts';
-import { actionClock } from './attacks.ts';
+import { actionClock, payCost } from './attacks.ts';
+import { ResourceBudget, staminaExhausted } from './resources.ts';
 import { damagePower, damageDefense } from './damage.ts';
 import { assessStatusEffects, observedDamagePrior } from './status-assessment.ts';
 import { adjustedStatusValue, damageStatusBps } from './status-modifiers.ts';
@@ -75,6 +76,15 @@ export function efficacy(
   };
 }
 export function assessAbility(view: DecisionView, ability: AbilityRevision): CandidateAssessment {
+  return ability.definition.stages
+    ? assessStages(view, ability)
+    : assessSingle(view, ability).assessment;
+}
+function assessSingle(
+  view: DecisionView,
+  ability: AbilityRevision,
+  timing?: { cast: number; duration: number },
+) {
   const rules = view.rules ?? AI_RULES,
     weights = view.self.actor.policy.evaluation ?? {
       attackBps: 10000,
@@ -84,8 +94,8 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen,
     d = ability.definition;
   const clock = actionClock(d, view.self.actor.character.stats.actionSpeedBps, 0);
-  const duration = clock?.recoveryUntil ?? 8000,
-    cast = clock?.launchAt ?? 8000;
+  const duration = timing?.duration ?? clock?.recoveryUntil ?? 8000,
+    cast = timing?.cast ?? clock?.launchAt ?? 8000;
   const burnRisk = Math.min(1, (view.burnDamage ?? 0) / Math.max(1, view.resources.hp));
   const beforeHitRisk = Math.min(1, (burnRisk * Math.max(1, cast)) / rules.horizonSteps);
   const observedThreat =
@@ -224,16 +234,15 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
       10000;
     reasons.push('own-power/coarse-impact/visible-wounds; kill is an estimate');
   }
-  const weight = boundedWeight(
+  const score =
     ((utility + exploration) * (1 - 0.6 * exposure)) /
-      (1 + duration / rules.horizonSteps) /
-      (1 + costBps / 5000),
-  );
-  return {
+    (1 + duration / rules.horizonSteps) /
+    (1 + costBps / 5000);
+  const assessment: CandidateAssessment = {
     key: `ability:${ability.id}`,
     kind: 'ability',
     abilityId: ability.id,
-    weight,
+    weight: boundedWeight(score),
     totalWeight: 1,
     successBps: success,
     killBps: kill,
@@ -246,7 +255,80 @@ export function assessAbility(view: DecisionView, ability: AbilityRevision): Can
     evidence: [...new Set(evidence)].slice(-32),
     reason: reasons.join('; ').slice(0, 300),
   };
+  return { assessment, score };
 }
+/** Reuse the same utility terms for each reachable own stage; physical offsets are never speed-scaled again. */
+function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAssessment {
+  const { stages, ...definition } = ability.definition;
+  const plan = stages!;
+  const clock = actionClock(ability.definition, view.self.actor.character.stats.actionSpeedBps, 0);
+  const duration = clock?.recoveryUntil ?? 8000;
+  const costs = plan.reduce(
+    (sum, stage) => ({
+      ...sum,
+      hp: sum.hp + (stage.cost?.hp ?? 0),
+      mp: sum.mp + (stage.cost?.mp ?? 0),
+      stamina: (sum.stamina ?? 0) + (stage.cost?.stamina ?? 0),
+    }),
+    { ...definition.costs },
+  );
+  const initial = payCost(
+    ability.definition,
+    view.resources,
+    view.used?.[ability.id] ?? 0,
+    !view.staminaExhausted,
+  );
+  let resources = initial.resources;
+  const parts: ReturnType<typeof assessSingle>[] = [];
+  if (initial.ok)
+    for (const [index, stage] of plan.entries()) {
+      if (stage.startCondition && !conditionMatches(stage.startCondition, { ...view, resources }))
+        break;
+      if (stage.interruptWhen && conditionMatches(stage.interruptWhen, { ...view, resources }))
+        break;
+      if (index > 0 && stage.cost) {
+        const budget = new ResourceBudget(
+          resources,
+          {},
+          !staminaExhausted(resources, view.self.actor.character.stamina, view.staminaExhausted),
+        );
+        if (!budget.reserve('estimate', [stage.cost]).ok) break;
+        resources = budget.commit('estimate').after;
+      }
+      if (!stage.attack) continue;
+      parts.push(
+        assessSingle(
+          { ...view, resources },
+          {
+            ...ability,
+            definition: { ...definition, costs, attack: stage.attack, effects: stage.effects },
+          },
+          { cast: (clock?.launchAt ?? 8000) + stage.offsetSteps, duration },
+        ),
+      );
+    }
+  const fallback = assessSingle(
+    view,
+    { ...ability, definition },
+    { cast: clock?.launchAt ?? 8000, duration },
+  ).assessment;
+  const average = (key: 'successBps' | 'efficacyBps' | 'confidenceBps') =>
+    parts.length ? Math.round(parts.reduce((n, p) => n + p.assessment[key], 0) / parts.length) : 0;
+  return {
+    ...fallback,
+    weight: boundedWeight(parts.reduce((n, p) => n + p.score, 0)),
+    durationSteps: Math.min(8000, duration),
+    successBps: average('successBps'),
+    efficacyBps: average('efficacyBps'),
+    confidenceBps: average('confidenceBps'),
+    killBps: clampBps(parts.reduce((n, p) => n + p.assessment.killBps, 0)),
+    survivalBps: Math.min(fallback.survivalBps, ...parts.map((p) => p.assessment.survivalBps)),
+    costBps: Math.max(fallback.costBps, ...parts.map((p) => p.assessment.costBps)),
+    evidence: [...new Set(parts.flatMap((p) => p.assessment.evidence))].slice(-32),
+    reason: `${plan.length} own stages, ${parts.length} presently affordable releases; physical timing, combined cost and exposure estimate`,
+  };
+}
+
 export type KnownClearance = (
   from: DeepReadonly<DecisionView['self']['position']>,
   to: DeepReadonly<DecisionView['self']['position']>,

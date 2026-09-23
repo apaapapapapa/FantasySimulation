@@ -1,5 +1,17 @@
-import { canonicalJson, compareIds, contentHash, deepFreeze } from './canonical.ts';
-import { parseJson, type DefinitionKind, type RevisionRef } from './contracts.ts';
+import {
+  canonicalJson,
+  compareIds,
+  contentHash,
+  deepFreeze,
+  type DeepReadonly,
+} from './canonical.ts';
+import {
+  abilityEffects,
+  parseJson,
+  type DefinitionKind,
+  type RevisionRef,
+  type StageContact,
+} from './contracts.ts';
 import { type Outcome } from './records.ts';
 import { initialResources } from './resources.ts';
 import {
@@ -25,6 +37,20 @@ const requireReplay = (condition: boolean, message: string) => {
 };
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 type RecordedRevision = RecordedManifest['revisions'][number];
+function recordedStage(
+  ability: DeepReadonly<Extract<RecordedRevision, { kind: 'ability' }>> | undefined,
+  contact: StageContact,
+) {
+  const stage = ability?.definition.stages?.[contact.stageIndex];
+  if (
+    !stage ||
+    stage.id !== contact.stageId ||
+    contact.emitterId !== 0 ||
+    contact.hitGroupId !== (stage.hit?.group ?? 'shared')
+  )
+    return fail('stage reference');
+  return stage;
+}
 export type ReplayContext = Awaited<ReturnType<typeof replayContext>>;
 /** Validate content identity and resolve display metadata without loading any engine/WASM. */
 export async function replayContext(input: unknown, simulationHash: string) {
@@ -56,7 +82,7 @@ export async function replayContext(input: unknown, simulationHash: string) {
       r.definition.equipment.forEach((ref) => get('equipment', ref));
     } else if (r.kind === 'equipment') r.definition.abilities.forEach((ref) => get('ability', ref));
     else if (r.kind === 'ability')
-      for (const effect of r.definition.effects)
+      for (const effect of abilityEffects(r.definition))
         if (effect.kind === 'apply-status') get('status', effect.status);
   }
   const actors = manifest.participants.map((p) => {
@@ -195,6 +221,60 @@ export class ReplayState {
         const ability = definition.abilities.find((a) => a.id === action.abilityId);
         const activeSteps =
           ability?.definition.attack.kind === 'melee' ? ability.definition.attack.activeSteps : 1;
+        const activeUntil = action.activeUntil ?? action.launchAt + activeSteps;
+        if (action.stage) {
+          const stage = recordedStage(ability, action.stage.contact),
+            last = ability!.definition.stages!.at(-1)!;
+          requireReplay(
+            action.stage.contact.actionId === action.id &&
+              action.stage.startAt === action.launchAt + stage.offsetSteps &&
+              action.stage.endAt === action.stage.startAt + stage.durationSteps &&
+              action.activeUntil === action.launchAt + last.offsetSteps + last.durationSteps &&
+              action.stage.shape === (stage.attack?.kind ?? 'hold'),
+            'stage display clocks/shape',
+          );
+          requireReplay(
+            action.stage.state !== 'active' ||
+              (step >= action.stage.startAt &&
+                step < action.stage.endAt &&
+                action.phase === 'active'),
+            'active stage window',
+          );
+          const state = action.stage.state;
+          requireReplay(
+            (action.phase !== 'active' || state === 'active') &&
+              (state !== 'preparing' ||
+                (step < action.launchAt && action.stage.contact.stageIndex === 0)) &&
+              (state !== 'complete' || (stage === last && step >= activeUntil)) &&
+              (state !== 'waiting' ||
+                step === action.launchAt ||
+                (step >= action.stage.endAt && step < activeUntil)),
+            'stage state window',
+          );
+          if (action.stage.geometry) {
+            const geometry = action.stage.geometry,
+              shape = stage.attack;
+            requireReplay(
+              !!shape &&
+                (shape.kind === 'melee' || shape.kind === 'hitscan') &&
+                geometry.kind === (shape.kind === 'melee' ? 'sphere' : 'ray') &&
+                geometry.radiusMm === shape.radiusMm,
+              'stage geometry shape',
+            );
+            for (let i = 1; i < geometry.segments.length; i++) {
+              const previous = geometry.segments[i - 1]!,
+                current = geometry.segments[i]!;
+              requireReplay(
+                Math.abs(previous.to - current.from) <= 1e-12 && same(previous.end, current.start),
+                'stage geometry continuity',
+              );
+            }
+          }
+        } else
+          requireReplay(
+            !ability?.definition.stages && action.activeUntil === undefined,
+            'missing stage display',
+          );
         requireReplay(
           !!ability &&
             action.startedAt <= step &&
@@ -203,8 +283,7 @@ export class ReplayState {
             step < action.recoveryUntil &&
             (step < action.launchAt
               ? action.phase === 'cast'
-              : action.phase !== 'cast' &&
-                (action.phase !== 'active' || step < action.launchAt + activeSteps)),
+              : action.phase !== 'cast' && (action.phase !== 'active' || step < activeUntil)),
           'action reference/time',
         );
       }
@@ -219,7 +298,8 @@ export class ReplayState {
   private validateProjectile(p: ProjectileDisplay, step: number) {
     const owner = this.context.actors.find((a) => a.participant.actorId === p.ownerId);
     const ability = owner?.abilities.find((a) => a.id === p.abilityId);
-    const attack = ability?.definition.attack;
+    const attack = p.stage ? recordedStage(ability, p.stage).attack : ability?.definition.attack;
+    requireReplay(!!p.stage === !!ability?.definition.stages, 'projectile stage display');
     requireReplay(
       p.id.startsWith('projectile.') &&
         attack?.kind === 'projectile' &&
@@ -298,6 +378,12 @@ export class ReplayState {
                 .abilities.some((a) => a.id === e.abilityId),
           'event ability reference',
         );
+      if (e.stage) {
+        const ability = this.context.actors
+          .find((a) => a.participant.actorId === e.actorId)
+          ?.abilities.find((a) => a.id === e.abilityId);
+        recordedStage(ability, e.stage);
+      }
     }
     requireReplay(this.value.nextEvent + events.length <= 1_000_001, 'event limit');
   }
