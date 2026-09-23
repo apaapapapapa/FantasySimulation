@@ -108,6 +108,25 @@ export async function evaluate(path: string, run: typeof runCommand = runCommand
     const writable = writableOutputs(dirs.workspace);
     const before = git(dirs.workspace, ['status', '--porcelain=v1', '--untracked-files=all']);
     ensure(!before, 'Build output is not ignored');
+    const isolation = await isolatedCommand(
+      dirs.workspace,
+      dirs.repository,
+      [process.execPath, '--version'],
+      Math.min(30_000, Math.max(1, Date.parse(view.deadline) - Date.now())),
+      [],
+      run,
+    );
+    if (isolation.exitCode !== 0 || isolation.bounded) {
+      const evidence = join(dirs.root, 'evidence', `isolation-${j.revision}.json`);
+      writeFileSync(evidence, JSON.stringify(isolation, null, 2), { flag: 'wx', mode: 0o600 });
+      if (Date.now() >= Date.parse(view.deadline))
+        return { ...status(j), repairComplete: false, evaluationExitCode: 2, evidence };
+      const blocked = transition(path, j, 'blocked', {
+        reason: 'Isolation unavailable; verification was not executed',
+        evidence,
+      });
+      return { ...status(blocked), repairComplete: false, evaluationExitCode: 2, evidence };
+    }
     const runner: typeof runCommand = async (command, args, cwd) => {
       ensure(
         command === 'vp' && JSON.stringify(args) === '["run","verify"]' && cwd === dirs.workspace,
@@ -143,7 +162,13 @@ export async function evaluate(path: string, run: typeof runCommand = runCommand
       { flag: 'wx', mode: 0o600 },
     );
     const interrupted = Date.now() >= Date.parse(view.deadline);
-    if (interrupted) return { ...status(readJournal(path)), repairComplete: false, evidence };
+    if (interrupted)
+      return {
+        ...status(readJournal(path)),
+        repairComplete: false,
+        evaluationExitCode: 2,
+        evidence,
+      };
     const next = transition(path, j, 'evaluated', {
       candidateSha: view.candidateSha,
       outcome: assessed.exitCode === 0 ? 'pass' : assessed.exitCode === 1 ? 'fail' : 'unknown',
@@ -151,6 +176,11 @@ export async function evaluate(path: string, run: typeof runCommand = runCommand
         .length,
       evidence,
     });
-    return { ...status(next), repairComplete: false, evidence };
+    return {
+      ...status(next),
+      repairComplete: false,
+      evaluationExitCode: assessed.exitCode,
+      evidence,
+    };
   });
 }

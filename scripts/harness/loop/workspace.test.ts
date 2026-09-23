@@ -190,7 +190,9 @@ describe('owned workspace and full baseline scope', () => {
         victim = join(f.store, 'host-evidence');
       mkdirSync(victim);
       writeFileSync(join(victim, 'verify.log'), 'Host data');
-      const result = await evaluate(f.path, async () => {
+      const result = await evaluate(f.path, async (_command, args) => {
+        if (args.at(-1) === '--version')
+          return { exitCode: 0, signal: null, bounded: false, output: 'v24' };
         const generated = join(dirs.workspace, '.generated/harness');
         mkdirSync(generated, { recursive: true });
         symlinkSync(victim, join(generated, 'loop-attempt-1'));
@@ -227,6 +229,44 @@ describe('owned workspace and full baseline scope', () => {
       f.dispose();
     }
   });
+  it('blocks unavailable isolation without executing verification or refunding the attempt', async () => {
+    const f = fixture();
+    try {
+      await prepare(f.path, f.repo.root);
+      await beginAttempt(f.path, reservation);
+      const candidate = await applyPatch(f.path, f.proposal(change()));
+      let commands = 0;
+      const result = await evaluate(f.path, async (command, args) => {
+        commands++;
+        expect(command).toBe('bwrap');
+        expect(args.at(-1)).toBe('--version');
+        return { exitCode: 1, signal: null, bounded: false, output: 'Namespace unavailable' };
+      });
+      expect(commands).toBe(1);
+      expect(result).toMatchObject({
+        phase: 'blocked',
+        nextAction: 'recover',
+        evaluationExitCode: 2,
+        attempts: 1,
+        externalCalls: 1,
+        noProgress: 0,
+        verifiedSha: null,
+      });
+      expect(readFileSync(result.evidence, 'utf8')).toContain('Namespace unavailable');
+      await expect(beginAttempt(f.path, reservation)).rejects.toThrow();
+      const resumed = await recover(f.path, 'Isolation repaired; previous process ended');
+      expect(resumed).toMatchObject({
+        phase: 'candidate',
+        candidateSha: candidate.candidateSha,
+        attempts: 1,
+        externalCalls: 1,
+        deadline: candidate.deadline,
+      });
+      expect(f.repo.git('status', '--porcelain')).toBe('');
+    } finally {
+      f.dispose();
+    }
+  });
 });
 it('never exposes tracked build inputs or dangling output symlinks as writable', () => {
   const f = fixture();
@@ -252,7 +292,8 @@ it('bounds evaluation, filters host secrets, and never falls back on missing iso
   );
   expect(args).toContain('--unshare-all');
   expect(args).toContain('--clearenv');
-  expect(args).not.toContain(process.env.HOME);
+  // A nested isolation test may already have the synthetic HOME. Host variables are
+  // excluded by clearenv and the subprocess environment allowlist asserted below.
   const result = await isolatedCommand(
     '/candidate',
     '/owned.git',
