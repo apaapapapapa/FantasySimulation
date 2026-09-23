@@ -43,7 +43,12 @@ export function runCommand(
   command: string,
   args: string[],
   cwd: string,
-  options: { timeoutMs?: number; maxBytes?: number; env?: NodeJS.ProcessEnv } = {},
+  options: {
+    timeoutMs?: number;
+    maxBytes?: number;
+    env?: NodeJS.ProcessEnv;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<CommandResult> {
   const timeoutMs = options.timeoutMs ?? 12 * 60 * 1000;
   const maxBytes = options.maxBytes ?? 4 * 1024 * 1024;
@@ -83,6 +88,8 @@ export function runCommand(
       }
     };
     const timer = setTimeout(kill, timeoutMs);
+    options.signal?.addEventListener('abort', kill, { once: true });
+    if (options.signal?.aborted) kill();
     const append = (chunk: Buffer) => {
       const remaining = maxBytes - bytes;
       if (remaining > 0) chunks.push(chunk.subarray(0, remaining));
@@ -94,6 +101,7 @@ export function runCommand(
     child.on('error', (error) => append(Buffer.from(error.message)));
     child.on('close', (exitCode, signal) => {
       clearTimeout(timer);
+      options.signal?.removeEventListener('abort', kill);
       resolve({
         exitCode,
         signal,

@@ -289,6 +289,15 @@ function plannedFixture(full: boolean) {
     evidence: [{ uri: '.generated/harness/ci/security.json', sourceSha: TESTED }],
   }));
   const reports: Record<string, Report> = { security };
+  if (full)
+    reports.ui = {
+      ...sourceReport(),
+      producer: 'ui-runner',
+      checks: ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'].map((id) => ({
+        ...sourceReport().checks[0]!,
+        id,
+      })),
+    };
   for (const [index, os] of ['ubuntu-latest'].entries()) {
     const report = sourceReport();
     if (!full) {
@@ -308,6 +317,7 @@ function plannedFixture(full: boolean) {
     verify: full ? 'success' : 'skipped',
     load: full ? 'success' : 'skipped',
     docs: full ? 'skipped' : 'success',
+    ui: full ? 'success' : 'skipped',
   };
   for (const [index, name] of ['changes', 'ci-gate'].entries())
     run.jobs.push({

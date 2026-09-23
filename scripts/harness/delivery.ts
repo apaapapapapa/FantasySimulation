@@ -262,10 +262,11 @@ export function validateRun(
       return { status: 'unknown', reason: 'CI plan or aggregate evidence missing' };
     plan = parsePlan(evidence.plan.value);
     const gate = parseReport(evidence.gate.report);
-    const ids = ['changes', 'security', 'dependency-policy', 'verify', 'load', 'docs'].map(
+    const ids = ['changes', 'security', 'dependency-policy', 'verify', 'load', 'docs', 'ui'].map(
       (name) => `ci-job:${name}`,
     );
     ids.push('ci-evidence:security', ...SECURITY_CHECKS);
+    if (plan.ui) ids.push('ci-evidence:ui');
     if (plan.simulation) ids.push(CORPUS_ARTIFACT_CHECK, 'ci-evidence:load-pair');
     ids.push(
       ...(plan.full ? ['ubuntu-latest'] : ['docs-ubuntu-latest']).map(
@@ -454,6 +455,7 @@ export function assessDelivery(
     const names: readonly string[] = [
       ...(plan.full ? DOCS_JOBS : [...VERIFY_JOBS, ...SOURCE_JOBS, SOURCE_MATRIX_JOB]),
       ...(plan.simulation ? [] : ['Corpus (ubuntu-latest)', ...LOAD_JOBS, LOAD_MATRIX_JOB]),
+      ...(plan.ui ? [] : ['UI (Linux Chromium)']),
     ];
     for (const job of objects(snapshot.prRun.jobs))
       if (names.includes(String(job.name)) && job.conclusion === 'skipped')

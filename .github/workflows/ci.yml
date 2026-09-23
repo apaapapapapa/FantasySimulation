@@ -33,6 +33,7 @@ jobs:
     outputs:
       full: ${{ steps.plan.outputs.full }}
       simulation: ${{ steps.plan.outputs.simulation }}
+      ui: ${{ steps.plan.outputs.ui }}
       baseline: ${{ steps.plan.outputs.baseline }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -111,6 +112,30 @@ jobs:
         with:
           name: harness-task-${{ matrix.task }}
           path: .generated/harness/
+          retention-days: 7
+          if-no-files-found: error
+          include-hidden-files: true
+  ui:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    name: UI (Linux Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - uses: ./.github/actions/setup-playwright
+      - name: Run isolated local API and browser smoke
+        run: vp exec node scripts/harness.ts ui .generated/harness/ui
+      - name: Preserve all attempts and failure artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: harness-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/ui/
           retention-days: 7
           if-no-files-found: error
           include-hidden-files: true
@@ -222,7 +247,7 @@ jobs:
           include-hidden-files: true
   ci-gate:
     name: ci-gate
-    needs: [changes, verify, load, docs, security, dependency-policy]
+    needs: [changes, verify, load, docs, ui, security, dependency-policy]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -256,12 +281,18 @@ jobs:
           name: harness-docs-ubuntu-latest
           path: .generated/harness/ci/evidence/docs-ubuntu-latest/docs
       - name: Collect security receipts from this run and attempt only
+        # UI artifacts are deliberately separate from the temporary SQLite directory.
         if: always()
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           pattern: security-*-${{ github.run_id }}-${{ github.run_attempt }}
           path: .generated/harness/ci/security-evidence
           merge-multiple: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: always() && needs.changes.outputs.ui == 'true'
+        with:
+          name: harness-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/ci/evidence/ui
       - name: Bind every security receipt to the common report
         if: always()
         run: vp exec node scripts/security/evidence.ts
