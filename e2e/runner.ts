@@ -3,18 +3,33 @@ import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { startServers } from './servers.ts';
-import { UI_SETTINGS } from './contract.ts';
+import { UI_SETTINGS, uiScenario } from './contract.ts';
 
 const require = createRequire(import.meta.url);
 const output = process.env.FANTASY_UI_OUTPUT;
 const temporary = process.env.FANTASY_UI_TEMP;
 if (!output || !temporary) throw new Error('Use the isolated UI harness');
+const scenario = uiScenario(process.argv[2]);
 const save = (file: string, value: unknown) =>
   writeFileSync(join(output, file), JSON.stringify(value, null, 2) + '\n');
 let stage = 'server-start';
+const lifecycle: { stage: string; at: string }[] = [];
+function progress(value: string) {
+  lifecycle.push({ stage: value, at: new Date().toISOString() });
+  save('lifecycle.json', lifecycle);
+}
 let servers: Awaited<ReturnType<typeof startServers>> | undefined;
 try {
-  servers = await startServers(process.cwd(), temporary);
+  progress(stage);
+  // A missing web package fails after the real API has bound, exercising partial startup cleanup.
+  servers = await startServers(
+    scenario === 'startup' ? join(temporary, 'missing-web') : process.cwd(),
+    temporary,
+    (state) => {
+      save('servers.json', state);
+      progress(state.stopped ? 'servers-stopped' : state.webOrigin ? 'web-ready' : 'api-ready');
+    },
+  );
   const playwright = dirname(
     require.resolve('playwright/package.json', {
       paths: [dirname(require.resolve('@playwright/test/package.json'))],
@@ -31,7 +46,7 @@ try {
   );
   save('execution.json', {
     run: JSON.parse(readFileSync(join(output, 'run.json'), 'utf8')) as unknown,
-    settings: UI_SETTINGS,
+    settings: { ...UI_SETTINGS, retries: scenario === 'smoke' ? UI_SETTINGS.retries : 0 },
     playwright: installed.version,
     browsers: JSON.parse(readFileSync(join(browserPackage, 'browsers.json'), 'utf8')) as unknown,
     font: {
@@ -46,8 +61,10 @@ try {
     architecture: process.arch,
     reuseExistingServer: false,
     envFiles: false,
+    scenario,
   });
   stage = 'browser';
+  progress(stage);
   // Inherit our process group. The outer bounded runner kills the entire group on timeout/abort.
   const exitCode = await new Promise<number>((resolve, reject) => {
     const child = spawn(
@@ -57,14 +74,20 @@ try {
         cwd: process.cwd(),
         stdio: 'inherit',
         shell: false,
-        env: { ...process.env, FANTASY_UI_ORIGIN: servers!.webOrigin },
+        env: {
+          ...process.env,
+          FANTASY_UI_ORIGIN: servers!.webOrigin,
+          FANTASY_UI_SCENARIO: scenario,
+        },
       },
     );
     child.once('error', reject);
     child.once('exit', (code) => resolve(code ?? 1));
   });
   process.exitCode = exitCode;
+  progress('browser-finished');
 } catch (error) {
+  progress('failure');
   save('failure.json', {
     stage,
     message: error instanceof Error ? error.message : 'UI execution failed',
@@ -75,7 +98,6 @@ try {
   if (servers) {
     try {
       await servers.stop();
-      save('servers.json', { stopped: true });
     } catch (error) {
       save('servers.json', {
         stopped: false,

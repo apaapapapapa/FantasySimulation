@@ -1,18 +1,19 @@
 import { resolve } from 'node:path';
 import { defineConfig } from '@playwright/test';
-import { localOrigin, UI_SETTINGS } from './contract.ts';
+import { localOrigin, UI_SETTINGS, uiScenario } from './contract.ts';
 
 const output = process.env.FANTASY_UI_OUTPUT;
 if (!output) throw new Error('Run vp run test:e2e; direct execution has no isolated servers');
+const scenario = uiScenario(process.env.FANTASY_UI_SCENARIO);
 
 export default defineConfig({
-  testDir: './specs',
+  testDir: scenario === 'smoke' ? './specs' : './faults',
   testMatch: '**/*.spec.ts',
   outputDir: resolve(output, 'tests'),
   fullyParallel: false,
   forbidOnly: true,
   workers: UI_SETTINGS.workers,
-  retries: UI_SETTINGS.retries,
+  retries: scenario === 'smoke' ? UI_SETTINGS.retries : 0,
   timeout: UI_SETTINGS.timeout,
   globalTimeout: UI_SETTINGS.globalTimeout,
   expect: { timeout: 5000 },
