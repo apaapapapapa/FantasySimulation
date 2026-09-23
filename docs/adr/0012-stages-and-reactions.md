@@ -10,11 +10,10 @@ G-01/#68,G-02/#69,G-03/#70/#72,G-04/#73/#78,G-05 first PR #85.
 #45 simultaneous slots remain pending. Later #45/#59/#61 override old parent text.
 Recheck main/PRs before implementation; G-05 confirmed §7 separately.
 
-Adopt one20ms clock, staged instances/shared ledger, bounded waves in existing
-transactions. Alternatives rejected: separate loops (duplicate ownership), recursive
-callbacks (unbounded/order-dependent), contact-order HP (breaks simultaneity),
-character scripts (unvalidated), future-stage prepayment (blocks recovery use).
-Boundary interruption is deliberate; finer timing needs a versioned decision.
+One20ms clock, staged instances/shared ledger, bounded transaction waves. Reject
+separate loops (duplicate owners), recursive callbacks (unbounded/order-dependent),
+contact-order HP (nonsimultaneous), character scripts (unvalidated), future-stage
+prepayment (blocks recovery use). Boundary interruption; finer timing needs versioning.
 
 Paths: engine `src/spatial/`. Reuse G-01 categories, G-02 damage, G-03 status, G-04
 resources/resource-step/motion-resources and geometry modules. Only simulate.ts
@@ -67,10 +66,16 @@ minIntervalSteps≥1; requireSeparation adds a full intervening non-overlap inte
 New stage=new key. Zero-damage/parried contact consumes hit; miss does not. Roll
 back ledger with transaction; collider order/replay/retry cannot create extra hits.
 
-Motion ownership: collision/gravity constraints → forced → authored stage → dodge
-→ ordinary locomotion. Sum simultaneous force vectors commutatively, cap to declared
-rules speed limit, record contributors/cap. Knockback/pull from n starts n+1 for
-fixed duration with contact-frame direction; no retroactive displacement. Root/
+Motion ownership: collision/gravity → forced → stage → dodge → locomotion.
+G-07b effect (strict, integers): `{kind:force,profile:linear-v1,direction:away|toward,
+speedMmPerSecond:1..100000,durationSteps:1..100}`. Freeze source actor→target center unit
+vector at contact (negate for toward); coincident=zero/logged. Multiply by speed,
+round each mm/s component, ties away from0. Active[n+1,n+1+duration); BigInt sum
+active vectors, then Euclidean norm-clamp via optional rules.`forcedSpeedCapMmPerSecond`
+(integer1..100000; omitted100000). Log contributors/cap. Timed transport replaces
+voluntary velocity; add separate gravity/jump vertical accumulator after cap,
+then collision clips combined trace. Expiry leaves no transport velocity; no
+retargeting. §10 versioning; never use character speed as cap; no force=unchanged. Root/
 action lock blocks voluntary motion, not gravity/force. Force costs target no stamina.
 Dash/retreat supplies velocity/acceleration to shared movement, leap uses real
 support/jump/ceiling checks. Authored motion replaces gait: stage cost replaces gait
@@ -87,8 +92,8 @@ undefined interference is unresolved, never invented priority.
 
 ## 4. 同時選択・資源
 
-#45 returns action and movement slots from one observation; G-05 evaluates feasible
-pairs. Explicit stages declare allowed movement/postures, default follows existing
+#45 returns both slots from one observation; G-05 evaluates feasible pairs.
+Explicit stages declare movement/postures, default follows existing
 movementWhileCasting. Free-moving attacks allow dodge; authored motion+dodge cannot
 own the same interval. Disallow that pair, not every skill+dodge. Execution failure
 rejects the new pair atomically, retaining legal existing work; no silent slot drop.
@@ -129,8 +134,8 @@ perceive/decide. No extra boundary pulses after final interval.
 - **before-defeat**: After all damage waves: gather provisional HP0 owners, bounded simultaneous revival waves
 - **Commit/verdict**: Statuses, next-interval interruption/forces, G-04 natural recovery, ledger/PRNG/knowledge/log/display; then win/draw
 
-Each wave is finalized only within provisional transaction state. Reaction: point, category/element filter, condition, costs/clocks/uses,response.
-Combat-only trigger data; register pretransaction capabilities, not new statuses.
+Waves are provisional. Reaction: point, category/element filter, condition,
+costs/clocks/uses,response. Combat-only data; pretransaction capabilities only.
 
 G-03 evaluates each old revision/element once per whole transaction including later
 waves; damage keeps old status modifiers. Union accepted contacts/grants/removals,
@@ -192,11 +197,11 @@ Work counters retain attempted work; no budget refill or partial wave yield/chec
 
 ## 7. G-05・観測・ログ・保存
 
-G-05 consumes own stage timing/G-02 power/G-03 status value, shape/coverage/motion,
-slot/posture compatibility, costs/exposure and reaction limits. Bounded estimates,
-never guaranteed hits. Use DecisionView→assessAbility/assessStatusEffects→CandidateAssessment;
+G-05 consumes own timing/power/status value, shape/coverage/motion, slot/posture compatibility,
+costs/exposure/reaction limits. Bounded estimates, never guaranteed hits.
+Use DecisionView→assessAbility/assessStatusEffects→CandidateAssessment;
 observedCondition uses only latest delayed visible snapshot, including unknown propagation.
-G-05 confirmed this contract in PR discussion; no wait for all G-05 work.
+G-05 confirmed this boundary; no wait for its completion.
 
 Enemy stage cues/phase/motion/status/impacts pass sight/delay. Hidden future stages,
 unused reactions, exact resources/costs/revision/hash remain private; no ID lookup.
@@ -214,8 +219,8 @@ forward/backward seeks across stages/waves/terminal plus Worker/SQLite round tri
 
 ## 8. データ例と机上受入（実装試験ではない）
 
-Proposed notation, not accepted JSON; retain required fields, attack/effects=stage0.
-Extra cost defaults0, top-level cost paid once. D/shape below are notation, not input macros.
+Proposed notation, not JSON/macros. Keep required attack/effects=stage0;
+extra cost defaults0, top-level cost paid once.
 
 ```text
 costs={hp:0,mp:0,stamina:6,uses:0}; castSteps=2
@@ -231,8 +236,8 @@ Unless stated, defenses are zero; each case uses the common pipeline.
 
 - 連撃: declaration10/speed10000 → L12, windows[12,14),[15,17), hits10+15,
   no duplicate at13. Extra4 paid15; shortage cancels second, retains6.
-- 突進斬り: +X dash/melee into wall uses clipped/bent trace, no through-wall hit;
-  fixed cost remains, force overrides next interval.
+- 突進斬り: +X dash/melee clips/bends at wall, no through-wall hit; fixed cost remains.
+  Next-interval forces +80000/+80000 clamp to100000; +80000/-80000 cancel.
 - 薙ぎ払い: adjacent overlaps/multiple emitters give one shared-group hit;
   only explicit re-hit rules or a new stage permit another.
 - 回避＋射撃: stamina20,skill6+dodge8 reserves14. With13 neither pays.
@@ -258,29 +263,26 @@ domain schema and log adapters at a time. G-04 is published; G-05 need only revi
 - **G-08a (after G-07)**: New reactions.ts, same coordinator, combat-effects.ts/effects.ts planning adapter, domain triggers/records: reuse G-03/G-04, empty reactions preserve old results
 - **G-08b (after a)**: Declarative parry or counter, bounded waves/queue: lethality/heal/ledger/cost/cross-interval limits/atomic diagnostics/replay. No reflection/absorption/revival capability or P4/P5
 
-Each PR must satisfy #61 §2-I: validation/resolution/interference/AI/observation/
-logs/saved display/tests/compatibility, plus independent fixtures/docs/new sample IDs.
-Coordinate G-05 evaluator/perception edits; one editor per shared file.
-P6 owns reflection/revival matrices/fixtures.
+Each PR: #61 §2-I, independent fixtures/docs/new sample IDs. Coordinate G-05
+evaluation/perception; one editor/shared file. P6 owns reflection/revival fixtures.
 
 Tests: boundary0/final/end-contact, melee duration mismatch, interruption, exact
-HP cost/stage shortage, expiry/transform, repeated contact, enumeration swaps,
+HP cost/stage shortage, force bounds/zero direction/expiry/gravity, expiry/transform,
+repeated contact, enumeration swaps,
 seed/hash/Worker equivalence, unseen-enemy mutation invariance, cast/queue/byte
-rollback, bidirectional replay seek and old DB/result/replay reading. CI is Linux. ADR changes require full CI, not wording shortcut:
+rollback, bidirectional replay seek, old DB/result/replay reading. ADR needs full Linux CI:
 quality/context/links, verify, clean-source, latest-head review/CI; main CI after merge.
 
 ## 10. 版更新・承認証跡
 
-[ADR0010](0010-battle-version-compatibility.md) governs optional fields/enums and
-unchanged omitted behavior; preserve old meanings/ranges/required fields/fixtures.
-New mechanics/selection/waves require new engine/rules version and rules ID in the
-implementing PR, reviewing digest/corpus/independent expectations/docs together.
+[ADR0010](0010-battle-version-compatibility.md): additive fields/enums, unchanged
+omission/meanings/ranges/required fields/fixtures. New mechanics/selection/waves need
+new engine/rules version and ID; review digest/corpus/independent expectations/docs.
 Choose version after #45/G-05 rebase; preserve published ID/hash, add new sample IDs.
 Keep old data strict-readable, reject old execution/retry/recovery; no historical
 engine/DB conversion. Optional display additions only when unambiguous; incompatible
 record/profile needs explicit version rejection while preserving old readers.
 
-PR records reviewer/head/decision/findings for timing/cost/waves/privacy/examples/
-ownership. Author self-review is insufficient. Obtain maintainer/user approval,
-then main CI; update only #61 G-06 design approval/progress. Implementation boxes
-and whole Issue remain open; no subsequent work is authorized.
+PR records reviewer/head/decision/findings. Self-review is not approval. Require
+maintainer/user approval and main CI; update only #61 G-06 design approval.
+Implementation/Issue remain open; no subsequent work is authorized.
