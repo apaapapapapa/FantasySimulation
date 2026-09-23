@@ -70,3 +70,10 @@ export const stagedRules = {
   contentHash: 'sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868',
   definition: { ...simultaneousRules.definition, rulesVersion: 'spatial-v1.16' },
 } satisfies Revision;
+
+export const motionRules = {
+  ...simultaneousRules,
+  id: 'standard-motion-v1',
+  contentHash: 'sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd',
+  definition: { ...simultaneousRules.definition, rulesVersion: 'spatial-v1.17' },
+} satisfies Revision;

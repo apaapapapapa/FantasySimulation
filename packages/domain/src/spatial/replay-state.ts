@@ -189,11 +189,66 @@ export class ReplayState {
   get ended() {
     return this.value.lastRecord?.kind === 'terminal';
   }
-  private validateState(state: DisplayState, step: number) {
+  private validateState(state: DisplayState, step: number, nextEvent = this.value.nextEvent) {
     requireReplay(new Set(state.actors.map((a) => a.id)).size === 2, 'actor IDs');
     for (const actor of state.actors) {
       const definition = this.context.actors.find((a) => a.participant.actorId === actor.id);
       if (!definition) return fail('unknown actor');
+      const reactions = actor.reactions ?? [];
+      requireReplay(
+        new Set(reactions.map((r) => r.abilityId)).size === reactions.length &&
+          new Set(reactions.map((r) => r.context.activationId)).size === reactions.length &&
+          reactions.filter((r) => r.state === 'queued').length <= 64,
+        'reaction identity/queue',
+      );
+      for (const reaction of reactions) {
+        const ability = definition.abilities.find((a) => a.id === reaction.abilityId);
+        const response = ability?.definition.reaction?.response.kind;
+        requireReplay(
+          !!response &&
+            ability?.definition.trigger === reaction.context.point &&
+            reaction.activatedAt <= step &&
+            reaction.readyAt === reaction.activatedAt &&
+            reaction.recoveryUntil >= reaction.activatedAt + 2 &&
+            reaction.cooldownUntil >= reaction.activatedAt &&
+            this.context.actors.some((a) => a.participant.actorId === reaction.targetId) &&
+            (response === 'counter'
+              ? reaction.targetId !== actor.id && reaction.state !== 'applied'
+              : reaction.targetId === actor.id && reaction.state === 'applied') &&
+            (reaction.state !== 'queued' || (reaction.readyAt === step && actor.resources.hp > 0)),
+          'reaction reference/clocks',
+        );
+        requireReplay(
+          emittedId(reaction.context.activationId) < nextEvent,
+          'reaction activation cursor',
+        );
+        const geometry = reaction.geometry;
+        requireReplay((reaction.state === 'released') === !!geometry, 'reaction release geometry');
+        if (geometry) {
+          const shape = ability!.definition.attack;
+          requireReplay(
+            shape.kind === 'hitscan' &&
+              geometry.kind === 'ray' &&
+              geometry.radiusMm === shape.radiusMm &&
+              geometry.segments.length === 1,
+            'reaction geometry shape',
+          );
+          if (geometry.kind === 'ray') {
+            const segment = geometry.segments[0]!;
+            requireReplay(
+              segment.from === 0 &&
+                segment.to === 1 &&
+                Math.hypot(
+                  segment.end.x - segment.start.x,
+                  segment.end.y - segment.start.y,
+                  segment.end.z - segment.start.z,
+                ) <=
+                  ability!.definition.rangeMm / 1000 + 1e-5,
+              'reaction geometry reach',
+            );
+          }
+        }
+      }
       if (actor.force) {
         const force = actor.force;
         requireReplay(
@@ -475,6 +530,19 @@ export class ReplayState {
         recordedStage(ability, e.stage);
       }
       if (e.force) this.validateForce(e.force);
+      if (e.reaction) {
+        const ability = this.context.actors
+          .find((a) => a.participant.actorId === e.actorId)
+          ?.abilities.find((a) => a.id === e.abilityId);
+        requireReplay(
+          !!ability?.definition.reaction &&
+            ability.definition.trigger === e.reaction.point &&
+            (e.ruleId === 'reaction.activated'
+              ? e.reaction.activationId === e.id
+              : emittedId(e.reaction.activationId) < id),
+          'reaction event reference',
+        );
+      }
     }
     requireReplay(this.value.nextEvent + events.length <= 1_000_001, 'event limit');
   }
@@ -620,7 +688,11 @@ export class ReplayState {
       }
       this.validateEvents(record, entities);
     }
-    this.validateState(state, step);
+    this.validateState(
+      state,
+      step,
+      prior.nextEvent + ('events' in record ? record.events.length : 0),
+    );
     state.actors.sort((a, b) => compareIds(a.id, b.id));
     state.projectiles.sort((a, b) => compareIds(a.id, b.id));
     this.value = {

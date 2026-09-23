@@ -66,6 +66,9 @@ import { HitLedger } from './hit-ledger.ts';
 import { beginForcedInterval, settleForcedInterval } from './forces.ts';
 import { sweepBlade } from './blades.ts';
 import { applyStageMotion } from './stage-motion.ts';
+import { commitReactiveEffects } from './reactions.ts';
+import { releaseCounters } from './counter-release.ts';
+import { visibleReactionCue } from './reaction-assessment.ts';
 
 export type SimulationEnd = {
   steps: number;
@@ -134,6 +137,7 @@ export function* simulate(
   let melees: MeleeState[] = [];
   let projectiles: ProjectileState[] = [];
   let ledger = new HitLedger();
+  const reactionWork = { attempts: 0 };
   try {
     actors = [...battle.actors]
       .sort((a, b) => compareIds(a.participant.actorId, b.participant.actorId))
@@ -223,7 +227,15 @@ export function* simulate(
               effects.push(...effectsOf(actor, ability, actorId(actor), launch.id, step));
             }
           }
-          commitEffects(next, effects, battle, journal, step, step, 'boundary', budget, world);
+          commitEffects(next, effects, {
+            battle,
+            journal,
+            step,
+            activationStep: step,
+            phase: 'boundary',
+            budget,
+            world,
+          });
         }
         const periodic: PendingEffect[] = [];
         for (const actor of next) {
@@ -261,8 +273,28 @@ export function* simulate(
             });
           }
         }
-        if (periodic.length)
-          commitEffects(next, periodic, battle, journal, step, step, 'boundary', budget, world);
+        if (
+          periodic.length ||
+          next.some(
+            (a) =>
+              a.resources.hp === 0 && a.motion.actor.abilities.some((b) => b.definition.reaction),
+          )
+        )
+          commitReactiveEffects(
+            next,
+            periodic,
+            {
+              battle,
+              journal,
+              step,
+              activationStep: step,
+              phase: 'boundary',
+              budget,
+              world,
+              aliveAtStart: new Set(actors.filter((a) => a.resources.hp > 0).map(actorId)),
+            },
+            reactionWork,
+          );
         interruptDamagedStages(next, step, journal, 'boundary');
         for (const actor of next)
           checkStageInterruption(
@@ -347,6 +379,7 @@ export function* simulate(
               statuses: enemy.statuses,
               action: displayActor(enemy, step).action?.phase ?? 'idle',
               stage: visibleStageCue(enemy, step),
+              reaction: visibleReactionCue(enemy, step),
             },
             battle.scenario.terrainKnowledge ?? 'observed',
             battle.rules.ai!,
@@ -796,6 +829,11 @@ export function* simulate(
           if (force?.active) actor.intent.forced = { gravity: force.gravity!, force: force.force };
           applyStageMotion(actor, step);
         }
+        effects.push(
+          ...releaseCounters(next, battle, journal, world, step, nextLedger, () => {
+            if (++candidates > budget.maxCandidates) throw new SpatialBudgetError('candidates');
+          }),
+        );
         const motionPlans = next.map((actor) =>
           reserveMotion(
             actor,
@@ -999,7 +1037,21 @@ export function* simulate(
               });
           }
         }
-        commitEffects(next, effects, battle, journal, step, step + 1, 'resolution', budget, world);
+        commitReactiveEffects(
+          next,
+          effects,
+          {
+            battle,
+            journal,
+            step,
+            activationStep: step + 1,
+            phase: 'resolution',
+            budget,
+            world,
+            aliveAtStart: new Set(actors.filter((a) => a.resources.hp > 0).map(actorId)),
+          },
+          reactionWork,
+        );
         interruptDamagedStages(next, step + 1, journal, 'resolution');
         for (const actor of next)
           checkStageInterruption(
@@ -1123,6 +1175,9 @@ export function* simulate(
         candidates,
         pathNodes,
         peakProjectiles,
+        ...(battle.actors.some((a) => a.abilities.some((b) => b.definition.reaction))
+          ? { reactionAttempts: reactionWork.attempts }
+          : {}),
       },
     };
   } finally {

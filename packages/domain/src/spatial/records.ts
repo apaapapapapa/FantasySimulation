@@ -5,6 +5,7 @@ import {
   HashSchema,
   IdSchema,
   StageContactSchema,
+  ReactionPointSchema,
 } from './contracts.ts';
 import { CognitionSchema } from './cognition.ts';
 
@@ -55,6 +56,13 @@ export const ForceContributionSchema = z
   })
   .refine((f) => f.endAt > f.startAt && f.endAt <= f.startAt + 100, 'Force duration');
 export type ForceContribution = z.infer<typeof ForceContributionSchema>;
+export const ReactionContextSchema = z.strictObject({
+  activationId: IdSchema,
+  point: ReactionPointSchema,
+  wave: z.number().int().min(0).max(8),
+  depth: z.number().int().min(1).max(8),
+});
+export type ReactionContext = z.infer<typeof ReactionContextSchema>;
 export const EventSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
@@ -87,6 +95,7 @@ export const EventSchema = z
       'stage-end',
       'stage-interrupt',
       'force',
+      'reaction',
     ]),
     actorId: IdSchema.nullable(),
     targetId: IdSchema.nullable(),
@@ -127,8 +136,15 @@ export const EventSchema = z
     cognition: CognitionSchema.optional(),
     stage: StageContactSchema.optional(),
     force: ForceContributionSchema.optional(),
+    reaction: ReactionContextSchema.optional(),
+    wave: z.number().int().min(0).max(8).optional(),
   })
   .superRefine((event, ctx) => {
+    if (event.kind === 'reaction' && (!event.reaction || !event.actorId || !event.abilityId))
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Reaction activation/lifecycle requires an owner and context',
+      });
     if (
       (event.kind === 'force') !== !!event.force ||
       (event.force &&
@@ -185,6 +201,7 @@ export const ResultSchema = z.strictObject({
     candidates: count,
     pathNodes: count,
     peakProjectiles: count,
+    reactionAttempts: count.optional(),
   }),
 });
 export type BattleResult = z.infer<typeof ResultSchema>;

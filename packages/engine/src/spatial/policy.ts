@@ -13,6 +13,7 @@ import { copyPublicStatuses } from './status-observation.ts';
 import { usesObservedConditions } from './observed-conditions.ts';
 import { blockedBySilence } from './categories.ts';
 import { assessAbility, type KnownClearance } from './assessment.ts';
+import { assessReactions } from './reaction-assessment.ts';
 import { dodgeOptions } from './dodge.ts';
 import { chooseMovementSlot, dodgeAssessment, passiveAssessment } from './movement-choice.ts';
 import { initialDecisionRandom, weightedChoice, type DecisionRandom } from './decision-random.ts';
@@ -60,6 +61,20 @@ export function choosePolicy(
   clear: KnownClearance = () => true,
 ): Decision {
   const simultaneous = view.rules?.slots === 'simultaneous-v1';
+  const reactions = assessReactions(view);
+  const assessmentView = reactions.estimates.length
+    ? {
+        ...view,
+        resources: {
+          ...view.resources,
+          hp: Math.max(1, view.resources.hp - reactions.reserve.hp),
+          mp: Math.max(0, view.resources.mp - reactions.reserve.mp),
+          ...(view.resources.stamina === undefined
+            ? {}
+            : { stamina: Math.max(0, view.resources.stamina - reactions.reserve.stamina) }),
+        },
+      }
+    : view;
   const actor = view.self.actor,
     target = view.memory.observation?.enemy ?? view.memory.lastSeen;
   const toward = target ? sub(target.position, view.self.position) : { ...ZERO };
@@ -112,7 +127,7 @@ export function choosePolicy(
       excluded.push({ abilityId: ability.id, reason });
       continue;
     }
-    const assessment = assessAbility(view, ability);
+    const assessment = assessAbility(assessmentView, ability);
     if (assessment.weight) candidates.push(assessment);
     else excluded.push({ abilityId: ability.id, reason: 'no estimated benefit' });
   }
@@ -165,7 +180,7 @@ export function choosePolicy(
   const observation = view.memory.observation;
   const allocation = chooseGait(
     view,
-    ability ? (declarationCost(ability.definition).stamina ?? 0) : 0,
+    (ability ? (declarationCost(ability.definition).stamina ?? 0) : 0) + reactions.reserve.stamina,
     dodge,
   );
   return {
@@ -177,6 +192,9 @@ export function choosePolicy(
     ...(allocation ? { gait: dodge ? ('run' as const) : allocation.gait } : {}),
     cognition: {
       kind: 'decision',
+      ...(reactions.estimates.length
+        ? { reactions: reactions.estimates, reactionReserve: reactions.reserve }
+        : {}),
       ...(movement ? { movementSlot: movement.cognition } : {}),
       perspective: 'subjective',
       ...(allocation
@@ -199,6 +217,7 @@ export function choosePolicy(
         : null,
       wounds: target?.wounds ?? 'unknown',
       ...(target?.stage ? { observedStage: { ...target.stage } } : {}),
+      ...(target?.reaction ? { observedReaction: { ...target.reaction } } : {}),
       ...(target?.statuses && { observedStatuses: copyPublicStatuses(target.statuses) }),
       ...(observation?.enemy &&
         (actor.abilities.some((a) =>

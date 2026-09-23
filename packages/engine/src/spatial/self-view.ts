@@ -22,7 +22,8 @@ export function selfView(
     | 'action'
     | 'staminaClock'
     | 'forces'
-  >,
+  > &
+    Partial<Pick<ActorState, 'cooldowns'>>,
   step: number,
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>>,
   definitions: readonly StatusRevision[],
@@ -53,6 +54,9 @@ export function selfView(
     statusIds: active.map((s) => s.revision.id),
     step,
     used: actor.used,
+    ...(actor.motion.actor.abilities.some((a) => a.definition.reaction)
+      ? { reactionReadyAt: actor.cooldowns ?? {} }
+      : {}),
     ownStatuses: active,
     incapacitated: stats.incapacitated,
     canAct: step >= actor.readyAt && !actor.action && !stats.incapacitated,

@@ -6,6 +6,7 @@ import {
   type StageContact,
   type Stage,
   type ForceContribution,
+  type ReactionDisplay,
 } from '@fantasy/domain/spatial';
 import { initialMotion, type MotionIntent, type MotionState } from './movement.ts';
 import { emptyMemory, type PerceptionMemory } from './perception.ts';
@@ -38,6 +39,7 @@ export type ActorState = {
   forces?: ForceContribution[];
   forceGravity?: Vec3;
   forceDisplay?: ActorDisplay['force'];
+  reactions?: ReactionDisplay[];
   statuses: StatusCohort[];
   memory: PerceptionMemory;
   decision: Decision;
@@ -101,6 +103,7 @@ export const cloneActor = (state: ActorState): ActorState => ({
   ...(state.motionClock ? { motionClock: { ...state.motionClock } } : {}),
   ...(state.locomotion ? { locomotion: { ...state.locomotion } } : {}),
   ...(state.forces ? { forces: structuredClone(state.forces) } : {}),
+  ...(state.reactions ? { reactions: structuredClone(state.reactions) } : {}),
   ...(state.forceGravity ? { forceGravity: { ...state.forceGravity } } : {}),
   ...(state.forceDisplay !== undefined
     ? { forceDisplay: structuredClone(state.forceDisplay) }
@@ -127,6 +130,7 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
     velocity: { ...motion.velocity },
     facing: { ...motion.facing },
     grounded: motion.grounded,
+    ...(state.reactions ? { reactions: structuredClone(state.reactions) } : {}),
     ...(state.forceDisplay !== undefined ? { force: structuredClone(state.forceDisplay) } : {}),
     resources: { ...state.resources },
     ...(state.locomotion ? { locomotion: { ...state.locomotion } } : {}),

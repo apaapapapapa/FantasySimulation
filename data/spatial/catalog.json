@@ -519,6 +519,46 @@
   },
   {
     "kind": "ability",
+    "id": "parry-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980",
+    "definition": {
+      "name": "受け流し",
+      "originalText": "受け流し",
+      "trigger": "before-hit",
+      "reaction": {
+        "response": {
+          "kind": "parry",
+          "scope": "all"
+        },
+        "categories": ["physical"]
+      },
+      "categories": ["technique"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 4,
+        "uses": 0
+      },
+      "castSteps": 0,
+      "recoverySteps": 6,
+      "cooldownSteps": 60,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": []
+    }
+  },
+  {
+    "kind": "ability",
     "id": "return-cut-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -644,6 +684,52 @@
           "delaySteps": 5,
           "occlusion": "vision",
           "powerBps": 6000
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "riposte-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:07e20804d028d980a6de20a0e8681886ea85b11df719d2db92a5925bb09ebcc4",
+    "definition": {
+      "name": "被弾後の反撃",
+      "originalText": "被弾後の反撃",
+      "trigger": "after-damage",
+      "reaction": {
+        "response": {
+          "kind": "counter"
+        }
+      },
+      "categories": ["technique"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 3,
+        "uses": 8
+      },
+      "castSteps": 0,
+      "recoverySteps": 4,
+      "cooldownSteps": 30,
+      "movementWhileCasting": "allow",
+      "rangeMm": 3000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 80
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 5000,
+          "element": "physical"
         }
       ]
     }
@@ -1712,6 +1798,108 @@
   },
   {
     "kind": "character",
+    "id": "reaction-duelist-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e0585a005b30ba52b6127defd50ab6b2d20902b2bef64948c66ccafd6290bd64",
+    "definition": {
+      "name": "受け流しと反撃の剣士",
+      "originalText": "受け流しと反撃の剣士。能力・装備・方針はすべて公開revisionで固定する。",
+      "stamina": {
+        "max": 100,
+        "recoveryPerSecond": 3,
+        "resumeAt": 20
+      },
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000,
+        "locomotion": {
+          "walk": {
+            "speedMmPerSecond": 2000,
+            "staminaPerMeter": 2
+          },
+          "run": {
+            "speedMmPerSecond": 6000,
+            "staminaPerMeter": 6
+          },
+          "exhaustedSpeedMmPerSecond": 500,
+          "jumpStamina": 12,
+          "dodgeStamina": 8,
+          "stepStaminaPerMeter": 10
+        }
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "sword",
+          "revision": 1,
+          "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef"
+        },
+        {
+          "id": "parry-v1",
+          "revision": 1,
+          "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980"
+        },
+        {
+          "id": "riposte-v1",
+          "revision": 1,
+          "contentHash": "sha256:07e20804d028d980a6de20a0e8681886ea85b11df719d2db92a5925bb09ebcc4"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "reaction-duelist-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:6ff8744b894b44831eb9edea8bdd4828f39395abafa416151d33b858819805cb"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "sky-mage",
     "revision": 1,
     "schemaVersion": 1,
@@ -2678,6 +2866,29 @@
   },
   {
     "kind": "policy",
+    "id": "reaction-duelist-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:6ff8744b894b44831eb9edea8bdd4828f39395abafa416151d33b858819805cb",
+    "definition": {
+      "name": "受け流しと反撃の剣士の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "sword"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
     "id": "sky-mage-policy",
     "revision": 1,
     "schemaVersion": 1,
@@ -3069,6 +3280,72 @@
         "killWeight": 2400,
         "actionWeight": 100,
         "dodgeWeight": 600
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard-reactions-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6",
+    "definition": {
+      "name": "標準3D",
+      "rulesVersion": "spatial-v1.18",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1"
       },
       "stepMs": 20,
       "maxSteps": 6000,

@@ -482,6 +482,36 @@
       "id": "standard-motion-v1",
       "revision": 1,
       "contentHash": "sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd"
+    },
+    {
+      "kind": "ability",
+      "id": "parry-v1",
+      "revision": 1,
+      "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980"
+    },
+    {
+      "kind": "ability",
+      "id": "riposte-v1",
+      "revision": 1,
+      "contentHash": "sha256:07e20804d028d980a6de20a0e8681886ea85b11df719d2db92a5925bb09ebcc4"
+    },
+    {
+      "kind": "character",
+      "id": "reaction-duelist-v1",
+      "revision": 1,
+      "contentHash": "sha256:e0585a005b30ba52b6127defd50ab6b2d20902b2bef64948c66ccafd6290bd64"
+    },
+    {
+      "kind": "policy",
+      "id": "reaction-duelist-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:6ff8744b894b44831eb9edea8bdd4828f39395abafa416151d33b858819805cb"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-reactions-v1",
+      "revision": 1,
+      "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
     }
   ]
 }

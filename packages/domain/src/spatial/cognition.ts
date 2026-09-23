@@ -11,6 +11,8 @@ import {
   AbilityCategorySchema,
   ObservedPhaseSchema,
   ObservedStageSchema,
+  ObservedReactionSchema,
+  ReactionPointSchema,
 } from './contracts.ts';
 
 const tick = z.number().int().min(0).max(8000),
@@ -98,6 +100,17 @@ export const CandidateAssessmentSchema = z.strictObject({
   reason: z.string().max(300),
 });
 export type CandidateAssessment = z.infer<typeof CandidateAssessmentSchema>;
+export const ReactionEstimateSchema = z.strictObject({
+  abilityId: IdSchema,
+  point: ReactionPointSchema,
+  response: z.enum(['parry', 'effects', 'counter']),
+  readyAt: quantity,
+  remainingUses: quantity.nullable(),
+  eligible: z.boolean(),
+  reason: z.string().max(100),
+  assessment: CandidateAssessmentSchema,
+});
+export type ReactionEstimate = z.infer<typeof ReactionEstimateSchema>;
 const RandomDrawSchema = z.strictObject({
   purpose: z.enum(['action', 'dodge', 'movement']),
   before: quantity,
@@ -167,6 +180,9 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
       })
       .optional(),
     observedStage: ObservedStageSchema.optional(),
+    observedReaction: ObservedReactionSchema.optional(),
+    reactions: z.array(ReactionEstimateSchema).max(160).optional(),
+    reactionReserve: z.strictObject({ hp: quantity, mp: quantity, stamina: quantity }).optional(),
     method: z.enum(['sole', 'weighted', 'exploration', 'equal', 'none']),
     draws: z.array(DrawSchema).max(2),
     directions: z
