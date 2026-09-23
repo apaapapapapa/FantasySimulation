@@ -9,6 +9,10 @@ import {
   UI_CHECKS,
   UI_RUN_CHECKS,
   UI_FAULTS,
+  uiCases,
+  uiBrowsers,
+  uiSettings,
+  localOrigin,
   type UiScenario,
 } from '../../e2e/contract.ts';
 import { readBoundedJson } from './files.ts';
@@ -26,6 +30,12 @@ export function readUiEvidence(
     report.checks.find((check) => check.id === 'ui:diagnostics')?.status !== observed.status
   )
     throw new Error('Missing or inconsistent UI diagnostic evidence');
+  const staticResult = inspectUiStatic(directory, expected, run);
+  if (
+    staticResult.status !== 'pass' ||
+    report.checks.find((check) => check.id === 'ui:static-replay')?.status !== 'pass'
+  )
+    throw new Error('Missing or inconsistent static UI evidence');
   return assessReport(report, UI_CHECKS).report;
 }
 
@@ -85,16 +95,11 @@ export function readUiRun(
   let original = directory;
   if (raw) {
     const projects = record(raw.config).projects;
-    if (!Array.isArray(projects) || projects.length !== 1)
-      throw new Error('Missing Chromium configuration');
+    if (!Array.isArray(projects) || projects.length !== uiBrowsers(scenario).length)
+      throw new Error('Missing required browser configuration');
     original = dirname(text(record(projects[0]).outputDir));
   }
-  const recollected = uiCoverage(
-    raw,
-    directory,
-    original,
-    scenario === 'smoke' ? undefined : [scenario],
-  );
+  const recollected = uiCoverage(raw, directory, original, uiCases(scenario), uiBrowsers(scenario));
   if (!isDeepStrictEqual(coverage, recollected))
     throw new Error('UI coverage does not match raw execution');
   if (!Array.isArray(coverage.attempts)) throw new Error('Missing UI attempt coverage');
@@ -121,7 +126,8 @@ export function readUiRun(
     report.candidateSha !== info.candidateSha ||
     report.testMergeSha !== info.testMergeSha ||
     report.baselineSha !== info.baselineSha ||
-    report.producer !== (scenario === 'smoke' ? 'ui-runner' : 'ui-diagnostic')
+    report.producer !==
+      (scenario === 'smoke' ? 'ui-runner' : scenario === 'static' ? 'ui-static' : 'ui-diagnostic')
   )
     throw new Error('UI report identity mismatch');
   if (
@@ -139,7 +145,7 @@ export function readUiRun(
       ? ['server-start', 'api-ready', 'servers-stopped', 'failure']
       : [
           'server-start',
-          'api-ready',
+          scenario === 'static' ? 'fixtures-ready' : 'api-ready',
           'web-ready',
           'browser',
           'browser-finished',
@@ -161,6 +167,42 @@ export function readUiRun(
     previous = at;
   }
   return assessment.report;
+}
+
+export function inspectUiStatic(
+  directory: string,
+  expected: Identity,
+  run: { id: string | null; attempt: string | null },
+): { status: CheckStatus; reason: string } {
+  try {
+    const folder = join(directory, 'static');
+    const report = readUiRun(folder, expected, run, 'static');
+    const execution = record(readBoundedJson(join(folder, 'execution.json')));
+    const origins = record(execution.origins);
+    const servers = record(readBoundedJson(join(folder, 'servers.json')));
+    if (
+      assessReport(report, UI_RUN_CHECKS).exitCode !== 0 ||
+      !isDeepStrictEqual(execution.settings, uiSettings('static')) ||
+      origins.api !== null ||
+      servers.apiOrigin !== null ||
+      !isDeepStrictEqual(execution.samples, []) ||
+      localOrigin(text(origins.web)) === localOrigin(text(origins.data)) ||
+      servers.webOrigin !== origins.web ||
+      servers.dataOrigin !== origins.data ||
+      servers.stopped !== true
+    )
+      throw new Error('Static suite did not pass in independent API-free origins');
+    return {
+      status: 'pass',
+      reason:
+        'Chromium and WebKit exercised static selection, recorded 3D replay and failures without API/SQLite/engine execution',
+    };
+  } catch (error) {
+    return {
+      status: 'unknown',
+      reason: error instanceof Error ? error.message : 'Missing static evidence',
+    };
+  }
 }
 
 export function inspectUiDiagnostics(
@@ -255,6 +297,7 @@ export function uiCoverage(
   directory: string,
   originalDirectory = directory,
   cases: readonly string[] = UI_CASES,
+  browsers: readonly string[] = ['chromium'],
 ): { status: CheckStatus; attempts: UiAttempt[]; reason: string } {
   const attempts: UiAttempt[] = [];
   try {
@@ -272,67 +315,86 @@ export function uiCoverage(
       }
     }
     visit(result.suites);
-    const observed = specs.map((spec) => text(spec.title));
+    // Playwright may emit a separate spec ID for each project. Coverage belongs
+    // to the case/browser pair, not to the JSON reporter's grouping of specs.
+    const observed = specs.flatMap((spec) => {
+      if (!Array.isArray(spec.tests) || !spec.tests.length)
+        throw new Error('Missing browser test inventory');
+      return spec.tests.map((test) => ({
+        caseId: text(spec.title),
+        browser: text(record(test).projectName),
+      }));
+    });
     if (
-      observed.length !== cases.length ||
-      cases.some((id) => observed.filter((title) => title === id).length !== 1)
-    )
-      throw new Error('Required case missing/duplicated or unexpected case');
-    for (const spec of specs) {
-      if (!Array.isArray(spec.tests) || spec.tests.length !== 1)
-        throw new Error('Expected exactly one Chromium project');
-      const test = record(spec.tests[0]);
-      if (
-        test.projectName !== 'chromium' ||
-        test.expectedStatus !== 'passed' ||
-        !Array.isArray(test.results) ||
-        !test.results.length
+      observed.length !== cases.length * browsers.length ||
+      cases.some((id) =>
+        browsers.some(
+          (browser) =>
+            observed.filter((test) => test.caseId === id && test.browser === browser).length !== 1,
+        ),
       )
-        throw new Error('Required browser test was not executed');
-      for (const [index, value] of test.results.entries()) {
-        const attempt = record(value);
-        if (attempt.retry !== index || index > 1 || !Array.isArray(attempt.attachments))
-          throw new Error('Incomplete retry history');
-        const attachments = attempt.attachments.map(record);
-        const browser = attachments.filter((item) => item.name === 'browser-identity');
-        if (browser.length !== 1) throw new Error('Browser did not start');
-        const identity = record(
-          JSON.parse(Buffer.from(text(browser[0]!.body), 'base64').toString('utf8')) as unknown,
-        );
-        if (identity.name !== 'chromium' || !text(identity.version))
-          throw new Error('Missing browser identity');
-        const files = attachments
-          .filter((item) => item.path !== undefined)
-          .map((item) => {
-            const path = relative(originalDirectory, resolve(text(item.path)));
-            const file = resolve(directory, path);
-            if (!path || path.startsWith('..') || isAbsolute(path) || !existsSync(file))
-              throw new Error('Missing or unsafe failure artifact');
-            return {
-              path: path.replaceAll('\\', '/'),
-              sha256: createHash('sha256').update(readFileSync(file)).digest('hex'),
-            };
+    )
+      throw new Error('Required case/browser missing, duplicated or unexpected');
+    for (const spec of specs) {
+      const projects = spec.tests;
+      if (!Array.isArray(projects)) throw new Error('Missing browser project');
+      for (const project of projects) {
+        const test = record(project);
+        if (
+          !browsers.includes(text(test.projectName)) ||
+          test.expectedStatus !== 'passed' ||
+          !Array.isArray(test.results) ||
+          !test.results.length
+        )
+          throw new Error('Required browser test was not executed');
+        for (const [index, value] of test.results.entries()) {
+          const attempt = record(value);
+          if (attempt.retry !== index || index > 1 || !Array.isArray(attempt.attachments))
+            throw new Error('Incomplete retry history');
+          const attachments = attempt.attachments.map(record);
+          const browser = attachments.filter((item) => item.name === 'browser-identity');
+          if (browser.length !== 1) throw new Error('Browser did not start');
+          const identity = record(
+            JSON.parse(Buffer.from(text(browser[0]!.body), 'base64').toString('utf8')) as unknown,
+          );
+          if (identity.name !== test.projectName || !text(identity.version))
+            throw new Error('Missing browser identity');
+          const files = attachments
+            .filter((item) => item.path !== undefined)
+            .map((item) => {
+              const path = relative(originalDirectory, resolve(text(item.path)));
+              const file = resolve(directory, path);
+              if (!path || path.startsWith('..') || isAbsolute(path) || !existsSync(file))
+                throw new Error('Missing or unsafe failure artifact');
+              return {
+                path: path.replaceAll('\\', '/'),
+                sha256: createHash('sha256').update(readFileSync(file)).digest('hex'),
+              };
+            });
+          const status = text(attempt.status);
+          attempts.push({
+            testId: `${text(spec.id)}:${text(test.projectName)}`,
+            caseId: text(spec.title),
+            retry: index,
+            status,
+            browser: identity,
+            attachments: files,
           });
-        const status = text(attempt.status);
-        attempts.push({
-          testId: text(spec.id),
-          caseId: text(spec.title),
-          retry: index,
-          status,
-          browser: identity,
-          attachments: files,
-        });
-        if (status === 'skipped' || status === 'interrupted')
-          throw new Error('Unexecuted/interrupted test');
-        if (status !== 'passed' && !attachments.some((item) => item.name === 'trace' && item.path))
-          throw new Error('Failed attempt lacks trace');
+          if (status === 'skipped' || status === 'interrupted')
+            throw new Error('Unexecuted/interrupted test');
+          if (
+            status !== 'passed' &&
+            !attachments.some((item) => item.name === 'trace' && item.path)
+          )
+            throw new Error('Failed attempt lacks trace');
+        }
       }
     }
     return {
       status: attempts.every((attempt) => attempt.status === 'passed') ? 'pass' : 'fail',
       attempts,
       reason:
-        'All required Chromium cases executed; a failed first attempt remains a failure even after retry',
+        'All required cases and browsers executed; a failed first attempt remains a failure even after retry',
     };
   } catch (error) {
     return {

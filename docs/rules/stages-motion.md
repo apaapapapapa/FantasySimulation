@@ -33,7 +33,7 @@ Arc shape adds reachMm/bladeRadiusMm/startAngleMilliDegrees/sweepMilliDegrees:
 a capsule from muzzle to tip rotates uniformly in launch-frozen local horizontal
 plane during durationSteps; radial is a full360-degree sweep. Fixed-table geometry
 sweeps the whole blade along actual bent body traces, not only its tip. Keep
-muzzle occlusion, first blocking wall and existing wall/body epsilon tie. Radial
+muzzle occlusion, first blocking wall (even after a body hit) and wall/body epsilon tie. Radial
 contacts check individual occlusion; endpoint cones cannot replace sweeps.
 Future emitters/beams/areas use this scheduler/ledger and declare offsets/lifetime/
 pulses/coverage/walls. Reject until #61 §2-I is complete.
@@ -101,7 +101,7 @@ work are unchanged. Display stores active contributors, applied cap, G before/af
 incident speed, projected force and ordered collision projections; expiry clears it.
 Stage display saves requested motion, actual ownership, clocks and emitted geometry.
 Replay validates references/windows and seeks without importing the engine.
-Enemy cues whitelist only delayed visible current shape/state/motion; own AI estimates
+Enemy cues use current force windows and delayed visible shape/state/motion; own AI estimates
 shape coverage, travel exposure, force duration and leap costs without private lookups.
 
 New samples: dash-cut-v1, wide-sweep-v1, stage-vanguard-v1. All published revisions

@@ -656,6 +656,26 @@
     "motion-catalog": {
       "file": "packages/engine/src/spatial/catalog.test.ts",
       "name": "data-composed 3D sample catalog runs stage-vanguard-v1 through the common rules without character-specific execution"
+    },
+    "blade-later-wall-single": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact clips a later wall after a body hit, split trace=false"
+    },
+    "blade-later-wall-split": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact clips a later wall after a body hit, split trace=true"
+    },
+    "force-cue-windows": {
+      "file": "packages/engine/src/spatial/forces.test.ts",
+      "name": "contact-frozen forces samples one-step force onset and expiry from current forces before delayed delivery"
+    },
+    "blade-wall-termination-arc": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact keeps the first body hit but terminates a multi-hit arc at its later wall"
+    },
+    "blade-wall-termination-melee": {
+      "file": "packages/engine/src/spatial/blades.test.ts",
+      "name": "rotating whole-blade contact keeps the first body hit but terminates a multi-hit melee at its later wall"
     }
   },
   "entries": [
@@ -1308,7 +1328,12 @@
         "authored-motion-5",
         "motion-shape-ai",
         "motion-worker-persistence",
-        "motion-catalog"
+        "motion-catalog",
+        "blade-later-wall-single",
+        "blade-later-wall-split",
+        "blade-wall-termination-arc",
+        "blade-wall-termination-melee",
+        "force-cue-windows"
       ],
       "title": "G-07b: 回転刃・段階移動・強制移動・費用・保存",
       "state": "implemented",

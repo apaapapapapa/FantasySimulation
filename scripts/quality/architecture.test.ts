@@ -145,6 +145,29 @@ it('enforces external SDK, server and Rapier boundaries using resolved library m
   }
 });
 
+it('admits only the reviewed renderer/table browser packages while server SDKs remain forbidden', async () => {
+  for (const name of [
+    'three',
+    '@react-three/fiber',
+    '@react-three/drei',
+    '@tanstack/react-table',
+    'better-sqlite3',
+    '@octokit/core',
+  ]) {
+    const f = fixture({
+      'apps/web/src/a.ts': `import {X} from '${name}'; export const value=X;`,
+      [`node_modules/${name}/package.json`]: JSON.stringify({ name, main: 'index.js' }),
+      [`node_modules/${name}/index.js`]: 'export const X=1;',
+    });
+    const result = await architecture(f.root, f.paths);
+    expect(
+      result.publicGraph.summary.violations.some(
+        (v) => v.rule.name === 'browser-external-boundary',
+      ),
+    ).toBe(['better-sqlite3', '@octokit/core'].includes(name));
+  }
+});
+
 it('checks ambient declarations and the approved Vite reference without allowing extra boundary leaks', async () => {
   const f = fixture({
     'apps/web/src/vite-env.d.ts':

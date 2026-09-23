@@ -59,7 +59,7 @@ export function sweepBlade(
   targetTrace: Trace,
   rules: DeepReadonly<Definition<'ruleset'>>,
   budget: Budget,
-): { contact: AttackContact | null; geometry: AttackGeometry } {
+): { contact: AttackContact | null; wall: AttackContact | null; geometry: AttackGeometry } {
   const reach = shape.reachMm / 1000,
     radius = shape.bladeRadiusMm / 1000;
   const sweep = (shape.kind === 'radial' ? 360000 : shape.sweepMilliDegrees) / 1000;
@@ -120,7 +120,8 @@ export function sweepBlade(
           length(sub(at(targetTrace, to), at(targetTrace, from))) / (to - from),
         (t) => bodyContact(t).distance,
       );
-    if (firstImpact(wall, body)) break;
+    // A body accepts a hit, but does not end the blade's remaining wall sweep.
+    if (wall !== undefined) break;
   }
   let impact = firstImpact(wall, body);
   if (
@@ -128,6 +129,7 @@ export function sweepBlade(
     world.occluded(pose(impact.time).root, bodyContact(impact.time).point, 'attack')
   ) {
     impact = { kind: 'wall', time: impact.time };
+    wall = impact.time;
     wallPoint = bodyContact(impact.time).point;
   }
   const contact = impact
@@ -137,7 +139,7 @@ export function sweepBlade(
         center: pose(impact.time).root,
       }
     : null;
-  const end = impact?.kind === 'wall' ? impact.time : 1;
+  const end = wall ?? 1;
   // Recorded poses bound the tip's chord error; also retain all owner trace breakpoints.
   const segments = Math.max(
     1,
@@ -160,6 +162,10 @@ export function sweepBlade(
     throw new SpatialBudgetError('curve-segments');
   return {
     contact,
+    wall:
+      wall === undefined
+        ? null
+        : { kind: 'wall', time: wall, point: wallPoint!, center: pose(wall).root },
     geometry: {
       kind: 'blade',
       radiusMm: shape.bladeRadiusMm,

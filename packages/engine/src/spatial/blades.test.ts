@@ -13,7 +13,7 @@ import type { MotionState } from './movement.ts';
 import { runBattle } from './run.ts';
 import { locomotionFixture } from '../../test-support/locomotion.ts';
 import { stagedManifest } from '../../test-support/stages.ts';
-import { battleEvents } from '../../test-support/fixtures.ts';
+import { battleEvents, boxObstacle, editScenario } from '../../test-support/fixtures.ts';
 
 beforeAll(initializePhysics);
 const arc = (): Extract<Definition<'ability'>['attack'], { kind: 'arc' }> => ({
@@ -181,6 +181,114 @@ describe('rotating whole-blade contact', () => {
       f.world.free();
     }
   });
+  it.each([false, true])('clips a later wall after a body hit, split trace=%s', async (split) => {
+    const f = await locomotionFixture(),
+      world = new SpatialWorld([
+        {
+          id: 'later-wall',
+          position: { x: 0, y: 0, z: 0.75 },
+          halfExtents: { x: 0.2, y: 1, z: 0.01 },
+          blocks: { movement: false, vision: false, attack: true },
+        },
+      ]);
+    try {
+      const target = { ...f.actor.motion, position: { x: 0.75, y: 0, z: 0 } };
+      const owner = split
+        ? [
+            { from: 0, to: 0.5, start: ZERO, end: ZERO },
+            { from: 0.5, to: 1, start: ZERO, end: { x: -0.1, y: 0, z: 0 } },
+          ]
+        : straight(ZERO, ZERO);
+      const result = sweepBlade(
+        world,
+        owner,
+        ZERO,
+        { x: 1, y: 0, z: 0 },
+        arc(),
+        0,
+        1,
+        target,
+        straight(target.position, target.position),
+        f.battle.rules,
+        DEFAULT_BUDGET,
+      );
+      expect(result.contact?.kind).toBe('body');
+      expect(result.contact!.time).toBeLessThan(0.5);
+      if (result.geometry.kind !== 'blade') throw Error('Expected saved blade poses');
+      const end = result.geometry.poses.at(-1)!;
+      expect(end.fraction).toBeGreaterThan(0.5);
+      expect(end.fraction).toBeLessThan(1);
+      expect(result.wall?.time).toBe(end.fraction);
+      expect(result.wall?.kind).toBe('wall');
+    } finally {
+      world.free();
+      f.world.free();
+    }
+  });
+  it.each(['arc', 'melee'] as const)(
+    'keeps the first body hit but terminates a multi-hit %s at its later wall',
+    async (kind) => {
+      const input = await stagedManifest({
+        steps: 12,
+        ability: { castSteps: 0, rangeMm: 4000 },
+        stages: [
+          {
+            id: 'cut',
+            offsetSteps: 0,
+            durationSteps: 2,
+            attack:
+              kind === 'arc'
+                ? { ...arc(), startAngleMilliDegrees: -40000, sweepMilliDegrees: 60000 }
+                : {
+                    kind: 'melee',
+                    reachMm: 4000,
+                    radiusMm: 200,
+                    activeSteps: 2,
+                    maxHitsPerTarget: 2,
+                  },
+            effects: [
+              {
+                kind: 'damage',
+                amount: 10,
+                attackScaleBps: 0,
+                element: 'physical',
+                defense: 'none',
+              },
+            ],
+            hit: { group: 'shared', maxHits: 2, minIntervalSteps: 1, requireSeparation: false },
+          },
+        ],
+      });
+      await editScenario(input, (scenario) =>
+        scenario.obstacles.push({
+          ...boxObstacle(
+            'later-wall',
+            kind === 'arc' ? { x: 1050, y: 1300, z: -180 } : { x: 600, y: 1300, z: 300 },
+            { x: 5, y: 500, z: 5 },
+          ),
+          blocks: { movement: false, vision: false, attack: true },
+        }),
+      );
+      const full = await runBattle(input),
+        events = battleEvents(full.records);
+      const hits = events.filter((e) => e.actorId === 'left' && e.kind === 'hit');
+      expect(hits).toHaveLength(1);
+      const stop = events.find(
+        (e) => e.actorId === 'left' && e.reason === 'wall' && e.kind === 'fizzle',
+      );
+      expect(stop).toMatchObject({ step: hits[0]!.step, ruleId: `${kind}.blocking-wall` });
+      expect(stop!.subtimeMicros).toBeGreaterThan(hits[0]!.subtimeMicros);
+      const { replay, checkpoints } = await recordedCheckpoints(input, full);
+      const stopped = checkpoints.find(
+        (c) => c.lastRecord?.kind === 'interval' && c.lastRecord.fromStep === stop!.step,
+      )!;
+      const geometry = stopped.state!.actors[0]!.action!.stage!.geometry!;
+      const end =
+        geometry.kind === 'blade' ? geometry.poses.at(-1)!.fraction : geometry.segments.at(-1)!.to;
+      expect(end).toBeCloseTo(stop!.subtimeMicros / 1000000, 6);
+      expect(replay.checkpoint().state!.actors[1]!.resources.hp).toBe(90);
+    },
+  );
   it('executes a staged radial sweep once per target and restores recorded blade geometry', async () => {
     const attack = {
       kind: 'radial' as const,

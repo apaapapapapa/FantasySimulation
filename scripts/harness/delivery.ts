@@ -455,7 +455,7 @@ export function assessDelivery(
     const names: readonly string[] = [
       ...(plan.full ? DOCS_JOBS : [...VERIFY_JOBS, ...SOURCE_JOBS, SOURCE_MATRIX_JOB]),
       ...(plan.simulation ? [] : ['Corpus (ubuntu-latest)', ...LOAD_JOBS, LOAD_MATRIX_JOB]),
-      ...(plan.ui ? [] : ['UI (Linux Chromium)']),
+      ...(plan.ui ? [] : ['UI (Linux Chromium/WebKit)']),
     ];
     for (const job of objects(snapshot.prRun.jobs))
       if (names.includes(String(job.name)) && job.conclusion === 'skipped')

@@ -1,4 +1,4 @@
-name: Pinned Chromium
+name: Pinned Chromium and WebKit
 description: Browser-only cache, exact Playwright/OS/architecture identity; no test results
 runs:
   using: composite
@@ -11,12 +11,12 @@ runs:
       id: browser
       with:
         path: .generated/playwright
-        key: fantasy-chromium-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.version.outputs.version }}
-    - name: Install browser libraries and exact headless Chromium
+        key: fantasy-chromium-webkit-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.version.outputs.version }}
+    - name: Install browser libraries and exact Chromium and WebKit
       shell: bash
       env:
         PLAYWRIGHT_BROWSERS_PATH: .generated/playwright
-      run: vp exec playwright install --with-deps chromium --only-shell
+      run: vp exec playwright install --with-deps chromium webkit --only-shell
     - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25
       if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.browser.outputs.cache-hit != 'true'
       with:

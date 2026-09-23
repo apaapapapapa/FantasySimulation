@@ -7,7 +7,13 @@ import {
   type Effect,
   type ForceContribution,
 } from '@fantasy/domain/spatial';
-import { freezeForce, forceSum, beginForcedInterval, queueForce } from './forces.ts';
+import {
+  freezeForce,
+  forceSum,
+  beginForcedInterval,
+  queueForce,
+  settleForcedInterval,
+} from './forces.ts';
 import { initializePhysics } from './physics.ts';
 import { ZERO } from './math.ts';
 import { runBattle } from './run.ts';
@@ -16,6 +22,10 @@ import { simulate } from './simulate.ts';
 import { locomotionFixture } from '../../test-support/locomotion.ts';
 import { stagedManifest } from '../../test-support/stages.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
+import { visibleStageCue } from './stages.ts';
+import { initialActor } from './combat-state.ts';
+import { emptyMemory, perceive } from './perception.ts';
+import { moveActors } from './movement.ts';
 
 beforeAll(initializePhysics);
 const force = (direction: 'away' | 'toward' = 'away'): Extract<Effect, { kind: 'force' }> => ({
@@ -179,5 +189,64 @@ describe('contact-frozen forces', () => {
     });
     expect(JSON.stringify(end.value.decisionState)).not.toContain('forceGravity');
     expect((await runBattle(input)).result).toEqual(full.result);
+  });
+  it('samples one-step force onset and expiry from current forces before delayed delivery', async () => {
+    const f = await locomotionFixture();
+    try {
+      const enemy = initialActor(f.world, f.battle.actors[1]);
+      queueForce(
+        enemy,
+        { ...force(), speedMmPerSecond: 1000, durationSteps: 1 },
+        f.actor.motion.position,
+        enemy.motion.position,
+        { id: 'e.0', actorId: 'left', abilityId: 'push' },
+        4,
+        DEFAULT_BUDGET,
+      );
+      expect(visibleStageCue(enemy, 4)).toBeUndefined();
+      const cue = visibleStageCue(enemy, 5);
+      expect(cue).toEqual({ shape: 'hold', state: 'active', motion: 'forced' });
+      const sampled = perceive(f.world, f.actor.motion, enemy.motion, [], 5, emptyMemory(), {
+        resources: enemy.resources,
+        action: 'idle',
+        stage: cue,
+      });
+      expect(sampled.observation).toBeNull();
+      const plan = beginForcedInterval(enemy, 5, 100000)!;
+      const moved = moveActors(
+        f.world,
+        [enemy.motion],
+        new Map([
+          [
+            'right',
+            {
+              ...enemy.intent,
+              forced: { force: plan.force, gravity: plan.gravity! },
+            },
+          ],
+        ]),
+        f.battle.rules,
+      )[0]!;
+      settleForcedInterval(enemy, plan, moved, 5);
+      expect(enemy.forceDisplay?.active).toBe(true);
+      expect(visibleStageCue(enemy, 6)).toBeUndefined();
+      const expired = perceive(f.world, f.actor.motion, enemy.motion, [], 6, emptyMemory(), {
+        resources: enemy.resources,
+        action: 'idle',
+        stage: visibleStageCue(enemy, 6),
+      });
+      const delivered = perceive(f.world, f.actor.motion, enemy.motion, [], 10, sampled);
+      expect(delivered.observation?.sampledAt).toBe(5);
+      expect(delivered.observation?.enemy?.stage).toEqual({
+        shape: 'hold',
+        state: 'active',
+        motion: 'forced',
+      });
+      expect(
+        perceive(f.world, f.actor.motion, enemy.motion, [], 11, expired).observation?.enemy?.stage,
+      ).toBeUndefined();
+    } finally {
+      f.world.free();
+    }
   });
 });

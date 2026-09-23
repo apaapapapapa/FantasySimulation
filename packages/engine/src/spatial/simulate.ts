@@ -18,6 +18,7 @@ import {
   meleeTrace,
   muzzleBlocked,
   traceAttack,
+  type AttackContact,
 } from './attacks.ts';
 import {
   cloneActor,
@@ -875,9 +876,17 @@ export function* simulate(
                   shape.activeSteps,
                 )
               : [];
+          const blocking: { wall: AttackContact | null } = { wall: blade?.wall ?? null };
           const contact =
             shape.kind === 'melee'
-              ? traceAttack(world, trace, shape.radiusMm / 1000, enemy.state, enemy.trace)
+              ? traceAttack(
+                  world,
+                  trace,
+                  shape.radiusMm / 1000,
+                  enemy.state,
+                  enemy.trace,
+                  attack.stage ? blocking : undefined,
+                )
               : blade!.contact;
           if (attack.stage)
             ownerActor.action!.stages!.geometry =
@@ -885,7 +894,7 @@ export function* simulate(
                 ? {
                     kind: 'sphere',
                     radiusMm: shape.radiusMm,
-                    segments: contact?.kind === 'wall' ? clipTrace(trace, contact.time) : trace,
+                    segments: blocking.wall ? clipTrace(trace, blocking.wall.time) : trace,
                   }
                 : blade!.geometry;
           if (contact) {
@@ -937,8 +946,23 @@ export function* simulate(
                 });
             }
           }
+          if (blocking.wall && contact?.kind === 'body')
+            journal.emit({
+              kind: 'fizzle',
+              step,
+              phase: 'contact',
+              subtimeMicros: Math.round(blocking.wall.time * 1_000_000),
+              actorId: attack.actorId,
+              abilityId: attack.ability.id,
+              parentEventId: attack.cause,
+              point: blocking.wall.point,
+              ruleId: `${shape.kind}.blocking-wall`,
+              reason: 'wall',
+              ...(attack.stage ? { stage: attack.stage } : {}),
+            });
           if (
             contact?.kind !== 'wall' &&
+            !blocking.wall &&
             (attack.stage || (shape.kind === 'melee' && attack.hits < shape.maxHitsPerTarget)) &&
             step + 1 < attack.launchStep + activeSteps
           )

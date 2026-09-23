@@ -58,6 +58,15 @@ function unsupportedFormat(value: unknown): string | null {
   }
   return null;
 }
+export function parseSavedManifest(value: unknown): ReplayManifest {
+  const unsupported = unsupportedFormat(value);
+  if (unsupported)
+    throw new ReplayLoadError('unsupported', `Unsupported replay format: ${unsupported}`);
+  const parsed = ReplayManifestSchema.safeParse(value);
+  if (!parsed.success)
+    throw new ReplayLoadError('damaged', 'Replay manifest is invalid', { cause: parsed.error });
+  return parsed.data;
+}
 async function guarded<T>(
   signal: AbortSignal | undefined,
   fallback: ReplayLoadErrorKind,
@@ -84,16 +93,11 @@ export async function openReplay(
   const { signal } = options,
     limit = options.cachedFiles ?? 8;
   const raw = await guarded(signal, 'unavailable', () => source.manifest(signal));
-  const unsupported = unsupportedFormat(raw);
-  if (unsupported)
-    throw new ReplayLoadError('unsupported', `Unsupported replay format: ${unsupported}`);
   const { manifest, context } = await guarded(signal, 'damaged', async () => {
-    const parsed = ReplayManifestSchema.safeParse(raw);
-    if (!parsed.success)
-      throw new ReplayLoadError('damaged', 'Replay manifest is invalid', { cause: parsed.error });
+    const manifest = parseSavedManifest(raw);
     return {
-      manifest: parsed.data,
-      context: await replayContext(parsed.data.input, parsed.data.simulationHash),
+      manifest,
+      context: await replayContext(manifest.input, manifest.simulationHash),
     };
   });
   const cache = new Map<string, unknown>();

@@ -1,6 +1,5 @@
-import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { build, preview, type InlineConfig } from 'vite-plus';
+import { startWeb } from './web-server.ts';
 import { createApp } from '../apps/api/src/app.ts';
 import { openStore, readSampleRevisions } from '../apps/api/src/store.ts';
 import { BattleRuntime } from '../apps/api/src/battle-runtime.ts';
@@ -44,49 +43,7 @@ export async function startServers(
     const apiOrigin = await api.listen({ host: '127.0.0.1', port: 0 });
     state.apiOrigin = apiOrigin;
     observe({ ...state });
-    const webRequire = createRequire(join(root, 'apps/web/package.json'));
-    const { default: react } = (await import(webRequire.resolve('@vitejs/plugin-react'))) as {
-      default: () => import('vite-plus').PluginOption;
-    };
-    const config: InlineConfig = {
-      logLevel: 'warn',
-      configFile: false,
-      envDir: false,
-      root: join(root, 'apps/web'),
-      cacheDir: join(temporary, 'vite-cache'),
-      plugins: [
-        react(),
-        {
-          name: 'isolated-test-font',
-          transformIndexHtml: {
-            order: 'pre',
-            handler: () => [
-              {
-                tag: 'script',
-                attrs: { type: 'module' },
-                children: 'import "@fontsource/noto-sans-jp/400.css";',
-                injectTo: 'head',
-              },
-              {
-                tag: 'style',
-                children: ':root { font-family: "Noto Sans JP", sans-serif !important; }',
-                injectTo: 'head',
-              },
-            ],
-          },
-        },
-      ],
-      build: { outDir: join(temporary, 'web'), emptyOutDir: true },
-      preview: {
-        host: '127.0.0.1',
-        port: 0,
-        strictPort: true,
-        proxy: { '/api': apiOrigin },
-      },
-    };
-    // Production assets have no dev/HMR client or websocket reconnect attempts.
-    await build(config);
-    const web = await preview(config);
+    const web = await startWeb(root, temporary, { apiOrigin });
     close.push(() => web.close());
     const address = web.httpServer?.address();
     if (!address || typeof address === 'string') throw new Error('Web server did not bind');

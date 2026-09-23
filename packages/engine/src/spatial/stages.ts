@@ -13,6 +13,7 @@ import type { ResourceBudget } from './resources.ts';
 import type { Journal } from './journal.ts';
 import { admitMotionCost, rejectPair } from './pair-admission.ts';
 import { mul, unit } from './math.ts';
+import { hasForcedMotion } from './forces.ts';
 
 export type StageRuntime = {
   index: number;
@@ -100,7 +101,7 @@ export function interruptStage(
 }
 /** A visible cue has no plan IDs, future windows, costs or definition references. */
 export function visibleStageCue(actor: ActorState, step: number): ObservedStage | undefined {
-  if (actor.forceDisplay?.active) return { shape: 'hold', state: 'active', motion: 'forced' };
+  if (hasForcedMotion(actor, step)) return { shape: 'hold', state: 'active', motion: 'forced' };
   const display = actor.action && stageDisplay(actor.action, step);
   if (!display || display.state === 'preparing' || display.state === 'complete') return undefined;
   return {
