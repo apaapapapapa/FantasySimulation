@@ -8,7 +8,7 @@ import { length, mul, sub, unit, ZERO, type Vec3 } from './math.ts';
 import type { MotionIntent } from './movement.ts';
 import { Navigator, type NavigationResult } from './navigation.ts';
 import { conditionMatches, type DecisionView } from './perception.ts';
-import { inObservedRange, payCost } from './attacks.ts';
+import { declarationCost, inObservedRange, payCost } from './attacks.ts';
 import { copyPublicStatuses } from './status-observation.ts';
 import { usesObservedConditions } from './observed-conditions.ts';
 import { blockedBySilence } from './categories.ts';
@@ -163,7 +163,11 @@ export function choosePolicy(
     });
   }
   const observation = view.memory.observation;
-  const allocation = chooseGait(view, ability?.definition.costs.stamina ?? 0, dodge);
+  const allocation = chooseGait(
+    view,
+    ability ? (declarationCost(ability.definition).stamina ?? 0) : 0,
+    dodge,
+  );
   return {
     abilityId: selected.abilityId,
     ...(movement ? { dodge } : {}),
@@ -194,9 +198,15 @@ export function choosePolicy(
         ? { ...target.appearance, equipment: [...target.appearance.equipment] }
         : null,
       wounds: target?.wounds ?? 'unknown',
+      ...(target?.stage ? { observedStage: { ...target.stage } } : {}),
       ...(target?.statuses && { observedStatuses: copyPublicStatuses(target.statuses) }),
       ...(observation?.enemy &&
-        (actor.abilities.some((a) => usesObservedConditions(a.definition.condition)) ||
+        (actor.abilities.some((a) =>
+          [
+            a.definition.condition,
+            ...(a.definition.stages?.flatMap((s) => [s.startCondition, s.interruptWhen]) ?? []),
+          ].some((c) => c && usesObservedConditions(c)),
+        ) ||
           actor.policy.priorities.some((p) => usesObservedConditions(p.when))) && {
           conditionObservation: {
             phase: observation.enemy.action ?? null,
@@ -243,12 +253,12 @@ export function steerPolicy(
   options: { flight: boolean; canMove: boolean; speedBps: number; maxPathNodes: number },
 ): { intent: MotionIntent; navigation: NavigationResult | null } {
   const character = view.self.actor.character,
-    movement = character.movement.locomotion;
+    movement = character.movement.locomotion,
+    ability = view.self.actor.abilities.find((a) => a.id === decision.abilityId);
   const stamina = Math.max(
     0,
     (view.resources.stamina ?? 0) -
-      (view.self.actor.abilities.find((a) => a.id === decision.abilityId)?.definition.costs
-        .stamina ?? 0) -
+      (ability ? (declarationCost(ability.definition).stamina ?? 0) : 0) -
       (isDodgeDecision(decision) ? (movement?.dodgeStamina ?? 0) : 0),
   );
   const ready = resourceReady({ ...view, resources: { ...view.resources, stamina } });

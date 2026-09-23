@@ -1,4 +1,4 @@
-import type { DeepReadonly, Effect } from '@fantasy/domain/spatial';
+import { abilityEffects, type DeepReadonly, type Effect } from '@fantasy/domain/spatial';
 import { statusBenefit } from './status-observation.ts';
 import { planStatusEffects } from './status-reactions.ts';
 import { applyStatuses, UnresolvedRuleError, type StatusCohort } from './status.ts';
@@ -78,7 +78,7 @@ export function assessStatusEffects(
               ({ definition }) =>
                 (!adjustment.category ||
                   abilityCategories(definition).includes(adjustment.category)) &&
-                definition.effects.some(
+                abilityEffects(definition).some(
                   (e) =>
                     e.kind === 'damage' &&
                     (!adjustment.element || e.element === adjustment.element),

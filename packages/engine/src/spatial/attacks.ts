@@ -38,11 +38,29 @@ export function actionClock(ability: Ability, speedBps: number, step: number): A
   if (speedBps === 0) return null;
   const delay = (value: number) => Math.ceil((value * 10000) / speedBps);
   const launchAt = step + delay(ability.castSteps);
-  const active = ability.attack.kind === 'melee' ? ability.attack.activeSteps : 1;
+  const last = ability.stages?.at(-1);
+  const active = last
+    ? last.offsetSteps + last.durationSteps
+    : ability.attack.kind === 'melee'
+      ? ability.attack.activeSteps
+      : 1;
   return {
     launchAt,
     recoveryUntil: launchAt + active + Math.max(1, delay(ability.recoverySteps)),
     cooldownUntil: launchAt + delay(ability.cooldownSteps),
+  };
+}
+/** Only stage zero is prepaid. Later costs never hold future resources. */
+export function declarationCost(ability: Ability) {
+  const extra = ability.stages?.[0]?.cost;
+  if (!extra) return ability.costs;
+  return {
+    ...ability.costs,
+    hp: ability.costs.hp + (extra.hp ?? 0),
+    mp: ability.costs.mp + (extra.mp ?? 0),
+    ...(ability.costs.stamina !== undefined || extra.stamina !== undefined
+      ? { stamina: (ability.costs.stamina ?? 0) + (extra.stamina ?? 0) }
+      : {}),
   };
 }
 /** Zero uses means unlimited. HP cost equal to current HP is legal. No partial cost on failure. */
@@ -54,7 +72,7 @@ export function payCost(
 ) {
   const budget = new ResourceBudget(resources, { ability: used }, staminaReady);
   const result = budget.reserve('ability', [
-    { ...ability.costs, uses: { id: 'ability', limit: ability.costs.uses } },
+    { ...declarationCost(ability), uses: { id: 'ability', limit: ability.costs.uses } },
   ]);
   if (!result.ok) return { ...result, resources: { ...resources } };
   budget.commit('ability');

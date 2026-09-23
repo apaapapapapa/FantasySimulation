@@ -1,6 +1,13 @@
-import type { Budget, DeepReadonly, Definition, ProjectileDisplay } from '@fantasy/domain/spatial';
+import type {
+  Budget,
+  DeepReadonly,
+  Definition,
+  ProjectileDisplay,
+  Stage,
+  StageContact,
+} from '@fantasy/domain/spatial';
 import { add, sub, mul, unit, length, turnToward, type Vec3 } from './math.ts';
-import { at, ballShape, SpatialBudgetError, type SpatialWorld, type Trace } from './physics.ts';
+import { ballShape, SpatialBudgetError, type SpatialWorld, type Trace } from './physics.ts';
 import type { AbilityRevision } from './combat-state.ts';
 import type { PerceptionMemory } from './perception.ts';
 import type { MotionState } from './movement.ts';
@@ -16,6 +23,8 @@ export type ProjectileState = DamageSnapshot & {
   position: Vec3;
   velocity: Vec3;
   target: Vec3 | null;
+  stage?: StageContact;
+  hit?: DeepReadonly<Stage['hit']>;
 };
 const shapeOf = (p: ProjectileState) => {
   const shape = p.ability.definition.attack;
@@ -33,6 +42,7 @@ export function displayProjectile(p: ProjectileState): ProjectileDisplay {
     radiusMm: shape.radiusMm,
     launchStep: p.launchStep,
     endStep: p.launchStep + shape.lifetimeSteps,
+    ...(p.stage ? { stage: p.stage } : {}),
   };
 }
 /** Fixed-rule subdivision; the attempt budget only accepts or rejects it, never changes the trajectory. */
@@ -79,13 +89,6 @@ export function projectileCurve(
     velocity = add(turned, { x: 0, y: gravity * seconds, z: 0 });
   }
   return { trace, next: { ...p, position, velocity, target: target ? { ...target } : null } };
-}
-export function clipProjectile(trace: Trace, time: number): Trace {
-  const point = at(trace, time);
-  const pieces = trace
-    .filter((s) => s.from < time)
-    .map((s) => (s.to <= time ? s : { ...s, end: point, to: time }));
-  return pieces.length ? pieces : [{ start: point, end: point, from: 0, to: 0 }];
 }
 /** Exact sphere/capsule intersection, then five equal-weight visible samples with linear falloff. */
 export function explosionCoverage(

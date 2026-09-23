@@ -7,9 +7,11 @@ import {
   type StreamRecord,
   type BattleResult,
   type ProjectileDisplay,
+  type StageContact,
 } from '@fantasy/domain/spatial';
 import {
   actionClock,
+  declarationCost,
   hitscan,
   inObservedRange,
   launchDirection,
@@ -28,7 +30,7 @@ import {
 } from './combat-state.ts';
 import { commitEffects, contactObservation, type PendingEffect } from './combat-effects.ts';
 import { displayChanges, Journal, recordBytes } from './journal.ts';
-import { mul, sub } from './math.ts';
+import { add, mul, sub } from './math.ts';
 import { moveActors } from './movement.ts';
 import { ResourceBudget } from './resources.ts';
 import { recoverActorResources } from './resource-step.ts';
@@ -40,7 +42,7 @@ import { knownTerrainWorld } from './known-terrain.ts';
 import { selfView } from './self-view.ts';
 import { blockedBySilence } from './categories.ts';
 import { bodyPoint, conditionMatches, perceive } from './perception.ts';
-import { SpatialBudgetError } from './physics.ts';
+import { clipTrace, straight, SpatialBudgetError } from './physics.ts';
 import { choosePolicy, steerPolicy, isDodgeDecision } from './policy.ts';
 import { admitPair, rejectPair } from './pair-admission.ts';
 import type { PreparedBattle } from './prepare.ts';
@@ -50,6 +52,16 @@ import { displayProjectile, type ProjectileState } from './projectiles.ts';
 import { stepProjectiles } from './projectile-step.ts';
 import { statusDamageSource, copyDamageSnapshot } from './status-damage.ts';
 import { statusVision, copyPublicStatuses } from './status-observation.ts';
+import {
+  checkStageInterruption,
+  attachedStageAlive,
+  finishStages,
+  interruptDamagedStages,
+  interruptStage,
+  releaseStage,
+  visibleStageCue,
+} from './stages.ts';
+import { HitLedger } from './hit-ledger.ts';
 
 export type SimulationEnd = {
   steps: number;
@@ -73,6 +85,7 @@ function effectsOf(
   targetId: string,
   parentEventId: string,
   step: number,
+  stage?: StageContact,
 ): PendingEffect[] {
   const source = statusDamageSource(actor, ability, step);
   return ability.definition.effects.map((effect) => ({
@@ -82,6 +95,7 @@ function effectsOf(
     ...source,
     parentEventId,
     abilityId: ability.id,
+    ...(stage ? { stage } : {}),
   }));
 }
 function outcomeFromError(error: unknown): Outcome {
@@ -115,6 +129,7 @@ export function* simulate(
   let actors: ActorState[] = [];
   let melees: MeleeState[] = [];
   let projectiles: ProjectileState[] = [];
+  let ledger = new HitLedger();
   try {
     actors = [...battle.actors]
       .sort((a, b) => compareIds(a.participant.actorId, b.participant.actorId))
@@ -244,6 +259,15 @@ export function* simulate(
         }
         if (periodic.length)
           commitEffects(next, periodic, battle, journal, step, step, 'boundary', budget, world);
+        interruptDamagedStages(next, step, journal, 'boundary');
+        for (const actor of next)
+          checkStageInterruption(
+            actor,
+            selfView(actor, step, battle.rules.ai!, battle.statuses),
+            step,
+            journal,
+            'boundary',
+          );
         const changes = displayChanges(
           before,
           next.map((a) => displayActor(a, step)),
@@ -260,6 +284,7 @@ export function* simulate(
           actors = next;
           bytes += committed.bytes;
           sequence += journal.events.length;
+          melees = melees.filter((m) => attachedStageAlive(m, next, step));
           yield structuredClone(record);
         } else actors = next;
         outcome = verdict(actors);
@@ -272,6 +297,7 @@ export function* simulate(
         const before = actors.map((a) => displayActor(a, step));
         const next = actors.map(cloneActor),
           attacks = melees.map((m) => ({ ...m }));
+        const nextLedger = ledger.clone();
         let nextSerial = serial;
         const bullets = [...projectiles],
           spawns: ProjectileDisplay[] = [];
@@ -306,6 +332,7 @@ export function* simulate(
               resources: enemy.resources,
               statuses: enemy.statuses,
               action: displayActor(enemy, step).action?.phase ?? 'idle',
+              stage: visibleStageCue(enemy, step),
             },
             battle.scenario.terrainKnowledge ?? 'observed',
             battle.rules.ai!,
@@ -313,6 +340,7 @@ export function* simulate(
           if (actor.action && actor.action.recoveryUntil <= step) actor.action = null;
           const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
           const view = selfView(actor, step, battle.rules.ai!, battle.statuses);
+          checkStageInterruption(actor, view, step, journal, 'declaration');
           const flight =
             stats.flight &&
             canMaintainFlight(
@@ -480,7 +508,10 @@ export function* simulate(
                 }
               }
               const payment = resources.reserve('action', [
-                { ...definition.costs, uses: { id: ability.id, limit: definition.costs.uses } },
+                {
+                  ...declarationCost(definition),
+                  uses: { id: ability.id, limit: definition.costs.uses },
+                },
               ]);
               const silenced = !!view.silenced && blockedBySilence(definition);
               if (!inObservedRange(definition, view) || !payment.ok || silenced) {
@@ -539,6 +570,9 @@ export function* simulate(
                   startedAt: step,
                   ...clock,
                   released: false,
+                  ...(definition.stages
+                    ? { stages: { index: -1, next: 0, active: false, cause: start.id } }
+                    : {}),
                 };
                 if (definition.movementWhileCasting === 'stop' && definition.castSteps > 0)
                   actor.intent = { ...actor.intent, canMove: false };
@@ -548,28 +582,41 @@ export function* simulate(
         }
         for (const actor of next) {
           const action = actor.action;
-          if (!action || action.released || action.launchAt !== step) continue;
-          action.released = true;
-          const definition = action.ability.definition;
+          if (!action) continue;
+          if (!action.stages && (action.released || action.launchAt !== step)) continue;
+          const staged = action.stages
+            ? releaseStage(
+                actor,
+                selfView(actor, step, battle.rules.ai!, battle.statuses),
+                step,
+                resourceBudgets.get(actorId(actor))!,
+                journal,
+              )
+            : null;
+          if (action.stages && !staged?.ability) continue;
+          if (!staged) action.released = true;
+          const ability = staged?.ability ?? action.ability;
+          const definition = ability.definition;
           if (
-            !inObservedRange(
+            !staged &&
+            (!inObservedRange(
               definition,
               selfView(actor, step, battle.rules.ai!, battle.statuses),
             ) ||
-            selfView(actor, step, battle.rules.ai!, battle.statuses).incapacitated ||
-            !conditionMatches(
-              definition.condition,
-              selfView(actor, step, battle.rules.ai!, battle.statuses),
-            ) ||
-            (selfView(actor, step, battle.rules.ai!, battle.statuses).silenced &&
-              blockedBySilence(definition))
+              selfView(actor, step, battle.rules.ai!, battle.statuses).incapacitated ||
+              !conditionMatches(
+                definition.condition,
+                selfView(actor, step, battle.rules.ai!, battle.statuses),
+              ) ||
+              (selfView(actor, step, battle.rules.ai!, battle.statuses).silenced &&
+                blockedBySilence(definition)))
           ) {
             journal.emit({
               kind: 'fizzle',
               step,
               phase: 'launch',
               actorId: actorId(actor),
-              abilityId: action.ability.id,
+              abilityId: ability.id,
               parentEventId: action.cause,
               ruleId: 'action.release',
               reason: 'Release condition/range no longer holds; cost is retained',
@@ -581,12 +628,16 @@ export function* simulate(
             step,
             phase: 'launch',
             actorId: actorId(actor),
-            abilityId: action.ability.id,
-            parentEventId: action.cause,
+            abilityId: ability.id,
+            parentEventId: staged?.cause ?? action.cause,
             ruleId: 'action.release',
+            ...(staged ? { stage: staged.contact } : {}),
           });
           if (definition.attack.kind === 'direct') {
-            effects.push(...effectsOf(actor, action.ability, actorId(actor), launch.id, step));
+            if (staged) nextLedger.contact(staged.contact, staged.hit, actorId(actor), step);
+            effects.push(
+              ...effectsOf(actor, ability, actorId(actor), launch.id, step, staged?.contact),
+            );
             continue;
           }
           const enemy = next.find((a) => actorId(a) !== actorId(actor))!;
@@ -605,10 +656,11 @@ export function* simulate(
               step,
               phase: 'launch',
               actorId: actorId(actor),
-              abilityId: action.ability.id,
+              abilityId: ability.id,
               parentEventId: launch.id,
               ruleId: `${definition.attack.kind}.muzzle-blocked`,
             });
+            if (staged) interruptStage(actor, step, journal, 'launch', 'muzzle-blocked');
             continue;
           }
           if (definition.attack.kind === 'hitscan') {
@@ -621,22 +673,39 @@ export function* simulate(
               definition.rangeMm / 1000,
               definition.attack.radiusMm / 1000,
             );
+            if (staged) {
+              const origin = bodyPoint(
+                actor.motion,
+                actor.motion.actor.character.body.muzzleOffset,
+              );
+              action.stages!.geometry = {
+                kind: 'ray',
+                radiusMm: definition.attack.radiusMm,
+                segments: straight(
+                  origin,
+                  contact?.point ?? add(origin, mul(aim.direction, definition.rangeMm / 1000)),
+                ),
+              };
+            }
             if (contact) {
+              if (contact.kind === 'body' && staged)
+                nextLedger.contact(staged.contact, staged.hit, actorId(enemy), step);
               const hit = journal.emit({
                 kind: contact.kind === 'body' ? 'hit' : 'fizzle',
                 step,
                 phase: 'contact',
                 actorId: actorId(actor),
                 targetId: contact.kind === 'body' ? actorId(enemy) : null,
-                abilityId: action.ability.id,
+                abilityId: ability.id,
                 parentEventId: launch.id,
                 ruleId: 'hitscan.first-contact',
                 point: contact.point,
                 reason: contact.kind,
+                ...(staged ? { stage: staged.contact } : {}),
               });
               if (contact.kind === 'body')
                 effects.push(
-                  ...effectsOf(actor, action.ability, actorId(enemy), hit.id, step).map(
+                  ...effectsOf(actor, ability, actorId(enemy), hit.id, step, staged?.contact).map(
                     (effect) => ({
                       ...effect,
                       observation: { self: actor.motion, target: enemy.motion },
@@ -646,9 +715,9 @@ export function* simulate(
             }
           } else if (definition.attack.kind === 'melee') {
             attacks.push({
-              id: action.id,
+              id: staged?.id ?? action.id,
               actorId: actorId(actor),
-              ability: action.ability,
+              ability,
               cause: launch.id,
               launchStep: step,
               direction: aim.direction,
@@ -656,20 +725,26 @@ export function* simulate(
                 bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
                 actor.motion.position,
               ),
-              ...statusDamageSource(actor, action.ability, step),
+              ...statusDamageSource(actor, ability, step),
               hits: 0,
+              ...(staged
+                ? { stage: staged.contact, ...(staged.hit ? { hit: staged.hit } : {}) }
+                : {}),
             });
           } else if (definition.attack.kind === 'projectile') {
             const target = actor.memory.observation?.enemy ?? actor.memory.lastSeen;
             const projectile: ProjectileState = {
-              id: `projectile.${action.id}`,
+              id: `projectile.${staged?.id ?? action.id}`,
               ownerId: actorId(actor),
-              ability: action.ability,
+              ...(staged
+                ? { stage: staged.contact, ...(staged.hit ? { hit: staged.hit } : {}) }
+                : {}),
+              ability,
               cause: launch.id,
               launchStep: step,
               position: bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
               velocity: mul(aim.direction, definition.attack.speedMmPerSecond / 1000),
-              ...statusDamageSource(actor, action.ability, step),
+              ...statusDamageSource(actor, ability, step),
               target: target ? { ...target.position } : null,
             };
             const spawn = journal.emit({
@@ -678,7 +753,7 @@ export function* simulate(
               phase: 'launch',
               entityId: projectile.id,
               actorId: projectile.ownerId,
-              abilityId: action.ability.id,
+              abilityId: ability.id,
               parentEventId: launch.id,
               ruleId: 'projectile.spawn',
               point: projectile.position,
@@ -721,9 +796,17 @@ export function* simulate(
           () => {
             if (++candidates > budget.maxCandidates) throw new SpatialBudgetError('candidates');
           },
+          nextLedger,
         );
         effects.push(...projectileStep.effects);
         for (const attack of attacks) {
+          const ownerActor = next.find((a) => actorId(a) === attack.actorId)!;
+          if (
+            attack.stage &&
+            (ownerActor.action?.id !== attack.stage.actionId ||
+              ownerActor.action.stages?.interruptedAt !== undefined)
+          )
+            continue;
           const shape = attack.ability.definition.attack;
           if (shape.kind !== 'melee') throw new Error('Invalid active melee');
           const owner = moved.find((a) => a.state.actor.participant.actorId === attack.actorId)!;
@@ -744,9 +827,29 @@ export function* simulate(
             enemy.state,
             enemy.trace,
           );
+          if (attack.stage)
+            ownerActor.action!.stages!.geometry = {
+              kind: 'sphere',
+              radiusMm: shape.radiusMm,
+              segments: contact?.kind === 'wall' ? clipTrace(trace, contact.time) : trace,
+            };
           if (contact) {
+            const admission =
+              contact.kind === 'body' && attack.stage
+                ? nextLedger.contact(
+                    attack.stage,
+                    attack.hit,
+                    enemy.state.actor.participant.actorId,
+                    step,
+                  )
+                : null;
             const hit = journal.emit({
-              kind: contact.kind === 'body' ? 'hit' : 'fizzle',
+              kind:
+                contact.kind === 'body'
+                  ? admission?.accepted === false
+                    ? 'diagnostic'
+                    : 'hit'
+                  : 'fizzle',
               step,
               phase: 'contact',
               subtimeMicros: Math.round(contact.time * 1_000_000),
@@ -756,9 +859,10 @@ export function* simulate(
               parentEventId: attack.cause,
               point: contact.point,
               ruleId: 'melee.first-contact',
-              reason: contact.kind,
+              reason: admission?.reason ?? contact.kind,
+              ...(attack.stage ? { stage: attack.stage } : {}),
             });
-            if (contact.kind === 'body') {
+            if (contact.kind === 'body' && admission?.accepted !== false) {
               attack.hits++;
               for (const effect of attack.ability.definition.effects)
                 effects.push({
@@ -768,6 +872,7 @@ export function* simulate(
                   ...copyDamageSnapshot(attack),
                   parentEventId: hit.id,
                   abilityId: attack.ability.id,
+                  ...(attack.stage ? { stage: attack.stage } : {}),
                   observation: contactObservation(
                     moved,
                     next.find((a) => actorId(a) === attack.actorId)!.motion,
@@ -779,7 +884,7 @@ export function* simulate(
           }
           if (
             contact?.kind !== 'wall' &&
-            attack.hits < shape.maxHitsPerTarget &&
+            (attack.stage || attack.hits < shape.maxHitsPerTarget) &&
             step + 1 < attack.launchStep + shape.activeSteps
           )
             surviving.push(attack);
@@ -815,6 +920,16 @@ export function* simulate(
           }
         }
         commitEffects(next, effects, battle, journal, step, step + 1, 'resolution', budget, world);
+        interruptDamagedStages(next, step + 1, journal, 'resolution');
+        for (const actor of next)
+          checkStageInterruption(
+            actor,
+            selfView(actor, step + 1, battle.rules.ai!, battle.statuses),
+            step + 1,
+            journal,
+            'resolution',
+          );
+        finishStages(next, step + 1, journal);
         for (const actor of next) {
           if (!actor.staminaClock) continue;
           const start = actors.find((a) => actorId(a) === actorId(actor))!;
@@ -846,8 +961,15 @@ export function* simulate(
           events: journal.events,
         };
         const committed = journal.finish(record);
+        nextLedger.prune(
+          new Set([
+            ...next.flatMap((a) => (a.action?.stages ? [a.action.id] : [])),
+            ...projectileStep.alive.flatMap((p) => (p.stage ? [p.stage.actionId] : [])),
+          ]),
+        );
+        ledger = nextLedger;
         actors = next;
-        melees = surviving;
+        melees = surviving.filter((m) => attachedStageAlive(m, next, step + 1));
         projectiles = projectileStep.alive;
         serial = nextSerial;
         step++;
@@ -903,6 +1025,7 @@ export function* simulate(
           },
         })),
         serial,
+        ...(ledger.snapshot().length ? { hitLedger: ledger.snapshot() } : {}),
         projectiles: projectiles.map((p) => ({
           ...p,
           ability: {

@@ -4,15 +4,11 @@ import { contactObservation, type PendingEffect } from './combat-effects.ts';
 import type { Journal } from './journal.ts';
 import type { MovedActor } from './movement.ts';
 import type { PreparedBattle } from './prepare.ts';
-import { at, type SpatialWorld } from './physics.ts';
+import { at, clipTrace, type SpatialWorld } from './physics.ts';
 import { copyDamageSnapshot } from './status-damage.ts';
 import { traceAttack } from './attacks.ts';
-import {
-  clipProjectile,
-  explosionCoverage,
-  projectileCurve,
-  type ProjectileState,
-} from './projectiles.ts';
+import type { HitLedger } from './hit-ledger.ts';
+import { explosionCoverage, projectileCurve, type ProjectileState } from './projectiles.ts';
 
 /** Every contact uses the same committed movement traces; damage is returned for simultaneous resolution. */
 export function stepProjectiles(
@@ -25,6 +21,7 @@ export function stepProjectiles(
   journal: Journal,
   step: number,
   candidate: () => void,
+  ledger: HitLedger,
 ) {
   const alive: ProjectileState[] = [],
     paths: DisplayPath[] = [],
@@ -47,7 +44,7 @@ export function stepProjectiles(
     );
     paths.push({
       entityId: projectile.id,
-      segments: contact ? clipProjectile(curve.trace, contact.time) : curve.trace,
+      segments: contact ? clipTrace(curve.trace, contact.time) : curve.trace,
     });
     if (contact) {
       const subtimeMicros = Math.round(contact.time * 1_000_000);
@@ -79,8 +76,11 @@ export function stepProjectiles(
         } else if (contact.kind === 'body' && targetId === enemy.state.actor.participant.actorId)
           scaleBps = 10000;
         if (scaleBps === 0) continue;
+        const admission = projectile.stage
+          ? ledger.contact(projectile.stage, projectile.hit, targetId, step)
+          : null;
         const hit = journal.emit({
-          kind: 'hit',
+          kind: admission?.accepted === false ? 'diagnostic' : 'hit',
           step,
           phase: 'contact',
           subtimeMicros,
@@ -92,8 +92,10 @@ export function stepProjectiles(
           ruleId: shape.explosionRadiusMm > 0 ? 'explosion.coverage' : 'projectile.hit',
           point: shape.explosionRadiusMm > 0 ? contact.center : contact.point,
           amount: scaleBps,
-          reason: 'coverage-bps',
+          reason: admission?.reason ?? 'coverage-bps',
+          ...(projectile.stage ? { stage: projectile.stage } : {}),
         });
+        if (admission?.accepted === false) continue;
         for (const effect of projectile.ability.definition.effects)
           effects.push({
             actorId: projectile.ownerId,
@@ -102,6 +104,7 @@ export function stepProjectiles(
             ...copyDamageSnapshot(projectile),
             parentEventId: hit.id,
             abilityId: projectile.ability.id,
+            ...(projectile.stage ? { stage: projectile.stage } : {}),
             scaleBps,
             observation: contactObservation(
               moved,

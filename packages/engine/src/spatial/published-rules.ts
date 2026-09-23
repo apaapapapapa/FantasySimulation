@@ -52,3 +52,14 @@ export const generalAiRules = {
     ai: { ...AI_RULES, appearancePriors: AppearancePriorsSchema.parse(LEGACY_APPEARANCE_PRIORS) },
   },
 } satisfies Revision;
+
+export const simultaneousRules = {
+  ...generalAiRules,
+  id: 'standard-simultaneous-v1',
+  contentHash: 'sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125',
+  definition: {
+    ...generalAiRules.definition,
+    rulesVersion: 'spatial-v1.15',
+    ai: { ...generalAiRules.definition.ai, slots: 'simultaneous-v1' },
+  },
+} satisfies Revision;

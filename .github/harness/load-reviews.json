@@ -2,6 +2,27 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "71c022b55b09175f203995ee89a99bd6bf2f3913",
+      "beforeDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",
+      "afterDigest": "7055f27075903b45792b00dc331c63e11e86c94ba476b15fbce3175bc93e54fb",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "G-07a introduces optional stages under spatial-v1.16 / standard-stages-v1. Reviewed five actual alternating trials of all seven fixed cases (35 per revision), exact main 71c022b against clean bddb07f. Every outcome, step, cast, candidate, path-node, event and byte vector is identical across revisions and stable in every trial; both revisions pass unchanged ceilings. Stages are absent from these seven legacy inputs. The candidate also passes 706 tests and 133 mapped regressions, including explicit one-stage equivalence for all four attack primitives, two-stage payments/hits, interruption, rollback, wall geometry, delayed private-state exclusion and real Worker/SQLite/replay seeks. All previously published ID/hash pairs and Golden expectations are preserved; new sample IDs are additive. Only current engine/rules identities change in the seven corpus inputs; different identities require this independent transition review and make same-input timing/RSS claims inappropriate. Source parsing capacity was independently changed by merged prerequisite PR #91; this PR changes no detector threshold, runtime pin or simulation budget.",
+      "evidence": [
+        ".generated/harness/load-g07a-71c022b/0-before.json",
+        ".generated/harness/load-g07a-71c022b/0-after.json",
+        ".generated/harness/load-g07a-71c022b/results.json",
+        ".generated/harness/load-g07a-71c022b/commands.json",
+        ".generated/harness/load-g07a-71c022b/boundary.json",
+        ".generated/harness/load-g07a-71c022b/reviewed-comparison.json",
+        ".generated/harness/source-g07a-initial/report.json",
+        "packages/engine/src/spatial/stages.test.ts",
+        "packages/engine/src/spatial/stage-interference.test.ts",
+        "apps/api/src/simultaneous-persistence.test.ts"
+      ]
+    },
+    {
       "baselineSha": "604d359c31645e2d956958ffed21b6ecd2dbd20e",
       "beforeDigest": "2ac009a662471885ebeda8734507b3f59f390c3f3949bbc01062440a9ebdd2de",
       "afterDigest": "a3f97161a5d27a50331c89365d4768f34667ef3558c107d13606114a02b5fa76",

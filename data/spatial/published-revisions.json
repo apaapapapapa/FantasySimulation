@@ -428,6 +428,30 @@
       "id": "standard-simultaneous-v1",
       "revision": 1,
       "contentHash": "sha256:8c2a6cbe79e621af4ad3d3715c3f64ec6beb5a7ebaa80f5dc4140cf310117125"
+    },
+    {
+      "kind": "ability",
+      "id": "return-cut-v1",
+      "revision": 1,
+      "contentHash": "sha256:396d51406e90fb6d783f0b9037d39f6bcd7f8c034624096c90db34edf3934b7f"
+    },
+    {
+      "kind": "character",
+      "id": "staged-duelist-v1",
+      "revision": 1,
+      "contentHash": "sha256:9f96acc56a9bfacd3479a2575a7fa00008a878ade3be6bcd2f7e012a93e5bf7c"
+    },
+    {
+      "kind": "policy",
+      "id": "staged-duelist-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:ab74889e695425c41c762e4f4671833734bf710e1e45882433ccba7456c88e31"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-stages-v1",
+      "revision": 1,
+      "contentHash": "sha256:2875785275782dce27db4839ed4f1aacd1533d5b85b419b78698bff96110f868"
     }
   ]
 }

@@ -1,6 +1,7 @@
 import type { ActorState, AbilityRevision } from './combat-state.ts';
 import type { ResourceBudget } from './resources.ts';
 import { flightRate } from './locomotion.ts';
+import { declarationCost } from './attacks.ts';
 
 /** Keep the attempted choice in cognition, but restore every input used by motion settlement. */
 export function rejectPair(actor: ActorState, previous: Pick<ActorState, 'intent' | 'decision'>) {
@@ -39,7 +40,7 @@ export function admitPair(
   const flight = actor.intent.flight ? Math.ceil(flightRate(actor.statuses, step) * 0.02) : 0;
   const jump = actor.intent.jump && actor.motion.grounded ? (movement?.jumpStamina ?? 0) : 0;
   const result = budget.reserve('pair-admission', [
-    { ...definition.costs, uses: { id: ability.id, limit: definition.costs.uses } },
+    { ...declarationCost(definition), uses: { id: ability.id, limit: definition.costs.uses } },
     { stamina: flight + jump + (movement?.dodgeStamina ?? 0) },
   ]);
   if (result.ok) budget.cancel('pair-admission');

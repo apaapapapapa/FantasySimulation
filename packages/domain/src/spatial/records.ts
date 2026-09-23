@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { DamageDefenseSchema, ElementSchema, HashSchema, IdSchema } from './contracts.ts';
+import {
+  DamageDefenseSchema,
+  ElementSchema,
+  HashSchema,
+  IdSchema,
+  StageContactSchema,
+} from './contracts.ts';
 import { CognitionSchema } from './cognition.ts';
 
 const step = z.number().int().min(0).max(6000);
@@ -44,6 +50,9 @@ export const EventSchema = z
       'state',
       'decision',
       'knowledge',
+      'stage-start',
+      'stage-end',
+      'stage-interrupt',
     ]),
     actorId: IdSchema.nullable(),
     targetId: IdSchema.nullable(),
@@ -82,6 +91,7 @@ export const EventSchema = z
       .nullable(),
     reason: z.string().max(500),
     cognition: CognitionSchema.optional(),
+    stage: StageContactSchema.optional(),
   })
   .superRefine((event, ctx) => {
     const subjective = event.kind === 'decision' || event.kind === 'knowledge';

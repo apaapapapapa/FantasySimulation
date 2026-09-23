@@ -1,4 +1,5 @@
 import {
+  abilityEffects,
   actorSeed,
   compareIds,
   statusTransformationRefs,
@@ -10,7 +11,13 @@ import {
 } from '@fantasy/domain/spatial';
 import { reference, sealRevision } from './prepare.ts';
 import { sampleManifest } from './sample.ts';
-import { observedRules, statusRules, locomotionRules, generalAiRules } from './published-rules.ts';
+import {
+  observedRules,
+  statusRules,
+  locomotionRules,
+  generalAiRules,
+  simultaneousRules,
+} from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
 /** Versioned data examples, never character-specific branches in the simulator. */
@@ -28,6 +35,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
     structuredClone(statusRules),
     structuredClone(locomotionRules),
     structuredClone(generalAiRules),
+    structuredClone(simultaneousRules),
   ];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);
@@ -342,6 +350,37 @@ export async function sampleCatalog(): Promise<Revision[]> {
     });
   }
   await character('swordsman', '剣士', [sword], 1200);
+  const comboAttack: Definition<'ability'>['attack'] = {
+    kind: 'melee',
+    reachMm: 1800,
+    radiusMm: 200,
+    activeSteps: 2,
+    maxHitsPerTarget: 1,
+  };
+  const combo = await add(
+    'ability',
+    'return-cut-v1',
+    ability('返しの連撃', {
+      rangeMm: 2500,
+      castSteps: 2,
+      recoverySteps: 4,
+      cooldownSteps: 30,
+      costs: { hp: 0, mp: 0, stamina: 6, uses: 0 },
+      attack: comboAttack,
+      effects: [{ kind: 'damage', element: 'physical', amount: 10, attackScaleBps: 0 }],
+      stages: [10, 15].map((amount, index) => ({
+        id: index === 0 ? 'cut' : 'return',
+        offsetSteps: index * 3,
+        durationSteps: 2,
+        attack: { ...comboAttack },
+        effects: [{ kind: 'damage', element: 'physical', amount, attackScaleBps: 0 }],
+        ...(index === 1 ? { cost: { stamina: 4 } } : {}),
+      })),
+    }),
+  );
+  await character('staged-duelist-v1', '連撃の剣士', [combo], 1200, {
+    stamina: { max: 30, recoveryPerSecond: 5 },
+  });
   const staminaStrike = await add(
     'ability',
     'stamina-strike-v1',
@@ -564,7 +603,7 @@ export function revisionClosure(
     } else if (revision.kind === 'equipment') {
       for (const r of revision.definition.abilities) visit('ability', r);
     } else if (revision.kind === 'ability') {
-      for (const effect of revision.definition.effects)
+      for (const effect of abilityEffects(revision.definition))
         if (effect.kind === 'apply-status') visit('status', effect.status);
     } else if (revision.kind === 'status') {
       for (const ref of statusTransformationRefs(revision.definition)) visit('status', ref);
