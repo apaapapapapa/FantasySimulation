@@ -7,11 +7,12 @@ export async function loopCommand(args: string[]) {
   if (!path || extra.length) throw new Error('Invalid loop arguments');
   if (command === 'init' && input) {
     const journal = initialize(path, readBoundedJson(input));
+    const view = status(readJournal(journal));
     return {
       journal,
       operationRecorded: true,
-      repairComplete: false,
-      ...status(readJournal(journal)),
+      repairComplete: view.phase === 'completed',
+      ...view,
     };
   }
   if (command === 'status' && !input) {

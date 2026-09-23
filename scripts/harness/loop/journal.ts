@@ -151,9 +151,14 @@ export function initialize(store: string, value: unknown, at = new Date().toISOS
       contractHash: digest(contract),
       events: [],
     };
-    atomicWrite(path, append(empty, 'initialized', {}, at));
+    writeJournal(path, append(empty, 'initialized', {}, at));
     return path;
   });
+}
+function writeJournal(path: string, journal: Journal) {
+  if (Buffer.byteLength(JSON.stringify(journal, null, 2) + '\n') > 4 * 1024 * 1024)
+    throw new Error('Journal size budget');
+  atomicWrite(path, journal);
 }
 export function updateJournal(
   path: string,
@@ -168,9 +173,7 @@ export function updateJournal(
     if (previous.revision !== revision) throw new Error('Journal revision conflict');
     const next = append(previous, type, data, at);
     validate(next, at);
-    if (Buffer.byteLength(JSON.stringify(next)) > 4 * 1024 * 1024)
-      throw new Error('Journal size budget');
-    atomicWrite(path, next);
+    writeJournal(path, next);
     return next;
   });
 }
