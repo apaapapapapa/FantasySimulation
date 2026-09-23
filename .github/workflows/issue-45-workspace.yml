@@ -9,26 +9,26 @@ jobs:
   workspace:
     if: github.head_ref == 'work/issue-45-rational-candidates' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
           persist-credentials: false
-      - uses: ./.github/actions/setup-project
-      - name: Package clean source and pinned installed tools only
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - name: Package resolved pinned Node runtime
         shell: bash
         run: |
-          mkdir -p /tmp/issue-45-workspace
-          tar --exclude='./.generated' --exclude='./.env' --exclude='./.env.*' --exclude='*.sqlite' --exclude='*.db' -czf /tmp/issue-45-workspace/repository.tgz .
-          cp "$(command -v node)" /tmp/issue-45-workspace/node
-          cp -L "$(command -v vp)" /tmp/issue-45-workspace/vp
-          git rev-parse HEAD > /tmp/issue-45-workspace/commit.txt
+          mkdir -p /tmp/issue-45-node
+          cp "$(node -p process.execPath)" /tmp/issue-45-node/node
+          node --version > /tmp/issue-45-node/version.txt
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: issue-45-workspace
-          path: /tmp/issue-45-workspace/
+          name: issue-45-node
+          path: /tmp/issue-45-node/
           retention-days: 1
           if-no-files-found: error
-          compression-level: 0
