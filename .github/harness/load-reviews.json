@@ -23,20 +23,41 @@
       ]
     },
     {
-      "baselineSha": "b354a2ac83ba24ef6e3c9c52076e9b7b43dafb0d",
+      "baselineSha": "add5a103f1685b3063f452dbdc49f28bc148952b",
       "beforeDigest": "ebc58ce781d09662fd834f13344d3f710e1452b7061028771b5598fe79abfc24",
-      "afterDigest": "9573e7c3c6c63ff7beab07b80fd26f385d3c963739544e075d53e96a01a6aaa6",
+      "afterDigest": "5063ceb0bde6fbe4685e806e0f5ac0dcd1c94d6191cb23bb3abf207823fa4b29",
       "introduction": false,
       "comparison": "independent",
       "reviewer": "Codex self-review; not independent approval",
-      "reason": "G-04 introduces spatial-v1.12 / standard-locomotion-v1 because published v1.11 stamina-only exhaustion movement changes. The seven existing recipes keep the same characters, scenarios and seeds; only engine/rules identity changes, and six G-04 regressions join the corpus. Reviewed five actual alternating before/after trials for every case (35 measurements per revision) against exact main b354a2a: both revisions execute their own pinned inputs successfully, every deterministic cost vector is stable and equal, and all original count/byte ceilings pass unchanged. Candidate b858b77 has successful independent corpus boundary evidence; Golden expectations were not regenerated. Different input identities make this an independent transition, not a same-input timing or performance claim. Published v1.11 replay bytes remain readable and old execution is rejected.",
+      "reason": "Reviewed five actual alternating pairs (35 measurements per revision) from main add5a103 and G-03 0f914ff. All seven deterministic operation/count/byte dictionaries and outcomes match before/after, and both revisions complete within their unchanged ceilings. G-03 deliberately moves only the seven pinned manifests engine/rules identity from spatial-v1.11 / standard-observed-v1 to spatial-v1.12 / standard-status-v1, as required by ADR 0010 for water-damage extinguishing and new status AI semantics. Released sample IDs/hashes and existing Golden outputs remain fixed; the candidate corpus independently verifies 83 regressions, including reactions, removal/expiry, resource boundaries and subjective information. Because fixed input identities differ, same-input and wall-time/RSS regression comparability remains unknown: this approves independent inputs with unchanged budgets, not a timing claim or a failed-baseline waiver. No profile limits or runtime pins changed.",
       "evidence": [
         ".generated/harness/load-pair/0-before.json",
         ".generated/harness/load-pair/0-after.json",
         ".generated/harness/load-pair/results.json",
         ".generated/harness/load-pair/commands.json",
+        ".generated/harness/load-pair/baseline-corpus.json",
         ".generated/harness/load-pair/boundary.json",
-        "apps/api/fixtures/compatibility/stamina-v1.11.json"
+        "packages/engine/fixtures/spatial/corpus.json",
+        "docs/adr/0010-battle-version-compatibility.md"
+      ]
+    },
+    {
+      "baselineSha": "b354a2ac83ba24ef6e3c9c52076e9b7b43dafb0d",
+      "beforeDigest": "ebc58ce781d09662fd834f13344d3f710e1452b7061028771b5598fe79abfc24",
+      "afterDigest": "5063ceb0bde6fbe4685e806e0f5ac0dcd1c94d6191cb23bb3abf207823fa4b29",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Reviewed five actual alternating pairs (35 measurements per revision) from main b354a2a and G-03 8563041. All seven deterministic operation/count/byte dictionaries and outcomes match before/after, and both revisions complete within unchanged ceilings. Only the pinned engine/rules identities deliberately move from spatial-v1.11 / standard-observed-v1 to spatial-v1.12 / standard-status-v1 under ADR 0010; released sample IDs/hashes and Golden expectations remain fixed. Current independent corpus evidence verifies all 85 mapped regressions, including self replacement losses and total-cohort strengthening capacity. Different fixed input identities prevent same-input and wall-time/RSS regression claims. This is independent-input transition review, not a failed-baseline waiver or an increase in limits; runtime pins and profile are unchanged.",
+      "evidence": [
+        ".generated/harness/load-pair/0-before.json",
+        ".generated/harness/load-pair/0-after.json",
+        ".generated/harness/load-pair/results.json",
+        ".generated/harness/load-pair/commands.json",
+        ".generated/harness/load-pair/baseline-corpus.json",
+        ".generated/harness/load-pair/boundary.json",
+        "packages/engine/fixtures/spatial/corpus.json",
+        "docs/adr/0010-battle-version-compatibility.md"
       ]
     }
   ]

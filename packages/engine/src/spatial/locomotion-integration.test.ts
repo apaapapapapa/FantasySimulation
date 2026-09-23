@@ -15,7 +15,11 @@ describe('resource-aware decisions and full matches', () => {
     try {
       const decide = (stamina: number) => {
         f.actor.resources.stamina = stamina;
-        return choosePolicy(selfView(f.actor, 0, f.battle.rules.ai!), new Set(), false);
+        return choosePolicy(
+          selfView(f.actor, 0, f.battle.rules.ai!, f.battle.statuses),
+          new Set(),
+          false,
+        );
       };
       expect(decide(100).gait).toBe('run');
       expect(decide(20).gait).toBe('walk');

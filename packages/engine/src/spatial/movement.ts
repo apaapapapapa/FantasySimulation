@@ -32,6 +32,7 @@ export type MotionState = {
   velocity: Vec3;
   facing: Vec3;
   grounded: boolean;
+  vision?: { rangeMm: number; fovMilliDegrees: number; enabled: boolean; visible: boolean };
 };
 export type MotionIntent = {
   direction: Vec3;

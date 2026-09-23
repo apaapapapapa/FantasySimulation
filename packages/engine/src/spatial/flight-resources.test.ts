@@ -106,4 +106,28 @@ describe('flight grants and their shared stamina budget', () => {
       f.world.free();
     }
   });
+  it('settles fractional flight carry without reserving an extra unavailable unit', async () => {
+    const f = await locomotionFixture();
+    try {
+      f.actor.statuses = applyStatuses(
+        [],
+        [{ revision: await grant(8), cause: 'wings' }],
+        [],
+        0,
+      ).statuses;
+      f.actor.resources.stamina = 1;
+      f.actor.motionClock = { remainder: 0, flightRemainder: 960000 };
+      f.actor.intent = { ...f.actor.intent, flight: true, canMove: false };
+      f.actor.motion.position.y = 5;
+      f.actor.motion.grounded = false;
+      advanceLocomotion(f, 1);
+      expect(f.actor.resources.stamina).toBe(0);
+      expect(f.actor.motionClock.flightRemainder).toBe(120000);
+      expect(f.actor.motion.position.y).toBe(5);
+      advanceLocomotion(f, 2);
+      expect(f.actor.motion.position.y).toBeLessThan(5);
+    } finally {
+      f.world.free();
+    }
+  });
 });

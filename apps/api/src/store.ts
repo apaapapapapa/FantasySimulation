@@ -18,6 +18,7 @@ import {
   parseJson,
   RevisionSchema,
   SpecInputSchema,
+  statusTransformationRefs,
   type DefinitionKind,
   type Draft,
   type Revision,
@@ -62,8 +63,9 @@ function dependencies(revision: Revision): Dependency[] {
       return revision.definition.effects.flatMap((e) =>
         e.kind === 'apply-status' ? [{ kind: 'status' as const, ref: e.status }] : [],
       );
-    case 'policy':
     case 'status':
+      return statusTransformationRefs(revision.definition).map((ref) => ({ kind: 'status', ref }));
+    case 'policy':
     case 'scenario':
     case 'ruleset':
       return [];

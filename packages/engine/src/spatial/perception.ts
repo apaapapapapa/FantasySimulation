@@ -11,11 +11,14 @@ import {
   type DeepReadonly,
   type ResourceState,
   type VectorMm,
+  type ObservedStatus,
 } from '@fantasy/domain/spatial';
 import { add, cosDegrees, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
 import type { MotionState } from './movement.ts';
 import type { SpatialWorld } from './physics.ts';
 import { metres } from './terrain.ts';
+import { publicStatuses } from './status-observation.ts';
+import type { StatusCohort } from './status.ts';
 
 export type ObservedActor = {
   id: string;
@@ -27,6 +30,7 @@ export type ObservedActor = {
   wounds?: 'unknown' | 'unhurt' | 'hurt' | 'severe' | 'critical';
   action?: 'idle' | 'cast' | 'active' | 'recovery';
   size?: { radiusMm: number; heightMm: number };
+  statuses?: ObservedStatus[];
 };
 export type ObservableProjectile = {
   id: string;
@@ -52,6 +56,7 @@ export type PerceptionMemory = DeepReadonly<{
   learned: Experience[];
   expired: string[];
   terrain: ObservedSurface[];
+  statusChangedAt?: number;
 }>;
 export const emptyMemory = (): PerceptionMemory => ({
   sampledAt: -1,
@@ -77,11 +82,12 @@ export function bodyPoint(state: Pick<MotionState, 'position' | 'facing'>, offse
   );
 }
 export function canSee(world: SpatialWorld, self: MotionState, point: Vec3): boolean {
-  const perception = self.actor.character.perception;
+  const perception = self.vision ?? self.actor.character.perception;
   const eye = bodyPoint(self, self.actor.character.body.eyeOffset),
     delta = sub(point, eye);
   const distance = length(delta);
   return (
+    self.vision?.enabled !== false &&
     distance <= perception.rangeMm / 1000 &&
     (distance < 1e-12 ||
       dot(unit(self.facing), unit(delta)) >=
@@ -113,7 +119,10 @@ function observeTerrain(world: SpatialWorld, self: MotionState, step: number): O
   for (const direction of directions) {
     const end = add(
         eye,
-        mul(direction, Math.min(6, self.actor.character.perception.rangeMm / 1000)),
+        mul(
+          direction,
+          Math.min(6, (self.vision?.rangeMm ?? self.actor.character.perception.rangeMm) / 1000),
+        ),
       ),
       hit = world.raycast(eye, end, 'movement');
     if (hit && canSee(world, self, sub(hit.point, mul(direction, 0.005))))
@@ -155,7 +164,11 @@ export function observeImpact(
   step: number,
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
 ): Experience | null {
-  if (!canSee(world, self, bodyPoint(target, target.actor.character.body.aimOffset))) return null;
+  if (
+    target.vision?.visible === false ||
+    !canSee(world, self, bodyPoint(target, target.actor.character.body.aimOffset))
+  )
+    return null;
   const uncertain = detail.partial,
     shield = detail.shield,
     low = Math.floor(detail.impact / rules.damageQuantum) * rules.damageQuantum;
@@ -190,6 +203,7 @@ export function observeReveal(
   step: number,
 ): Experience | null {
   if (
+    target.vision?.visible === false ||
     effect.powerBps <= (target.actor.character.perception.revealWardBps ?? 0) ||
     !canSee(world, self, bodyPoint(target, target.actor.character.body.aimOffset))
   )
@@ -220,7 +234,11 @@ export function perceive(
   projectiles: readonly ObservableProjectile[],
   step: number,
   previous: PerceptionMemory,
-  visibleState?: { resources: ResourceState; action: NonNullable<ObservedActor['action']> },
+  visibleState?: {
+    resources: ResourceState;
+    action: NonNullable<ObservedActor['action']>;
+    statuses?: readonly StatusCohort[];
+  },
   terrainMode: 'surveyed' | 'observed' = 'surveyed',
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
 ): PerceptionMemory {
@@ -229,8 +247,14 @@ export function perceive(
     observation = previous.observation,
     lastSeen = previous.lastSeen,
     terrain = [...previous.terrain];
+  let statusChangedAt = previous.statusChangedAt;
   for (const sample of pending)
     if (sample.availableAt <= step) {
+      if (
+        sample.enemy?.statuses !== undefined &&
+        JSON.stringify(sample.enemy.statuses) !== JSON.stringify(lastSeen?.statuses)
+      )
+        statusChangedAt = sample.sampledAt;
       observation = sample;
       if (sample.enemy) lastSeen = sample.enemy;
       terrain.push(...(sample.terrain ?? []));
@@ -239,7 +263,12 @@ export function perceive(
   let sampledAt = previous.sampledAt;
   if (sampledAt < 0 || step - sampledAt >= interval) {
     const point = bodyPoint(enemy, enemy.actor.character.body.aimOffset);
-    const visible = canSee(world, self, point);
+    const visible = enemy.vision?.visible !== false && canSee(world, self, point);
+    const observedStatuses = publicStatuses(visibleState?.statuses ?? [], step);
+    const statusKnown =
+      observedStatuses.length > 0 ||
+      lastSeen?.statuses !== undefined ||
+      previous.pending.some((s) => s.enemy?.statuses !== undefined);
     pending.push({
       sampledAt: step,
       availableAt: step + interval,
@@ -259,6 +288,7 @@ export function perceive(
               ? wounds(visibleState.resources.hp, enemy.actor.character.stats.hp)
               : 'unknown',
             action: visibleState?.action ?? 'idle',
+            ...(statusKnown && { statuses: observedStatuses }),
             size: {
               radiusMm: enemy.actor.character.body.radiusMm,
               heightMm: enemy.actor.character.body.heightMm,
@@ -302,9 +332,13 @@ export function perceive(
   const delivered = previous.pendingExperience.filter(
     (e) => e.availableAt <= step && e.expiresAt > step,
   );
-  const knowledge = [...previous.knowledge.filter((e) => e.expiresAt > step), ...delivered].slice(
-    -rules.memorySamples,
-  );
+  const knowledge = [...previous.knowledge.filter((e) => e.expiresAt > step), ...delivered]
+    // Impacts stamped at the transition boundary used the previous interval's status snapshot.
+    // Reveals measure the baseline resistance, which is independent of a temporary status.
+    .filter(
+      (e) => e.kind === 'reveal' || statusChangedAt === undefined || e.sampledAt > statusChangedAt,
+    )
+    .slice(-rules.memorySamples);
   const learned = delivered.filter((e) => knowledge.includes(e));
   const expired = previous.knowledge.filter((e) => !knowledge.includes(e)).map((e) => e.eventId);
   const surfaces = new Map<string, DeepReadonly<ObservedSurface>>();
@@ -322,6 +356,7 @@ export function perceive(
     learned,
     expired,
     terrain,
+    ...(statusChangedAt !== undefined && { statusChangedAt }),
     pendingExperience: previous.pendingExperience.filter(
       (e) => e.availableAt > step && e.expiresAt > step,
     ),
@@ -340,6 +375,8 @@ export type DecisionView = {
   speedBps?: number;
   flightStaminaPerSecond?: number;
   silenced?: boolean;
+  incapacitated?: boolean;
+  ownStatuses?: readonly StatusCohort[];
   burnDamage?: number;
   waterExtinguishable?: boolean;
   attack?: number;

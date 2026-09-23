@@ -2422,10 +2422,10 @@
     "id": "standard-locomotion-v1",
     "revision": 1,
     "schemaVersion": 1,
-    "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea",
+    "contentHash": "sha256:e26b82bd5e29c922a35d6593612a9b9a71789ab4d619849fadf641b2442685ba",
     "definition": {
       "name": "標準3D",
-      "rulesVersion": "spatial-v1.12",
+      "rulesVersion": "spatial-v1.13",
       "ai": {
         "profile": "observed-utility-v1",
         "observation": "visible-coarse-v1",
@@ -2462,6 +2462,42 @@
     "definition": {
       "name": "標準3D",
       "rulesVersion": "spatial-v1.11",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard-status-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:57b2217741561bbd192286a14502edf1a1a359d12a1a33885bf71d64ad01bdea",
+    "definition": {
+      "name": "標準3D",
+      "rulesVersion": "spatial-v1.12",
       "ai": {
         "profile": "observed-utility-v1",
         "observation": "visible-coarse-v1",
@@ -2867,6 +2903,83 @@
   },
   {
     "kind": "status",
+    "id": "battle-focus-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:6cb16e112dca8137886442a1e5da33666a337647c55afe8e0ccdbabdb7ecc04e",
+    "definition": {
+      "name": "戦闘中の集中",
+      "originalText": "戦闘中の集中",
+      "stackKey": "focus",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 250,
+      "categories": ["buff", "permanent"],
+      "adjustments": [
+        {
+          "target": "damageDealt",
+          "operation": "multiply",
+          "amount": 12000
+        }
+      ],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": []
+    }
+  },
+  {
+    "kind": "status",
+    "id": "battle-replenishment-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:3219833be4c51d3de3fcd1a52fe69b538d9e9e31f980b5ee73f69124e3bc0a5c",
+    "definition": {
+      "name": "戦闘中の補給",
+      "originalText": "戦闘中の補給",
+      "stackKey": "supply",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 250,
+      "categories": ["buff", "permanent"],
+      "adjustments": [
+        {
+          "target": "staminaRecovery",
+          "operation": "multiply",
+          "amount": 12000
+        }
+      ],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [
+        {
+          "everySteps": 50,
+          "kind": "resource",
+          "resource": "mp",
+          "amount": 3
+        },
+        {
+          "everySteps": 50,
+          "kind": "resource",
+          "resource": "stamina",
+          "amount": 2
+        }
+      ]
+    }
+  },
+  {
+    "kind": "status",
     "id": "burning",
     "revision": 1,
     "schemaVersion": 1,
@@ -2943,6 +3056,56 @@
   },
   {
     "kind": "status",
+    "id": "ice-bound-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e32a69c0a7e553f58269198ab1cb366822ce40716d710ad210b0f91c0df8bf19",
+    "definition": {
+      "name": "氷結拘束",
+      "originalText": "氷結拘束",
+      "stackKey": "ice-bound-v1",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 250,
+      "categories": ["control"],
+      "adjustments": [
+        {
+          "target": "action",
+          "operation": "multiply",
+          "amount": 0
+        },
+        {
+          "target": "perceptionRange",
+          "operation": "multiply",
+          "amount": 5000
+        }
+      ],
+      "reactions": [
+        {
+          "element": "fire",
+          "response": {
+            "kind": "transform",
+            "status": {
+              "id": "soaked-v1",
+              "revision": 1,
+              "contentHash": "sha256:d5102da8cd295791fca88a51b6203cc7087a853fb8430df4595f9f63aa8d6b33"
+            }
+          }
+        }
+      ],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": []
+    }
+  },
+  {
+    "kind": "status",
     "id": "ordinary-burning",
     "revision": 1,
     "schemaVersion": 1,
@@ -2969,6 +3132,46 @@
           "everySteps": 25,
           "kind": "damage",
           "amount": 18,
+          "element": "fire"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "status",
+    "id": "reactive-flame-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a29101b02b7b205e09eaa39b806c932930f1ee5577e39eca9387a455de90075b",
+    "definition": {
+      "name": "反応する炎",
+      "originalText": "反応する炎",
+      "stackKey": "reactive-flame-v1",
+      "stacking": "sum",
+      "maxStacks": 3,
+      "durationSteps": 250,
+      "categories": ["damage-over-time"],
+      "reactions": [
+        {
+          "element": "water",
+          "response": {
+            "kind": "remove"
+          }
+        }
+      ],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [
+        {
+          "everySteps": 25,
+          "kind": "damage",
+          "amount": 8,
           "element": "fire"
         }
       ]
@@ -3006,6 +3209,40 @@
   },
   {
     "kind": "status",
+    "id": "soaked-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:d5102da8cd295791fca88a51b6203cc7087a853fb8430df4595f9f63aa8d6b33",
+    "definition": {
+      "name": "濡れた体",
+      "originalText": "濡れた体",
+      "stackKey": "soaked-v1",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 250,
+      "categories": ["debuff"],
+      "reactions": [
+        {
+          "element": "lightning",
+          "response": {
+            "kind": "none"
+          },
+          "damageTakenBps": 20000
+        }
+      ],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": []
+    }
+  },
+  {
+    "kind": "status",
     "id": "stamina-wings-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -3026,6 +3263,46 @@
         "rooted": false
       },
       "periodic": []
+    }
+  },
+  {
+    "kind": "status",
+    "id": "unquenchable-flame-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:dbfc3610235d63616c5586ad86b6c9ded9c724b48139963941c4dd25b399c57b",
+    "definition": {
+      "name": "水で消えない炎",
+      "originalText": "水で消えない炎",
+      "stackKey": "undying",
+      "stacking": "sum",
+      "maxStacks": 3,
+      "durationSteps": 250,
+      "categories": ["damage-over-time"],
+      "reactions": [
+        {
+          "element": "water",
+          "response": {
+            "kind": "none"
+          }
+        }
+      ],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [
+        {
+          "everySteps": 25,
+          "kind": "damage",
+          "amount": 8,
+          "element": "fire"
+        }
+      ]
     }
   }
 ]

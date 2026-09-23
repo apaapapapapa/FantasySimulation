@@ -8,7 +8,6 @@ import { ResourceBudget, staminaExhausted } from './resources.ts';
 const unit = 1_000_000n;
 const distanceUnits = (metres: number, rate: number) =>
   BigInt(Math.round(metres * 1_000_000)) * BigInt(rate);
-const ceiling = (value: bigint) => Number((value + unit - 1n) / unit);
 /** Reserve the physical upper bound, then settle the collision-truncated travelled distance. */
 export function reserveMotion(
   actor: ActorState,
@@ -31,7 +30,7 @@ export function reserveMotion(
     flightUnits = BigInt(rate) * 20_000n + BigInt(actor.motionClock?.flightRemainder ?? 0);
     if (
       !canMaintainFlight(budget.available, rate, ready) ||
-      !budget.reserve('flight', [{ stamina: ceiling(flightUnits) }]).ok
+      !budget.reserve('flight', [{ stamina: Number(flightUnits / unit) }]).ok
     ) {
       intent.flight = false;
       flightUnits = 0n;

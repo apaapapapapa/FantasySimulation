@@ -10,7 +10,7 @@ import type { Decision } from './policy.ts';
 import type { StatusCohort } from './status.ts';
 import type { Vec3 } from './math.ts';
 import { initialDecisionRandom, type DecisionRandom } from './decision-random.ts';
-import type { DamageSource } from './damage.ts';
+import type { DamageSnapshot } from './status-damage.ts';
 import type { SpatialWorld } from './physics.ts';
 import type { ResolvedActor } from './prepare.ts';
 import { initialResources } from './resources.ts';
@@ -41,7 +41,7 @@ export type ActorState = {
   random: number;
   decisionRandom: DecisionRandom;
 };
-export type MeleeState = DamageSource & {
+export type MeleeState = DamageSnapshot & {
   id: string;
   actorId: string;
   ability: AbilityRevision;

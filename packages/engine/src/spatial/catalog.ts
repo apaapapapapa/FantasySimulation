@@ -1,6 +1,7 @@
 import {
   actorSeed,
   compareIds,
+  statusTransformationRefs,
   type Definition,
   type DefinitionKind,
   type Manifest,
@@ -9,7 +10,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { reference, sealRevision } from './prepare.ts';
 import { sampleManifest } from './sample.ts';
-import { observedRules } from './published-rules.ts';
+import { observedRules, statusRules } from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
 /** Versioned data examples, never character-specific branches in the simulator. */
@@ -19,7 +20,13 @@ export async function sampleCatalog(): Promise<Revision[]> {
   const fighter = base.revisions.find((r) => r.kind === 'character')!;
   const flat = base.revisions.find((r) => r.kind === 'scenario')!;
   const rules = base.revisions.find((r) => r.kind === 'ruleset')!;
-  const revisions: Revision[] = [sword, flat, rules, structuredClone(observedRules)];
+  const revisions: Revision[] = [
+    sword,
+    flat,
+    rules,
+    structuredClone(observedRules),
+    structuredClone(statusRules),
+  ];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);
     revisions.push(revision);
@@ -64,6 +71,51 @@ export async function sampleCatalog(): Promise<Revision[]> {
       { kind: 'heal', amount: 8, element: 'arcane', everySteps: 25 },
     ]),
   );
+  const soaked = await add('status', 'soaked-v1', {
+    ...status('濡れた体', 'soaked-v1', {}),
+    visibility: 'visible',
+    categories: ['debuff'],
+    reactions: [{ element: 'lightning', response: { kind: 'none' }, damageTakenBps: 20000 }],
+  });
+  await add('status', 'ice-bound-v1', {
+    ...status('氷結拘束', 'ice-bound-v1', {}),
+    visibility: 'visible',
+    categories: ['control'],
+    adjustments: [
+      { target: 'action', operation: 'multiply', amount: 0 },
+      { target: 'perceptionRange', operation: 'multiply', amount: 5000 },
+    ],
+    reactions: [{ element: 'fire', response: { kind: 'transform', status: reference(soaked) } }],
+  });
+  for (const persistent of [false, true])
+    await add('status', persistent ? 'unquenchable-flame-v1' : 'reactive-flame-v1', {
+      ...status(
+        persistent ? '水で消えない炎' : '反応する炎',
+        persistent ? 'undying' : 'reactive-flame-v1',
+        {},
+        [{ kind: 'damage', element: 'fire', amount: 8, everySteps: 25 }],
+      ),
+      visibility: 'visible',
+      categories: ['damage-over-time'],
+      maxStacks: 3,
+      stacking: 'sum',
+      reactions: [{ element: 'water', response: { kind: persistent ? 'none' : 'remove' } }],
+    });
+  await add('status', 'battle-focus-v1', {
+    ...status('戦闘中の集中', 'focus', {}),
+    visibility: 'visible',
+    categories: ['buff', 'permanent'],
+    adjustments: [{ target: 'damageDealt', operation: 'multiply', amount: 12000 }],
+  });
+  await add('status', 'battle-replenishment-v1', {
+    ...status('戦闘中の補給', 'supply', {}, [
+      { kind: 'resource', resource: 'mp', amount: 3, everySteps: 50 },
+      { kind: 'resource', resource: 'stamina', amount: 2, everySteps: 50 },
+    ]),
+    visibility: 'visible',
+    categories: ['buff', 'permanent'],
+    adjustments: [{ target: 'staminaRecovery', operation: 'multiply', amount: 12000 }],
+  });
   const ability = (name: string, edits: Partial<Definition<'ability'>>): Definition<'ability'> => ({
     ...sword.definition,
     name,
@@ -512,6 +564,8 @@ export function revisionClosure(
     } else if (revision.kind === 'ability') {
       for (const effect of revision.definition.effects)
         if (effect.kind === 'apply-status') visit('status', effect.status);
+    } else if (revision.kind === 'status') {
+      for (const ref of statusTransformationRefs(revision.definition)) visit('status', ref);
     }
   }
   for (const root of roots) visit(root.kind, root.ref);
