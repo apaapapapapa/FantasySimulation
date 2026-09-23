@@ -6,6 +6,7 @@ export const UI_CASES = [
   'network-boundary',
   'draft-revisions',
   'draft-errors',
+  'draft-resume-tall-character',
   'battle-cancel-retry',
   'battle-truncated-result',
   'battle-api-error',

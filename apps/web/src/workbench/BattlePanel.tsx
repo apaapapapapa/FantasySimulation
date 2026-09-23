@@ -11,6 +11,7 @@ import {
   type Revision,
 } from '@fantasy/domain/spatial';
 import { api, errorText, reference } from '../api-client.ts';
+import { spawnPosition } from './spawn-position.ts';
 
 type Status = ReturnType<typeof JobStatusSchema.parse>;
 type Result = ReturnType<typeof BattleResultResponseSchema.parse>;
@@ -217,17 +218,21 @@ export function BattlePanel({
               const required = (items: Revision[], id: string) => {
                 const value = items.find((r) => r.id === id);
                 if (!value) throw new Error('設定を選択してください');
-                return reference(value);
+                return value;
               };
               const request = JobRequestSchema.parse({
                 spec: {
                   seed,
-                  ruleset: required(catalog.rulesets, ruleset),
-                  scenario: required(catalog.scenarios, scenario),
+                  ruleset: reference(required(catalog.rulesets, ruleset)),
+                  scenario: reference(required(catalog.scenarios, scenario)),
                   participants: [left, right].map((id, index) => ({
                     actorId: index === 0 ? 'left' : 'right',
-                    character: required(catalog.characters, id),
-                    position: { x: index === 0 ? -4000 : 4000, y: 1200, z: 0 },
+                    character: reference(required(catalog.characters, id)),
+                    position: spawnPosition(
+                      required(catalog.characters, id),
+                      required(catalog.scenarios, scenario),
+                      index,
+                    ),
                     facing: { x: index === 0 ? 1000 : -1000, y: 0, z: 0 },
                     rngSeed: actorSeed(seed, index as 0 | 1),
                     rngStream: index,

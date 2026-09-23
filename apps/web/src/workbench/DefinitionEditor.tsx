@@ -7,10 +7,22 @@ import {
   RevisionPageSchema,
   RevisionSchema,
   ValidationSchema,
+  IdSchema,
   type Draft,
   type Revision,
 } from '@fantasy/domain/spatial';
 import { api, errorText, jsonText, reference } from '../api-client.ts';
+
+const recentKey = 'fantasy.recent-drafts';
+function recentDrafts(): string[] {
+  try {
+    return IdSchema.array()
+      .max(20)
+      .parse(JSON.parse(localStorage.getItem(recentKey) ?? '[]'));
+  } catch {
+    return [];
+  }
+}
 
 export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
   const [kind, setKind] = useState<'character' | 'ability'>('character');
@@ -29,6 +41,43 @@ export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
   const [error, setError] = useState('');
   const [valid, setValid] = useState(false);
   const [historyRevision, setHistoryRevision] = useState(1);
+  const [recent, setRecent] = useState(recentDrafts);
+  const [resumeId, setResumeId] = useState('');
+
+  function remember(saved: Draft) {
+    setResumeId(saved.id);
+    setRecent((previous) => {
+      const next = [saved.id, ...previous.filter((id) => id !== saved.id)].slice(0, 20);
+      try {
+        localStorage.setItem(recentKey, JSON.stringify(next));
+      } catch {
+        // The displayed ID still allows retrieval when browser storage is unavailable.
+      }
+      return next;
+    });
+  }
+  async function resume(value: string) {
+    const saved = await api(`drafts/${encodeURIComponent(IdSchema.parse(value))}`, DraftSchema);
+    if (saved.kind !== 'character' && saved.kind !== 'ability')
+      throw new Error('この画面ではキャラクターと能力の下書きを編集できます');
+    const ref = saved.published ?? saved.base;
+    const original = ref
+      ? await api(
+          `revisions/${saved.kind}/${encodeURIComponent(ref.id)}/${ref.revision}`,
+          RevisionSchema,
+        )
+      : null;
+    setKind(saved.kind);
+    setCursor(null);
+    setBase(original);
+    setDraft(saved);
+    setId(saved.definitionId);
+    setDefinition(jsonText(saved.definition));
+    setHistoryRevision(original?.revision ?? 1);
+    setValid(false);
+    remember(saved);
+    setMessage(`下書きを再開しました（版 ${saved.version}）`);
+  }
 
   useEffect(() => {
     const controller = new AbortController();
@@ -84,6 +133,7 @@ export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
           }),
         });
     setDraft(saved);
+    remember(saved);
     setValid(false);
     setMessage(`下書きを保存しました（版 ${saved.version}）`);
     return saved;
@@ -92,6 +142,30 @@ export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
     <section className="panel" aria-label="設定の編集">
       <h2>キャラクター・能力の編集</h2>
       <fieldset disabled={busy}>
+        <details>
+          <summary>保存した下書きを再開</summary>
+          <label>
+            再開する下書きID
+            <input value={resumeId} onChange={(e) => setResumeId(e.target.value)} />
+          </label>
+          <button
+            type="button"
+            disabled={!resumeId}
+            onClick={() => void work(() => resume(resumeId))}
+          >
+            IDから再開
+          </button>
+          <ul aria-label="最近保存した下書き">
+            {recent.map((value) => (
+              <li key={value}>
+                <button type="button" onClick={() => void work(() => resume(value))}>
+                  {value}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+        {draft && <output aria-label="保存済み下書きID">{draft.id}</output>}
         <label>
           設定の種類
           <select
@@ -213,6 +287,7 @@ export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
                 });
                 select(published.revision);
                 setDraft(published.draft);
+                remember(published.draft);
                 setMessage(`revision ${published.revision.revision} を公開しました`);
                 setReload((n) => n + 1);
                 onPublished();

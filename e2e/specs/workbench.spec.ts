@@ -62,6 +62,47 @@ test('draft-errors', async ({ page }) => {
   await expect(editor.getByRole('alert')).toContainText('API 409');
 });
 
+test('draft-resume-tall-character', async ({ page }, info) => {
+  await page.goto('/');
+  const editor = page.getByRole('region', { name: '設定の編集' });
+  await editor.getByRole('button', { name: / · arcane-archer · / }).click();
+  const original = JSON.parse(await editor.getByLabel('定義JSON').inputValue()) as {
+    body: { heightMm: number };
+  };
+  const definition = { ...original, body: { ...original.body, heightMm: 6000 } };
+  await editor.getByRole('button', { name: '新規IDで複製' }).click();
+  const id = `ui.tall.${info.retry}`;
+  await editor.getByLabel('設定ID').fill(id);
+  await editor.getByLabel('定義JSON').fill(JSON.stringify(definition));
+  await editor.getByRole('button', { name: '下書きを保存' }).click();
+  const saved = editor.getByLabel('保存済み下書きID');
+  await expect(saved).toBeVisible();
+  const draftId = (await saved.textContent())!;
+  await page.reload();
+  await editor.getByText('保存した下書きを再開', { exact: true }).click();
+  await editor.getByRole('button', { name: draftId, exact: true }).click();
+  await expect(editor.getByLabel('設定ID')).toHaveValue(id);
+  expect(JSON.parse(await editor.getByLabel('定義JSON').inputValue())).toEqual(definition);
+  await editor.getByLabel('設定の種類').selectOption('ability');
+  await editor.getByLabel('再開する下書きID').fill(draftId);
+  await editor.getByRole('button', { name: 'IDから再開' }).click();
+  await expect(editor.getByLabel('設定の種類')).toHaveValue('character');
+  await editor.getByRole('button', { name: '保存して検証' }).click();
+  await expect(editor.getByRole('button', { name: '新revisionを公開' })).toBeEnabled();
+  await expect(saved).toHaveText(draftId);
+  await editor.getByRole('button', { name: '新revisionを公開' }).click();
+  await expect(editor.getByRole('status', { name: '編集の状態' })).toHaveText(
+    'revision 1 を公開しました',
+  );
+  const battle = page.getByRole('region', { name: '非同期対戦' });
+  await battle.getByLabel('参加者A').selectOption(id);
+  await battle.getByText('計算予算', { exact: true }).click();
+  await battle.getByLabel('ログ上限bytes').fill('1');
+  await battle.getByRole('button', { name: '対戦を開始' }).click();
+  await expect(battle.getByLabel('結果の種類')).toHaveText('truncated');
+  await expect(battle.getByRole('alert')).toHaveCount(0);
+});
+
 test('battle-cancel-retry', async ({ page }) => {
   await page.goto('/');
   const battle = page.getByRole('region', { name: '非同期対戦' });
