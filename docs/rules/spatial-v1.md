@@ -194,7 +194,7 @@ hpRecovery/staminaRecovery, perceptionRange/perceptionFov/action/movement/vision
 Add uses target units (stats/mm/millidegrees; stamina recovery units/sec; otherwise Bps).
 Sum add*stacks; sum (multiply-10000)*stacks with legacy speed deltas; clamp multiplier 0..30000,
 floor one BigInt product. Omitted magic inherits adjusted physical values.
-Resistance requires element and clamps 0..10000; damage factors clamp 0..30000.
+Resistance: element required, 0..10000; damage factors: 0..30000.
 Element limits damage/resistance; category limits dealt damage (mixed category matches once).
 Zero action blocks start/release/movement, but committed attacks persist. Zero movement/vision/
 visibility blocks moving/seeing/being seen. Perception clamps to 200000mm/360000 millidegrees.
@@ -215,15 +215,16 @@ updateResources once per boundary; retains carry/exhaustion, leaves absent stami
 Resource pulses precede HP/declarations. recoverActorResources settles interval-start
 staminaRecovery at step+1; later removal/grants cannot alter elapsed recovery. No duplicate arithmetic.
 
-Omitted/hidden visibility reveals nothing. Sight/reaction delay delivers at most 64 sorted summaries:
+Only visible states yield ≤64 sorted summaries after sight/reaction delay:
 ID/categories, benefit/adjustment direction, removability, reaction/damage direction; no hashes,
-quantities, stacks or deadlines. Own AI knows its states/definitions/transform closure; enemy AI
+quantities, stacks or deadlines. Own AI knows ability/held-state transform closures; enemy AI
 uses delayed summaries/impacts only. Apply/cleanse/reaction estimates follow holder benefit,
 including resource pulses/recovery (missing own resources ignored). Weakness changes the coarse
-prior, never duplicates measured impact. Public context changes retire old impacts after delivery.
-Knowledge/decision logs share these summaries, never enemy truth.
+prior, never duplicates measured impact. Public changes retire prior/same-boundary impacts after
+delay; baseline reveals persist and use the public prior.
+Knowledge/decision logs use these summaries, never enemy truth.
 
-G-03 spatial-v1.12 / standard-status-v1 changes water-damage extinguishing and status AI.
+G-03 spatial-v1.12 / standard-status-v1 changes water extinguishing and status AI.
 ADR 0010: omissions preserve legacy arithmetic/hashes; old records remain readable without historical
 execution. Corpus changes only engine/rules identity; published sample IDs stay fixed.
 

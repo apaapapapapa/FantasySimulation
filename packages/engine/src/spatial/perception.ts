@@ -333,7 +333,11 @@ export function perceive(
     (e) => e.availableAt <= step && e.expiresAt > step,
   );
   const knowledge = [...previous.knowledge.filter((e) => e.expiresAt > step), ...delivered]
-    .filter((e) => statusChangedAt === undefined || e.sampledAt >= statusChangedAt)
+    // Impacts stamped at the transition boundary used the previous interval's status snapshot.
+    // Reveals measure the baseline resistance, which is independent of a temporary status.
+    .filter(
+      (e) => e.kind === 'reveal' || statusChangedAt === undefined || e.sampledAt > statusChangedAt,
+    )
     .slice(-rules.memorySamples);
   const learned = delivered.filter((e) => knowledge.includes(e));
   const expired = previous.knowledge.filter((e) => !knowledge.includes(e)).map((e) => e.eventId);

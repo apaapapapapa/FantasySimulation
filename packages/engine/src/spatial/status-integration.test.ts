@@ -1,5 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
-import { StreamRecordSchema, type Definition, type Effect } from '@fantasy/domain/spatial';
+import {
+  StreamRecordSchema,
+  AI_RULES,
+  type AbilityCategory,
+  type Definition,
+  type Effect,
+} from '@fantasy/domain/spatial';
 import {
   aiFixture,
   impactEvidence,
@@ -10,11 +16,12 @@ import { battleEvents } from '../../test-support/fixtures.ts';
 import { initializePhysics } from './physics.ts';
 import { prepareBattle, reference, sealRevision } from './prepare.ts';
 import { runBattle } from './run.ts';
-import { emptyMemory, perceive } from './perception.ts';
+import { emptyMemory, perceive, observeImpact, observeReveal } from './perception.ts';
 import { choosePolicy } from './policy.ts';
 import { assessAbility, efficacy } from './assessment.ts';
 import { assessStatusEffect } from './status-assessment.ts';
 import { statusVision } from './status-observation.ts';
+import { selfView } from './self-view.ts';
 
 beforeAll(initializePhysics);
 const water: Effect = { kind: 'damage', amount: 25, attackScaleBps: 0, element: 'water' };
@@ -22,10 +29,21 @@ const stopped: Definition<'status'>['adjustments'] = [
   { target: 'action', operation: 'multiply', amount: 0 },
 ];
 
-async function statusCombat(status: Partial<Definition<'status'>>, effects: Effect[] = [water]) {
+async function statusCombat(
+  status: Partial<Definition<'status'>>,
+  effects: Effect[] = [water],
+  categories?: AbilityCategory[],
+) {
   const f = await aiFixture({
     steps: 30,
-    abilities: [{ castSteps: 0, costs: { hp: 0, mp: 0, uses: 1 }, effects }],
+    abilities: [
+      {
+        castSteps: 0,
+        costs: { hp: 0, mp: 0, uses: 1 },
+        effects,
+        ...(categories && { categories }),
+      },
+    ],
   });
   f.world.free();
   await withInitialStatus(
@@ -38,44 +56,50 @@ async function statusCombat(status: Partial<Definition<'status'>>, effects: Effe
 
 describe('G-03 status combat and subjective observations', () => {
   it('applies the old-snapshot weakness on the extinguishing hit, then observes its removal after delay', async () => {
-    const manifest = await statusCombat({
-      burning: { waterExtinguishable: false },
-      reactions: [{ element: 'water', response: { kind: 'remove' }, damageTakenBps: 20000 }],
-      periodic: [{ kind: 'damage', amount: 6, element: 'fire', everySteps: 4 }],
-    });
-    const run = await runBattle(manifest),
-      events = battleEvents(run.records);
-    const damage = events.find((e) => e.kind === 'damage' && e.actorId === 'left')!;
-    expect(damage).toMatchObject({
-      step: 6,
-      amount: 40,
-      after: { hp: 58 },
-      damage: { calculation: { basePower: 25, afterModifiers: 40 } },
-    });
-    const reaction = events.find((e) => e.ruleId === 'status.reaction')!;
-    expect(reaction).toMatchObject({
-      step: 6,
-      reason: 'initial-status-1:water:remove',
-      causes: [damage.id],
-    });
-    expect(events.some((e) => e.kind === 'status-remove' && e.step === 6)).toBe(true);
-    const seen = events
-      .filter((e) => e.actorId === 'left')
-      .flatMap((e) =>
-        e.cognition?.kind === 'knowledge' && e.cognition.statusObservation
-          ? [{ step: e.step, ...e.cognition.statusObservation }]
-          : [],
+    for (const category of ['physical', 'magic'] as const) {
+      const manifest = await statusCombat(
+        {
+          burning: { waterExtinguishable: false },
+          reactions: [{ element: 'water', response: { kind: 'remove' }, damageTakenBps: 20000 }],
+          periodic: [{ kind: 'damage', amount: 6, element: 'fire', everySteps: 4 }],
+        },
+        [water],
+        [category],
       );
-    expect(seen.map((s) => [s.step, s.sampledAt, s.availableAt, s.statuses.length])).toEqual([
-      [5, 0, 5, 1],
-      [15, 10, 15, 0],
-    ]);
-    expect(seen[0]!.statuses[0]).not.toHaveProperty('contentHash');
-    expect(seen[0]!.statuses[0]).not.toHaveProperty('stacks');
-    expect(seen[0]!.statuses[0]).not.toHaveProperty('endStep');
-    for (const record of run.records)
-      expect(StreamRecordSchema.safeParse(record).success).toBe(true);
-    expect((await runBattle(manifest)).result).toEqual(run.result);
+      const run = await runBattle(manifest),
+        events = battleEvents(run.records);
+      const damage = events.find((e) => e.kind === 'damage' && e.actorId === 'left')!;
+      expect(damage).toMatchObject({
+        step: 6,
+        amount: 40,
+        after: { hp: 58 },
+        damage: { calculation: { basePower: 25, afterModifiers: 40 } },
+      });
+      const reaction = events.find((e) => e.ruleId === 'status.reaction')!;
+      expect(reaction).toMatchObject({
+        step: 6,
+        reason: 'initial-status-1:water:remove',
+        causes: [damage.id],
+      });
+      expect(events.some((e) => e.kind === 'status-remove' && e.step === 6)).toBe(true);
+      const seen = events
+        .filter((e) => e.actorId === 'left')
+        .flatMap((e) =>
+          e.cognition?.kind === 'knowledge' && e.cognition.statusObservation
+            ? [{ step: e.step, ...e.cognition.statusObservation }]
+            : [],
+        );
+      expect(seen.map((s) => [s.step, s.sampledAt, s.availableAt, s.statuses.length])).toEqual([
+        [5, 0, 5, 1],
+        [15, 10, 15, 0],
+      ]);
+      expect(seen[0]!.statuses[0]).not.toHaveProperty('contentHash');
+      expect(seen[0]!.statuses[0]).not.toHaveProperty('stacks');
+      expect(seen[0]!.statuses[0]).not.toHaveProperty('endStep');
+      for (const record of run.records)
+        expect(StreamRecordSchema.safeParse(record).success).toBe(true);
+      expect((await runBattle(manifest)).result).toEqual(run.result);
+    }
   });
 
   it('transforms once into a referenced status and expires the destination on its own clock', async () => {
@@ -337,13 +361,189 @@ describe('G-03 status combat and subjective observations', () => {
         visible,
       );
       expect(efficacy({ ...f.view, step: 10, memory: before }, 'fire', 25).bps).toBe(18000);
-      const after = perceive(f.world, f.self, f.enemy, [], 15, before, visible);
+      const transitionHit = observeImpact(
+        f.world,
+        f.self,
+        f.enemy,
+        {
+          ability: reference(f.abilities[0]!),
+          eventId: 'transition-hit',
+          element: 'fire',
+          basePower: 25,
+          impact: 45,
+          shield: false,
+          partial: false,
+        },
+        10,
+      )!;
+      expect(transitionHit).toMatchObject({ sampledAt: 10, availableAt: 15 });
+      const after = perceive(
+        f.world,
+        f.self,
+        f.enemy,
+        [],
+        15,
+        {
+          ...before,
+          pendingExperience: [transitionHit],
+        },
+        visible,
+      );
       expect(after.expired).toEqual(['observed.1']);
+      expect(after.knowledge).toEqual([]);
+      expect(after.learned).toEqual([]);
       expect(efficacy({ ...f.view, step: 15, memory: after }, 'fire', 25)).toMatchObject({
         bps: 7500,
         confidence: 0,
         evidence: [],
       });
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it('combines revealed baseline resistance with public status direction and retains that baseline after expiry', async () => {
+    const f = await aiFixture();
+    try {
+      for (const [definition, expected] of [
+        [
+          { reactions: [{ element: 'fire', response: { kind: 'none' }, damageTakenBps: 20000 }] },
+          11875,
+        ],
+        [
+          {
+            adjustments: [
+              { target: 'resistance', element: 'fire', operation: 'add', amount: 5000 },
+            ],
+          },
+          7125,
+        ],
+      ] as [Partial<Definition<'status'>>, number][]) {
+        const revision = await sealRevision(
+          'status',
+          'revealed-context',
+          1,
+          initialStatus({
+            ...definition,
+            visibility: 'visible',
+          }),
+        );
+        const visible = {
+          resources: f.view.resources,
+          action: 'idle' as const,
+          statuses: [{ revision, startStep: 0, endStep: 10, stacks: 1, causes: [] }],
+        };
+        const reveal = observeReveal(
+          f.world,
+          f.self,
+          f.enemy,
+          {
+            kind: 'reveal',
+            field: 'resistance',
+            occlusion: 'vision',
+            element: 'fire',
+            powerBps: 10000,
+            precisionBps: 1000,
+            delaySteps: 0,
+            durationSteps: 100,
+          },
+          reference(f.abilities[0]!),
+          'baseline',
+          0,
+        )!;
+        let memory = perceive(
+          f.world,
+          f.self,
+          f.enemy,
+          [],
+          0,
+          { ...emptyMemory(), pendingExperience: [reveal] },
+          visible,
+        );
+        memory = perceive(f.world, f.self, f.enemy, [], 5, memory, visible);
+        expect(efficacy({ ...f.view, memory }, 'fire', 25)).toMatchObject({
+          bps: expected,
+          confidence: 1000,
+          evidence: ['baseline'],
+        });
+        for (const step of [10, 15])
+          memory = perceive(f.world, f.self, f.enemy, [], step, memory, visible);
+        expect(efficacy({ ...f.view, step: 15, memory }, 'fire', 25)).toMatchObject({
+          bps: 9500,
+          confidence: 10000,
+          evidence: ['baseline'],
+        });
+      }
+    } finally {
+      f.world.free();
+    }
+  });
+
+  it('learns only the transform closure of a received own status and rejects a worsening self reaction', async () => {
+    const f = await aiFixture();
+    try {
+      const worse = await sealRevision(
+        'status',
+        'worse-result',
+        1,
+        initialStatus({
+          adjustments: [
+            { target: 'attack', operation: 'add', amount: -25 },
+            { target: 'damageTaken', operation: 'multiply', amount: 30000 },
+          ],
+        }),
+      );
+      const unrelated = await sealRevision(
+        'status',
+        'unrelated-enemy-secret',
+        1,
+        initialStatus({
+          visibility: 'hidden',
+          adjustments: stopped,
+        }),
+      );
+      f.manifest.revisions.push(worse, unrelated);
+      const received = await withInitialStatus(
+        f.manifest,
+        1,
+        initialStatus({
+          adjustments: [{ target: 'attack', operation: 'add', amount: -5 }],
+          reactions: [
+            { element: 'water', response: { kind: 'transform', status: reference(worse) } },
+          ],
+        }),
+      );
+      const battle = await prepareBattle(f.manifest);
+      expect(battle.actors[0].knownStatuses).toBeUndefined();
+      const actor = {
+        motion: { ...f.self, actor: battle.actors[0] },
+        resources: f.view.resources,
+        memory: f.view.memory,
+        used: {},
+        readyAt: 0,
+        action: null,
+        statuses: [],
+      };
+      expect(
+        selfView(actor, 5, AI_RULES, battle.statuses).self.actor.knownStatuses,
+      ).toBeUndefined();
+      const view = selfView(
+        {
+          ...actor,
+          statuses: [
+            { revision: received, startStep: 1, endStep: 100, stacks: 1, causes: ['enemy-grant'] },
+          ],
+        },
+        5,
+        AI_RULES,
+        battle.statuses,
+      );
+      expect(view.self.actor.knownStatuses?.map((s) => s.id)).toEqual([received.id, worse.id]);
+      expect(
+        assessStatusEffect(view, { kind: 'water', extinguish: true }, 'self').value,
+      ).toBeCloseTo(-2.8);
+      expect(assessAbility(view, f.abilities[1]!).weight).toBe(0);
+      expect(battle.actors[0].knownStatuses).toBeUndefined();
     } finally {
       f.world.free();
     }

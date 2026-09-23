@@ -19,6 +19,7 @@ import {
 } from '@fantasy/domain/spatial';
 import implementation from './implementation.json' with { type: 'json' };
 import profile from './profile.json' with { type: 'json' };
+import { statusKnowledge } from './status.ts';
 
 export { implementation, profile };
 export type ResolvedActor = DeepReadonly<{
@@ -125,17 +126,14 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
         if (effect.kind === 'apply-status') get('status', effect.status);
     }
     const policy = get('policy', character.policy).definition;
-    const knownStatuses = new Map<string, Extract<Revision, { kind: 'status' }>>();
-    function know(ref: RevisionRef) {
-      const status = get('status', ref),
-        key = `${status.id}:${status.revision}:${status.contentHash}`;
-      if (knownStatuses.has(key)) return;
-      knownStatuses.set(key, status);
-      for (const dependency of statusTransformationRefs(status.definition)) know(dependency);
-    }
-    for (const ability of abilities)
-      for (const effect of ability.definition.effects)
-        if (effect.kind === 'apply-status') know(effect.status);
+    const knownStatuses = statusKnowledge(
+      abilities.flatMap((a) =>
+        a.definition.effects.flatMap((e) =>
+          e.kind === 'apply-status' ? [get('status', e.status)] : [],
+        ),
+      ),
+      manifest.revisions.filter((r) => r.kind === 'status'),
+    );
     for (const priority of policy.priorities)
       if (!ids.has(priority.abilityId))
         throw new Error(`Policy references unavailable ability: ${priority.abilityId}`);
@@ -145,7 +143,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
       abilities: abilities.sort((a, b) => compareIds(a.id, b.id)),
       equipment,
       policy,
-      ...(knownStatuses.size && { knownStatuses: [...knownStatuses.values()] }),
+      ...(knownStatuses.length && { knownStatuses }),
     };
   }
   for (const revision of manifest.revisions) {

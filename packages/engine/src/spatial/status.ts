@@ -1,6 +1,7 @@
 import {
   DEFAULT_BUDGET,
   compareIds,
+  statusTransformationRefs,
   type DeepReadonly,
   type Revision,
 } from '@fantasy/domain/spatial';
@@ -10,6 +11,27 @@ import { permanentStatus } from './categories.ts';
 import { adjustedStatusValue } from './status-modifiers.ts';
 export type StatusLimits = { maxStatusTypes: number; maxStatusCauses: number };
 export type StatusRevision = DeepReadonly<Extract<Revision, { kind: 'status' }>>;
+/** Only definitions reachable from known abilities or currently owned states enter self knowledge. */
+export function statusKnowledge<T extends StatusRevision>(
+  roots: readonly T[],
+  available: readonly T[],
+): T[] {
+  const known = new Map<string, T>();
+  function visit(status: T) {
+    const key = `${status.id}:${status.revision}:${status.contentHash}`;
+    if (known.has(key)) return;
+    known.set(key, status);
+    for (const ref of statusTransformationRefs(status.definition)) {
+      const dependency = available.find(
+        (s) => s.id === ref.id && s.revision === ref.revision && s.contentHash === ref.contentHash,
+      );
+      if (!dependency) throw new Error('Missing status transformation revision');
+      visit(dependency);
+    }
+  }
+  roots.forEach(visit);
+  return [...known.values()];
+}
 export type StatusCohort = {
   revision: StatusRevision;
   startStep: number;

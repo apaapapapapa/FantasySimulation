@@ -1,7 +1,7 @@
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial';
 import type { ActorState } from './combat-state.ts';
 import type { DecisionView } from './perception.ts';
-import { effectiveStats } from './status.ts';
+import { effectiveStats, statusKnowledge, type StatusRevision } from './status.ts';
 import { calculateDamage, damageSource } from './damage.ts';
 import { damageStatusBps, statusResistance } from './status-modifiers.ts';
 import { reactionDamageBps, statusReactions } from './status-reactions.ts';
@@ -9,12 +9,22 @@ import { generalizedStatus } from './status-observation.ts';
 
 /** Own resources and active statuses are proprioception, never a lookup of an opponent. */
 export function selfView(
-  actor: ActorState,
+  actor: Pick<
+    ActorState,
+    'motion' | 'statuses' | 'resources' | 'memory' | 'used' | 'readyAt' | 'action' | 'staminaClock'
+  >,
   step: number,
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>>,
+  definitions: readonly StatusRevision[],
 ): DecisionView {
   const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
   const active = actor.statuses.filter((s) => s.startStep <= step && step < s.endStep);
+  const known = actor.motion.actor.knownStatuses ?? [];
+  const knowledge = statusKnowledge([...known, ...active.map((s) => s.revision)], definitions);
+  const self =
+    knowledge.length === known.length && knowledge.every((s, i) => s === known[i])
+      ? actor.motion
+      : { ...actor.motion, actor: { ...actor.motion.actor, knownStatuses: knowledge } };
   const burnDamage = active.reduce(
     (sum, s) =>
       sum +
@@ -62,7 +72,7 @@ export function selfView(
     0,
   );
   return {
-    self: actor.motion,
+    self,
     resources: actor.resources,
     ...(actor.staminaClock ? { staminaExhausted: actor.staminaClock.exhausted } : {}),
     memory: actor.memory,

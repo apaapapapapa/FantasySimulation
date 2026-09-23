@@ -32,10 +32,16 @@ export function efficacy(
     (e) => e.targetId === target?.id && e.element === element && e.expiresAt > step,
   );
   const revealed = evidence.filter((e) => e.kind === 'reveal').at(-1);
+  const statusPrior = observedDamagePrior(view, element);
   if (revealed?.range)
     return {
-      bps: Math.round(10000 - (revealed.range.low + revealed.range.high) / 2),
-      confidence: 10000,
+      bps: Math.min(
+        30000,
+        Math.round(
+          ((10000 - (revealed.range.low + revealed.range.high) / 2) * statusPrior) / 10000,
+        ),
+      ),
+      confidence: statusPrior === 10000 ? 10000 : 1000,
       evidence: [revealed.eventId],
     };
   const comparable = evidence.filter(
@@ -64,7 +70,7 @@ export function efficacy(
       ? 6500
       : 7500;
   return {
-    bps: Math.min(30000, Math.round((prior * observedDamagePrior(view, element)) / 10000)),
+    bps: Math.min(30000, Math.round((prior * statusPrior) / 10000)),
     confidence: surface === 'red' || surface === 'blue' ? 1000 : 0,
     evidence: [],
   };

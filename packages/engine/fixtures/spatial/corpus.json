@@ -336,6 +336,14 @@
     "status-resource-4": {
       "file": "packages/engine/src/spatial/status-resources.test.ts",
       "name": "G-03 resource states through the G-04 resource API values resource states from own definitions, excludes missing resources and records only coarse public benefit"
+    },
+    "status-revealed-context": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations combines revealed baseline resistance with public status direction and retains that baseline after expiry"
+    },
+    "status-received-knowledge": {
+      "file": "packages/engine/src/spatial/status-integration.test.ts",
+      "name": "G-03 status combat and subjective observations learns only the transform closure of a received own status and rejects a worsening self reaction"
     }
   },
   "entries": [
@@ -871,7 +879,9 @@
         "status-resource-1",
         "status-resource-2",
         "status-resource-3",
-        "status-resource-4"
+        "status-resource-4",
+        "status-revealed-context",
+        "status-received-knowledge"
       ]
     }
   ]

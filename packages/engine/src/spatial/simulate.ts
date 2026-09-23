@@ -167,7 +167,10 @@ export function* simulate(
             const startup = actor.motion.actor.abilities.filter(
               (a) =>
                 a.definition.trigger === 'battle-start' &&
-                conditionMatches(a.definition.condition, selfView(actor, step, battle.rules.ai!)),
+                conditionMatches(
+                  a.definition.condition,
+                  selfView(actor, step, battle.rules.ai!, battle.statuses),
+                ),
             );
             const budget = new ResourceBudget(actor.resources, actor.used);
             const reserved = budget.reserve(
@@ -322,7 +325,7 @@ export function* simulate(
           );
           if (actor.action && actor.action.recoveryUntil <= step) actor.action = null;
           const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
-          const view = selfView(actor, step, battle.rules.ai!);
+          const view = selfView(actor, step, battle.rules.ai!, battle.statuses);
           const ready = new Set(
             actor.motion.actor.abilities
               .filter(
@@ -431,7 +434,7 @@ export function* simulate(
           };
         }
         for (const actor of next) {
-          const view = selfView(actor, step, battle.rules.ai!);
+          const view = selfView(actor, step, battle.rules.ai!, battle.statuses);
           if (
             aiBoundary &&
             step >= actor.readyAt &&
@@ -522,10 +525,17 @@ export function* simulate(
           action.released = true;
           const definition = action.ability.definition;
           if (
-            !inObservedRange(definition, selfView(actor, step, battle.rules.ai!)) ||
-            selfView(actor, step, battle.rules.ai!).incapacitated ||
-            !conditionMatches(definition.condition, selfView(actor, step, battle.rules.ai!)) ||
-            (selfView(actor, step, battle.rules.ai!).silenced && blockedBySilence(definition))
+            !inObservedRange(
+              definition,
+              selfView(actor, step, battle.rules.ai!, battle.statuses),
+            ) ||
+            selfView(actor, step, battle.rules.ai!, battle.statuses).incapacitated ||
+            !conditionMatches(
+              definition.condition,
+              selfView(actor, step, battle.rules.ai!, battle.statuses),
+            ) ||
+            (selfView(actor, step, battle.rules.ai!, battle.statuses).silenced &&
+              blockedBySilence(definition))
           ) {
             journal.emit({
               kind: 'fizzle',
