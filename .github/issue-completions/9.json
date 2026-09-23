@@ -10,15 +10,15 @@
   "acceptance": [
     {
       "task": "対応中のengineについて、固定manifest・seed/PRNG・scenario revision・rules/schema version・実装digest・採用後のWASM hashを持つコーパスを定義する",
-      "evidence": "packages/engine/fixtures/spatial/corpus.json の固定6入力と契約を使用。corpus.ts の observedInput/engine:check が各実行の実装digest・WASM・固定入力hashを検証し、results.jsonへsource SHAとともに保持する。期待戦闘digestは再生成していない。"
+      "evidence": "packages/engine/fixtures/spatial/corpus.json の固定7入力と契約を使用。corpus.ts の observedInput/engine:check が各実行の実装digest・WASM・固定入力hashを検証し、results.jsonへsource SHAとともに保持する。期待戦闘digestは再生成していない。"
     },
     {
       "task": "既存のengine:check・固定fixture・単体/結合試験を呼ぶadapterを作る。検証ロジックをコピーして二重管理しない",
-      "evidence": "既存 corpus.ts adapter・scripts/engine-identity.ts・64件の対応テストを再利用。別エンジンを作らず、実行は packages/engine/src/spatial/index.ts と既存 BattlePool/JobStore に接続。"
+      "evidence": "既存 corpus.ts adapter・scripts/engine-identity.ts・68件の対応テストを再利用。別エンジンを作らず、実行は packages/engine/src/spatial/index.ts と既存 BattlePool/JobStore に接続。"
     },
     {
       "task": "同じ入力の反復、Linux/Windows、利用可能になったWorker数・投入順の違いで、result/event/必要な物理state digestを比較する",
-      "evidence": "corpusの2回実行、corpus-compare.tsによるLinux/Windowsの結果照合、worker-corpus.test.tsの固定6入力・1/複数実Worker・逆順投入でresult/event/trajectory/physics等を比較。"
+      "evidence": "corpusの2回実行、corpus-compare.tsによるLinux/Windowsの結果照合、worker-corpus.test.tsの固定7入力・1/複数実Worker・逆順投入でresult/event/trajectory/physics等を比較。"
     },
     {
       "task": "両OSで試験が個別成功したことだけでなく、同一入力に対応する出力digestをartifactで突合する。欠落OS・欠落fixtureは不完全とする",
@@ -42,7 +42,7 @@
     },
     {
       "task": "step数、cast/接触候補数、探索ノード数、event数、ログ/軌跡bytesを測定し、必要なprofileへ上限を設定する",
-      "evidence": "load-capture.ts が実engineのsteps/casts/candidates/pathNodes/events/logBytesとcanonical trajectory bytesを計測。load-profile.jsonの6ケース・7指標すべてに明示的な上限を設定。"
+      "evidence": "load-capture.ts が実engineのsteps/casts/candidates/pathNodes/events/logBytesとcanonical trajectory bytesを計測。load-profile.jsonの7ケース・7指標すべてに明示的な上限を設定。"
     },
     {
       "task": "経過時間、中央値/p95、メモリ最大値等を実際の計測条件とともに別の性能reportへ保存する。測定できない項目はnull/unknownと理由を残す",

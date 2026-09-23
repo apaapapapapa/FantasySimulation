@@ -9,6 +9,7 @@ import type { PerceptionMemory } from './perception.ts';
 import type { Decision } from './policy.ts';
 import type { StatusCohort } from './status.ts';
 import type { Vec3 } from './math.ts';
+import type { DecisionRandom } from './decision-random.ts';
 export type AbilityRevision = DeepReadonly<Extract<Revision, { kind: 'ability' }>>;
 export type ActionState = {
   id: string;
@@ -31,6 +32,7 @@ export type ActorState = {
   used: Record<string, number>;
   cooldowns: Record<string, number>;
   random: number;
+  decisionRandom: DecisionRandom;
 };
 export type MeleeState = {
   id: string;

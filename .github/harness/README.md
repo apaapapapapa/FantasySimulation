@@ -213,8 +213,8 @@ and fixed corpus run identically on both OS; generated-suite timing is not a bat
 performance measurement.
 
 The engine identity includes the reviewed root manifest and toolchain: adding the
-development dependency and verification scripts changes that digest. No engine
-rule, pinned input or expected battle digest changed.
+development dependency and verification scripts changes that digest. The H5 adapter itself changes no engine
+rule or expected battle digest; it uses the current reviewed corpus from main.
 Provenance: HiFiScout `replay.ts` and `load-gate.ts` at the Issue #9 pinned SHA were
 read for coverage and exact-baseline review principles; no catalog or D1 adapter
 was imported. Upstream API reference: <https://fast-check.dev/docs/core-blocks/runners/>.
@@ -230,9 +230,14 @@ collection still require a clean committed checkout. Counts and canonical log/tr
 have reviewed per-case ceilings in `load-profile.json`; zero counters are measured
 zeros, never substitutes for a missing instrument. The initial ceilings allow
 roughly 20–50% headroom for most positive operation counters; tiny counts round up,
-while the 6000-step boundary remains exact. Trajectory ceilings allow approximately
+while configured 6000-step and 250-step boundaries remain exact. Trajectory ceilings allow approximately
 twice the raw encoding size. Zero path/candidate counts stay strict. These are
-regression budgets for these six cases, not product scalability promises.
+regression budgets for these seven cases, not product scalability promises.
+The initial profile follows PR #57’s approved observed-AI rules and seventh input.
+Decision/knowledge events increase log counts, and swordsman/sky-mage now reaches
+the game’s 6000-step draw boundary. These are reviewed main behavior, not H5
+engine changes; initial budget review requires real before/after measurements
+against that exact main revision.
 
 `vp run harness load <FULL_BASELINE_SHA>` creates a disposable local worktree,
 installs that revision's frozen dependencies, checks both revisions' engine identity,

@@ -9,44 +9,44 @@
       "casts": 2200,
       "candidates": 16,
       "pathNodes": 0,
-      "events": 64,
-      "logBytes": 200000,
+      "events": 150,
+      "logBytes": 300000,
       "trajectoryBytes": 500000
     },
     "catalog-swordsman-sky-mage-pillars": {
-      "steps": 350,
-      "casts": 7500,
-      "candidates": 150,
-      "pathNodes": 500,
-      "events": 80,
-      "logBytes": 450000,
-      "trajectoryBytes": 1000000
+      "steps": 6000,
+      "casts": 55000,
+      "candidates": 200,
+      "pathNodes": 700,
+      "events": 3200,
+      "logBytes": 11000000,
+      "trajectoryBytes": 17000000
     },
     "catalog-fire-mage-healer-flat": {
-      "steps": 800,
-      "casts": 15000,
-      "candidates": 200,
+      "steps": 850,
+      "casts": 16500,
+      "candidates": 350,
       "pathNodes": 0,
-      "events": 350,
-      "logBytes": 1100000,
-      "trajectoryBytes": 2500000
+      "events": 700,
+      "logBytes": 1800000,
+      "trajectoryBytes": 2700000
     },
     "catalog-archer-guardian-flat": {
-      "steps": 850,
-      "casts": 17000,
+      "steps": 900,
+      "casts": 18000,
       "candidates": 275,
       "pathNodes": 0,
-      "events": 250,
-      "logBytes": 1200000,
-      "trajectoryBytes": 3000000
+      "events": 600,
+      "logBytes": 1700000,
+      "trajectoryBytes": 2800000
     },
     "catalog-storm-mage-ice-mage-flat": {
       "steps": 150,
       "casts": 2400,
       "candidates": 12,
       "pathNodes": 0,
-      "events": 50,
-      "logBytes": 200000,
+      "events": 120,
+      "logBytes": 275000,
       "trajectoryBytes": 500000
     },
     "catalog-lancer-swordsman-pillars": {
@@ -54,9 +54,18 @@
       "casts": 48000,
       "candidates": 0,
       "pathNodes": 0,
-      "events": 2,
-      "logBytes": 5500000,
-      "trajectoryBytes": 14000000
+      "events": 3100,
+      "logBytes": 9000000,
+      "trajectoryBytes": 16500000
+    },
+    "observed-ai-seer-ember": {
+      "steps": 250,
+      "casts": 6000,
+      "candidates": 600,
+      "pathNodes": 0,
+      "events": 300,
+      "logBytes": 900000,
+      "trajectoryBytes": 1500000
     }
   }
 }

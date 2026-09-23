@@ -164,7 +164,7 @@ describe('Drizzle Kit and spatial persistence integration', () => {
     const store = openStore(filename);
     try {
       await store.seedRevisions(readSampleRevisions());
-      expect(store.listRevisions('character').items).toHaveLength(10);
+      expect(store.listRevisions('character').items).toHaveLength(13);
     } finally {
       store.close();
     }

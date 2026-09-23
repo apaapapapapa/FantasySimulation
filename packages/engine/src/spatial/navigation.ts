@@ -16,16 +16,19 @@ export class Navigator {
   private readonly actor: ResolvedActor;
   private readonly scenario: DeepReadonly<Definition<'scenario'>>;
   private readonly rules: DeepReadonly<Definition<'ruleset'>>;
+  private readonly exploring: boolean;
   constructor(
     world: SpatialWorld,
     actor: ResolvedActor,
     scenario: DeepReadonly<Definition<'scenario'>>,
     rules: DeepReadonly<Definition<'ruleset'>>,
+    exploring = false,
   ) {
     this.world = world;
     this.actor = actor;
     this.scenario = scenario;
     this.rules = rules;
+    this.exploring = exploring;
   }
   private clear(from: Vec3, to: Vec3): boolean {
     const shape = capsuleShape(bodyCapsule(this.actor.character.body));
@@ -126,6 +129,7 @@ export class Navigator {
    * Already supported bridge decks keep their level; this never changes an explicit graph edge.
    */
   groundGoal(goal: Vec3): Vec3 {
+    if (this.exploring) return { ...goal };
     if (this.supported(goal)) return { ...goal };
     const shape = capsuleShape(bodyCapsule(this.actor.character.body));
     if (this.world.overlaps(goal, shape)) return { ...goal };
@@ -151,6 +155,21 @@ export class Navigator {
     maxNodes: number,
     allowJump = true,
   ): NavigationResult {
+    if (this.exploring) {
+      const delta = sub({ ...goal, y: flight ? goal.y : start.y }, start),
+        distance = length(delta);
+      const next =
+        distance > 0.75
+          ? lerp(start, { ...goal, y: flight ? goal.y : start.y }, 0.75 / distance)
+          : { ...goal, y: flight ? goal.y : start.y };
+      return this.clear(start, next)
+        ? {
+            kind: 'path',
+            waypoints: [{ position: next, mode: flight ? 'fly' : 'walk' }],
+            visited: 0,
+          }
+        : { kind: 'unreachable', visited: 0 };
+    }
     const mode = flight ? 'fly' : 'walk';
     if (this.traversable(start, goal, mode))
       return { kind: 'path', waypoints: [{ position: { ...goal }, mode }], visited: 0 };
@@ -245,5 +264,8 @@ export class Navigator {
       }
     }
     return { kind: 'unreachable', visited };
+  }
+  knownClearance(from: Vec3, to: Vec3) {
+    return this.clear(from, to);
   }
 }

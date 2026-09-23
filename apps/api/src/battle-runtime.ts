@@ -133,9 +133,9 @@ export class BattleRuntime {
       this.jobs.artifact(authority.replayId)?.state === 'quarantined'
     )
       throw new StoreError(409, 'Only a missing/corrupt definitive replay can be recovered');
-    const spec = this.jobs.store.getSpec(result.simulationHash);
-    if (!spec) throw new StoreError(409, 'Saved specification is unavailable');
     try {
+      const spec = this.jobs.store.getSpec(result.simulationHash);
+      if (!spec) throw new Error('Saved specification is unavailable');
       await prepareBattle(spec.manifest);
     } catch {
       throw new StoreError(409, 'Saved engine identity is unsupported; replay remains held');

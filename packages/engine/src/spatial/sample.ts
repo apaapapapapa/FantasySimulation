@@ -1,5 +1,7 @@
 import {
   contentHash,
+  CURRENT_ENGINE_VERSION,
+  AI_RULES,
   actorSeed,
   PhysicsProfileSchema,
   type Definition,
@@ -69,6 +71,7 @@ export async function sampleManifest(maxSteps = 6000): Promise<Manifest> {
     policy: reference(policy),
   });
   const scenario = await sealRevision('scenario', 'flat', 1, {
+    terrainKnowledge: 'surveyed',
     name: '平地',
     bounds: { min: { x: -50000, y: -1000, z: -50000 }, max: { x: 50000, y: 50000, z: 50000 } },
     obstacles: [
@@ -84,9 +87,10 @@ export async function sampleManifest(maxSteps = 6000): Promise<Manifest> {
     ],
     navigation: { version: 'support-graph-v1', nodes: [], edges: [] },
   });
-  const ruleset = await sealRevision('ruleset', 'standard', 1, {
+  const ruleset = await sealRevision('ruleset', 'standard-observed-v1', 1, {
     name: '標準3D',
-    rulesVersion: 'spatial-v1.10',
+    rulesVersion: CURRENT_ENGINE_VERSION,
+    ai: { ...AI_RULES },
     stepMs: 20,
     maxSteps,
     gravityMmPerSecond2: -9807,
@@ -101,7 +105,8 @@ export async function sampleManifest(maxSteps = 6000): Promise<Manifest> {
     schemaVersion: 3,
     eventSchemaVersion: 1,
     replaySchemaVersion: 1,
-    engineVersion: 'spatial-v1.10',
+    engineVersion: CURRENT_ENGINE_VERSION,
+    aiProfile: 'observed-utility-v1',
     implementationDigest: implementation.digest,
     physicsProfileHash: await contentHash(profile),
     physicsProfile: PhysicsProfileSchema.parse(profile),

@@ -52,6 +52,20 @@ const checked = (n: bigint) => {
   if (!Number.isSafeInteger(value)) throw new Error('Unsafe resource accumulation');
   return value;
 };
+/** Shared integer damage arithmetic for resolution and self-known periodic-risk estimates. */
+export function damageAmounts(
+  amount: number,
+  attack: number,
+  attackScaleBps: number,
+  defense: number,
+  resistance: number,
+  coverage = 10000,
+) {
+  const raw = BigInt(amount) + (BigInt(attack) * BigInt(attackScaleBps)) / 10000n;
+  const afterDefense =
+    ((raw > BigInt(defense) ? raw - BigInt(defense) : 0n) * BigInt(coverage)) / 10000n;
+  return { afterDefense, afterResistance: (afterDefense * BigInt(10000 - resistance)) / 10000n };
+}
 /** Simultaneous defense/resistance/shield resolution with exact attribution and one HP clamp. */
 export function resolveEffects(
   targets: readonly EffectTarget[],
@@ -85,15 +99,14 @@ export function resolveEffects(
         if (scale < 0n || scale > 10000n) throw new Error('Invalid effect coverage');
         switch (effect.kind) {
           case 'damage': {
-            const raw =
-              BigInt(effect.amount) +
-              (BigInt(application.attack) * BigInt(effect.attackScaleBps)) / 10000n;
-            const afterDefense =
-              ((raw > BigInt(stats.defense) ? raw - BigInt(stats.defense) : 0n) * scale) / 10000n;
-            const afterResistance =
-              (afterDefense *
-                BigInt(10000 - target.actor.character.stats.resistances[effect.element])) /
-              10000n;
+            const { afterDefense, afterResistance } = damageAmounts(
+              effect.amount,
+              application.attack,
+              effect.attackScaleBps,
+              stats.defense,
+              target.actor.character.stats.resistances[effect.element] ?? 0,
+              Number(scale),
+            );
             damages.push({ applicationId: application.id, afterDefense, afterResistance });
             break;
           }
@@ -105,6 +118,17 @@ export function resolveEffects(
             break;
           case 'dispel':
             if (scale > 0n) dispels.push(...effect.statusIds);
+            break;
+          case 'water':
+            if (scale > 0n)
+              dispels.push(
+                ...target.statuses
+                  .filter((s) => s.revision.definition.burning?.waterExtinguishable)
+                  .map((s) => s.revision.id),
+              );
+            break;
+          case 'reveal':
+            // Information is extracted only by the observation boundary, after actual contact.
             break;
           case 'apply-status': {
             const revision = statuses.find(
