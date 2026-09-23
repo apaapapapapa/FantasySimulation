@@ -42,7 +42,7 @@ import { blockedBySilence } from './categories.ts';
 import { bodyPoint, conditionMatches, perceive } from './perception.ts';
 import { SpatialBudgetError } from './physics.ts';
 import { choosePolicy, steerPolicy, isDodgeDecision } from './policy.ts';
-import { admitPair } from './pair-admission.ts';
+import { admitPair, rejectPair } from './pair-admission.ts';
 import type { PreparedBattle } from './prepare.ts';
 import { effectiveStats, statusBoundary, UnresolvedRuleError } from './status.ts';
 import { createBattleWorld } from './terrain.ts';
@@ -278,7 +278,12 @@ export function* simulate(
         const journal = new Journal(sequence, bytes, budget),
           effects: PendingEffect[] = [];
         const aiBoundary = step % (battle.manifest.physicsProfile.aiMs / battle.rules.stepMs) === 0;
-        const previousIntents = new Map(next.map((actor) => [actorId(actor), { ...actor.intent }]));
+        const previousMovement = new Map(
+          next.map((actor) => [
+            actorId(actor),
+            { intent: { ...actor.intent }, decision: actor.decision },
+          ]),
+        );
         // Observe and choose before either participant pays or declares anything.
         for (const actor of next) {
           const enemy = actors.find((a) => actorId(a) !== actorId(actor))!;
@@ -461,13 +466,7 @@ export function* simulate(
                   conditionMatches(definition.condition, view) &&
                   !(view.silenced && blockedBySilence(definition));
                 if (!admission.ok || !legal) {
-                  actor.decision = { ...actor.decision, abilityId: null, dodge: false };
-                  actor.intent = {
-                    ...previousIntents.get(actorId(actor))!,
-                    canMove: actor.intent.canMove,
-                    speedBps: actor.intent.speedBps,
-                    flight: actor.intent.flight,
-                  };
+                  rejectPair(actor, previousMovement.get(actorId(actor))!);
                   journal.emit({
                     kind: 'fizzle',
                     step,

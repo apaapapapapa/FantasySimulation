@@ -2,6 +2,23 @@ import type { ActorState, AbilityRevision } from './combat-state.ts';
 import type { ResourceBudget } from './resources.ts';
 import { flightRate } from './locomotion.ts';
 
+/** Keep the attempted choice in cognition, but restore every input used by motion settlement. */
+export function rejectPair(actor: ActorState, previous: Pick<ActorState, 'intent' | 'decision'>) {
+  const { gait: _, ...decision } = actor.decision;
+  actor.decision = {
+    ...decision,
+    abilityId: null,
+    dodge: false,
+    ...(previous.decision.gait ? { gait: previous.decision.gait } : {}),
+  };
+  actor.intent = {
+    ...previous.intent,
+    canMove: actor.intent.canMove,
+    speedBps: actor.intent.speedBps,
+    flight: actor.intent.flight,
+  };
+}
+
 /** Validate the entire new pair before either slot mutates resources, uses or clocks.
  * The guard is released immediately; synchronous declaration then motion reserve
  * against this same budget, without an intervening update or another consumer.

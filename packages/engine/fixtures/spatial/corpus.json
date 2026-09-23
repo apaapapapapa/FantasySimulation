@@ -460,6 +460,14 @@
     "slot-storage": {
       "file": "apps/api/src/simultaneous-persistence.test.ts",
       "name": "simultaneous slots through persisted Workers preserves joint decisions, costs and replacement displays across forward and backward seeks"
+    },
+    "slot-rejected-gait-true": {
+      "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
+      "name": "simultaneous action and evasion restores prior walking and its actual cost after a rejected jump pair, explicit gait=true"
+    },
+    "slot-rejected-gait-false": {
+      "file": "packages/engine/src/spatial/simultaneous-slots.test.ts",
+      "name": "simultaneous action and evasion restores prior walking and its actual cost after a rejected jump pair, explicit gait=false"
     }
   },
   "entries": [
@@ -1050,7 +1058,9 @@
         "slot-payment",
         "slot-execution-stamina",
         "slot-execution-legacy",
-        "slot-storage"
+        "slot-storage",
+        "slot-rejected-gait-true",
+        "slot-rejected-gait-false"
       ]
     }
   ]
