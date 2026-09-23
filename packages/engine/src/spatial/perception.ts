@@ -19,6 +19,7 @@ import type { SpatialWorld } from './physics.ts';
 import { metres } from './terrain.ts';
 import { publicStatuses } from './status-observation.ts';
 import type { StatusCohort } from './status.ts';
+import { observedCondition } from './observed-conditions.ts';
 
 export type ObservedActor = {
   id: string;
@@ -384,6 +385,12 @@ export type DecisionView = {
   rules?: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>>;
 };
 export function conditionMatches(condition: DeepReadonly<Condition>, view: DecisionView): boolean {
+  return evaluateCondition(condition, view) === true;
+}
+function evaluateCondition(
+  condition: DeepReadonly<Condition>,
+  view: DecisionView,
+): boolean | undefined {
   switch (condition.kind) {
     case 'always':
       return true;
@@ -408,12 +415,23 @@ export function conditionMatches(condition: DeepReadonly<Condition>, view: Decis
       return view.statusIds.includes(condition.id) === condition.present;
     case 'projectile-observed':
       return (view.memory.observation?.projectiles.length ?? 0) > 0;
-    case 'all':
-      return condition.children.every((c) => conditionMatches(c, view));
-    case 'any':
-      return condition.children.some((c) => conditionMatches(c, view));
-    case 'not':
-      return !conditionMatches(condition.child, view);
+    case 'observed-wounds':
+    case 'observed-phase':
+    case 'observed-status':
+    case 'relative-position':
+      return observedCondition(condition, view);
+    case 'all': {
+      const values = condition.children.map((c) => evaluateCondition(c, view));
+      return values.includes(false) ? false : values.includes(undefined) ? undefined : true;
+    }
+    case 'any': {
+      const values = condition.children.map((c) => evaluateCondition(c, view));
+      return values.includes(true) ? true : values.includes(undefined) ? undefined : false;
+    }
+    case 'not': {
+      const value = evaluateCondition(condition.child, view);
+      return value === undefined ? undefined : !value;
+    }
     default: {
       const impossible: never = condition;
       throw new Error(`Unknown condition: ${String(impossible)}`);
