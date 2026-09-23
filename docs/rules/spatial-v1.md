@@ -1,8 +1,6 @@
 # spatial-v1.11: 公開入力と実行manifest
 
-3D-02で固定する公開契約。実際に受理する項目は`packages/domain/src/spatial`のstrict Zod
-schemaを正本とする。3D-03〜07で実行系を追加し、3D-08でAPIへ接続する。
-旧契約を3Dへ暗黙変換しない。
+公開契約の正本は`packages/domain/src/spatial`のstrict Zod schema。旧契約を暗黙変換しない。
 観測AIの式・情報境界・記憶・乱数は[ADR 0009](../adr/0009-observed-ai.md)を参照。
 
 ## 単位と上限
@@ -183,34 +181,46 @@ policyへ渡さない。回避の候補は視認済みの敵弾だけで、未�
 状態`buff`/`debuff`/`control`/`damage-over-time`を重複なく複数持てる。能力で省略時はMPが正なら
 `magic`とみなす。`dispel`は`statusIds`か`categories`で一致する既存状態を解除する。
 
-## 効果と状態の同時解決（3D-06a）
+## 効果と状態の同時解決（3D-06a / G-02）
 
-ダメージは各効果ごとに`max(0, amount + floor(attack × attackScaleBps / 10000) - defense)`、
-範囲攻撃等のcoverage、属性耐性の順に整数切捨てする。その対象へ同区間に届く耐性適用後の
-ダメージを合計し、開始時と同区間付与のshieldを一括消費する。個々の吸収/HP向け内訳は
-`総量 × 各寄与 / 寄与合計`の既約有理数で保存する。端数をID順へ配らない。
+magicPower/magicDefense: optional integers 0..1,000,000; omitted = equipment/status-adjusted
+attack/defense. Explicit values (even 0) exclude physical modifiers.
+One effect = physical/elemental component. Magic swords: G-01 physical/magic categories,
+two effects, each using both stats.
 
-回復合計とshield後のダメージ合計を、コスト確定後のHPへ一度に反映して0〜maxHPへclampする。
-先に回復上限で切り捨てず、確定済み効果を同区間の被弾や合法なHP自己コストで取り消さない。
-計算の乗算・合算にはBigIntを用い、資源として安全整数へ戻す時に検証する。対象や効果の
-列挙順は結果を変えない。戻り値のID整列は記録の正規化だけに使う。
+Power = amount + floor(attack * attackScaleBps / 10000) + sum(floor(stat * ratioBps / 10000)).
+Optional scaling: 1..2 unique {stat: attack|magicPower, ratioBps: 0..100000} terms.
+Additive to legacy terms; use attackScaleBps=0 for scaling alone.
+Optional defense: physical (default), magic or none; independent of element/category.
 
-状態は[startStep, endStep)。主行動の新規状態は次境界から有効であり、その区間の防御を
-遡って変えない。期限切れを先に除き、継続効果は開始境界から定義した間隔で発火する。
-endStepでは発火しない。継続damage/healはstackごとの効果として扱い、防御の適用単位を
-cohortのまとめ方で変えない。解除は既存snapshotだけを対象とし、同時の新規付与を消さない。
+Order: max(0,power-defense) → coverage → resistance → dealtBps → receivedBps → shared shield → HP.
+none skips defense only. Each multiplication floors; factors are Bps/10000, or
+(10000-resistance)/10000. Coverage/resistance clamp 0..10000; dealt/received default 10000,
+clamp 0..30000 each. BigInt intermediates, safe-integer outputs; invalid inputs rejected.
 
-同じstackKey・同じrevisionの同時付与はcohortとして扱う。sumは最大stackまで共有して受け入れ、
-原因集合を保持する。異なる開始時刻のstackはそれぞれ期限を持つ。refreshは終了のみを延長して
-周期の開始を動かさず、replaceは既存を除いて開始を更新、rejectは有効な既存があれば拒否する。
-refreshの原因集合は元の付与と各延長の原因を保持し、その総数も原因予算へ算入する。
-期限と新規開始が同じ境界なら古いcohortは新規付与を妨げない。同時に異なるrevisionが同じkeyを
-要求する場合は優先規則を捏造せずunresolvedとする。単独のreplaceは明示的な置換として扱う。
+Sum components; consume initial + simultaneously granted shield. Shield/HP attribution uses
+reduced fractions total*contribution/sum, no ID-based remainders or per-component HP caps.
+Post-cost HP + healing - unshielded damage clamps once to 0..maxHP; no early healing clamp
+or cancellation by simultaneous damage/legal self-cost. Enumeration is irrelevant; ID sort is for records.
 
-状態の攻撃/防御修正はstack数で加算し、実効値は0以上。移動倍率は10000を基準とする差分を
-加算し、0〜30000Bpsに制限する。flight/rootedは有効な状態の論理和。飛行権限が期限切れなら
-次の移動で重力へ戻る。maxStatusTypes/maxStatusCausesはattemptの予算で、manifest/hashへ含めず
-増額できる。上限超過はtruncatedであり、状態や原因を黙って捨てない。
+`damage.ts`: damagePower(effect,source); calculateDamage(effect,source,target,coverageBps?,modifiers?).
+G-03 supplies adjusted stats/resistance and modifiers {dealtBps,receivedBps}. Source freezes at launch
+(including melee/projectiles); target uses resolution snapshot. Fixtures: damage-formulas.json.
+Only new formulas add damage.calculation metadata.
+afterDefense includes coverage; amount includes modifiers. AI uses own power/observations,
+Impact comparisons match defense (legacy=physical); resistance reveals ignore defense.
+Omitted additions preserve legacy results/hashes.
+
+Statuses: [start,end); expiry before pulses, per-stack pulses from start, never at end.
+Cohorts do not change defense units. New action states activate next boundary; dispel touches
+existing snapshots only, not simultaneous grants or that interval's defense.
+Same key/revision/start forms a cohort; sum shares maxStacks; distinct starts retain ends.
+Refresh extends end, preserves pulse phase and all grant/refresh causes (counted to budget).
+Replace removes old/resets start; reject blocks active states; expired states cannot block grants.
+Conflicting simultaneous revisions/key: unresolved. Single replace: explicit replacement.
+Attack/defense add per stack, floor 0; speed adds deltas from 10000, clamps 0..30000.
+Flight/rooted: active-state OR; expired flight restores gravity next movement.
+maxStatusTypes/maxStatusCauses: increasable attempt budgets outside manifest/hash; overflow truncates.
 
 ## 行動時計と攻撃形状（3D-06b）
 
@@ -307,7 +317,6 @@ explosionRadiusMm>0なら接触時点で球形範囲に一度だけ作用し、�
 
 初期表示に空の飛翔体集合を置き、各区間にspawn/位置・速度更新/接触時刻付きremoveと実際の分割軌跡を
 記録する。接触後の存在しない軌道を補間しない。projectile-spawn→接触→hit→effect/removeの原因を残す。
-entityIdの追加と飛翔体記録に合わせ、近接fixtureの内容hashもspatial-v1.9で更新する。
 
 ## 地上方針の空中目標とサンプル（spatial-v1.10）
 

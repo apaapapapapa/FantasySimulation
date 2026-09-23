@@ -1,5 +1,6 @@
 import type { BattleEvent, Budget, DeepReadonly, Effect } from '@fantasy/domain/spatial';
 import { resolveEffects } from './effects.ts';
+import { damagePower, type DamageSource } from './damage.ts';
 import type { ActorState } from './combat-state.ts';
 import type { PreparedBattle } from './prepare.ts';
 import type { Journal } from './journal.ts';
@@ -15,11 +16,10 @@ const effectEventKinds = {
   water: 'diagnostic',
   reveal: 'diagnostic',
 } satisfies Record<Effect['kind'], BattleEvent['kind']>;
-export type PendingEffect = {
+export type PendingEffect = DamageSource & {
   actorId: string | null;
   targetId: string;
   effect: DeepReadonly<Effect>;
-  attack: number;
   parentEventId: string | null;
   abilityId: string | null;
   causes?: readonly string[];
@@ -87,7 +87,7 @@ export function commitEffects(
       if (detail) {
         const { applicationId: _, ...damage } = detail;
         app.event.damage = damage;
-        app.event.amount = detail.afterResistance;
+        app.event.amount = detail.calculation?.afterModifiers ?? detail.afterResistance;
         app.event.ruleId = 'damage.defense-resistance-shield';
         app.event.reason = 'shared-shield-and-single-hp-clamp';
       } else if (app.effect.kind === 'heal' || app.effect.kind === 'shield') {
@@ -122,10 +122,9 @@ export function commitEffects(
                     ability: ref,
                     eventId: app.id,
                     element: app.effect.element,
-                    basePower:
-                      app.effect.amount +
-                      Math.floor((app.attack * app.effect.attackScaleBps) / 10000),
-                    impact: detail.afterResistance,
+                    basePower: Number(damagePower(app.effect, app)),
+                    ...(app.effect.defense !== undefined && { defense: app.effect.defense }),
+                    impact: detail.calculation?.afterModifiers ?? detail.afterResistance,
                     shield: BigInt(detail.absorbed.numerator) > 0n,
                     partial: (app.scaleBps ?? 10000) !== 10000,
                   },
