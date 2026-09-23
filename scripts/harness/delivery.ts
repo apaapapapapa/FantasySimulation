@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { assessReport, identity, parseReport, record, sha, text, timestamp } from './report.ts';
 import type { Check, Identity, Report } from './report.ts';
 import { parsePlan } from '../ci/plan.ts';
+import { DOCS_CHECKS } from '../ci/docs.ts';
 import type { Plan } from '../ci/plan.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { CORPUS_ARTIFACT_CHECK } from './corpus-compare.ts';
@@ -329,10 +330,8 @@ export function validateRun(
     if (
       !/^[a-f0-9]{64}$/.test(sources[0]!.logDigest) ||
       source.producer !== (plan?.full === false ? 'docs-check' : 'source-runner') ||
-      assessReport(
-        source,
-        plan?.full === false ? ['docs:diff', 'docs:links'] : ['source-clean', 'source-verify'],
-      ).exitCode !== 0
+      assessReport(source, plan?.full === false ? DOCS_CHECKS : ['source-clean', 'source-verify'])
+        .exitCode !== 0
     )
       return { status: 'unknown', reason: 'Source receipt incomplete or failed' };
     if (

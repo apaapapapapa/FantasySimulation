@@ -152,15 +152,29 @@ describe('fail-closed CI gate', () => {
         docs: 'success',
       };
     const docReports = {
-      'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']),
+      'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links', 'docs:context']),
       security,
     };
     expect(assessGate(docs, observed, docReports).exitCode).toBe(0);
+    for (const status of ['missing', 'fail']) {
+      const report = evidence(['docs:diff', 'docs:links', 'docs:context']);
+      report.checks = report.checks.flatMap((check) =>
+        check.id !== 'docs:context'
+          ? [check]
+          : status === 'missing'
+            ? []
+            : [{ ...check, status: 'fail' }],
+      );
+      expect(
+        assessGate(docs, observed, { ...docReports, 'docs-ubuntu-latest': report }).exitCode,
+      ).toBe(status === 'missing' ? 2 : 1);
+    }
     expect(assessGate(docs, observed, { ...docReports, security: null }).exitCode).toBe(2);
     expect(assessGate(docs, observed, {}).exitCode).toBe(2);
     expect(
-      assessGate(docs, observed, { 'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links']) })
-        .exitCode,
+      assessGate(docs, observed, {
+        'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links', 'docs:context']),
+      }).exitCode,
     ).toBe(2);
     expect(assessGate(docs, { ...observed, docs: 'skipped' }, {}).exitCode).toBe(1);
     expect(assessGate(docs, { ...observed, load: 'failure' }, docReports).exitCode).toBe(1);
