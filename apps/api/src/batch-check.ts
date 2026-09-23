@@ -117,9 +117,9 @@ export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
       }
       const outcome = slot.receipt?.result.outcome.kind;
       if (
+        (slot.reused && slot.state !== 'complete') ||
         ((slot.state === 'unresolved' || slot.state === 'truncated') && outcome !== slot.state) ||
-        ((slot.state === 'failed' || slot.state === 'pending') &&
-          (slot.receipt !== null || slot.reused))
+        ((slot.state === 'failed' || slot.state === 'pending') && slot.receipt !== null)
       )
         throw new Error('Slot state/replay mismatch');
       if (

@@ -6,6 +6,7 @@ import {
   canonicalJson,
   contentHash,
   PublicKeySchema,
+  PublicMatchRowSchema,
   assertPublicReplayBinding,
   assertPublicPageBinding,
   type BatchIndex,
@@ -18,7 +19,7 @@ import {
   readPublication,
 } from '../test-support/publication.ts';
 import { exportPublication } from './publication-export.ts';
-import { shardSlots } from './batch-check.ts';
+import { shardSlots, reconcileBatch } from './batch-check.ts';
 import { sha256 } from './replay-files.ts';
 
 describe('public saved-batch export', () => {
@@ -138,6 +139,14 @@ describe('public saved-batch export', () => {
           lastVerifiedStep: 6,
           replay: { objectHash: f.receipt.objectHash },
         });
+        expect(PublicMatchRowSchema.safeParse({ ...row, reused: true }).success).toBe(false);
+        const index = await publicationIndex(
+          f.plan,
+          f.index.slots.map((slot) => ({ ...slot, reused: true })),
+        );
+        const forged = [{ index, bundles: f.bundles }];
+        await expect(reconcileBatch(f.plan, forged)).rejects.toThrow(/Slot state/);
+        await expect(exportPublication(f.plan, forged, target)).rejects.toThrow(/Slot state/);
       });
     },
   );

@@ -65,11 +65,11 @@ export const PublicMatchRowSchema = z
       pending: 'not-started',
     }[row.state];
     if (
+      (row.reused && row.state !== 'complete') ||
       recorded !== (row.replay !== null && row.result !== null) ||
       (!recorded &&
         (row.replay !== null ||
           row.result !== null ||
-          row.reused ||
           row.records !== 0 ||
           row.lastVerifiedStep !== null)) ||
       (recorded &&
