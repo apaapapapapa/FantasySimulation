@@ -1,0 +1,140 @@
+[
+  {
+    "name": "legacy physical defense",
+    "effect": { "kind": "damage", "amount": 25, "attackScaleBps": 10000, "element": "fire" },
+    "source": { "attack": 20 },
+    "target": { "defense": 5, "resistance": 0 },
+    "expected": {
+      "basePower": "45",
+      "defenseApplied": 5,
+      "afterDefense": "40",
+      "afterResistance": "40",
+      "afterModifiers": "40"
+    }
+  },
+  {
+    "name": "magic fallback includes effective physical stats",
+    "effect": {
+      "kind": "damage",
+      "amount": 0,
+      "attackScaleBps": 0,
+      "element": "fire",
+      "defense": "magic",
+      "scaling": [{ "stat": "magicPower", "ratioBps": 20000 }]
+    },
+    "source": { "attack": 10 },
+    "target": { "defense": 7, "resistance": 0 },
+    "expected": {
+      "basePower": "20",
+      "defenseApplied": 7,
+      "afterDefense": "13",
+      "afterResistance": "13",
+      "afterModifiers": "13"
+    }
+  },
+  {
+    "name": "explicit magic defense",
+    "effect": {
+      "kind": "damage",
+      "amount": 7,
+      "attackScaleBps": 0,
+      "element": "fire",
+      "defense": "magic",
+      "scaling": [{ "stat": "magicPower", "ratioBps": 10000 }]
+    },
+    "source": { "attack": 101, "magicPower": 203 },
+    "target": { "defense": 11, "magicDefense": 31, "resistance": 2500 },
+    "expected": {
+      "basePower": "210",
+      "defenseApplied": 31,
+      "afterDefense": "179",
+      "afterResistance": "134",
+      "afterModifiers": "134"
+    }
+  },
+  {
+    "name": "defense bypass still applies resistance",
+    "effect": {
+      "kind": "damage",
+      "amount": 210,
+      "attackScaleBps": 0,
+      "element": "fire",
+      "defense": "none"
+    },
+    "source": { "attack": 101 },
+    "target": { "defense": 999, "resistance": 2500 },
+    "expected": {
+      "basePower": "210",
+      "defenseApplied": 0,
+      "afterDefense": "210",
+      "afterResistance": "157",
+      "afterModifiers": "157"
+    }
+  },
+  {
+    "name": "separate term floors and defense coverage resistance dealt received order",
+    "effect": {
+      "kind": "damage",
+      "amount": 7,
+      "attackScaleBps": 5000,
+      "element": "fire",
+      "scaling": [
+        { "stat": "attack", "ratioBps": 3333 },
+        { "stat": "magicPower", "ratioBps": 2500 }
+      ]
+    },
+    "source": { "attack": 101, "magicPower": 203 },
+    "target": { "defense": 11, "resistance": 2500 },
+    "coverage": 3333,
+    "modifiers": { "dealtBps": 15000, "receivedBps": 12500 },
+    "expected": {
+      "basePower": "140",
+      "defenseApplied": 11,
+      "afterDefense": "42",
+      "afterResistance": "31",
+      "afterModifiers": "57"
+    }
+  },
+  {
+    "name": "defense floors at zero before modifiers",
+    "effect": { "kind": "damage", "amount": 3, "attackScaleBps": 0, "element": "physical" },
+    "source": { "attack": 0 },
+    "target": { "defense": 4, "resistance": 0 },
+    "modifiers": { "dealtBps": 30000, "receivedBps": 30000 },
+    "expected": {
+      "basePower": "3",
+      "defenseApplied": 4,
+      "afterDefense": "0",
+      "afterResistance": "0",
+      "afterModifiers": "0"
+    }
+  },
+  {
+    "name": "resistance saturation precedes vulnerability",
+    "effect": { "kind": "damage", "amount": 100, "attackScaleBps": 0, "element": "fire" },
+    "source": { "attack": 0 },
+    "target": { "defense": 0, "resistance": 12000 },
+    "modifiers": { "receivedBps": 30000 },
+    "expected": {
+      "basePower": "100",
+      "defenseApplied": 0,
+      "afterDefense": "100",
+      "afterResistance": "0",
+      "afterModifiers": "0"
+    }
+  },
+  {
+    "name": "aggregate multipliers cap at three times each",
+    "effect": { "kind": "damage", "amount": 11, "attackScaleBps": 0, "element": "physical" },
+    "source": { "attack": 0 },
+    "target": { "defense": 0, "resistance": -10 },
+    "modifiers": { "dealtBps": 60000, "receivedBps": 30000 },
+    "expected": {
+      "basePower": "11",
+      "defenseApplied": 0,
+      "afterDefense": "11",
+      "afterResistance": "11",
+      "afterModifiers": "99"
+    }
+  }
+]

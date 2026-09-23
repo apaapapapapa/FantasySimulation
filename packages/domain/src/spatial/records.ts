@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { HashSchema, IdSchema } from './contracts.ts';
+import { DamageDefenseSchema, ElementSchema, HashSchema, IdSchema } from './contracts.ts';
 import { CognitionSchema } from './cognition.ts';
 
 const step = z.number().int().min(0).max(6000);
@@ -55,6 +55,15 @@ export const EventSchema = z
         defenseApplied: count,
         afterDefense: count,
         afterResistance: count,
+        calculation: z
+          .strictObject({
+            element: ElementSchema,
+            component: z.enum(['physical', 'elemental']),
+            defense: DamageDefenseSchema,
+            basePower: count,
+            afterModifiers: count,
+          })
+          .optional(),
         absorbed: z.strictObject({
           numerator: z.string().regex(/^\d{1,40}$/),
           denominator: z.string().regex(/^[1-9]\d{0,39}$/),

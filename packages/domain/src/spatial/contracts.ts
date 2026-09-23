@@ -150,12 +150,25 @@ const categoryList = <T extends z.ZodType<string>>(item: T) =>
     .max(8)
     .refine((values) => new Set(values).size === values.length, 'Categories must be unique');
 
+export const DamageDefenseSchema = z.enum(['physical', 'magic', 'none']);
+export type DamageDefense = z.infer<typeof DamageDefenseSchema>;
+const DamageScalingSchema = z
+  .array(z.strictObject({ stat: z.enum(['attack', 'magicPower']), ratioBps: uint(100_000) }))
+  .min(1)
+  .max(2)
+  .refine(
+    (terms) => new Set(terms.map((term) => term.stat)).size === terms.length,
+    'Damage scaling stats must be unique',
+  );
+
 export const EffectSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('damage'),
     amount: uint(1_000_000),
     attackScaleBps: uint(100_000),
     element: ElementSchema,
+    scaling: DamageScalingSchema.optional(),
+    defense: DamageDefenseSchema.optional(),
   }),
   z.strictObject({ kind: z.literal('heal'), amount: uint(1_000_000) }),
   z.strictObject({ kind: z.literal('shield'), amount: uint(1_000_000) }),
@@ -308,6 +321,8 @@ export const CharacterSchema = z.strictObject({
     mp: uint(1_000_000),
     attack: uint(1_000_000),
     defense: uint(1_000_000),
+    magicPower: uint(1_000_000).optional(),
+    magicDefense: uint(1_000_000).optional(),
     actionSpeedBps: uint(100_000),
     shield: uint(1_000_000),
     resistances: ResistancesSchema,

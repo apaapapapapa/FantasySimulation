@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "issue": 59,
+  "issueBodySha256": "c0cc18a6139a84453372d7c40f0d189957d92cec0b49a60d53ada886b64a37f1",
+  "issueUpdatedAt": "2026-09-23T04:48:46Z",
+  "complete": true,
+  "summary": "PR #62の互換性方針をPR #71で実装。旧版データの参照と旧版実行の拒否、配布済み定義の不変性検査、新IDシナリオ、実旧版DB/replayのCI回帰試験を接続。",
+  "remainingWork": [],
+  "pullRequests": [62, 71],
+  "acceptance": [
+    {
+      "task": "AGENTS.mdとADRに、互換な追加・判断を変える変更・サンプルの定義・新しいDBが避けられない場合の規則と、版を上げるPRの手順が書かれている",
+      "evidence": "PR #62のAGENTS.md、READMEとADR 0010を継承。今回のADR更新で保存/実行の境界とflat/pillarsの正本を具体化。"
+    },
+    {
+      "task": "前の版で作ったDBを新しいコードで開く回帰試験がCIにある。起動・サンプル登録・定義の一覧と取得・旧版の結果とリプレイの取得が成功する",
+      "evidence": "apps/api/src/version-compatibility.test.ts: 旧コード06958f6 (v1.10) と e42a991 (v1.11)の実DB/完了結果/replay/pending/interrupted固定資料を展開。公式migration、API起動、seed、定義一覧/取得、結果/replay取得を検証。fixtures/compatibility/README.mdに再現方法。"
+    },
+    {
+      "task": "旧版の未完了のjob・再試行・リプレイ復旧が、ZodErrorではなく「対応していない版」と分かる理由で止まる。旧版のengineでは再実行しない",
+      "evidence": "prepare.tsのunsupportedExecutionReasonをStore.requireExecutableSpec、JobStore.retry、BattleRuntimeの実行/復旧で共有。両旧版のjobが明示的失敗、retry/recovery 409、BattlePool.run未呼出しを回帰試験で確認。"
+    },
+    {
+      "task": "定義の一覧またはBattleSpecの作成で、実行できない旧版のrulesを区別できる",
+      "evidence": "Store.prepareSpecが旧rulesでの作成を409と旧版/現版の説明で拒否。version-compatibility.test.tsがv1.10の標準rulesをAPIへ渡して検証。"
+    },
+    {
+      "task": "サンプルの定義の変更は新しいIDで行われ、既存IDの内容を変えるとカタログ検査が失敗する",
+      "evidence": "published-revisions.jsonの配布済み52定義と新規2定義をscripts/catalog-history.tsで照合。内容/番号/削除/ID重複を拒否する5試験。catalog:spatialと既存品質検査へ接続。"
+    },
+    {
+      "task": "PR #57 で同じID・revisionのまま内容が変わった `flat`・`pillars` が規則に沿って扱われ、revision 1 の内容と、既に作られたDBの扱いが記録されている",
+      "evidence": "ADR 0010にPR #57後の配布済みrevision 1を正本と定め、PR #57前後の既存DBは上書きせず保持することを記録。flat-surveyed-v1/pillars-surveyed-v1を新IDで追加。両旧版DBのseedと旧定義保持を検証し、固定corpusの旧IDを維持。"
+    },
+    {
+      "task": "schemaの変更は省略可能な項目・列挙値の追加だけで、省略時に既存の全fixtureの結果が変わらないことを試験で確かめる",
+      "evidence": "実行Manifestの制約は維持し、保存用Manifestだけを既存replay同様の旧版許容へ分離。必須項目削除や旧定義の変更なし。全既存fixtureと固定7入力のcorpus/68対応試験が成功。期待battle digestの再生成なし。"
+    },
+    {
+      "task": "新しいDBが避けられない場合の手順がADRに書かれている。ADR 0003で廃止した仕組みを復活させていない",
+      "evidence": "ADR 0010の非互換変更時の規則を維持。新DBへの切替や独自migration/履歴table/resetを実装せず、Drizzleの既存migrationで旧DBを読む。"
+    },
+    {
+      "task": "既存の `vp run verify`・Linux CI・source harnessで検証する（2026-09-23のLinuxのみとするユーザー指示、およびPR #64・#66に準拠）",
+      "evidence": "vp run verify、API起動、clean-source harnessで検証。PR #71の最新Linux CIとmainの実SHA/Release成功はdelivery評価とIssue completion workflowの必須gateで照合する。"
+    }
+  ]
+}
