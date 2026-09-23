@@ -11,9 +11,13 @@ import { withSources } from './ast.ts';
 import { firstPartyTypeScript } from './files.ts';
 
 // These are reviewed policy, not a growing baseline or a percentage allowance.
-export const DUPLICATION_POLICY = Object.freeze({ minNodes: 40, minLines: 8 });
-const MAX_NODES = 250000;
-const MAX_COMPARISONS = 1000000;
+export const DUPLICATION_POLICY = Object.freeze({
+  minNodes: 40,
+  minLines: 8,
+  maxSourceNodes: 250000,
+  maxRepositoryNodes: 500000,
+  maxComparisons: 1000000,
+});
 interface Token {
   key: string;
   startLine: number;
@@ -60,7 +64,8 @@ function tokens(file: SourceFile): Token[] {
             children.length ? start : Math.max(start, node.end - 1),
           ).line + 1,
       });
-      if (result.length > MAX_NODES) throw Error('Duplication source node budget exceeded');
+      if (result.length > DUPLICATION_POLICY.maxSourceNodes)
+        throw Error('Duplication source node budget exceeded');
     }
     children.forEach(visit);
   }
@@ -72,15 +77,21 @@ function tokens(file: SourceFile): Token[] {
 export function duplication(root: string, paths: readonly string[]): DuplicateFinding[] {
   const selected = firstPartyTypeScript(paths).sort();
   return withSources(root, selected, (files) => {
-    const sources = [...files].map(([path, file]) => ({ path, tokens: tokens(file) }));
-    if (sources.reduce((count, file) => count + file.tokens.length, 0) > MAX_NODES)
-      throw Error('Duplication repository node budget exceeded');
+    let nodes = 0;
+    const sources = [...files].map(([path, file]) => {
+      const sequence = tokens(file);
+      nodes += sequence.length;
+      if (nodes > DUPLICATION_POLICY.maxRepositoryNodes)
+        throw Error('Duplication repository node budget exceeded');
+      return { path, tokens: sequence };
+    });
     const windows = new Map<string, { file: number; offset: number }[]>();
     const findings: DuplicateFinding[] = [];
     const { minNodes, minLines } = DUPLICATION_POLICY;
     let comparisons = 0;
     const equal = (left: Token, right: Token) => {
-      if (++comparisons > MAX_COMPARISONS) throw Error('Duplication comparison budget exceeded');
+      if (++comparisons > DUPLICATION_POLICY.maxComparisons)
+        throw Error('Duplication comparison budget exceeded');
       return left.key === right.key;
     };
     for (const [file, source] of sources.entries()) {
