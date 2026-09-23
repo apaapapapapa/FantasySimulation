@@ -99,7 +99,8 @@ export function pathAllowed(contract: Contract, value: unknown): boolean {
     /^(?:scripts|db|data|evaluations|e2e|docs)(?:\/|$)/.test(path) ||
     /(?:^|\/)(?:fixtures|test-support|migrations)(?:\/|$)/.test(path) ||
     /(?:identity|digest|budget|expected|snapshot)/i.test(path) ||
-    path === 'apps/api/src/db/schema.ts'
+    path === 'apps/api/src/db/schema.ts' ||
+    path === 'packages/engine/src/spatial/implementation.json'
   )
     return false;
   return contract.allowedPaths.some((p) => path === p || path.startsWith(p + '/'));

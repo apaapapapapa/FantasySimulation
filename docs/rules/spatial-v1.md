@@ -280,13 +280,13 @@ commit/cancel once. Actual travel≤physical bound; settle all holds before upda
 skills keep costs after fizzle; failed reservations cost0; uses0=unlimited; HP may pay all.
 
 `status.flightStaminaPerSecond?` or apply-status override defines upkeep/s, including hover/root/cast.
-Omitted=0; grant/refresh minimum wins without duplicate charges. Paid flight requires next interval
+Omitted=0; grant/refresh minimum wins once. Paid flight needs next interval
 ceiling cost and resume threshold; shortage restores gravity/ground routes; retry after recovery.
-Free flight persists. Display/replay retains override; decision state retains fractions.
+Free flight persists; displays retain override, decision state fractions.
 `updateResources` sums signed deltas and max(0,rate+add)×Bps/10000 recovery before one clamp;
-recovery fractions persist, discarded at max. G-03 supplies interval-start recovery modifiers.
+recovery fractions persist, discarded at max. G-03 supplies interval-start modifiers.
 
-AI reserves own skill/jump/dodge funds, then runs if its horizon travel budget fits.
+AI reserves skill/jump/dodge costs and runs if horizon travel fits.
 Visible threats price dodge; skills preserve paid-flight upkeep.
 Enemy inputs: delayed visible speed/appearance, never exact stamina. Logs record own gait/reserve,
 movement.cost before/after and boundary recovery.
