@@ -110,7 +110,7 @@ export const AppearancePriorsSchema = z.strictObject({
     .array(
       z.strictObject({
         match: AppearanceSchema.partial().refine(
-          (m) => Object.keys(m).length > 0,
+          (m) => !!(m.surface || m.silhouette || m.equipment?.length),
           'Empty appearance cue',
         ),
         confidenceBps: uint(10000),

@@ -77,15 +77,16 @@ describe('G-05 observation contracts', () => {
         bps: 7500,
         confidence: 1000,
       });
-      expect(
-        AiRulesSchema.safeParse({
-          ...rules,
-          appearancePriors: {
-            ...rules.appearancePriors,
-            cues: [{ match: {}, confidenceBps: 1, efficacy: [] }],
-          },
-        }).success,
-      ).toBe(false);
+      for (const match of [{}, { equipment: [] }])
+        expect(
+          AiRulesSchema.safeParse({
+            ...rules,
+            appearancePriors: {
+              ...rules.appearancePriors,
+              cues: [{ match, confidenceBps: 1, efficacy: [] }],
+            },
+          }).success,
+        ).toBe(false);
       const run = await runBattle(f.manifest);
       expect(
         battleEvents(run.records).some((e) => e.damage?.calculation?.element === 'earth'),
