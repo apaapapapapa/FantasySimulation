@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "issue": 59,
+  "issueBodySha256": "5f72c62bfca61ece5fe54cc4f22f5fbce5fa2d2c10ba9d2829a3afc4803c6592",
+  "issueUpdatedAt": "2026-09-22T23:59:11Z",
+  "complete": true,
+  "summary": "戦闘版からDBとreplayの既定保存先を導出し、保存データから判定した版が異なる・混在する・不明なDBと、別DB所有のartifact rootを書込み前に拒否する。旧DB/WAL/SHM・下書き・artifactのhash不変、現行版での起動/再起動、公式Drizzle運用を検証。#57は順序要件を確認する前に統合済みであり、この変更を以後の#45拡張と完了処理の前提とする。",
+  "remainingWork": [],
+  "pullRequests": [57, 62],
+  "acceptance": [
+    {
+      "task": "既定設定で、版が上がった後の初回起動が、新しい空のDBとartifact rootを作成し、マイグレーション・サンプル登録・起動に成功する",
+      "evidence": "apps/api/src/storage-paths.ts and config.ts derive both defaults from CURRENT_ENGINE_VERSION. storage-version.test.ts tests fresh migration/13-character seed/runtime startup/restart. Built dist/index.mjs also started twice using the fresh default data/spatial-v1.11 paths and returned healthy HTTP responses."
+    },
+    {
+      "task": "旧版の既定DBファイル・artifact root・下書きが、起動の前後で変更も削除もされない（内容のhash等で確認する）",
+      "evidence": "storage-version.test.ts: starts a new version, seeds and restarts without changing old DB/WAL/SHM, drafts or artifacts. test-support/storage.ts hashes every original file before and after; old draft bytes remain in the WAL-backed fixture."
+    },
+    {
+      "task": "旧版のDBを`DATABASE_PATH`で明示すると、ZodErrorではなく、DBの版・現在の版・対処方法を示すエラーで起動を止める。そのDBへの書込みは起きない",
+      "evidence": "storage-version.ts inspects a private DB/WAL copy before Store opens or the official migrator writes. Tests reject spatial-v1.10 with StorageVersionError containing stored/current versions and DATABASE_PATH/ARTIFACT_PATH remedies; original file hashes remain identical."
+    },
+    {
+      "task": "旧版のartifact rootを`ARTIFACT_PATH`で明示した場合も同様に停止し、既存の`.store-id`による保護と矛盾しない",
+      "evidence": "index.ts, seed.ts and batch-runner.ts call assertStoragePaths before opening the database. The old-artifact regression confirms the fresh DB is not created and old bytes are unchanged; runtime-owner.ts preserves .store-id and its existing foreign/nonempty-root tests."
+    },
+    {
+      "task": "版を判定できないDBを、推測で開かない",
+      "evidence": "storage-version.test.ts rejects unknown, empty, schema-only, unreadable and mixed-version databases. No path-name or schema-generation inference supplies a guessed version."
+    },
+    {
+      "task": "同じ版のDBは、従来どおり再起動・再利用でき、既存のjob・lease・復旧の試験が成功する",
+      "evidence": "storage-version.test.ts verifies current-version startup/restart. Existing battle-runtime.test.ts, job-store/property/recovery and batch suites remain in verify; all 386 tests passed locally."
+    },
+    {
+      "task": "schema世代の宣言・reset・自前のmigration runner・履歴tableを追加していない。Drizzleのmigrationは従来どおり適用される",
+      "evidence": "Store still calls drizzle-orm/better-sqlite3/migrator directly, with unchanged db/drizzle SQL and official __drizzle_migrations. drizzle.test.ts verifies Kit/startup receipts, incremental changes and rollback; no custom migration/history/reset implementation was added."
+    },
+    {
+      "task": "旧版の定義・結果を、新版で再実行・変換・取込みしない",
+      "evidence": "Store admission rejects old DBs and pinned old rules imports; existing sealRevision/prepareBattle reject old rules for publication/execution. Old results are absent from the new DB, while supported archived replay schemas retain display-only handling."
+    },
+    {
+      "task": "README・`.env.example`・ADRが、新しい運用と一致する",
+      "evidence": "README.md, .env.example, ADR 0004/0005 and AGENTS.md document automatic version paths, explicit override rejection, old-file preservation/manual deletion and reviewed rules/digest/corpus/version-bump delivery. Generated DB/artifact directories are ignored by Git."
+    },
+    {
+      "task": "既存の`vp run verify`・両OSのCI・source harnessで検証する",
+      "evidence": "Canonical vp run verify passed: 386 tests, 61 security tests, quality, corpus and builds. The final committed-source harness and both Verify OS jobs are required by this PR and post-merge main CI; Issue completion verifies their actual receipts before closing."
+    }
+  ]
+}
