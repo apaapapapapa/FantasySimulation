@@ -98,6 +98,12 @@ test('draft-resume-tall-character', async ({ page }, info) => {
   await battle.getByLabel('参加者A').selectOption(id);
   await battle.getByText('計算予算', { exact: true }).click();
   await battle.getByLabel('ログ上限bytes').fill('1');
+  await battle.getByText('開始位置を調整', { exact: true }).click();
+  const positions = battle.getByLabel('開始位置JSON（A・Bの順、mm）');
+  await positions.fill('[{"x":1000000,"y":3020,"z":0},{"x":4000,"y":1200,"z":0}]');
+  await battle.getByRole('button', { name: '対戦を開始' }).click();
+  await expect(battle.getByRole('alert')).toContainText('Spawn body exceeds arena bounds');
+  await positions.fill('[{"x":-4000,"y":3020,"z":2000},{"x":4000,"y":1200,"z":0}]');
   await battle.getByRole('button', { name: '対戦を開始' }).click();
   await expect(battle.getByLabel('結果の種類')).toHaveText('truncated');
   await expect(battle.getByRole('alert')).toHaveCount(0);
@@ -119,6 +125,12 @@ test('battle-cancel-retry', async ({ page }) => {
   });
   await expect(battle.getByLabel('対戦ID')).toHaveText(id!);
   await expect(battle.getByLabel('試行履歴')).toContainText('completed');
+  await page.reload();
+  await battle.getByText('保存した対戦を開く', { exact: true }).click();
+  await battle.getByRole('button', { name: id!, exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(battle.getByLabel('対戦ID')).toHaveText(id!);
+  await expect(battle.getByRole('status', { name: '対戦の状態' })).toHaveText('完了');
   await battle.getByRole('button', { name: '結果のリプレイを見る' }).click();
   await expect(page.getByRole('table', { name: '記録された状態' }).getByRole('row')).toHaveCount(3);
 });

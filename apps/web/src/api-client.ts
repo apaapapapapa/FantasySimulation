@@ -1,5 +1,5 @@
 import { readBounded, strictText } from './replay/artifacts.ts';
-import { type Revision, type RevisionRef } from '@fantasy/domain/spatial';
+import { RevisionPageSchema, type Revision, type RevisionRef } from '@fantasy/domain/spatial';
 
 /** All editor requests stay on the local API origin and validate the returned contract. */
 export async function api<T>(
@@ -10,6 +10,7 @@ export async function api<T>(
     body?: unknown;
     signal?: AbortSignal;
     headers?: Record<string, string>;
+    maxBytes?: number;
   } = {},
 ): Promise<T> {
   const response = await fetch(`/api/${path}`, {
@@ -22,7 +23,11 @@ export async function api<T>(
     },
     ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
   });
-  const bytes = await readBounded(response.body ?? new Blob().stream(), 512 * 1024, 'API response');
+  const bytes = await readBounded(
+    response.body ?? new Blob().stream(),
+    options.maxBytes ?? 1024 * 1024,
+    'API response',
+  );
   let value: unknown;
   try {
     value = JSON.parse(strictText(bytes, 'API response'));
@@ -51,3 +56,11 @@ export const reference = ({ id, revision, contentHash }: Revision): RevisionRef 
   revision,
   contentHash,
 });
+
+/** At most ten 512-KiB API definitions plus revision envelopes per request. */
+export const apiRevisionPage = (kind: string, cursor: string | null, signal?: AbortSignal) =>
+  api(
+    `revisions/${kind}?limit=10${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
+    RevisionPageSchema,
+    { ...(signal ? { signal } : {}), maxBytes: 6 * 1024 * 1024 },
+  );

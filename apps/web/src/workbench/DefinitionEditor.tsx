@@ -11,18 +11,9 @@ import {
   type Draft,
   type Revision,
 } from '@fantasy/domain/spatial';
-import { api, errorText, jsonText, reference } from '../api-client.ts';
+import { api, apiRevisionPage, errorText, jsonText, reference } from '../api-client.ts';
 
-const recentKey = 'fantasy.recent-drafts';
-function recentDrafts(): string[] {
-  try {
-    return IdSchema.array()
-      .max(20)
-      .parse(JSON.parse(localStorage.getItem(recentKey) ?? '[]'));
-  } catch {
-    return [];
-  }
-}
+import { recentIdentities, rememberIdentity } from './recent-identities.ts';
 
 export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
   const [kind, setKind] = useState<'character' | 'ability'>('character');
@@ -41,20 +32,12 @@ export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
   const [error, setError] = useState('');
   const [valid, setValid] = useState(false);
   const [historyRevision, setHistoryRevision] = useState(1);
-  const [recent, setRecent] = useState(recentDrafts);
+  const [recent, setRecent] = useState(() => recentIdentities('drafts'));
   const [resumeId, setResumeId] = useState('');
 
   function remember(saved: Draft) {
     setResumeId(saved.id);
-    setRecent((previous) => {
-      const next = [saved.id, ...previous.filter((id) => id !== saved.id)].slice(0, 20);
-      try {
-        localStorage.setItem(recentKey, JSON.stringify(next));
-      } catch {
-        // The displayed ID still allows retrieval when browser storage is unavailable.
-      }
-      return next;
-    });
+    setRecent((previous) => rememberIdentity('drafts', saved.id, previous));
   }
   async function resume(value: string) {
     const saved = await api(`drafts/${encodeURIComponent(IdSchema.parse(value))}`, DraftSchema);
@@ -82,11 +65,7 @@ export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
   useEffect(() => {
     const controller = new AbortController();
     setPage({ items: [], nextCursor: null });
-    void api(
-      `revisions/${kind}?limit=10${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
-      RevisionPageSchema,
-      { signal: controller.signal },
-    )
+    void apiRevisionPage(kind, cursor, controller.signal)
       .then(setPage)
       .catch((e: unknown) => {
         if (!controller.signal.aborted) setError(errorText(e));

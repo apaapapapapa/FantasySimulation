@@ -1,17 +1,25 @@
 import { useEffect, useState } from 'react';
 import {
   actorSeed,
+  IdSchema,
+  Vec3Schema,
   CURRENT_ENGINE_VERSION,
   DEFAULT_BUDGET,
   JobRequestSchema,
   JobResponseSchema,
   JobStatusSchema,
   BattleResultResponseSchema,
-  RevisionPageSchema,
   type Revision,
 } from '@fantasy/domain/spatial';
-import { api, errorText, reference } from '../api-client.ts';
-import { spawnPosition } from './spawn-position.ts';
+import { api, apiRevisionPage, errorText, reference } from '../api-client.ts';
+import { spawnPositions } from './spawn-position.ts';
+import { recentIdentities, rememberIdentity } from './recent-identities.ts';
+
+function required(items: Revision[], id: string) {
+  const value = items.find((r) => r.id === id);
+  if (!value) throw new Error('設定を選択してください');
+  return value;
+}
 
 type Status = ReturnType<typeof JobStatusSchema.parse>;
 type Result = ReturnType<typeof BattleResultResponseSchema.parse>;
@@ -44,7 +52,9 @@ export function BattlePanel({
   const [jobId, setJobId] = useState<string | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const [result, setResult] = useState<Result | null>(null);
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState(() => recentIdentities('jobs'));
+  const [resumeId, setResumeId] = useState('');
+  const [positionsText, setPositionsText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [pollTick, setPollTick] = useState(0);
@@ -56,15 +66,11 @@ export function BattlePanel({
       const seen = new Set<string>();
       do {
         if (cursor) {
-          if (seen.has(cursor) || seen.size >= 10)
+          if (seen.has(cursor) || seen.size >= 100)
             throw new Error('設定一覧のページ参照が不正です');
           seen.add(cursor);
         }
-        const page: ReturnType<typeof RevisionPageSchema.parse> = await api(
-          `revisions/${kind}?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
-          RevisionPageSchema,
-          { signal: controller.signal },
-        );
+        const page = await apiRevisionPage(kind, cursor, controller.signal);
         items.push(...page.items);
         cursor = page.nextCursor;
         if (items.length >= 1000 && cursor)
@@ -76,7 +82,10 @@ export function BattlePanel({
       .then(([characters, allRules, scenarios]) => {
         if (controller.signal.aborted) return;
         const rulesets = allRules.filter(
-          (r) => r.kind === 'ruleset' && r.definition.rulesVersion === CURRENT_ENGINE_VERSION,
+          (r) =>
+            r.kind === 'ruleset' &&
+            r.definition.rulesVersion === CURRENT_ENGINE_VERSION &&
+            !!r.definition.ai,
         );
         setCatalog({ characters, rulesets, scenarios });
         setLeft((old) => old || characters[0]?.id || '');
@@ -138,6 +147,21 @@ export function BattlePanel({
     } finally {
       setBusy(false);
     }
+  }
+  function defaultPositions() {
+    return spawnPositions(
+      [required(catalog.characters, left), required(catalog.characters, right)],
+      required(catalog.scenarios, scenario),
+    );
+  }
+  function openJob(value: string) {
+    const id = IdSchema.parse(value);
+    setJobId(id);
+    setResumeId(id);
+    setStatus(null);
+    setResult(null);
+    setPollTick((n) => n + 1);
+    setHistory((ids) => rememberIdentity('jobs', id, ids));
   }
   function options(items: Revision[]) {
     return items.map((r) => (
@@ -209,17 +233,45 @@ export function BattlePanel({
           </label>
           <p>上限で中断した場合は、予算を増やして明示的に再試行できます。</p>
         </details>
+        <details>
+          <summary>開始位置を調整</summary>
+          <p>
+            空欄は自動配置です。障害物に重なる場合は座標を調整してください。開始時に範囲と重なりを確認します。
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              void work(async () => {
+                setPositionsText(JSON.stringify(defaultPositions(), null, 2));
+              })
+            }
+          >
+            既定位置を入力
+          </button>
+          <label>
+            開始位置JSON（A・Bの順、mm）
+            <textarea value={positionsText} onChange={(e) => setPositionsText(e.target.value)} />
+          </label>
+          <details>
+            <summary>選択した戦場の地形</summary>
+            <pre>
+              {JSON.stringify(
+                catalog.scenarios.find((r) => r.id === scenario)?.definition,
+                null,
+                2,
+              )}
+            </pre>
+          </details>
+        </details>
         <button
           type="button"
           className="primary"
           disabled={!left || !right || !ruleset || !scenario || active}
           onClick={() =>
             void work(async () => {
-              const required = (items: Revision[], id: string) => {
-                const value = items.find((r) => r.id === id);
-                if (!value) throw new Error('設定を選択してください');
-                return value;
-              };
+              const positions = positionsText.trim()
+                ? Vec3Schema.array().length(2).parse(JSON.parse(positionsText))
+                : defaultPositions();
               const request = JobRequestSchema.parse({
                 spec: {
                   seed,
@@ -228,11 +280,7 @@ export function BattlePanel({
                   participants: [left, right].map((id, index) => ({
                     actorId: index === 0 ? 'left' : 'right',
                     character: reference(required(catalog.characters, id)),
-                    position: spawnPosition(
-                      required(catalog.characters, id),
-                      required(catalog.scenarios, scenario),
-                      index,
-                    ),
+                    position: positions[index],
                     facing: { x: index === 0 ? 1000 : -1000, y: 0, z: 0 },
                     rngSeed: actorSeed(seed, index as 0 | 1),
                     rngStream: index,
@@ -249,9 +297,7 @@ export function BattlePanel({
               setStatus({ job: submitted.job, attempts: [] });
               setJobId(submitted.job.id);
               setPollTick((n) => n + 1);
-              setHistory((ids) =>
-                [submitted.job.id, ...ids.filter((id) => id !== submitted.job.id)].slice(0, 20),
-              );
+              setHistory((ids) => rememberIdentity('jobs', submitted.job.id, ids));
             })
           }
         >
@@ -342,26 +388,31 @@ export function BattlePanel({
           {error}
         </p>
       )}
-      {history.length > 0 && (
-        <details>
-          <summary>この画面で実行した対戦</summary>
-          <ul>
+      <details>
+        <summary>保存した対戦を開く</summary>
+        <fieldset disabled={busy}>
+          <label>
+            開く対戦ID
+            <input value={resumeId} onChange={(e) => setResumeId(e.target.value)} />
+          </label>
+          <button
+            type="button"
+            disabled={!resumeId}
+            onClick={() => void work(async () => openJob(resumeId))}
+          >
+            IDで開く
+          </button>
+          <ul aria-label="最近の対戦">
             {history.map((id) => (
               <li key={id}>
-                <button
-                  onClick={() => {
-                    setJobId(id);
-                    setStatus(null);
-                    setPollTick((n) => n + 1);
-                  }}
-                >
+                <button type="button" onClick={() => openJob(id)}>
                   {id}
                 </button>
               </li>
             ))}
           </ul>
-        </details>
-      )}
+        </fieldset>
+      </details>
     </section>
   );
 }
