@@ -591,6 +591,10 @@ export function* simulate(
                 step,
                 resourceBudgets.get(actorId(actor))!,
                 journal,
+                {
+                  dodge: aiBoundary && isDodgeDecision(actor.decision),
+                  previous: previousMovement.get(actorId(actor))!,
+                },
               )
             : null;
           if (action.stages && !staged?.ability) continue;

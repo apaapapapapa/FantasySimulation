@@ -110,26 +110,29 @@ restamp their identities or use a gate-only rerun as substitute evidence.
 
 Workflow dependencies prevent the release job from proceeding after failed or
 incomplete security checks. They do not independently restrict manual merges.
-Configure an active rule for `main` requiring the exact observed `ci-gate` check,
-plus the security/dependency gates as defense in depth, from the expected GitHub
-Actions producer. Require review for workflow and policy changes, dismiss stale
-approval after changes and prevent direct/force-push bypass as appropriate.
-Do not remove existing required checks before confirming their replacements.
-See GitHub's [protected branch documentation](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches).
+[Ruleset 23838688](https://github.com/apaapapapapa/FantasySimulation/rules/23838688)
+was verified active for `refs/heads/main` on 2026-09-23. It requires a PR,
+resolved review threads and an up-to-date branch, forbids deletion/force pushes
+and has no bypass actors. The required checks are `ci-gate`,
+`Security / security-gate` and `Dependency policy / dependency-policy-gate`,
+each bound to GitHub Actions (integration ID `15368`). The branch API also
+reports `protected: true`; legacy branch-protection fields alone do not describe
+Ruleset enforcement. Recheck the live rules before delivery.
 
-At the 2026-09-23 inspection baseline
-`1ebd0b11a039e5b448d35ace669f66b66266db3d`, the branch API reported
-`protected: false`, protection disabled and no required status-check contexts.
-This change does not enable repository administration settings. Detailed
-settings and enforcement must be verified by an administrator; do not label
-this repository protected based solely on successful CI.
+The owner chose zero required approving reviews for solo development.
+Current-head self-review, resolving findings and SHA-bound CI remain required;
+self-review is not independent human approval. The separate independent-human
+approval rule for secret exceptions above is unchanged. Windows validation and
+actual fork-PR testing are outside the current acceptance scope. Fork-specific
+permissions, execution approval and SARIF publication remain untested; retain
+`pull_request`, minimal permissions and no project secrets for PR validation.
 
 Remaining operational acceptance for Issue #8:
 
-1. Authorize the existing Mend Renovate GitHub App for FantasySimulation.
-   Verify its onboarding/dashboard and actual bot activity; a valid
-   `renovate.json` alone is not activation. Do not introduce another update bot.
-2. Approve one suitable update from its Dependency Dashboard. Confirm the real
+1. Verify actual hosted Renovate activity. The owner already completed App
+   authorization; do not ask for it again. A valid `renovate.json` or authorization
+   confirmation does not prove bot execution. See [dependency updates](dependency-updates.md).
+2. Approve one suitable update from the bot's Dependency Dashboard. Confirm the real
    bot PR has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
    correct lockfile. Preserve manual review, including vulnerability updates.
    Run Linux verification and all security evidence; do not manufacture a
@@ -138,12 +141,12 @@ Remaining operational acceptance for Issue #8:
 3. On an actual Rapier/WASM update, review physics version, WASM hash, engine
    digest and deterministic fixtures. Existing engine tests passing without a
    dependency update do not prove this upgrade path.
-4. Configure and verify the `main` protection/review requirements above.
-5. Exercise an actual fork PR without project secrets. Keep `pull_request`,
-   read-only basic validation and the restricted CodeQL publication permission;
-   document any GitHub permission or approval limitation. Do not replace this
-   with privileged `pull_request_target` execution or mark a skipped upload green.
+4. Verify the first successful GitHub `schedule` event for both Security and
+   Dependency policy, including each run/attempt and sanitized receipt. The weekly
+   UTC crons are Monday 19:45 and 20:15 (Tuesday 04:45 and 05:15 JST). Manual
+   `workflow_dispatch` success verifies the non-PR checks, not the scheduler.
 
-Keep #8 open until external setup and actual update/fork acceptance are evidenced.
-The Issue-completion declaration must not waive these items merely because the
-code-side integration is merged.
+The owner's [scope decision](https://github.com/apaapapapapa/FantasySimulation/issues/8#issuecomment-5782312771)
+excludes actual fork-PR testing and requiring a second reviewer, without claiming
+either was performed. Do not recreate those tasks. Keep #8 open until its remaining
+bot/update/schedule evidence exists, then use the existing Issue-completion protocol.

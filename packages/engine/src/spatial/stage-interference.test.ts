@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
-import { type Definition } from '@fantasy/domain/spatial';
+import { ReplayState, replayContext, type Definition } from '@fantasy/domain/spatial';
 import { initializePhysics } from './physics.ts';
 import { runBattle } from './run.ts';
-import { reference, sealRevision } from './prepare.ts';
+import { prepareBattle, reference, sealRevision } from './prepare.ts';
 import { assessAbility } from './assessment.ts';
 import { choosePolicy } from './policy.ts';
 import { emptyMemory, perceive } from './perception.ts';
@@ -12,6 +12,39 @@ import { aiFixture, initialStatus, withInitialStatus } from '../../test-support/
 
 beforeAll(initializePhysics);
 describe('stage interference and information boundary', () => {
+  it('interrupts an unaffordable later stage while preserving paid flight in the actual interval', async () => {
+    const input = await stagedManifest({ stamina: 30, steps: 11 });
+    await withInitialStatus(
+      input,
+      0,
+      initialStatus({
+        modifiers: { attack: 0, defense: 0, speedBps: 10000, rooted: false, flight: true },
+        flightStaminaPerSecond: 100,
+      }),
+    );
+    const run = await runBattle(input),
+      events = battleEvents(run.records);
+    expect(events.find((e) => e.kind === 'stage-interrupt' && e.actorId === 'left')).toMatchObject({
+      step: 10,
+      reason: 'insufficient-stamina',
+      stage: { stageId: 'return' },
+    });
+    expect(events.filter((e) => e.actorId === 'left' && e.ruleId === 'stage.cost')).toHaveLength(0);
+    expect(
+      events.find((e) => e.actorId === 'left' && e.step === 10 && e.ruleId === 'movement.cost'),
+    ).toMatchObject({
+      before: { stamina: 4 },
+      after: { stamina: 2 },
+      reason: 'flight; jump=false; step=false; dodge=false',
+    });
+    const replay = new ReplayState(
+      await replayContext((await prepareBattle(input)).manifest, run.result.simulationHash),
+    );
+    for (const record of run.records) replay.apply(record);
+    expect(replay.checkpoint().state!.actors.find((a) => a.id === 'left')!.locomotion!.mode).toBe(
+      'flight',
+    );
+  });
   it('records melee geometry only as far as the first blocking wall', async () => {
     const input = await stagedManifest();
     await editScenario(input, (scenario) => scenario.obstacles.push(glassWall(5)));

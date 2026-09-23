@@ -238,11 +238,11 @@ No hidden enemy inputs.
 
 ## 段階攻撃（G-07a、spatial-v1.16）
 
-standard-stages-v1 adds optional stages; omission preserves costs, aim, events,
-hit limits and PRNG. Required attack/effects equal explicit stage0 and execute once.
-Only action triggers accept stages: 1–16 unique IDs, first offset0, ordered nonoverlapping
-windows, offset≤6000, duration1–100, last end≤6000. Melee duration=activeSteps;
-holds use null attack/empty effects. Other releases emit once; projectiles may outlive stages.
+standard-stages-v1: omitted stages preserve costs/aim/events/hits/PRNG.
+Required attack/effects=stage0, executed once. Action only; 1–16 unique IDs,
+first offset0, ordered nonoverlapping windows, offset≤6000, duration1–100,
+last end≤6000. Melee duration=activeSteps; hold=null attack/empty effects.
+Other releases emit once; projectiles may outlive stages.
 
 L is the speed-scaled release; stage windows are [L+offset,L+offset+duration),
 with physical offsets/duration. Recovery follows the last planned end; cooldown starts
@@ -251,7 +251,9 @@ condition/startCondition/interruptWhen and observed range; failure cancels all r
 stages without retry. Conditions use bounded own/delayed observation ASTs.
 
 Top cost/uses + stage0 extra pay at declaration; later extras use ResourceBudget at
-start, without future holds/uses. Shortage cancels; committed cost remains.
+start, without future holds/uses. Before paying, admit due cost plus flight upkeep and
+selected dodge/jump together. Shortage cancels stage/new burst, preserves flight and
+existing gait, and retains committed cost.
 Boundary death/incapacity/silence cancels explicit sequences. Declared damage interruption
 uses positive attributed HP damage, including simultaneous healing. Interval effects commit
 at n+1 without rewinding gathered contacts. Attached shapes end/cancel; detached shots keep
@@ -264,9 +266,8 @@ AI estimates own stages/cost/exposure/timing; enemy cues contain delayed visible
 Recorded geometry/clocks/causes support ReplayState seek and Worker/SQLite storage.
 return-cut-v1 / staged-duelist-v1: 10+15 damage, 6+4 stamina.
 
-Corpus: only engine/rules input identities change; recipes/seeds/published hashes/Golden stay.
-Stage/rollback/privacy/storage tests extend coverage.
-Arc/motion/force/reactions remain G-07b/G-08 work.
+Corpus changes only engine/rules identities; new tests cover stages, motion admission,
+rollback, privacy and storage. G-07b/G-08 shape/motion/force/reactions remain pending.
 
 ## 行動時計と攻撃形状（3D-06b）
 

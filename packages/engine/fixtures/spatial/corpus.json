@@ -544,6 +544,30 @@
     "stage-wall-display": {
       "file": "packages/engine/src/spatial/stage-interference.test.ts",
       "name": "stage interference and information boundary records melee geometry only as far as the first blocking wall"
+    },
+    "stage-admit-dodge": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":false,\"dodge\":true,\"jump\":false,\"total\":11}"
+    },
+    "stage-admit-flight-dodge": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":true,\"dodge\":true,\"jump\":false,\"total\":13}"
+    },
+    "stage-admit-jump": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":false,\"dodge\":false,\"jump\":true,\"total\":14}"
+    },
+    "stage-admit-flight": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":true,\"dodge\":false,\"jump\":false,\"total\":8}"
+    },
+    "stage-flight-shortage": {
+      "file": "packages/engine/src/spatial/stage-interference.test.ts",
+      "name": "stage interference and information boundary interrupts an unaffordable later stage while preserving paid flight in the actual interval"
+    },
+    "stage-admit-blocked-motion": {
+      "file": "packages/engine/src/spatial/stage-admission.test.ts",
+      "name": "due stage and movement admission admits the whole stage and burst at the exact boundary: {\"flight\":false,\"dodge\":true,\"jump\":true,\"total\":6,\"blocked\":true}"
     }
   },
   "entries": [
@@ -1163,7 +1187,13 @@
         "stage-ledger",
         "stage-cancel-condition",
         "stage-cancel-incapacity",
-        "stage-wall-display"
+        "stage-wall-display",
+        "stage-admit-dodge",
+        "stage-admit-flight-dodge",
+        "stage-admit-jump",
+        "stage-admit-flight",
+        "stage-flight-shortage",
+        "stage-admit-blocked-motion"
       ]
     }
   ]

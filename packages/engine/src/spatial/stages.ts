@@ -11,6 +11,7 @@ import { inObservedRange } from './attacks.ts';
 import { blockedBySilence } from './categories.ts';
 import type { ResourceBudget } from './resources.ts';
 import type { Journal } from './journal.ts';
+import { admitMotionCost, rejectPair } from './pair-admission.ts';
 
 export type StageRuntime = {
   index: number;
@@ -185,6 +186,7 @@ export function releaseStage(
   step: number,
   budget: ResourceBudget,
   journal: Journal,
+  movement: { dodge: boolean; previous: Pick<ActorState, 'intent' | 'decision'> },
 ) {
   const action = actor.action!,
     runtime = action.stages!,
@@ -213,6 +215,22 @@ export function releaseStage(
     return null;
   }
   if (index > 0 && stage.cost) {
+    const admission = admitMotionCost(
+      actor,
+      budget,
+      step,
+      'stage-admission',
+      [stage.cost],
+      movement.dodge,
+    );
+    if (!admission.ok) {
+      if (movement.dodge || actor.intent.jump) {
+        rejectPair(actor, movement.previous);
+        actor.intent.jump = false;
+      }
+      interruptStage(actor, step, journal, 'launch', `insufficient-${admission.reason}`);
+      return null;
+    }
     const payment = budget.reserve('stage', [stage.cost]);
     if (!payment.ok) {
       interruptStage(actor, step, journal, 'launch', `insufficient-${payment.reason}`);
