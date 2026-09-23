@@ -66,7 +66,7 @@
     },
     {
       "task": "技の段・攻撃の形・自分の移動・相手の移動・反応型の発動について、設計ADRが#1のP6の処理順と整合する形で承認されている",
-      "evidence": "PR #86 (main e9325df): docs/adr/0012-stages-and-reactions.md was approved at https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5794777109 before implementation. It fixes shared clocks, transactions, wave order, P6 reflection/revival boundaries, limits and rollback. Current stages-motion.md/reactions.md document implemented contracts."
+      "evidence": "PR #86 (main e9325df): docs/adr/0012-stages-and-reactions.md was approved at https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5792777109 before implementation. It fixes shared clocks, transactions, wave order, P6 reflection/revival boundaries, limits and rollback. Current stages-motion.md/reactions.md document implemented contracts."
     },
     {
       "task": "連撃（2段以上）・突進斬り・薙ぎ払いを、データだけで定義して実対戦fixtureで再現できる。既存の技は段が1つとして同じ結果になる",
