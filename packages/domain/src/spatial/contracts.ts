@@ -3,6 +3,7 @@ import { assertJson } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.11' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -21,13 +22,14 @@ export const RefSchema = z.strictObject({
   contentHash: HashSchema,
 });
 export type RevisionRef = z.infer<typeof RefSchema>;
-export const ElementSchema = z.enum(['physical', 'fire', 'ice', 'lightning', 'arcane']);
+export const ElementSchema = z.enum(['physical', 'fire', 'ice', 'lightning', 'arcane', 'water']);
 const ResistancesSchema = z.strictObject({
   physical: uint(10_000),
   fire: uint(10_000),
   ice: uint(10_000),
   lightning: uint(10_000),
   arcane: uint(10_000),
+  water: uint(10_000).optional(),
 });
 
 export const BodySchema = z
@@ -63,7 +65,47 @@ export const PerceptionSchema = z.strictObject({
   fovMilliDegrees: positive(360_000),
   reactionSteps: positive(500),
   memorySteps: uint(6_000),
+  revealWardBps: uint(10_000).optional(),
 });
+export const AppearanceSchema = z.strictObject({
+  silhouette: z.enum(['humanoid', 'beast', 'construct']),
+  surface: z.enum(['neutral', 'red', 'blue', 'dark', 'bright']),
+  equipment: z.array(z.enum(['blade', 'bow', 'staff', 'shield'])).max(4),
+});
+export const AiRulesSchema = z.strictObject({
+  profile: z.literal('observed-utility-v1'),
+  observation: z.literal('visible-coarse-v1'),
+  initialKnowledge: z.literal('empty-match-v1'),
+  random: z.literal('actor-purpose-rejection-v1'),
+  horizonSteps: positive(100),
+  memorySamples: positive(32),
+  knowledgeTtlSteps: positive(1000),
+  damageQuantum: positive(100),
+  healthPrior: positive(1000),
+  explorationWeight: uint(1000),
+  riskWeight: positive(5000),
+  killWeight: positive(5000),
+  actionWeight: positive(1000),
+  dodgeWeight: positive(5000),
+});
+export const AI_RULES = Object.freeze(
+  AiRulesSchema.parse({
+    profile: 'observed-utility-v1',
+    observation: 'visible-coarse-v1',
+    initialKnowledge: 'empty-match-v1',
+    random: 'actor-purpose-rejection-v1',
+    horizonSteps: 50,
+    memorySamples: 32,
+    knowledgeTtlSteps: 500,
+    damageQuantum: 10,
+    healthPrior: 200,
+    explorationWeight: 60,
+    riskWeight: 800,
+    killWeight: 2400,
+    actionWeight: 100,
+    dodgeWeight: 600,
+  }),
+);
 
 export type Condition =
   | { kind: 'always' }
@@ -108,6 +150,17 @@ export const EffectSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('shield'), amount: uint(1_000_000) }),
   z.strictObject({ kind: z.literal('apply-status'), status: RefSchema }),
   z.strictObject({ kind: z.literal('dispel'), statusIds: z.array(IdSchema).min(1).max(16) }),
+  z.strictObject({ kind: z.literal('water'), extinguish: z.literal(true) }),
+  z.strictObject({
+    kind: z.literal('reveal'),
+    field: z.literal('resistance'),
+    element: ElementSchema,
+    precisionBps: positive(10_000),
+    durationSteps: positive(1000),
+    delaySteps: positive(500),
+    occlusion: z.literal('vision'),
+    powerBps: positive(10_000),
+  }),
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
 export const StatusSchema = z.strictObject({
@@ -117,12 +170,14 @@ export const StatusSchema = z.strictObject({
   stacking: z.enum(['sum', 'replace', 'refresh', 'reject']),
   maxStacks: positive(32),
   durationSteps: positive(6_000),
+  burning: z.strictObject({ waterExtinguishable: z.boolean() }).optional(),
   modifiers: z.strictObject({
     attack: z.number().int().min(-100_000).max(100_000),
     defense: z.number().int().min(-100_000).max(100_000),
     speedBps: uint(30_000),
     flight: z.boolean(),
     rooted: z.boolean(),
+    silenced: z.boolean().optional(),
   }),
   periodic: z
     .array(
@@ -175,6 +230,17 @@ export const AbilitySchema = z
     effects: z.array(EffectSchema).min(1).max(16),
   })
   .superRefine((ability, ctx) => {
+    if (
+      ability.effects.some((e) => e.kind === 'reveal') &&
+      (ability.target !== 'enemy' ||
+        ability.attack.kind !== 'hitscan' ||
+        ability.attack.radiusMm !== 0)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'Reveal requires an enemy-targeted zero-radius hitscan; unsupported acquisition modes are rejected',
+      });
     if (ability.target === 'self' && ability.attack.kind !== 'direct')
       ctx.addIssue({ code: 'custom', message: 'Self effects require direct targeting' });
     if (ability.attack.kind === 'direct' && ability.target !== 'self')
@@ -196,6 +262,13 @@ export const PolicySchema = z.strictObject({
   preferredDistanceMm: uint(100_000),
   flightAltitudeMm: uint(40_000),
   jumpWhenBlocked: z.boolean(),
+  evaluation: z
+    .strictObject({
+      attackBps: positive(30_000),
+      survivalBps: positive(30_000),
+      explorationBps: uint(30_000),
+    })
+    .optional(),
 });
 export const EquipmentSchema = z.strictObject({
   name: z.string().min(1).max(100),
@@ -207,6 +280,7 @@ export const EquipmentSchema = z.strictObject({
 export const CharacterSchema = z.strictObject({
   name: z.string().min(1).max(100),
   originalText: z.string().max(20_000),
+  appearance: AppearanceSchema.optional(),
   stats: z.strictObject({
     hp: positive(1_000_000),
     mp: uint(1_000_000),
@@ -275,6 +349,7 @@ export const ScenarioSchema = z
       nodes: z.array(NodeSchema).max(4_096),
       edges: z.array(EdgeSchema).max(16_384),
     }),
+    terrainKnowledge: z.enum(['surveyed', 'observed']).optional(),
   })
   .superRefine((scenario, ctx) => {
     for (const axis of ['x', 'y', 'z'] as const)
@@ -322,7 +397,9 @@ export const ScenarioSchema = z
   });
 export const RulesetSchema = z.strictObject({
   name: z.string().min(1).max(100),
-  rulesVersion: z.literal('spatial-v1.10'),
+  // Stored historical revisions remain readable; prepareBattle admits only the current rules.
+  rulesVersion: IdSchema,
+  ai: AiRulesSchema.optional(),
   stepMs: z.literal(20),
   maxSteps: positive(6_000),
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),
@@ -390,7 +467,8 @@ export const ManifestSchema = z
     schemaVersion: z.literal(3),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
-    engineVersion: z.literal('spatial-v1.10'),
+    engineVersion: z.literal(CURRENT_ENGINE_VERSION),
+    aiProfile: z.literal('observed-utility-v1'),
     implementationDigest: HashSchema,
     physicsProfileHash: HashSchema,
     physicsProfile: PhysicsProfileSchema,

@@ -303,6 +303,181 @@
   },
   {
     "kind": "ability",
+    "id": "measured-fire",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965",
+    "definition": {
+      "name": "fireの観測射撃",
+      "originalText": "fireの観測射撃",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 2,
+        "uses": 0
+      },
+      "castSteps": 4,
+      "recoverySteps": 16,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 25,
+          "attackScaleBps": 0,
+          "element": "fire"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "measured-ice",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:39b76f7d8ff892a180d7142fcba6d92a7c361d58a4fe5261251ed6f0190696d2",
+    "definition": {
+      "name": "iceの観測射撃",
+      "originalText": "iceの観測射撃",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 2,
+        "uses": 0
+      },
+      "castSteps": 4,
+      "recoverySteps": 16,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 25,
+          "attackScaleBps": 0,
+          "element": "ice"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "ordinary-flare",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:ebe6c0f4194d04a18d9d657a3fdd2b692a86b1ccb82b291d6b5885e17ddc5c42",
+    "definition": {
+      "name": "燃焼を与える炎弾",
+      "originalText": "燃焼を与える炎弾",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 3,
+        "uses": 0
+      },
+      "castSteps": 6,
+      "recoverySteps": 24,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "projectile",
+        "speedMmPerSecond": 16000,
+        "radiusMm": 80,
+        "lifetimeSteps": 150,
+        "gravityScaleBps": 0,
+        "homingTurnMilliDegreesPerSecond": 0,
+        "observation": "launch-only",
+        "explosionRadiusMm": 0,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 20,
+          "attackScaleBps": 0,
+          "element": "fire"
+        },
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "ordinary-burning",
+            "revision": 1,
+            "contentHash": "sha256:4d6b455fc9652857bda8fafdb8c1286c858a2638ef5a432dd754b19095442024"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "reveal-fire",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:1d54c35a5d79ce021d43eb0cc31b6bccd027ad71846ea9f9ce3dbde71f6c3514",
+    "definition": {
+      "name": "炎耐性の限定鑑定",
+      "originalText": "炎耐性の限定鑑定",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 8,
+        "uses": 3
+      },
+      "castSteps": 8,
+      "recoverySteps": 16,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "reveal",
+          "field": "resistance",
+          "element": "fire",
+          "precisionBps": 1000,
+          "durationSteps": 250,
+          "delaySteps": 5,
+          "occlusion": "vision",
+          "powerBps": 6000
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "seeker",
     "revision": 1,
     "schemaVersion": 1,
@@ -343,6 +518,42 @@
           "amount": 12,
           "attackScaleBps": 10000,
           "element": "arcane"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "self-water",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55",
+    "definition": {
+      "name": "自己への水魔法",
+      "originalText": "自己への水魔法",
+      "trigger": "action",
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 4,
+        "uses": 0
+      },
+      "castSteps": 3,
+      "recoverySteps": 12,
+      "cooldownSteps": 25,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "water",
+          "extinguish": true
         }
       ]
     }
@@ -619,6 +830,89 @@
   },
   {
     "kind": "character",
+    "id": "ember-duelist",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:afb1cf71bf6a2be45a23001982fd25328d31d0c15f0e0b197a39f953114f923a",
+    "definition": {
+      "name": "炎と水の術師",
+      "originalText": "炎と水の術師。能力・装備・方針はすべて公開revisionで固定する。",
+      "appearance": {
+        "silhouette": "humanoid",
+        "surface": "red",
+        "equipment": ["staff"]
+      },
+      "stats": {
+        "hp": 150,
+        "mp": 300,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "ordinary-flare",
+          "revision": 1,
+          "contentHash": "sha256:ebe6c0f4194d04a18d9d657a3fdd2b692a86b1ccb82b291d6b5885e17ddc5c42"
+        },
+        {
+          "id": "self-water",
+          "revision": 1,
+          "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "ember-duelist-policy",
+        "revision": 1,
+        "contentHash": "sha256:06cad52985a9446fb07e7081cc5414a55a0f8f68a0dd59214051e15ebe80ff55"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "fire-mage",
     "revision": 1,
     "schemaVersion": 1,
@@ -687,6 +981,99 @@
         "id": "fire-mage-policy",
         "revision": 1,
         "contentHash": "sha256:626da8128a7b437511d969c2df5ed6a5ae987de33287131138f715c294656bd7"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "fire-seer",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:fa9724ead3a489542266bccf43fef95c01991c9cc3878fc203820305fe6a3cbb",
+    "definition": {
+      "name": "炎を鑑定する術師",
+      "originalText": "炎を鑑定する術師。能力・装備・方針はすべて公開revisionで固定する。",
+      "appearance": {
+        "silhouette": "humanoid",
+        "surface": "bright",
+        "equipment": ["staff"]
+      },
+      "stats": {
+        "hp": 120,
+        "mp": 300,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "measured-fire",
+          "revision": 1,
+          "contentHash": "sha256:e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965"
+        },
+        {
+          "id": "measured-ice",
+          "revision": 1,
+          "contentHash": "sha256:39b76f7d8ff892a180d7142fcba6d92a7c361d58a4fe5261251ed6f0190696d2"
+        },
+        {
+          "id": "reveal-fire",
+          "revision": 1,
+          "contentHash": "sha256:1d54c35a5d79ce021d43eb0cc31b6bccd027ad71846ea9f9ce3dbde71f6c3514"
+        },
+        {
+          "id": "self-water",
+          "revision": 1,
+          "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "fire-seer-policy",
+        "revision": 1,
+        "contentHash": "sha256:0c7c8c1e8bd7edd94b088cfcf8e4a9e6be5fc66107c0c8c1924be45e69d05ddf"
       }
     }
   },
@@ -1228,6 +1615,94 @@
     }
   },
   {
+    "kind": "character",
+    "id": "water-observer",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:26185be68cef86a3d3f407b8180ecc3375b8709f343c01362aa44ddf08c9d839",
+    "definition": {
+      "name": "観測する水術師",
+      "originalText": "観測する水術師。能力・装備・方針はすべて公開revisionで固定する。",
+      "appearance": {
+        "silhouette": "humanoid",
+        "surface": "neutral",
+        "equipment": ["staff"]
+      },
+      "stats": {
+        "hp": 130,
+        "mp": 300,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "measured-fire",
+          "revision": 1,
+          "contentHash": "sha256:e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965"
+        },
+        {
+          "id": "measured-ice",
+          "revision": 1,
+          "contentHash": "sha256:39b76f7d8ff892a180d7142fcba6d92a7c361d58a4fe5261251ed6f0190696d2"
+        },
+        {
+          "id": "self-water",
+          "revision": 1,
+          "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "water-observer-policy",
+        "revision": 1,
+        "contentHash": "sha256:b7596f61912a7a8b22802b3c262a138617f552930a8c59ba0a9e1ae747ef91ca"
+      }
+    }
+  },
+  {
     "kind": "equipment",
     "id": "long-spear",
     "revision": 1,
@@ -1309,6 +1784,35 @@
   },
   {
     "kind": "policy",
+    "id": "ember-duelist-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:06cad52985a9446fb07e7081cc5414a55a0f8f68a0dd59214051e15ebe80ff55",
+    "definition": {
+      "name": "炎と水の術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "ordinary-flare"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "self-water"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
     "id": "fire-mage-policy",
     "revision": 1,
     "schemaVersion": 1,
@@ -1322,6 +1826,47 @@
             "kind": "always"
           },
           "abilityId": "fireball"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "fire-seer-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:0c7c8c1e8bd7edd94b088cfcf8e4a9e6be5fc66107c0c8c1924be45e69d05ddf",
+    "definition": {
+      "name": "炎を鑑定する術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "measured-fire"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "measured-ice"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "reveal-fire"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "self-water"
         }
       ],
       "movement": "keep-distance",
@@ -1518,14 +2063,65 @@
     }
   },
   {
-    "kind": "ruleset",
-    "id": "standard",
+    "kind": "policy",
+    "id": "water-observer-policy",
     "revision": 1,
     "schemaVersion": 1,
-    "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae",
+    "contentHash": "sha256:b7596f61912a7a8b22802b3c262a138617f552930a8c59ba0a9e1ae747ef91ca",
+    "definition": {
+      "name": "観測する水術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "measured-fire"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "measured-ice"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "self-water"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard-observed-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71",
     "definition": {
       "name": "標準3D",
-      "rulesVersion": "spatial-v1.10",
+      "rulesVersion": "spatial-v1.11",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600
+      },
       "stepMs": 20,
       "maxSteps": 6000,
       "gravityMmPerSecond2": -9807,
@@ -1542,7 +2138,7 @@
     "id": "flat",
     "revision": 1,
     "schemaVersion": 1,
-    "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb",
+    "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
     "definition": {
       "name": "平地",
       "bounds": {
@@ -1584,7 +2180,8 @@
         "version": "support-graph-v1",
         "nodes": [],
         "edges": []
-      }
+      },
+      "terrainKnowledge": "surveyed"
     }
   },
   {
@@ -1592,7 +2189,7 @@
     "id": "pillars",
     "revision": 1,
     "schemaVersion": 1,
-    "contentHash": "sha256:3c846f9dd90660266784e51c3303bc0faaa95367a6a26c3689a9cb3c526de898",
+    "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",
     "definition": {
       "name": "柱のある広場",
       "bounds": {
@@ -1720,7 +2317,8 @@
             "bidirectional": true
           }
         ]
-      }
+      },
+      "terrainKnowledge": "surveyed"
     }
   },
   {
@@ -1797,6 +2395,39 @@
         "rooted": false
       },
       "periodic": []
+    }
+  },
+  {
+    "kind": "status",
+    "id": "ordinary-burning",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:4d6b455fc9652857bda8fafdb8c1286c858a2638ef5a432dd754b19095442024",
+    "definition": {
+      "name": "水で消える燃焼",
+      "originalText": "水で消える燃焼",
+      "stackKey": "ordinary-burning",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 250,
+      "burning": {
+        "waterExtinguishable": true
+      },
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [
+        {
+          "everySteps": 25,
+          "kind": "damage",
+          "amount": 18,
+          "element": "fire"
+        }
+      ]
     }
   },
   {

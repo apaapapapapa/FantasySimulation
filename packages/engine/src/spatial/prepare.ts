@@ -7,6 +7,7 @@ import {
   parseJson,
   RevisionSchema,
   compareIds,
+  CURRENT_ENGINE_VERSION,
   type Definition,
   type DefinitionKind,
   type Manifest,
@@ -53,6 +54,11 @@ export async function sealRevision<K extends DefinitionKind>(
     contentHash: `sha256:${'0'.repeat(64)}`,
     definition,
   });
+  if (
+    snapshot.kind === 'ruleset' &&
+    (snapshot.definition.rulesVersion !== CURRENT_ENGINE_VERSION || !snapshot.definition.ai)
+  )
+    throw new Error('New rules revisions must declare the current engine and AI profile');
   snapshot.contentHash = await revisionHash(snapshot);
   return snapshot as Extract<Revision, { kind: K }>;
 }
@@ -142,6 +148,9 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     actor(manifest.participants[1]),
   ];
   const scenario = get('scenario', manifest.scenario).definition;
+  const rules = get('ruleset', manifest.ruleset).definition;
+  if (rules.rulesVersion !== CURRENT_ENGINE_VERSION || !rules.ai)
+    throw new Error('Unsupported rules/AI profile; stored inputs are not silently upgraded');
   for (const { participant, character } of actors) {
     for (const axis of ['x', 'y', 'z'] as const) {
       const extent = axis === 'y' ? character.body.heightMm / 2 : character.body.radiusMm;
@@ -152,7 +161,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
         throw new Error('Spawn body exceeds arena bounds');
     }
   }
-  // Revisions are a set, while participants, policy priorities and effects have meaningful order.
+  // Revision enumeration is normalized. Saved arrays retain identity; policy conditions are evaluated as a set.
   manifest.revisions.sort((a, b) =>
     compareIds(`${a.kind}:${a.id}:${a.revision}`, `${b.kind}:${b.id}:${b.revision}`),
   );
@@ -161,7 +170,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     simulationHash: await contentHash(manifest),
     actors,
     scenario,
-    rules: get('ruleset', manifest.ruleset).definition,
+    rules,
     statuses: manifest.revisions.filter((r) => r.kind === 'status'),
   });
 }

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.10",
-    "rulesVersion": "spatial-v1.10",
+    "engineVersion": "spatial-v1.11",
+    "rulesVersion": "spatial-v1.11",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -201,6 +201,22 @@
       "file": "packages/domain/src/spatial/contracts.test.ts",
       "name": "canonicalizes keys without erasing ordered arrays and uses a stable UTF-8 SHA-256 contract"
     },
+    "observed-ai-integration": {
+      "file": "packages/engine/src/spatial/ai-integration.test.ts",
+      "name": "common engine cognition and effects executes scoped reveal and experiences, with occlusion and fresh-match knowledge"
+    },
+    "observed-ai-noninterference": {
+      "file": "packages/engine/src/spatial/knowledge.test.ts",
+      "name": "private delayed bounded cognition does not distinguish hidden enemy definitions with the same lawful visible appearance"
+    },
+    "observed-ai-probability": {
+      "file": "packages/engine/src/spatial/assessment.test.ts",
+      "name": "observed utility distributions prefers ordinary self extinguishing without making it compulsory, then favors a supported quick kill"
+    },
+    "observed-ai-dodge": {
+      "file": "packages/engine/src/spatial/ai-integration.test.ts",
+      "name": "common engine cognition and effects uses four equal flying escapes in actual streamed combat; movement and collisions decide the result"
+    },
     "cross-os": {
       "file": "scripts/harness/corpus-compare.test.ts",
       "name": "cross OS corpus comparison compares each expected input and rejects missing, stale or changed evidence"
@@ -248,17 +264,17 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:2e9c5b0f1dc79e87101134e00c56ab95a385774244348e2a3fbf88db8bb107c6",
+        "inputHash": "sha256:66423efaeb61a07031b78625934d705ca5e91986d40cf1a7bba8c390361ebea5",
         "seed": 42,
         "scenario": {
           "id": "flat",
           "revision": 1,
-          "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+          "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard",
+          "id": "standard-observed-v1",
           "revision": 1,
-          "contentHash": "sha256:ef158bc4107c83f975cd6f6a53da85ef8d6c0bdbb03acfa3f07c74f66d64bdfb"
+          "contentHash": "sha256:68fe9a15b15b38e45567fd69040afcd9faec923cf47f4aaa40ed467468788e45"
         },
         "participants": [
           {
@@ -293,17 +309,17 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:4e97ad4432ef1b6e7b4b41706e9fcc252b76ee12863759df211a811a256b264e",
+        "inputHash": "sha256:0bd2ce0b48b8b1a51c79e605d6cf3f730b62a2b64d7350ebec5354f8d21eb4b4",
         "seed": 42,
         "scenario": {
           "id": "pillars",
           "revision": 1,
-          "contentHash": "sha256:3c846f9dd90660266784e51c3303bc0faaa95367a6a26c3689a9cb3c526de898"
+          "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard",
+          "id": "standard-observed-v1",
           "revision": 1,
-          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
         },
         "participants": [
           {
@@ -338,17 +354,17 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:525803385e673eb3764f6801574e0796e94fdbaff12df00911bb5b8090e7af37",
+        "inputHash": "sha256:8e912867e7637ed1dd9af48dc0aba66e35f51de2d6d6406c9dfa8474d153d9c8",
         "seed": 42,
         "scenario": {
           "id": "flat",
           "revision": 1,
-          "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+          "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard",
+          "id": "standard-observed-v1",
           "revision": 1,
-          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
         },
         "participants": [
           {
@@ -383,17 +399,17 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:2deb5cfc0518f378ec39ffb5f4185104302e69c23a0a181f46e858b6a723d3e5",
+        "inputHash": "sha256:e0a7f435fb835836fccdb21805b500dc4be86f6a3f810037f6b236d8211b669c",
         "seed": 42,
         "scenario": {
           "id": "flat",
           "revision": 1,
-          "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+          "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard",
+          "id": "standard-observed-v1",
           "revision": 1,
-          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
         },
         "participants": [
           {
@@ -428,17 +444,17 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:3f7df307f60db20015b856faf49c381940ff33d7744f78728c9a6cc3847f8779",
+        "inputHash": "sha256:3e778c2cc750780e7e96126443a65082a1a7fc8d3e13c6690e386e3c320c72fe",
         "seed": 42,
         "scenario": {
           "id": "flat",
           "revision": 1,
-          "contentHash": "sha256:aa9a8d172d4aea0f812eb046e85951fdca17f879e181cdfa27d8967d019767fb"
+          "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard",
+          "id": "standard-observed-v1",
           "revision": 1,
-          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
         },
         "participants": [
           {
@@ -473,17 +489,17 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:8a14e7df95d59a392ba8f67ddad3f98ac0daa2fe941e5ceb96848a842205e239",
+        "inputHash": "sha256:5572f77b69a8077a323a2f3a315751e6c0f804323b5412688d366e00ce87bb62",
         "seed": 42,
         "scenario": {
           "id": "pillars",
           "revision": 1,
-          "contentHash": "sha256:3c846f9dd90660266784e51c3303bc0faaa95367a6a26c3689a9cb3c526de898"
+          "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard",
+          "id": "standard-observed-v1",
           "revision": 1,
-          "contentHash": "sha256:fe984fdc22ed9d8425c029896a17838251f06e72b413e4489eddc2134d3501ae"
+          "contentHash": "sha256:598bd6eece1645e20db3131537a10e4d4a6277bbfa268fb4d80919e80d6c8a71"
         },
         "participants": [
           {
@@ -500,6 +516,51 @@
               "id": "swordsman",
               "revision": 1,
               "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "observed-ai-seer-ember",
+      "purpose": "限定鑑定・経験・自己水魔法を共通の保存可能streamで実行",
+      "recipe": {
+        "kind": "catalog",
+        "left": "fire-seer",
+        "right": "ember-duelist",
+        "scenario": "flat",
+        "maxSteps": 250,
+        "seed": 42
+      },
+      "oracles": ["observed-ai-integration"],
+      "identity": {
+        "inputHash": "sha256:65e3c12f6dc5a1865694b00225f120e4fde1d8c9ec3b6b301f9d0a746d18734c",
+        "seed": 42,
+        "scenario": {
+          "id": "flat",
+          "revision": 1,
+          "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
+        },
+        "ruleset": {
+          "id": "standard-observed-v1",
+          "revision": 1,
+          "contentHash": "sha256:6a483b157d9e0772d0cb4878b6f6792760302dada3ddc1911bebd9360a27f6f6"
+        },
+        "participants": [
+          {
+            "actorId": "left",
+            "character": {
+              "id": "fire-seer",
+              "revision": 1,
+              "contentHash": "sha256:fa9724ead3a489542266bccf43fef95c01991c9cc3878fc203820305fe6a3cbb"
+            }
+          },
+          {
+            "actorId": "right",
+            "character": {
+              "id": "ember-duelist",
+              "revision": 1,
+              "contentHash": "sha256:afb1cf71bf6a2be45a23001982fd25328d31d0c15f0e0b197a39f953114f923a"
             }
           }
         ]
@@ -680,6 +741,18 @@
       "state": "planned",
       "owner": "#9 小PR 3",
       "tests": []
+    },
+    {
+      "id": "observed-ai",
+      "title": "観測非干渉・確率分布・知識取得・実際の回避",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "observed-ai-integration",
+        "observed-ai-noninterference",
+        "observed-ai-probability",
+        "observed-ai-dodge"
+      ]
     },
     {
       "id": "bounded-properties",

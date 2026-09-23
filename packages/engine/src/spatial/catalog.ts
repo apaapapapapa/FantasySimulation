@@ -233,6 +233,8 @@ export async function sampleCatalog(): Promise<Revision[]> {
       behavior?: Definition<'policy'>['movement'];
       extras?: Ability[];
       equipment?: RevisionRef[];
+      appearance?: Definition<'character'>['appearance'];
+      body?: Definition<'character'>['body'];
     } = {},
   ) {
     const extras = options.extras ?? [];
@@ -271,6 +273,8 @@ export async function sampleCatalog(): Promise<Revision[]> {
     );
     return add('character', id, {
       ...fighter.definition,
+      ...(options.appearance ? { appearance: options.appearance } : {}),
+      ...(options.body ? { body: options.body } : {}),
       name,
       originalText: name + '。能力・装備・方針はすべて公開revisionで固定する。',
       stats: { ...fighter.definition.stats, ...options.stats },
@@ -306,6 +310,94 @@ export async function sampleCatalog(): Promise<Revision[]> {
   await character('healer', '治癒剣士', [sword], 1200, {
     stats: { hp: 110, mp: 180 },
     extras: [cleanse, heal],
+  });
+  const ordinaryBurn = await add('status', 'ordinary-burning', {
+    ...status('水で消える燃焼', 'ordinary-burning', {}, [
+      { kind: 'damage', amount: 18, element: 'fire', everySteps: 25 },
+    ]),
+    burning: { waterExtinguishable: true },
+  });
+  const water = await add(
+    'ability',
+    'self-water',
+    ability('自己への水魔法', {
+      ...self,
+      castSteps: 3,
+      recoverySteps: 12,
+      cooldownSteps: 25,
+      costs: { hp: 0, mp: 4, uses: 0 },
+      effects: [{ kind: 'water', extinguish: true }],
+    }),
+  );
+  const probes: Ability[] = [];
+  for (const element of ['fire', 'ice'] as const)
+    probes.push(
+      await add(
+        'ability',
+        `measured-${element}`,
+        ability(`${element}の観測射撃`, {
+          rangeMm: 20000,
+          castSteps: 4,
+          recoverySteps: 16,
+          costs: { hp: 0, mp: 2, uses: 0 },
+          attack: { kind: 'hitscan', radiusMm: 0 },
+          effects: [{ kind: 'damage', amount: 25, attackScaleBps: 0, element }],
+        }),
+      ),
+    );
+  const reveal = await add(
+    'ability',
+    'reveal-fire',
+    ability('炎耐性の限定鑑定', {
+      rangeMm: 12000,
+      castSteps: 8,
+      recoverySteps: 16,
+      cooldownSteps: 100,
+      costs: { hp: 0, mp: 8, uses: 3 },
+      attack: { kind: 'hitscan', radiusMm: 0 },
+      effects: [
+        {
+          kind: 'reveal',
+          field: 'resistance',
+          element: 'fire',
+          precisionBps: 1000,
+          durationSteps: 250,
+          delaySteps: 5,
+          occlusion: 'vision',
+          powerBps: 6000,
+        },
+      ],
+    }),
+  );
+  const flare = await add(
+    'ability',
+    'ordinary-flare',
+    ability('燃焼を与える炎弾', {
+      rangeMm: 20000,
+      castSteps: 6,
+      recoverySteps: 24,
+      costs: { hp: 0, mp: 3, uses: 0 },
+      attack: projectile({ speedMmPerSecond: 16000 }),
+      effects: [
+        { kind: 'damage', amount: 20, attackScaleBps: 0, element: 'fire' },
+        { kind: 'apply-status', status: reference(ordinaryBurn) },
+      ],
+    }),
+  );
+  await character('water-observer', '観測する水術師', [...probes, water], 7000, {
+    body: { ...fighter.definition.body, muzzleOffset: { x: 0, y: 200, z: 0 } },
+    stats: { hp: 130, mp: 300 },
+    appearance: { silhouette: 'humanoid', surface: 'neutral', equipment: ['staff'] },
+  });
+  await character('fire-seer', '炎を鑑定する術師', [...probes, reveal, water], 7000, {
+    body: { ...fighter.definition.body, muzzleOffset: { x: 0, y: 200, z: 0 } },
+    stats: { hp: 120, mp: 300 },
+    appearance: { silhouette: 'humanoid', surface: 'bright', equipment: ['staff'] },
+  });
+  await character('ember-duelist', '炎と水の術師', [flare, water], 7000, {
+    body: { ...fighter.definition.body, muzzleOffset: { x: 0, y: 200, z: 0 } },
+    stats: { hp: 150, mp: 300 },
+    appearance: { silhouette: 'humanoid', surface: 'red', equipment: ['staff'] },
   });
   const nodes: Definition<'scenario'>['navigation']['nodes'] = [-1, 1].flatMap((x) =>
     [-1, 1].map((z) => ({

@@ -98,6 +98,7 @@ describe('legal observations and conditional policies', () => {
   it('honors declared conditional priorities, readiness and configured flight altitude', async () => {
     const { world, left, right } = await setup();
     try {
+      right.position.x = left.position.x + 1;
       let memory = perceive(world, left, right, [], 0, emptyMemory());
       memory = perceive(world, left, right, [], 5, memory);
       const sword = left.actor.abilities[0]!;
@@ -135,7 +136,11 @@ describe('legal observations and conditional policies', () => {
         statusIds: [],
         resources: { hp: 10, mp: 20, shield: 0 },
       };
-      expect(choosePolicy(view, new Set(['heal', sword.id]), false).abilityId).toBe('heal');
+      expect(
+        choosePolicy(view, new Set(['heal', sword.id]), false).cognition?.candidates.find(
+          (c) => c.abilityId === 'heal',
+        )?.weight,
+      ).toBeGreaterThan(0);
       expect(choosePolicy(view, new Set([sword.id]), false).abilityId).toBe(sword.id);
       expect(
         choosePolicy(
@@ -296,9 +301,12 @@ describe('legal observations and conditional policies', () => {
         false,
       );
       expect(choosePolicy(view, new Set(), false).abilityId).toBeNull();
-      expect(
-        choosePolicy(view, new Set(left.actor.abilities.map((a) => a.id)), false).abilityId,
-      ).toBe(left.actor.policy.priorities[0]!.abilityId);
+      const decision = choosePolicy(view, new Set(left.actor.abilities.map((a) => a.id)), false);
+      expect(decision.abilityId).toBeNull();
+      expect(decision.cognition?.excluded).toContainEqual({
+        abilityId: 'sword',
+        reason: 'observed-range-or-facing',
+      });
     } finally {
       world.free();
     }

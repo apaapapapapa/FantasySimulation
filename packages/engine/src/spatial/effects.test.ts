@@ -30,6 +30,49 @@ const definition = (stacking: Definition<'status'>['stacking'] = 'sum'): Definit
   periodic: [{ kind: 'damage', amount: 4, element: 'fire', everySteps: 2 }],
 });
 describe('simultaneous effects', () => {
+  it('water removes only existing extinguishable burning while simultaneous new burning remains', async () => {
+    const states = await targets();
+    const burn = await sealRevision('status', 'ordinary-burn', 1, {
+      ...definition('refresh'),
+      burning: { waterExtinguishable: true },
+    });
+    const magic = await sealRevision('status', 'magic-burn', 1, {
+      ...definition('refresh'),
+      stackKey: 'magic',
+      burning: { waterExtinguishable: false },
+    });
+    states[0]!.statuses = [burn, magic].map((revision) => ({
+      revision,
+      startStep: 0,
+      endStep: 3,
+      stacks: 1,
+      causes: ['prior'],
+    }));
+    const water: EffectApplication = {
+      id: 'water',
+      actorId: 'left',
+      targetId: 'left',
+      attack: 0,
+      effect: { kind: 'water', extinguish: true },
+    };
+    const ignition: EffectApplication = {
+      id: 'ignite',
+      actorId: 'right',
+      targetId: 'left',
+      attack: 0,
+      effect: { kind: 'apply-status', status: reference(burn) },
+    };
+    const result = resolveEffects(states, [water, ignition], [burn, magic], 0, 1)[0]!;
+    expect(result.statuses.map((s) => [s.revision.id, s.startStep])).toEqual([
+      ['magic-burn', 0],
+      ['ordinary-burn', 1],
+    ]);
+    expect(result.resources).toEqual(states[0]!.resources);
+    expect(resolveEffects(states, [ignition, water], [burn, magic], 0, 1)).toEqual(
+      resolveEffects(states, [water, ignition], [burn, magic], 0, 1),
+    );
+    expect(states[0]!.statuses.every((s) => s.startStep === 0)).toBe(true);
+  });
   it('aggregates healing and damage before clamping, including HP already spent as a legal self-cost', async () => {
     const states = await targets();
     states[0]!.resources.hp = 10;

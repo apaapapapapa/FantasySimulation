@@ -10,9 +10,9 @@ import { runBattle } from './run.ts';
 beforeAll(initializePhysics);
 const events = (records: StreamRecord[]) => records.flatMap((r) => ('events' in r ? r.events : []));
 describe('data-composed 3D sample catalog', () => {
-  it('keeps ten published character examples and their transitive references reproducible', async () => {
+  it('keeps thirteen published character examples and their transitive references reproducible', async () => {
     const catalog = await sampleCatalog();
-    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(10);
+    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(13);
     for (const revision of catalog) expect(RevisionSchema.safeParse(revision).success).toBe(true);
     const saved = JSON.parse(
       readFileSync(new URL('../../../../data/spatial/catalog.json', import.meta.url), 'utf8'),
@@ -50,6 +50,9 @@ describe('data-composed 3D sample catalog', () => {
     'storm-mage',
     'sky-mage',
     'healer',
+    'water-observer',
+    'fire-seer',
+    'ember-duelist',
   ])('runs %s through the common rules without character-specific execution', async (id) => {
     const run = await runBattle(await catalogManifest(id, 'swordsman', 'flat', 400));
     expect(['win', 'draw']).toContain(run.result.outcome.kind);
@@ -80,7 +83,8 @@ describe('data-composed 3D sample catalog', () => {
     expect(again.result.eventHash).toBe(first.result.eventHash);
     expect(again.result.trajectoryHash).toBe(first.result.trajectoryHash);
     expect(again.result.tsStateHash).toBe(first.result.tsStateHash);
-  });
+    // Two complete 6000-step streams, including cognitive logs, under parallel test load.
+  }, 15000);
   it('projects only policy goals onto support; explicit routes retain bridge levels and never grant flight', async () => {
     const battle = await prepareBattle(await catalogManifest('swordsman', 'swordsman', 'flat'));
     const world = createBattleWorld(battle);
