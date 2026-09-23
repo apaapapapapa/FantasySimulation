@@ -14,6 +14,8 @@ export async function assertPublishedRevisions(revisions: readonly Revision[]) {
   const current = new Map(revisions.map((r) => [key(r), r]));
   if (current.size !== revisions.length || new Set(prior.map(key)).size !== prior.length)
     throw new Error('Duplicate catalog definition ID');
+  if (current.size !== prior.length)
+    throw new Error('Published sample inventory differs; record every distributed ID');
   for (const old of prior) {
     const actual = current.get(key(old));
     if (

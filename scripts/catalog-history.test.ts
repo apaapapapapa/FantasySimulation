@@ -17,7 +17,7 @@ describe('published catalog immutability', () => {
       expect(current.definition).toHaveProperty('terrainKnowledge', 'surveyed');
     }
   });
-  it.each(['content', 'revision', 'remove', 'duplicate'] as const)(
+  it.each(['content', 'revision', 'remove', 'duplicate', 'unrecorded'] as const)(
     'rejects an existing sample %s change',
     async (change) => {
       const catalog = savedCatalog.map((r) => RevisionSchema.parse(r));
@@ -35,6 +35,9 @@ describe('published catalog immutability', () => {
           break;
         case 'duplicate':
           catalog.push(structuredClone(item));
+          break;
+        case 'unrecorded':
+          catalog.push({ ...structuredClone(item), id: 'unrecorded-sample' });
           break;
       }
       await expect(assertPublishedRevisions(catalog)).rejects.toThrow(/Published sample|Duplicate/);
