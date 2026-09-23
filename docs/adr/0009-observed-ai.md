@@ -107,22 +107,12 @@ subjectiveなdecision/knowledgeと全知のdamage/cost結果を別eventにする
 resource before/afterやdamageを混在させない。候補35、除外160、経験32、地形64、方向4、乱数用途2に制限し、
 既存Journal/Worker/backpressure/gzip上限で保存する。P4表示機能は別Issue。
 
-既存の近接fixtureは射程外の無駄な開始とrecovery待ちを除いたため151stepになる。
-有効な宣言55/85/115/145、cast5後のcontact60/90/120/150、次境界のdamage25×4で両者HP100を消費する。
-テストにこの算術/時系列を明示してからevent/trajectory/state固定digestを更新した。
-高速projectile fixtureは6step同時致死・trajectory/physics digestを維持し、認識event/state追加だけが変わる。
-保存済みの旧mutual-hit replay fixtureは書き換えない。コーパス更新は入力identityとルール版の変更で、
-candidateの出力から期待値を一括生成していない。
-
-同時致死の終端境界試験は、自傷の強制優先選択を前提にせず、reaction5後に発動する実際の敵向け射撃で
-5step終了時は両者生存、最後の区間を含む6step終了で同時敗北を確認する。
-柱の列挙順試験は完全な6000step対戦を2回保持するためhost timeoutだけ15秒にする。
-時間/メモリの性能受入は別の実測reportで判定し、このtimeoutを性能達成の根拠にはしない。
-
-PR #56の固定fast-check依存と両OS/Worker/fairness試験を統合した。実装digestは新しいAIと
-root依存/lockfileを合わせて明示的にstampする。コーパスは両方の試験対応を保持し、
-既存6件とAI追加1件の合計7入力を同じ両OS/Worker比較へ渡す。
-
-レビューで敵向けshieldを自己保護と評価する分岐を除去し、接触時刻の軌跡位置・区間開始時の
-向きで経験の視認判定を行うよう修正した。複数damage効果の撃破推定は合計推定威力を使い、
-最後の効果による上書きを避ける。既存の単一damage基準値と保存済みreplayは維持する。
+PR #57 regressions retain explicit arithmetic: melee declares at 55/85/115/145,
+contacts five steps later and applies 25 damage at the next boundary (151-step mutual defeat).
+The fast projectile case retains six-step mutual defeat/trajectory/physics; cognition changes
+only events/state. Historical replay is unchanged. Terminal-boundary tests use enemy shots:
+five steps survive, six steps include the final lethal interval. Pillar permutation tests
+allow 15s for two 6000-step runs; this is not a performance acceptance threshold.
+The seven fixed inputs retain Worker/fairness/fast-check coverage; current CI is Linux-only.
+Review regressions cover enemy shields, contact-position sight, interval-start facing and
+compound damage aggregation. Expected outputs were not generated from the candidate.

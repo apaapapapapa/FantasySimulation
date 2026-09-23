@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { assertJson } from './canonical.ts';
+import { assertJson, deepFreeze } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
@@ -22,7 +22,15 @@ export const RefSchema = z.strictObject({
   contentHash: HashSchema,
 });
 export type RevisionRef = z.infer<typeof RefSchema>;
-export const ElementSchema = z.enum(['physical', 'fire', 'ice', 'lightning', 'arcane', 'water']);
+export const ElementSchema = z.enum([
+  'physical',
+  'fire',
+  'ice',
+  'lightning',
+  'arcane',
+  'water',
+  'earth',
+]);
 const ResistancesSchema = z.strictObject({
   physical: uint(10_000),
   fire: uint(10_000),
@@ -30,6 +38,7 @@ const ResistancesSchema = z.strictObject({
   lightning: uint(10_000),
   arcane: uint(10_000),
   water: uint(10_000).optional(),
+  earth: uint(10_000).optional(),
 });
 
 export const BodySchema = z
@@ -89,10 +98,54 @@ export const PerceptionSchema = z.strictObject({
   revealWardBps: uint(10_000).optional(),
 });
 export const AppearanceSchema = z.strictObject({
-  silhouette: z.enum(['humanoid', 'beast', 'construct']),
-  surface: z.enum(['neutral', 'red', 'blue', 'dark', 'bright']),
-  equipment: z.array(z.enum(['blade', 'bow', 'staff', 'shield'])).max(4),
+  silhouette: z.enum(['humanoid', 'beast', 'construct', 'winged', 'amorphous']),
+  surface: z.enum(['neutral', 'red', 'blue', 'dark', 'bright', 'brown', 'green']),
+  equipment: z
+    .array(z.enum(['blade', 'bow', 'staff', 'shield', 'spear', 'axe', 'grimoire']))
+    .max(4),
 });
+export const AppearancePriorsSchema = z.strictObject({
+  defaultEfficacyBps: uint(30000),
+  cues: z
+    .array(
+      z.strictObject({
+        match: AppearanceSchema.partial().refine(
+          (m) => Object.keys(m).length > 0,
+          'Empty appearance cue',
+        ),
+        confidenceBps: uint(10000),
+        efficacy: z
+          .array(z.strictObject({ element: ElementSchema, bps: uint(30000) }))
+          .max(32)
+          .refine(
+            (es) => new Set(es.map((e) => e.element)).size === es.length,
+            'Duplicate element prior',
+          ),
+      }),
+    )
+    .max(32),
+});
+// Omitted rules retain the published prior; new rules persist this data explicitly.
+export const LEGACY_APPEARANCE_PRIORS = deepFreeze(
+  AppearancePriorsSchema.parse({
+    defaultEfficacyBps: 7500,
+    cues: [
+      {
+        match: { surface: 'red' },
+        confidenceBps: 1000,
+        efficacy: [{ element: 'fire', bps: 6500 }],
+      },
+      {
+        match: { surface: 'blue' },
+        confidenceBps: 1000,
+        efficacy: [{ element: 'ice', bps: 6500 }],
+      },
+    ],
+  }),
+);
+export const WoundStageSchema = z.enum(['unknown', 'unhurt', 'hurt', 'severe', 'critical']);
+export const ObservedPhaseSchema = z.enum(['idle', 'cast', 'active', 'recovery']);
+const RelativePositionSchema = z.enum(['front', 'behind', 'side', 'above', 'below']);
 export const AiRulesSchema = z.strictObject({
   profile: z.literal('observed-utility-v1'),
   observation: z.literal('visible-coarse-v1'),
@@ -108,6 +161,7 @@ export const AiRulesSchema = z.strictObject({
   killWeight: positive(5000),
   actionWeight: positive(1000),
   dodgeWeight: positive(5000),
+  appearancePriors: AppearancePriorsSchema.optional(),
 });
 export const AI_RULES = Object.freeze(
   AiRulesSchema.parse({
@@ -135,6 +189,10 @@ export type Condition =
   | { kind: 'visible'; value: boolean }
   | { kind: 'status'; id: string; present: boolean }
   | { kind: 'projectile-observed' }
+  | { kind: 'observed-wounds'; stage: z.infer<typeof WoundStageSchema> }
+  | { kind: 'observed-phase'; phase: z.infer<typeof ObservedPhaseSchema> }
+  | { kind: 'observed-status'; id: string; present: boolean }
+  | { kind: 'relative-position'; relation: z.infer<typeof RelativePositionSchema> }
   | { kind: 'all' | 'any'; children: Condition[] }
   | { kind: 'not'; child: Condition };
 function conditionAt(depth: number): z.ZodType<Condition> {
@@ -149,6 +207,10 @@ function conditionAt(depth: number): z.ZodType<Condition> {
     z.strictObject({ kind: z.literal('visible'), value: z.boolean() }),
     z.strictObject({ kind: z.literal('status'), id: IdSchema, present: z.boolean() }),
     z.strictObject({ kind: z.literal('projectile-observed') }),
+    z.strictObject({ kind: z.literal('observed-wounds'), stage: WoundStageSchema }),
+    z.strictObject({ kind: z.literal('observed-phase'), phase: ObservedPhaseSchema }),
+    z.strictObject({ kind: z.literal('observed-status'), id: IdSchema, present: z.boolean() }),
+    z.strictObject({ kind: z.literal('relative-position'), relation: RelativePositionSchema }),
   ] as const;
   if (depth === 0) return z.discriminatedUnion('kind', leaves);
   const child = conditionAt(depth - 1);

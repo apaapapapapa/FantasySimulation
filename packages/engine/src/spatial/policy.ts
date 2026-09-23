@@ -11,6 +11,7 @@ import { Navigator, type NavigationResult } from './navigation.ts';
 import { conditionMatches, type DecisionView } from './perception.ts';
 import { inObservedRange, payCost } from './attacks.ts';
 import { copyPublicStatuses } from './status-observation.ts';
+import { usesObservedConditions } from './observed-conditions.ts';
 import { blockedBySilence } from './categories.ts';
 import { assessAbility, type KnownClearance } from './assessment.ts';
 import { dodgeOptions } from './dodge.ts';
@@ -225,6 +226,18 @@ export function choosePolicy(
         : null,
       wounds: target?.wounds ?? 'unknown',
       ...(target?.statuses && { observedStatuses: copyPublicStatuses(target.statuses) }),
+      ...(observation?.enemy &&
+        (actor.abilities.some((a) => usesObservedConditions(a.definition.condition)) ||
+          actor.policy.priorities.some((p) => usesObservedConditions(p.when))) && {
+          conditionObservation: {
+            phase: observation.enemy.action ?? null,
+            facingBps: {
+              x: Math.round(observation.enemy.facing.x * 10000),
+              y: Math.round(observation.enemy.facing.y * 10000),
+              z: Math.round(observation.enemy.facing.z * 10000),
+            },
+          },
+        }),
       targetPositionMm: target
         ? {
             x: Math.round(target.position.x * 1000),

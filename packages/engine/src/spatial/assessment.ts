@@ -13,6 +13,7 @@ import { damagePower, damageDefense } from './damage.ts';
 import { assessStatusEffects, observedDamagePrior } from './status-assessment.ts';
 import { adjustedStatusValue, damageStatusBps } from './status-modifiers.ts';
 import { abilityCategories } from './categories.ts';
+import { appearancePrior } from './appearance.ts';
 
 export const clampBps = (n: number) => Math.max(0, Math.min(10000, Math.round(n)));
 export const boundedWeight = (n: number) => Math.max(0, Math.min(1_000_000, Math.round(n)));
@@ -64,14 +65,10 @@ export function efficacy(
       evidence: comparable.map((e) => e.eventId),
     };
   }
-  const surface = target?.appearance?.surface;
-  const prior =
-    (surface === 'red' && element === 'fire') || (surface === 'blue' && element === 'ice')
-      ? 6500
-      : 7500;
+  const prior = appearancePrior(target?.appearance, element, view.rules?.appearancePriors);
   return {
-    bps: Math.min(30000, Math.round((prior * statusPrior) / 10000)),
-    confidence: surface === 'red' || surface === 'blue' ? 1000 : 0,
+    bps: Math.min(30000, Math.round((prior.bps * statusPrior) / 10000)),
+    confidence: prior.confidence,
     evidence: [],
   };
 }

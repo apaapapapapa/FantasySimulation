@@ -168,6 +168,7 @@ export async function withInitialStatus(
   const ability = await sealRevision('ability', `initial-grant-${index}`, 1, {
     ...base.definition,
     trigger: 'battle-start',
+    condition: { kind: 'always' },
     target: 'self',
     attack: { kind: 'direct' },
     castSteps: 0,
