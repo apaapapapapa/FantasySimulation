@@ -738,7 +738,8 @@ export function* simulate(
           }
         }
         commitEffects(next, effects, battle, journal, step, step + 1, 'resolution', budget, world);
-        for (const actor of next) recoverActorResources(actor, battle.rules.stepMs, step, journal);
+        for (const actor of next)
+          recoverActorResources(actor, battle.rules.stepMs, step + 1, journal);
         const record: StreamRecord = {
           kind: 'interval',
           schemaVersion: 1,

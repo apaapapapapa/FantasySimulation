@@ -86,9 +86,9 @@ describe('stamina in the real battle and own-resource AI', () => {
       (e) => e.ruleId === 'resource.stamina-recovery' && e.actorId === 'left',
     );
     expect(recovery.map((e) => [e.step, e.before?.stamina, e.after?.stamina])).toEqual([
-      [16, 2, 3],
-      [33, 3, 4],
-      [49, 4, 5],
+      [17, 2, 3],
+      [34, 3, 4],
+      [50, 4, 5],
     ]);
     expect(run.result.steps).toBe(50);
   });

@@ -9,7 +9,7 @@ import { resourceLimits, staminaExhausted, updateResources } from './resources.t
 export function recoverActorResources(
   actor: ActorState,
   elapsedMs: number,
-  step: number,
+  boundaryStep: number,
   journal: Journal,
   adjustment: { addPerSecond?: number; multiplierBps?: number } = {},
 ) {
@@ -31,9 +31,8 @@ export function recoverActorResources(
   if (updated.actual.stamina)
     journal.emit({
       kind: 'resource',
-      step,
+      step: boundaryStep,
       phase: 'resolution',
-      subtimeMicros: 1_000_000,
       actorId: actor.motion.actor.participant.actorId,
       ruleId: 'resource.stamina-recovery',
       before,
