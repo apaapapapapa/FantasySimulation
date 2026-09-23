@@ -59,6 +59,7 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
     }
   }
   writeFileSync(join(directory, 'runner.log'), result.output);
+  if (result.exitCode !== 0) console.error(result.output);
   let results: unknown = null;
   try {
     results = JSON.parse(readFileSync(join(directory, 'results.json'), 'utf8')) as unknown;

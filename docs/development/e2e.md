@@ -13,7 +13,8 @@ and blocked external requests. Dirty trees provide diagnostics but cannot pass S
 
 The existing API/store/runtime seeds current domain revisions into a new OS temporary
 DB. API and web bind kernel-assigned loopback ports; no server reuse or port-probe gap.
-Vite skips `.env`; child environments exclude DB/API overrides and credentials.
+Vite builds/previews temporary assets without HMR or `.env`; child environments
+exclude DB/API overrides and credentials.
 Timeout/SIGINT/SIGTERM kills the owned process group before removing temporary data.
 Browser contexts block foreign HTTP origins, WebSockets and service workers. These
 request guards are not OS sandboxing.
@@ -33,7 +34,7 @@ replay bytes/provenance and `ReplayManifestSchema`; it starts no API/DB/engine.
 Static browser coverage stays `unknown` until #81's reviewed publication schemas and
 #79/#80 screens land. Import those shared catalog/set/page types without duplication;
 keep `ReplaySource`/`OpenedReplay` in web. Add WebKit and actual selection/play/seek
-flows then. P4 editor/job/cancel/result tests remain later #12 PRs; this PR does not
-close #12. #9 owns engine correctness, independently of screenshots.
+flows then. P4 editor/job/cancel/result tests remain later PRs; #12 remains open.
+#9 owns engine correctness, independently of screenshots.
 
 Source: HiFiScout `36aaf69d3f7a61195af4e85a468514dfbb1ecc80` local UI harness.

@@ -7,6 +7,7 @@ import { readUiEvidence, uiCoverage } from './ui-results.ts';
 import { runCommand } from './process.ts';
 import { UI_CASES, UI_CHECKS, allowedRequest, localOrigin } from '../../e2e/contract.ts';
 import { startStaticFixtures } from '../../e2e/static-fixtures.ts';
+import { startServers } from '../../e2e/servers.ts';
 
 function results() {
   return {
@@ -206,11 +207,16 @@ it.each(['timeout', 'abort'] as const)('kills the owned process group on %s', as
   try {
     mkdirSync(join(root, 'owned'));
     const marker = join(root, 'owned', 'leaked');
-    const childCode = `setTimeout(()=>require('node:fs').writeFileSync(${JSON.stringify(marker)},'leaked'),1500)`;
-    const parentCode = `require('node:child_process').spawn(process.execPath,['-e',${JSON.stringify(childCode)}],{stdio:'inherit'}); setInterval(()=>{},1000);`;
+    const parentCode = `
+      require('node:child_process').spawn(process.execPath, [
+        '-e', "setTimeout(()=>require('node:fs').writeFileSync(process.argv[1],'leaked'),1500)",
+        process.argv[1]
+      ], {stdio:'inherit'});
+      setInterval(()=>{},1000);
+    `;
     const controller = new AbortController();
     const timer = mode === 'abort' ? setTimeout(() => controller.abort(), 100) : null;
-    const outcome = await runCommand(process.execPath, ['-e', parentCode], root, {
+    const outcome = await runCommand(process.execPath, ['-e', parentCode, marker], root, {
       timeoutMs: mode === 'timeout' ? 150 : 3000,
       signal: controller.signal,
     });
@@ -223,3 +229,25 @@ it.each(['timeout', 'abort'] as const)('kills the owned process group on %s', as
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+it('serves built web assets and isolated API without the dev websocket client', async () => {
+  const temporary = mkdtempSync(join(tmpdir(), 'fantasy-ui-servers-'));
+  let servers: Awaited<ReturnType<typeof startServers>> | undefined;
+  try {
+    servers = await startServers(process.cwd(), temporary);
+    const html = await (await fetch(servers.webOrigin)).text();
+    expect(html).not.toMatch(/@vite\/client|@react-refresh|@fs\//);
+    const stylesheet = /href="([^"]+\.css)"/.exec(html)?.[1];
+    expect(stylesheet).toBeDefined();
+    expect(await (await fetch(new URL(stylesheet!, servers.webOrigin))).text()).toContain(
+      'Noto Sans JP',
+    );
+    expect(await (await fetch(`${servers.webOrigin}/api/health`)).json()).toMatchObject({
+      status: 'ok',
+    });
+    expect(servers.webOrigin).not.toBe(servers.apiOrigin);
+  } finally {
+    await servers?.stop();
+    rmSync(temporary, { recursive: true, force: true });
+  }
+}, 15_000);

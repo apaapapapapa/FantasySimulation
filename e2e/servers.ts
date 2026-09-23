@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import { createServer } from 'vite-plus';
+import { build, preview, type InlineConfig } from 'vite-plus';
 import { createApp } from '../apps/api/src/app.ts';
 import { openStore, readSampleRevisions } from '../apps/api/src/store.ts';
 import { BattleRuntime } from '../apps/api/src/battle-runtime.ts';
@@ -30,13 +30,12 @@ export async function startServers(root: string, temporary: string) {
     // The app owns store/runtime after this point, matching the production lifecycle.
     close.splice(0, close.length, () => api.close());
     const apiOrigin = await api.listen({ host: '127.0.0.1', port: 0 });
-    const require = createRequire(import.meta.url);
-    const fontCss = require.resolve('@fontsource/noto-sans-jp/400.css');
     const webRequire = createRequire(join(root, 'apps/web/package.json'));
     const { default: react } = (await import(webRequire.resolve('@vitejs/plugin-react'))) as {
       default: () => import('vite-plus').PluginOption;
     };
-    const web = await createServer({
+    const config: InlineConfig = {
+      logLevel: 'warn',
       configFile: false,
       envDir: false,
       root: join(root, 'apps/web'),
@@ -45,31 +44,36 @@ export async function startServers(root: string, temporary: string) {
         react(),
         {
           name: 'isolated-test-font',
-          transformIndexHtml: () => [
-            {
-              tag: 'link',
-              attrs: { rel: 'stylesheet', href: `/@fs/${fontCss}` },
-              injectTo: 'head',
-            },
-            {
-              tag: 'style',
-              children: ':root { font-family: "Noto Sans JP", sans-serif !important; }',
-              injectTo: 'head',
-            },
-          ],
+          transformIndexHtml: {
+            order: 'pre',
+            handler: () => [
+              {
+                tag: 'script',
+                attrs: { type: 'module' },
+                children: 'import "@fontsource/noto-sans-jp/400.css";',
+                injectTo: 'head',
+              },
+              {
+                tag: 'style',
+                children: ':root { font-family: "Noto Sans JP", sans-serif !important; }',
+                injectTo: 'head',
+              },
+            ],
+          },
         },
       ],
-      server: {
+      build: { outDir: join(temporary, 'web'), emptyOutDir: true },
+      preview: {
         host: '127.0.0.1',
         port: 0,
         strictPort: true,
-        hmr: false,
         proxy: { '/api': apiOrigin },
-        fs: { allow: [root] },
       },
-    });
+    };
+    // Production assets have no dev/HMR client or websocket reconnect attempts.
+    await build(config);
+    const web = await preview(config);
     close.push(() => web.close());
-    await web.listen();
     const address = web.httpServer?.address();
     if (!address || typeof address === 'string') throw new Error('Web server did not bind');
     const webOrigin = `http://127.0.0.1:${address.port}`;
