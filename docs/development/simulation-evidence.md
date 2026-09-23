@@ -149,3 +149,7 @@ incorrectly passed identity/repeat checks. The baseline assertion fails and the
 candidate assertion passes, with separate source/driver identities. Import/setup
 errors cannot stand in for this reproduction. Later baselines retaining the fix
 are reported as retained regression coverage, not new failing-baseline evidence.
+
+## 保存込み統合性能
+
+固定基準機の新規1,000試合、Worker比較、再実行コマンドと採用判断は[ADR 0011](../adr/0011-integrated-performance.md)を参照する。
