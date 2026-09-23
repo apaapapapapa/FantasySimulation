@@ -13,6 +13,7 @@ body {
   margin: 0;
 }
 button,
+input,
 select,
 textarea {
   font: inherit;
@@ -28,11 +29,79 @@ button:disabled {
   opacity: 0.5;
 }
 button:focus-visible,
+input:focus-visible,
 a:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid #dbbf83;
   outline-offset: 4px;
+}
+fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+input {
+  color: inherit;
+  background: #101827;
+  border: 1px solid #4a5261;
+  padding: 8px;
+  width: 100%;
+}
+.app-shell {
+  padding: 24px 0;
+}
+.app-shell > section,
+.workspace {
+  margin-bottom: 24px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0;
+}
+.revision-list {
+  list-style: none;
+  padding: 0;
+}
+.revision-list li {
+  margin: 6px 0;
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 360px;
+  overflow: auto;
+  font-size: 12px;
+}
+code,
+output {
+  overflow-wrap: anywhere;
+}
+table {
+  display: block;
+  overflow: auto;
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+td,
+th {
+  border-bottom: 1px solid #354156;
+  padding: 8px;
+}
+button {
+  background: #28354a;
+  color: inherit;
+  border: 1px solid #58647a;
+  border-radius: 5px;
+  padding: 8px 12px;
+}
+summary {
+  cursor: pointer;
+  margin: 12px 0;
 }
 main {
   width: min(1240px, calc(100% - 64px));

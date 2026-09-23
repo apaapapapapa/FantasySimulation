@@ -407,6 +407,10 @@ export class Store {
       prng: 'xorshift32-v1',
       seedDerivation: 'actor-stream-v1',
       revisions,
+    }).catch((error: unknown) => {
+      if (error instanceof Error && error.message === 'Spawn body exceeds arena bounds')
+        throw new StoreError(400, error.message);
+      throw error;
     });
   }
   saveSpec(battle: PreparedBattle) {

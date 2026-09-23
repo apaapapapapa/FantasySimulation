@@ -44,11 +44,10 @@ SQLiteのネイティブビルドが必要な環境ではPythonとC++ツール�
 | `POST /api/drafts/{id}/validate`            | 公開可能な構造・参照の検証                         |
 | `POST /api/drafts/{id}/publish`             | 検証済みsnapshotの新revision公開                   |
 
-現行仕様は[3Dルール](../rules/spatial-v1.md)を参照してください。
-初期画面は接続状態を表示します。編集・対戦・観戦の画面はP4で追加します。
-
-保存記録の検証、gzipチャンク、チェックポイントからの表示復元は[ADR 0006](../adr/0006-recorded-replay.md)。
-再生には対戦エンジンやRapierを実行しません。観戦画面はP4の作業です。
+画面ではキャラクター・能力のJSONを下書き保存→検証→新revision公開できます。
+対戦は設定とseedを選んで開始し、中止・再試行・結果・保存ログを確認します。
+ログ上限で中断した場合は計算予算を増やして再試行します。公開revisionは保持されます。
+記録の検証・表示復元は[ADR 0006](../adr/0006-recorded-replay.md)。描画はengineを実行しません。
 
 ## 3Dサンプル対戦
 

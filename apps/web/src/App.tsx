@@ -1,6 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { DefinitionEditor } from './workbench/DefinitionEditor.tsx';
+import { BattlePanel } from './workbench/BattlePanel.tsx';
+import { ReplayPanel } from './replay/ReplayPanel.tsx';
+import { apiReplaySource } from './replay/api-source.ts';
 export function App() {
   const [status, setStatus] = useState('接続を確認しています');
+  const [revisionTick, setRevisionTick] = useState(0);
+  const [replayId, setReplayId] = useState<string | null>(null);
+  const replaySource = useMemo(() => (replayId ? apiReplaySource(replayId) : null), [replayId]);
   useEffect(() => {
     const controller = new AbortController();
     void fetch('/api/health', { signal: controller.signal })
@@ -23,11 +30,16 @@ export function App() {
         <h1>3D対戦の開発環境</h1>
       </header>
       <section className="panel">
-        <p role="status">{status}</p>
-        <p>
-          キャラクターの登録と対戦実行はAPI・CLIから利用します。編集画面と3D観戦は次の開発段階で追加します。
+        <p role="status" aria-label="API接続">
+          {status}
         </p>
+        <p>設定を下書きとして検証し、新しいrevisionを公開して対戦できます。</p>
       </section>
+      <div className="workspace">
+        <DefinitionEditor onPublished={() => setRevisionTick((n) => n + 1)} />
+        <BattlePanel revisionTick={revisionTick} onReplay={setReplayId} />
+      </div>
+      {replaySource && <ReplayPanel source={replaySource} />}
     </main>
   );
 }

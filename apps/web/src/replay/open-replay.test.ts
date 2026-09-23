@@ -11,6 +11,7 @@ import {
 import { apiReplaySource } from './api-source.ts';
 import { ReplayLoadError } from './artifacts.ts';
 import { openReplay } from './open-replay.ts';
+import { seekStep } from './seek-step.ts';
 
 // Fixed bytes from the real ReplayWriter; see test-fixtures/replays/provenance.json.
 const ID = 'swordsman-sky-mage-240';
@@ -86,6 +87,19 @@ function replaceFile(
 const expand = (served: Served, file: string) => gunzipSync(served.files.get(file)!);
 
 describe('saved replay loading through the local API adapter', () => {
+  it('seeks final step states across chunk boundaries without duplicating boundary events', async () => {
+    const saved = await savedReplay(),
+      expected = await sequentialCheckpoints(saved);
+    const opened = await open(saved).opening;
+    for (const step of [0, 1, 90, 91, 92, 158, 159, 160, 238, 239, 240, 100, 0]) {
+      const state = await seekStep(opened, step);
+      expect(state.checkpoint()).toEqual(expected.findLast((value) => value.step === step));
+    }
+    await expect(seekStep(opened, 241)).rejects.toThrow(RangeError);
+    const controller = new AbortController();
+    controller.abort();
+    await expect(seekStep(opened, 1, controller.signal)).rejects.toMatchObject({ kind: 'aborted' });
+  });
   it('restores record cursors across all chunks from verified files only', async () => {
     const saved = await savedReplay(),
       expected = await sequentialCheckpoints(saved);
