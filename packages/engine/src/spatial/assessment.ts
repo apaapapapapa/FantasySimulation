@@ -49,8 +49,7 @@ export function efficacy(
   const comparable = evidence.filter(
     (e) =>
       e.kind === 'impact' &&
-      (e.observedStatuses === undefined ||
-        canonicalJson(e.observedStatuses) === canonicalJson(target?.statuses ?? [])) &&
+      canonicalJson(e.observedStatuses ?? []) === canonicalJson(target?.statuses ?? []) &&
       (e.defense ?? 'physical') === defense &&
       e.range &&
       e.basePower > 0 &&

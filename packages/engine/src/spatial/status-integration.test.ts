@@ -20,7 +20,7 @@ import { emptyMemory, perceive, observeImpact, observeReveal } from './perceptio
 import { choosePolicy } from './policy.ts';
 import { assessAbility, efficacy } from './assessment.ts';
 import { assessStatusEffect } from './status-assessment.ts';
-import { statusVision } from './status-observation.ts';
+import { copyPublicStatuses, statusVision } from './status-observation.ts';
 import { selfView } from './self-view.ts';
 import { applyStatuses } from './status.ts';
 import { planStatusReactions } from './status-reactions.ts';
@@ -380,6 +380,7 @@ describe('G-03 status combat and subjective observations', () => {
         sampledAt: 5,
         availableAt: 10,
         range: { low: 40, high: 50 },
+        observedStatuses: copyPublicStatuses(observed.observation!.enemy!.statuses!),
       });
       const before = perceive(
         f.world,
@@ -391,6 +392,10 @@ describe('G-03 status combat and subjective observations', () => {
         visible,
       );
       expect(efficacy({ ...f.view, step: 10, memory: before }, 'fire', 25).bps).toBe(18000);
+      const { observedStatuses: _, ...bareImpact } = old;
+      expect(
+        efficacy({ ...f.view, memory: { ...before, knowledge: [bareImpact] } }, 'fire', 25),
+      ).toMatchObject({ bps: 9375, evidence: [] });
       const transitionHit = observeImpact(
         f.world,
         f.self,
