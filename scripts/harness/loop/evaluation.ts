@@ -14,6 +14,7 @@ export function sandboxCommand(
   repository: string,
   command: string[],
   writable: string[],
+  readOnly: string[] = [],
 ) {
   ensure(process.platform === 'linux', 'Evaluation requires Linux bubblewrap');
   const args = [
@@ -30,6 +31,7 @@ export function sandboxCommand(
   args.push('--proc', '/proc', '--dev', '/dev', '--tmpfs', '/tmp', '--dir', '/tmp/loop-home');
   args.push('--ro-bind', repository, repository, '--ro-bind', workspace, workspace);
   for (const path of writable) args.push('--bind', path, path);
+  for (const path of readOnly) args.push('--ro-bind', path, path);
   args.push(
     '--setenv',
     'HOME',
@@ -65,12 +67,18 @@ export async function isolatedCommand(
   timeoutMs: number,
   writable: string[] = [],
   run: typeof runCommand = runCommand,
+  readOnly: string[] = [],
 ): Promise<CommandResult> {
-  return run('bwrap', sandboxCommand(workspace, repository, command, writable), workspace, {
-    env: { PATH: '/usr/bin:/bin' },
-    timeoutMs,
-    maxBytes: 4 * 1024 * 1024,
-  });
+  return run(
+    'bwrap',
+    sandboxCommand(workspace, repository, command, writable, readOnly),
+    workspace,
+    {
+      env: { PATH: '/usr/bin:/bin' },
+      timeoutMs,
+      maxBytes: 4 * 1024 * 1024,
+    },
+  );
 }
 export async function evaluate(path: string) {
   return operation(path, async () => {

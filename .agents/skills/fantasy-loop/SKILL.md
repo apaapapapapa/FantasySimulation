@@ -18,7 +18,7 @@ Run `node scripts/harness.ts loop` with these arguments:
 - `apply JOURNAL JSON`: submit `{patch,baseSha,attempt}`, constructed outside the worktree.
 - `evaluate JOURNAL`: inspect actual verification logs and nextAction.
 - `regression JOURNAL JSON`: `{file,name}` selects a new test; require baseline assertion
-  failure and candidate pass, never setup/import failure.
+  failure and candidate pass, never setup/import failure. Proof tests must have no lifecycle hooks.
 - `review JOURNAL JSON`: record candidateSha, completedAt, method (`self`/`human`), summary,
   all reviewedPaths and unresolvedFindings=0 only after actual review.
 - `handoff JOURNAL`: manually publish the exact branch/SHA and create its PR using authorized tools.

@@ -122,8 +122,29 @@ it.each([
       },
     ],
   };
-  expect(assertionOutcome(result, '/repo/src/new.test.ts', 'returns the expected value')).toBe(
-    expected,
+  const execution = {
+    schemaVersion: 1,
+    hooksExecuted: false,
+    unhandledErrors: 0,
+    tests: [
+      {
+        file: '/repo/src/new.test.ts',
+        name: 'returns the expected value',
+        state: 'failed',
+        errors: ['AssertionError'],
+      },
+    ],
+  };
+  expect(
+    assertionOutcome(result, '/repo/src/new.test.ts', 'returns the expected value', execution),
+  ).toBe(expected);
+  expect(assertionOutcome(result, '/repo/src/new.test.ts', 'unexecuted test', execution)).toBe(
+    'unknown',
   );
-  expect(assertionOutcome(result, '/repo/src/new.test.ts', 'unexecuted test')).toBe('unknown');
+  expect(
+    assertionOutcome(result, '/repo/src/new.test.ts', 'returns the expected value', {
+      ...execution,
+      hooksExecuted: true,
+    }),
+  ).toBe('unknown');
 });

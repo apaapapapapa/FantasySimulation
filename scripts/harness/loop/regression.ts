@@ -6,7 +6,7 @@ import { record, text } from '../report.ts';
 import { git } from '../source.ts';
 import { digest, isTestPath, relativePath } from './contract.ts';
 import { isolatedCommand } from './evaluation.ts';
-import { readJournal } from './journal.ts';
+import { readJournal, regularPath } from './journal.ts';
 import { ensure, status, transition } from './state.ts';
 import { copyDependencies, operation, owned, scope } from './workspace.ts';
 
@@ -14,7 +14,19 @@ export function assertionOutcome(
   value: unknown,
   file: string,
   name: string,
+  execution: unknown,
 ): 'pass' | 'assertion-failed' | 'unknown' {
+  const receipt = record(execution);
+  if (
+    receipt.schemaVersion !== 1 ||
+    receipt.hooksExecuted !== false ||
+    receipt.unhandledErrors !== 0
+  )
+    return 'unknown';
+  const executed = objects(receipt.tests).filter(
+    (test) => test.file === file && test.name === name,
+  );
+  if (executed.length !== 1) return 'unknown';
   const data = record(value);
   if (data.numRuntimeErrorTestSuites !== undefined && data.numRuntimeErrorTestSuites !== 0)
     return 'unknown';
@@ -23,21 +35,34 @@ export function assertionOutcome(
   const tests = objects(files[0]!.assertionResults).filter((t) => t.fullName === name);
   if (tests.length !== 1) return 'unknown';
   const test = tests[0]!;
-  if (test.status === 'passed' && files[0]!.status === 'passed') return 'pass';
+  if (test.status === 'passed' && files[0]!.status === 'passed' && executed[0]!.state === 'passed')
+    return 'pass';
   if (
     test.status !== 'failed' ||
+    executed[0]!.state !== 'failed' ||
     !Array.isArray(test.failureMessages) ||
     !test.failureMessages.length
   )
     return 'unknown';
   // Setup/import errors cannot stand in for the expected failing assertion.
   if (
+    Array.isArray(executed[0]!.errors) &&
+    executed[0]!.errors.length > 0 &&
+    executed[0]!.errors.every((e) => e === 'AssertionError') &&
     test.failureMessages.every(
       (message) => typeof message === 'string' && /(?:AssertionError|ERR_ASSERTION)/.test(message),
     )
   )
     return 'assertion-failed';
   return 'unknown';
+}
+export function executionReceipt(output: string): unknown {
+  const rows = output
+    .split('\n')
+    .map((line) => /^FANTASY_REGRESSION_EXECUTION=(.*)$/.exec(line)?.[1])
+    .filter((line) => line !== undefined);
+  ensure(rows.length === 1, 'Missing or ambiguous test-body execution receipt');
+  return JSON.parse(rows[0]!);
 }
 export async function regression(path: string, selection: unknown) {
   return operation(path, async () => {
@@ -92,15 +117,22 @@ export async function regression(path: string, selection: unknown) {
       ['baseline', baseline],
       ['candidate', dirs.workspace],
     ] as const) {
-      const output = join(root, '.generated', 'loop-regression');
+      const output = regularPath(join(root, '.generated', 'loop-regression'));
       mkdirSync(output, { recursive: true });
       const reportPath = join(output, 'vitest.json');
+      const reporterPath = regularPath(join(output, 'regression-reporter.ts'));
+      writeFileSync(
+        reporterPath,
+        readFileSync(new URL('./regression-reporter.ts', import.meta.url)),
+        { flag: 'wx' },
+      );
       const command = [
         'vp',
         'test',
         'run',
         file,
         '--reporter=json',
+        `--reporter=${reporterPath}`,
         `--outputFile=${reportPath}`,
         `--testNamePattern=^${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
       ];
@@ -112,13 +144,17 @@ export async function regression(path: string, selection: unknown) {
         command,
         Math.min(120_000, remaining),
         [join(root, '.generated')],
+        undefined,
+        [reporterPath],
       );
       writeFileSync(join(directory, `${label}.log`), run.output, { flag: 'wx' });
       let report: unknown = null,
+        execution: unknown = null,
         outcome = 'unknown';
       try {
-        report = readBoundedJson(reportPath);
-        outcome = assertionOutcome(report, join(root, file), name);
+        report = readBoundedJson(regularPath(reportPath));
+        execution = executionReceipt(run.output);
+        outcome = assertionOutcome(report, join(root, file), name, execution);
       } catch {
         /* Missing JSON is incomplete. */
       }
@@ -127,7 +163,7 @@ export async function regression(path: string, selection: unknown) {
         !git(root, ['status', '--porcelain=v1', '--untracked-files=all']),
         'Regression changed tracked source',
       );
-      results.push({ label, command, ...run, report, outcome });
+      results.push({ label, command, ...run, report, execution, outcome });
     }
     owned(path, j);
     const evidence = join(directory, 'comparison.json');
