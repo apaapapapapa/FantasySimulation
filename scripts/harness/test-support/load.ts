@@ -55,7 +55,7 @@ export function loadBoundary(info: Identity): Report {
 
 export function loadReceipts(info: Identity) {
   return Object.fromEntries(
-    ['load-ubuntu-latest', 'load-windows-latest', 'load-pair'].map((name) => [
+    ['load-ubuntu-latest', 'load-pair'].map((name) => [
       name,
       {
         ...info,

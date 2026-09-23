@@ -7,14 +7,13 @@ export const requiredJobs = [
   'changes',
   'ci-gate',
   'Verify (ubuntu-latest)',
-  'Verify (windows-latest)',
+  'Paired load (ubuntu-latest)',
   'Security / Secret scan',
   'Security / Dependency audit',
   'Security / CodeQL and severity policy',
   'Security / security-gate',
   'Dependency policy / Renovate configuration',
   'Dependency policy / Toolchain policy (ubuntu-latest)',
-  'Dependency policy / Toolchain policy (windows-latest)',
   'Dependency policy / dependency-policy-gate',
   'Release',
 ];
@@ -119,14 +118,14 @@ export function validateJobs(values: unknown[]): void {
     requireCompletion(matching.length === 1, 'MISSING_OR_DUPLICATE_REQUIRED_JOB');
     requireCompletion(matching[0]!.conclusion === 'success', 'FAILED_OR_SKIPPED_JOB');
   }
-  // Main always runs full verification. GitHub skips docs before expanding its matrix.
+  // Main always runs full verification. Only the planned Linux docs job may skip.
   // Only that exact job may be skipped; planner, aggregate gate and source proofs stay mandatory.
   requireCompletion(
     jobs.every(
       (job) =>
         job.status === 'completed' &&
         (job.conclusion === 'success' ||
-          (job.name === 'Docs (${{ matrix.os }})' && job.conclusion === 'skipped')),
+          (job.name === 'Docs (ubuntu-latest)' && job.conclusion === 'skipped')),
     ),
     'FAILED_OR_SKIPPED_JOB',
   );

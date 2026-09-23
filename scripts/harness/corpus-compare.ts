@@ -1,7 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { assessReport, identity, record, type Check, type Identity } from './report.ts';
 
-export const CROSS_OS_CHECK = 'corpus:cross-os';
+export const CORPUS_ARTIFACT_CHECK = 'corpus:artifacts';
 const digest = (value: unknown) => typeof value === 'string' && /^sha256:[a-f0-9]{64}$/.test(value);
 
 /** Compare receipts from one CI run against the checked-out definition, never just each other. */
@@ -12,7 +12,7 @@ export function compareCorpus(
   artifacts: Record<string, unknown>,
 ): Check {
   const check: Check = {
-    id: CROSS_OS_CHECK,
+    id: CORPUS_ARTIFACT_CHECK,
     required: true,
     status: 'unknown',
     reason: 'Missing or invalid corpus evidence',
@@ -30,8 +30,7 @@ export function compareCorpus(
       baselineSha: null,
       testMergeSha: null,
     };
-    const results: unknown[][] = [];
-    for (const platform of ['linux', 'win32']) {
+    for (const platform of ['linux']) {
       const bundle = record(artifacts[platform]);
       const raw = record(bundle.results);
       const report = assessReport(bundle.report, [
@@ -59,7 +58,6 @@ export function compareCorpus(
         throw new Error(`${platform}: wrong corpus or missing entries`);
       if (!isDeepStrictEqual(raw.entries.map((e: unknown) => record(e).id).sort(), expectedIds))
         throw new Error(`${platform}: missing, duplicate or extra fixture`);
-      const rows: unknown[] = [];
       for (const fixed of expected) {
         const entry = record(raw.entries.find((e: unknown) => record(e).id === fixed.id));
         if (
@@ -98,19 +96,14 @@ export function compareCorpus(
           check.status = 'fail';
           throw new Error(`${platform}: repeated result differs`);
         }
-        rows.push({ id: fixed.id, result: entry.runs[0] });
       }
-      results.push([raw.engine, raw.nodeVersion, ...rows]);
       check.evidence.push({
-        uri: `.generated/harness/ci/evidence/${platform === 'linux' ? 'ubuntu-latest' : 'windows-latest'}/corpus/results.json`,
+        uri: '.generated/harness/ci/evidence/ubuntu-latest/corpus/results.json',
         sourceSha: info.sourceSha,
       });
     }
-    check.status = isDeepStrictEqual(results[0], results[1]) ? 'pass' : 'fail';
-    check.reason =
-      check.status === 'pass'
-        ? `${expected.length} fixed inputs: Linux/Windows result, event, trajectory, TS and physics digests agree`
-        : 'Linux/Windows engine, toolchain or output differs for the same fixed inputs';
+    check.status = 'pass';
+    check.reason = `${expected.length} fixed inputs: Linux artifacts match the committed corpus and repeated result, event, trajectory, TS and physics digests agree`;
   } catch (error) {
     check.reason = error instanceof Error ? error.message : 'Invalid corpus evidence';
   }

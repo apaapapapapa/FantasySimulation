@@ -46,10 +46,10 @@ attestation of full scope, not something inferred from a green build.
 has only repository/actions/PR read and Issue write permissions. PR workflows
 never invoke this writer; no production secrets, new PAT or package install
 is required. It checks the completed CI's path, repository, event, branch,
-SHA and attempt, all thirteen required successful jobs (including `changes`
-and `ci-gate`), both source-runner reports and actual `vp run verify` command
+SHA and attempt, all required successful jobs (including `changes`
+and `ci-gate`, plus the independent paired-load job), the Linux source-runner report and actual `vp run verify` command
 receipts through the existing report contract. Main always runs full CI;
-only the unexpanded `Docs (${{ matrix.os }})` job may have its planned skip.
+only the `Docs (ubuntu-latest)` job may have its planned skip.
 Unknown skips, duplicated jobs and failed required checks still block writes.
 Artifacts are downloaded only from that exact run and never executed.
 

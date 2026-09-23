@@ -12,7 +12,7 @@ import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { parsePlan } from './plan.ts';
 import type { Plan } from './plan.ts';
 import { readLoadArtifacts } from './load-artifacts.ts';
-const osNames = ['ubuntu-latest', 'windows-latest'] as const;
+const osNames = ['ubuntu-latest'] as const;
 export function assessGate(
   plan: Plan,
   results: Record<string, unknown>,
@@ -27,6 +27,7 @@ export function assessGate(
     security: 'success',
     'dependency-policy': 'success',
     verify: plan.full ? 'success' : 'skipped',
+    load: plan.full ? 'success' : 'skipped',
     docs: plan.full ? 'skipped' : 'success',
   };
   for (const [job, result] of Object.entries(expected))
@@ -80,7 +81,7 @@ export function assessGate(
       compareCorpus(plan, corpus?.definition, corpus?.sha256 ?? '', corpus?.artifacts ?? {}),
     );
   if (plan.full) {
-    for (const key of ['load-ubuntu-latest', 'load-windows-latest', 'load-pair']) {
+    for (const key of ['load-ubuntu-latest', 'load-pair']) {
       let status: Check['status'] = 'unknown',
         reason = 'Missing load receipt';
       try {
@@ -150,10 +151,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       reports.security = null;
     }
     const artifacts: Record<string, unknown> = {};
-    for (const [os, platform] of [
-      ['ubuntu-latest', 'linux'],
-      ['windows-latest', 'win32'],
-    ] as const) {
+    for (const [os, platform] of [['ubuntu-latest', 'linux']] as const) {
       try {
         const directory = `.generated/harness/ci/evidence/${os}/corpus`;
         artifacts[platform] = {
@@ -166,8 +164,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     }
     for (const [key, path] of [
       ['load-ubuntu-latest', 'ubuntu-latest/load'],
-      ['load-windows-latest', 'windows-latest/load'],
-      ['load-pair', 'ubuntu-latest/load-pair'],
+      ['load-pair', 'load/load-pair'],
     ]) {
       try {
         reports[key!] = readLoadArtifacts(

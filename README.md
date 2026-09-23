@@ -104,7 +104,9 @@ DATABASE_PATH=./data/fantasy.sqlite
 | `vp run engine:check`  | エンジン実装digestと現在のソースの整合性を検査                     |
 
 `pnpm check`、`pnpm test`、`pnpm build`、`pnpm verify`も利用できます。
-GitHub ActionsはLinux・Windowsで固定バージョンの依存関係をインストールし、同じ検証を実行します。
+GitHub ActionsはLinuxで固定バージョンの依存関係をインストールし、検証を実行します。
+通常検証と性能比較は別のLinux runnerで並列実行し、両方の合格を必須とします。
+Windowsでの自動検証は行いません。
 
 ビルド成果物は`apps/web/dist`と`apps/api/dist`です。確認するには、ビルド後に別々のターミナルで実行します。
 
@@ -122,7 +124,7 @@ APIは起動時にルートの`db/drizzle`と`data/spatial`を参照するため
 
 ## 自動リリース
 
-`main`へのpush後、GitHub ActionsのLinux・Windows両方の検証が成功すると、
+`main`へのpush後、GitHub ActionsのLinuxの通常検証・性能比較と各ゲートが成功すると、
 semantic-releaseが前回のリリース以降のコミットを解析します。
 リリース対象の変更があれば、`vX.Y.Z`タグと変更履歴付きの
 [GitHub Release](https://github.com/apaapapapapa/FantasySimulation/releases)を作成します。
@@ -152,7 +154,7 @@ PRタイトルだけを整えても、最終コミットに残らなければ解
 GitHub Actions標準の`GITHUB_TOKEN`を使います。Issue/PRへの自動コメントとラベル変更は無効にしています。
 ブランチ・タグの保護ルールを追加する場合は、Actionsによる`v*`タグ作成との整合性を確認してください。
 
-リリースの再試行は、Actions → CI → Run workflowで`main`を選びます。両OSの検証から実行します。
+リリースの再試行は、Actions → CI → Run workflowで`main`を選びます。Linuxの検証から実行します。
 ローカルで解析結果を確認する場合は、書き込み権限を確認できる`GITHUB_TOKEN`を環境変数に設定し、
 最新の`main`とタグを取得した上で`pnpm release:dry-run`を実行してください。
 dry-runでも認証・push権限は検証しますが、タグとReleaseは作成しません。
@@ -239,7 +241,7 @@ PRの成功、mainの成功、release結果、Issue完了はそれぞれ確認�
 対戦の決定性・回帰は `vp run check:corpus` で検査します。
 `packages/engine/fixtures/spatial/corpus.json` の固定入力を2回実行してdigestの一致を確認し、
 入力identityの変化と、既存の決定性テストの実行結果をカテゴリ別に記録します。
-両OS間の出力突合、公平性、Worker投入順、計算量・容量の上限と同一runnerでの負荷比較も検証します。
+Linux上の反復出力の一致、公平性、Worker投入順、計算量・容量の上限と同一runnerでの負荷比較も検証します。
 実測の欠落・比較不能・中断は `unknown` とし、未完了の証跡を合格に数えません。
 固定入力や対応テストを意図して変更する場合は、同じPRでコーパスを更新し理由を記載します。
 
@@ -312,8 +314,8 @@ vp run batch check .generated/batch-plan.json path/to/index.json .generated/batc
 `verify`は固定コーパスの再現性、実Workerの並列数・投入順、左右交換の公平性、
 SQLiteの状態遷移、計算回数とログ容量の上限をコミット前にも検証できます。
 作業中の結果は未コミットの診断として保存し、最終証跡はcleanなcommitに固定します。
-CIはLinux/Windowsの出力digestを自動照合し、固定baseline SHAとcandidateを
-同じrunnerで交互に測定します。時間・メモリは観測値として別reportへ保存します。
+CIはLinuxの固定入力・反復出力の証跡を検証し、固定baseline SHAとcandidateを
+通常検証とは別のLinux runnerで交互に測定します。時間・メモリは観測値として別reportへ保存します。
 再現手順、制約、予算変更reviewは[ハーネス手順](.github/harness/README.md)を参照してください。
 
 ## 観測・経験に基づくAI（P2/P3）
