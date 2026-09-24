@@ -155,12 +155,19 @@ export async function publicationGraph(source: PublicationRead) {
             bytes: manifestBytes.length,
             checksum: receipt.manifestChecksum,
           });
-          for (const artifact of [...manifest.chunks, ...manifest.checkpoints])
-            add({
+          for (const artifact of [...manifest.chunks, ...manifest.checkpoints]) {
+            const file = {
               key: objectPrefix + artifact.file,
               bytes: artifact.bytes,
               checksum: artifact.checksum,
-            });
+            };
+            if (!files.has(file.key)) {
+              const data = await read(file.key, file.bytes);
+              if (data.length !== file.bytes || sha256(data) !== file.checksum)
+                throw new Error('Retained artifact checksum/size mismatch');
+            }
+            add(file);
+          }
           objects.add(receipt.objectHash);
         }
       }

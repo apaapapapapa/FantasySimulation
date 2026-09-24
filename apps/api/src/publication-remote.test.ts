@@ -18,6 +18,9 @@ class MemoryStore implements PublicationStore {
   readonly writes: string[] = [];
   readonly removed: string[] = [];
   private version = 0;
+  remainingRequests() {
+    return 100_000;
+  }
   async inventory() {
     return new Map([...this.objects].map(([key, value]) => [key, value.data.length]));
   }
@@ -93,7 +96,7 @@ it('publishes references before current, verifies all sizes, and repeats without
   });
   expect(store.writes).toHaveLength(count);
 });
-it.each(['viewer', 'capacity', 'writes', 'transfer', 'worker'] as const)(
+it.each(['viewer', 'capacity', 'writes', 'transfer', 'worker', 'transport'] as const)(
   'refuses %s preflight with zero writes',
   async (kind) => {
     const { directory, store, options } = await setup();
@@ -102,6 +105,10 @@ it.each(['viewer', 'capacity', 'writes', 'transfer', 'worker'] as const)(
     if (kind === 'writes') options.maxWrites = 1;
     if (kind === 'transfer') options.maxTransferBytes = 1;
     if (kind === 'worker') options.maxWorkerRequests = 1;
+    if (kind === 'transport') {
+      options.maxWrites = 60000;
+      store.remainingRequests = () => 1;
+    }
     await expect(publishPublication(directory, store, options)).rejects.toMatchObject({
       phase: 'not-committed',
     });
@@ -113,6 +120,7 @@ it('dry run reports byte/request budgets without mutating storage', async () => 
   const result = await publishPublication(directory, store, { ...options, dryRun: true });
   expect(result.status).toBe('planned');
   expect(result.transferBytes).toBeGreaterThan(0);
+  expect(result.reservedS3Requests).toBeGreaterThan(result.writes * 2);
   expect(store.writes).toEqual([]);
 });
 it('resumes interrupted immutable uploads and only recovers a lost response with exact bytes', async () => {
@@ -205,6 +213,26 @@ it('retains every catalog ancestor and deletes only explicit, unreferenced keys'
   expect(await prunePublication(store, true)).toMatchObject({ status: 'deleted', keys: [orphan] });
   for (const key of oldKeys) expect(store.objects.has(key)).toBe(true);
 });
+
+it.each(['missing', 'corrupt', 'budget'] as const)(
+  'refuses orphan deletion when retained payloads or request capacity are %s',
+  async (failure) => {
+    const { directory, store, options } = await setup();
+    await publishPublication(directory, store, options);
+    const orphan = `catalog/${'f'.repeat(64)}.json`;
+    store.objects.set(orphan, { data: Buffer.from('{}'), etag: 'orphan' });
+    const key = [...store.objects.keys()].find((key) => key.endsWith('.gz'))!;
+    if (failure === 'missing') store.objects.delete(key);
+    if (failure === 'corrupt') {
+      const data = store.objects.get(key)!.data;
+      data.writeUInt8(data.readUInt8(0) ^ 1, 0);
+    }
+    if (failure === 'budget') store.remainingRequests = () => 1;
+    await expect(prunePublication(store, true)).rejects.toThrow();
+    expect(store.removed).toEqual([]);
+    expect(store.objects.has(orphan)).toBe(true);
+  },
+);
 
 it('rejects an old local generation after a newer publication without rolling back', async () => {
   const { root, directory, store, options } = await setup();

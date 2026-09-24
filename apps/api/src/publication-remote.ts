@@ -19,6 +19,7 @@ export interface RemoteObject {
   etag: string;
 }
 export interface PublicationStore {
+  remainingRequests(): number;
   inventory(): Promise<Map<string, number>>;
   read(key: string, limit: number): Promise<RemoteObject | null>;
   head(key: string): Promise<number | null>;
@@ -45,6 +46,7 @@ export interface PublishReport {
   writes: number;
   transferBytes: number;
   workerRequests: number;
+  reservedS3Requests: number;
   incompleteRows: number;
 }
 function limit(value: number | undefined, fallback: number, upper: number) {
@@ -159,6 +161,9 @@ export async function publishPublication(
       writes: additions.length + (unchanged ? 0 : 1),
       transferBytes,
       workerRequests: selected.size,
+      // Includes every HEAD/generation check and a recovery GET for each uncertain PUT.
+      // The store has already charged inventory pages, receipt and collision reads.
+      reservedS3Requests: additions.length * 2 + graph.files.size + 3 + (unchanged ? 0 : 2),
       incompleteRows: [...graph.sets.values()].reduce((n, set) => n + set.incompleteRows, 0),
     };
     options.observe?.(report);
@@ -166,6 +171,7 @@ export async function publishPublication(
       report.projectedBytes > maxBytes ||
       report.writes > maxWrites ||
       report.transferBytes > maxTransfer ||
+      report.reservedS3Requests > store.remainingRequests() ||
       inventory.size + additions.length + (previous ? 0 : 1) > PUBLICATION_MAX_FILES ||
       selected.size > maxWorker
     )
@@ -240,6 +246,8 @@ export async function prunePublication(store: PublicationStore, confirm = false)
   const inventory = await store.inventory();
   const keys = [...inventory.keys()].filter((key) => !graph.files.has(key));
   if (keys.length > 10000) throw new Error('Orphan deletion request limit');
+  if (confirm && keys.length * 2 > store.remainingRequests())
+    throw new Error('Orphan deletion request budget');
   for (const key of confirm ? keys : []) {
     const current = await store.read('catalog/current.json', 4_000_000);
     if (!current || current.etag !== before.etag || !current.data.equals(before.data))

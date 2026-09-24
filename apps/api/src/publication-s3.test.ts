@@ -37,6 +37,7 @@ it('uses conditional writes, explicit MIME/cache and no HTTP gzip encoding', asy
     CacheControl: 'public, max-age=30, no-transform',
   });
   expect(pointer).not.toHaveProperty('IfNoneMatch');
+  expect(store.remainingRequests()).toBe(99998);
 });
 it('paginates inventory, refuses unexpected keys and stops repeated cursors', async () => {
   const { store, send } = fixture();
@@ -50,6 +51,7 @@ it('paginates inventory, refuses unexpected keys and stops repeated cursors', as
     IsTruncated: false,
   } as never);
   expect([...(await store.inventory()).values()]).toEqual([123, 456]);
+  expect(store.remainingRequests()).toBe(99998);
   send.mockResolvedValueOnce({
     Contents: [{ Key: 'private.env', Size: 1 }],
     IsTruncated: false,

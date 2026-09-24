@@ -23,6 +23,9 @@ export class PublicationS3 implements PublicationStore {
   private transferred = 0;
   private writes = 0;
   private uploaded = 0;
+  remainingRequests() {
+    return 100_000 - this.requests;
+  }
   metrics() {
     return {
       logicalRequests: this.requests,
@@ -53,7 +56,8 @@ export class PublicationS3 implements PublicationStore {
     this.client.destroy();
   }
   private options() {
-    if (++this.requests > 100_000) throw new Error('S3 request budget exceeded');
+    if (this.remainingRequests() < 1) throw new Error('S3 request budget exceeded');
+    this.requests++;
     this.signal.throwIfAborted();
     return { abortSignal: this.signal };
   }
