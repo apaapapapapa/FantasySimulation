@@ -6,7 +6,8 @@ import {
   type Manifest,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
-import { prepareBattle, reference, sealRevision } from './prepare.ts';
+import { prepareBattle, reference } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import { sampleManifest } from '@fantasy/samples';
 import {
   battleEvents as events,

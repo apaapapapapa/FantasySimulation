@@ -9,7 +9,10 @@
 同じ振る舞いの入力違いには `it.each` を使い、無関係な処理の過剰な抽象化は避けます。
 
 共通の戦闘fixtureは `packages/engine/test-support/fixtures.ts` です。
-`combatManifest` は能力・戦闘方針・キャラクターを編集し、revisionを再封印して参照を接続します。
+`combatManifest` は能力・方針・キャラクターを編集し、公開 `ManifestBuilder.relink` で参照を接続します。
+入力生成はengineの `ManifestBuilder`（`from`・`create`・`participants`・`build`）を使います。
+`relink` の外部参照は組立て中として保持し、`build` で閉包と実行可否を検証します。
+参照の列挙・走査はdomainの `revisionDependencies`・`resolveClosure` に集約します。
 `editScenario` は指定されたscenarioだけを置き換え、他のrevisionを変更しません。
 `terrainBattle`、`boxObstacle`、`glassWall` は独立した地形入力を生成します。
 `battleEvents` は保存ログからイベントを取り出します。物理worldの解放は利用側の責任です。

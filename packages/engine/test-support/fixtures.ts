@@ -1,5 +1,6 @@
 import type { Definition, Manifest, StreamRecord } from '@fantasy/domain/spatial';
-import { prepareBattle, reference, sealRevision } from '../src/spatial/prepare.ts';
+import { prepareBattle, reference } from '../src/spatial/prepare.ts';
+import { sealRevision, ManifestBuilder } from '../src/spatial/manifest-builder.ts';
 import { sampleManifest } from '@fantasy/samples';
 
 type Scenario = Definition<'scenario'>;
@@ -85,10 +86,6 @@ export async function combatManifest(
     basePolicy.revision,
     {
       ...basePolicy.definition,
-      priorities: basePolicy.definition.priorities.map((p) => ({
-        ...p,
-        abilityId: p.abilityId === baseAbility.id ? ability.id : p.abilityId,
-      })),
       ...edit.policy,
     },
   );
@@ -100,21 +97,13 @@ export async function combatManifest(
     {
       ...baseCharacter.definition,
       ...edit.character,
-      abilities: [reference(ability)],
-      policy: reference(policy),
     },
   );
-  manifest.revisions = manifest.revisions.map((r) =>
-    r.kind === 'ability'
-      ? ability
-      : r.kind === 'policy'
-        ? policy
-        : r.kind === 'character'
-          ? character
-          : r,
-  );
-  for (const participant of manifest.participants) participant.character = reference(character);
-  return manifest;
+  return ManifestBuilder.relink(manifest, [
+    { from: baseAbility, to: ability },
+    { from: basePolicy, to: policy },
+    { from: baseCharacter, to: character },
+  ]);
 }
 
 export const battleEvents = (records: readonly StreamRecord[]) =>

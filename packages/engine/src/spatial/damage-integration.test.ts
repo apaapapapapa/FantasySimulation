@@ -9,7 +9,8 @@ import {
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';
 import { assessAbility, efficacy } from './assessment.ts';
 import { initializePhysics } from './physics.ts';
-import { reference, sealRevision } from './prepare.ts';
+import { reference } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import { sampleManifest } from '@fantasy/samples';
 import { runBattle } from './run.ts';
 

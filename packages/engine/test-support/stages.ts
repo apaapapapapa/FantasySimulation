@@ -1,6 +1,7 @@
 import type { Definition, Stage } from '@fantasy/domain/spatial';
 import { combatManifest } from './fixtures.ts';
-import { reference, sealRevision } from '../src/spatial/prepare.ts';
+import { reference } from '../src/spatial/prepare.ts';
+import { sealRevision } from '../src/spatial/manifest-builder.ts';
 
 /** Fresh declarative data; numerical expectations belong to each consuming test. */
 export function comboStages(): Stage[] {

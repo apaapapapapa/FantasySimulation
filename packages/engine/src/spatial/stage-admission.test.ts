@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { DEFAULT_BUDGET } from '@fantasy/domain/spatial';
 import { initializePhysics } from './physics.ts';
-import { sealRevision } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import { actionClock } from './attacks.ts';
 import { releaseStage } from './stages.ts';
 import { selfView } from './self-view.ts';

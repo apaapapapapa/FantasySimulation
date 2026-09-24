@@ -10,7 +10,8 @@ import { reactionManifest } from '../../test-support/reactions.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
 import { runBattle } from './run.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
-import { reference, sealRevision } from './prepare.ts';
+import { reference } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import { initialStatus } from '../../test-support/ai.ts';
 
 beforeAll(initializePhysics);

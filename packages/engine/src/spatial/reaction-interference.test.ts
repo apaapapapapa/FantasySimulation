@@ -6,7 +6,8 @@ import { reactionManifest } from '../../test-support/reactions.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
 import { initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
-import { reference, sealRevision } from './prepare.ts';
+import { reference } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import { recordBytes } from './journal.ts';
 
 beforeAll(initializePhysics);

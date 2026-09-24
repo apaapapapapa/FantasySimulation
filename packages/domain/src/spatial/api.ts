@@ -39,9 +39,21 @@ export const DraftSchema = DraftInputSchema.extend({
 });
 export type Draft = z.infer<typeof DraftSchema>;
 export type DraftInput = z.infer<typeof DraftInputSchema>;
+export const ExecutionEligibilitySchema = z.discriminatedUnion('executable', [
+  z.strictObject({ executable: z.literal(true) }),
+  z.strictObject({
+    executable: z.literal(false),
+    code: z.string().min(1).max(80),
+    reason: z.string().max(1000),
+  }),
+]);
 export const RevisionPageSchema = z.strictObject({
   items: z.array(RevisionSchema).max(100),
   nextCursor: IdSchema.nullable(),
+  execution: z
+    .array(z.strictObject({ revision: RefSchema, eligibility: ExecutionEligibilitySchema }))
+    .max(100)
+    .optional(),
 });
 export const ValidationSchema = z.strictObject({
   valid: z.boolean(),

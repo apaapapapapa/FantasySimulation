@@ -1,5 +1,6 @@
 import { readBounded, strictText } from './replay/artifacts.ts';
-import { RevisionPageSchema, type Revision, type RevisionRef } from '@fantasy/domain/spatial';
+import { RevisionPageSchema } from '@fantasy/domain/spatial';
+export { revisionReference as reference } from '@fantasy/domain/spatial';
 
 /** All editor requests stay on the local API origin and validate the returned contract. */
 export async function api<T>(
@@ -51,11 +52,19 @@ export async function api<T>(
 export const jsonText = (value: unknown) => JSON.stringify(value, null, 2);
 export const errorText = (error: unknown) =>
   error instanceof Error ? error.message : '操作に失敗しました';
-export const reference = ({ id, revision, contentHash }: Revision): RevisionRef => ({
-  id,
-  revision,
-  contentHash,
-});
+export function executableRules(page: ReturnType<typeof RevisionPageSchema.parse>) {
+  return page.items.filter(
+    (item) =>
+      item.kind === 'ruleset' &&
+      page.execution?.some(
+        ({ revision, eligibility }) =>
+          eligibility.executable &&
+          revision.id === item.id &&
+          revision.revision === item.revision &&
+          revision.contentHash === item.contentHash,
+      ),
+  );
+}
 
 /** At most ten 512-KiB API definitions plus revision envelopes per request. */
 export const apiRevisionPage = (kind: string, cursor: string | null, signal?: AbortSignal) =>

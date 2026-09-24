@@ -1,6 +1,7 @@
 import type { Definition, Manifest } from '@fantasy/domain/spatial';
 import { catalogManifest } from '@fantasy/samples';
-import { sealRevision, reference } from '../src/spatial/prepare.ts';
+import { reference } from '../src/spatial/prepare.ts';
+import { sealRevision } from '../src/spatial/manifest-builder.ts';
 import { TACTICAL_AI } from '@fantasy/samples';
 
 export async function withTacticalRules(

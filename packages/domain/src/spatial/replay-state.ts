@@ -1,17 +1,18 @@
 import {
+  characterLoadout,
+  revisionHash,
+  revisionIndex,
+  revisionDependencies,
+  resolveClosure,
+} from './revision-graph.ts';
+import {
   canonicalJson,
   compareIds,
   contentHash,
   deepFreeze,
   type DeepReadonly,
 } from './canonical.ts';
-import {
-  abilityEffects,
-  parseJson,
-  type DefinitionKind,
-  type RevisionRef,
-  type StageContact,
-} from './contracts.ts';
+import { parseJson, type StageContact } from './contracts.ts';
 import { type Outcome, type ForceContribution } from './records.ts';
 import { initialResources } from './resources.ts';
 import {
@@ -55,49 +56,29 @@ export type ReplayContext = Awaited<ReturnType<typeof replayContext>>;
 /** Validate content identity and resolve display metadata without loading any engine/WASM. */
 export async function replayContext(input: unknown, simulationHash: string) {
   const manifest = parseJson(RecordedManifestSchema, input);
-  const index = new Map<string, RecordedRevision>();
-  for (const revision of manifest.revisions) {
-    const key = `${revision.kind}:${revision.id}:${revision.revision}`;
-    requireReplay(!index.has(key), 'duplicate revision');
-    index.set(key, revision);
-    requireReplay(
-      revision.contentHash ===
-        (await contentHash({
-          kind: revision.kind,
-          schemaVersion: revision.schemaVersion,
-          definition: revision.definition,
-        })),
-      'revision content hash',
-    );
+  let get: ReturnType<typeof revisionIndex>;
+  try {
+    get = revisionIndex(manifest.revisions);
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : 'revision index');
   }
-  function get<K extends DefinitionKind>(kind: K, ref: RevisionRef) {
-    const r = index.get(`${kind}:${ref.id}:${ref.revision}`);
-    if (!r || r.contentHash !== ref.contentHash) return fail(`missing ${kind} revision`);
-    return r as Extract<RecordedRevision, { kind: K }>;
+  for (const revision of manifest.revisions)
+    requireReplay(revision.contentHash === (await revisionHash(revision)), 'revision content hash');
+  // Replay v1 historically checks ability/status references but not status transformation closure.
+  // Preserve its acceptance boundary while sharing the graph traversal.
+  let actors;
+  try {
+    resolveClosure(manifest.revisions, get, 256, {
+      dependencies: (revision) =>
+        revision.kind === 'status' ? [] : revisionDependencies(revision),
+    });
+    actors = manifest.participants.map((participant) => {
+      const { character, abilities } = characterLoadout(participant.character, get);
+      return { participant, character, abilities };
+    });
+  } catch (error) {
+    return fail(error instanceof Error ? error.message : 'revision graph');
   }
-  for (const r of manifest.revisions) {
-    if (r.kind === 'character') {
-      get('policy', r.definition.policy);
-      r.definition.abilities.forEach((ref) => get('ability', ref));
-      r.definition.equipment.forEach((ref) => get('equipment', ref));
-    } else if (r.kind === 'equipment') r.definition.abilities.forEach((ref) => get('ability', ref));
-    else if (r.kind === 'ability')
-      for (const effect of abilityEffects(r.definition))
-        if (effect.kind === 'apply-status') get('status', effect.status);
-  }
-  const actors = manifest.participants.map((p) => {
-    const character = get('character', p.character).definition;
-    const refs = [
-      ...character.abilities,
-      ...character.equipment.flatMap((r) => get('equipment', r).definition.abilities),
-    ];
-    const abilities = refs.map((r) => get('ability', r));
-    requireReplay(
-      new Set(abilities.map((a) => a.id)).size === abilities.length,
-      'duplicate ability',
-    );
-    return { participant: p, character, abilities };
-  });
   requireReplay(
     actors[0]!.participant.actorId !== actors[1]!.participant.actorId,
     'duplicate actor',

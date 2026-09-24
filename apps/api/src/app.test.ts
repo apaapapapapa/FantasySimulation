@@ -33,6 +33,20 @@ async function setup(filename = ':memory:') {
   return { store, app };
 }
 describe('3D revision API and Drizzle persistence', () => {
+  it('returns server execution eligibility without changing immutable rule revisions', async () => {
+    const { app, store } = await setup();
+    for (const path of ['rulesets', 'revisions/ruleset']) {
+      const page = RevisionPageSchema.parse(
+        (await app.inject({ url: `/api/${path}?limit=100` })).json(),
+      );
+      expect(page.execution).toHaveLength(page.items.length);
+      expect(page.execution?.some((item) => item.eligibility.executable)).toBe(true);
+      const old = page.execution?.find((item) => item.revision.id === 'standard-observed-v1');
+      expect(old?.eligibility).toMatchObject({ executable: false, code: 'unsupported-rules' });
+      for (const revision of page.items)
+        expect(revision).toEqual(store.getRevision('ruleset', revision.id, revision.revision));
+    }
+  });
   it('serves paged immutable characters, rules and scenarios using shared contracts', async () => {
     const { app } = await setup();
     expect((await app.inject({ url: '/api/health' })).json()).toMatchObject({

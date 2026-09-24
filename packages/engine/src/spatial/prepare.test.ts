@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { contentHash, type Revision } from '@fantasy/domain/spatial';
 import { sampleManifest } from '@fantasy/samples';
-import { prepareBattle, reference, revisionHash, sealRevision } from './prepare.ts';
+import { prepareBattle, reference, revisionHash } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 
 describe('immutable spatial manifest resolution', () => {
   it('seals the validated snapshot even when the caller edits its definition during hashing', async () => {

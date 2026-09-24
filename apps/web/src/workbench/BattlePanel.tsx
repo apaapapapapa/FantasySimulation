@@ -3,7 +3,6 @@ import {
   actorSeed,
   IdSchema,
   Vec3Schema,
-  CURRENT_ENGINE_VERSION,
   DEFAULT_BUDGET,
   JobRequestSchema,
   JobResponseSchema,
@@ -11,7 +10,7 @@ import {
   BattleResultResponseSchema,
   type Revision,
 } from '@fantasy/domain/spatial';
-import { api, apiRevisionPage, errorText, reference } from '../api-client.ts';
+import { api, apiRevisionPage, errorText, executableRules, reference } from '../api-client.ts';
 import { facingToward, spawnPositions } from './spawn-position.ts';
 import { recentIdentities, rememberIdentity } from './recent-identities.ts';
 
@@ -63,6 +62,7 @@ export function BattlePanel({
     async function pages(kind: string) {
       const items: Revision[] = [];
       let cursor: string | null = null;
+      let received = 0;
       const seen = new Set<string>();
       do {
         if (cursor) {
@@ -71,22 +71,17 @@ export function BattlePanel({
           seen.add(cursor);
         }
         const page = await apiRevisionPage(kind, cursor, controller.signal);
-        items.push(...page.items);
+        received += page.items.length;
+        items.push(...(kind === 'ruleset' ? executableRules(page) : page.items));
         cursor = page.nextCursor;
-        if (items.length >= 1000 && cursor)
+        if (received >= 1000 && cursor)
           throw new Error('設定が多すぎます。1000件以内のローカルDBを使用してください。');
       } while (cursor);
       return items;
     }
     void Promise.all([pages('character'), pages('ruleset'), pages('scenario')])
-      .then(([characters, allRules, scenarios]) => {
+      .then(([characters, rulesets, scenarios]) => {
         if (controller.signal.aborted) return;
-        const rulesets = allRules.filter(
-          (r) =>
-            r.kind === 'ruleset' &&
-            r.definition.rulesVersion === CURRENT_ENGINE_VERSION &&
-            !!r.definition.ai,
-        );
         setCatalog({ characters, rulesets, scenarios });
         setLeft((old) => old || characters[0]?.id || '');
         setRight((old) => old || characters[1]?.id || '');

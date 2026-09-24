@@ -23,6 +23,12 @@ const rule = (
 ): IRegularForbiddenRuleType => ({ name, from, to, comment, severity: 'error' });
 export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
+    'execution-does-not-import-builder',
+    { path: '^packages/engine/src/', pathNot: '/(?:index|manifest-builder)[.]ts$' },
+    { path: '^packages/engine/src/spatial/manifest-builder[.]ts$' },
+    'Manifest construction depends on execution; runtime must not depend on construction tooling.',
+  ),
+  rule(
     'engine-domain-execution-entry',
     { path: '^packages/engine/src/spatial/' },
     { path: '^packages/domain/', pathNot: '^packages/domain/src/spatial/execution[.]ts$' },

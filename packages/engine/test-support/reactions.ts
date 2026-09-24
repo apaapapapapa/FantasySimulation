@@ -1,6 +1,7 @@
 import type { Definition, Manifest, Revision } from '@fantasy/domain/spatial';
 import { combatManifest } from './fixtures.ts';
-import { reference, sealRevision } from '../src/spatial/prepare.ts';
+import { reference } from '../src/spatial/prepare.ts';
+import { sealRevision } from '../src/spatial/manifest-builder.ts';
 import { revisionClosure } from '@fantasy/samples';
 
 /** Sealing/wiring for real reaction battles; no expected outcomes live in this factory. */

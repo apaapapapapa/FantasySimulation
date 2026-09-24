@@ -1,10 +1,5 @@
-import {
-  AI_RULES,
-  CURRENT_ENGINE_VERSION,
-  type Definition,
-  type Revision,
-} from '@fantasy/domain/spatial';
-import { sealRevision, reference } from '@fantasy/engine/spatial';
+import { AI_RULES, type Definition, type Revision } from '@fantasy/domain/spatial';
+import { sealRevision, reference, rulesExecutionEligibility } from '@fantasy/engine/spatial';
 
 /** Issue #45 numerical proposal. Review its fixtures before authorizing distribution. */
 export const TACTICAL_AI: NonNullable<Definition<'ruleset'>['ai']> = {
@@ -39,7 +34,7 @@ export function tacticalPostures(
 }
 export async function addTacticalSamples(revisions: Revision[]) {
   const rules = revisions.find(
-    (r) => r.kind === 'ruleset' && r.definition.rulesVersion === CURRENT_ENGINE_VERSION,
+    (r) => r.kind === 'ruleset' && rulesExecutionEligibility(r.definition).executable,
   )!;
   if (rules.kind !== 'ruleset') throw new Error('Missing current rules');
   revisions.push(

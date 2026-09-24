@@ -11,7 +11,8 @@ import { traceAttack } from './attacks.ts';
 import { emptyMemory, perceive } from './perception.ts';
 import { initialMotion } from './movement.ts';
 import { cosDegrees, dot, unit } from './math.ts';
-import { prepareBattle, reference, sealRevision } from './prepare.ts';
+import { prepareBattle, reference } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import {
   battleEvents as events,
   combatManifest,

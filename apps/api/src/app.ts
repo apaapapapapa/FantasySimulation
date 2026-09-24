@@ -8,7 +8,10 @@ import {
   IdSchema,
   parseJson,
   CURRENT_ENGINE_VERSION,
+  RevisionGraphError,
+  revisionReference,
 } from '@fantasy/domain/spatial';
+import { EngineInputError, rulesExecutionEligibility } from '@fantasy/engine/spatial';
 import { StoreError, type Store } from './store.ts';
 import type { BattleRuntime } from './battle-runtime.ts';
 import { addJobRoutes } from './job-routes.ts';
@@ -38,6 +41,11 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
     store.close();
   });
   app.setErrorHandler((error, request, reply) => {
+    if (error instanceof EngineInputError)
+      return reply
+        .code(error.code.startsWith('unsupported-') ? 409 : 400)
+        .send({ error: error.message });
+    if (error instanceof RevisionGraphError) return reply.code(400).send({ error: error.message });
     if (error instanceof StoreError)
       return reply.code(error.statusCode).send({ error: error.message });
     if (error instanceof z.ZodError)
@@ -58,6 +66,28 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
     engineVersion: CURRENT_ENGINE_VERSION,
     migrationTool: 'drizzle',
   }));
+  const revisionPage = (
+    kind: Parameters<Store['listRevisions']>[0],
+    limit: number,
+    cursor?: string,
+  ) => {
+    const page = store.listRevisions(kind, limit, cursor);
+    return kind === 'ruleset'
+      ? {
+          ...page,
+          execution: page.items.flatMap((revision) =>
+            revision.kind === 'ruleset'
+              ? [
+                  {
+                    revision: revisionReference(revision),
+                    eligibility: rulesExecutionEligibility(revision.definition),
+                  },
+                ]
+              : [],
+          ),
+        }
+      : page;
+  };
   for (const [path, kind] of [
     ['characters', 'character'],
     ['rulesets', 'ruleset'],
@@ -65,7 +95,7 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
   ] as const) {
     app.get('/api/' + path, async (request) => {
       const q = pageQuery.parse(request.query);
-      return store.listRevisions(kind, q.limit, q.cursor);
+      return revisionPage(kind, q.limit, q.cursor);
     });
   }
   app.get('/api/characters/:id', async (request) => {
@@ -78,7 +108,7 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
   app.get('/api/revisions/:kind', async (request) => {
     const { kind } = z.strictObject({ kind: DefinitionKindSchema }).parse(request.params),
       q = pageQuery.parse(request.query);
-    return store.listRevisions(kind, q.limit, q.cursor);
+    return revisionPage(kind, q.limit, q.cursor);
   });
   app.get('/api/revisions/:kind/:id/:revision', async (request) => {
     const p = z

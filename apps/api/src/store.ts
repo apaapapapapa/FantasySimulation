@@ -8,10 +8,9 @@ import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { alias } from 'drizzle-orm/sqlite-core';
 import { battleSpecs, definitionDrafts, publishedRevisions } from './db/schema.ts';
 import {
-  abilityEffects,
   canonicalJson,
-  contentHash,
-  CURRENT_ENGINE_VERSION,
+  revisionKey,
+  requireRevision,
   DraftInputSchema,
   DraftSchema,
   ManifestSchema,
@@ -19,7 +18,6 @@ import {
   parseJson,
   RevisionSchema,
   SpecInputSchema,
-  statusTransformationRefs,
   type DefinitionKind,
   type Draft,
   type Revision,
@@ -27,15 +25,13 @@ import {
   type SpecInput,
 } from '@fantasy/domain/spatial';
 import {
-  implementation,
-  profile,
   reference,
+  ManifestBuilder,
   revisionHash,
   sealRevision,
   unsupportedExecutionReason,
   type PreparedBattle,
 } from '@fantasy/engine/spatial';
-import { prepareBattle } from '@fantasy/engine/spatial/execution';
 import { repositoryRoot } from './config.ts';
 
 export class StoreError extends Error {
@@ -49,64 +45,6 @@ export function jsonValue(value: unknown): unknown {
   if (typeof value !== 'string') throw new Error('Invalid JSON in database');
   return JSON.parse(value) as unknown;
 }
-type Dependency = { kind: DefinitionKind; ref: RevisionRef };
-function dependencies(revision: Revision): Dependency[] {
-  switch (revision.kind) {
-    case 'character':
-      return [
-        { kind: 'policy', ref: revision.definition.policy },
-        ...revision.definition.abilities.map((ref) => ({ kind: 'ability' as const, ref })),
-        ...revision.definition.equipment.map((ref) => ({ kind: 'equipment' as const, ref })),
-      ];
-    case 'equipment':
-      return revision.definition.abilities.map((ref) => ({ kind: 'ability', ref }));
-    case 'ability':
-      return abilityEffects(revision.definition).flatMap((e) =>
-        e.kind === 'apply-status' ? [{ kind: 'status' as const, ref: e.status }] : [],
-      );
-    case 'status':
-      return statusTransformationRefs(revision.definition).map((ref) => ({ kind: 'status', ref }));
-    case 'policy':
-    case 'scenario':
-    case 'ruleset':
-      return [];
-  }
-}
-const revisionKey = (r: Pick<Revision, 'kind' | 'id' | 'revision'>) =>
-  `${r.kind}:${r.id}:${r.revision}`;
-function resolveClosure(
-  roots: Revision[],
-  get: (kind: DefinitionKind, ref: RevisionRef) => Revision,
-  limit = 256,
-): Revision[] {
-  const found = new Map<string, Revision>();
-  const visit = (r: Revision) => {
-    const key = revisionKey(r);
-    if (found.has(key)) return;
-    if (found.size >= limit) throw new StoreError(400, `Revision closure exceeds ${limit} entries`);
-    found.set(key, r);
-    for (const d of dependencies(r)) visit(get(d.kind, d.ref));
-  };
-  roots.forEach(visit);
-  for (const r of found.values())
-    if (r.kind === 'character') {
-      const policy = get('policy', r.definition.policy);
-      const equipment = r.definition.equipment.map((ref) => get('equipment', ref));
-      const abilities = [
-        ...r.definition.abilities,
-        ...equipment.flatMap((e) => (e.kind === 'equipment' ? e.definition.abilities : [])),
-      ];
-      const ids = new Set(abilities.map((a) => a.id));
-      if (ids.size !== abilities.length) throw new StoreError(400, 'Duplicate actor ability');
-      if (
-        policy.kind !== 'policy' ||
-        policy.definition.priorities.some((p) => !ids.has(p.abilityId))
-      )
-        throw new StoreError(400, 'Policy references an unavailable ability');
-    }
-  return [...found.values()];
-}
-
 export class Store {
   readonly db: Database.Database;
   readonly orm: BetterSQLite3Database;
@@ -155,10 +93,7 @@ export class Store {
     return row ? parseJson(RevisionSchema, jsonValue(row.revisionJson)) : undefined;
   }
   requireRevision(kind: DefinitionKind, ref: RevisionRef): Revision {
-    const r = this.getRevision(kind, ref.id, ref.revision);
-    if (!r || r.contentHash !== ref.contentHash)
-      throw new StoreError(400, `Missing or mismatched ${kind} revision: ${ref.id}`);
-    return r;
+    return requireRevision((kind, ref) => this.getRevision(kind, ref.id, ref.revision), kind, ref);
   }
   listRevisions(kind: DefinitionKind, limit = 50, cursor = '') {
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
@@ -238,7 +173,7 @@ export class Store {
           throw new StoreError(409, 'Sample conflicts with an existing revision');
         return r;
       };
-      resolveClosure(additions, get, mode === 'exact-revision' ? 4096 : 256);
+      new ManifestBuilder(get).closure(additions, mode === 'exact-revision' ? 4096 : 256);
       const now = new Date().toISOString();
       for (const r of additions) this.insertRevision(r, now);
     });
@@ -329,7 +264,7 @@ export class Store {
       definition: draft.definition,
     });
     const revision = await sealRevision(parsed.kind, parsed.id, 1, parsed.definition);
-    resolveClosure([revision], (kind, ref) => this.requireRevision(kind, ref));
+    new ManifestBuilder((kind, ref) => this.requireRevision(kind, ref)).closure([revision]);
     return { draft, revision };
   }
   async validateDraft(id: string) {
@@ -377,41 +312,7 @@ export class Store {
   }
   async prepareSpec(input: SpecInput): Promise<PreparedBattle> {
     const request = parseJson(SpecInputSchema, input);
-    const roots = [
-      ...request.participants.map((p) => this.requireRevision('character', p.character)),
-      this.requireRevision('ruleset', request.ruleset),
-      this.requireRevision('scenario', request.scenario),
-    ];
-    const rules = roots.find((r) => r.kind === 'ruleset')!;
-    if (
-      rules.kind === 'ruleset' &&
-      (rules.definition.rulesVersion !== CURRENT_ENGINE_VERSION || !rules.definition.ai)
-    )
-      throw new StoreError(
-        409,
-        `Unsupported rules version: saved ${rules.definition.rulesVersion}, current ${CURRENT_ENGINE_VERSION}; select a current rules revision`,
-      );
-    const revisions = resolveClosure(roots, (kind, ref) => this.requireRevision(kind, ref));
-    return prepareBattle({
-      ...request,
-      schemaVersion: 3,
-      eventSchemaVersion: 1,
-      replaySchemaVersion: 1,
-      engineVersion: CURRENT_ENGINE_VERSION,
-      aiProfile: 'observed-utility-v1',
-      implementationDigest: implementation.digest,
-      physicsProfileHash: await contentHash(profile),
-      physicsProfile: profile,
-      wasmHash: implementation.wasm,
-      angleTableHash: implementation.table,
-      prng: 'xorshift32-v1',
-      seedDerivation: 'actor-stream-v1',
-      revisions,
-    }).catch((error: unknown) => {
-      if (error instanceof Error && error.message === 'Spawn body exceeds arena bounds')
-        throw new StoreError(400, error.message);
-      throw error;
-    });
+    return new ManifestBuilder((kind, ref) => this.requireRevision(kind, ref)).build(request);
   }
   saveSpec(battle: PreparedBattle) {
     const encoded = canonicalJson(battle.manifest);

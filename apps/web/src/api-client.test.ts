@@ -2,7 +2,18 @@ import { readFileSync } from 'node:fs';
 import { ReplayManifestSchema } from '@fantasy/domain/spatial';
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { ValidationSchema } from '@fantasy/domain/spatial';
-import { api, apiRevisionPage } from './api-client.ts';
+import { api, apiRevisionPage, executableRules, reference } from './api-client.ts';
+
+function savedManifest() {
+  return ReplayManifestSchema.parse(
+    JSON.parse(
+      readFileSync(
+        new URL('../test-fixtures/replays/swordsman-sky-mage-240/manifest.json', import.meta.url),
+        'utf8',
+      ),
+    ),
+  );
+}
 
 afterEach(() => vi.unstubAllGlobals());
 it('uses the same origin and retains optimistic versions while validating responses', async () => {
@@ -42,14 +53,7 @@ it.each([
 );
 
 it('reads a bounded revision page with large valid definitions and requests only ten rows', async () => {
-  const manifest = ReplayManifestSchema.parse(
-    JSON.parse(
-      readFileSync(
-        new URL('../test-fixtures/replays/swordsman-sky-mage-240/manifest.json', import.meta.url),
-        'utf8',
-      ),
-    ),
-  );
+  const manifest = savedManifest();
   const character = manifest.input.revisions.find((r) => r.kind === 'character')!;
   if (character.kind !== 'character') throw new Error('Fixture character');
   character.definition.originalText = '長'.repeat(20000);
@@ -61,4 +65,30 @@ it('reads a bounded revision page with large valid definitions and requests only
   vi.stubGlobal('fetch', request);
   expect((await apiRevisionPage('character', null)).items).toHaveLength(10);
   expect(request).toHaveBeenCalledWith('/api/revisions/character?limit=10', expect.any(Object));
+});
+
+it('uses only eligibility bound to the exact server revision, including absent metadata', () => {
+  const rule = savedManifest().input.revisions.find((revision) => revision.kind === 'ruleset')!;
+  const page = { items: [rule], nextCursor: null };
+  expect(executableRules(page)).toEqual([]);
+  const eligibility = { executable: true as const };
+  expect(
+    executableRules({ ...page, execution: [{ revision: reference(rule), eligibility }] }),
+  ).toEqual([rule]);
+  for (const revision of [
+    { ...reference(rule), revision: rule.revision + 1 },
+    { ...reference(rule), contentHash: `sha256:${'f'.repeat(64)}` },
+  ])
+    expect(executableRules({ ...page, execution: [{ revision, eligibility }] })).toEqual([]);
+  expect(
+    executableRules({
+      ...page,
+      execution: [
+        {
+          revision: reference(rule),
+          eligibility: { executable: false, code: 'unsupported-rules', reason: 'saved' },
+        },
+      ],
+    }),
+  ).toEqual([]);
 });
