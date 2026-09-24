@@ -20,6 +20,23 @@ import { battleSpecs } from './db/schema.ts';
 // Several cases start/stop multiple real Workers and SQLite roots. Windows cold
 // starts exceeded Vitest's 5s default; this bounds the integration, not game time.
 describe('persistent Worker/API orchestration', { timeout: 30000 }, () => {
+  it('accepts an immediate retry after cancellation without overlapping attempts', async () => {
+    await withRuntime(async ({ runtime, spec }) => {
+      const first = await runtime.submit(spec, 'immediate-retry', 'one');
+      const cancelled = runtime.cancel(first.id);
+      expect(cancelled.state).toBe('cancelled');
+      const requests = await Promise.allSettled([
+        runtime.retry(first.id, cancelled.attempts, DEFAULT_BUDGET),
+        runtime.retry(first.id, cancelled.attempts, DEFAULT_BUDGET),
+      ]);
+      expect(requests.map((r) => r.status).sort()).toEqual(['fulfilled', 'rejected']);
+      expect((await runtime.wait(first.id)).state).toBe('completed');
+      expect(runtime.jobs.attempts(first.id).map((a) => a.state)).toEqual([
+        'cancelled',
+        'completed',
+      ]);
+    });
+  });
   it('returns an actionable client error for out-of-bounds spawns without persisting a job', async () => {
     await withRuntime(async ({ runtime, store, spec }) => {
       const app = createApp(store, false, runtime);

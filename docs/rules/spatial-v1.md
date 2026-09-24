@@ -50,30 +50,27 @@ Ground/air nodes and walk/jump/fly edges carry elevation/width/headroom; body sw
 
 ## revisionとhash
 
-revisionはkind/id/revision/schemaVersion/contentHash/definitionを持つ。
-contentHashは`{kind,schemaVersion,definition}`の正規化JSONをUTF-8 SHA-256で識別する。
-公開後の書換えを許可しない。refはid/revision/contentHashの3値を固定する。
+Revisions carry kind/id/revision/schemaVersion/contentHash/definition; immutable refs pin
+id/revision/contentHash. Hash canonical UTF-8 `{kind,schemaVersion,definition}` with SHA-256.
+`prepareBattle` validates hashes, typed references, duplicate abilities, policy references,
+participant IDs and whole-body arena bounds. Manifest schema 3 pins both actors' placement,
+facing/streams, rules/scenario, resolved revisions, seed/PRNG, engine/digest, physics profile
+and its hash, WASM/table hashes. [ADR 0010](../adr/0010-battle-version-compatibility.md)
+governs saved-data compatibility; no published revision is overwritten.
 
-`prepareBattle`は全定義のcontent hash、参照のkind/id/revision/hash、能力重複、方針の
-能力参照、参加者ID、身体の戦場境界を検証する。新しいmanifest schema 3には、
-2参加者の配置・向き・乱数stream、ruleset/scenario、解決済みrevision、seed/PRNG版、
-engineVersion/実装digest、physics profile本体とhash、WASM/table hashを記録する。
+Canonicalization sorts object keys by ASCII and revisions by kind/id/revision, never input
+arrays (slots/effects/priorities). AI treats priorities as a conditional candidate set without
+order bonuses. simulationHash identifies the fixed manifest; budgets, worker counts, attempt
+IDs and wall time are excluded, allowing retry with a larger budget.
 
-正規化はobject keyをASCII順にする。resolved revisionsは集合としてkind/id/revision順に
-正規化する。参加枠、effects、policy prioritiesなどの入力配列をhash正規化で勝手に並べ替えない。
-AI評価時のprioritiesは条件付き候補の集合として扱い、列挙順によるutility加点をしない。
-simulationHashはこの確定manifestのhash。計算予算、Worker数、attempt ID、実時計は
-manifestに含めず、同じ試合を予算増加して再試行できるようにする。
+Xorshift32-v1 actor streams follow actors when swapping placement/facing; zero seeds map to
+a fixed nonzero value. Aim consumes only when fixed at launch; old
+accuracy draws are not layered on normal hits. actor-purpose-rejection-v1 separates action/
+dodge; sole candidates draw nothing. Enumeration/render FPS cannot affect streams. Master
+to actor derivation is pinned by the runner's actor-stream-v1.
 
-乱数はxorshift32-v1。actorSeedを対応する主体に固定し、主体/位置/向き交換時には
-streamも一緒に交換する。seed0は固定の非零初期値へ写す。照準streamは照準確定時だけ消費し、
-判断はaiProfileのactor-purpose-rejection-v1で導出した独立のaction/dodge streamを使う。
-唯一候補では消費せず、候補列挙や描画fpsには依存させない。照準誤差は発射時に固定し、通常命中に旧accuracy乱数を
-重ねない。master seedからactor seedへの生成手順はrunnerのactor-stream-v1として固定する。
-
-event/result schemaは新形式のみを定義する。win/draw/unresolved/truncatedを区別し、
-event hash、表示軌跡hash、TS state hash、Rapier snapshot hashを別々に持つ。
-ホストfailed/cancelledはjob/attemptの状態であり、勝敗やdrawへ変換しない。
+Event/result schemas distinguish win/draw/unresolved/truncated; event/display/TS-state/Rapier
+hashes are independent. Host failed/cancelled are attempt states, never battle outcomes.
 
 ## 静的戦場と初期配置（3D-03）
 
@@ -235,6 +232,15 @@ Failure preserves previous legal intent, costs/uses/deadlines; no skill-only fal
 Cast-stop excludes paired dodge. Actual collision/settlement remains authoritative.
 movementSlot saves candidates/exclusions/draw; existing cognition/locomotion saves the rest.
 No hidden enemy inputs.
+
+### Optional candidate floor (#45; numeric activation pending)
+
+`ai.minimumCandidateWeightBps?` (0..10000) removes `w` iff
+`w*10000 < max(original weights)*floor` in action/movement/direction draws.
+Equality stays; survivors retain weights; 0/omission preserves legacy selection.
+Explicit floors add `weightBeforeCutoff`; weight/totalWeight describe final probabilities.
+Sole survivors consume no draw. 500 is test-only; attack81/cleanse659 is unchanged.
+Published rules stay unchanged. Approval, new rules ID/version and search integration remain pending.
 
 ## 段階攻撃・移動（G-07）
 

@@ -283,10 +283,31 @@ export class BattleRuntime {
       this.active.get(id)?.controller.abort(new Error('Cancelled by client'));
     return job;
   }
-  retry(id: string, expectedAttempts: number, budget: Budget) {
+  async retry(id: string, expectedAttempts: number, budget: Budget) {
     if (this.stopped || this.failure) throw new StoreError(503, 'Runtime unavailable');
-    if (this.active.has(id))
-      throw new StoreError(409, 'Previous attempt is still releasing resources');
+    const previous = this.active.get(id);
+    if (previous) {
+      if (!previous.controller.signal.aborted)
+        throw new StoreError(409, 'Previous attempt is still running');
+      // Cancellation is visible before the Worker/writer have released their resources.
+      // Accept a single user retry after cleanup, then revalidate the optimistic attempt
+      // count in the store. Concurrent requests cannot enqueue two attempts.
+      let timeout: ReturnType<typeof setTimeout> | undefined;
+      try {
+        await Promise.race([
+          previous.done,
+          new Promise<never>((_, reject) => {
+            timeout = setTimeout(
+              () => reject(new StoreError(409, 'Previous attempt is still releasing resources')),
+              5000,
+            );
+          }),
+        ]);
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+    if (this.stopped || this.failure) throw new StoreError(503, 'Runtime unavailable');
     const job = this.jobs.retry(id, expectedAttempts, budget);
     this.tick();
     return job;

@@ -175,6 +175,7 @@ export const AiRulesSchema = z.strictObject({
   dodgeWeight: positive(5000),
   appearancePriors: AppearancePriorsSchema.optional(),
   slots: z.literal('simultaneous-v1').optional(),
+  minimumCandidateWeightBps: uint(10_000).optional(),
 });
 export const AI_RULES = Object.freeze(
   AiRulesSchema.parse({

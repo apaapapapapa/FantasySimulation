@@ -98,7 +98,7 @@ export async function runBatch(
               ['failed', 'cancelled'].includes(job.state) &&
               job.attempts < job.maxAttempts
             )
-              job = runtime!.retry(job.id, job.attempts, plan.budget);
+              job = await runtime!.retry(job.id, job.attempts, plan.budget);
             const cancel = () => runtime!.cancel(job.id);
             options.signal?.addEventListener('abort', cancel, { once: true });
             if (options.signal?.aborted) cancel();

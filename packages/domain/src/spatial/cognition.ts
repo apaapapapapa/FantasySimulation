@@ -87,6 +87,7 @@ export const CandidateAssessmentSchema = z.strictObject({
   kind: z.enum(['ability', 'dodge', 'move', 'wait']),
   abilityId: IdSchema.nullable(),
   weight: z.number().int().min(0).max(1_000_000),
+  weightBeforeCutoff: z.number().int().min(0).max(1_000_000).optional(),
   totalWeight: z.number().int().min(1).max(40_000_000),
   successBps: bps,
   killBps: bps,
@@ -190,6 +191,7 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
         z.strictObject({
           key: z.enum(['up', 'down', 'left', 'right']),
           weight: quantity,
+          weightBeforeCutoff: z.number().int().min(0).max(1_000_000).optional(),
           reason: z.string().max(100),
         }),
       )
