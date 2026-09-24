@@ -1,6 +1,6 @@
 import { AI_RULES, type CandidateAssessment, type Cognition } from '@fantasy/domain/spatial';
 import type { DecisionView } from './perception.ts';
-import { initialMovementRandom, weightedChoice } from './decision-random.ts';
+import { initialMovementRandom, weightedChoice, recordDecisionWeights } from './decision-random.ts';
 import type { AbilityRevision } from './combat-state.ts';
 import { payCost } from './attacks.ts';
 import { canMaintainFlight, resourceReady } from './locomotion.ts';
@@ -106,7 +106,9 @@ export function chooseMovementSlot(
   const choice = weightedChoice(
     candidates.map((c) => c.weight),
     before,
+    view.rules?.minimumCandidateWeightBps,
   );
+  recordDecisionWeights(candidates, choice, view.rules?.minimumCandidateWeightBps);
   const selected = candidates[choice.index!]!;
   for (const candidate of candidates) candidate.totalWeight = choice.total;
   const selection = selected.kind === 'dodge' ? 'dodge' : moving ? 'move' : 'wait';

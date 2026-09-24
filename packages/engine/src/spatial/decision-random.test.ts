@@ -5,8 +5,20 @@ import { launchDirection } from './attacks.ts';
 
 describe('purpose-separated unbiased decision draws', () => {
   it('retains state for no candidate or a sole positive candidate and rejects invalid weights', () => {
-    expect(weightedChoice([0, 0], 19)).toEqual({ index: null, state: 19, draws: 0, total: 0 });
-    expect(weightedChoice([0, 17, 0], 19)).toEqual({ index: 1, state: 19, draws: 0, total: 17 });
+    expect(weightedChoice([0, 0], 19)).toEqual({
+      index: null,
+      state: 19,
+      draws: 0,
+      total: 0,
+      weights: [0, 0],
+    });
+    expect(weightedChoice([0, 17, 0], 19)).toEqual({
+      index: 1,
+      state: 19,
+      draws: 0,
+      total: 17,
+      weights: [0, 17, 0],
+    });
     for (const weights of [[-0.1], [1.1], [1_000_001], Array(36).fill(1)])
       expect(() => weightedChoice(weights, 19)).toThrow(/Invalid decision weights/);
   });

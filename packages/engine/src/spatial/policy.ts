@@ -16,7 +16,12 @@ import { assessAbility, type KnownClearance } from './assessment.ts';
 import { assessReactions } from './reaction-assessment.ts';
 import { dodgeOptions } from './dodge.ts';
 import { chooseMovementSlot, dodgeAssessment, passiveAssessment } from './movement-choice.ts';
-import { initialDecisionRandom, weightedChoice, type DecisionRandom } from './decision-random.ts';
+import {
+  initialDecisionRandom,
+  weightedChoice,
+  recordDecisionWeights,
+  type DecisionRandom,
+} from './decision-random.ts';
 import {
   canMaintainFlight,
   chooseGait,
@@ -138,9 +143,12 @@ export function choosePolicy(
   const choice = weightedChoice(
       candidates.map((c) => c.weight),
       random.action,
+      view.rules?.minimumCandidateWeightBps,
     ),
     selected = candidates[choice.index!]!;
+  recordDecisionWeights(candidates, choice, view.rules?.minimumCandidateWeightBps);
   for (const candidate of candidates) candidate.totalWeight = choice.total;
+  const eligible = candidates.filter((c) => c.weight > 0);
   const draws: Extract<Cognition, { kind: 'decision' }>['draws'] = [
     {
       purpose: 'action',
@@ -165,8 +173,10 @@ export function choosePolicy(
     const direction = weightedChoice(
         directions.map((d) => d.weight),
         random.dodge,
+        view.rules?.minimumCandidateWeightBps,
       ),
       selectedDirection = directions[direction.index!]!;
+    recordDecisionWeights(directions, direction, view.rules?.minimumCandidateWeightBps);
     goal = selectedDirection.goal;
     nextRandom.dodge = direction.state;
     draws.push({
@@ -253,15 +263,20 @@ export function choosePolicy(
       excluded,
       selection: selected.key,
       method:
-        candidates.length === 1
+        eligible.length === 1
           ? 'sole'
-          : candidates.every((c) => c.weight === candidates[0]!.weight)
+          : eligible.every((c) => c.weight === eligible[0]!.weight)
             ? 'equal'
             : selected.exploration > 0
               ? 'exploration'
               : 'weighted',
       draws,
-      directions: directions.map(({ key, weight, reason }) => ({ key, weight, reason })),
+      directions: directions.map(({ key, weight, reason, weightBeforeCutoff }) => ({
+        key,
+        weight,
+        reason,
+        ...(weightBeforeCutoff === undefined ? {} : { weightBeforeCutoff }),
+      })),
     },
   };
 }
