@@ -183,7 +183,7 @@ export function* simulate(
                 a.definition.trigger === 'battle-start' &&
                 conditionMatches(
                   a.definition.condition,
-                  selfView(actor, step, battle.rules.ai!, battle.statuses),
+                  selfView(actor, step, battle.rules.ai, battle.statuses),
                 ),
             );
             const budget = new ResourceBudget(actor.resources, actor.used);
@@ -309,7 +309,7 @@ export function* simulate(
         for (const actor of next)
           checkStageInterruption(
             actor,
-            selfView(actor, step, battle.rules.ai!, battle.statuses),
+            selfView(actor, step, battle.rules.ai, battle.statuses),
             step,
             journal,
             'boundary',
@@ -350,7 +350,7 @@ export function* simulate(
             delete actor.intent.authored;
             return [
               actorId(actor),
-              beginForcedInterval(actor, step, battle.rules.forcedSpeedCapMmPerSecond ?? 100000),
+              beginForcedInterval(actor, step, battle.rules.forcedSpeedCapMmPerSecond),
             ];
           }),
         );
@@ -381,7 +381,7 @@ export function* simulate(
                 p.ability.definition.attack.kind === 'projectile'
                   ? p.ability.definition.attack.radiusMm
                   : 0,
-              ...(battle.rules.ai?.reapplication
+              ...(battle.rules.ai.reapplication
                 ? {
                     element: p.ability.definition.effects.find((e) => e.kind === 'damage')?.element,
                     attackCueId: p.cause,
@@ -397,24 +397,20 @@ export function* simulate(
               stage: visibleStageCue(enemy, step),
               reaction: visibleReactionCue(enemy, step),
             },
-            battle.scenario.terrainKnowledge ?? 'observed',
-            battle.rules.ai!,
+            battle.scenario.terrainKnowledge,
+            battle.rules.ai,
             battle.scenario.bounds,
           );
           if (actor.action && actor.action.recoveryUntil <= step) actor.action = null;
           const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
           const view = {
-            ...selfView(actor, step, battle.rules.ai!, battle.statuses),
+            ...selfView(actor, step, battle.rules.ai, battle.statuses),
             gravityMmPerSecond2: battle.rules.gravityMmPerSecond2,
           };
           checkStageInterruption(actor, view, step, journal, 'declaration');
           const flight =
             stats.flight &&
-            canMaintainFlight(
-              view.resources,
-              view.flightStaminaPerSecond ?? 0,
-              resourceReady(view),
-            );
+            canMaintainFlight(view.resources, view.flightStaminaPerSecond, resourceReady(view));
           const ready = new Set(
             actor.motion.actor.abilities
               .filter(
@@ -494,7 +490,7 @@ export function* simulate(
                 flight,
                 actor.decisionRandom,
                 (from, to, body) => navigator.knownClearance(from, to, body),
-                battle.rules.ai?.search
+                battle.rules.ai.search
                   ? {
                       bounds: battle.scenario.bounds,
                       obstacles: (knownWorld ?? world).obstacles('vision'),
@@ -569,12 +565,12 @@ export function* simulate(
             new ResourceBudget(
               actor.resources,
               actor.used,
-              resourceReady(selfView(actor, step, battle.rules.ai!, battle.statuses)),
+              resourceReady(selfView(actor, step, battle.rules.ai, battle.statuses)),
             ),
           ]),
         );
         for (const actor of next) {
-          const view = selfView(actor, step, battle.rules.ai!, battle.statuses);
+          const view = selfView(actor, step, battle.rules.ai, battle.statuses);
           if (
             aiBoundary &&
             step >= actor.readyAt &&
@@ -696,10 +692,11 @@ export function* simulate(
           const action = actor.action;
           if (!action) continue;
           if (!action.stages && (action.released || action.launchAt !== step)) continue;
+          const releaseView = selfView(actor, step, battle.rules.ai, battle.statuses);
           const staged = action.stages
             ? releaseStage(
                 actor,
-                selfView(actor, step, battle.rules.ai!, battle.statuses),
+                releaseView,
                 step,
                 resourceBudgets.get(actorId(actor))!,
                 journal,
@@ -716,17 +713,10 @@ export function* simulate(
           if (
             !postureAllows(actor.motion, definition) ||
             (!staged &&
-              (!inObservedRange(
-                definition,
-                selfView(actor, step, battle.rules.ai!, battle.statuses),
-              ) ||
-                selfView(actor, step, battle.rules.ai!, battle.statuses).incapacitated ||
-                !conditionMatches(
-                  definition.condition,
-                  selfView(actor, step, battle.rules.ai!, battle.statuses),
-                ) ||
-                (selfView(actor, step, battle.rules.ai!, battle.statuses).silenced &&
-                  blockedBySilence(definition))))
+              (!inObservedRange(definition, releaseView) ||
+                releaseView.incapacitated ||
+                !conditionMatches(definition.condition, releaseView) ||
+                (releaseView.silenced && blockedBySilence(definition))))
           ) {
             journal.emit({
               kind: 'fizzle',
@@ -758,7 +748,7 @@ export function* simulate(
             continue;
           }
           const enemy = next.find((a) => actorId(a) !== actorId(actor))!;
-          if (battle.rules.ai?.reapplication)
+          if (battle.rules.ai.reapplication)
             enemy.memory = seenAttack(
               world,
               enemy.motion,
@@ -1132,7 +1122,7 @@ export function* simulate(
         for (const actor of next)
           checkStageInterruption(
             actor,
-            selfView(actor, step + 1, battle.rules.ai!, battle.statuses),
+            selfView(actor, step + 1, battle.rules.ai, battle.statuses),
             step + 1,
             journal,
             'resolution',

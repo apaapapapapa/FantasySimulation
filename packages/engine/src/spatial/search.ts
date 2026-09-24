@@ -95,11 +95,11 @@ export function surveySearch(
 }
 
 export function chooseSearch(view: DecisionView, state: number | undefined) {
-  const rules = view.rules?.search;
+  const rules = view.rules.search;
   const previous = view.memory.search;
   if (!rules || !previous || view.memory.observation?.enemy) return null;
   const memory = structuredClone(previous) as SearchMemory,
-    step = view.step ?? 0;
+    step = view.step;
   const lastSeen = view.memory.lastSeen;
   const cue = memory.cues
     .filter((c) => c.availableAt <= step && step - c.sampledAt <= rules.revisitSteps)
@@ -161,9 +161,9 @@ export function chooseSearch(view: DecisionView, state: number | undefined) {
     const choice = weightedChoice(
       weights.map((c) => c.weight),
       before,
-      view.rules?.minimumCandidateWeightBps,
+      view.rules.minimumCandidateWeightBps,
     );
-    recordDecisionWeights(weights, choice, view.rules?.minimumCandidateWeightBps);
+    recordDecisionWeights(weights, choice, view.rules.minimumCandidateWeightBps);
     candidates = weights;
     draw = { before, after: choice.state, draws: choice.draws };
     if (choice.index !== null) {

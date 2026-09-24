@@ -1,3 +1,4 @@
+import { decisionView, withAbilities } from '../../test-support/ai.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { initializePhysics, SpatialWorld, type Obstacle } from './physics.ts';
 import { prepareBattle } from './prepare.ts';
@@ -79,12 +80,12 @@ describe('legal observations and conditional policies', () => {
       memory = perceive(world, left, right, [], 10, memory);
       expect(memory.observation?.enemy).toBeNull();
       expect(memory.lastSeen?.position.x).toBe(4);
-      const view: DecisionView = {
+      const view: DecisionView = decisionView({
         self: left,
         resources: { hp: 100, mp: 20, shield: 0 },
         statusIds: [],
         memory,
-      };
+      });
       const before = choosePolicy(view, new Set(['sword']), false);
       right.position = { x: -20, y: 4, z: 0 };
       expect(choosePolicy(view, new Set(['sword']), false)).toEqual(before);
@@ -115,8 +116,7 @@ describe('legal observations and conditional policies', () => {
       const self = {
         ...left,
         actor: {
-          ...left.actor,
-          abilities: [sword, heal],
+          ...withAbilities(left.actor, [sword, heal]),
           policy: {
             ...left.actor.policy,
             priorities: [
@@ -130,12 +130,12 @@ describe('legal observations and conditional policies', () => {
           },
         },
       };
-      const view: DecisionView = {
+      const view: DecisionView = decisionView({
         self,
         memory,
         statusIds: [],
         resources: { hp: 10, mp: 20, shield: 0 },
-      };
+      });
       expect(
         choosePolicy(view, new Set(['heal', sword.id]), false).cognition?.candidates.find(
           (c) => c.abilityId === 'heal',
@@ -175,7 +175,7 @@ describe('legal observations and conditional policies', () => {
         ...left,
         actor: { ...left.actor, policy: { ...left.actor.policy, movement: 'evade' as const } },
       };
-      const view: DecisionView = {
+      const view: DecisionView = decisionView({
         self,
         resources: { hp: 100, mp: 0, shield: 0 },
         statusIds: [],
@@ -183,7 +183,7 @@ describe('legal observations and conditional policies', () => {
           ...emptyMemory(),
           observation: { sampledAt: 0, availableAt: 5, enemy: null, projectiles },
         },
-      };
+      });
       const first = choosePolicy(view, new Set(), false);
       const reversed = {
         ...view,
@@ -222,7 +222,7 @@ describe('legal observations and conditional policies', () => {
           },
         };
         const decision = choosePolicy(
-          { self, memory, resources: { hp: 100, mp: 0, shield: 0 }, statusIds: [] },
+          decisionView({ self, memory, resources: { hp: 100, mp: 0, shield: 0 }, statusIds: [] }),
           new Set(),
           false,
         );
@@ -245,7 +245,7 @@ describe('legal observations and conditional policies', () => {
         },
       };
       const goal = choosePolicy(
-        { self, memory, resources: { hp: 100, mp: 0, shield: 0 }, statusIds: [] },
+        decisionView({ self, memory, resources: { hp: 100, mp: 0, shield: 0 }, statusIds: [] }),
         new Set(),
         false,
       ).goal!;
@@ -278,12 +278,12 @@ describe('legal observations and conditional policies', () => {
       );
       memory = perceive(world, left, right, [], 5, memory);
       expect(memory.observation?.projectiles.map((p) => p.id)).toEqual(['arrow']);
-      const view: DecisionView = {
+      const view: DecisionView = decisionView({
         self: left,
         resources: { hp: 10, mp: 0, shield: 0 },
         statusIds: ['burn'],
         memory,
-      };
+      });
       expect(
         conditionMatches(
           {

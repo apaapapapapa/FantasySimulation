@@ -18,14 +18,14 @@ export function coverOptions(
   clear: KnownClearance,
   selected?: DeepReadonly<Definition<'ability'>>,
 ) {
-  if (!view.rules?.search || !view.canMove || view.stageOwnsMotion) return [];
+  if (!view.rules.search || !view.canMove || view.stageOwnsMotion) return [];
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen;
-  const cue = view.memory.search?.cues.filter((c) => c.availableAt <= (view.step ?? 0)).at(-1);
+  const cue = view.memory.search?.cues.filter((c) => c.availableAt <= view.step).at(-1);
   const estimate = target?.position ?? (cue ? add(cue.origin, mul(cue.direction, 3)) : null);
   if (!estimate) return [];
   if (
     !view.memory.observation?.enemy &&
-    (view.step ?? 0) - (view.memory.search?.lastContactAt ?? 0) >= view.rules.search.maxWaitSteps
+    view.step - (view.memory.search?.lastContactAt ?? 0) >= view.rules.search.maxWaitSteps
   )
     return [];
   const aversion = 20000 - (view.self.actor.policy.evaluation?.riskToleranceBps ?? 10000);
@@ -104,15 +104,15 @@ export function chooseCover(
   if (!terrain) return null;
   const covers = coverOptions(view, terrain, clear, selected);
   if (!covers.length) return null;
-  const ordinary = { key: 'ordinary', weight: view.rules?.actionWeight ?? 100 };
+  const ordinary = { key: 'ordinary', weight: view.rules.actionWeight };
   const candidates = [ordinary, ...covers.map(({ key, weight }) => ({ key, weight }))];
   const before = state ?? initialCoverRandom(view.self.actor.participant.rngSeed);
   const choice = weightedChoice(
     candidates.map((c) => c.weight),
     before,
-    view.rules?.minimumCandidateWeightBps,
+    view.rules.minimumCandidateWeightBps,
   );
-  recordDecisionWeights(candidates, choice, view.rules?.minimumCandidateWeightBps);
+  recordDecisionWeights(candidates, choice, view.rules.minimumCandidateWeightBps);
   return {
     selected: choice.index ? covers[choice.index - 1]! : null,
     candidates,

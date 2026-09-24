@@ -66,3 +66,9 @@ export function unsupportedExecutionReason(manifest: StoredManifest): string | n
   const eligibility = executionEligibility(manifest);
   return eligibility.executable ? null : eligibility.reason;
 }
+
+export function requireExecutableRules(
+  rules: Definition<'ruleset'>,
+): asserts rules is Definition<'ruleset'> & { ai: NonNullable<Definition<'ruleset'>['ai']> } {
+  requireExecutable(rulesExecutionEligibility(rules));
+}

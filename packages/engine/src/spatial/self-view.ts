@@ -1,3 +1,4 @@
+import profile from './profile.json' with { type: 'json' };
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import type { ActorState } from './combat-state.ts';
 import type { DecisionView } from './perception.ts';
@@ -28,6 +29,7 @@ export function selfView(
   step: number,
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>>,
   definitions: readonly StatusRevision[],
+  gravityMmPerSecond2 = profile.gravityMmPerSecond2,
 ): DecisionView {
   const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
   const active = actor.statuses.filter((s) => s.startStep <= step && step < s.endStep);
@@ -47,22 +49,19 @@ export function selfView(
   return {
     self,
     resources: actor.resources,
-    ...(actor.staminaClock ? { staminaExhausted: actor.staminaClock.exhausted } : {}),
-    ...(stats.flight && flightRate(actor.statuses, step) > 0
-      ? { flightStaminaPerSecond: flightRate(actor.statuses, step) }
-      : {}),
+    staminaExhausted: actor.staminaClock?.exhausted ?? false,
+    flightStaminaPerSecond: stats.flight ? flightRate(actor.statuses, step) : 0,
     memory: actor.memory,
     statusIds: active.map((s) => s.revision.id),
     step,
+    gravityMmPerSecond2,
     used: actor.used,
-    ...(actor.motion.actor.abilities.some((a) => a.definition.reaction)
-      ? { reactionReadyAt: actor.cooldowns ?? {} }
-      : {}),
+    reactionReadyAt: actor.cooldowns ?? {},
     ownStatuses: active,
     incapacitated: stats.incapacitated,
     canAct: step >= actor.readyAt && !actor.action && !stats.incapacitated,
-    ...(actor.action ? { activeAbility: actor.action.ability.definition } : {}),
-    ...(ownsStageMotion(actor.action, step) ? { stageOwnsMotion: true } : {}),
+    activeAbility: actor.action?.ability.definition,
+    stageOwnsMotion: ownsStageMotion(actor.action, step),
     canMove:
       !hasForcedMotion(actor, step) &&
       !stats.rooted &&
@@ -75,7 +74,8 @@ export function selfView(
     silenced: stats.silenced,
     speedBps: Math.floor((stats.speedBps * postureSpeed(actor.motion)) / 10000),
     ...damageSource(stats),
-    ...(burnDamage === undefined ? {} : { burnDamage }),
+    magicPower: stats.magicPower ?? stats.attack,
+    burnDamage,
     waterExtinguishable: active.some((s) =>
       statusReactions(s.revision.definition).some(
         (r) => r.element === 'water' && r.response.kind === 'remove',

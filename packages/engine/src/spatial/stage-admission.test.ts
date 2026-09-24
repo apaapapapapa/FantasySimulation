@@ -80,7 +80,7 @@ describe('due stage and movement admission', () => {
           journal = new Journal(1, 0, DEFAULT_BUDGET);
         const released = releaseStage(
           f.actor,
-          selfView(f.actor, 3, f.battle.rules.ai!, f.battle.statuses),
+          selfView(f.actor, 3, f.battle.rules.ai, f.battle.statuses),
           3,
           budget,
           journal,

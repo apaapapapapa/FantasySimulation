@@ -52,9 +52,9 @@ export function seenAttack(
 }
 
 export function reapplicationEstimate(view: DecisionView, statusId: string, activation: number) {
-  if (!view.rules?.reapplication) return null;
+  if (!view.rules.reapplication) return null;
   const history = (view.memory.threatHistory ?? []).filter(
-    (e) => e.availableAt <= (view.step ?? 0) && e.expiresAt > (view.step ?? 0),
+    (e) => e.availableAt <= view.step && e.expiresAt > view.step,
   );
   const applied = history.filter((e) => e.statusId === statusId);
   const last = applied.at(-1);

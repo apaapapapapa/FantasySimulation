@@ -1,5 +1,4 @@
 import {
-  AI_RULES,
   canonicalJson,
   type CandidateAssessment,
   type DeepReadonly,
@@ -31,7 +30,7 @@ export function efficacy(
   defense: DamageDefense = 'physical',
 ) {
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen,
-    step = view.step ?? 0;
+    step = view.step;
   const evidence = view.memory.knowledge.filter(
     (e) => e.targetId === target?.id && e.element === element && e.expiresAt > step,
   );
@@ -53,7 +52,7 @@ export function efficacy(
       e.kind === 'impact' &&
       canonicalJson(e.observedStatuses ?? []) === canonicalJson(target?.statuses ?? []) &&
       (e.defense ?? 'physical') === defense &&
-      (e.range || (e.impactBand && view.rules?.relativeImpactBps)) &&
+      (e.range || (e.impactBand && view.rules.relativeImpactBps)) &&
       e.basePower > 0 &&
       Math.abs(e.basePower - power) <= Math.max(1, power * 0.2) &&
       e.distanceBand ===
@@ -63,7 +62,7 @@ export function efficacy(
     const average =
       comparable.reduce((n, e) => {
         if (e.range) return n + (e.range.low + e.range.high) / 2 / e.basePower;
-        const [a, b, c] = view.rules!.relativeImpactBps!;
+        const [a, b, c] = view.rules.relativeImpactBps!;
         const ranges = {
           minimal: [0, a],
           weak: [a, b],
@@ -79,7 +78,7 @@ export function efficacy(
       evidence: comparable.map((e) => e.eventId),
     };
   }
-  const prior = appearancePrior(target?.appearance, element, view.rules?.appearancePriors);
+  const prior = appearancePrior(target?.appearance, element, view.rules.appearancePriors);
   return {
     bps: Math.min(30000, Math.round((prior.bps * statusPrior) / 10000)),
     confidence: prior.confidence,
@@ -96,7 +95,7 @@ function assessSingle(
   ability: AbilityRevision,
   timing?: { cast: number; duration: number },
 ) {
-  const rules = view.rules ?? AI_RULES,
+  const rules = view.rules,
     weights = view.self.actor.policy.evaluation ?? {
       attackBps: 10000,
       survivalBps: 10000,
@@ -132,7 +131,7 @@ function assessSingle(
     confidencePower = 0;
   const evidence: string[] = [],
     reasons: string[] = [];
-  const stateValue = assessStatusEffects(view, d.effects, d.target, (view.step ?? 0) + cast);
+  const stateValue = assessStatusEffects(view, d.effects, d.target, view.step + cast);
   utility += (stateValue.risk?.nonDamageValue ?? stateValue.value) * rules.actionWeight;
   if (stateValue.risk) {
     const { before, after } = stateValue.risk;
@@ -150,17 +149,13 @@ function assessSingle(
     if (effect.kind === 'damage' && d.target === 'enemy') {
       const power = Number(
         damagePower(effect, {
-          attack: view.attack ?? view.self.actor.character.stats.attack,
-          magicPower:
-            view.magicPower ??
-            view.self.actor.character.stats.magicPower ??
-            view.attack ??
-            view.self.actor.character.stats.attack,
+          attack: view.attack,
+          magicPower: view.magicPower,
         }),
       );
       const base = Math.floor(
         (power *
-          damageStatusBps('damageDealt', view.ownStatuses ?? [], view.step ?? 0, {
+          damageStatusBps('damageDealt', view.ownStatuses ?? [], view.step, {
             element: effect.element,
             categories: abilityCategories(d),
           })) /
@@ -185,7 +180,7 @@ function assessSingle(
               (effect.amount *
                 Math.min(
                   30000,
-                  adjustedStatusValue(10000, 'hpRecovery', view.ownStatuses ?? [], view.step ?? 0),
+                  adjustedStatusValue(10000, 'hpRecovery', view.ownStatuses ?? [], view.step),
                 )) /
                 10000,
             ),
@@ -299,7 +294,7 @@ function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAs
   const initial = payCost(
     ability.definition,
     view.resources,
-    view.used?.[ability.id] ?? 0,
+    view.used[ability.id] ?? 0,
     !view.staminaExhausted,
   );
   let resources = initial.resources;

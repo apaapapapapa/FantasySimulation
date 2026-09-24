@@ -38,10 +38,10 @@ export function dodgeOptions(
       locomotion.dodgeStamina +
         Math.ceil(
           (flight
-            ? (view.flightStaminaPerSecond ?? 0)
+            ? view.flightStaminaPerSecond
             : (gait!.staminaPerMeter * gait!.speedMmPerSecond) / 1000) * 0.1,
         );
-  if (!travelAffordable && (flight || !view.rules?.groundEvasion)) return [];
+  if (!travelAffordable && (flight || !view.rules.groundEvasion)) return [];
   const self = view.self,
     body = self.actor.character.body,
     movement = self.actor.character.movement;
@@ -50,11 +50,11 @@ export function dodgeOptions(
       ? movement.flySpeedMmPerSecond
       : (gait?.speedMmPerSecond ?? movement.speedMmPerSecond)) /
       1000) *
-      (view.speedBps ?? 10000)) /
+      view.speedBps) /
     10000;
   const acceleration = movement.accelerationMmPerSecond2 / 1000;
-  const age = Math.max(0, (view.step ?? observation.availableAt) - observation.sampledAt) * 0.02;
-  const horizon = (view.rules?.horizonSteps ?? 50) * 0.02;
+  const age = Math.max(0, view.step - observation.sampledAt) * 0.02;
+  const horizon = view.rules.horizonSteps * 0.02;
   const threats = observation.projectiles.flatMap((p) => {
     const position = add(p.position, mul(p.velocity, age)),
       relative = sub(self.position, position),
@@ -94,12 +94,12 @@ export function dodgeOptions(
       }),
     );
   return directions.map(({ key, vector }) => {
-    if (vector.y && !flight && view.rules?.groundEvasion) {
+    if (vector.y && !flight && view.rules.groundEvasion) {
       if (view.canMove === false || !self.grounded)
         return { key, goal: self.position, weight: 0, reason: 'ground movement unavailable' };
       if (key === 'up') {
         const velocity = movement.jumpMmPerSecond / 1000,
-          gravity = (view.gravityMmPerSecond2 ?? -9807) / 1000;
+          gravity = view.gravityMmPerSecond2 / 1000;
         const height = velocity * time + (gravity * time * time) / 2;
         const goal = add(self.position, { x: 0, y: height, z: 0 });
         const peak = gravity < 0 ? (velocity * velocity) / (-2 * gravity) : 0;
@@ -137,7 +137,7 @@ export function dodgeOptions(
             key,
             goal: self.position,
             posture,
-            postureUntil: (view.step ?? 0) + Math.ceil(time * 50) + 1,
+            postureUntil: view.step + Math.ceil(time * 50) + 1,
             weight: Math.max(1, Math.round(margin * 1000)),
             reason: 'lower capsule before observed intercept',
           };

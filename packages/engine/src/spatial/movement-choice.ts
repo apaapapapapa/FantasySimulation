@@ -1,8 +1,4 @@
-import {
-  AI_RULES,
-  type CandidateAssessment,
-  type Cognition,
-} from '@fantasy/domain/spatial/execution';
+import { type CandidateAssessment, type Cognition } from '@fantasy/domain/spatial/execution';
 import type { DecisionView } from './perception.ts';
 import { initialMovementRandom, weightedChoice, recordDecisionWeights } from './decision-random.ts';
 import type { AbilityRevision } from './combat-state.ts';
@@ -22,10 +18,7 @@ export function dodgeAssessment(view: DecisionView): CandidateAssessment {
     key: 'dodge',
     kind: 'dodge',
     abilityId: null,
-    weight: Math.max(
-      1,
-      Math.floor(((view.rules ?? AI_RULES).dodgeWeight * 10000) / (10000 + costBps)),
-    ),
+    weight: Math.max(1, Math.floor((view.rules.dodgeWeight * 10000) / (10000 + costBps))),
     totalWeight: 1,
     successBps: 7000,
     killBps: 0,
@@ -71,14 +64,14 @@ export function chooseMovementSlot(
   const excluded: string[] = [];
   const payment =
     ability &&
-    payCost(ability.definition, view.resources, view.used?.[ability.id] ?? 0, resourceReady(view));
+    payCost(ability.definition, view.resources, view.used[ability.id] ?? 0, resourceReady(view));
   const resources = payment?.ok ? payment.resources : view.resources;
   const blocks =
     view.stageOwnsMotion ||
     (!!ability &&
       ((ability.definition.castSteps === 0 && !!ability.definition.stages?.[0]?.selfMotion) ||
         (ability.definition.castSteps > 0 && ability.definition.movementWhileCasting === 'stop')));
-  const rate = flight ? (view.flightStaminaPerSecond ?? 0) : 0;
+  const rate = flight ? view.flightStaminaPerSecond : 0;
   const maintained = canMaintainFlight(resources, rate, resourceReady(view));
   if (blocks)
     excluded.push(
@@ -113,7 +106,7 @@ export function chooseMovementSlot(
         direction.reason = 'selected action incompatible with this posture';
       }
   const fallback = passiveAssessment(moving);
-  fallback.weight = (view.rules ?? AI_RULES).actionWeight;
+  fallback.weight = view.rules.actionWeight;
   fallback.reason = 'retain ordinary movement and conserve evasion resources';
   const candidates = [fallback];
   if (directions.some((d) => d.weight > 0))
@@ -124,9 +117,9 @@ export function chooseMovementSlot(
   const choice = weightedChoice(
     candidates.map((c) => c.weight),
     before,
-    view.rules?.minimumCandidateWeightBps,
+    view.rules.minimumCandidateWeightBps,
   );
-  recordDecisionWeights(candidates, choice, view.rules?.minimumCandidateWeightBps);
+  recordDecisionWeights(candidates, choice, view.rules.minimumCandidateWeightBps);
   const selected = candidates[choice.index!]!;
   for (const candidate of candidates) candidate.totalWeight = choice.total;
   const selection = selected.kind === 'dodge' ? 'dodge' : moving ? 'move' : 'wait';

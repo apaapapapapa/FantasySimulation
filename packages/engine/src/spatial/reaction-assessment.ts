@@ -24,8 +24,8 @@ export function assessReactions(view: DecisionView) {
     const d = ability.definition,
       reaction = d.reaction;
     if (!reaction || d.trigger === 'action' || d.trigger === 'battle-start') continue;
-    const used = view.used?.[ability.id] ?? 0;
-    const readyAt = view.reactionReadyAt?.[ability.id] ?? 0;
+    const used = view.used[ability.id] ?? 0;
+    const readyAt = view.reactionReadyAt[ability.id] ?? 0;
     const payment = payCost(d, view.resources, used, resourceReady(view));
     const reason = !postureAllows(view.self, d)
       ? 'posture'
@@ -33,7 +33,7 @@ export function assessReactions(view: DecisionView) {
         ? 'incapacitated'
         : view.silenced && blockedBySilence(d)
           ? 'silenced'
-          : readyAt > (view.step ?? 0)
+          : readyAt > view.step
             ? 'cooldown-or-recovery'
             : !payment.ok
               ? `insufficient-${payment.reason}`
@@ -46,7 +46,7 @@ export function assessReactions(view: DecisionView) {
     const assessment = assessAbility(view, ability);
     if (reaction.response.kind === 'parry') {
       assessment.weight = threat
-        ? boundedWeight((view.rules?.actionWeight ?? 100) / (1 + assessment.costBps / 5000))
+        ? boundedWeight(view.rules.actionWeight / (1 + assessment.costBps / 5000))
         : 0;
       assessment.successBps = threat ? 5000 : 0;
       assessment.confidenceBps = 1000;

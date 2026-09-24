@@ -1,10 +1,50 @@
 import { AI_RULES, type Definition, type Experience } from '@fantasy/domain/spatial';
 import { sampleManifest } from '@fantasy/samples';
-import { prepareBattle, reference } from '../src/spatial/prepare.ts';
+import {
+  prepareBattle,
+  reference,
+  decisionAbilityOrder,
+  type ResolvedActor,
+} from '../src/spatial/prepare.ts';
 import { sealRevision } from '../src/spatial/manifest-builder.ts';
 import { initialMotion } from '../src/spatial/movement.ts';
 import { SpatialWorld } from '../src/spatial/physics.ts';
 import { emptyMemory, type DecisionView } from '../src/spatial/perception.ts';
+
+/** Keep manually edited test actors consistent with prepared canonical decision order. */
+export const withAbilities = (
+  actor: ResolvedActor,
+  abilities: ResolvedActor['abilities'],
+): ResolvedActor => ({ ...actor, abilities, decisionAbilities: decisionAbilityOrder(abilities) });
+
+/** Explicit defaults for partial synthetic observations; undefined status knowledge remains unknown. */
+export function decisionView(
+  input: Pick<DecisionView, 'self' | 'resources' | 'memory' | 'statusIds'> & Partial<DecisionView>,
+): DecisionView {
+  const stats = input.self.actor.character.stats;
+  return {
+    step: 0,
+    gravityMmPerSecond2: -9807,
+    staminaExhausted: false,
+    used: {},
+    reactionReadyAt: {},
+    canAct: true,
+    canMove: true,
+    activeAbility: undefined,
+    stageOwnsMotion: false,
+    speedBps: 10000,
+    flightStaminaPerSecond: 0,
+    silenced: false,
+    incapacitated: false,
+    ownStatuses: undefined,
+    burnDamage: undefined,
+    waterExtinguishable: false,
+    attack: stats.attack,
+    magicPower: stats.magicPower ?? input.attack ?? stats.attack,
+    rules: AI_RULES,
+    ...input,
+  };
+}
 
 export function withEvaluation(
   view: DecisionView,
@@ -95,7 +135,7 @@ export async function aiFixture(
     world = new SpatialWorld([]);
   const self = initialMotion(world, battle.actors[0]),
     enemy = initialMotion(world, battle.actors[1]);
-  const view: DecisionView = {
+  const view: DecisionView = decisionView({
     self,
     resources: { hp: 100, mp: 100, shield: 0 },
     statusIds: [],
@@ -125,7 +165,7 @@ export async function aiFixture(
     waterExtinguishable: true,
     attack: 20,
     rules: AI_RULES,
-  };
+  });
   return { manifest, battle, world, self, enemy, view, abilities };
 }
 export function impactEvidence(
@@ -158,7 +198,7 @@ export const flyingBody = {
 };
 export async function dodgeFixture() {
   const f = await aiFixture({ character: { body: flyingBody } });
-  const view: DecisionView = {
+  const view: DecisionView = decisionView({
     ...f.view,
     canAct: false,
     step: 5,
@@ -171,7 +211,7 @@ export async function dodgeFixture() {
         projectiles: [incomingArrow(f.self.position)],
       },
     },
-  };
+  });
   return { ...f, view };
 }
 

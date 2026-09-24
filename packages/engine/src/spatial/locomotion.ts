@@ -60,7 +60,7 @@ export function chooseGait(view: DecisionView, selectedCost: number, dodge = fal
       (a) =>
         a.definition.trigger === 'action' &&
         (a.definition.costs.stamina ?? 0) > 0 &&
-        (!a.definition.costs.uses || (view.used?.[a.id] ?? 0) < a.definition.costs.uses) &&
+        (!a.definition.costs.uses || (view.used[a.id] ?? 0) < a.definition.costs.uses) &&
         a.definition.costs.mp <= view.resources.mp &&
         a.definition.costs.hp <= view.resources.hp,
     )
@@ -75,12 +75,9 @@ export function chooseGait(view: DecisionView, selectedCost: number, dodge = fal
           view.memory.observation?.projectiles.length ? m.dodgeStamina : 0,
           view.self.actor.policy.jumpWhenBlocked ? m.jumpStamina : 0,
         ));
-  const horizon = (view.rules?.horizonSteps ?? 50) * 0.02;
+  const horizon = view.rules.horizonSteps * 0.02;
   const runCost = Math.ceil(
-    (((m.run.staminaPerMeter * m.run.speedMmPerSecond) / 1000) *
-      horizon *
-      (view.speedBps ?? 10000)) /
-      10000,
+    (((m.run.staminaPerMeter * m.run.speedMmPerSecond) / 1000) * horizon * view.speedBps) / 10000,
   );
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen;
   const policy = view.self.actor.policy;
