@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium, webkit, expect } from '@playwright/test';
 import { publicationGraph } from '../../apps/api/src/publication-graph.ts';
 import { publicHttp } from '../../apps/api/src/publication-http.ts';
-import { PublicMatchPageSchema, ReplayManifestSchema } from '@fantasy/domain/spatial';
+import { PublicMatchPageSchema, ReplayManifestSchema } from '../../packages/domain/src/spatial/index.ts';
 
 const viewer = 'https://apaapapapapa.github.io/FantasySimulation/';
 const reader = 'https://fantasysimulation-replay-reader.tokyojp.workers.dev/';
