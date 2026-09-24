@@ -1,61 +1,85 @@
-# ADR 0008: 固定計画・結果bundle・公開layout
+# ADR 0008: Fixed plans, result bundles and publication
 
-#10 A1のheadless実行は公開revision、BattleRuntime、Piscina、既存エンジンを共用する。
-[採用済みの計画・容量・再開契約の全文](https://github.com/apaapapapapa/FantasySimulation/blob/e9325df8ca62beba39b85d100265379e4c5ad2fb/docs/adr/0008-headless-batch.md)
-を正本として保持する。以下の要約で既存の上限・耐久性・実行契約は変更しない。
+Headless execution shares published revisions, BattleRuntime, Piscina and the engine.
+The [adopted plan/capacity/resume contract](https://github.com/apaapapapapa/FantasySimulation/blob/e9325df8ca62beba39b85d100265379e4c5ad2fb/docs/adr/0008-headless-batch.md)
+remains authoritative for execution, capacity, deadlines, shards, durability, ownership,
+retry and recovery. This summary changes none of those rules or engine decisions.
 
-## 計画と保存
-
-The linked adopted contract retains all execution, capacity, deadline, shard, atomic
-publication, ownership, retry and recovery rules. No engine behavior changes here.
-
-`batch check`: all planned slots, source/shards/receipts/files; complete=0, incomplete=2,
-invalid=1. Empty indexes mean all pending. Hashes are not authentication. Reading plans
-accepts historical engine IDs; execution still requires current engine/source/digest and
+`batch check` verifies every planned slot, source, shard, receipt and file: exit 0 complete,
+2 incomplete, 1 invalid. No indexes means all pending. Hashes are not authentication.
+Historical engine IDs are readable; execution requires current engine/source/digest and
 reconstruction equality. No historical execution.
 
-## 公開契約 v1（#81小PR1 / #80小PR1）
+## Publication contract v1 (#81 / #80)
 
-Zodと型の正本は`packages/domain/src/spatial/publication.ts`。通信のReplaySource/OpenedReplayは
-webが所有する。公開JSONはschemaVersion=1、未知版/余分なfieldを拒否する。
+Zod/types: `packages/domain/src/spatial/publication.ts`. Platform I/O is excluded;
+web owns ReplaySource/OpenedReplay. Strict schemaVersion=1 rejects unknown versions/fields.
 
-| key（hashはsha256のhex64桁）     | 内容                                                            |
-| -------------------------------- | --------------------------------------------------------------- |
-| `catalog/current.json`           | 現行catalogHashと展開後bytes                                    |
-| `catalog/<hash>.json`            | 前catalogHash（初回null）、setHash/bytesの昇順一覧（最大1,000） |
-| `sets/<setHash>/set.json`        | source・計算条件・件数・ページ参照                              |
-| `sets/<setHash>/<pageHash>.json` | planId/index、slotId順100行（末尾だけ短い、最大10ページ）       |
-| `objects/<objectHash>/...`       | 既存receipt/manifest/chunk/checkpointを元bytesのまま保持        |
+| Key (hash = 64 hexadecimal SHA-256 digits) | Content                                                                 |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| `catalog/current.json`                     | Current catalogHash and decoded bytes                                   |
+| `catalog/<hash>.json`                      | Previous catalogHash (initial null), sorted setHash/bytes, <=1,000 sets |
+| `sets/<setHash>/set.json`                  | Source, conditions, counts, page references                             |
+| `sets/<setHash>/<pageHash>.json`           | planId/index; slotId-sorted rows, 100/page except last, <=10 pages      |
+| `objects/<objectHash>/...`                 | Original receipt/manifest/chunk/checkpoint bytes                        |
 
-新規JSONはcanonicalJsonのUTF-8、改行なし。hashはファイル全体で、自己hash fieldを含めない。
-pageにsetHashを含めず循環を避ける。配信JSONのchecksum/サイズはHTTP展開後bytes、gzipは
-圧縮bytesが対象。既存objectHashは従来どおりreceiptからobjectHashを除いたcanonical body。
-receiptの実bytesのchecksum/サイズとmanifestChecksumを行のPublicReplayRefへ持つ。
-consumerはbytesを検証してからrow→receipt→manifest、set→pageの共有照合関数を使う。
+New JSON is canonical UTF-8 without newline; names hash the entire file without a
+self-hash field. Pages omit setHash to avoid cycles. JSON checksums bind decoded HTTP
+bytes; gzip checksums bind compressed bytes. Existing objectHash still hashes the canonical
+receipt body excluding objectHash. PublicReplayRef stores the receipt's actual byte size/hash
+and manifestChecksum. Verify bytes before shared row/receipt/manifest and set/page bindings.
 
-行はslotId/simulationHash、名前付きcharacter/scenario revision、配置/向き/主体stream、
-ruleset、seed、state/reason、reused、勝敗/終了step、再生参照、records/lastVerifiedStepを持つ。
-complete=full、unresolved/truncated=検証済み範囲だけpartial。failed/pendingは参照/result=null、
-records=0でunavailable。架空IDを作らない。欠落shardもpending行として残す。
-reasonは固定コード。バッチの生エラー文を公開しない。cancelled診断は本bundle形式には含めない。
+Rows carry slot/simulation IDs, named character/scenario revisions, placement/orientation,
+actor RNG streams, ruleset, seed, state/reason/reused, outcome/steps and replay references,
+records/lastVerifiedStep. Complete is full playback; unresolved/truncated is verified partial
+playback. Failed/pending has null result/reference, zero records and unavailable playback.
+Never invent IDs or omit missing-shard pending rows. Reasons are fixed codes; raw batch
+errors and cancelled diagnostics do not enter this bundle contract. New reaction state
+belongs in the existing versioned display records, not copied into list rows.
 
-## ローカルexport
+## Local export
 
-`batch export plan.json public-dir index.json bundle-root [index.json bundle-root ...]`。
-DB・戦闘・Git checkout・ネットワークを使わず、checkと同じ照合を再利用する。
-plan/index/receiptの参照、revision hash、manifest入力と一覧の条件を検証する。
-公開fieldの選択に加え、JSONと展開gzipの絶対パス・秘密field・既知credential形式を検査し拒否。
-任意の秘密文字列を完全検出する保証ではない。管理者が公開可能な定義だけを入力する。
-`.work/`、DB、環境変数、下書き、任意ファイルはコピーしない。
+See [commands](../development/local-usage.md). Export reuses batch check without SQLite,
+engine execution, Git checkout or network. It binds plan/index/receipt references, revision
+hashes, manifest input and row conditions. Schemas allowlist public fields; JSON and expanded
+gzip are additionally scanned for absolute paths, private fields and known credential forms.
+This cannot detect every arbitrary secret: administrators supply only publishable definitions.
+Never copy `.work/`, DBs, environment, drafts or arbitrary files.
 
-全衝突・容量を事前照合後、object→page→set→catalog→currentの順に保存。
-既存bytesが同じなら再利用、違えば停止。同じsimulationのresultHash差も停止。
-同じsetの再exportは世代を進めない。追加setは前世代と過去リンクを保持し、自動削除しない。
-上限は保存8,000,000,000 bytes（pointer staging込み）、100,000ファイル。複数objectは非原子的。
-rootは入力から分離し、symlink/形式外keyを拒否。ローカル単一writer lockとcurrent再照合を使う。
-例外後は再実行可能。強制終了でlockが残った場合、writer停止を確認して管理者がlockを除去する。
-exit 2でも全予定枠を含む未完了exportが確定する。通信成功や正式公開の意味ではない。
+Preflight all collisions/capacity before object -> page -> set -> catalog -> current.
+Reuse identical bytes; stop on different bytes or a different resultHash for one simulation.
+Repeated sets keep their generation. New sets retain prior generations/links; no auto-delete.
+Limits: 8,000,000,000 stored bytes including pointer staging, 100,000 files. Multi-object
+writes are not atomic. Separate output from input; reject symlinks/non-layout keys.
+One local writer lock plus current recheck protects replacement. Rerun after exceptions;
+remove a crash-left lock only after confirming the writer stopped. Exit 2 still commits
+an export with every planned slot; it does not mean complete calculation or remote publication.
 
-Tests use fixed v1.10 records; no engine/SQLite execution. R2/S3, Worker, viewer
-compatibility, Pages, external setup and production acceptance remain #81 follow-ups.
-Static adapter/UI belongs to #79; E2E to #12.
+## R2 transport and operating bounds
+
+The explicit local publisher uses pinned official AWS S3 SDK signing, conditional PUT,
+three maximum attempts and a five-minute deadline. Credentials grant only this bucket's
+object read/write and stay in local `.env`. No upload API is exposed by the reader.
+Before writes: reconcile/export, validate all retained graphs/files/privacy, inventory,
+collision/result identity, source ancestry and viewer format, then capacity/request budgets.
+Upload objects/pages/sets/catalogs, HEAD every referenced file, recheck generation/viewer,
+and replace current with If-Match (first publish If-None-Match). Identical bytes are reused.
+S3 and reader catalog/set/sample-bundle read-back must pass before reporting verified.
+Conditional response loss is explicitly uncertain; rerun the same inputs. No auto-delete;
+explicit prune protects every catalog ancestor and stops if current changes.
+
+R2 remains private. Reader serves only shared PublicKeySchema GET/HEAD/OPTIONS; no list,
+write, signing or engine. JSON is application/json; gzip application/gzip without
+Content-Encoding; no-transform, current max-age=30, immutable max-age=31536000.
+CORS is exact Pages origin. Missing, damaged, unsupported, unavailable and visible
+429/1027 limits have distinct viewer errors; CORS-hidden platform failures stay unavailable.
+
+Cost baseline (2026-09-23): [R2](https://developers.cloudflare.com/r2/pricing/) Standard
+free allowance 10GB-month, 1M Class A/10M Class B monthly, egress free;
+[Workers](https://developers.cloudflare.com/workers/platform/pricing/) Free 100k/day
+shared account-wide. These are allowances, not a guarantee of zero charges.
+Keep publication <=8GB, inspect total account storage/requests and billing alerts before
+routine operation. Stop publication on budget breach or quota errors; never silently upgrade.
+Acceptance records must include actual account plan, retained bytes, upload/Worker requests,
+public URL/build SHA, browser replay/CORS/compression and interruption/republication evidence.
+Static tests alone do not establish external setup or production acceptance.

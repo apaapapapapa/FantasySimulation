@@ -28,6 +28,25 @@ export type PublicationFile = {
 };
 const absent = (error: unknown) => (error as NodeJS.ErrnoException).code === 'ENOENT';
 
+/** Reused for local export and remote collisions; a result hash includes its event/trajectory hashes. */
+export function receiptIdentity(key: string, bytes: Buffer, results: Map<string, string>) {
+  const receipt = BundleReceiptSchema.parse(
+    JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)),
+  );
+  const { objectHash, ...body } = receipt;
+  if (
+    key !== `objects/${publicHashName(objectHash)}/receipt.json` ||
+    sha256(canonicalJson(body)) !== objectHash ||
+    sha256(canonicalJson(receipt.result)) !== receipt.resultHash ||
+    receipt.result.simulationHash !== receipt.simulationHash ||
+    (results.has(receipt.simulationHash) &&
+      results.get(receipt.simulationHash) !== receipt.resultHash)
+  )
+    throw new Error('Existing simulation result conflict');
+  results.set(receipt.simulationHash, receipt.resultHash);
+  return receipt;
+}
+
 /** Public JSON is allowlisted by schemas; free text must not carry local diagnostics or credentials. */
 export function assertPublicData(value: unknown): void {
   if (typeof value === 'string') {
@@ -129,26 +148,11 @@ export async function writePublication(
   const stored = await inventory(root);
   const incoming = new Map<string, string>();
   for (const file of files.filter((f) => f.key.endsWith('/receipt.json'))) {
-    const receipt = BundleReceiptSchema.parse(
-      JSON.parse((await publicationBytes(file)).toString('utf8')),
-    );
-    incoming.set(receipt.simulationHash, receipt.resultHash);
+    receiptIdentity(file.key, await publicationBytes(file), incoming);
   }
   for (const key of stored.keys())
     if (key.endsWith('/receipt.json')) {
-      const receipt = BundleReceiptSchema.parse(
-        JSON.parse((await readBoundedFile(join(root, key), 65536)).toString('utf8')),
-      );
-      const { objectHash, ...body } = receipt;
-      if (
-        key !== `objects/${publicHashName(objectHash)}/receipt.json` ||
-        sha256(canonicalJson(body)) !== objectHash ||
-        sha256(canonicalJson(receipt.result)) !== receipt.resultHash ||
-        receipt.result.simulationHash !== receipt.simulationHash ||
-        (incoming.has(receipt.simulationHash) &&
-          incoming.get(receipt.simulationHash) !== receipt.resultHash)
-      )
-        throw new Error('Existing simulation result conflict');
+      receiptIdentity(key, await readBoundedFile(join(root, key), 65536), incoming);
     }
   const additions: PublicationFile[] = [];
   const keys = new Set<string>();

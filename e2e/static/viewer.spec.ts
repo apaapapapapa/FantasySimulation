@@ -23,6 +23,7 @@ test('static-selection', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('リプレイID', { exact: true })).toHaveText(complete.manifest.id);
   expect(page.url()).toContain(complete.row.slotId.slice(7));
+  await expect(page.getByLabel('現在のstep')).toHaveText('0');
   await page.reload();
   await expect(page.getByLabel('現在のstep')).toHaveText('0');
   await expect(page.getByLabel('リプレイID', { exact: true })).toHaveText(complete.manifest.id);
