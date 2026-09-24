@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Read current main analyses, severity and source locations without mutations
+      - name: Read alerts and exact source without dismissing or suppressing findings
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -37,30 +37,29 @@ jobs:
           const common={owner:'apaapapapapa',repo:'FantasySimulation'};
           const target='945c078b5c612a716cfdadfada942230819f4b6c';
           assert.equal(execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),target);
-          const dir='.generated/harness/codeql-diagnostic';mkdirSync(dir,{recursive:true});
-          const analyses=(await api.request('GET /repos/{owner}/{repo}/code-scanning/analyses',{...common,ref:'refs/heads/main',per_page:30})).data;
-          writeFileSync(dir+'/analyses.json',JSON.stringify(analyses,null,2));
-          console.log('CODEQL_ANALYSES='+JSON.stringify(analyses));
-          const selected=analyses.filter(a=>a.commit_sha===target&&a.tool.name==='CodeQL').slice(0,4);
-          assert(selected.length>0,'No analysis bound to current main');
-          const findings=[];
-          for(const a of selected){
-            const sarif=(await api.request('GET /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}',{...common,analysis_id:a.id,headers:{accept:'application/sarif+json'}})).data;
-            writeFileSync(`${dir}/analysis-${a.id}.json`,JSON.stringify(sarif,null,2));
-            for(const run of sarif.runs??[])for(const result of run.results??[]){
-              const rule=[run.tool.driver,...(run.tool.extensions??[])].flatMap(c=>c.rules??[]).find(r=>r.id===result.ruleId);
-              const locations=(result.locations??[]).map(l=>{const p=l.physicalLocation,uri=p?.artifactLocation?.uri,line=p?.region?.startLine;const safe=typeof uri==='string'&&/^[a-zA-Z0-9_.\/-]+$/.test(uri)&&!uri.startsWith('/')&&!uri.split('/').includes('..');return {uri,line,exists:safe&&existsSync(uri),excerpt:safe&&existsSync(uri)?readFileSync(uri,'utf8').split('\n').slice(Math.max(0,line-5),line+5).join('\n'):null};});
-              findings.push({analysisId:a.id,commit:a.commit_sha,ruleId:result.ruleId,rule:rule?.properties,message:result.message,locations,properties:result.properties,codeFlows:result.codeFlows});
+          const dir='.generated/harness/codeql-alerts';mkdirSync(dir,{recursive:true});
+          const alerts=(await api.request('GET /repos/{owner}/{repo}/code-scanning/alerts',{...common,ref:'refs/heads/main',per_page:100})).data;
+          assert(alerts.length<100,'Alert pagination exceeds diagnostic budget');
+          writeFileSync(dir+'/alerts.json',JSON.stringify(alerts,null,2));
+          const detailed=[];
+          for(const a of alerts){
+            const instances=(await api.request('GET /repos/{owner}/{repo}/code-scanning/alerts/{alert_number}/instances',{...common,alert_number:a.number,ref:'refs/heads/main',per_page:100})).data;
+            for(const i of instances){
+              const uri=i.location?.path;
+              const safe=typeof uri==='string'&&/^[a-zA-Z0-9_.\/-]+$/.test(uri)&&!uri.startsWith('/')&&!uri.split('/').includes('..');
+              const source=safe&&existsSync(uri)?readFileSync(uri,'utf8'):null;
+              if(source)writeFileSync(dir+'/'+uri.replaceAll('/','__'),source);
+              detailed.push({number:a.number,state:a.state,rule:a.rule,instance:i,source,blob:source?execFileSync('git',['hash-object',uri],{encoding:'utf8'}).trim():null});
             }
           }
-          writeFileSync(dir+'/findings.json',JSON.stringify(findings,null,2));
-          console.log('EXACT_CODEQL_FINDINGS='+JSON.stringify(findings));
+          writeFileSync(dir+'/details.json',JSON.stringify(detailed,null,2));
+          console.log('CURRENT_MAIN_CODEQL_ALERTS='+JSON.stringify(detailed));
           NODE
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: activation-81-codeql-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .generated/harness/codeql-diagnostic/
+          name: activation-81-alerts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/codeql-alerts/
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
