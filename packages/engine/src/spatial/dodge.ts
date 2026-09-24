@@ -3,7 +3,7 @@ import { add, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
 import type { DecisionView } from './perception.ts';
 import type { KnownClearance } from './assessment.ts';
 import { resourceReady } from './locomotion.ts';
-import { postureBody, postureDuration, posturePosition } from './posture.ts';
+import { postureBody, postureDuration, posturePosition, postureRequiresWalk } from './posture.ts';
 
 type Direction = Extract<Cognition, { kind: 'decision' }>['directions'][number];
 export type DodgeOption = Direction & {
@@ -21,10 +21,7 @@ export function dodgeOptions(
   const observation = view.memory.observation;
   if (!observation?.projectiles.length) return [];
   const locomotion = view.self.actor.character.movement.locomotion;
-  const gait =
-    view.self.posture && view.self.posture.current !== 'standing'
-      ? locomotion?.walk
-      : locomotion?.run;
+  const gait = postureRequiresWalk(view.self) ? locomotion?.walk : locomotion?.run;
   if (
     !resourceReady(view) ||
     (locomotion && (view.resources.stamina ?? 0) < locomotion.dodgeStamina)

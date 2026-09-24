@@ -3,6 +3,7 @@ import type { DecisionView } from './perception.ts';
 import type { StatusCohort } from './status.ts';
 import { staminaExhausted } from './resources.ts';
 import { length, sub } from './math.ts';
+import { postureRequiresWalk } from './posture.ts';
 
 export type Gait = 'walk' | 'run' | 'slow';
 export function gaitProfile(character: DeepReadonly<Definition<'character'>>, gait: Gait) {
@@ -94,7 +95,7 @@ export function chooseGait(view: DecisionView, selectedCost: number, dodge = fal
         (policy.movement !== 'approach' && distance < preferred - 0.1)));
   const gait: Gait = !resourceReady(view)
     ? 'slow'
-    : urgent && stamina - reserve >= runCost
+    : !postureRequiresWalk(view.self) && urgent && stamina - reserve >= runCost
       ? 'run'
       : 'walk';
   return { gait, reserveStamina: reserve };

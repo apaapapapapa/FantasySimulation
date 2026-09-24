@@ -22,6 +22,9 @@ export const postureDuration = (self: MotionState, posture: Posture) =>
       ? (self.actor.character.postures?.[self.posture.current]?.transitionSteps ?? 0)
       : 0,
   );
+export const postureRequiresWalk = (self: MotionState) =>
+  (self.posture?.current ?? 'standing') !== 'standing' ||
+  (self.posture?.transition?.to ?? 'standing') !== 'standing';
 export const postureSpeed = (self: MotionState) =>
   Math.min(
     !self.posture || self.posture.current === 'standing'

@@ -4,6 +4,7 @@ import { length, sub } from './math.ts';
 import type { MotionIntent, MovedActor } from './movement.ts';
 import { canMaintainFlight, flightRate, gaitProfile, type Gait } from './locomotion.ts';
 import { ResourceBudget, staminaExhausted } from './resources.ts';
+import { postureRequiresWalk } from './posture.ts';
 
 const unit = 1_000_000n;
 const distanceUnits = (metres: number, rate: number) =>
@@ -47,7 +48,7 @@ export function reserveMotion(
     if (!dodgePaid) intent.canMove = false;
   }
   let gait: Gait = ready
-    ? actor.motion.posture?.current !== undefined && actor.motion.posture.current !== 'standing'
+    ? postureRequiresWalk(actor.motion)
       ? 'walk'
       : (actor.decision.gait ?? 'walk')
     : 'slow';

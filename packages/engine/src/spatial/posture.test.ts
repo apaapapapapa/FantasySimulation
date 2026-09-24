@@ -14,6 +14,8 @@ import { runBattle } from './run.ts';
 import { catalogManifest, sampleCatalog } from './catalog.ts';
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';
 import { withTacticalRules } from '../../test-support/tactics.ts';
+import { chooseGait } from './locomotion.ts';
+import { selfView } from './self-view.ts';
 
 beforeAll(initializePhysics);
 it('performs a seeded ground jump against a real projectile without granting flight', async () => {
@@ -78,10 +80,22 @@ it.each(['crouching', 'prone'] as const)(
         },
       };
       f.actor.motion = advancePosture(f.actor.motion, stance, 0, f.world, []);
-      f.actor.motion = advancePosture(f.actor.motion, undefined, 20, f.world, []);
       f.actor.decision.gait = 'run';
       f.actor.intent.speedBps = postureSpeed(f.actor.motion);
       f.actor.intent.jump = true;
+      const startX = f.actor.motion.position.x;
+      for (let step = 0; step < (stance === 'prone' ? 20 : 10); step++) {
+        const { moved } = advanceLocomotion(f, step);
+        expect(moved.jumped).toBe(false);
+      }
+      expect(f.actor.motion.posture?.current).toBe('standing');
+      expect(f.actor.motion.position.x - startX).toBeCloseTo(stance === 'prone' ? 0.16 : 0.2, 4);
+      expect(f.actor.resources.stamina).toBe(100);
+      expect(f.actor.motionClock?.remainder).toBe(stance === 'prone' ? 320000 : 400000);
+      expect(chooseGait(selfView(f.actor, 9, TACTICAL_AI, f.battle.statuses), 0, true)?.gait).toBe(
+        'walk',
+      );
+      f.actor.motion = advancePosture(f.actor.motion, undefined, 20, f.world, []);
       const { plan, moved } = advanceLocomotion(f, 21);
       expect(plan.intent.speedMmPerSecond).toBe(2000);
       expect(plan.intent.speedBps).toBe(stance === 'prone' ? 2000 : 5000);

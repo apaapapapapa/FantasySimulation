@@ -18,7 +18,7 @@ import { assessReactions } from './reaction-assessment.ts';
 import { dodgeOptions } from './dodge.ts';
 import { chooseMovementSlot, dodgeAssessment, passiveAssessment } from './movement-choice.ts';
 import { chooseSearch, type SearchMemory } from './search.ts';
-import { postureAllows } from './posture.ts';
+import { postureAllows, postureRequiresWalk } from './posture.ts';
 import { chooseCover, type TacticalTerrain } from './cover.ts';
 import {
   initialDecisionRandom,
@@ -385,7 +385,7 @@ export function steerPolicy(
   );
   const ready = resourceReady({ ...view, resources: { ...view.resources, stamina } });
   const gait = ready
-    ? view.self.posture?.current !== undefined && view.self.posture.current !== 'standing'
+    ? postureRequiresWalk(view.self)
       ? 'walk'
       : (decision.gait ?? 'walk')
     : 'slow';
