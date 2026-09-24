@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Recollect and assess unchanged agent-reviewed PR
+      - name: Recollect and assess the actual reviewed candidate and corrected non-closing wording
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -37,11 +37,11 @@ jobs:
           import {conversationDigest,assessDelivery} from './scripts/harness/delivery.ts';
           const directory='.generated/harness/107-delivery/';
           const snapshot=JSON.parse(readFileSync(directory+'github-snapshot.json','utf8'));
-          const digest='9ac6aa28d1a594cc7da6704ba61208297a1ed05ee4d31d8025dd7ee608635781';
+          const digest='9719766e7bf668db751d6b7c2bc4a6f2a137ccbd07fbee6d141b18730bde8575';
           assert.equal(conversationDigest(snapshot),digest,'Review inputs changed; agent must rereview');
           assert.equal(snapshot.pull.head.sha,'8e813dcb855f6395dc185e123824eaa2327d7ee0');
           assert.equal(snapshot.pull.base.sha,'945c078b5c612a716cfdadfada942230819f4b6c');
-          const receipt={candidateSha:snapshot.pull.head.sha,conversationDigest:digest,reviewedPaths:['scripts/publication-workflow.test.ts'],completedAt:new Date().toISOString(),method:'self',summary:'Agent reviewed the complete one-file diff and all current discussion. Three explicit negative assertions replace the mixed-anchor regex without relaxing artifact restrictions. Latest-head Codex review completed. Independent clean-source verification passed in run 36023062091. Independent security-extended analysis and unchanged high-critical policy also passed; only its auxiliary artifact upload failed because the requested receipt directory did not exist. This does not treat that auxiliary job as successful or replace required current PR CI.',unresolvedFindings:0,squashTitle:'test(publication): clarify artifact scope assertions for CodeQL (#107)',squashBody:'Refs #81'};
+          const receipt={candidateSha:snapshot.pull.head.sha,conversationDigest:digest,reviewedPaths:['scripts/publication-workflow.test.ts'],completedAt:new Date().toISOString(),method:'self',summary:'Agent reviewed the entire one-file diff and all current discussion, including the revised final sentence avoiding a literal closing keyword/reference. Three explicit assertions preserve artifact restrictions. No production or security-policy changes. Latest-head Codex review completed without findings. Clean-source verification passed in run 36023062091. Extended CodeQL analysis/policy passed; its separate upload-path failure is not treated as a passing auxiliary job.',unresolvedFindings:0,squashTitle:'test(publication): clarify artifact scope assertions for CodeQL (#107)',squashBody:'Refs #81'};
           const result=assessDelivery(snapshot,'pr',receipt);
           writeFileSync(directory+'review.json',JSON.stringify(receipt,null,2));
           writeFileSync(directory+'delivery.json',JSON.stringify(result,null,2));
