@@ -8,6 +8,7 @@ import { readBoundedFile } from './replay-files.ts';
 import { exportPublication } from './publication-export.ts';
 import { publicationDirectory } from './publication-files.ts';
 import { publishPublication, prunePublication, PublicationFailure } from './publication-remote.ts';
+import { restorePublication } from './publication-restore.ts';
 import { PublicationS3 } from './publication-s3.ts';
 import { ancestorOf, publicHttp } from './publication-http.ts';
 
@@ -36,16 +37,17 @@ async function main() {
         files.length % 2 === 0 &&
         files.length <= 128 &&
         !values.confirm) ||
-      (command === 'prune' && !output && !values['dry-run'])
+      (command === 'prune' && !output && !values['dry-run']) ||
+      (command === 'restore' && !output && !values['dry-run'] && !values.confirm)
     )
   )
     throw new Error(
-      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] | prune public-dir [--confirm]',
+      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] | restore new-public-dir | prune public-dir [--confirm]',
     );
   const root = resolve(command === 'publish' ? output! : input),
     lock = root + '.remote-lock';
   await publicationDirectory(resolve(root, '..'), true);
-  await mkdir(lock); // One administrator/process, including explicit orphan cleanup.
+  await mkdir(lock); // One administrator/process, including restore and explicit orphan cleanup.
   let store: PublicationS3 | undefined;
   try {
     if (command === 'publish') {
@@ -64,7 +66,17 @@ async function main() {
       accessKeyId: required('R2_ACCESS_KEY_ID'),
       secretAccessKey: required('R2_SECRET_ACCESS_KEY'),
     });
-    if (command === 'prune')
+    if (command === 'restore')
+      console.log(
+        canonicalJson(
+          await restorePublication(
+            root,
+            store,
+            Number(process.env.PUBLICATION_MAX_RESTORE_BYTES ?? 256_000_000),
+          ),
+        ),
+      );
+    else if (command === 'prune')
       console.log(canonicalJson(await prunePublication(store, values.confirm ?? false)));
     else {
       const viewer = publicHttp(required('PUBLICATION_VIEWER_URL')),
@@ -97,7 +109,7 @@ await main().catch((error: unknown) => {
       message:
         error instanceof PublicationFailure
           ? error.message
-          : 'Publication failed; review local inputs, configuration and network access.',
+          : 'Publication failed; review inputs, runtime configuration and network access.',
     }),
   );
   process.exitCode = 1;
