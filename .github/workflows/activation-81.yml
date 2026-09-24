@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Retrieve exact uploaded findings and checked-out policy
+      - name: Read current main analyses, severity and source locations without mutations
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -38,19 +38,19 @@ jobs:
           const target='945c078b5c612a716cfdadfada942230819f4b6c';
           assert.equal(execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),target);
           const dir='.generated/harness/codeql-diagnostic';mkdirSync(dir,{recursive:true});
-          const source=['scripts/security/codeql.ts','scripts/security/codeql-policy.ts','.github/workflows/security.yml'].map(path=>({path,blob:existsSync(path)?execFileSync('git',['hash-object',path],{encoding:'utf8'}).trim():null,content:existsSync(path)?readFileSync(path,'utf8'):null}));
-          writeFileSync(dir+'/sources.json',JSON.stringify(source,null,2));
-          console.log('ACTUAL_CODEQL_SOURCE='+JSON.stringify(source));
-          const analyses=(await api.request('GET /repos/{owner}/{repo}/code-scanning/analyses',{...common,ref:'refs/heads/main',sarif_id:'de4f98b9-d535-48d5-a15d-59c6ac908ec3',per_page:100})).data;
-          assert(analyses.length>0&&analyses.length<100,'Expected exact uploaded analysis');
+          const analyses=(await api.request('GET /repos/{owner}/{repo}/code-scanning/analyses',{...common,ref:'refs/heads/main',per_page:30})).data;
+          writeFileSync(dir+'/analyses.json',JSON.stringify(analyses,null,2));
+          console.log('CODEQL_ANALYSES='+JSON.stringify(analyses));
+          const selected=analyses.filter(a=>a.commit_sha===target&&a.tool.name==='CodeQL').slice(0,4);
+          assert(selected.length>0,'No analysis bound to current main');
           const findings=[];
-          for(const a of analyses){
-            assert.equal(a.commit_sha,target);
+          for(const a of selected){
             const sarif=(await api.request('GET /repos/{owner}/{repo}/code-scanning/analyses/{analysis_id}',{...common,analysis_id:a.id,headers:{accept:'application/sarif+json'}})).data;
             writeFileSync(`${dir}/analysis-${a.id}.json`,JSON.stringify(sarif,null,2));
             for(const run of sarif.runs??[])for(const result of run.results??[]){
-              const rule=(run.tool.driver.rules??[]).find(r=>r.id===result.ruleId);
-              findings.push({analysisId:a.id,commit:a.commit_sha,ruleId:result.ruleId,level:result.level,message:result.message,rule:rule?{name:rule.name,description:rule.shortDescription,properties:rule.properties}:null,locations:result.locations,properties:result.properties,codeFlows:result.codeFlows});
+              const rule=[run.tool.driver,...(run.tool.extensions??[])].flatMap(c=>c.rules??[]).find(r=>r.id===result.ruleId);
+              const locations=(result.locations??[]).map(l=>{const p=l.physicalLocation,uri=p?.artifactLocation?.uri,line=p?.region?.startLine;const safe=typeof uri==='string'&&/^[a-zA-Z0-9_.\/-]+$/.test(uri)&&!uri.startsWith('/')&&!uri.split('/').includes('..');return {uri,line,exists:safe&&existsSync(uri),excerpt:safe&&existsSync(uri)?readFileSync(uri,'utf8').split('\n').slice(Math.max(0,line-5),line+5).join('\n'):null};});
+              findings.push({analysisId:a.id,commit:a.commit_sha,ruleId:result.ruleId,rule:rule?.properties,message:result.message,locations,properties:result.properties,codeFlows:result.codeFlows});
             }
           }
           writeFileSync(dir+'/findings.json',JSON.stringify(findings,null,2));
