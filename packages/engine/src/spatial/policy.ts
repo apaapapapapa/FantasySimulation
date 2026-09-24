@@ -3,6 +3,7 @@ import {
   compareIds,
   type CandidateAssessment,
   type Cognition,
+  type Posture,
 } from '@fantasy/domain/spatial';
 import { length, mul, sub, unit, ZERO, type Vec3 } from './math.ts';
 import type { MotionIntent } from './movement.ts';
@@ -16,6 +17,9 @@ import { assessAbility, type KnownClearance } from './assessment.ts';
 import { assessReactions } from './reaction-assessment.ts';
 import { dodgeOptions } from './dodge.ts';
 import { chooseMovementSlot, dodgeAssessment, passiveAssessment } from './movement-choice.ts';
+import { chooseSearch, type SearchMemory } from './search.ts';
+import { postureAllows } from './posture.ts';
+import { chooseCover, type TacticalTerrain } from './cover.ts';
 import {
   initialDecisionRandom,
   weightedChoice,
@@ -38,9 +42,18 @@ export type Decision = {
   random?: DecisionRandom;
   gait?: Gait;
   dodge?: boolean;
+  search?: SearchMemory;
+  posture?: Posture;
+  postureUntil?: number;
+  jump?: boolean;
 };
 export const isDodgeDecision = (decision: Decision) =>
   decision.dodge ?? decision.cognition?.selection === 'dodge';
+const vectorUnits = (p: Vec3, scale: number) => ({
+  x: Math.round(p.x * scale),
+  y: Math.round(p.y * scale),
+  z: Math.round(p.z * scale),
+});
 function movementGoal(view: DecisionView, facing: Vec3, flight: boolean): Vec3 | null {
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen,
     policy = view.self.actor.policy;
@@ -64,6 +77,7 @@ export function choosePolicy(
   flight: boolean,
   random: DecisionRandom = initialDecisionRandom(view.self.actor.participant.rngSeed),
   clear: KnownClearance = () => true,
+  terrain?: TacticalTerrain,
 ): Decision {
   const simultaneous = view.rules?.slots === 'simultaneous-v1';
   const reactions = assessReactions(view);
@@ -83,7 +97,7 @@ export function choosePolicy(
   const actor = view.self.actor,
     target = view.memory.observation?.enemy ?? view.memory.lastSeen;
   const toward = target ? sub(target.position, view.self.position) : { ...ZERO };
-  const facing = length(toward) > 1e-12 ? unit(toward) : { ...view.self.facing };
+  let facing = length(toward) > 1e-12 ? unit(toward) : { ...view.self.facing };
   const candidates: CandidateAssessment[] = [],
     excluded: { abilityId: string; reason: string }[] = [];
   // Conditions form a set of admissible uses. Input enumeration and IDs confer no utility bonus.
@@ -104,30 +118,32 @@ export function choosePolicy(
       view.used?.[ability.id] ?? 0,
       !view.staminaExhausted,
     );
-    const reason = view.incapacitated
-      ? 'incapacitated'
-      : view.canAct === false
-        ? 'action-phase'
-        : !readyAbilities.has(ability.id)
-          ? 'cooldown'
-          : !payment.ok
-            ? `insufficient-${payment.reason}`
-            : flight &&
-                !canMaintainFlight(
-                  payment.resources,
-                  view.flightStaminaPerSecond ?? 0,
-                  resourceReady(view),
-                )
-              ? 'flight-reserve'
-              : view.silenced && blockedBySilence(d)
-                ? 'silenced'
-                : !enabled || !conditionMatches(d.condition, view)
-                  ? 'condition'
-                  : !actor.character.stats.actionSpeedBps
-                    ? 'action-speed'
-                    : !inObservedRange(d, view)
-                      ? 'observed-range-or-facing'
-                      : null;
+    const reason = !postureAllows(view.self, d)
+      ? 'posture'
+      : view.incapacitated
+        ? 'incapacitated'
+        : view.canAct === false
+          ? 'action-phase'
+          : !readyAbilities.has(ability.id)
+            ? 'cooldown'
+            : !payment.ok
+              ? `insufficient-${payment.reason}`
+              : flight &&
+                  !canMaintainFlight(
+                    payment.resources,
+                    view.flightStaminaPerSecond ?? 0,
+                    resourceReady(view),
+                  )
+                ? 'flight-reserve'
+                : view.silenced && blockedBySilence(d)
+                  ? 'silenced'
+                  : !enabled || !conditionMatches(d.condition, view)
+                    ? 'condition'
+                    : !actor.character.stats.actionSpeedBps
+                      ? 'action-speed'
+                      : !inObservedRange(d, view)
+                        ? 'observed-range-or-facing'
+                        : null;
     if (reason) {
       excluded.push({ abilityId: ability.id, reason });
       continue;
@@ -139,6 +155,12 @@ export function choosePolicy(
   let directions = dodgeOptions(view, flight, clear);
   if (!simultaneous && directions.some((d) => d.weight > 0)) candidates.push(dodgeAssessment(view));
   let goal = movementGoal(view, facing, flight);
+  const search = chooseSearch(view, random.search);
+  if (search?.goal) {
+    goal = search.goal;
+    const direction = sub(goal, view.self.position);
+    if (length(direction) > 1e-12) facing = unit(direction);
+  }
   if (!candidates.length) candidates.push(passiveAssessment(!!goal));
   const choice = weightedChoice(
       candidates.map((c) => c.weight),
@@ -159,7 +181,21 @@ export function choosePolicy(
     },
   ];
   const nextRandom = { ...random, action: choice.state };
+  let posture: Posture | undefined = view.self.posture ? 'standing' : undefined;
+  let jump = false;
+  let postureUntil: number | undefined;
+  if (search?.draw) nextRandom.search = search.draw.after;
   const ability = actor.abilities.find((a) => a.id === selected.abilityId);
+  const cover = search?.forced
+    ? null
+    : chooseCover(view, terrain, clear, random.cover, ability?.definition ?? view.activeAbility);
+  if (cover) {
+    nextRandom.cover = cover.draw.after;
+    if (cover.selected) {
+      goal = { ...cover.selected.goal, y: view.self.position.y };
+      posture = cover.selected.posture;
+    }
+  }
   const movement =
     simultaneous && view.memory.observation?.projectiles.length
       ? chooseMovementSlot(view, ability, flight, !!goal, random.movement, clear)
@@ -178,6 +214,9 @@ export function choosePolicy(
       selectedDirection = directions[direction.index!]!;
     recordDecisionWeights(directions, direction, view.rules?.minimumCandidateWeightBps);
     goal = selectedDirection.goal;
+    posture = selectedDirection.posture ?? (view.self.posture ? 'standing' : undefined);
+    postureUntil = selectedDirection.postureUntil;
+    jump = selectedDirection.jump ?? false;
     nextRandom.dodge = direction.state;
     draws.push({
       purpose: 'dodge',
@@ -199,9 +238,57 @@ export function choosePolicy(
     goal,
     facing,
     random: nextRandom,
+    ...(search ? { search: search.memory } : {}),
+    ...(posture ? { posture } : {}),
+    ...(postureUntil !== undefined ? { postureUntil } : {}),
+    ...(jump ? { jump: true } : {}),
     ...(allocation ? { gait: dodge ? ('run' as const) : allocation.gait } : {}),
     cognition: {
       kind: 'decision',
+      ...(cover
+        ? {
+            cover: {
+              candidates: cover.candidates,
+              draw: cover.draw,
+              ...(cover.selected
+                ? {
+                    goalMm: vectorUnits(cover.selected.goal, 1000),
+                    posture: cover.selected.posture,
+                  }
+                : {}),
+            },
+          }
+        : {}),
+      ...(search
+        ? {
+            search: {
+              forced: search.forced,
+              waitSteps: search.waitSteps,
+              selection: search.memory.goal?.key ?? 'wait',
+              checkedAt: search.memory.cells.map((c) => c.confirmedAt),
+              goalMm: search.goal ? vectorUnits(search.goal, 1000) : null,
+              cues: search.memory.cues
+                .filter((c) => c.availableAt <= (view.step ?? 0))
+                .map((c) => ({
+                  id: c.id,
+                  sampledAt: c.sampledAt,
+                  availableAt: c.availableAt,
+                  originMm: vectorUnits(c.origin, 1000),
+                  directionBps: vectorUnits(c.direction, 10000),
+                })),
+              candidates: search.candidates,
+              ...(search.draw
+                ? {
+                    draw: {
+                      purpose: 'search' as const,
+                      ...search.draw,
+                      selection: search.memory.goal?.key ?? 'wait',
+                    },
+                  }
+                : {}),
+            },
+          }
+        : {}),
       ...(reactions.estimates.length
         ? { reactions: reactions.estimates, reactionReserve: reactions.reserve }
         : {}),
@@ -228,6 +315,7 @@ export function choosePolicy(
       wounds: target?.wounds ?? 'unknown',
       ...(target?.stage ? { observedStage: { ...target.stage } } : {}),
       ...(target?.reaction ? { observedReaction: { ...target.reaction } } : {}),
+      ...(target?.posture ? { observedPosture: target.posture } : {}),
       ...(target?.statuses && { observedStatuses: copyPublicStatuses(target.statuses) }),
       ...(observation?.enemy &&
         (actor.abilities.some((a) =>
@@ -296,7 +384,11 @@ export function steerPolicy(
       (isDodgeDecision(decision) ? (movement?.dodgeStamina ?? 0) : 0),
   );
   const ready = resourceReady({ ...view, resources: { ...view.resources, stamina } });
-  const gait = ready ? (decision.gait ?? 'walk') : 'slow';
+  const gait = ready
+    ? view.self.posture?.current !== undefined && view.self.posture.current !== 'standing'
+      ? 'walk'
+      : (decision.gait ?? 'walk')
+    : 'slow';
   const profile = gaitProfile(character, gait);
   const speed = options.flight ? character.movement.flySpeedMmPerSecond : profile.speedMmPerSecond;
   const resources =
@@ -330,7 +422,10 @@ export function steerPolicy(
     intent: {
       direction: first ? unit(sub(first.position, view.self.position)) : { ...ZERO },
       facing: decision.facing,
-      jump: !!first && first.mode === 'jump' && view.self.actor.policy.jumpWhenBlocked,
+      jump:
+        view.self.posture?.current !== 'prone' &&
+        (decision.jump === true ||
+          (!!first && first.mode === 'jump' && view.self.actor.policy.jumpWhenBlocked)),
       flight: options.flight,
       canMove: options.canMove,
       speedBps: options.speedBps,

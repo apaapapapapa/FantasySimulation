@@ -9,6 +9,7 @@ import type { AbilityRevision, ActionState, ActorState, MeleeState } from './com
 import { conditionMatches, type DecisionView } from './perception.ts';
 import { inObservedRange } from './attacks.ts';
 import { blockedBySilence } from './categories.ts';
+import { postureAllows } from './posture.ts';
 import type { ResourceBudget } from './resources.ts';
 import type { Journal } from './journal.ts';
 import { admitMotionCost, rejectPair } from './pair-admission.ts';
@@ -209,18 +210,20 @@ export function releaseStage(
   runtime.index = index;
   delete runtime.geometry;
   const definition = action.ability.definition;
-  const reason = view.incapacitated
-    ? 'incapacitated'
-    : view.silenced && blockedBySilence(definition)
-      ? 'silenced'
-      : stage.interruptWhen && conditionMatches(stage.interruptWhen, view)
-        ? 'interrupt-condition'
-        : !conditionMatches(definition.condition, view) ||
-            (stage.startCondition && !conditionMatches(stage.startCondition, view))
-          ? 'start-condition'
-          : stage.attack && !inObservedRange({ ...definition, attack: stage.attack }, view)
-            ? 'observed-range-or-facing'
-            : null;
+  const reason = !postureAllows(actor.motion, definition)
+    ? 'posture'
+    : view.incapacitated
+      ? 'incapacitated'
+      : view.silenced && blockedBySilence(definition)
+        ? 'silenced'
+        : stage.interruptWhen && conditionMatches(stage.interruptWhen, view)
+          ? 'interrupt-condition'
+          : !conditionMatches(definition.condition, view) ||
+              (stage.startCondition && !conditionMatches(stage.startCondition, view))
+            ? 'start-condition'
+            : stage.attack && !inObservedRange({ ...definition, attack: stage.attack }, view)
+              ? 'observed-range-or-facing'
+              : null;
   if (reason) {
     interruptStage(actor, step, journal, 'launch', reason);
     return null;

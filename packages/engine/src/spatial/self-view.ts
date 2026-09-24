@@ -8,6 +8,7 @@ import { knownPeriodicDamage } from './status-risk.ts';
 import { flightRate } from './locomotion.ts';
 import { hasForcedMotion } from './forces.ts';
 import { ownsStageMotion } from './stage-motion.ts';
+import { postureSpeed } from './posture.ts';
 
 /** Own resources and active statuses are proprioception, never a lookup of an opponent. */
 export function selfView(
@@ -60,6 +61,7 @@ export function selfView(
     ownStatuses: active,
     incapacitated: stats.incapacitated,
     canAct: step >= actor.readyAt && !actor.action && !stats.incapacitated,
+    ...(actor.action ? { activeAbility: actor.action.ability.definition } : {}),
     ...(ownsStageMotion(actor.action, step) ? { stageOwnsMotion: true } : {}),
     canMove:
       !hasForcedMotion(actor, step) &&
@@ -71,7 +73,7 @@ export function selfView(
         actor.action.ability.definition.movementWhileCasting === 'stop'
       ),
     silenced: stats.silenced,
-    speedBps: stats.speedBps,
+    speedBps: Math.floor((stats.speedBps * postureSpeed(actor.motion)) / 10000),
     ...damageSource(stats),
     ...(burnDamage === undefined ? {} : { burnDamage }),
     waterExtinguishable: active.some((s) =>

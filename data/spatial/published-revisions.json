@@ -512,6 +512,54 @@
       "id": "standard-reactions-v1",
       "revision": 1,
       "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
+    },
+    {
+      "kind": "character",
+      "id": "posture-archer-v1",
+      "revision": 1,
+      "contentHash": "sha256:47fe005c185430150be08e70032ca2956843c545ce6e8dd00398b300f2e12143"
+    },
+    {
+      "kind": "character",
+      "id": "posture-duelist-v1",
+      "revision": 1,
+      "contentHash": "sha256:a866e6fd292cff362d8e094f86dcc944ad5eb02e125a8ce301265bb405550a35"
+    },
+    {
+      "kind": "policy",
+      "id": "posture-archer-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:2cdad91136d6439d1e4efdbba116246f0a50a6354282af07ef0ba5aaa7e2ac13"
+    },
+    {
+      "kind": "policy",
+      "id": "posture-duelist-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:f95190a5007d28119959e2225e94c383d3f58addaafc2be49a810151ecaded10"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-evaluation-v1",
+      "revision": 1,
+      "contentHash": "sha256:70daee44c0d02f9d9fd535d7d9bbbf60e383193c27296d1a580a578f013ca2b8"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-tactics-v1",
+      "revision": 1,
+      "contentHash": "sha256:b4b4af6be2ef0f4c1ad69d21013b6e0fd5f631b7a9ef61b168050e643bd79f99"
+    },
+    {
+      "kind": "scenario",
+      "id": "cover-surveyed-v1",
+      "revision": 1,
+      "contentHash": "sha256:f5180e682496ed70a0e2eaf304d5b1456bce99648a017a442aed6e8a425242b8"
+    },
+    {
+      "kind": "scenario",
+      "id": "search-observed-v1",
+      "revision": 1,
+      "contentHash": "sha256:f7585f44d9b61781ce7e0bed22afe4e975241971f095dd2daae9d3220a539068"
     }
   ]
 }

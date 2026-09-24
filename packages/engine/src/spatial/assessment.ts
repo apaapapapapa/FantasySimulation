@@ -53,7 +53,7 @@ export function efficacy(
       e.kind === 'impact' &&
       canonicalJson(e.observedStatuses ?? []) === canonicalJson(target?.statuses ?? []) &&
       (e.defense ?? 'physical') === defense &&
-      e.range &&
+      (e.range || (e.impactBand && view.rules?.relativeImpactBps)) &&
       e.basePower > 0 &&
       Math.abs(e.basePower - power) <= Math.max(1, power * 0.2) &&
       e.distanceBand ===
@@ -61,8 +61,18 @@ export function efficacy(
   );
   if (comparable.length) {
     const average =
-      comparable.reduce((n, e) => n + (e.range!.low + e.range!.high) / 2 / e.basePower, 0) /
-      comparable.length;
+      comparable.reduce((n, e) => {
+        if (e.range) return n + (e.range.low + e.range.high) / 2 / e.basePower;
+        const [a, b, c] = view.rules!.relativeImpactBps!;
+        const ranges = {
+          minimal: [0, a],
+          weak: [a, b],
+          normal: [b, c],
+          strong: [c, Math.min(30000, c * 2)],
+        };
+        const range = ranges[e.impactBand!];
+        return n + (range[0]! + range[1]!) / 20000;
+      }, 0) / comparable.length;
     return {
       bps: Math.min(30000, Math.round(average * 10000)),
       confidence: Math.min(9000, comparable.length * 2500),
@@ -98,11 +108,13 @@ function assessSingle(
   const duration = timing?.duration ?? clock?.recoveryUntil ?? 8000,
     cast = timing?.cast ?? clock?.launchAt ?? 8000;
   const burnRisk = Math.min(1, (view.burnDamage ?? 0) / Math.max(1, view.resources.hp));
+  const riskAversion = (20000 - (weights.riskToleranceBps ?? 10000)) / 10000;
+  const costConcern = (weights.resourceConservationBps ?? 10000) / 10000;
   const beforeHitRisk = Math.min(1, (burnRisk * Math.max(1, cast)) / rules.horizonSteps);
   const observedThreat =
     (view.memory.observation?.projectiles.length ?? 0) * 0.15 +
     (target?.action === 'cast' ? 0.25 : target?.action === 'active' ? 0.4 : 0);
-  const exposure = Math.min(1, (observedThreat * duration) / rules.horizonSteps);
+  const exposure = Math.min(1, (observedThreat * duration * riskAversion) / rules.horizonSteps);
   const costBps = clampBps(
     10000 *
       (d.costs.hp / Math.max(1, view.resources.hp) +
@@ -247,7 +259,7 @@ function assessSingle(
   const score =
     ((utility + exploration) * (1 - 0.6 * exposure)) /
     (1 + duration / rules.horizonSteps) /
-    (1 + costBps / 5000);
+    (1 + (costBps * costConcern) / 5000);
   const assessment: CandidateAssessment = {
     key: `ability:${ability.id}`,
     kind: 'ability',
@@ -263,6 +275,7 @@ function assessSingle(
     costBps,
     exploration: Math.round(exploration),
     evidence: [...new Set(evidence)].slice(-32),
+    ...(stateValue.reapplication.length ? { reapplication: stateValue.reapplication } : {}),
     reason: reasons.join('; ').slice(0, 300),
   };
   return { assessment, score };
@@ -352,4 +365,5 @@ function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAs
 export type KnownClearance = (
   from: DeepReadonly<DecisionView['self']['position']>,
   to: DeepReadonly<DecisionView['self']['position']>,
+  body?: DeepReadonly<Definition<'character'>['body']>,
 ) => boolean;

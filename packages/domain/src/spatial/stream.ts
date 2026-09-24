@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { IdSchema, RefSchema, StageContactSchema } from './contracts.ts';
+import { IdSchema, RefSchema, StageContactSchema, PostureSchema, BodySchema } from './contracts.ts';
 import {
   EventSchema,
   OutcomeSchema,
@@ -89,6 +89,13 @@ export const ActorDisplaySchema = z.strictObject({
   velocity: PhysicalVectorSchema,
   facing: PhysicalVectorSchema,
   grounded: z.boolean(),
+  posture: z
+    .strictObject({
+      current: PostureSchema,
+      body: BodySchema,
+      transition: z.strictObject({ to: PostureSchema, completeAt: count }).optional(),
+    })
+    .optional(),
   reactions: z.array(ReactionDisplaySchema).max(160).optional(),
   force: z
     .strictObject({

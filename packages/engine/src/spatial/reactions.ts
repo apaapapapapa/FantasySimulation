@@ -15,6 +15,7 @@ import {
 import type { Journal } from './journal.ts';
 import { ResourceBudget } from './resources.ts';
 import { abilityCategories, blockedBySilence } from './categories.ts';
+import { postureAllows } from './posture.ts';
 import { selfView } from './self-view.ts';
 import { conditionMatches } from './perception.ts';
 import { actionClock } from './attacks.ts';
@@ -163,6 +164,7 @@ export function commitReactiveEffects(
             d.reaction &&
             d.trigger === point &&
             !view.incapacitated &&
+            postureAllows(actor.motion, d) &&
             !(view.silenced && blockedBySilence(d)) &&
             (actor.cooldowns[a.id] ?? 0) <= activationStep &&
             (!d.costs.uses || (actor.used[a.id] ?? 0) < d.costs.uses) &&

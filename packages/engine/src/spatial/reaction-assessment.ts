@@ -3,6 +3,7 @@ import type { ActorState } from './combat-state.ts';
 import { assessAbility, boundedWeight } from './assessment.ts';
 import { conditionMatches, type DecisionView } from './perception.ts';
 import { blockedBySilence } from './categories.ts';
+import { postureAllows } from './posture.ts';
 import { payCost } from './attacks.ts';
 import { resourceReady } from './locomotion.ts';
 
@@ -22,19 +23,21 @@ export function assessReactions(view: DecisionView) {
     const used = view.used?.[ability.id] ?? 0;
     const readyAt = view.reactionReadyAt?.[ability.id] ?? 0;
     const payment = payCost(d, view.resources, used, resourceReady(view));
-    const reason = view.incapacitated
-      ? 'incapacitated'
-      : view.silenced && blockedBySilence(d)
-        ? 'silenced'
-        : readyAt > (view.step ?? 0)
-          ? 'cooldown-or-recovery'
-          : !payment.ok
-            ? `insufficient-${payment.reason}`
-            : !view.self.actor.character.stats.actionSpeedBps
-              ? 'action-speed'
-              : !conditionMatches(d.condition, view)
-                ? 'condition'
-                : 'automatic-trigger; estimate only';
+    const reason = !postureAllows(view.self, d)
+      ? 'posture'
+      : view.incapacitated
+        ? 'incapacitated'
+        : view.silenced && blockedBySilence(d)
+          ? 'silenced'
+          : readyAt > (view.step ?? 0)
+            ? 'cooldown-or-recovery'
+            : !payment.ok
+              ? `insufficient-${payment.reason}`
+              : !view.self.actor.character.stats.actionSpeedBps
+                ? 'action-speed'
+                : !conditionMatches(d.condition, view)
+                  ? 'condition'
+                  : 'automatic-trigger; estimate only';
     const eligible = reason === 'automatic-trigger; estimate only';
     const assessment = assessAbility(view, ability);
     if (reaction.response.kind === 'parry') {

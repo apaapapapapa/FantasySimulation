@@ -26,6 +26,7 @@ import {
 } from './physics.ts';
 import type { ResolvedActor } from './prepare.ts';
 import { bodyCapsule, metres } from './terrain.ts';
+import type { PostureState } from './posture.ts';
 
 export type MotionState = {
   actor: ResolvedActor;
@@ -33,6 +34,7 @@ export type MotionState = {
   velocity: Vec3;
   facing: Vec3;
   grounded: boolean;
+  posture?: PostureState;
   vision?: { rangeMm: number; fovMilliDegrees: number; enabled: boolean; visible: boolean };
 };
 export type MotionIntent = {
@@ -112,6 +114,9 @@ export function initialMotion(world: SpatialWorld, actor: ResolvedActor): Motion
     velocity: { ...ZERO },
     facing: unit(actor.participant.facing),
     grounded: false,
+    ...(actor.character.postures
+      ? { posture: { current: 'standing' as const, standingBody: actor.character.body } }
+      : {}),
   };
   const ground = support(world, state, state.position);
   state.grounded = !!ground && ground.time_of_impact <= CONTACT_TOLERANCE;
@@ -325,6 +330,7 @@ export function moveActors(
     return {
       state: {
         actor: state.actor,
+        ...(state.posture ? { posture: state.posture } : {}),
         position,
         velocity,
         grounded,

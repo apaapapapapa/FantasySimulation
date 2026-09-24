@@ -132,33 +132,27 @@ explicit graph goals retain their levels.
 
 ## 観測と行動方針（G-05）
 
-Upright offsets: +X forward/+Z right, yaw-rotated (vertical facing uses world +X).
-Sight: eye-origin cone, range/FOV/vision LOS independent of attack occlusion.
-Every reactionSteps, freeze position/velocity/facing/time; deliver after the same delay,
-including startup. Lost targets retain lastSeen for memorySteps. AI gets no hidden current/future state.
+Offsets: yaw-rotated +X forward/+Z right; vertical facing uses world +X.
+Sight uses eye cone/range/vision LOS, independently of attack occlusion. Samples every
+reactionSteps freeze position/velocity/facing/time and arrive after that delay, including
+startup. Lost targets retain lastSeen for memorySteps. Hidden/future state stays private.
+Impacts use contact positions/start facing, delayed from resolution; typed reveal exposes one field.
 
-Conditions use own resources/statuses, observed distance/visibility/projectiles, all/any/not.
-G-05 adds observed-wounds/phase/status and relative-position using only the latest delivered
-visible snapshot (not lastSeen). Unknown propagates through not/all/any; only true admits use.
-Status absence means no visible matching status, never absence of hidden states. Relative self
-position uses observed enemy facing: front cosine ≥0.5, behind ≤−0.5, side otherwise;
-above/below require >100mm vertical separation. Coincident/vertical horizontal axes are unknown.
-Decision conditionObservation records observed phase/facing with the existing timestamps.
-Rules ai.appearancePriors maps silhouette/surface/equipment to element estimates:
-order-independent average efficacy, maximum confidence.
-Omission retains the published red/fire and blue/ice priors; [] disables cues. Earth resistance
-is optional (zero when absent); enums expand appearance without per-element AI branches.
-Execution constraints filter candidates; seeded integer weights select them (ADR 0009).
-Movement: approach/keep-distance/evade/hold. Flight uses policy altitude unless dodging;
-lost flight returns to ground. Dodge is left/right, plus up/down in flight. Own geometry/
-acceleration, known terrain and constant-velocity observed bullets constrain weighted directions.
-Equal directions equiprobable; sole direction draws nothing. Physics resolves actual movement.
+Conditions: own resources/statuses, observed distance/visibility/projectiles, all/any/not.
+G-05 wounds/phase/status/relative-position use the latest visible snapshot, never lastSeen.
+Unknown propagates; only true admits use. No visible status does not imply no hidden status.
+Relative position uses enemy facing: front cosine>=0.5, behind<=-0.5, otherwise side;
+above/below needs >100mm. Coincident/vertical horizontal axes are unknown.
+conditionObservation logs phase/facing/times. Appearance priors average efficacy and maximize
+confidence across silhouette/surface/equipment, independent of order. Omission keeps red/fire,
+blue/ice; [] disables cues. Optional earth resistance defaults0; no per-element AI branches.
 
-Appearance/wounds/phase/impacts are delayed; impact sight uses contact positions and start facing,
-with delay from resolution. Exact enemy resources/resistance/unused abilities remain private;
-typed reveal exposes one field. Categories: ability physical/magic/technique/special
-(omission: magic iff MP>0); status buff/debuff/control/damage-over-time/permanent, without duplicates.
-Silence blocks magic start/release; dispel matches ID/category, subject to permanence.
+Feasible candidates use seeded weights (ADR0009). Movement: approach/keep-distance/evade/hold.
+Flight uses policy altitude unless dodging; loss restores ground movement. Dodge uses observed
+constant-velocity bullets, own geometry/acceleration and known terrain; physics decides success.
+Categories: ability physical/magic/technique/special (omitted: magic iff MP>0), status
+buff/debuff/control/damage-over-time/permanent; no duplicates. Silence blocks magic start/release;
+dispel matches ID/category subject to permanence. Further tactics are linked below.
 
 ## 効果と状態の同時解決（3D-06a / G-02 / G-03）
 
@@ -223,6 +217,8 @@ Reasons, weight/total, seed draws and context persist in cognition.
 
 ## 同時選択（#45、spatial-v1.15）
 
+spatial-v1.19の追加は[索敵・姿勢・遮蔽と数値案](tactical-ai.md)を参照。
+
 standard-simultaneous-v1: optional ai.slots=simultaneous-v1 (omission preserves behavior).
 Same observation → action → cost/lock-feasible movement. Dodge competes with ordinary
 movement at actionWeight versus existing dodgeWeight/cost; direction is sampled separately.
@@ -233,14 +229,11 @@ Cast-stop excludes paired dodge. Actual collision/settlement remains authoritati
 movementSlot saves candidates/exclusions/draw; existing cognition/locomotion saves the rest.
 No hidden enemy inputs.
 
-### Optional candidate floor (#45; numeric activation pending)
+### Optional candidate floor (#45)
 
-`ai.minimumCandidateWeightBps?` (0..10000) removes `w` iff
-`w*10000 < max(original weights)*floor` in action/movement/direction draws.
-Equality stays; survivors retain weights; 0/omission preserves legacy selection.
-Explicit floors add `weightBeforeCutoff`; weight/totalWeight describe final probabilities.
-Sole survivors consume no draw. 500 is test-only; attack81/cleanse659 is unchanged.
-Published rules stay unchanged. Approval, new rules ID/version and search integration remain pending.
+ai.minimumCandidateWeightBps (0..10000): discard w iff w*10000 < max(original)*floor.
+Equality/survivor weights stay; omission/0 preserves legacy draws. Explicit floors log
+weightBeforeCutoff and effective weight/totalWeight. See [proposal](tactical-ai.md).
 
 ## 段階攻撃・移動（G-07）
 
@@ -254,40 +247,36 @@ ceil(steps×10000/speed), minimum recovery1. Recovery follows physical active ti
 cooldown starts at release. uses0=unlimited, positive=declaration limit. Insufficient
 HP/MP rejects the whole payment; exact HP-to-zero is legal. No refund after fizzle.
 
-宣言・発射時の射程は観測/記憶上の相手中心と武器起点で確認し、後方への開始を認めない。
-照準は発射境界の身体の向きに固定し、相手の現在位置へ瞬間的に向き直らない。照準誤差は
-発射ごとに主体のPRNGを2回進め、local yaw/pitchへそれぞれ定義範囲の一様誤差を与える。
-誤差0でも2回進める。通常弾には発射後の相手位置を自動注入しない。
+Declaration/release range uses observed/remembered target centre and muzzle; no rear starts.
+Aim freezes launch-boundary facing, never live target position. Each release consumes two
+actor PRNG draws for uniform local yaw/pitch error, even at zero error. Ordinary bullets
+receive no later target positions.
 
-hitscanは発射時点の起点からrangeまでを半径付きで検査し、最初の壁/身体に作用する。
-meleeは半径radiusMmの球を、有効activeStepsの間に武器起点からreachMmまで前進させる
-突きとして定義する。射程上限とreachの小さい方を実行時に使う。方向は発射時に固定し、
-身体の移動折れ線に突きの進行を加えた軌跡を保持する。動く対象との相対sweepで命中を調べる。
-同一instanceは対象へ1区間に最大1回、全有効時間でmaxHitsPerTarget回まで作用する。
-既定の1回は複数stepの接触で重複しない。壁接触はinstanceを終了する。
-
-攻撃の開始重なりは命中として数え、身体移動の「離れる接触は止めない」と区別する。
-壁/身体の接触がepsilon以内なら壁優先。身体中心と武器offsetの間にも遮蔽検査を行い、
-武器だけを壁の向こうへ生成しない。接触時刻は表示/最初の接触選択に使い、HP確定は同区間末尾。
+Hitscan sweeps its radius to range and takes first wall/body. Melee advances a radiusMm
+sphere from muzzle to min(reach,range) over activeSteps, retaining body paths plus thrust.
+Relative sweeps test moving targets; at most one contact/target/interval and maxHitsPerTarget
+per instance (default1, no repeated-step hits). Walls end the instance.
+Initial attack overlap counts as hit, unlike separating body contacts. Within epsilon,
+wall wins body ties. Centre-to-muzzle occlusion prevents spawning beyond walls. Contact
+time chooses first hit/display; HP commits at interval end.
 
 ## 固定step対戦と記録（3D-06c）
 
-`simulate(prepared, budget)`は同期generatorで、呼出し側が次の記録を要求するまで進まない。
-初期表示、必要な境界差分、各20ms区間の折れ線/差分/イベント、終端を出力する。途中でreturn
-してもfinallyでWASM worldを解放する。エンジンにI/O・実時計・Worker番号を渡さない。
-`runBattle`はCLI/fixture用の予算付き収集器であり、本番Workerはgeneratorをbackpressure付きで使う。
+simulate(prepared,budget) is a synchronous pull generator: initial display, optional boundary,
+20ms interval paths/deltas/events, terminal. Early return frees WASM in finally. No I/O,
+wall clock or Worker ID enters the engine. runBattle collects bounded CLI/fixture output;
+Workers consume with backpressure.
 
-境界nは期限切れ→継続効果→敗北判定→遅延観測→AI→宣言/支払い→発射。
-区間[n,n+1)の移動・接触・効果・自然回復を同時確定する。AIは100msごとで、その間は移動指示を
-保持する。飛行権限は次の移動、詠唱の移動禁止は宣言区間から反映。硬直/cooldown終了後の宣言は次のAI境界。
-
-開始条件/資源不足の不発はコスト0で通常の回復時間を待つ。成功宣言は使用回数とコストを消費し、
-発射時の条件/射程不成立でも返金しない。同区間でHP0となっても発射済み効果は取り消さない。
-区間末の同時致死はdraw、片方だけなら直ちにwin。最後の許容区間も解決し、終了境界の継続効果や
-新規宣言は実行しない。落下は環境由来のphysical damageとして同じ防御/耐性/シールドを通す。
-
-battle-startはdirect selfのみ。同じ初期snapshotで条件を満たす群を主体ごとに一括予約し、
-合計不足なら全不発、成功なら支払い・効果を同時解決する。開始状態は境界0の継続効果より先に有効。
+Boundary n: expiry→periodic→defeat→delayed observation→AI→declaration/payment→release.
+Movement/contact/effects/recovery commit together over [n,n+1). AI every100ms retains intent
+between decisions. Flight updates next movement; cast-stop starts at declaration. Recovery/
+cooldown completion permits declaration at the next AI boundary.
+Failed condition/resources costs0 but waits recovery. Successful declaration consumes cost/uses;
+release failure never refunds. Same-interval HP0 does not cancel released effects. Mutual death
+draws, one survivor wins immediately. Resolve the final allowed interval, then no boundary
+periodic/new declaration. Fall damage uses environmental physical defense/resistance/shield.
+Battle-start is direct self: qualify from one initial snapshot, reserve the actor's whole group,
+fail all on shortage, otherwise pay/resolve simultaneously before boundary0 periodic effects.
 
 G-04: spatial-v1.13 / standard-locomotion-v1 changes stamina-only exhaustion movement.
 Retain v1.11/v1.12 definitions/replays; reject old execution.
@@ -325,21 +314,19 @@ Samples stamina-scout-v1/glider-v1: max100, regen3/s, resume20; walk2m/s at2/m,
 run6m/s at6/m, slow0.5m/s free, jump12, dodge8, step10/m. Steady walk nets -1/s, run -33/s;
 Stationary: +3/s. Glider takeoff overrides 8/s to5/s.
 
-境界と区間は独立トランザクション。予算超過/未定義干渉は未確定のコスト・乱数・移動・イベントを
-破棄し、最後の確定表示と理由を返す。入力不正/実装例外をunresolved/drawへ変換しない。
-蓄積上限は`maxEvents/maxBytes/maxFrameBytes`、初期/終端診断は別枠32KiB。
-maxPathNodesは1探索、casts/candidatesは試合累計の上限。statsは実作業量。
-
-イベントは安定ID、記録sequence、step/phase/区間内時刻、親/原因集合、前後資源、厳密なダメージ
-内訳を持つ。sequenceは記録順であり戦闘の先手ではない。同時効果の各内訳のbefore/afterは
-共有snapshotと一括確定値を指す。状態の原因は付与eventから継続効果まで辿れる。
-表示記録は初期状態へのreplacement deltaと各折れ線で、戦闘を再実行せず復元できる。
-
-eventHashは各event、trajectoryHashは各記録からeventsを除いた内容について、数値を規定のf64
-encodingへ変換→canonical JSON→LFの列をSHA-256した値。圧縮checksumとは別物である。
-tsStateHashは資源・状態の原因/期限・行動時計・使用回数・cooldown・観測記憶・乱数を含む。
-physicsStateHashは静的Rapier world snapshot。TS側の身体運動はTS state/trajectoryに含める。
-これらを「途中から再計算を再開できる完全snapshot」とは扱わない。
+Boundary/interval transactions independently roll back uncommitted costs, randomness,
+movement and events on budget/unresolved failure; return the last display and reason.
+Invalid input/implementation exceptions never become draws/unresolved. maxEvents/Bytes/
+FrameBytes are cumulative; control envelopes reserve32KiB. maxPathNodes is per search;
+casts/candidates are per battle, and stats count actual work.
+Events record stable IDs, sequence, step/phase/subtime, parent/causes, resources and exact
+damage attribution. Sequence is recording order, not combat priority; simultaneous
+before/after uses shared snapshots. Status causes trace grants through pulses.
+Replacement display deltas/paths replay without simulation. eventHash hashes events;
+trajectoryHash hashes event-free records: f64 encoding→canonical JSON→LF→SHA256,
+independent of compression checksum. tsStateHash covers resources, status causes/clocks,
+actions/uses/cooldowns, observations and randomness; physicsStateHash is static Rapier.
+Body motion belongs to TS state/trajectory; these are not resumable execution snapshots.
 
 ## 飛翔体・誘導・爆発（3D-07）
 
@@ -351,9 +338,10 @@ physicsStateHashは静的Rapier world snapshot。TS側の身体運動はTS state
 消滅する。寿命切れだけでは爆発しない。片方が倒れた区間末で試合を終了し、残存弾を待たない。
 
 gravityScaleBpsで重力を倍率指定する。誘導は速度の向きを1秒当たりの上限角まで旋回させる。
-launch-onlyは発射時点で得ていた目標位置へ向かう。owner-visibleは所有者へ遅延配信済みの観測だけで
-更新し、観測が非可視になったら現在速度と重力で進む。pendingの将来観測や相手の実位置を参照しない。
-飛翔体の公開観測はID/所有者/位置/速度/可視半径のみで、内部の目標や能力/乱数を混入させない。
+launch-only aims at launch-known positions; owner-visible uses only delivered owner
+observations. Once invisible, continue current velocity/gravity, never pending/live targets.
+Public samples carry ID/owner/position/velocity/radius, plus visible element/attack cue under
+new tactical rules; no private targets, ability definitions or random state.
 
 区間幅dt=0.02秒、角速度ωはradian/s、重力g、現在速さvについて、分割数は
 `ceil(sqrt((abs(g) + 2*(v + abs(g)*dt)*ω) * dt² / (8*curveError)))`、最低1とする。

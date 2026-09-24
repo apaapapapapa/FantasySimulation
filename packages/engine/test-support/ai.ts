@@ -5,6 +5,31 @@ import { initialMotion } from '../src/spatial/movement.ts';
 import { SpatialWorld } from '../src/spatial/physics.ts';
 import { emptyMemory, type DecisionView } from '../src/spatial/perception.ts';
 
+export function withEvaluation(
+  view: DecisionView,
+  edit: Partial<NonNullable<Definition<'policy'>['evaluation']>>,
+): DecisionView {
+  return {
+    ...view,
+    self: {
+      ...view.self,
+      actor: {
+        ...view.self.actor,
+        policy: {
+          ...view.self.actor.policy,
+          evaluation: {
+            attackBps: 10000,
+            survivalBps: 10000,
+            explorationBps: 10000,
+            ...view.self.actor.policy.evaluation,
+            ...edit,
+          },
+        },
+      },
+    },
+  };
+}
+
 /** Seals common AI inputs; assertions and numeric expectations belong to each test. */
 export async function aiFixture(
   edits: {

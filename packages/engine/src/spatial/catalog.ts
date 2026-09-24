@@ -11,6 +11,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { reference, sealRevision } from './prepare.ts';
 import { sampleManifest } from './sample.ts';
+import { addTacticalSamples } from './tactical-samples.ts';
 import {
   observedRules,
   statusRules,
@@ -19,6 +20,7 @@ import {
   simultaneousRules,
   stagedRules,
   motionRules,
+  reactionsRules,
 } from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
@@ -40,6 +42,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
     structuredClone(simultaneousRules),
     structuredClone(stagedRules),
     structuredClone(motionRules),
+    structuredClone(reactionsRules),
   ];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);
@@ -695,6 +698,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
   // Old IDs have two historical DB variants. New references use unambiguous IDs.
   await add('scenario', 'flat-surveyed-v1', flat.definition);
   await add('scenario', 'pillars-surveyed-v1', pillars.definition);
+  await addTacticalSamples(revisions);
   return revisions.sort((a, b) => compareIds(`${a.kind}:${a.id}`, `${b.kind}:${b.id}`));
 }
 
@@ -736,6 +740,7 @@ export async function catalogManifest(
   scenarioId = 'pillars-surveyed-v1',
   maxSteps = 6000,
   seed = 42,
+  rulesId?: string,
 ): Promise<Manifest> {
   const catalog = await sampleCatalog(),
     template = await sampleManifest(maxSteps);
@@ -744,8 +749,17 @@ export async function catalogManifest(
     if (!r) throw new Error('Unknown catalog entry: ' + id);
     return r;
   }
-  const rules = template.revisions.find((r) => r.kind === 'ruleset')!,
-    scenario = get('scenario', scenarioId);
+  const scenario = get('scenario', scenarioId);
+  let rules = template.revisions.find((r) => r.kind === 'ruleset')!;
+  if (rulesId) {
+    const selected = get('ruleset', rulesId);
+    if (selected.kind !== 'ruleset') throw new Error('Expected rules');
+    rules = await sealRevision('ruleset', rulesId, selected.revision, {
+      ...selected.definition,
+      maxSteps,
+    });
+    template.ruleset = reference(rules);
+  }
   const revisions = catalog.map((r) => (r.kind === 'ruleset' && r.id === rules.id ? rules : r));
   template.seed = seed;
   for (const [i, id] of [left, right].entries()) {

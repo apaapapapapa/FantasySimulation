@@ -46,7 +46,13 @@ export function reserveMotion(
     dodgePaid = budget.reserve('dodge', [{ stamina: m.dodgeStamina }]).ok;
     if (!dodgePaid) intent.canMove = false;
   }
-  let gait: Gait = ready ? (actor.decision.gait ?? 'walk') : 'slow';
+  let gait: Gait = ready
+    ? actor.motion.posture?.current !== undefined && actor.motion.posture.current !== 'standing'
+      ? 'walk'
+      : (actor.decision.gait ?? 'walk')
+    : 'slow';
+  if (actor.motion.posture?.current === 'prone' || actor.motion.posture?.transition)
+    intent.jump = false;
   let fixed = 0,
     motionUnits = 0n,
     stepRate = 0;

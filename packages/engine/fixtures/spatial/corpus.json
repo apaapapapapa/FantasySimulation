@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.18",
-    "rulesVersion": "spatial-v1.18",
+    "engineVersion": "spatial-v1.19",
+    "rulesVersion": "spatial-v1.19",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -812,6 +812,86 @@
     "g08-34": {
       "file": "packages/engine/src/spatial/reaction-interference.test.ts",
       "name": "reaction interference and old-cohort settlement scopes before-defeat ancestry to owner 1 despite the opponent reaction wave"
+    },
+    "relative-impact": {
+      "file": "packages/engine/src/spatial/relative-impact.test.ts",
+      "name": "delivers four relative bands with exact boundaries and no finer damage interval"
+    },
+    "evaluation-preferences": {
+      "file": "packages/engine/src/spatial/evaluation-preferences.test.ts",
+      "name": "preserves neutral defaults and changes distributions using only the authored preference"
+    },
+    "search-wait": {
+      "file": "packages/engine/src/spatial/search.test.ts",
+      "name": "requires low delayed sight, revisits old cells and overrides hold at the common waiting limit"
+    },
+    "search-cue": {
+      "file": "packages/engine/src/spatial/search.test.ts",
+      "name": "investigates the last observation before cells and treats incoming cues only as directions"
+    },
+    "search-surveyed": {
+      "file": "packages/engine/src/spatial/search.test.ts",
+      "name": "finds initially hidden ground opponents in pillars-surveyed-v1 and repeats the result"
+    },
+    "search-observed": {
+      "file": "packages/engine/src/spatial/search.test.ts",
+      "name": "finds initially hidden ground opponents in search-observed-v1 and repeats the result"
+    },
+    "posture-body": {
+      "file": "packages/engine/src/spatial/posture.test.ts",
+      "name": "changes the physical capsule after the authored delay, preserves feet and delays posture observation"
+    },
+    "posture-headroom": {
+      "file": "packages/engine/src/spatial/posture.test.ts",
+      "name": "refuses to stand into a ceiling and does not shrink when the transition is incomplete"
+    },
+    "posture-evasion": {
+      "file": "packages/engine/src/spatial/posture.test.ts",
+      "name": "offers ground jump and lowering only when reaction time, resources and ceiling allow"
+    },
+    "posture-jump": {
+      "file": "packages/engine/src/spatial/posture.test.ts",
+      "name": "performs a seeded ground jump against a real projectile without granting flight"
+    },
+    "posture-crouch": {
+      "file": "packages/engine/src/spatial/posture.test.ts",
+      "name": "enforces crouching speed and jump restrictions at the motion boundary"
+    },
+    "posture-prone": {
+      "file": "packages/engine/src/spatial/posture.test.ts",
+      "name": "enforces prone speed and jump restrictions at the motion boundary"
+    },
+    "cover-geometry": {
+      "file": "packages/engine/src/spatial/posture.test.ts",
+      "name": "selects low or high cover using only the provided terrain and estimated enemy"
+    },
+    "cover-boundary": {
+      "file": "packages/engine/src/spatial/posture.test.ts",
+      "name": "never turns an arena floor into cover beyond the public bounds"
+    },
+    "reapplication-history": {
+      "file": "packages/engine/src/spatial/threat-memory.test.ts",
+      "name": "uses delayed own applications, then visible element intervals, with bounded memory"
+    },
+    "reapplication-burn": {
+      "file": "packages/engine/src/spatial/threat-memory.test.ts",
+      "name": "limits burning removal benefit to the observed reapplication interval"
+    },
+    "reapplication-toxin": {
+      "file": "packages/engine/src/spatial/threat-memory.test.ts",
+      "name": "limits toxin removal benefit to the observed reapplication interval"
+    },
+    "reapplication-contact": {
+      "file": "packages/engine/src/spatial/threat-memory.test.ts",
+      "name": "remembers real incoming status contacts and only delayed hit directions (transaction=false)"
+    },
+    "reapplication-transaction": {
+      "file": "packages/engine/src/spatial/threat-memory.test.ts",
+      "name": "remembers real incoming status contacts and only delayed hit directions (transaction=true)"
+    },
+    "tactical-storage": {
+      "file": "apps/api/src/ai-delivery.test.ts",
+      "name": "observed AI delivery through persisted Workers persists tactical samples through API and reproduces posture and search records headlessly"
     }
   },
   "entries": [
@@ -824,7 +904,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:ffcd1ed449067d84f90b7e8d0e97c48f1ec8f2c8ec1eff0c90d0f029fe0a2a6a",
+        "inputHash": "sha256:b168ebc4fbeae10d1e43074afdc359f6fb3ed285344815fe9a777ecb788e4d7f",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -832,9 +912,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-reactions-v1",
+          "id": "standard-evaluation-v1",
           "revision": 1,
-          "contentHash": "sha256:0aa60aa2042bef300644a0e45336696b6060713a24091f5b556b02d8231e897f"
+          "contentHash": "sha256:94386c63135b11380369eb0331b3a371129120c0c872a4384765f0e79a41835c"
         },
         "participants": [
           {
@@ -869,7 +949,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:3915dbf69d3bc50eb1b5e5ae9121f5953a2128ef30e391e9e966e3062e61cd27",
+        "inputHash": "sha256:2df4e202b7374bea39ea69d4e486bb58b711e89c42d92f589aee1fb7d513b3f0",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -877,9 +957,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-reactions-v1",
+          "id": "standard-evaluation-v1",
           "revision": 1,
-          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
+          "contentHash": "sha256:70daee44c0d02f9d9fd535d7d9bbbf60e383193c27296d1a580a578f013ca2b8"
         },
         "participants": [
           {
@@ -914,7 +994,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:64406fd1a04a051d25bb62a5a8c5c7e24463bcc050293d29346030fb7ce417d1",
+        "inputHash": "sha256:40c7da5e5241ebed2ec3b6ff343354f59a1d61a6d031ab97783f30a2355c3592",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -922,9 +1002,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-reactions-v1",
+          "id": "standard-evaluation-v1",
           "revision": 1,
-          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
+          "contentHash": "sha256:70daee44c0d02f9d9fd535d7d9bbbf60e383193c27296d1a580a578f013ca2b8"
         },
         "participants": [
           {
@@ -959,7 +1039,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:cf9036c899d7f98b298e101d594734054205261f0ef33d9d2e9e9850066edc07",
+        "inputHash": "sha256:2234ff8359c31888798eb35f9d4fefc30f75d3afdbb91ae3dd219591b9d30b01",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -967,9 +1047,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-reactions-v1",
+          "id": "standard-evaluation-v1",
           "revision": 1,
-          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
+          "contentHash": "sha256:70daee44c0d02f9d9fd535d7d9bbbf60e383193c27296d1a580a578f013ca2b8"
         },
         "participants": [
           {
@@ -1004,7 +1084,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:1112a04eacc9a16c23471fcf9e3ebbfe59145e66bf608dfb9129111c1b24b667",
+        "inputHash": "sha256:0b955d22a1bc016144ddbf1e3ff2cb1519f02c5245e1b428598af1c6c844f240",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1012,9 +1092,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-reactions-v1",
+          "id": "standard-evaluation-v1",
           "revision": 1,
-          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
+          "contentHash": "sha256:70daee44c0d02f9d9fd535d7d9bbbf60e383193c27296d1a580a578f013ca2b8"
         },
         "participants": [
           {
@@ -1049,7 +1129,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:f11341fc0d53d4d124ca6c53c5a9e89553ac92cf5d7f344306c72bf238124fe0",
+        "inputHash": "sha256:8b39e442c324ded2d2f9faeed3784b0311cf492b5c596d04f6f76f053f38f570",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -1057,9 +1137,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-reactions-v1",
+          "id": "standard-evaluation-v1",
           "revision": 1,
-          "contentHash": "sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6"
+          "contentHash": "sha256:70daee44c0d02f9d9fd535d7d9bbbf60e383193c27296d1a580a578f013ca2b8"
         },
         "participants": [
           {
@@ -1094,7 +1174,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:bb58c08a4e2fb35b6a4854a9a89d1b10351abe89c2262673555b3b5baf75e894",
+        "inputHash": "sha256:3c78ecf1638d8147b09cce3e87a7006072dcb6675b8f5c1a87855abed398426b",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1102,9 +1182,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-reactions-v1",
+          "id": "standard-evaluation-v1",
           "revision": 1,
-          "contentHash": "sha256:76657bb08c2c01b5957232591d0b0bbf233999d19b5846c044e1d6a4ad641e28"
+          "contentHash": "sha256:7ccc2f1792459a68838f6222c2cd8bfa070fe7a3d8780b3d0f525b54c01d6ff8"
         },
         "participants": [
           {
@@ -1516,6 +1596,34 @@
       "title": "G-08: 反応点・受け流し・反撃・上限・原子性・観測・保存",
       "state": "implemented",
       "owner": null
+    },
+    {
+      "id": "tactical-ai",
+      "title": "Issue #45: 相対手応え・再付与・索敵・姿勢・遮蔽・保存",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "relative-impact",
+        "evaluation-preferences",
+        "search-wait",
+        "search-cue",
+        "search-surveyed",
+        "search-observed",
+        "posture-body",
+        "posture-headroom",
+        "posture-evasion",
+        "posture-jump",
+        "posture-crouch",
+        "posture-prone",
+        "cover-geometry",
+        "cover-boundary",
+        "reapplication-history",
+        "reapplication-burn",
+        "reapplication-toxin",
+        "reapplication-contact",
+        "reapplication-transaction",
+        "tactical-storage"
+      ]
     }
   ]
 }
