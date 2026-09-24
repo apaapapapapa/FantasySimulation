@@ -1,0 +1,224 @@
+import { hitscan, inObservedRange, launchDirection, muzzleBlocked } from '../attacks.ts';
+import { add, mul, sub } from '../math.ts';
+import { selfView } from '../self-view.ts';
+import { blockedBySilence } from '../categories.ts';
+import { bodyPoint, conditionMatches } from '../perception.ts';
+import { straight } from '../physics.ts';
+import { isDodgeDecision } from '../policy.ts';
+import { displayProjectile, type ProjectileState } from '../projectiles.ts';
+import { statusDamageSource } from '../status-damage.ts';
+import { interruptStage, releaseStage } from '../stages.ts';
+import { applyStageMotion } from '../stage-motion.ts';
+import { releaseCounters } from '../counter-release.ts';
+import { seenAttack } from '../threat-memory.ts';
+import { postureAllows } from '../posture.ts';
+import { type StepTransaction, actorId } from './step-transaction.ts';
+import { effectsOf } from './step-effects.ts';
+export function releasePhase(tx: StepTransaction) {
+  const { battle, world, work } = tx.context;
+  const {
+    step,
+    journal,
+    effects,
+    resourceBudgets,
+    forcePlans,
+    spawns,
+    aiBoundary,
+    previousMovement,
+  } = tx;
+  const next = tx.next.actors,
+    attacks = tx.next.melees,
+    bullets = tx.next.projectiles,
+    nextLedger = tx.next.ledger;
+  for (const actor of next) {
+    const action = actor.action;
+    if (!action) continue;
+    if (!action.stages && (action.released || action.launchAt !== step)) continue;
+    const releaseView = selfView(actor, step, battle.rules.ai, battle.statuses);
+    const staged = action.stages
+      ? releaseStage(actor, releaseView, step, resourceBudgets.get(actorId(actor))!, journal, {
+          dodge: aiBoundary && isDodgeDecision(actor.decision),
+          previous: previousMovement.get(actorId(actor))!,
+        })
+      : null;
+    if (action.stages && !staged?.ability) continue;
+    if (!staged) action.released = true;
+    const ability = staged?.ability ?? action.ability;
+    const definition = ability.definition;
+    if (
+      !postureAllows(actor.motion, definition) ||
+      (!staged &&
+        (!inObservedRange(definition, releaseView) ||
+          releaseView.incapacitated ||
+          !conditionMatches(definition.condition, releaseView) ||
+          (releaseView.silenced && blockedBySilence(definition))))
+    ) {
+      journal.emit({
+        kind: 'fizzle',
+        step,
+        phase: 'launch',
+        actorId: actorId(actor),
+        abilityId: ability.id,
+        parentEventId: action.cause,
+        ruleId: 'action.release',
+        reason: 'Release condition/range no longer holds; cost is retained',
+      });
+      continue;
+    }
+    const launch = journal.emit({
+      kind: 'launch',
+      step,
+      phase: 'launch',
+      actorId: actorId(actor),
+      abilityId: ability.id,
+      parentEventId: staged?.cause ?? action.cause,
+      ruleId: 'action.release',
+      ...(staged ? { stage: staged.contact } : {}),
+    });
+    if (definition.attack.kind === 'direct') {
+      if (staged) nextLedger.contact(staged.contact, staged.hit, actorId(actor), step);
+      effects.push(...effectsOf(actor, ability, actorId(actor), launch.id, step, staged?.contact));
+      continue;
+    }
+    const enemy = next.find((a) => actorId(a) !== actorId(actor))!;
+    if (battle.rules.ai.reapplication)
+      enemy.memory = seenAttack(
+        world,
+        enemy.motion,
+        actor.motion,
+        definition.effects,
+        launch.id,
+        step,
+        enemy.memory,
+        battle.rules.ai.knowledgeTtlSteps,
+      );
+    const aim = launchDirection(actor.motion.facing, definition.aimErrorMilliDegrees, actor.random);
+    actor.random = aim.random;
+    if (
+      (definition.attack.kind === 'melee' ||
+        definition.attack.kind === 'projectile' ||
+        definition.attack.kind === 'arc' ||
+        definition.attack.kind === 'radial') &&
+      muzzleBlocked(world, actor.motion)
+    ) {
+      journal.emit({
+        kind: 'fizzle',
+        step,
+        phase: 'launch',
+        actorId: actorId(actor),
+        abilityId: ability.id,
+        parentEventId: launch.id,
+        ruleId: `${definition.attack.kind}.muzzle-blocked`,
+      });
+      if (staged) interruptStage(actor, step, journal, 'launch', 'muzzle-blocked');
+      continue;
+    }
+    if (definition.attack.kind === 'hitscan') {
+      work.candidate();
+      const contact = hitscan(
+        world,
+        actor.motion,
+        enemy.motion,
+        aim.direction,
+        definition.rangeMm / 1000,
+        definition.attack.radiusMm / 1000,
+      );
+      if (staged) {
+        const origin = bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset);
+        action.stages!.geometry = {
+          kind: 'ray',
+          radiusMm: definition.attack.radiusMm,
+          segments: straight(
+            origin,
+            contact?.point ?? add(origin, mul(aim.direction, definition.rangeMm / 1000)),
+          ),
+        };
+      }
+      if (contact) {
+        if (contact.kind === 'body' && staged)
+          nextLedger.contact(staged.contact, staged.hit, actorId(enemy), step);
+        const hit = journal.emit({
+          kind: contact.kind === 'body' ? 'hit' : 'fizzle',
+          step,
+          phase: 'contact',
+          actorId: actorId(actor),
+          targetId: contact.kind === 'body' ? actorId(enemy) : null,
+          abilityId: ability.id,
+          parentEventId: launch.id,
+          ruleId: 'hitscan.first-contact',
+          point: contact.point,
+          reason: contact.kind,
+          ...(staged ? { stage: staged.contact } : {}),
+        });
+        if (contact.kind === 'body')
+          effects.push(
+            ...effectsOf(actor, ability, actorId(enemy), hit.id, step, staged?.contact).map(
+              (effect) => ({
+                ...effect,
+                observation: { self: actor.motion, target: enemy.motion },
+              }),
+            ),
+          );
+      }
+    } else if (
+      definition.attack.kind === 'melee' ||
+      definition.attack.kind === 'arc' ||
+      definition.attack.kind === 'radial'
+    ) {
+      attacks.push({
+        id: staged?.id ?? action.id,
+        actorId: actorId(actor),
+        ability,
+        cause: launch.id,
+        launchStep: step,
+        direction: aim.direction,
+        offset: sub(
+          bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
+          actor.motion.position,
+        ),
+        ...statusDamageSource(actor, ability, step),
+        hits: 0,
+        ...(staged ? { stage: staged.contact, ...(staged.hit ? { hit: staged.hit } : {}) } : {}),
+      });
+    } else if (definition.attack.kind === 'projectile') {
+      const target = actor.memory.observation?.enemy ?? actor.memory.lastSeen;
+      const projectile: ProjectileState = {
+        id: `projectile.${staged?.id ?? action.id}`,
+        ownerId: actorId(actor),
+        ...(staged ? { stage: staged.contact, ...(staged.hit ? { hit: staged.hit } : {}) } : {}),
+        ability,
+        cause: launch.id,
+        launchStep: step,
+        position: bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
+        velocity: mul(aim.direction, definition.attack.speedMmPerSecond / 1000),
+        ...statusDamageSource(actor, ability, step),
+        target: target ? { ...target.position } : null,
+      };
+      const spawn = journal.emit({
+        kind: 'projectile-spawn',
+        step,
+        phase: 'launch',
+        entityId: projectile.id,
+        actorId: projectile.ownerId,
+        abilityId: ability.id,
+        parentEventId: launch.id,
+        ruleId: 'projectile.spawn',
+        point: projectile.position,
+      });
+      projectile.cause = spawn.id;
+      bullets.push(projectile);
+      work.projectiles(bullets.length);
+      spawns.push(displayProjectile(projectile));
+    }
+  }
+  for (const actor of next) {
+    const force = forcePlans.get(actorId(actor));
+    if (force?.active) actor.intent.forced = { gravity: force.gravity!, force: force.force };
+    applyStageMotion(actor, step);
+  }
+  effects.push(
+    ...releaseCounters(next, battle, journal, world, step, nextLedger, () => {
+      work.candidate();
+    }),
+  );
+}
