@@ -77,3 +77,6 @@ grants no authority.
 
 Exit codes: 0 required checks passed, 1 failed, 2 incomplete/invalid. Recollect before
 an authorized merge; a snapshot cannot guarantee future repository state.
+Input/collection exceptions write a bounded JSON diagnostic to stderr: command, error
+type/message and optional code. Existing secret redaction applies; stacks/arbitrary objects
+are omitted. Exit 2 and the absence of a success report remain unchanged.

@@ -93,6 +93,26 @@ describe('documentation budgets and navigation', () => {
     }
   });
 
+  it.each([0, 1])('enforces the unchanged total budget at 170000 + %i bytes', (overflow) => {
+    const project = contextRepository();
+    try {
+      let remaining =
+        170000 + overflow - inspectContext(project.root, qualityPaths(project.root)).totalBytes;
+      for (let index = 0; remaining > 0; index++) {
+        const bytes = Math.min(remaining, 32000);
+        writeFileSync(join(project.root, `docs/reserved-${index}.md`), 'x'.repeat(bytes));
+        remaining -= bytes;
+      }
+      const result = inspectContext(project.root, qualityPaths(project.root));
+      expect(result.totalBytes).toBe(170000 + overflow);
+      expect(result.findings).toEqual(
+        overflow ? [{ path: 'all documentation', reason: '170001 bytes exceeds 170000' }] : [],
+      );
+    } finally {
+      project.dispose();
+    }
+  });
+
   it('checks incoming links in unchanged docs after a target is removed', () => {
     const project = contextRepository({
       'docs/guide.md': '[obsolete](obsolete.md)\n[web](https://example.com)\n[anchor](#section)\n',
