@@ -49,16 +49,28 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
         headers: { accept: key.endsWith('.gz') ? 'application/gzip' : 'application/json' },
       });
       const type = key.endsWith('.gz') ? 'application/gzip' : 'application/json';
+      if (!response.ok) {
+        // Cloudflare's platform limit may occur before the Worker runs. If CORS hides it,
+        // fetch rejects and it remains an unavailable response rather than a guessed 1027.
+        const errorBody = await readBounded(
+          response.body ?? new Blob().stream(),
+          16384,
+          'Delivery error',
+        ).catch(() => new Uint8Array());
+        const limit =
+          response.status === 429 ||
+          /\b(?:error\s*:?\s*1027|Error code:\s*1027)\b/i.test(new TextDecoder().decode(errorBody));
+        throw new ReplayLoadError(
+          limit ? 'limit' : response.status === 404 ? 'gone' : 'unavailable',
+          `Public data response ${response.status}: ${key}`,
+        );
+      }
       if (
-        !response.ok ||
         !(response.headers.get('content-type') ?? '').startsWith(type) ||
         (key.endsWith('.gz') && response.headers.has('content-encoding'))
       ) {
         await response.body?.cancel();
-        throw new ReplayLoadError(
-          response.status === 404 ? 'damaged' : 'unavailable',
-          `Public data response ${response.status}: ${key}`,
-        );
+        throw new ReplayLoadError('damaged', `Public data response ${response.status}: ${key}`);
       }
       const value = await readBounded(response.body ?? new Blob().stream(), limit, key);
       signal?.throwIfAborted();

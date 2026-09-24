@@ -109,6 +109,8 @@ it('rejects reverse workspace and builtin dependencies including type-only edges
     ['packages/engine/src/a.ts', 'apps/api/src/b.ts', 'engine-is-headless'],
     ['apps/web/src/a.ts', 'packages/engine/src/b.ts', 'web-is-client'],
     ['apps/api/src/a.ts', 'apps/web/src/b.ts', 'api-does-not-import-web'],
+    ['apps/replay-reader/src/a.ts', 'apps/api/src/b.ts', 'reader-is-read-only-transport'],
+    ['apps/replay-reader/src/a.ts', 'packages/engine/src/b.ts', 'reader-is-read-only-transport'],
   ] as const) {
     const specifier = '../../../' + to;
     const f = fixture({
@@ -122,6 +124,7 @@ it('rejects reverse workspace and builtin dependencies including type-only edges
     'packages/domain/src/a.ts',
     'packages/engine/src/a.ts',
     'apps/web/src/a.ts',
+    'apps/replay-reader/src/a.ts',
   ]) {
     const f = fixture({ [path]: "import {readFileSync} from 'fs'; export const a=readFileSync;" });
     const result = await architecture(f.root, f.paths);
@@ -134,6 +137,7 @@ it('enforces external SDK, server and Rapier boundaries using resolved library m
     ['apps/web/src/a.ts', 'fastify', 'browser-external-boundary'],
     ['packages/engine/src/a.ts', '@dimforge/rapier3d-compat', 'rapier-physics-boundary'],
     ['apps/api/src/a.ts', '@octokit/core', 'development-tools-stay-outside-runtime'],
+    ['apps/replay-reader/src/a.ts', '@aws-sdk/client-s3', 'reader-external-boundary'],
   ] as const) {
     const f = fixture({
       [source]: `import type {X} from '${name}';export type A=X;`,

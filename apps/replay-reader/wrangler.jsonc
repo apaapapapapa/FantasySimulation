@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fantasysimulation-replay-reader",
+  "main": "dist/index.js",
+  "compatibility_date": "2026-09-23",
+  "workers_dev": true,
+  "preview_urls": false,
+  "r2_buckets": [{ "binding": "REPLAYS", "bucket_name": "fantasysimulation-replays" }],
+}

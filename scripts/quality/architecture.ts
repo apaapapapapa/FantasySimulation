@@ -30,7 +30,7 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
   ),
   rule(
     'no-browser-core',
-    { path: '^(packages/domain|apps/web)/' },
+    { path: '^(packages/domain|apps/web|apps/replay-reader)/' },
     { dependencyTypes: ['core'] },
     'Platform builtins do not belong in shared/browser contracts.',
   ),
@@ -71,6 +71,21 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
     { path: '^apps/web/' },
     { path: '^(apps/api/|packages/engine/|scripts/|node:)' },
     'Use shared domain contracts, not server or engine execution.',
+  ),
+  rule(
+    'reader-is-read-only-transport',
+    { path: '^apps/replay-reader/' },
+    { path: '^(apps/(?:api|web)/|packages/engine/|scripts/|node:)' },
+    'The edge reader may use only shared contracts and its read-only R2 binding.',
+  ),
+  rule(
+    'reader-external-boundary',
+    { path: '^apps/replay-reader/' },
+    {
+      path: '(?:^|/)node_modules/',
+      pathNot: '(?:^|/)node_modules/(?:zod|@cloudflare/workers-types)/',
+    },
+    'Only shared validation and official Workers types belong in the reader runtime.',
   ),
   rule(
     'api-does-not-import-web',
