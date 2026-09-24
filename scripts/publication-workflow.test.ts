@@ -1,10 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vite-plus/test';
 
-const workflow = readFileSync(
-  new URL('../.github/workflows/publication.yml', import.meta.url),
-  'utf8',
-);
+const workflowPath = new URL('../.github/workflows/publication.yml', import.meta.url);
+const workflow = readFileSync(workflowPath, 'utf8');
 
 it('keeps publication manual, serialized and bound to the successful main workflow source', () => {
   expect(workflow).toContain('  workflow_dispatch:');
