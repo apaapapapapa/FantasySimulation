@@ -12,6 +12,14 @@ For implementation, fixes, CI recovery and PR delivery, apply
 [fantasy-delivery](.agents/skills/fantasy-delivery/SKILL.md). Read-only requests keep
 their scope. Preserve concurrent work and use small, reviewed changes.
 
+## PC-free operation
+
+The owner instructs Codex/agents from the smartphone ChatGPT app and uses no PC.
+Never require their terminal or local `.env`. Follow [cloud publication](docs/development/cloud-publication.md):
+production R2 keys belong only to the protected Actions Environment, not the agent's
+development environment, chat, source or browser build. Keep PR tests secret-free.
+External setup must be possible in a smartphone browser; do not claim it is complete without evidence.
+
 ## Boundaries
 
 - `apps/web`: React/API client; never import server or SQLite code.

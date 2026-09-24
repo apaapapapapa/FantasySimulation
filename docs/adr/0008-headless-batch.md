@@ -57,9 +57,9 @@ an export with every planned slot; it does not mean complete calculation or remo
 
 ## R2 transport and operating bounds
 
-The explicit local publisher uses pinned official AWS S3 SDK signing, conditional PUT,
+The explicit publisher uses pinned official AWS S3 SDK signing, conditional PUT,
 three maximum attempts and a five-minute deadline. Credentials grant only this bucket's
-object read/write and stay in local `.env`. No upload API is exposed by the reader.
+object read/write. No upload API is exposed by the reader.
 Before writes: reconcile/export, validate all retained graphs/files/privacy, inventory,
 collision/result identity, source ancestry and viewer format, then capacity/request budgets.
 Upload objects/pages/sets/catalogs, HEAD every referenced file, recheck generation/viewer,
@@ -67,6 +67,26 @@ and replace current with If-Match (first publish If-None-Match). Identical bytes
 S3 and reader catalog/set/sample-bundle read-back must pass before reporting verified.
 Conditional response loss is explicitly uncertain; rerun the same inputs. No auto-delete;
 explicit prune protects every catalog ancestor and stops if current changes.
+
+### Cloud-first operation (2026-09-24, user-approved replacement of local-only credentials)
+
+The owner uses the smartphone ChatGPT app, never a PC or local `.env`.
+[Publish replays](../../.github/workflows/publication.yml) is manual-only and uses a
+successful main push CI/ci-gate SHA identical to the workflow source, rechecked after the
+Environment boundary. PRs/forks cannot publish. Calculation/check/export has no production
+secrets. Only allowlisted plan/index/objects pass by same-run immutable artifact ID.
+Bucket-scoped keys live in Environment `r2-publication` (main-only deployment policy),
+not repository-wide secrets, agent development environments, chat, source, logs or Pages.
+Only the publication step receives them. No automatic publish, cleanup or plan upgrade.
+
+`publication restore` recovers every retained generation on a fresh runner before export.
+It requires a new directory, reuses graph/bundle/expanded-privacy verification, bounds reads,
+and rechecks the R2 pointer; errors remove only its newly created incomplete directory.
+The workflow caps restore downloads at 256MB and stops rather than silently expanding.
+Workflow concurrency serializes writers; conditional PUT remains the cross-process guard.
+The workflow requires complete calculations; existing CLI partial-row semantics stay intact.
+User setup is browser-only; see [instructions](../development/cloud-publication.md).
+Reader updates use authorized cloud tooling, not an owner-PC requirement.
 
 R2 remains private. Reader serves only shared PublicKeySchema GET/HEAD/OPTIONS; no list,
 write, signing or engine. JSON is application/json; gzip application/gzip without

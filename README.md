@@ -5,7 +5,13 @@
 ローカル画面で編集・対戦、公開専用画面で保存済みリプレイを観戦できます。
 編集APIは認証のないローカル専用です。公開画面は読取専用のデータ配信を使います。
 
-## 開始
+## PCを使わない運用
+
+スマホのChatGPTアプリからCodex等へ開発を指示し、GitHub Actionsで対戦計算・R2公開を行います。
+ユーザーPCやローカル`.env`は不要です。[初期設定と公開手順](docs/development/cloud-publication.md)を参照してください。
+本番キーはGitHubの公開専用Environmentへ登録し、チャットやCodexの開発環境には渡しません。
+
+## ローカル開発（任意）
 
 Gitと[Vite+](https://viteplus.dev/guide/)を用意して実行します。
 

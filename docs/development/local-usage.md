@@ -1,5 +1,7 @@
 # Local usage
 
+These are optional developer commands, not requirements for the owner. For smartphone-only
+operation, use [cloud publication](cloud-publication.md); do not ask the owner to create a local `.env`.
 Start with [README](../../README.md); pinned versions/scripts are in
 [package.json](../../package.json). Copy `.env.example` to root `.env` only for overrides.
 DB paths are repository-relative. Vite proxies `/api`; restart after changing `API_PORT`.
@@ -21,7 +23,7 @@ All routes below use `/api`.
 | API                                      | Contract                        |
 | ---------------------------------------- | ------------------------------- |
 | `GET /health`                            | Startup/Drizzle health          |
-| `GET /characters`                        | Latest; `limit` <=100, `cursor` |
+| `GET /characters`                        | Latest; limit <=100, cursor    |
 | `GET /characters/{id}?revision=1`        | Revision; default latest        |
 | `GET /rulesets`, `/scenarios`            | Rules/scenarios                 |
 | `GET /revisions/{kind}/{id}/{revision}`  | Fixed definition                |
@@ -83,14 +85,18 @@ exit 0 complete, 2 incomplete, 1 invalid. `.work/` remains private; disk needs o
 limit + work limit +256 MiB. [ADR 0008](../adr/0008-headless-batch.md) owns the contracts.
 Built CLI: `node apps/api/dist/batch.mjs` (arguments relative to current directory).
 
-For R2, keep bucket-scoped Object Read & Write credentials only in local root `.env`:
+R2 publication normally runs through [protected Actions](cloud-publication.md).
+The CLI reads process environment variables, not a mandatory `.env`:
 `R2_ACCOUNT_ID`, `R2_BUCKET=fantasysimulation-replays`, `R2_ACCESS_KEY_ID`,
-`R2_SECRET_ACCESS_KEY`. Never put these in GitHub Secrets, commits, logs or browser builds.
+`R2_SECRET_ACCESS_KEY`. Store production keys in Environment `r2-publication` only;
+never in commits, chat, agent development environments, logs or browser builds.
 Set `PUBLICATION_VIEWER_URL=https://apaapapapapa.github.io/FantasySimulation/` and
 `PUBLICATION_WORKER_URL=https://fantasysimulation-replay-reader.tokyojp.workers.dev/`.
-Fetch main first so the local Git graph contains the deployed viewer SHA.
+The runtime Git graph must contain the deployed viewer SHA (Actions uses full history).
 
 ```sh
+# Fresh runtime only: restore retained data into a directory that does not yet exist.
+vp run publication restore .generated/public
 vp run publication publish .generated/plan.json .generated/public path/to/index.json .generated/output --dry-run
 vp run publication publish .generated/plan.json .generated/public path/to/index.json .generated/output
 vp run publication prune .generated/public
@@ -98,6 +104,9 @@ vp run publication prune .generated/public
 vp run publication prune .generated/public --confirm
 ```
 
+Restore validates all retained data and expanded privacy, refuses existing directories,
+and removes only its own incomplete output on failure. `PUBLICATION_MAX_RESTORE_BYTES`
+defaults to 256MB (caps at 8GB); transport request/deadline bounds also apply.
 Publish runs batch check/export first. One administrator runs publish/cleanup sequentially;
 `public-dir.remote-lock` must be removed manually only after confirming no process remains.
 Interrupted uploads resume with the same inputs. `commit-unknown` or `committed-unverified`
@@ -115,5 +124,5 @@ origin only. Static output has no API/DB/credentials. Data CORS permits the view
 `Public viewer` checks successful main push CI/ci-gate before build and deploy.
 Manual rollback requires a successful main CI run ID and verified main ancestry.
 Reader: `vp run --filter @fantasy/replay-reader build`, then
-`vp run --filter @fantasy/replay-reader deploy` using separately authorized Cloudflare tooling.
-Keep R2 public access disabled; the reader validates GET/HEAD/OPTIONS keys without listing.
+`vp run --filter @fantasy/replay-reader deploy` using separately authorized cloud tooling,
+not the owner's PC. Keep R2 public access disabled; the reader validates GET/HEAD/OPTIONS keys without listing.
