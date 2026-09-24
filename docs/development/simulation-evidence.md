@@ -18,8 +18,9 @@ data, rules, WASM or table changes do not.
   standalone collection runs mapped existing tests via local Vite+/Vitest JSON, reusing assertions.
 - `corpus:identity`: engine builders reconstruct every pinned input/contract.
 - `corpus:repeat`: two real executions compare result/event/trajectory/TS/physics digests.
-- `coverage:<category>`: all mapped tests passed. Missing/renamed/skipped/planned stays unknown;
-  assertions fail. Exit 2/1 respectively; incomplete coverage never passes.
+- `coverage:<category>`: all mapped tests passed. Missing/renamed/skipped required tests stay
+  unknown (exit 2); failed assertions exit 1. Planned categories are optional, remain unknown
+  and are not counted as covered; they do not change an otherwise successful exit code.
 
 results.json holds corpus hash, engine identity, platform/Node, commands and both runs.
 Observed digests are not expected values; owning tests retain independent expectations.
