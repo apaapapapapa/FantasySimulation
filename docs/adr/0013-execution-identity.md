@@ -27,6 +27,10 @@ semantic equivalence: edits within a reachable file can still require a restamp.
   dynamic loading, unsupported module forms or missing inputs fail closed. Traverse
   cycles once; never quietly drop an edge. No HTTP/DB/Web/sample module is permitted
   in the execution closure.
+  Source capture uses Linux `/proc/self/fd` to bind containment to the opened file,
+  then bounds reads on that descriptor; parent-path swaps cannot approve another file.
+  Missing descriptor inspection fails closed. Other capture platforms are unsupported,
+  consistent with current Linux verification; the canonical payload is unchanged.
 - Resolve external runtime dependencies recursively from frozen pnpm importers and
   snapshots, retaining package name, resolved version/peer identity and integrity.
   Initially this is Rapier and domain's Zod. Relevant transitive dependencies are

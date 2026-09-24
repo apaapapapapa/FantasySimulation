@@ -5,7 +5,7 @@ import type { Stats } from 'node:fs';
 export function readBoundedBytes(
   path: string,
   maxBytes = 8 * 1024 * 1024,
-  validateOpened?: (stat: Stats) => void,
+  validateOpened?: (stat: Stats, descriptor: number) => void,
 ): Buffer {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 32 * 1024 * 1024)
     throw new Error('Invalid input budget');
@@ -13,7 +13,7 @@ export function readBoundedBytes(
   try {
     const stat = fstatSync(descriptor);
     if (!stat.isFile() || stat.size > maxBytes) throw new Error('Invalid or oversized input');
-    validateOpened?.(stat);
+    validateOpened?.(stat, descriptor);
     const bytes = Buffer.alloc(maxBytes + 1);
     let size = 0;
     while (size <= maxBytes) {
