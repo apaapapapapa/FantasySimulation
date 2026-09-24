@@ -1,0 +1,151 @@
+name: Publish replays
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful main push CI run for this workflow's source SHA
+        required: true
+        type: string
+      plan_input:
+        description: sample or a committed data/publication/<name>.json input
+        required: true
+        default: sample
+        type: string
+      mode:
+        description: Preview the remote plan or explicitly publish it
+        required: true
+        default: dry-run
+        type: choice
+        options: [dry-run, publish]
+permissions:
+  contents: read
+concurrency:
+  group: r2-publication
+  cancel-in-progress: false
+jobs:
+  prepare:
+    if: >-
+      github.repository == 'apaapapapapa/FantasySimulation' &&
+      github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      artifact-id: ${{ steps.bundle.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/pages-gate
+        id: source
+        with:
+          run-id: ${{ inputs.ci_run_id }}
+      - name: Require the tested workflow source and explicit mode
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          test "$SOURCE_SHA" = "$GITHUB_SHA"
+          case "$MODE" in dry-run|publish) ;; *) exit 1 ;; esac
+      - uses: ./.github/actions/setup-project
+      - name: Calculate and validate without production credentials
+        env:
+          PLAN_INPUT: ${{ inputs.plan_input }}
+        run: |
+          cloud=apps/api/.generated/cloud
+          mkdir -p "$cloud"
+          if [ "$PLAN_INPUT" = sample ]; then
+            vp run batch sample .generated/cloud/input.json
+          elif [[ "$PLAN_INPUT" =~ ^data/publication/[A-Za-z0-9][A-Za-z0-9_-]*\.json$ ]] &&
+               [ -f "$PLAN_INPUT" ] && [ ! -L data ] &&
+               [ ! -L data/publication ] && [ ! -L "$PLAN_INPUT" ]; then
+            cp -- "$PLAN_INPUT" "$cloud/input.json"
+          else
+            echo 'Expected sample or a regular committed data/publication/<name>.json file.' >&2
+            exit 1
+          fi
+          vp run batch plan .generated/cloud/input.json .generated/cloud/plan.json
+          vp run batch run .generated/cloud/plan.json .generated/cloud/output --workers 1 --deadline 600000
+          indexes=("$cloud"/output/indexes/*.json)
+          test "${#indexes[@]}" -eq 1 && test -f "${indexes[0]}"
+          cp -- "${indexes[0]}" "$cloud/index.json"
+          vp run batch check .generated/cloud/plan.json .generated/cloud/index.json .generated/cloud/output
+          vp run batch export .generated/cloud/plan.json .generated/cloud/preview .generated/cloud/index.json .generated/cloud/output
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        id: bundle
+        with:
+          name: replay-input-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/api/.generated/cloud/plan.json
+            apps/api/.generated/cloud/index.json
+            apps/api/.generated/cloud/output/objects/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
+  publish:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    environment: r2-publication
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/pages-gate
+        id: source
+        with:
+          run-id: ${{ inputs.ci_run_id }}
+      - name: Recheck source after the environment gate
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          PREPARED_SHA: ${{ needs.prepare.outputs.sha }}
+          ENABLED: ${{ vars.R2_PUBLICATION_ENABLED }}
+        run: |
+          test "$SOURCE_SHA" = "$GITHUB_SHA"
+          test "$SOURCE_SHA" = "$PREPARED_SHA"
+          test "$ENABLED" = true || { echo 'Configure the r2-publication environment first.' >&2; exit 1; }
+      - uses: ./.github/actions/setup-project
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          artifact-ids: ${{ needs.prepare.outputs.artifact-id }}
+          path: apps/api/.generated/cloud
+          merge-multiple: true
+      - name: Restore retained data and run the existing publisher
+        id: publication
+        env:
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          PUBLICATION_VIEWER_URL: https://apaapapapapa.github.io/FantasySimulation/
+          PUBLICATION_WORKER_URL: https://fantasysimulation-replay-reader.tokyojp.workers.dev/
+          PUBLICATION_MAX_RESTORE_BYTES: '256000000'
+          MODE: ${{ inputs.mode }}
+        run: |
+          test -n "$R2_ACCOUNT_ID" && test -n "$R2_ACCESS_KEY_ID" && test -n "$R2_SECRET_ACCESS_KEY"
+          args=(--require-complete-input)
+          case "$MODE" in dry-run) args+=(--dry-run) ;; publish) ;; *) exit 1 ;; esac
+          vp run publication restore .generated/cloud/public
+          vp run publication publish .generated/cloud/plan.json .generated/cloud/public .generated/cloud/index.json .generated/cloud/output "${args[@]}"
+      - name: Record the publication outcome without secrets
+        if: always()
+        env:
+          MODE: ${{ inputs.mode }}
+          RESULT: ${{ steps.publication.outcome }}
+        run: |
+          case "$MODE:$RESULT" in
+            dry-run:success) outcome='Planned only; no R2 writes.' ;;
+            publish:success) outcome='Published and read-back verified.' ;;
+            *) outcome='Not verified. Inspect the fixed-code reports before retrying.' ;;
+          esac
+          printf '## Replay publication\n\nSource: `%s`\n\n%s\n' "$GITHUB_SHA" "$outcome" >> "$GITHUB_STEP_SUMMARY"
