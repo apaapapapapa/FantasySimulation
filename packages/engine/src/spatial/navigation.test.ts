@@ -1,3 +1,4 @@
+import { decisionView, withAbilities } from '../../test-support/ai.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import type { Definition } from '@fantasy/domain/spatial';
 import { initializePhysics } from './physics.ts';
@@ -269,12 +270,12 @@ describe('bounded body-aware support graphs', () => {
         ...battle.actors[0],
         character: { ...battle.actors[0].character, stamina: { max: 20, recoveryPerSecond: 2 } },
       };
-      const view: DecisionView = {
+      const view: DecisionView = decisionView({
         self: initialMotion(world, actor),
         resources: { hp: 100, mp: 100, shield: 0, stamina: 0 },
         statusIds: [],
         memory: emptyMemory(),
-      };
+      });
       const decision = { abilityId: null, goal, facing: { x: 1, y: 0, z: 0 } };
       const options = { flight: false, canMove: true, speedBps: 10000, maxPathNodes: 30 };
       const exhausted = steerPolicy(view, decision, navigator, options);
@@ -288,7 +289,7 @@ describe('bounded body-aware support graphs', () => {
           options,
         ).navigation?.kind,
       ).toBe('path');
-      const dodgeView: DecisionView = {
+      const dodgeView: DecisionView = decisionView({
         ...view,
         self: {
           ...view.self,
@@ -301,7 +302,7 @@ describe('bounded body-aware support graphs', () => {
           },
         },
         resources: { ...view.resources, stamina: 12 },
-      };
+      });
       const dodge = {
         ...decision,
         gait: 'run' as const,
@@ -322,25 +323,22 @@ describe('bounded body-aware support graphs', () => {
         ).navigation?.kind,
       ).toBe('path');
       const ability = actor.abilities[0]!;
-      const spendingView: DecisionView = {
+      const spendingView: DecisionView = decisionView({
         ...view,
         resources: { ...view.resources, stamina: 20 },
         self: {
           ...view.self,
-          actor: {
-            ...actor,
-            abilities: [
-              {
-                ...ability,
-                definition: {
-                  ...ability.definition,
-                  costs: { ...ability.definition.costs, stamina: 20 },
-                },
+          actor: withAbilities(actor, [
+            {
+              ...ability,
+              definition: {
+                ...ability.definition,
+                costs: { ...ability.definition.costs, stamina: 20 },
               },
-            ],
-          },
+            },
+          ]),
         },
-      };
+      });
       expect(
         steerPolicy(spendingView, { ...decision, abilityId: ability.id }, navigator, options)
           .navigation?.kind,

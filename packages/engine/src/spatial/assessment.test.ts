@@ -3,7 +3,7 @@ import { canonicalJson } from '@fantasy/domain/spatial';
 import { initializePhysics } from './physics.ts';
 import { choosePolicy } from './policy.ts';
 import { assessAbility, efficacy } from './assessment.ts';
-import { aiFixture, impactEvidence } from '../../test-support/ai.ts';
+import { withAbilities, aiFixture, impactEvidence } from '../../test-support/ai.ts';
 import { initialDecisionRandom } from './decision-random.ts';
 
 beforeAll(initializePhysics);
@@ -204,7 +204,7 @@ describe('observed utility distributions', () => {
       };
       const self = {
         ...f.self,
-        actor: { ...f.self.actor, abilities: [ability, ...f.abilities.slice(1)] },
+        actor: withAbilities(f.self.actor, [ability, ...f.abilities.slice(1)]),
       };
       expect(
         choosePolicy({ ...f.view, self, used: { 'choice-0': 1 } }, ready, false).abilityId,

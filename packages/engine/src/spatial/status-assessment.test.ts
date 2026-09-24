@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import type { Definition, Effect } from '@fantasy/domain/spatial';
-import { aiFixture, initialStatus } from '../../test-support/ai.ts';
+import { withAbilities, aiFixture, initialStatus } from '../../test-support/ai.ts';
 import { initializePhysics } from './physics.ts';
 import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
@@ -66,8 +66,7 @@ describe('status transaction forecasts', () => {
       expect(assessAbility(f.view, grant(0, 'enemy')).weight).toBe(0);
       const harmful = grant(3);
       const actor = {
-        ...f.view.self.actor,
-        abilities: [harmful],
+        ...withAbilities(f.view.self.actor, [harmful]),
         policy: {
           ...f.view.self.actor.policy,
           priorities: [{ abilityId: harmful.id, when: { kind: 'always' as const } }],

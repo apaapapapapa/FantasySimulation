@@ -1,5 +1,6 @@
 import {
   abilityEffects,
+  canonicalJson,
   characterLoadout,
   validatePolicyAbilities,
   revisionHash,
@@ -23,7 +24,7 @@ import {
   EngineInputError,
   executionEligibility,
   requireExecutable,
-  rulesExecutionEligibility,
+  requireExecutableRules,
 } from './execution-policy.ts';
 export { revisionHash, revisionReference as reference } from '@fantasy/domain/spatial/execution';
 
@@ -34,6 +35,7 @@ export type ResolvedActor = DeepReadonly<{
   participant: Manifest['participants'][number];
   character: Definition<'character'>;
   abilities: Extract<Revision, { kind: 'ability' }>[];
+  decisionAbilities: Extract<Revision, { kind: 'ability' }>[];
   equipment: Definition<'equipment'>[];
   policy: Definition<'policy'>;
   knownStatuses?: Extract<Revision, { kind: 'status' }>[];
@@ -41,11 +43,25 @@ export type ResolvedActor = DeepReadonly<{
 export type PreparedBattle = DeepReadonly<{
   manifest: Manifest;
   simulationHash: string;
-  rules: Definition<'ruleset'>;
-  scenario: Definition<'scenario'>;
+  rules: Definition<'ruleset'> & {
+    ai: NonNullable<Definition<'ruleset'>['ai']>;
+    forcedSpeedCapMmPerSecond: number;
+  };
+  scenario: Definition<'scenario'> & {
+    terrainKnowledge: NonNullable<Definition<'scenario'>['terrainKnowledge']>;
+  };
   actors: [ResolvedActor, ResolvedActor];
   statuses: Extract<Revision, { kind: 'status' }>[];
 }>;
+/** One canonical ordering per prepared actor; ID ordering remains separate for startup and records. */
+export function decisionAbilityOrder(
+  abilities: ResolvedActor['abilities'],
+): ResolvedActor['decisionAbilities'] {
+  return abilities
+    .map((revision) => ({ revision, key: canonicalJson(revision.definition) }))
+    .sort((a, b) => compareIds(a.key, b.key) || compareIds(a.revision.id, b.revision.id))
+    .map(({ revision }) => revision);
+}
 export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
   requireExecutable(executionEligibility(parseJson(StoredManifestSchema, input)));
   const manifest = parseJson(ManifestSchema, input);
@@ -82,6 +98,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     return {
       participant,
       character,
+      decisionAbilities: decisionAbilityOrder(abilities),
       abilities: abilities.sort((a, b) => compareIds(a.id, b.id)),
       equipment,
       policy,
@@ -94,7 +111,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
   ];
   const scenario = get('scenario', manifest.scenario).definition;
   const rules = get('ruleset', manifest.ruleset).definition;
-  requireExecutable(rulesExecutionEligibility(rules));
+  requireExecutableRules(rules);
   for (const { participant, character } of actors) {
     for (const axis of ['x', 'y', 'z'] as const) {
       const extent = axis === 'y' ? character.body.heightMm / 2 : character.body.radiusMm;
@@ -113,8 +130,8 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     manifest,
     simulationHash: await contentHash(manifest),
     actors,
-    scenario,
-    rules,
+    scenario: { ...scenario, terrainKnowledge: scenario.terrainKnowledge ?? 'observed' },
+    rules: { ...rules, forcedSpeedCapMmPerSecond: rules.forcedSpeedCapMmPerSecond ?? 100000 },
     statuses: manifest.revisions.filter((r) => r.kind === 'status'),
   });
 }

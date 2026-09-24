@@ -151,13 +151,13 @@ describe('one interval budget for physical locomotion', () => {
       expect(f.actor.resources.stamina).toBe(0);
       expect(f.actor.staminaClock?.exhausted).toBe(true);
       recoverActorResources(f.actor, 900, 45, journal);
-      expect(
-        chooseGait(selfView(f.actor, 45, f.battle.rules.ai!, f.battle.statuses), 0)?.gait,
-      ).toBe('slow');
+      expect(chooseGait(selfView(f.actor, 45, f.battle.rules.ai, f.battle.statuses), 0)?.gait).toBe(
+        'slow',
+      );
       recoverActorResources(f.actor, 100, 50, journal);
-      expect(
-        chooseGait(selfView(f.actor, 50, f.battle.rules.ai!, f.battle.statuses), 0)?.gait,
-      ).toBe('walk');
+      expect(chooseGait(selfView(f.actor, 50, f.battle.rules.ai, f.battle.statuses), 0)?.gait).toBe(
+        'walk',
+      );
       expect(f.actor.staminaClock?.exhausted).toBe(false);
     } finally {
       f.world.free();

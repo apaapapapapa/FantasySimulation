@@ -1,5 +1,4 @@
 import {
-  canonicalJson,
   compareIds,
   type CandidateAssessment,
   type Cognition,
@@ -79,7 +78,7 @@ export function choosePolicy(
   clear: KnownClearance = () => true,
   terrain?: TacticalTerrain,
 ): Decision {
-  const simultaneous = view.rules?.slots === 'simultaneous-v1';
+  const simultaneous = view.rules.slots === 'simultaneous-v1';
   const reactions = assessReactions(view);
   const assessmentView = reactions.estimates.length
     ? {
@@ -101,23 +100,14 @@ export function choosePolicy(
   const candidates: CandidateAssessment[] = [],
     excluded: { abilityId: string; reason: string }[] = [];
   // Conditions form a set of admissible uses. Input enumeration and IDs confer no utility bonus.
-  const abilities = [...actor.abilities].sort(
-    (a, b) =>
-      compareIds(canonicalJson(a.definition), canonicalJson(b.definition)) ||
-      compareIds(a.id, b.id),
-  );
+  const abilities = actor.decisionAbilities;
   for (const ability of abilities) {
     const d = ability.definition;
     if (d.trigger !== 'action') continue;
     const enabled = actor.policy.priorities.some(
       (p) => p.abilityId === ability.id && conditionMatches(p.when, view),
     );
-    const payment = payCost(
-      d,
-      view.resources,
-      view.used?.[ability.id] ?? 0,
-      !view.staminaExhausted,
-    );
+    const payment = payCost(d, view.resources, view.used[ability.id] ?? 0, !view.staminaExhausted);
     const reason = !postureAllows(view.self, d)
       ? 'posture'
       : view.incapacitated
@@ -131,7 +121,7 @@ export function choosePolicy(
               : flight &&
                   !canMaintainFlight(
                     payment.resources,
-                    view.flightStaminaPerSecond ?? 0,
+                    view.flightStaminaPerSecond,
                     resourceReady(view),
                   )
                 ? 'flight-reserve'
@@ -165,10 +155,10 @@ export function choosePolicy(
   const choice = weightedChoice(
       candidates.map((c) => c.weight),
       random.action,
-      view.rules?.minimumCandidateWeightBps,
+      view.rules.minimumCandidateWeightBps,
     ),
     selected = candidates[choice.index!]!;
-  recordDecisionWeights(candidates, choice, view.rules?.minimumCandidateWeightBps);
+  recordDecisionWeights(candidates, choice, view.rules.minimumCandidateWeightBps);
   for (const candidate of candidates) candidate.totalWeight = choice.total;
   const eligible = candidates.filter((c) => c.weight > 0);
   const draws: Extract<Cognition, { kind: 'decision' }>['draws'] = [
@@ -209,10 +199,10 @@ export function choosePolicy(
     const direction = weightedChoice(
         directions.map((d) => d.weight),
         random.dodge,
-        view.rules?.minimumCandidateWeightBps,
+        view.rules.minimumCandidateWeightBps,
       ),
       selectedDirection = directions[direction.index!]!;
-    recordDecisionWeights(directions, direction, view.rules?.minimumCandidateWeightBps);
+    recordDecisionWeights(directions, direction, view.rules.minimumCandidateWeightBps);
     goal = selectedDirection.goal;
     posture = selectedDirection.posture ?? (view.self.posture ? 'standing' : undefined);
     postureUntil = selectedDirection.postureUntil;
@@ -268,7 +258,7 @@ export function choosePolicy(
               checkedAt: search.memory.cells.map((c) => c.confirmedAt),
               goalMm: search.goal ? vectorUnits(search.goal, 1000) : null,
               cues: search.memory.cues
-                .filter((c) => c.availableAt <= (view.step ?? 0))
+                .filter((c) => c.availableAt <= view.step)
                 .map((c) => ({
                   id: c.id,
                   sampledAt: c.sampledAt,
@@ -392,7 +382,7 @@ export function steerPolicy(
   const profile = gaitProfile(character, gait);
   const speed = options.flight ? character.movement.flySpeedMmPerSecond : profile.speedMmPerSecond;
   const resources =
-    movement || character.stamina || (view.flightStaminaPerSecond ?? 0) > 0
+    movement || character.stamina || view.flightStaminaPerSecond > 0
       ? {
           speedMmPerSecond: (speed * options.speedBps) / 10000,
           stamina,
@@ -400,7 +390,7 @@ export function steerPolicy(
           walkPerMeter: profile.staminaPerMeter,
           jumpStamina: movement?.jumpStamina ?? 0,
           stepPerMeter: movement?.stepStaminaPerMeter ?? 0,
-          flightPerSecond: view.flightStaminaPerSecond ?? 0,
+          flightPerSecond: view.flightStaminaPerSecond,
         }
       : undefined;
   const navigation =

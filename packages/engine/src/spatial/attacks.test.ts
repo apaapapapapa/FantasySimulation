@@ -1,3 +1,4 @@
+import { decisionView } from '../../test-support/ai.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import {
   actionClock,
@@ -73,12 +74,12 @@ describe('action clocks and attack geometry', () => {
         velocity: { x: 0, y: 0, z: 0 },
         step: 0,
       };
-      const view = {
+      const view = decisionView({
         self: owner,
         memory: { ...emptyMemory(), lastSeen: observed },
         resources: { hp: 100, mp: 100, shield: 0 },
         statusIds: [],
-      };
+      });
       expect(inObservedRange(ability, view)).toBe(true);
       expect(inObservedRange(ability, { ...view, memory: emptyMemory() })).toBe(false);
       expect(

@@ -321,7 +321,7 @@ function rememberApplications(
   incoming: readonly EffectApplication[],
   { battle, activationStep }: EffectContext,
 ) {
-  if (!battle.rules.ai?.reapplication) return;
+  if (!battle.rules.ai.reapplication) return;
   for (const change of changes) {
     if (change.kind !== 'apply' && change.kind !== 'refresh') continue;
     const cause = incoming.find(

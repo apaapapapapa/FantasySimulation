@@ -2,9 +2,76 @@ import { describe, expect, it } from 'vite-plus/test';
 import { contentHash, type Revision } from '@fantasy/domain/spatial';
 import { sampleManifest } from '@fantasy/samples';
 import { prepareBattle, reference, revisionHash } from './prepare.ts';
-import { sealRevision } from './manifest-builder.ts';
+import { sealRevision, ManifestBuilder } from './manifest-builder.ts';
 
 describe('immutable spatial manifest resolution', () => {
+  it('normalizes execution defaults while retaining the saved definitions and their references', async () => {
+    const input = await sampleManifest();
+    const rules = input.revisions.find((revision) => revision.kind === 'ruleset')!;
+    const scenario = input.revisions.find((revision) => revision.kind === 'scenario')!;
+    const ruleDefinition = structuredClone(rules.definition);
+    const scenarioDefinition = structuredClone(scenario.definition);
+    delete ruleDefinition.forcedSpeedCapMmPerSecond;
+    delete scenarioDefinition.terrainKnowledge;
+    const manifest = await ManifestBuilder.relink(input, [
+      { from: rules, to: await sealRevision('ruleset', rules.id, rules.revision, ruleDefinition) },
+      {
+        from: scenario,
+        to: await sealRevision('scenario', scenario.id, scenario.revision, scenarioDefinition),
+      },
+    ]);
+    const battle = await prepareBattle(manifest);
+    expect(battle.rules.forcedSpeedCapMmPerSecond).toBe(100000);
+    expect(battle.scenario.terrainKnowledge).toBe('observed');
+    expect(battle.rules.ai).toEqual(ruleDefinition.ai);
+    expect(battle.manifest.ruleset).toEqual(manifest.ruleset);
+    expect(battle.manifest.scenario).toEqual(manifest.scenario);
+    expect(
+      battle.manifest.revisions.find((revision) => revision.kind === 'ruleset')?.definition,
+    ).toEqual(ruleDefinition);
+    expect(
+      battle.manifest.revisions.find((revision) => revision.kind === 'scenario')?.definition,
+    ).toEqual(scenarioDefinition);
+  });
+  it('precomputes canonical decision order independently of the ID order used for records', async () => {
+    const input = await sampleManifest();
+    const old = input.revisions.find((revision) => revision.kind === 'ability')!;
+    const alpha = await sealRevision('ability', 'alpha', 1, {
+      ...old.definition,
+      attack: { kind: 'hitscan', radiusMm: 20 },
+    });
+    const zeta = await sealRevision('ability', 'zeta', 1, {
+      ...old.definition,
+      attack: { kind: 'hitscan', radiusMm: 100 },
+    });
+    const policy = input.revisions.find((revision) => revision.kind === 'policy')!;
+    const character = input.revisions.find((revision) => revision.kind === 'character')!;
+    input.revisions.push(zeta);
+    const manifest = await ManifestBuilder.relink(input, [
+      { from: old, to: alpha },
+      {
+        from: policy,
+        to: await sealRevision('policy', policy.id, 1, {
+          ...policy.definition,
+          priorities: [
+            { abilityId: 'alpha', when: { kind: 'always' } },
+            { abilityId: 'zeta', when: { kind: 'always' } },
+          ],
+        }),
+      },
+      {
+        from: character,
+        to: await sealRevision('character', character.id, 1, {
+          ...character.definition,
+          abilities: [reference(alpha), reference(zeta)],
+        }),
+      },
+    ]);
+    const actor = (await prepareBattle(manifest)).actors[0];
+    expect(actor.abilities.map((ability) => ability.id)).toEqual(['alpha', 'zeta']);
+    expect(actor.decisionAbilities.map((ability) => ability.id)).toEqual(['zeta', 'alpha']);
+    expect(Object.isFrozen(actor.decisionAbilities)).toBe(true);
+  });
   it('seals the validated snapshot even when the caller edits its definition during hashing', async () => {
     const manifest = await sampleManifest();
     const definition = structuredClone(

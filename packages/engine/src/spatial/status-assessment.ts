@@ -13,9 +13,9 @@ export function assessStatusEffects(
   view: DecisionView,
   effects: readonly DeepReadonly<Effect>[],
   target: 'self' | 'enemy',
-  launchStep = view.step ?? 0,
+  launchStep = view.step,
 ) {
-  const horizon = view.rules?.horizonSteps ?? 50;
+  const horizon = view.rules.horizonSteps;
   const own = view.ownStatuses ?? [];
   const observed = (view.memory.observation?.enemy ?? view.memory.lastSeen)?.statuses ?? [];
   const definitions = view.self.actor.knownStatuses ?? [];

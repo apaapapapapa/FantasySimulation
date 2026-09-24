@@ -14,7 +14,7 @@ describe('resource-aware decisions and full matches', () => {
     const f = await locomotionFixture();
     try {
       const unseen = choosePolicy(
-        selfView(f.actor, 0, f.battle.rules.ai!, f.battle.statuses),
+        selfView(f.actor, 0, f.battle.rules.ai, f.battle.statuses),
         new Set(),
         false,
       );
@@ -37,7 +37,7 @@ describe('resource-aware decisions and full matches', () => {
       const decide = (stamina: number) => {
         f.actor.resources.stamina = stamina;
         return choosePolicy(
-          selfView(f.actor, 0, f.battle.rules.ai!, f.battle.statuses),
+          selfView(f.actor, 0, f.battle.rules.ai, f.battle.statuses),
           new Set(),
           false,
         );

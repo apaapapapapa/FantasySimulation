@@ -156,7 +156,7 @@ export function commitReactiveEffects(
     for (const actor of [...actors].sort((a, b) => compareIds(idOf(a), idOf(b)))) {
       if (!alive.has(idOf(actor)) || (point === 'before-defeat' && actor.resources.hp > 0))
         continue;
-      const view = selfView(actor, step, battle.rules.ai!, battle.statuses);
+      const view = selfView(actor, step, battle.rules.ai, battle.statuses);
       const eligible = actor.motion.actor.abilities
         .filter((a) => {
           const d = a.definition;

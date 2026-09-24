@@ -29,7 +29,7 @@ export function releaseCounters(
       if (reaction.state !== 'queued' || reaction.readyAt > step) continue;
       const ability = actor.motion.actor.abilities.find((a) => a.id === reaction.abilityId)!;
       const definition = ability.definition;
-      const view = selfView(actor, step, battle.rules.ai!, battle.statuses);
+      const view = selfView(actor, step, battle.rules.ai, battle.statuses);
       const enemy = actors.find((a) => a.motion.actor.participant.actorId === reaction.targetId)!;
       const valid =
         actor.resources.hp > 0 &&
