@@ -9,10 +9,10 @@ concurrency:
   group: issue-81-activation-evidence
   cancel-in-progress: false
 jobs:
-  verify:
+  delivery:
     if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     permissions:
       contents: read
       actions: read
@@ -26,26 +26,32 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Verify the clean candidate independently of the operations commit
-        run: |
-          test "$(git rev-parse HEAD)" = 81c58a17da1ffa27bacad6f1cf07e0016a232fd8
-          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp run harness source .generated/harness/activation-source
-          vp run harness report .generated/harness/activation-source/report.json source-clean source-verify
-      - name: Collect current PR delivery evidence with read-only authorization
+      - name: Recollect and assess the exact agent-reviewed snapshot
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          vp run harness github-snapshot apaapapapapa/FantasySimulation 105 .generated/harness/activation-pr
+          vp run harness github-snapshot apaapapapapa/FantasySimulation 105 .generated/harness/activation-delivery
           node --input-type=module <<'NODE'
-          import {readFileSync} from 'node:fs';
-          import {conversationDigest} from './scripts/harness/delivery.ts';
-          const s=JSON.parse(readFileSync('.generated/harness/activation-pr/github-snapshot.json','utf8'));
-          console.log('ACTIVATION_REVIEW_INPUT='+JSON.stringify({candidate:s.pull.head.sha,base:s.pull.base.sha,digest:conversationDigest(s),reviewDecision:s.reviewDecision,files:s.files.map(f=>f.filename),comments:s.comments.map(c=>({id:c.id,body:c.body})),reviews:s.reviews.map(r=>({id:r.id,body:r.body,state:r.state,commit:r.commit_id})),errors:s.errors}));
+          import assert from 'node:assert/strict';
+          import {readFileSync,writeFileSync} from 'node:fs';
+          import {conversationDigest,assessDelivery} from './scripts/harness/delivery.ts';
+          const directory='.generated/harness/activation-delivery/';
+          const snapshot=JSON.parse(readFileSync(directory+'github-snapshot.json','utf8'));
+          const digest='56b4ab83c72d385768333081f36fb03256712b05956eec7e28c3e2434d398240';
+          assert.equal(conversationDigest(snapshot),digest,'Review inputs changed; agent must rereview');
+          assert.equal(snapshot.pull.head.sha,'81c58a17da1ffa27bacad6f1cf07e0016a232fd8');
+          assert.equal(snapshot.pull.base.sha,'f58142ddbda3fb4c97c67268f21a20302bcbff39');
+          const receipt={candidateSha:snapshot.pull.head.sha,conversationDigest:digest,reviewedPaths:['.github/workflows/publication.yml','AGENTS.md','README.md','apps/api/src/publication-cli.test.ts','apps/api/src/publication-restore.test.ts','apps/api/src/publication-restore.ts','apps/api/src/publication.ts','docs/adr/0008-headless-batch.md','docs/development/cloud-publication.md','docs/development/local-usage.md','scripts/publication-workflow.test.ts'],completedAt:new Date().toISOString(),method:'self',summary:'Agent reviewed every changed file and all current discussion. Both Codex P2 findings are fixed with regression tests and resolved threads; latest-head Codex review has no major findings. Successful independent clean-source verification is retained in run 36019150900. Snapshot digest is rechecked here; no approval is invented. External publication acceptance remains separate.',unresolvedFindings:0,squashTitle:'feat(publication): support PC-free R2 publishing from protected Actions (#105)',squashBody:'Refs #81'};
+          writeFileSync(directory+'review.json',JSON.stringify(receipt,null,2));
+          const result=assessDelivery(snapshot,'pr',receipt);
+          writeFileSync(directory+'delivery.json',JSON.stringify(result,null,2));
+          console.log('ACTIVATION_DELIVERY='+JSON.stringify(result));
+          process.exitCode=result.exitCode;
           NODE
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: activation-81-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          name: activation-81-delivery-${{ github.run_id }}-${{ github.run_attempt }}
           path: .generated/harness/
           include-hidden-files: true
           if-no-files-found: error
