@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "issue": 45,
+  "issueBodySha256": "3de5631201593b1e3a6d4545d2486747a70f079b28703de0c7e81ef1b230c2f9",
+  "issueUpdatedAt": "2026-09-24T00:20:46Z",
+  "complete": true,
+  "summary": "AI-01〜06と39受入条件を共通エンジン・観測・保存経路へ接続しました。PR #57と#59/#61の基盤に続き、PR #101で全候補共通の下限と中止後再試行を修正。PR #104で有界な索敵、待機上限、手がかり、observed地形、しゃがみ・伏せ・地上跳躍回避、遮蔽、相対4段階の手応え、再付与の見込みと方針傾向を実装しました。標準消火659/740、隠し情報の非干渉、用途別seedを保持。新しいspatial-v1.19/rulesとサンプルIDを追加し、公開済み85revision・18キャラクター、旧DB/replay、Golden期待出力は保持しています。数値案とGitHub反映・マージは2026-09-24にユーザー承認済み。884テスト、220対応回帰、7固定入力、API/Worker/SQLite、起動、exact-head clean-sourceが成功。PR #101のmain CI35996441356、PR #104のCI35999345015（Chromium/WebKit・3負荷比較・最終ゲートを含む）が成功しました。初回負荷ゲートの版移行レビュー不足を実測で補い、低姿勢移行中の走行指摘を失敗再現付き回帰試験で修正。全変更と最新議論の自己レビュー・SHA付きdelivery判定が合格。本文・5コメント・関連PRと#59/#61の完了、sub-issueなしを確認しました。最終main SHA・CI・Releaseの成功は既存Issue completion workflowが検証して記録します。P4新画面・P5ランキング・高度能力は別Issueの範囲です。",
+  "remainingWork": [],
+  "pullRequests": [
+    57, 58, 60, 62, 68, 69, 70, 71, 72, 73, 78, 85, 86, 87, 89, 95, 97, 98, 101, 104
+  ],
+  "acceptance": [
+    {
+      "task": "外観・観測履歴・自己状態・判断seedが同一なら、敵の隠された能力/耐性だけを変えても候補・評価・選択確率・次の判断が同じになる。隠しデータが行動候補・撃破見込みの推定・乱数へ漏れない。",
+      "evidence": "packages/engine/src/spatial/knowledge.test.ts runs hidden-definition noninterference under both AI_RULES and TACTICAL_AI: changed enemy name, abilities, HP/MP and resistances preserve observation, candidates, weights, RNG and choice."
+    },
+    {
+      "task": "未使用スキル・正確な敵HP/MP・内部耐性・未来の行動/乱数を通常AIが参照できない。キャラクター名/ID/hashによる敵定義の逆引きもない。",
+      "evidence": "DecisionView in perception.ts exposes self state and delayed observations/experience only. knowledge.test.ts changes hidden definitions without changing decisions; no enemy catalog lookup is introduced by search.ts, cover.ts, posture.ts or threat-memory.ts."
+    },
+    {
+      "task": "観測外・遮蔽・反応遅延の間は新情報を得ない。観測できなかったダメージを0として学習しない。",
+      "evidence": "perception.test.ts and knowledge.test.ts verify range, FOV, obstacle vision flags, reaction delay, memory expiry and unseen-impact exclusion. Sensor results enter bounded pending observations before delivery."
+    },
+    {
+      "task": "相手の負傷は外見上の段階、自分の攻撃の手応えは自分の技の既知の威力に対する割合の4段階として、視野・遮蔽・反応遅延の条件を守って本人に届く。正確なHP・ダメージ値・耐性の内訳や、それより細かい区間は届かない。盾・部分遮蔽の反応は段階なし（不明）になる。見えた攻撃の属性、外見で分かる状態、相手の姿勢も同じ条件で届き、見えない状態は届かない。",
+      "evidence": "relative-impact.test.ts checks exact 25/75/125% boundaries, zero known power, shield/partial unknown feedback and absence of finer damage intervals. perception.test.ts and posture.test.ts verify delayed public wound/status/posture observation."
+    },
+    {
+      "task": "同程度の既知威力・比較可能な条件の攻撃結果（手応えの段階）から、より有効と推定される属性へ選択確率が変わる。威力差・盾・不命中のケースでは内部の弱点を断定しない。",
+      "evidence": "assessment.test.ts verifies comparable known-power efficacy and rejects power/distance/shield confounders; knowledge.test.ts covers relative bands and public condition snapshots. assessment.ts limits comparison to similar power and observed conditions."
+    },
+    {
+      "task": "鑑定等を持たない場合は隠し情報が不明。持つ場合も発動条件・開示範囲・遅延・遮蔽・失効を守り、許可されない情報は開示されない。",
+      "evidence": "knowledge.test.ts and ai-integration.test.ts verify scoped reveal activation, one permitted field, wards, occlusion, delay, expiry and fresh-match isolation; unknown fields remain unknown without a granted reveal."
+    },
+    {
+      "task": "通常燃焼を認識し自己消火と合理的な代替行動が可能で、短期撃破の有力な根拠がない標準fixtureでは、消火が最も選ばれやすいが100%固定ではない。標準fixtureは燃焼が実際に脅威となる数値で作る。PR #57の標準fixtureの消火確率 約89.05%（659/740）を、ユーザーが承認した（2026-09-23）。この値を基準として固定し、確率分布自体を検証する。",
+      "evidence": "assessment.test.ts, status-assessment.test.ts, candidate-cutoff.test.ts and evaluation-preferences.test.ts assert the actual standard weights attack81/cleanse659, total740, including TACTICAL_AI; the approved 659/740 distribution is preserved."
+    },
+    {
+      "task": "観測・経験から燃焼による自己敗北より先に相手を倒せる見込みが高まる比較fixtureでは、攻撃の選択確率が上がる。十分有利な条件で攻撃を消火より優先でき、固定seedで燃焼中の攻撃実行例を再現する。燃焼を理由に攻撃候補を一律削除しない。",
+      "evidence": "assessment.test.ts compares supported short-kill opportunities and corresponding attack probabilities; ai-integration.test.ts executes attack while burning with a fixed seed and does not force a victory."
+    },
+    {
+      "task": "他の評価要因を固定して燃焼による自己敗北の危険を高めると、攻撃継続より消火等の生存行動の評価を高める。撃破見込みの根拠が弱い/不明な場合も、真の敵HPを読んだ確信を作らない。詠唱時間・コスト等が選択へ反映される。",
+      "evidence": "assessment.test.ts and status-assessment.test.ts compare periodic self-defeat risk, cast timing, costs and unknown kill evidence using self state and public enemy wound bands only."
+    },
+    {
+      "task": "他の評価要因を固定して、相手が燃焼をかけ直す頻度が高いと観測している場合は、消火の評価が下がる。再付与の見込みは、自分の被弾経験（同じ状態を付与した相手の攻撃の間隔）と、見えた同じ属性の攻撃の間隔だけから推定し、どちらもなければ再付与なしとして評価する（標準fixtureは変わらない）。燃焼以外の解除可能な状態にも共通に効く。",
+      "evidence": "threat-memory.test.ts covers delayed own same-status application intervals, fallback visible same-element attack intervals, absent evidence, bounded history and continuously visible projectile deduplication. Burning and toxin fixtures both discount cleanse benefit at predicted reapplication."
+    },
+    {
+      "task": "方針の判断傾向の値（攻撃・生存・弱点探索・危険の許容度・資源の温存・索敵の積極性）のそれぞれだけを変えると、同じ局面の選択分布（索敵の積極性は待つ時間）が変わる。省略時は中立の既定値で、追加前と同じ評価式になる。キャラクターID・名前による分岐はない。",
+      "evidence": "evaluation-preferences.test.ts independently varies attack, survival, exploration, risk tolerance and resource conservation, and proves neutral omission preserves the old distribution. search.test.ts varies search aggression and checks forced search at the common cap."
+    },
+    {
+      "task": "重み付き抽選の正規化・0重み・唯一候補・丸め境界・等確率写像を単体試験する。固定seed集合でも挙動を確認し、少数試行で偶然100%消火した/しなかったことだけを合否の根拠にしない。",
+      "evidence": "decision-random.test.ts and candidate-cutoff.test.ts test weighted boundaries, zero/empty/sole candidates, invalid values, exact equality, unbiased rejection mapping and fixed seed sets; acceptance does not rely on a small observed sample proportion."
+    },
+    {
+      "task": "すべての重み付き抽選（技・移動・回避方向・索敵先）で、最良の候補の重みに対して共通の下限割合未満の候補は確率0になる。下限はrulesに固定され、標準fixtureの消火確率 約89.05%（659/740）は変わらない。",
+      "evidence": "decision-random.ts owns the original-maximum cutoff. policy.ts, movement-choice.ts, dodge directions, search.ts and cover.ts pass the same rules value. candidate-cutoff.test.ts proves the 5% boundary and unchanged 659/740 fixture; search/posture integration exercises tactical draws."
+    },
+    {
+      "task": "燃焼中の攻撃で継続被害や状態が勝手に消えず、消火を選んだ場合だけ実際の効果/状態処理に従って解決する。「倒せそう」という判断が外れても、成功や勝利を強制しない。",
+      "evidence": "ai-integration.test.ts executes water through resource/cast/effect boundaries, retains burning when an attack is selected and lets actual effects/collision determine outcomes. The policy never directly deletes a status."
+    },
+    {
+      "task": "消火魔法がMP不足・使用不能なら選び続けず、可能な代替行動へ進む。名前だけ水の技や敵対象専用技を勝手に自己消火へ変換しない。",
+      "evidence": "assessment.test.ts checks all self-known resource, use-count, cooldown and targeting failures while retaining alternatives; ai-integration.test.ts covers unavailable/silenced water and non-extinguishable burning."
+    },
+    {
+      "task": "水属性の攻撃と水耐性が共通部品として使える。「水で消える」と定義した燃焼は、水の攻撃・水魔法のどちらが当たっても共通ルールで消え、定義のない燃焼（水では消えない炎）は消えない。相手が燃えているときの水攻撃でも相手の燃焼が消える。AIは状態を直接削除しない。",
+      "evidence": "status-generalization.test.ts and status-integration.test.ts verify shared contacted-element reactions, water damage and legacy water, explicit non-extinguishable states, zero-coverage exclusion and old-snapshot transaction ordering. Water element/resistance definitions remain reusable data."
+    },
+    {
+      "task": "状態による弱点では、状態の間だけ該当属性の被害が通常より増え、状態が終わると戻る。常時のマイナス耐性はない。計算順・上限・丸め・重複時の扱いがルール文書とfixtureで定義され、AIは状態と手応えの組として学び、常時の弱点と混同しない。",
+      "evidence": "status-generalization.test.ts tests temporary elemental weakness, restoration after expiry, additive-then-Bps order, deterministic bounds and duplicate contacts. status-integration.test.ts verifies observed condition changes retire stale efficacy; docs/rules/spatial-v1.md defines the calculation contract."
+    },
+    {
+      "task": "飛行主体が回避を選んだ後の完全に同等な4方向fixtureで、固定seed集合から複数方向が選ばれ、同一seedでは同じ方向になる。等確率の写像を単体試験する。",
+      "evidence": "decision-random.test.ts checks equal-direction rejection mapping and fixed seeds; ai-integration.test.ts exercises all four flying escape directions in actual streamed combat and replay."
+    },
+    {
+      "task": "壁・天井・床・移動能力不足・反応時間で不可能な方向を除外する。唯一の適切な回避方向は確定し、複数の合理的方向に危険度差がある場合は重みに反映する。未来位置の覗き見や自動的な回避成功はない。",
+      "evidence": "dodge.test.ts and posture.test.ts cover walls, ceiling, resource limits, reaction time and actual gait/crawl reach. Real projectile integration keeps movement and collision authoritative rather than guaranteeing successful evasion."
+    },
+    {
+      "task": "回避と技を同じ判断で同時に選べる。回避しながら技を使え、回避の成否と技の結果は実際の移動・衝突・効果で決まる。回避を選んだことで技が使えなくなることはない。",
+      "evidence": "simultaneous-slots.test.ts and apps/api/src/simultaneous-persistence.test.ts verify shared-budget action and movement slots, independent purpose streams, actual execution and saved displays; reaction/stage paths keep the same shared constraints."
+    },
+    {
+      "task": "しゃがみ・伏せの身体寸法（伏せは高さを下げた直立カプセルの近似）・移動速度・姿勢変更の時間・頭上空間の確認が定義され、地上主体の下方向の回避候補になる。しゃがみ中は走行不可、伏せ中は匍匐・射撃・詠唱だけが可能（近接・跳躍・走行は不可）で、制限は共通処理が判定する。当たり判定・視線・遮蔽は実際の身体寸法で判定され、決定性を現行のLinux CIで検証する。姿勢を持つのは検証用の新しいサンプル（新ID）だけで、既存の定義・結果は変わらない。",
+      "evidence": "posture.test.ts checks delayed capsule replacement, feet preservation, headroom, delayed enemy posture observation, walk/crawl speeds and prone action restrictions. Shared postureAllows gates action/reaction/counter/stage paths. New posture characters use new IDs; catalog-history tests preserve the prior 85 revisions/18 characters. The same regression checks real 0.2s/0.4s transition travel, fractional walk stamina and gait selection before capsule completion; it failed before the P2 fix and passes after it. postureRequiresWalk is shared by physical motion, steering, dodge and gait choice."
+    },
+    {
+      "task": "ジャンプできる地上の主体は、回避の上方向として跳躍を候補にする。天井・資源・反応時間で不可能なら除外し、飛べない主体に上下の自由移動は付与しない。",
+      "evidence": "posture.test.ts offers jump evasion only with authored jump ability, affordable resources, sufficient reaction time and clear ceiling, and executes a real ballistic jump against a projectile without granting flight."
+    },
+    {
+      "task": "初期状態で互いの視線が遮られた対称な配置（例: `pillars-surveyed-v1`の地上同士）でも、相手の現在位置を読まずに索敵し、行動0回のまま時間切れになる試合がない。地形を事前に知る前提がscenarioに明記されている。",
+      "evidence": "search.test.ts runs initially hidden ground opponents in pillars-surveyed-v1 twice with identical results and requires nonzero cast-start activity and recorded search. The scenario explicitly declares surveyed terrain; search never reads hidden current enemy position."
+    },
+    {
+      "task": "手がかりのない時間が全員共通の上限時間（rules）を超えると、方針（`hold`を含む）にかかわらず索敵へ移る。上限までに待つ時間は索敵の積極性で変わる。",
+      "evidence": "search.test.ts checks aggression-dependent waiting and forced search for hold at step500 (10s). policy.ts gives the cap precedence over hiding/waiting behavior."
+    },
+    {
+      "task": "索敵は、最後に見た位置または手がかりの方向、次に長く確認していない区画の順に向かう。区画は伏せた身体の高さまで視線が届いたときだけ確認済みとなり、時間が経てば再び候補に戻る。同等な探索先はseed付きで選ぶ。",
+      "evidence": "search.test.ts verifies last-seen/cue priority, delayed low-height cell confirmation, revisits, seeded goals and purpose-stream isolation. search.ts bounds the 5x5 grid, checks centre/corners at actual support height and expires stalled goals."
+    },
+    {
+      "task": "見えない相手の攻撃を受けたとき、見えた飛翔体の飛来方向と被弾の向きだけから探す方向を推定し、相手の真の位置を使わない。音の知覚はない。",
+      "evidence": "threat-memory.test.ts covers observed projectile and actual incoming-hit direction, including projectile/explosion contact direction. combat-effects.ts and projectile-step.ts provide self-perceived contact vectors; search uses only a directional hypothesis, with no sound or hidden shooter-position input."
+    },
+    {
+      "task": "地形を事前に知らない（observed）検証用の戦場（新ID）でも同じ方式で索敵し、未観測の地形・相手の現在位置を読まない。",
+      "evidence": "search.test.ts runs the new search-observed-v1 scenario deterministically. knowledge.test.ts verifies independence from unobserved terrain; navigation.ts limits unknown-terrain movement to existing observed patches and local steps of at most0.75m."
+    },
+    {
+      "task": "既知の地形と推定した相手の位置だけから、視線・射線を切る位置と姿勢（高い遮蔽物は立ったまま、低い遮蔽物はしゃがみ・伏せ）を移動の候補として評価する。隠れた相手は索敵で見つけられ、双方が隠れたまま時間切れにはならない。遮蔽のある検証用の戦場（新ID）で試験する。",
+      "evidence": "posture.test.ts checks high standing cover, low prone cover, arena bounds and airborne stance feasibility. cover.ts receives only known obstacles and estimated enemy position; policy.ts yields hiding to forced search. apps/api/src/ai-delivery.test.ts exercises the new cover-surveyed-v1 sample and recorded decisions."
+    },
+    {
+      "task": "2026-09-24の決定で実装PRに委ねた数値（索敵の上限時間、姿勢の寸法・速度・切替時間、候補の下限割合、手応えの境界）を、基準fixtureとともに提示し、ユーザーの承認を得ている。",
+      "evidence": "The user explicitly approved the presented numerical proposal and GitHub delivery in ChatGPT on 2026-09-24. docs/rules/tactical-ai.md records wait cap10s, crouch radius/height0.3/1m speed50% transition0.2s, prone0.3/0.6m speed20% transition0.4s, cutoff5%, impact thresholds25/75/125%, with named reference fixtures."
+    },
+    {
+      "task": "弱点が不明で合理的候補が複数なら、情報価値・コスト・危険度に応じて探索する。経験や状況が変われば選択分布が変わり、全候補一律の抽選や固定の消火/攻撃比率にはならない。",
+      "evidence": "assessment.test.ts and evaluation-preferences.test.ts show evidence, exploration value, resource cost and danger changing the candidate distribution. Relative feedback and contextual experience update efficacy; all draws use rational candidate weights rather than a fixed attack/cleanse ratio."
+    },
+    {
+      "task": "MP/使用回数/クールダウン/既知の射程の選択前検査と、発動/命中時の再検査を区別する。最優先技の不成立で代替行動を選べない問題の回帰fixtureがある。選択の時点で本人に分かっていた理由（MP・使用回数・クールダウン・観測上の射程/向き）による宣言時の不発が発生しない。",
+      "evidence": "assessment.test.ts checks readiness and self-known preconditions before drawing; resource/action/reaction/stage tests separately verify execution-time rechecks, shared budget reservation and actual failures. No unavailable priority traps the actor in an unexecutable choice."
+    },
+    {
+      "task": "一方のAIの知識・記憶、別試合・Worker再利用、全知のreplay/結果から他方の判断へ情報が流れない。",
+      "evidence": "knowledge.test.ts bounds separate actor memories; apps/api/src/worker-pool.test.ts and ai-delivery.test.ts verify fresh matches, reused Workers and saved cognition without feeding omniscient replay data back to policy."
+    },
+    {
+      "task": "同一入力・seedの候補/評価/選択確率/判断/知識更新/result/eventが現行のLinux CIで再現し、意味のない列挙順変更と、主体・乱数対応を明示した対称性を検証する。",
+      "evidence": "Fixed corpus inputs, spatial properties and symmetry tests validate repeated result/event/trajectory/TS/physics hashes and enumeration invariance. Search and tactical API tests repeat identical seeds; Linux CI runs the same corpus and mapped tactical tests."
+    },
+    {
+      "task": "判断用乱数を追加しても照準等の別用途乱数を偶然消費しない。唯一候補の確定判断で乱数を消費せず、打切り・再試行でも状態が整合する。",
+      "evidence": "decision-random.test.ts and candidate-cutoff.test.ts prove sole-choice non-consumption and aim-stream isolation; search.test.ts verifies forced search leaves the action stream unchanged. Existing interruption/retry/Worker tests preserve execution state and budget bounds."
+    },
+    {
+      "task": "乱数のseedが対戦revisionのペアに依存しない。相手の隠れた設定だけを変えても、判断用の乱数が変わらない。",
+      "evidence": "The existing actor-stream-v1 and actor-purpose-rejection-v1 derive randomness from master seed, trial, actor and purpose. knowledge.test.ts changes only hidden opponent definitions while preserving the same decisions and RNG state; no revision pair enters the new search/cover streams."
+    },
+    {
+      "task": "観測profile/初期知識/policy/評価と確率変換等がmanifestと保存revisionに固定され、判断理由・経験更新・重みと選択確率・燃焼中に攻撃を選んだ理由を#10の保存ログから追跡できる。ログ/記憶は有界で、全知の正本と本人の認識が区別される。",
+      "evidence": "Optional schemas in cognition.ts/contracts.ts/stream.ts retain readable old records. ai-delivery.test.ts persists tactical manifests, weights, observations, reapplication evidence, search and posture through API/SQLite/recorded replay. Memory caps are32 threats,8 cues,25 cells; knowledge tests retain bounded actor histories."
+    },
+    {
+      "task": "版更新は#59の規則に従う（旧データは読めるまま、新しいrulesは別ID、サンプルの変更は新しいID）。旧DBを開く回帰試験が成功し、旧版のBattleSpec・結果を新版で再実行しない。",
+      "evidence": "ADR0010 and apps/api/src/version-compatibility.test.ts preserve real old DBs, BattleSpecs and recorded replays while rejecting unsupported execution. spatial-v1.19 adds new rules/sample IDs; published-rules.ts and catalog-history tests preserve every prior revision hash. Seven corpus input identities change version/rules only; expected battle outputs are not regenerated."
+    },
+    {
+      "task": "共通能力部品から追加したキャラクターをAPI/保存経由で準備しheadlessで対戦でき、キャラクター専用のAI/勝敗分岐なしで能力・知覚・方針の違いが反映される。",
+      "evidence": "apps/api/src/ai-delivery.test.ts prepares the new posture characters and search/cover scenarios through API and SQLite, runs ordinary headless battles and verifies recorded cognition/body changes. Character-specific program branches are not introduced; common authored capability data controls behavior."
+    },
+    {
+      "task": "既存ハーネス・必要な回帰試験・現行のLinux CI・レビュー・main検証の証跡を残す。未対応の高度能力やP4画面を完了扱いにせず、Issue更新/クローズは既存の完了プロトコルに従う。",
+      "evidence": "PR #101 main CI35996441356 and PR #104 CI35999345015 pass source, Chromium/WebKit E2E, paired loads, security and final gates. Clean a150c88 passes canonical vp run verify (884 tests, 7 corpus inputs, 220 mapped tests) and source-clean/source-verify; current-head delivery assessment passes all required checks. The sole automated P2 finding is fixed with a failing-before regression and its thread is resolved. .github/harness/load-reviews.json binds actual independent transition evidence with unchanged budgets. This final declaration requires new final-head CI and the existing post-main-CI completion workflow, which records the actual merge/main/CI identity. P4 UI and advanced abilities remain outside this Issue."
+    }
+  ]
+}
