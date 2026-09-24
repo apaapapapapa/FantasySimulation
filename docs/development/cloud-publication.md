@@ -12,12 +12,10 @@ Deployment branches and tagsはSelected branches and tagsにして、**branch `m
 必要ならRequired reviewersも設定できるが、1人運用で自己承認禁止を有効にすると承認できない。
 秘密値はこのEnvironmentの専用入力欄へ登録し、通常のrepository Secretsには置かない。
 
-| 種別 | 名前 | 値 |
-| --- | --- | --- |
-| Environment secret | `R2_ACCESS_KEY_ID` | 発行済みR2アクセスキーID |
-| Environment secret | `R2_SECRET_ACCESS_KEY` | 対になる秘密キー |
-| Environment variable | `R2_ACCOUNT_ID` | 対象CloudflareアカウントID |
-| Environment variable | `R2_PUBLICATION_ENABLED` | 初期設定・プラン確認後に`true` |
+Environment secretsには`R2_ACCESS_KEY_ID`（発行済みR2アクセスキーID）と
+`R2_SECRET_ACCESS_KEY`（対になる秘密キー）を登録する。
+Environment variablesには`R2_ACCOUNT_ID`（対象CloudflareアカウントID）を登録し、
+初期設定・プラン確認後に`R2_PUBLICATION_ENABLED`を`true`にする。
 
 キーは`fantasysimulation-replays`だけのObject Read & Write権限に限定する。
 Global API Key、他プロジェクトのキー、Cloudflare管理者権限は使わない。
@@ -46,7 +44,8 @@ workflowの完了は区別する。起動権限がなければスマホの上記
 
 ## 再実行・上限
 
-同時公開は1つ。失敗時は同じCI run IDと入力で再実行する。新しいrunnerで復元し、同じobjectを
+同時公開は1つ。失敗したrunは同じSHA・CI run ID・入力のままRe-run all jobsで再実行する。
+新規Run workflowでは現在のmainとCIのSHAを一致させる。新しいrunnerで復元し、同じobjectを
 再利用する。古い世代への巻き戻し・不一致・未確認の読み戻しは成功扱いにしない。
 復元は既存directoryを上書きせず、保持中の全世代とbundle・展開後の秘密情報を検査する。
 workflowの復元読取りは256MBまで。全保存8GB、転送256MB、書込み10,000、

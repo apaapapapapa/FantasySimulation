@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vite-plus/test';
 
-const workflow = readFileSync(new URL('../.github/workflows/publication.yml', import.meta.url), 'utf8');
+const workflow = readFileSync(
+  new URL('../.github/workflows/publication.yml', import.meta.url),
+  'utf8',
+);
 
 it('keeps publication manual, serialized and bound to the successful main workflow source', () => {
   expect(workflow).toContain('  workflow_dispatch:');
@@ -35,7 +38,7 @@ it('passes production credentials only to the protected publisher, never calcula
 it('defaults to dry run and restores before export/publish without automatic deletion', () => {
   expect(workflow).toContain('default: dry-run');
   expect(workflow).toContain('args=(--dry-run)');
-  expect(workflow).toContain('PUBLICATION_MAX_RESTORE_BYTES: \'256000000\'');
+  expect(workflow).toContain("PUBLICATION_MAX_RESTORE_BYTES: '256000000'");
   expect(workflow.indexOf('vp run publication restore')).toBeLessThan(
     workflow.indexOf('vp run publication publish'),
   );

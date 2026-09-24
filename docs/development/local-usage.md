@@ -23,7 +23,7 @@ All routes below use `/api`.
 | API                                      | Contract                        |
 | ---------------------------------------- | ------------------------------- |
 | `GET /health`                            | Startup/Drizzle health          |
-| `GET /characters`                        | Latest; limit <=100, cursor    |
+| `GET /characters`                        | Latest; `limit` <=100, `cursor` |
 | `GET /characters/{id}?revision=1`        | Revision; default latest        |
 | `GET /rulesets`, `/scenarios`            | Rules/scenarios                 |
 | `GET /revisions/{kind}/{id}/{revision}`  | Fixed definition                |
