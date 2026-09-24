@@ -13,6 +13,56 @@ import { BattleBundles } from './battle-bundle.ts';
 
 /** The API, persistence and headless paths must all execute the same prepared engine inputs. */
 describe('observed AI delivery through persisted Workers', () => {
+  it('persists tactical samples through API and reproduces posture and search records headlessly', async () => {
+    await withRuntime(
+      async ({ runtime, store, root }) => {
+        const input = await catalogManifest(
+          'posture-archer-v1',
+          'posture-duelist-v1',
+          'cover-surveyed-v1',
+          700,
+          42,
+          'standard-tactics-v1',
+        );
+        await store.loadPinnedRevisions(input.revisions);
+        const app = createApp(store, false, runtime);
+        try {
+          const response = await app.inject({
+            method: 'POST',
+            url: '/api/battle-jobs',
+            headers: { 'x-client-id': 'tactical-ai', 'idempotency-key': 'one' },
+            payload: { spec: specInput(input) },
+          });
+          expect(response.statusCode).toBe(202);
+          const done = await runtime.wait(response.json().job.id);
+          expect(done.state, JSON.stringify(done)).toBe('completed');
+          const row = runtime.jobs.result(done.resultId!)!;
+          const saved = (await verifyReplay(root, row.replayId)).manifest;
+          const direct = await runBattle(saved.input);
+          expect(JSON.parse(row.resultJson)).toEqual(direct.result);
+          for (const record of direct.records)
+            expect(StreamRecordSchema.safeParse(record).success).toBe(true);
+          const cognition = direct.records
+            .flatMap((r) => ('events' in r ? r.events : []))
+            .flatMap((e) => (e.cognition?.kind === 'decision' ? [e.cognition] : []));
+          expect(cognition.some((c) => c.search)).toBe(true);
+          expect(cognition.some((c) => c.cover?.draw.selection !== 'ordinary' && c.cover)).toBe(
+            true,
+          );
+          const actors = direct.records.flatMap((r) => ('changes' in r ? r.changes : []));
+          expect(
+            actors.some(
+              (a) => a.posture?.current === 'crouching' || a.posture?.current === 'prone',
+            ),
+          ).toBe(true);
+        } finally {
+          await app.close();
+        }
+      },
+      { workers: 1 },
+      700,
+    );
+  }, 30000);
   it('round trips public status experience, observed conditions and weighted reasons through SQLite and replay', async () => {
     await withRuntime(
       async ({ runtime, store, root }) => {

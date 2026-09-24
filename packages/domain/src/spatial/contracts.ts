@@ -3,7 +3,7 @@ import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.18' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.19' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -63,6 +63,13 @@ export const BodySchema = z
 const GaitSchema = z.strictObject({
   speedMmPerSecond: positive(100_000),
   staminaPerMeter: positive(1_000_000),
+});
+export const PostureSchema = z.enum(['standing', 'crouching', 'prone']);
+export type Posture = z.infer<typeof PostureSchema>;
+const PostureCapabilitySchema = z.strictObject({
+  body: BodySchema,
+  speedBps: positive(10000),
+  transitionSteps: positive(50),
 });
 export const LocomotionSchema = z
   .strictObject({
@@ -176,6 +183,21 @@ export const AiRulesSchema = z.strictObject({
   appearancePriors: AppearancePriorsSchema.optional(),
   slots: z.literal('simultaneous-v1').optional(),
   minimumCandidateWeightBps: uint(10_000).optional(),
+  relativeImpactBps: z
+    .tuple([positive(30000), positive(30000), positive(30000)])
+    .refine(([a, b, c]) => a < b && b < c, 'Impact boundaries must increase')
+    .optional(),
+  reapplication: z.literal('self-observed-v1').optional(),
+  groundEvasion: z.literal('posture-jump-v1').optional(),
+  search: z
+    .strictObject({
+      maxWaitSteps: positive(1000),
+      cellsPerSide: positive(5),
+      revisitSteps: positive(1000),
+      lowSightMm: positive(300),
+      goalTimeoutSteps: positive(500),
+    })
+    .optional(),
 });
 export const AI_RULES = Object.freeze(
   AiRulesSchema.parse({
@@ -670,6 +692,9 @@ export const PolicySchema = z.strictObject({
       attackBps: positive(30_000),
       survivalBps: positive(30_000),
       explorationBps: uint(30_000),
+      riskToleranceBps: uint(20_000).optional(),
+      resourceConservationBps: uint(30_000).optional(),
+      searchAggressionBps: uint(10_000).optional(),
     })
     .optional(),
 });
@@ -705,6 +730,12 @@ export const CharacterSchema = z
       resistances: ResistancesSchema,
     }),
     body: BodySchema,
+    postures: z
+      .strictObject({
+        crouching: PostureCapabilitySchema.optional(),
+        prone: PostureCapabilitySchema.optional(),
+      })
+      .optional(),
     movement: MovementSchema,
     perception: PerceptionSchema,
     abilities: z.array(RefSchema).max(32),
@@ -714,6 +745,13 @@ export const CharacterSchema = z
   .refine(
     (c) => !c.movement.locomotion || !!c.stamina,
     'Locomotion costs require a stamina definition',
+  )
+  .refine(
+    (c) =>
+      Object.values(c.postures ?? {}).every(
+        (p) => !p || (p.body.radiusMm === c.body.radiusMm && p.body.heightMm < c.body.heightMm),
+      ),
+    'Postures keep body width and reduce standing height',
   );
 
 const BlocksSchema = z.strictObject({

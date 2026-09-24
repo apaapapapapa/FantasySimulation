@@ -6,6 +6,7 @@ import { payCost } from './attacks.ts';
 import { canMaintainFlight, resourceReady } from './locomotion.ts';
 import { dodgeOptions } from './dodge.ts';
 import type { KnownClearance } from './assessment.ts';
+import { postureAllows } from './posture.ts';
 
 export function dodgeAssessment(view: DecisionView): CandidateAssessment {
   const cost = view.self.actor.character.movement.locomotion?.dodgeStamina ?? 0;
@@ -94,6 +95,19 @@ export function chooseMovementSlot(
     flight,
     clear,
   );
+  const chosen = ability?.definition ?? view.activeAbility;
+  if (chosen && view.self.posture)
+    for (const direction of directions)
+      if (
+        direction.posture &&
+        !postureAllows(
+          { ...view.self, posture: { ...view.self.posture, current: direction.posture } },
+          chosen,
+        )
+      ) {
+        direction.weight = 0;
+        direction.reason = 'selected action incompatible with this posture';
+      }
   const fallback = passiveAssessment(moving);
   fallback.weight = (view.rules ?? AI_RULES).actionWeight;
   fallback.reason = 'retain ordinary movement and conserve evasion resources';

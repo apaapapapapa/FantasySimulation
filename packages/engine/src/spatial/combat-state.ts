@@ -130,6 +130,15 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
     velocity: { ...motion.velocity },
     facing: { ...motion.facing },
     grounded: motion.grounded,
+    ...(motion.posture
+      ? {
+          posture: {
+            current: motion.posture.current,
+            body: structuredClone(motion.actor.character.body),
+            ...(motion.posture.transition ? { transition: { ...motion.posture.transition } } : {}),
+          },
+        }
+      : {}),
     ...(state.reactions ? { reactions: structuredClone(state.reactions) } : {}),
     ...(state.forceDisplay !== undefined ? { force: structuredClone(state.forceDisplay) } : {}),
     resources: { ...state.resources },

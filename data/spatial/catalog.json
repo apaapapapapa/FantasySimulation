@@ -1798,6 +1798,267 @@
   },
   {
     "kind": "character",
+    "id": "posture-archer-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:47fe005c185430150be08e70032ca2956843c545ce6e8dd00398b300f2e12143",
+    "definition": {
+      "name": "弓使い・姿勢検証",
+      "originalText": "弓使い。能力・装備・方針はすべて公開revisionで固定する。",
+      "stats": {
+        "hp": 80,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "postures": {
+        "crouching": {
+          "body": {
+            "radiusMm": 300,
+            "heightMm": 1000,
+            "eyeOffset": {
+              "x": 0,
+              "y": 350,
+              "z": 0
+            },
+            "muzzleOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "aimOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "speedBps": 5000,
+          "transitionSteps": 10
+        },
+        "prone": {
+          "body": {
+            "radiusMm": 300,
+            "heightMm": 600,
+            "eyeOffset": {
+              "x": 0,
+              "y": 100,
+              "z": 0
+            },
+            "muzzleOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "aimOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "speedBps": 2000,
+          "transitionSteps": 20
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "arrow",
+          "revision": 1,
+          "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "posture-archer-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:2cdad91136d6439d1e4efdbba116246f0a50a6354282af07ef0ba5aaa7e2ac13"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "posture-duelist-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a866e6fd292cff362d8e094f86dcc944ad5eb02e125a8ce301265bb405550a35",
+    "definition": {
+      "name": "体力を配分する斥候・姿勢検証",
+      "originalText": "体力を配分する斥候。能力・装備・方針はすべて公開revisionで固定する。",
+      "stamina": {
+        "max": 100,
+        "recoveryPerSecond": 3,
+        "resumeAt": 20
+      },
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "postures": {
+        "crouching": {
+          "body": {
+            "radiusMm": 300,
+            "heightMm": 1000,
+            "eyeOffset": {
+              "x": 0,
+              "y": 350,
+              "z": 0
+            },
+            "muzzleOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "aimOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "speedBps": 5000,
+          "transitionSteps": 10
+        },
+        "prone": {
+          "body": {
+            "radiusMm": 300,
+            "heightMm": 600,
+            "eyeOffset": {
+              "x": 0,
+              "y": 100,
+              "z": 0
+            },
+            "muzzleOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "aimOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "speedBps": 2000,
+          "transitionSteps": 20
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000,
+        "locomotion": {
+          "walk": {
+            "speedMmPerSecond": 2000,
+            "staminaPerMeter": 2
+          },
+          "run": {
+            "speedMmPerSecond": 6000,
+            "staminaPerMeter": 6
+          },
+          "exhaustedSpeedMmPerSecond": 500,
+          "jumpStamina": 12,
+          "dodgeStamina": 8,
+          "stepStaminaPerMeter": 10
+        }
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "stamina-strike-v1",
+          "revision": 1,
+          "contentHash": "sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "posture-duelist-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:f95190a5007d28119959e2225e94c383d3f58addaafc2be49a810151ecaded10"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "reaction-duelist-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -2866,6 +3127,68 @@
   },
   {
     "kind": "policy",
+    "id": "posture-archer-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:2cdad91136d6439d1e4efdbba116246f0a50a6354282af07ef0ba5aaa7e2ac13",
+    "definition": {
+      "name": "弓使いの方針・姿勢と索敵",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "arrow"
+        }
+      ],
+      "movement": "evade",
+      "preferredDistanceMm": 8000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true,
+      "evaluation": {
+        "attackBps": 10000,
+        "survivalBps": 10000,
+        "explorationBps": 10000,
+        "riskToleranceBps": 5000,
+        "resourceConservationBps": 15000,
+        "searchAggressionBps": 5000
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "posture-duelist-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:f95190a5007d28119959e2225e94c383d3f58addaafc2be49a810151ecaded10",
+    "definition": {
+      "name": "体力を配分する斥候の方針・姿勢と索敵",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "stamina-strike-v1"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true,
+      "evaluation": {
+        "attackBps": 10000,
+        "survivalBps": 10000,
+        "explorationBps": 10000,
+        "riskToleranceBps": 5000,
+        "resourceConservationBps": 15000,
+        "searchAggressionBps": 5000
+      }
+    }
+  },
+  {
+    "kind": "policy",
     "id": "reaction-duelist-v1-policy",
     "revision": 1,
     "schemaVersion": 1,
@@ -3087,6 +3410,72 @@
       "preferredDistanceMm": 7000,
       "flightAltitudeMm": 6000,
       "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard-evaluation-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:70daee44c0d02f9d9fd535d7d9bbbf60e383193c27296d1a580a578f013ca2b8",
+    "definition": {
+      "name": "標準3D",
+      "rulesVersion": "spatial-v1.19",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1"
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
     }
   },
   {
@@ -3527,6 +3916,262 @@
     }
   },
   {
+    "kind": "ruleset",
+    "id": "standard-tactics-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:b4b4af6be2ef0f4c1ad69d21013b6e0fd5f631b7a9ef61b168050e643bd79f99",
+    "definition": {
+      "name": "観測・索敵・姿勢",
+      "rulesVersion": "spatial-v1.19",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1",
+        "minimumCandidateWeightBps": 500,
+        "relativeImpactBps": [2500, 7500, 12500],
+        "reapplication": "self-observed-v1",
+        "groundEvasion": "posture-jump-v1",
+        "search": {
+          "maxWaitSteps": 500,
+          "cellsPerSide": 5,
+          "revisitSteps": 500,
+          "lowSightMm": 100,
+          "goalTimeoutSteps": 150
+        }
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "scenario",
+    "id": "cover-surveyed-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:f5180e682496ed70a0e2eaf304d5b1456bce99648a017a442aed6e8a425242b8",
+    "definition": {
+      "name": "高低の遮蔽・索敵検証",
+      "bounds": {
+        "min": {
+          "x": -50000,
+          "y": -1000,
+          "z": -50000
+        },
+        "max": {
+          "x": 50000,
+          "y": 50000,
+          "z": 50000
+        }
+      },
+      "obstacles": [
+        {
+          "id": "floor",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": -500,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 50000,
+            "y": 500,
+            "z": 50000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        },
+        {
+          "id": "pillar",
+          "kind": "pillar",
+          "center": {
+            "x": 0,
+            "y": 1500,
+            "z": 0
+          },
+          "radiusMm": 1200,
+          "halfHeightMm": 1500,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        },
+        {
+          "id": "low-cover-west",
+          "kind": "box",
+          "center": {
+            "x": -2500,
+            "y": 600,
+            "z": -3000
+          },
+          "halfExtents": {
+            "x": 200,
+            "y": 600,
+            "z": 1200
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        },
+        {
+          "id": "low-cover-east",
+          "kind": "box",
+          "center": {
+            "x": 2500,
+            "y": 600,
+            "z": 3000
+          },
+          "halfExtents": {
+            "x": 200,
+            "y": 600,
+            "z": 1200
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        }
+      ],
+      "navigation": {
+        "version": "support-graph-v1",
+        "nodes": [
+          {
+            "id": "corner-ws",
+            "position": {
+              "x": -2200,
+              "y": 902,
+              "z": -2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-wn",
+            "position": {
+              "x": -2200,
+              "y": 902,
+              "z": 2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-es",
+            "position": {
+              "x": 2200,
+              "y": 902,
+              "z": -2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-en",
+            "position": {
+              "x": 2200,
+              "y": 902,
+              "z": 2200
+            },
+            "mode": "ground"
+          }
+        ],
+        "edges": [
+          {
+            "from": "corner-ws",
+            "to": "corner-wn",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-ws",
+            "to": "corner-es",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-wn",
+            "to": "corner-en",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-es",
+            "to": "corner-en",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          }
+        ]
+      },
+      "terrainKnowledge": "surveyed"
+    }
+  },
+  {
     "kind": "scenario",
     "id": "flat",
     "revision": 1,
@@ -3900,6 +4545,143 @@
         ]
       },
       "terrainKnowledge": "surveyed"
+    }
+  },
+  {
+    "kind": "scenario",
+    "id": "search-observed-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:f7585f44d9b61781ce7e0bed22afe4e975241971f095dd2daae9d3220a539068",
+    "definition": {
+      "name": "未観測の柱・索敵検証",
+      "bounds": {
+        "min": {
+          "x": -50000,
+          "y": -1000,
+          "z": -50000
+        },
+        "max": {
+          "x": 50000,
+          "y": 50000,
+          "z": 50000
+        }
+      },
+      "obstacles": [
+        {
+          "id": "floor",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": -500,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 50000,
+            "y": 500,
+            "z": 50000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        },
+        {
+          "id": "pillar",
+          "kind": "pillar",
+          "center": {
+            "x": 0,
+            "y": 1500,
+            "z": 0
+          },
+          "radiusMm": 1200,
+          "halfHeightMm": 1500,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        }
+      ],
+      "navigation": {
+        "version": "support-graph-v1",
+        "nodes": [
+          {
+            "id": "corner-ws",
+            "position": {
+              "x": -2200,
+              "y": 902,
+              "z": -2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-wn",
+            "position": {
+              "x": -2200,
+              "y": 902,
+              "z": 2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-es",
+            "position": {
+              "x": 2200,
+              "y": 902,
+              "z": -2200
+            },
+            "mode": "ground"
+          },
+          {
+            "id": "corner-en",
+            "position": {
+              "x": 2200,
+              "y": 902,
+              "z": 2200
+            },
+            "mode": "ground"
+          }
+        ],
+        "edges": [
+          {
+            "from": "corner-ws",
+            "to": "corner-wn",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-ws",
+            "to": "corner-es",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-wn",
+            "to": "corner-en",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          },
+          {
+            "from": "corner-es",
+            "to": "corner-en",
+            "mode": "walk",
+            "widthMm": 1500,
+            "headroomMm": 10000,
+            "bidirectional": true
+          }
+        ]
+      },
+      "terrainKnowledge": "observed"
     }
   },
   {

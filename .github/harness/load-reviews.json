@@ -2,6 +2,26 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "e3e0bd956d8dc32d655f21fc215aadae6107415c",
+      "beforeDigest": "db6c3d3f53fd6c3ac1502653f3903964b2e88d0e9333fab9dce0f35092db94e1",
+      "afterDigest": "da38951681f9fc25390e86158c888669365afd0365c0700fb001943a3e17db8b",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "Issue #45 introduces spatial-v1.19 and new standard-evaluation-v1 / standard-tactics-v1 rules under ADR0010, with user-approved numerical fixtures. Reviewed actual CI35997179312 attempt1: exact main e3e0bd9 versus test merge 2e37891 (candidate5c9c13c). All three shards contain five genuine alternating trials for each of seven cases (35 per revision), with successful commands, regression probes and unchanged deterministic ceilings. Every outcome kind and step/cast/candidate/path-node/event/log-byte/trajectory-byte vector is stable within each revision and identical across revisions. Runtime pins, lockfile, load profile and all85 published revision hashes remain unchanged. The seven fixed recipes, seeds and actor/scenario identities are preserved; only engine/rules identity changes. The candidate independently passed884 tests, seven repeated corpus inputs and220 mapped regressions, including20 tactical cases. Different fixed input identities require the existing independent-transition review and do not support same-input elapsed-time or RSS claims. This entry binds observed before/after digests and supplies the missing review; it does not waive failed data, modify budgets, rewrite expected outputs or relax any gate. New CI must reproduce the data at its own SHA and attempt.",
+      "evidence": [
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35997179312/artifacts/10806244863",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35997179312/artifacts/10806936524",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35997179312/artifacts/10806448524",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/35997179312/artifacts/10806926630",
+        "packages/engine/fixtures/spatial/corpus.json",
+        "packages/engine/src/spatial/search.test.ts",
+        "packages/engine/src/spatial/posture.test.ts",
+        "apps/api/src/ai-delivery.test.ts",
+        "docs/rules/tactical-ai.md"
+      ]
+    },
+    {
       "baselineSha": "8bdf88503cca235940d95ff0e7260c2ba7d9a074",
       "beforeDigest": "a67a7dbffdddede5f3a54ca9d6851c2f0370fc2cfd9a8ca8bf4df23920237fe8",
       "afterDigest": "db6c3d3f53fd6c3ac1502653f3903964b2e88d0e9333fab9dce0f35092db94e1",

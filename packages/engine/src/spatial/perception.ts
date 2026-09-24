@@ -14,6 +14,7 @@ import {
   type ObservedStatus,
   type ObservedStage,
   type ObservedReaction,
+  type Posture,
 } from '@fantasy/domain/spatial';
 import { add, cosDegrees, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
 import type { MotionState } from './movement.ts';
@@ -22,6 +23,7 @@ import { metres } from './terrain.ts';
 import { publicStatuses } from './status-observation.ts';
 import type { StatusCohort } from './status.ts';
 import { observedCondition } from './observed-conditions.ts';
+import { surveySearch, type SearchMemory } from './search.ts';
 
 export type ObservedActor = {
   id: string;
@@ -36,6 +38,7 @@ export type ObservedActor = {
   statuses?: ObservedStatus[];
   stage?: ObservedStage;
   reaction?: ObservedReaction;
+  posture?: Posture;
 };
 export type ObservableProjectile = {
   id: string;
@@ -43,6 +46,8 @@ export type ObservableProjectile = {
   position: Vec3;
   velocity: Vec3;
   radiusMm?: number;
+  element?: Experience['element'] | undefined;
+  attackCueId?: string;
 };
 export type Observation = DeepReadonly<{
   sampledAt: number;
@@ -62,7 +67,18 @@ export type PerceptionMemory = DeepReadonly<{
   expired: string[];
   terrain: ObservedSurface[];
   statusChangedAt?: number;
+  threatHistory?: ThreatExperience[];
+  search?: SearchMemory;
 }>;
+export type ThreatExperience = {
+  eventId: string;
+  sourceId: string;
+  sampledAt: number;
+  availableAt: number;
+  expiresAt: number;
+  element?: Experience['element'];
+  statusId?: string;
+};
 export const emptyMemory = (): PerceptionMemory => ({
   sampledAt: -1,
   pending: [],
@@ -196,7 +212,21 @@ export function observeImpact(
     basePower: detail.basePower,
     ...(detail.defense !== undefined && { defense: detail.defense }),
     distanceBand: Math.min(200, Math.floor(length(sub(self.position, target.position)) / 2)),
-    range: uncertain || shield ? null : { low, high: low + rules.damageQuantum },
+    range:
+      uncertain || shield || rules.relativeImpactBps
+        ? null
+        : { low, high: low + rules.damageQuantum },
+    ...(!uncertain && !shield && rules.relativeImpactBps
+      ? {
+          impactBand: (['minimal', 'weak', 'normal', 'strong'] as const)[
+            detail.basePower <= 0
+              ? 0
+              : rules.relativeImpactBps.filter(
+                  (bound) => detail.impact * 10000 >= detail.basePower * bound,
+                ).length
+          ]!,
+        }
+      : {}),
     confidenceBps: uncertain || shield ? 0 : 2500,
     ...(observedStatuses.length && { observedStatuses }),
   };
@@ -252,6 +282,7 @@ export function perceive(
   },
   terrainMode: 'surveyed' | 'observed' = 'surveyed',
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
+  bounds?: DeepReadonly<Definition<'scenario'>['bounds']>,
 ): PerceptionMemory {
   const interval = self.actor.character.perception.reactionSteps;
   let pending = [...previous.pending],
@@ -259,6 +290,7 @@ export function perceive(
     lastSeen = previous.lastSeen,
     terrain = [...previous.terrain];
   let statusChangedAt = previous.statusChangedAt;
+  let threatHistory = previous.threatHistory ? [...previous.threatHistory] : undefined;
   for (const sample of pending)
     if (sample.availableAt <= step) {
       if (
@@ -266,9 +298,31 @@ export function perceive(
         JSON.stringify(sample.enemy.statuses) !== JSON.stringify(lastSeen?.statuses)
       )
         statusChangedAt = sample.sampledAt;
+      const previouslyVisible = observation?.projectiles ?? [];
       observation = sample;
       if (sample.enemy) lastSeen = sample.enemy;
       terrain.push(...(sample.terrain ?? []));
+      if (rules.reapplication)
+        for (const p of sample.projectiles) {
+          const cueId = `${p.attackCueId ?? `projectile.${p.id}`}.${p.element}`;
+          if (
+            !p.element ||
+            previouslyVisible.some((old) => old.id === p.id) ||
+            threatHistory?.some((e) => e.eventId === cueId)
+          )
+            continue;
+          threatHistory = [
+            ...(threatHistory ?? []),
+            {
+              eventId: cueId,
+              sourceId: p.ownerId,
+              element: p.element,
+              sampledAt: sample.sampledAt,
+              availableAt: sample.availableAt,
+              expiresAt: sample.sampledAt + rules.knowledgeTtlSteps,
+            },
+          ].slice(-32);
+        }
     }
   pending = pending.filter((sample) => sample.availableAt > step);
   let sampledAt = previous.sampledAt;
@@ -299,6 +353,7 @@ export function perceive(
               ? wounds(visibleState.resources.hp, enemy.actor.character.stats.hp)
               : 'unknown',
             action: visibleState?.action ?? 'idle',
+            ...(enemy.posture ? { posture: enemy.posture.current } : {}),
             ...(visibleState?.stage
               ? {
                   stage: {
@@ -346,6 +401,8 @@ export function perceive(
           position: { ...p.position },
           velocity: { ...p.velocity },
           radiusMm: p.radiusMm ?? 80,
+          ...(p.element ? { element: p.element } : {}),
+          ...(p.attackCueId ? { attackCueId: p.attackCueId } : {}),
         })),
       terrain: terrainMode === 'observed' ? observeTerrain(world, self, step) : [],
     });
@@ -384,7 +441,38 @@ export function perceive(
     learned,
     expired,
     terrain,
+    ...(rules.search && bounds
+      ? {
+          search: surveySearch(
+            self,
+            bounds,
+            rules.search,
+            step,
+            previous.search,
+            observation,
+            (point) => {
+              // A sensor may test true geometry, but delivers only a delayed checked-cell bit.
+              // Bounds include the floor volume; its lower bound is not the walking surface.
+              const feet = self.position.y - self.actor.character.body.heightMm / 2000;
+              const ground = world.raycast(
+                { ...point, y: feet + 0.75 },
+                { ...point, y: bounds.min.y / 1000 },
+                'movement',
+              );
+              return (
+                !!ground &&
+                ground.normal.y > 0.5 &&
+                canSee(world, self, {
+                  ...ground.point,
+                  y: ground.point.y + rules.search!.lowSightMm / 1000,
+                })
+              );
+            },
+          ),
+        }
+      : {}),
     ...(statusChangedAt !== undefined && { statusChangedAt }),
+    ...(threatHistory ? { threatHistory: threatHistory.filter((e) => e.expiresAt > step) } : {}),
     pendingExperience: previous.pendingExperience.filter(
       (e) => e.availableAt > step && e.expiresAt > step,
     ),
@@ -397,9 +485,11 @@ export type DecisionView = {
   statusIds: readonly string[];
   memory: PerceptionMemory;
   step?: number;
+  gravityMmPerSecond2?: number;
   used?: Readonly<Record<string, number>>;
   reactionReadyAt?: Readonly<Record<string, number>>;
   canAct?: boolean;
+  activeAbility?: DeepReadonly<Definition<'ability'>>;
   canMove?: boolean;
   stageOwnsMotion?: boolean;
   speedBps?: number;

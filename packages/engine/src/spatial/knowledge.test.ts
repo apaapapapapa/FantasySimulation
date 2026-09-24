@@ -13,69 +13,95 @@ import { aiFixture, impactEvidence } from '../../test-support/ai.ts';
 import { knownTerrainWorld } from './known-terrain.ts';
 import { Navigator } from './navigation.ts';
 import { contactObservation } from './combat-effects.ts';
+import { TACTICAL_AI } from './tactical-samples.ts';
 
 beforeAll(initializePhysics);
 describe('private delayed bounded cognition', () => {
-  it('does not distinguish hidden enemy definitions with the same lawful visible appearance', async () => {
-    const f = await aiFixture();
-    try {
-      const hidden = {
-        ...f.enemy,
-        actor: {
-          ...f.enemy.actor,
-          character: {
-            ...f.enemy.actor.character,
-            name: 'secret name',
-            stats: {
-              ...f.enemy.actor.character.stats,
-              hp: 900,
-              mp: 99999,
-              resistances: {
-                physical: 10000,
-                fire: 10000,
-                ice: 10000,
-                lightning: 10000,
-                arcane: 10000,
+  it.each([AI_RULES, TACTICAL_AI])(
+    'does not distinguish hidden enemy definitions with the same lawful visible appearance',
+    async (rules) => {
+      const f = await aiFixture();
+      try {
+        const hidden = {
+          ...f.enemy,
+          actor: {
+            ...f.enemy.actor,
+            character: {
+              ...f.enemy.actor.character,
+              name: 'secret name',
+              stats: {
+                ...f.enemy.actor.character.stats,
+                hp: 900,
+                mp: 99999,
+                resistances: {
+                  physical: 10000,
+                  fire: 10000,
+                  ice: 10000,
+                  lightning: 10000,
+                  arcane: 10000,
+                },
               },
+              abilities: [],
             },
             abilities: [],
           },
-          abilities: [],
-        },
-      };
-      const observe = (enemy: typeof f.enemy, hp: number) => {
-        let memory = perceive(f.world, f.self, enemy, [], 0, emptyMemory(), {
-          resources: { hp, mp: 99999, shield: 99999 },
-          action: 'idle',
-        });
-        memory = perceive(f.world, f.self, enemy, [], 5, memory, {
-          resources: { hp, mp: 99999, shield: 99999 },
-          action: 'idle',
-        });
-        return memory;
-      };
-      const ordinary = observe(f.enemy, 100),
-        secret = observe(hidden, 900);
-      expect(secret).toEqual(ordinary);
-      const ready = new Set(f.abilities.map((a) => a.id));
-      expect(choosePolicy({ ...f.view, memory: secret }, ready, false)).toEqual(
-        choosePolicy({ ...f.view, memory: ordinary }, ready, false),
-      );
-      expect(Object.keys(secret.observation!.enemy!).sort()).toEqual([
-        'action',
-        'appearance',
-        'facing',
-        'id',
-        'position',
-        'size',
-        'step',
-        'velocity',
-        'wounds',
-      ]);
-    } finally {
-      f.world.free();
-    }
-  });
+        };
+        const observe = (enemy: typeof f.enemy, hp: number) => {
+          let memory = perceive(
+            f.world,
+            f.self,
+            enemy,
+            [],
+            0,
+            emptyMemory(),
+            {
+              resources: { hp, mp: 99999, shield: 99999 },
+              action: 'idle',
+            },
+            'surveyed',
+            rules,
+            f.battle.scenario.bounds,
+          );
+          memory = perceive(
+            f.world,
+            f.self,
+            enemy,
+            [],
+            5,
+            memory,
+            {
+              resources: { hp, mp: 99999, shield: 99999 },
+              action: 'idle',
+            },
+            'surveyed',
+            rules,
+            f.battle.scenario.bounds,
+          );
+          return memory;
+        };
+        const ordinary = observe(f.enemy, 100),
+          secret = observe(hidden, 900);
+        expect(secret).toEqual(ordinary);
+        const ready = new Set(f.abilities.map((a) => a.id));
+        expect(choosePolicy({ ...f.view, rules, memory: secret }, ready, false)).toEqual(
+          choosePolicy({ ...f.view, rules, memory: ordinary }, ready, false),
+        );
+        expect(Object.keys(secret.observation!.enemy!).sort()).toEqual([
+          'action',
+          'appearance',
+          'facing',
+          'id',
+          'position',
+          'size',
+          'step',
+          'velocity',
+          'wounds',
+        ]);
+      } finally {
+        f.world.free();
+      }
+    },
+  );
   it('learns coarse visible effects only after reaction, distinguishes confounders and never learns unseen zero damage', async () => {
     const f = await aiFixture();
     const wall = new SpatialWorld([

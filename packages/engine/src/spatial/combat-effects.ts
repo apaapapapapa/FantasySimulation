@@ -19,6 +19,8 @@ import { queueForce } from './forces.ts';
 import { planStatusEffects } from './status-reactions.ts';
 import { applyStatuses, UnresolvedRuleError } from './status.ts';
 import type { EffectApplication } from './effects.ts';
+import { rememberThreat } from './threat-memory.ts';
+import { sub, unit, type Vec3 } from './math.ts';
 const effectEventKinds = {
   damage: 'damage',
   heal: 'heal',
@@ -41,6 +43,7 @@ export type PendingEffect = DamageSnapshot & {
   reaction?: ReactionContext;
   damageCancelled?: boolean;
   observation?: { self: MotionState; target: MotionState };
+  incomingDirection?: Vec3;
 };
 /** Keep the contact geometry even though simultaneous effects commit after movement. */
 export function contactObservation(
@@ -125,6 +128,38 @@ export function commitEffects(
         app.event.amount = Math.floor((app.effect.amount * (app.scaleBps ?? 10000)) / 10000);
       }
       const observer = actors.find((a) => a.motion.actor.participant.actorId === app.actorId);
+      if (
+        app.effect.kind === 'damage' &&
+        detail &&
+        observer &&
+        observer !== actor &&
+        actor.memory.search
+      ) {
+        const direction =
+          app.incomingDirection ??
+          unit(
+            sub(
+              app.observation?.self.position ?? observer.motion.position,
+              app.observation?.target.position ?? actor.motion.position,
+            ),
+          );
+        actor.memory = {
+          ...actor.memory,
+          search: {
+            ...actor.memory.search,
+            cues: [
+              ...actor.memory.search.cues,
+              {
+                id: app.id,
+                sampledAt: activationStep,
+                availableAt: activationStep + actor.motion.actor.character.perception.reactionSteps,
+                origin: { ...actor.motion.position },
+                direction: { ...direction },
+              },
+            ].slice(-8),
+          },
+        };
+      }
       if (app.effect.kind === 'force') {
         const geometry = app.observation ?? {
           self: observer?.motion ?? actor.motion,
@@ -197,6 +232,7 @@ export function commitEffects(
       }
     }
     emitStatusChanges(result, journal, activationStep, phase);
+    if (!deferStatuses) rememberApplications(actor, result.changes, applications, context);
     actor.resources = result.resources;
     actor.statuses = result.statuses;
   }
@@ -274,6 +310,49 @@ export function commitTransactionStatuses(
       activationStep,
       phase,
     );
+    rememberApplications(actor, applied.changes, incoming, context);
     actor.statuses = applied.statuses;
+  }
+}
+
+function rememberApplications(
+  actor: ActorState,
+  changes: ReturnType<typeof applyStatuses>['changes'],
+  incoming: readonly EffectApplication[],
+  { battle, activationStep }: EffectContext,
+) {
+  if (!battle.rules.ai?.reapplication) return;
+  for (const change of changes) {
+    if (change.kind !== 'apply' && change.kind !== 'refresh') continue;
+    const cause = incoming.find(
+      (e) =>
+        e.actorId &&
+        e.actorId !== actor.motion.actor.participant.actorId &&
+        change.causes.includes(e.id),
+    );
+    if (!cause?.actorId) continue;
+    const elemental = incoming.find(
+      (e) =>
+        e.actorId === cause.actorId &&
+        e.abilityId === cause.abilityId &&
+        !!cause.parentEventId &&
+        e.parentEventId === cause.parentEventId &&
+        e.effect.kind === 'damage',
+    );
+    const element =
+      elemental?.effect.kind === 'damage'
+        ? elemental.effect.element
+        : change.revision.definition.periodic.flatMap((p) =>
+            p.kind === 'damage' ? [p.element] : [],
+          )[0];
+    actor.memory = rememberThreat(actor.memory, {
+      eventId: cause.id,
+      sourceId: cause.actorId,
+      statusId: change.revision.id,
+      ...(element ? { element } : {}),
+      sampledAt: activationStep,
+      availableAt: activationStep + actor.motion.actor.character.perception.reactionSteps,
+      expiresAt: activationStep + battle.rules.ai.knowledgeTtlSteps,
+    });
   }
 }

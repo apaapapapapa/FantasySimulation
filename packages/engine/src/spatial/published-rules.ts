@@ -77,3 +77,10 @@ export const motionRules = {
   contentHash: 'sha256:20df97189317e59ee7ac872dd894d0f2a6b2a00cb7035cc64a62ba0d9c6b41dd',
   definition: { ...simultaneousRules.definition, rulesVersion: 'spatial-v1.17' },
 } satisfies Revision;
+
+export const reactionsRules = {
+  ...simultaneousRules,
+  id: 'standard-reactions-v1',
+  contentHash: 'sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6',
+  definition: { ...simultaneousRules.definition, rulesVersion: 'spatial-v1.18' },
+} satisfies Revision;

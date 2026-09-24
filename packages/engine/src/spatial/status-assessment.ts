@@ -6,6 +6,7 @@ import { knownPeriodicDamage } from './status-risk.ts';
 import { SpatialBudgetError } from './physics.ts';
 import type { DecisionView } from './perception.ts';
 import { abilityCategories } from './categories.ts';
+import { reapplicationEstimate } from './threat-memory.ts';
 
 /** Forecast one ability transaction using self knowledge or delayed public summaries only. */
 export function assessStatusEffects(
@@ -29,6 +30,7 @@ export function assessStatusEffects(
     }),
   );
   const handled = new Set<DeepReadonly<Effect>>();
+  const reapplication: NonNullable<ReturnType<typeof reapplicationEstimate>>[] = [];
   const result = (
     value: number,
     risk?: { before: number; after: number; nonDamageValue: number },
@@ -36,6 +38,7 @@ export function assessStatusEffects(
     risk,
     value,
     handled,
+    reapplication,
     reason:
       value !== 0
         ? 'defined status benefit/reaction from own knowledge or observed public state'
@@ -101,6 +104,17 @@ export function assessStatusEffects(
         plan.dispels,
         activationStep,
       ).statuses;
+      const removed = active.filter((s) => !after.some((a) => a.revision.id === s.revision.id));
+      for (const s of removed) {
+        const estimate = reapplicationEstimate(view, s.revision.id, activationStep);
+        if (estimate) reapplication.push(estimate);
+      }
+      const limited = active.map((s) => {
+        const estimate = reapplication.find((e) => e.statusId === s.revision.id);
+        return estimate
+          ? { ...s, endStep: Math.min(s.endStep, activationStep + estimate.effectiveSteps) }
+          : s;
+      });
       const damage = (states: readonly StatusCohort[]) =>
         knownPeriodicDamage(
           view.self.actor,
@@ -110,16 +124,16 @@ export function assessStatusEffects(
           horizon,
           activationStep,
         );
-      const beforeDamage = damage(active),
+      const beforeDamage = damage(limited),
         afterDamage = damage(after);
       if (beforeDamage === undefined || afterDamage === undefined) return result(0);
       return result(
-        benefit(after) - benefit(active),
+        benefit(after) - benefit(limited),
         beforeDamage || afterDamage
           ? {
               before: beforeDamage,
               after: afterDamage,
-              nonDamageValue: benefit(after, true) - benefit(active, true),
+              nonDamageValue: benefit(after, true) - benefit(limited, true),
             }
           : undefined,
       );

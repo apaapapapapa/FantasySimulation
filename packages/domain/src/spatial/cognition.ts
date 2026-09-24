@@ -13,6 +13,7 @@ import {
   ObservedStageSchema,
   ObservedReactionSchema,
   ReactionPointSchema,
+  PostureSchema,
 } from './contracts.ts';
 
 const tick = z.number().int().min(0).max(8000),
@@ -70,14 +71,17 @@ export const ExperienceSchema = z
     basePower: quantity,
     distanceBand: z.number().int().min(0).max(200),
     range: EstimateRangeSchema.nullable(),
+    impactBand: z.enum(['minimal', 'weak', 'normal', 'strong']).optional(),
     confidenceBps: bps,
     observedStatuses: ObservedStatusesSchema.optional(),
   })
   .superRefine((e, ctx) => {
     if (e.availableAt < e.sampledAt || e.expiresAt < e.sampledAt)
       ctx.addIssue({ code: 'custom', message: 'Experience time precedes observation' });
-    if ((e.kind === 'impact' || e.kind === 'reveal') !== !!e.range)
+    if ((e.kind === 'impact' || e.kind === 'reveal') !== (!!e.range || !!e.impactBand))
       ctx.addIssue({ code: 'custom', message: 'Only measured impact/reveal carries a range' });
+    if (e.impactBand && (e.kind !== 'impact' || e.range !== null))
+      ctx.addIssue({ code: 'custom', message: 'Relative impact carries only a band' });
     if (e.kind === 'reveal' && (e.basePower !== 0 || (e.range?.high ?? 0) > 10000))
       ctx.addIssue({ code: 'custom', message: 'Reveal is a bounded field, not damage' });
   });
@@ -99,6 +103,18 @@ export const CandidateAssessmentSchema = z.strictObject({
   exploration: quantity,
   evidence: z.array(IdSchema).max(32),
   reason: z.string().max(300),
+  reapplication: z
+    .array(
+      z.strictObject({
+        statusId: IdSchema,
+        intervalSteps: quantity,
+        effectiveSteps: quantity,
+        basis: z.enum(['self-application', 'visible-element']),
+        evidence: z.array(IdSchema).max(32),
+      }),
+    )
+    .max(64)
+    .optional(),
 });
 export type CandidateAssessment = z.infer<typeof CandidateAssessmentSchema>;
 export const ReactionEstimateSchema = z.strictObject({
@@ -113,7 +129,7 @@ export const ReactionEstimateSchema = z.strictObject({
 });
 export type ReactionEstimate = z.infer<typeof ReactionEstimateSchema>;
 const RandomDrawSchema = z.strictObject({
-  purpose: z.enum(['action', 'dodge', 'movement']),
+  purpose: z.enum(['action', 'dodge', 'movement', 'search', 'cover']),
   before: quantity,
   after: quantity,
   draws: z.number().int().min(0).max(128),
@@ -141,6 +157,53 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
   }),
   z.strictObject({
     kind: z.literal('decision'),
+    cover: z
+      .strictObject({
+        goalMm: Vec3Schema.optional(),
+        posture: PostureSchema.optional(),
+        candidates: z
+          .array(
+            z.strictObject({
+              key: z.string().max(100),
+              weight: quantity,
+              weightBeforeCutoff: quantity.optional(),
+            }),
+          )
+          .max(25),
+        draw: DrawSchema,
+      })
+      .optional(),
+    search: z
+      .strictObject({
+        forced: z.boolean(),
+        waitSteps: tick,
+        selection: z.string().max(100),
+        checkedAt: z.array(tick.nullable()).max(25),
+        goalMm: Vec3Schema.nullable().optional(),
+        cues: z
+          .array(
+            z.strictObject({
+              id: IdSchema,
+              sampledAt: tick,
+              availableAt: tick,
+              originMm: Vec3Schema,
+              directionBps: Vec3Schema,
+            }),
+          )
+          .max(8)
+          .optional(),
+        candidates: z
+          .array(
+            z.strictObject({
+              key: z.string().max(100),
+              weight: quantity,
+              weightBeforeCutoff: quantity.optional(),
+            }),
+          )
+          .max(25),
+        draw: DrawSchema.optional(),
+      })
+      .optional(),
     locomotion: z
       .strictObject({
         gait: z.enum(['walk', 'run', 'slow']),
@@ -182,6 +245,7 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
       .optional(),
     observedStage: ObservedStageSchema.optional(),
     observedReaction: ObservedReactionSchema.optional(),
+    observedPosture: PostureSchema.optional(),
     reactions: z.array(ReactionEstimateSchema).max(160).optional(),
     reactionReserve: z.strictObject({ hp: quantity, mp: quantity, stamina: quantity }).optional(),
     method: z.enum(['sole', 'weighted', 'exploration', 'equal', 'none']),

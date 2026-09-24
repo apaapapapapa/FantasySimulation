@@ -69,6 +69,8 @@ import { applyStageMotion } from './stage-motion.ts';
 import { commitReactiveEffects } from './reactions.ts';
 import { releaseCounters } from './counter-release.ts';
 import { visibleReactionCue } from './reaction-assessment.ts';
+import { seenAttack } from './threat-memory.ts';
+import { advancePosture, postureAllows, postureSpeed } from './posture.ts';
 
 export type SimulationEnd = {
   steps: number;
@@ -165,6 +167,14 @@ export function* simulate(
         const before = actors.map((a) => displayActor(a, step));
         const next = actors.map(cloneActor);
         const journal = new Journal(sequence, bytes, budget);
+        for (const actor of next)
+          actor.motion = advancePosture(
+            actor.motion,
+            undefined,
+            step,
+            world,
+            actors.map((a) => a.motion),
+          );
         if (step === 0) {
           const effects: PendingEffect[] = [];
           for (const actor of next) {
@@ -371,6 +381,12 @@ export function* simulate(
                 p.ability.definition.attack.kind === 'projectile'
                   ? p.ability.definition.attack.radiusMm
                   : 0,
+              ...(battle.rules.ai?.reapplication
+                ? {
+                    element: p.ability.definition.effects.find((e) => e.kind === 'damage')?.element,
+                    attackCueId: p.cause,
+                  }
+                : {}),
             })),
             step,
             actor.memory,
@@ -383,10 +399,14 @@ export function* simulate(
             },
             battle.scenario.terrainKnowledge ?? 'observed',
             battle.rules.ai!,
+            battle.scenario.bounds,
           );
           if (actor.action && actor.action.recoveryUntil <= step) actor.action = null;
           const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
-          const view = selfView(actor, step, battle.rules.ai!, battle.statuses);
+          const view = {
+            ...selfView(actor, step, battle.rules.ai!, battle.statuses),
+            gravityMmPerSecond2: battle.rules.gravityMmPerSecond2,
+          };
           checkStageInterruption(actor, view, step, journal, 'declaration');
           const flight =
             stats.flight &&
@@ -465,15 +485,52 @@ export function* simulate(
                     battle.rules,
                     true,
                   )
-                : navigators.get(actorId(actor))!;
+                : actor.motion.posture
+                  ? new Navigator(world, actor.motion.actor, battle.scenario, battle.rules)
+                  : navigators.get(actorId(actor))!;
               actor.decision = choosePolicy(
                 view,
                 aiBoundary ? ready : new Set(),
                 flight,
                 actor.decisionRandom,
-                (from, to) => navigator.knownClearance(from, to),
+                (from, to, body) => navigator.knownClearance(from, to, body),
+                battle.rules.ai?.search
+                  ? {
+                      bounds: battle.scenario.bounds,
+                      obstacles: (knownWorld ?? world).obstacles('vision'),
+                      blocked: (from, to, layer) => (knownWorld ?? world).occluded(from, to, layer),
+                    }
+                  : undefined,
               );
               actor.decisionRandom = actor.decision.random!;
+              if (actor.decision.search)
+                actor.memory = { ...actor.memory, search: actor.decision.search };
+              const requestedAbility =
+                actor.action?.ability ??
+                actor.motion.actor.abilities.find((a) => a.id === actor.decision.abilityId);
+              const requestedPosture = actor.decision.posture;
+              if (
+                !view.stageOwnsMotion &&
+                view.canMove &&
+                (!requestedAbility ||
+                  !actor.motion.posture ||
+                  !requestedPosture ||
+                  postureAllows(
+                    {
+                      ...actor.motion,
+                      posture: { ...actor.motion.posture, current: requestedPosture },
+                    },
+                    requestedAbility.definition,
+                  ))
+              )
+                actor.motion = advancePosture(
+                  actor.motion,
+                  requestedPosture,
+                  step,
+                  world,
+                  actors.map((a) => a.motion),
+                  actor.decision.postureUntil,
+                );
               journal.emit({
                 kind: 'decision',
                 step,
@@ -485,7 +542,7 @@ export function* simulate(
               const steering = steerPolicy(view, actor.decision, navigator, {
                 flight,
                 canMove,
-                speedBps: stats.speedBps,
+                speedBps: Math.floor((stats.speedBps * postureSpeed(actor.motion)) / 10000),
                 maxPathNodes: budget.maxPathNodes,
               });
               pathNodes += steering.navigation?.visited ?? 0;
@@ -502,7 +559,7 @@ export function* simulate(
           actor.intent = {
             ...actor.intent,
             canMove,
-            speedBps: stats.speedBps,
+            speedBps: Math.floor((stats.speedBps * postureSpeed(actor.motion)) / 10000),
             flight,
           };
         }
@@ -562,7 +619,12 @@ export function* simulate(
                 },
               ]);
               const silenced = !!view.silenced && blockedBySilence(definition);
-              if (!inObservedRange(definition, view) || !payment.ok || silenced) {
+              if (
+                !postureAllows(actor.motion, definition) ||
+                !inObservedRange(definition, view) ||
+                !payment.ok ||
+                silenced
+              ) {
                 if (payment.ok) resources.cancel('action');
                 actor.readyAt =
                   step +
@@ -584,7 +646,9 @@ export function* simulate(
                     ? `insufficient-${payment.reason}`
                     : silenced
                       ? 'silenced'
-                      : 'observed-range-or-facing',
+                      : !postureAllows(actor.motion, definition)
+                        ? 'posture'
+                        : 'observed-range-or-facing',
                 });
               } else {
                 const paid = resources.commit('action');
@@ -650,18 +714,19 @@ export function* simulate(
           const ability = staged?.ability ?? action.ability;
           const definition = ability.definition;
           if (
-            !staged &&
-            (!inObservedRange(
-              definition,
-              selfView(actor, step, battle.rules.ai!, battle.statuses),
-            ) ||
-              selfView(actor, step, battle.rules.ai!, battle.statuses).incapacitated ||
-              !conditionMatches(
-                definition.condition,
+            !postureAllows(actor.motion, definition) ||
+            (!staged &&
+              (!inObservedRange(
+                definition,
                 selfView(actor, step, battle.rules.ai!, battle.statuses),
               ) ||
-              (selfView(actor, step, battle.rules.ai!, battle.statuses).silenced &&
-                blockedBySilence(definition)))
+                selfView(actor, step, battle.rules.ai!, battle.statuses).incapacitated ||
+                !conditionMatches(
+                  definition.condition,
+                  selfView(actor, step, battle.rules.ai!, battle.statuses),
+                ) ||
+                (selfView(actor, step, battle.rules.ai!, battle.statuses).silenced &&
+                  blockedBySilence(definition))))
           ) {
             journal.emit({
               kind: 'fizzle',
@@ -693,6 +758,17 @@ export function* simulate(
             continue;
           }
           const enemy = next.find((a) => actorId(a) !== actorId(actor))!;
+          if (battle.rules.ai?.reapplication)
+            enemy.memory = seenAttack(
+              world,
+              enemy.motion,
+              actor.motion,
+              definition.effects,
+              launch.id,
+              step,
+              enemy.memory,
+              battle.rules.ai.knowledgeTtlSteps,
+            );
           const aim = launchDirection(
             actor.motion.facing,
             definition.aimErrorMilliDegrees,

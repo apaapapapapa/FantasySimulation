@@ -9,6 +9,7 @@ import { copyDamageSnapshot } from './status-damage.ts';
 import { traceAttack } from './attacks.ts';
 import type { HitLedger } from './hit-ledger.ts';
 import { explosionCoverage, projectileCurve, type ProjectileState } from './projectiles.ts';
+import { sub, unit } from './math.ts';
 
 /** Every contact uses the same committed movement traces; damage is returned for simultaneous resolution. */
 export function stepProjectiles(
@@ -96,6 +97,7 @@ export function stepProjectiles(
           ...(projectile.stage ? { stage: projectile.stage } : {}),
         });
         if (admission?.accepted === false) continue;
+        const incoming = curve.trace.find((segment) => contact.time <= segment.to)!;
         for (const effect of projectile.ability.definition.effects)
           effects.push({
             actorId: projectile.ownerId,
@@ -106,6 +108,11 @@ export function stepProjectiles(
             abilityId: projectile.ability.id,
             ...(projectile.stage ? { stage: projectile.stage } : {}),
             scaleBps,
+            incomingDirection: unit(
+              shape.explosionRadiusMm > 0
+                ? sub(contact.center, at(target.trace, contact.time))
+                : sub(incoming.start, incoming.end),
+            ),
             observation: contactObservation(
               moved,
               owner.motion,

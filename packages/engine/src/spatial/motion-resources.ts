@@ -4,6 +4,7 @@ import { length, sub } from './math.ts';
 import type { MotionIntent, MovedActor } from './movement.ts';
 import { canMaintainFlight, flightRate, gaitProfile, type Gait } from './locomotion.ts';
 import { ResourceBudget, staminaExhausted } from './resources.ts';
+import { postureRequiresWalk } from './posture.ts';
 
 const unit = 1_000_000n;
 const distanceUnits = (metres: number, rate: number) =>
@@ -46,7 +47,13 @@ export function reserveMotion(
     dodgePaid = budget.reserve('dodge', [{ stamina: m.dodgeStamina }]).ok;
     if (!dodgePaid) intent.canMove = false;
   }
-  let gait: Gait = ready ? (actor.decision.gait ?? 'walk') : 'slow';
+  let gait: Gait = ready
+    ? postureRequiresWalk(actor.motion)
+      ? 'walk'
+      : (actor.decision.gait ?? 'walk')
+    : 'slow';
+  if (actor.motion.posture?.current === 'prone' || actor.motion.posture?.transition)
+    intent.jump = false;
   let fixed = 0,
     motionUnits = 0n,
     stepRate = 0;

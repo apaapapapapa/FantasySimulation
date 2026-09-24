@@ -7,6 +7,7 @@ import { hitscan, inObservedRange, launchDirection } from './attacks.ts';
 import { bodyPoint, conditionMatches } from './perception.ts';
 import { selfView } from './self-view.ts';
 import { blockedBySilence } from './categories.ts';
+import { postureAllows } from './posture.ts';
 import { reactionPayload } from './reactions.ts';
 import { add, mul } from './math.ts';
 import { straight, type SpatialWorld } from './physics.ts';
@@ -34,6 +35,7 @@ export function releaseCounters(
         actor.resources.hp > 0 &&
         enemy.resources.hp > 0 &&
         !view.incapacitated &&
+        postureAllows(actor.motion, definition) &&
         !(view.silenced && blockedBySilence(definition)) &&
         conditionMatches(definition.condition, view) &&
         inObservedRange(definition, view);

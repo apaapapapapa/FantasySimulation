@@ -40,6 +40,8 @@ export type EffectApplication = DamageSnapshot & {
   actorId: string | null;
   targetId: string;
   effect: DeepReadonly<Effect>;
+  abilityId?: string | null;
+  parentEventId?: string | null;
   scaleBps?: number;
   dealtBps?: number;
   damageCancelled?: boolean;

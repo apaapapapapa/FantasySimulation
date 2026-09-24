@@ -324,7 +324,14 @@ export class Navigator {
       ? { ...bestPath, visited }
       : { kind: resourceLimited ? 'resource-limited' : 'unreachable', visited };
   }
-  knownClearance(from: Vec3, to: Vec3) {
+  knownClearance(from: Vec3, to: Vec3, body?: DeepReadonly<Definition<'character'>['body']>) {
+    if (body) {
+      const shape = capsuleShape(bodyCapsule(body));
+      return (
+        !this.world.overlaps(to, shape) &&
+        !this.world.sweep(from, sub(to, from), shape, 'movement', 1, COLLISION_SKIN / 2)
+      );
+    }
     return this.clear(from, to);
   }
 }
