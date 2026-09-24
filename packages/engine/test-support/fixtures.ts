@@ -1,6 +1,6 @@
 import type { Definition, Manifest, StreamRecord } from '@fantasy/domain/spatial';
 import { prepareBattle, reference, sealRevision } from '../src/spatial/prepare.ts';
-import { sampleManifest } from '../src/spatial/sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 
 type Scenario = Definition<'scenario'>;
 export type BoxObstacle = Extract<Scenario['obstacles'][number], { kind: 'box' }>;

@@ -39,6 +39,7 @@
     "publication": "vp run --filter @fantasy/api publication"
   },
   "devDependencies": {
+    "@fantasy/samples": "workspace:*",
     "@fontsource/noto-sans-jp": "5.2.8",
     "@octokit/core": "7.0.8",
     "@octokit/plugin-paginate-rest": "14.0.0",
@@ -53,6 +54,7 @@
     "drizzle-kit": "0.31.11",
     "drizzle-orm": "0.45.3",
     "fast-check": "4.10.2",
+    "js-yaml": "4.3.2",
     "semantic-release": "25.0.9",
     "typescript": "7.0.2",
     "vite-plus": "0.3.3"

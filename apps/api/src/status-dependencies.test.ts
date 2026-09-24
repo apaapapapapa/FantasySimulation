@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { sampleCatalog, sealRevision, reference } from '@fantasy/engine/spatial';
+import { sealRevision, reference } from '@fantasy/engine/spatial';
+import { sampleCatalog } from '@fantasy/samples';
 import { openStore } from './store.ts';
 
 describe('persisted status transformations', () => {

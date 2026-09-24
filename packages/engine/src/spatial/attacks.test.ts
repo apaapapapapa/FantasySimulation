@@ -10,7 +10,7 @@ import {
 } from './attacks.ts';
 import { initializePhysics, SpatialWorld, straight, type Obstacle } from './physics.ts';
 import { prepareBattle } from './prepare.ts';
-import { sampleManifest } from './sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 import { initialMotion } from './movement.ts';
 import { emptyMemory } from './perception.ts';
 import { length, mul, sub } from './math.ts';

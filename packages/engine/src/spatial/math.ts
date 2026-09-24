@@ -43,4 +43,4 @@ export function turnToward(facing: Vec3, desired: Vec3, degrees: number): Vec3 {
   return unit(add(mul(from, cosDegrees(degrees)), mul(tangent, sinDegrees(degrees))));
 }
 
-export { floatBits, encodeNumericState } from '@fantasy/domain/spatial';
+export { floatBits, encodeNumericState } from '@fantasy/domain/spatial/execution';

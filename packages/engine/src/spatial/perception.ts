@@ -15,7 +15,7 @@ import {
   type ObservedStage,
   type ObservedReaction,
   type Posture,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { add, cosDegrees, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
 import type { MotionState } from './movement.ts';
 import type { SpatialWorld } from './physics.ts';

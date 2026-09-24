@@ -4,7 +4,7 @@ import type {
   Definition,
   Effect,
   StatusCategory,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import type { StatusRevision } from './status.ts';
 
 type Ability = DeepReadonly<Definition<'ability'>>;

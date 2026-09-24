@@ -5,7 +5,7 @@ import {
   type Definition,
   type ObservedStatus,
   type StatusAdjustment,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { permanentStatus, statusCategories } from './categories.ts';
 import { adjustedStatusValue } from './status-modifiers.ts';
 import { statusReactions } from './status-reactions.ts';

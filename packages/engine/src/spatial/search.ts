@@ -1,4 +1,4 @@
-import type { DeepReadonly, Definition } from '@fantasy/domain/spatial';
+import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import type { MotionState } from './movement.ts';
 import type { Observation, DecisionView } from './perception.ts';
 import { add, mul, sub, length, unit, type Vec3 } from './math.ts';

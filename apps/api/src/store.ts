@@ -29,13 +29,13 @@ import {
 import {
   implementation,
   profile,
-  prepareBattle,
   reference,
   revisionHash,
   sealRevision,
   unsupportedExecutionReason,
   type PreparedBattle,
 } from '@fantasy/engine/spatial';
+import { prepareBattle } from '@fantasy/engine/spatial/execution';
 import { repositoryRoot } from './config.ts';
 
 export class StoreError extends Error {

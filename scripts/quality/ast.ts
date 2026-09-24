@@ -1,11 +1,9 @@
 import { API } from 'typescript/unstable/sync';
-import type { Checker } from 'typescript/unstable/sync';
+import type { Checker, Program } from 'typescript/unstable/sync';
 import {
   isImportDeclaration,
   isExportDeclaration,
   isStringLiteral,
-  isNamedImports,
-  isNamedExports,
   isImportTypeNode,
   isLiteralTypeNode,
   isCallExpression,
@@ -29,7 +27,12 @@ export function walk(node: Node, visit: (node: Node) => void): void {
 export function withSources<T>(
   root: string,
   paths: string[],
-  use: (sources: Map<string, SourceFile>, options: Record<string, unknown>, checker: Checker) => T,
+  use: (
+    sources: Map<string, SourceFile>,
+    options: Record<string, unknown>,
+    checker: Checker,
+    program: Program,
+  ) => T,
 ): T {
   if (!paths.length || paths.length > 10000 || new Set(paths).size !== paths.length)
     throw Error('Invalid source coverage');
@@ -68,6 +71,7 @@ export function withSources<T>(
         sources,
         project.compilerOptions as unknown as Record<string, unknown>,
         project.checker,
+        project.program,
       );
     } finally {
       snapshot.dispose();
@@ -77,37 +81,39 @@ export function withSources<T>(
   }
 }
 export function importEdges(file: SourceFile, allowedTypeReference?: string): ImportEdge[] {
-  const edges: ImportEdge[] = [];
+  return moduleReferences(file, allowedTypeReference).map(({ specifier, typeOnly }) => ({
+    specifier,
+    typeOnly,
+  }));
+}
+export function moduleReferences(file: SourceFile, allowedTypeReference?: string) {
+  const edges: (ImportEdge & { node: Node })[] = [];
   walk(file, (node) => {
     if (isImportDeclaration(node)) {
       if (!isStringLiteral(node.moduleSpecifier)) throw Error('Nonliteral static import');
-      const c = node.importClause,
-        bindings = c?.namedBindings;
-      const only =
-        !!c &&
-        (c.phaseModifier === SyntaxKind.TypeKeyword ||
-          (!c.name &&
-            !!bindings &&
-            isNamedImports(bindings) &&
-            bindings.elements.length > 0 &&
-            bindings.elements.every((e) => e.isTypeOnly)));
-      edges.push({ specifier: node.moduleSpecifier.text, typeOnly: only });
-    } else if (isExportDeclaration(node) && node.moduleSpecifier) {
-      if (!isStringLiteral(node.moduleSpecifier)) throw Error('Nonliteral export');
-      const clause = node.exportClause;
+      // Inline `import { type T }` leaves `import {}` and executes side effects
+      // under Node type stripping / verbatimModuleSyntax. Only import type erases the edge.
+      const only = node.importClause?.phaseModifier === SyntaxKind.TypeKeyword;
       edges.push({
         specifier: node.moduleSpecifier.text,
-        typeOnly:
-          node.isTypeOnly ||
-          (!!clause &&
-            isNamedExports(clause) &&
-            clause.elements.length > 0 &&
-            clause.elements.every((e) => e.isTypeOnly)),
+        typeOnly: only,
+        node: node.moduleSpecifier,
+      });
+    } else if (isExportDeclaration(node) && node.moduleSpecifier) {
+      if (!isStringLiteral(node.moduleSpecifier)) throw Error('Nonliteral export');
+      edges.push({
+        specifier: node.moduleSpecifier.text,
+        node: node.moduleSpecifier,
+        typeOnly: node.isTypeOnly,
       });
     } else if (isImportTypeNode(node)) {
       if (!isLiteralTypeNode(node.argument) || !isStringLiteral(node.argument.literal))
         throw Error('Nonliteral import type');
-      edges.push({ specifier: node.argument.literal.text, typeOnly: true });
+      edges.push({
+        specifier: node.argument.literal.text,
+        typeOnly: true,
+        node: node.argument.literal,
+      });
     } else if (
       isCallExpression(node) &&
       (node.expression.kind === SyntaxKind.ImportKeyword ||
@@ -116,7 +122,7 @@ export function importEdges(file: SourceFile, allowedTypeReference?: string): Im
       const argument = node.arguments[0];
       if (!argument || !isStringLiteral(argument))
         throw Error('Dynamic module expression needs an explicit boundary');
-      edges.push({ specifier: argument.text, typeOnly: false });
+      edges.push({ specifier: argument.text, typeOnly: false, node: argument });
     } else if (node.kind === SyntaxKind.ImportEqualsDeclaration)
       throw Error('Import-equals is not part of the ESM workspace contract');
   });

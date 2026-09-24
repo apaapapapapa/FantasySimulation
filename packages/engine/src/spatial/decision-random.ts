@@ -1,4 +1,4 @@
-import { nextRandom } from '@fantasy/domain/spatial';
+import { nextRandom } from '@fantasy/domain/spatial/execution';
 import { SpatialBudgetError } from './physics.ts';
 
 export type DecisionRandom = {

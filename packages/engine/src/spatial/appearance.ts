@@ -3,7 +3,7 @@ import {
   type DeepReadonly,
   type Definition,
   type Effect,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 
 /** Cues are rules data, not knowledge of an opponent's definition or resistance. */
 export function appearancePrior(

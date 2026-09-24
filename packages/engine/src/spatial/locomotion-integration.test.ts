@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { CharacterSchema, StreamRecordSchema } from '@fantasy/domain/spatial';
-import { catalogManifest } from './catalog.ts';
+import { catalogManifest } from '@fantasy/samples';
 import { runBattle } from './run.ts';
 import { initializePhysics } from './physics.ts';
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';

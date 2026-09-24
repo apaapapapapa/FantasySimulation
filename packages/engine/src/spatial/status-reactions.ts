@@ -4,7 +4,7 @@ import {
   type Definition,
   type Effect,
   type StatusReaction,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { dispelTargets, permanentStatus } from './categories.ts';
 import {
   UnresolvedRuleError,

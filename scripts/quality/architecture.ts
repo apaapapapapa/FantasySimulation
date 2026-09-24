@@ -23,6 +23,38 @@ const rule = (
 ): IRegularForbiddenRuleType => ({ name, from, to, comment, severity: 'error' });
 export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
+    'engine-domain-execution-entry',
+    { path: '^packages/engine/src/spatial/' },
+    { path: '^packages/domain/', pathNot: '^packages/domain/src/spatial/execution[.]ts$' },
+    'Engine runtime consumes only the domain execution entry.',
+  ),
+  rule(
+    'execution-contract-boundary',
+    {
+      path: '^packages/domain/src/spatial/',
+      pathNot: '/(?:index|api|batch|publication|replay|replay-state)[.]ts$',
+    },
+    {
+      path: '^packages/domain/src/spatial/(?:index|api|batch|publication|replay|replay-state)[.]ts$',
+    },
+    'Execution contracts cannot pull transport, publication or replay validation into the digest.',
+  ),
+  rule(
+    'samples-stay-outside-engine',
+    { path: '^packages/engine/src/' },
+    { path: '^packages/samples/' },
+    'Sample builders depend on the public engine, never the reverse.',
+  ),
+  rule(
+    'samples-use-public-engine',
+    { path: '^packages/samples/src/' },
+    {
+      path: '^packages/engine/',
+      pathNot: '^packages/engine/src/spatial/(?:index|execution)[.]ts$',
+    },
+    'Use the public engine API in sample builders.',
+  ),
+  rule(
     'unresolved',
     {},
     { couldNotResolve: true },

@@ -12,7 +12,7 @@ import {
   type SpecInput,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
-import { prepareBattle } from '@fantasy/engine/spatial';
+import { prepareBattle } from '@fantasy/engine/spatial/execution';
 import { JobStore, JOB_LIMITS, type Claim } from './job-store.ts';
 import { Store, StoreError, jsonValue } from './store.ts';
 import { sha256 } from './replay-files.ts';

@@ -1,4 +1,4 @@
-import type { Budget, DisplayPath, ProjectileChanges } from '@fantasy/domain/spatial';
+import type { Budget, DisplayPath, ProjectileChanges } from '@fantasy/domain/spatial/execution';
 import type { ActorState } from './combat-state.ts';
 import { contactObservation, type PendingEffect } from './combat-effects.ts';
 import type { Journal } from './journal.ts';

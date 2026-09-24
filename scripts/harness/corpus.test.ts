@@ -3,11 +3,8 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { join } from 'node:path';
 import { describe, it } from 'vite-plus/test';
 import type { BattleResult } from '../../packages/domain/src/spatial/index.ts';
-import {
-  prepareBattle,
-  runBattle,
-  sampleManifest,
-} from '../../packages/engine/src/spatial/index.ts';
+import { prepareBattle, runBattle } from '../../packages/engine/src/spatial/index.ts';
+import { sampleManifest } from '@fantasy/samples';
 import {
   collectCorpus,
   corpusChecks,

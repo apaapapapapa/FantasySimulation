@@ -1,4 +1,4 @@
-import { abilityEffects, type DeepReadonly, type Effect } from '@fantasy/domain/spatial';
+import { abilityEffects, type DeepReadonly, type Effect } from '@fantasy/domain/spatial/execution';
 import { statusBenefit } from './status-observation.ts';
 import { planStatusEffects } from './status-reactions.ts';
 import { applyStatuses, UnresolvedRuleError, type StatusCohort } from './status.ts';

@@ -1,5 +1,5 @@
 import { DEFAULT_BUDGET, type Definition } from '@fantasy/domain/spatial';
-import { sampleManifest } from '../src/spatial/sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 import { combatManifest, editScenario, type BoxObstacle } from './fixtures.ts';
 import { prepareBattle } from '../src/spatial/prepare.ts';
 import { createBattleWorld } from '../src/spatial/terrain.ts';

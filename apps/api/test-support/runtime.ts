@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { catalogManifest } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import { SpecInputSchema, type Manifest } from '@fantasy/domain/spatial';
 import { BattleRuntime, type RuntimeOptions } from '../src/battle-runtime.ts';
 import { openStore } from '../src/store.ts';

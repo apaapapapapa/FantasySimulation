@@ -5,7 +5,7 @@ import {
   type Effect,
   type ResourceState,
   type BattleEvent,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { calculateDamage, damageDefense, hasDamageFormula, type DamageEffect } from './damage.ts';
 import type { DamageSnapshot } from './status-damage.ts';
 import type { ResolvedActor } from './prepare.ts';

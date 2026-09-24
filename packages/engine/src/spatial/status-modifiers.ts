@@ -3,7 +3,7 @@ import type {
   Definition,
   Effect,
   StatusAdjustment,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import type { StatusCohort } from './status.ts';
 
 export type ModifierSelector = {

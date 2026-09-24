@@ -7,7 +7,7 @@ import {
   type Stage,
   type ForceContribution,
   type ReactionDisplay,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { initialMotion, type MotionIntent, type MotionState } from './movement.ts';
 import { emptyMemory, type PerceptionMemory } from './perception.ts';
 import type { Decision } from './policy.ts';

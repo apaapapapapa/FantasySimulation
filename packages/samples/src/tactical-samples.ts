@@ -4,7 +4,7 @@ import {
   type Definition,
   type Revision,
 } from '@fantasy/domain/spatial';
-import { sealRevision, reference } from './prepare.ts';
+import { sealRevision, reference } from '@fantasy/engine/spatial';
 
 /** Issue #45 numerical proposal. Review its fixtures before authorizing distribution. */
 export const TACTICAL_AI: NonNullable<Definition<'ruleset'>['ai']> = {

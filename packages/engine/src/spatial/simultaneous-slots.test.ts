@@ -16,7 +16,7 @@ import { admitPair, rejectPair } from './pair-admission.ts';
 import { ResourceBudget } from './resources.ts';
 import { sealRevision, prepareBattle } from './prepare.ts';
 import { runBattle } from './run.ts';
-import { STANDARD_MOVEMENT } from './sample.ts';
+import { STANDARD_MOVEMENT } from '@fantasy/samples';
 import { simultaneousManifest } from '../../test-support/simultaneous.ts';
 import { AbilitySchema } from '@fantasy/domain/spatial';
 

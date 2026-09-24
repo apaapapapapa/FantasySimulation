@@ -1,4 +1,4 @@
-import { compareIds } from '@fantasy/domain/spatial';
+import { compareIds } from '@fantasy/domain/spatial/execution';
 import type { ActorState } from './combat-state.ts';
 import type { Journal } from './journal.ts';
 import {

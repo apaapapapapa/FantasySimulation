@@ -1,4 +1,4 @@
-import type { Definition, DeepReadonly, Posture } from '@fantasy/domain/spatial';
+import type { Definition, DeepReadonly, Posture } from '@fantasy/domain/spatial/execution';
 import type { DecisionView } from './perception.ts';
 import type { KnownClearance } from './assessment.ts';
 import type { Obstacle } from './physics.ts';

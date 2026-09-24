@@ -1,4 +1,4 @@
-import type { ResourceState } from '@fantasy/domain/spatial';
+import type { ResourceState } from '@fantasy/domain/spatial/execution';
 import type { ResolvedActor } from './prepare.ts';
 import { statusBoundary, UnresolvedRuleError, type StatusCohort } from './status.ts';
 import { resolveEffects, type EffectApplication } from './effects.ts';

@@ -1,4 +1,9 @@
-import type { Cognition, Posture, Definition, DeepReadonly } from '@fantasy/domain/spatial';
+import type {
+  Cognition,
+  Posture,
+  Definition,
+  DeepReadonly,
+} from '@fantasy/domain/spatial/execution';
 import { add, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
 import type { DecisionView } from './perception.ts';
 import type { KnownClearance } from './assessment.ts';

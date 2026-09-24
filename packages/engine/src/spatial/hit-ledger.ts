@@ -3,7 +3,7 @@ import {
   type DeepReadonly,
   type Stage,
   type StageContact,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 
 type Entry = {
   contact: StageContact;

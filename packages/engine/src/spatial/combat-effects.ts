@@ -5,7 +5,7 @@ import type {
   Effect,
   StageContact,
   ReactionContext,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { resolveEffects } from './effects.ts';
 import { damagePower } from './damage.ts';
 import type { DamageSnapshot } from './status-damage.ts';

@@ -3,7 +3,7 @@ import { CharacterSchema, EffectSchema } from '@fantasy/domain/spatial';
 import fixtures from '../../fixtures/spatial/damage-formulas.json';
 import { calculateDamage } from './damage.ts';
 import { prepareBattle, sealRevision } from './prepare.ts';
-import { sampleManifest } from './sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 import { applyStatuses, effectiveStats } from './status.ts';
 import { resolveEffects, type EffectApplication } from './effects.ts';
 import { initialStatus } from '../../test-support/ai.ts';

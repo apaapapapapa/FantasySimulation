@@ -3,8 +3,12 @@ import type {
   Definition,
   ResourceState,
   ResourceLimits,
-} from '@fantasy/domain/spatial';
-export { initialResources, resourceLimits, type ResourceLimits } from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
+export {
+  initialResources,
+  resourceLimits,
+  type ResourceLimits,
+} from '@fantasy/domain/spatial/execution';
 
 type Character = DeepReadonly<Definition<'character'>>;
 export type ResourceKind = 'hp' | 'mp' | 'stamina';

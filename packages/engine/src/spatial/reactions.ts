@@ -4,7 +4,7 @@ import {
   type BattleEvent,
   type ReactionContext,
   type ReactionDisplay,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import type { ActorState, AbilityRevision } from './combat-state.ts';
 import {
   commitEffects,

@@ -3,7 +3,7 @@ import {
   type DeepReadonly,
   type Definition,
   type ResourceState,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import {
   add,
   sub,

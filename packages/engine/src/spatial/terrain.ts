@@ -1,4 +1,4 @@
-import type { DeepReadonly, Definition, VectorMm } from '@fantasy/domain/spatial';
+import type { DeepReadonly, Definition, VectorMm } from '@fantasy/domain/spatial/execution';
 import { cosDegrees, sinDegrees, type Vec3 } from './math.ts';
 import {
   capsuleShape,

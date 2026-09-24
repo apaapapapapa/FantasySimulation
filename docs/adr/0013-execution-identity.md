@@ -1,10 +1,10 @@
 # ADR 0013: Execution-only engine identity
 
-Status: proposed; owner approval required by Issue #106 D-1 before implementation.
+Status: accepted; owner approved this design in ChatGPT on 2026-09-24 (Issue #106 D-1).
 Refs #106 R-01/D-4 and [compatibility](0010-battle-version-compatibility.md).
 This ADR changes no executable, digest, fixture or saved data by itself.
 
-## Decision proposed for approval
+## Decision
 
 Use a versioned `source-closure-v2` SHA-256 input, limited to executable source
 closure, resolved runtime dependencies, pinned Node and physics assets.
@@ -19,7 +19,8 @@ semantic equivalence: edits within a reachable file can still require a restamp.
 - Roots: prepareBattle, simulate, runBattle/runPreparedBattle and result finalization,
   through a narrow engine execution entry. Include their complete runtime import
   closure: static imports, runtime re-exports, side effects and literal dynamic
-  imports, including JSON. Type-only imports/exports add no edge. Use the pinned TS
+  imports, including JSON. Erased `import type`/`export type` add no edge; inline
+  `{ type T }` retains module side effects under verbatim syntax and adds an edge. Use the pinned TS
   parser/resolver, not regular expressions or a hand-maintained source allowlist.
 - Resolve workspace exports to concrete files; enforce repository containment and
   ESM/package export assumptions. Unknown/unresolved/ambiguous imports, nonliteral
@@ -60,6 +61,13 @@ The implementation PR records old/new digest, payload inputs and exact baseline/
 with explicit review of the single restamp. Identical decisions need no rules/engine
 version bump; any decision change requires a separate versioned change under ADR 0010.
 The identity algorithm has its own v2 tag.
+
+R-01 transition baseline: `7cb877489c90f07d30b14cd494c2b110fdb46b41`.
+Reviewed old digest: `sha256:d82d3b1af1340d070ada82910585ab755a908d0468a1664cce7e20928d813800`.
+New digest: `sha256:af7bef471e2ddfc19ae0bd107de479d579640806146fa30424ce3766770b078e`.
+There are 69 source/Node inputs and two resolved packages (Rapier 0.20.0, Zod 4.6.5).
+WASM/binding/table hashes and distributed data/fixtures are unchanged. The PR records
+the tested candidate SHA; `node scripts/engine-identity.ts --inputs` prints the canonical payload.
 
 That one restamp changes new simulationHash values. Existing immutable specs/results
 are not rewritten: saved results/replays stay readable, and old-identity retry/recovery

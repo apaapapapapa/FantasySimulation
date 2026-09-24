@@ -9,7 +9,7 @@ import {
   type Definition,
   type Manifest,
 } from '@fantasy/domain/spatial';
-import { implementation, profile, reference, sealRevision } from './prepare.ts';
+import { implementation, profile, reference, sealRevision } from '@fantasy/engine/spatial';
 
 export const STANDARD_BODY: Definition<'character'>['body'] = {
   radiusMm: 300,

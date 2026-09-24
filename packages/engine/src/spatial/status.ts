@@ -4,7 +4,7 @@ import {
   statusTransformationRefs,
   type DeepReadonly,
   type Revision,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import type { ResolvedActor } from './prepare.ts';
 import { SpatialBudgetError } from './physics.ts';
 import { permanentStatus } from './categories.ts';

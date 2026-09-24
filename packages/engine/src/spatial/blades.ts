@@ -1,4 +1,9 @@
-import type { AttackGeometry, Budget, DeepReadonly, Definition } from '@fantasy/domain/spatial';
+import type {
+  AttackGeometry,
+  Budget,
+  DeepReadonly,
+  Definition,
+} from '@fantasy/domain/spatial/execution';
 import { bladeBodyContact, bladeObstacleContact } from './geometry.ts';
 import { add, cosDegrees, length, mul, sinDegrees, sub, unit, type Vec3 } from './math.ts';
 import {

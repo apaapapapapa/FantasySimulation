@@ -13,6 +13,56 @@ function fixture(files: Record<string, string>) {
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
+it.each([
+  [
+    'packages/engine/src/spatial/run.ts',
+    'packages/domain/src/spatial/execution.ts',
+    '../../../domain/src/spatial/execution.ts',
+    null,
+  ],
+  [
+    'packages/engine/src/spatial/run.ts',
+    'packages/domain/src/spatial/index.ts',
+    '../../../domain/src/spatial/index.ts',
+    'engine-domain-execution-entry',
+  ],
+  [
+    'packages/domain/src/spatial/execution.ts',
+    'packages/domain/src/spatial/replay.ts',
+    './replay.ts',
+    'execution-contract-boundary',
+  ],
+  [
+    'packages/engine/src/spatial/run.ts',
+    'packages/samples/src/index.ts',
+    '../../../samples/src/index.ts',
+    'samples-stay-outside-engine',
+  ],
+  [
+    'packages/samples/src/index.ts',
+    'packages/engine/src/spatial/prepare.ts',
+    '../../engine/src/spatial/prepare.ts',
+    'samples-use-public-engine',
+  ],
+  [
+    'packages/samples/src/index.ts',
+    'packages/engine/src/spatial/index.ts',
+    '../../engine/src/spatial/index.ts',
+    null,
+  ],
+])(
+  'checks execution/sample direction from %s to %s',
+  async (source, target, specifier, expected) => {
+    const f = fixture({
+      [source]: `export { value } from '${specifier}';`,
+      [target]: 'export const value = 1;',
+    });
+    const graph = await architecture(f.root, f.paths);
+    const violations = graph.publicGraph.summary.violations.map((v) => v.rule.name);
+    if (expected) expect(violations).toContain(expected);
+    else expect(violations).toEqual([]);
+  },
+);
 it('native TS7 parsing includes type imports, mixed imports, reexports and import types', () => {
   const path = 'packages/domain/src/a.ts';
   const f = fixture({
@@ -24,6 +74,18 @@ it('native TS7 parsing includes type imports, mixed imports, reexports and impor
     { specifier: './b.ts', typeOnly: false },
     { specifier: './c.ts', typeOnly: true },
     { specifier: './y.ts', typeOnly: true },
+  ]);
+});
+it('retains the side effects of inline type specifiers under verbatim module syntax', () => {
+  const path = 'packages/domain/src/a.ts';
+  const f = fixture({
+    [path]:
+      "import { type A } from './a-side.ts'; export { type B } from './b-side.ts'; import type { C } from './types.ts';",
+  });
+  expect(withSources(f.root, [path], (files) => importEdges(files.get(path)!))).toEqual([
+    { specifier: './a-side.ts', typeOnly: false },
+    { specifier: './b-side.ts', typeOnly: false },
+    { specifier: './types.ts', typeOnly: true },
   ]);
 });
 it('dependency-cruiser distinguishes runtime cycles from type-only reverse references', async () => {

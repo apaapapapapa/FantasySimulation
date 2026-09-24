@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { sampleCatalog } from '../packages/engine/src/spatial/catalog.ts';
+import { sampleCatalog } from '@fantasy/samples';
 import { revisionHash } from '../packages/engine/src/spatial/prepare.ts';
 import { RevisionSchema } from '../packages/domain/src/spatial/index.ts';
 import savedCatalog from '../data/spatial/catalog.json' with { type: 'json' };
