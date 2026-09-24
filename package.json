@@ -35,7 +35,8 @@
     "catalog:spatial": "node scripts/spatial-catalog.ts",
     "db:generate": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs generate",
     "db:check": "node --env-file-if-exists=.env node_modules/drizzle-kit/bin.cjs check",
-    "check:load": "node scripts/harness.ts load verify"
+    "check:load": "node scripts/harness.ts load verify",
+    "publication": "vp run --filter @fantasy/api publication"
   },
   "devDependencies": {
     "@fontsource/noto-sans-jp": "5.2.8",

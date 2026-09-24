@@ -8,9 +8,11 @@
     "build": "vp pack",
     "start": "node --env-file-if-exists=../../.env dist/index.mjs",
     "db:seed": "node --env-file-if-exists=../../.env --import tsx src/seed.ts",
-    "batch": "node --import tsx src/batch.ts"
+    "batch": "node --import tsx src/batch.ts",
+    "publication": "node --env-file-if-exists=../../.env --import tsx src/publication.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1138.0",
     "@fantasy/domain": "workspace:*",
     "@fantasy/engine": "workspace:*",
     "better-sqlite3": "13.0.3",
