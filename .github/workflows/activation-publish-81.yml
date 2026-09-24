@@ -1,0 +1,111 @@
+name: Issue 81 approved production activation
+on:
+  push:
+    branches: [ops/81-activation-20260925]
+    paths: [.github/workflows/activation-publish-81.yml]
+permissions:
+  contents: read
+concurrency:
+  group: issue-81-activation-evidence
+  cancel-in-progress: false
+jobs:
+  dispatch:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    permissions:
+      contents: read
+      actions: write
+    outputs:
+      run-id: ${{ steps.publish.outputs.run-id }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: 4618f3cc78942b354e1b8271f845f288cd4582c6
+          persist-credentials: false
+      - uses: ./.github/actions/pages-gate
+        id: source
+        with:
+          run-id: '36024584299'
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        id: publish
+        env:
+          TESTED_SHA: ${{ steps.source.outputs.sha }}
+        with:
+          retries: 0
+          script: |
+            const assert = (await import('node:assert/strict')).default;
+            const repo = {owner: 'apaapapapapa', repo: 'FantasySimulation'};
+            const sha = '4618f3cc78942b354e1b8271f845f288cd4582c6';
+            assert.equal(process.env.GITHUB_RUN_ATTEMPT, '1', 'Do not redispatch by rerunning');
+            assert.equal(process.env.TESTED_SHA, sha);
+            const main = (await github.rest.repos.getBranch({...repo, branch: 'main'})).data;
+            assert.equal(main.commit.sha, sha, 'Main changed; review before publishing');
+            const dry = (await github.rest.actions.getWorkflowRun({...repo, run_id: 36025358696})).data;
+            assert.equal(dry.head_sha, sha);
+            assert.equal(dry.path, '.github/workflows/publication.yml');
+            assert.equal(dry.event, 'workflow_dispatch');
+            assert.equal(dry.head_branch, 'main');
+            assert.equal(dry.run_attempt, 3);
+            assert.equal(dry.status, 'completed');
+            assert.equal(dry.conclusion, 'success', 'Corrected-settings dry run must pass');
+            const environment = {...repo, environment_name: 'r2-publication'};
+            const settings = (await github.request('GET /repos/{owner}/{repo}/environments/{environment_name}', environment)).data;
+            assert.equal(settings.deployment_branch_policy?.custom_branch_policies, true);
+            const policy = (await github.request('GET /repos/{owner}/{repo}/environments/{environment_name}/deployment-branch-policies', {...environment, per_page: 100})).data;
+            assert.equal(policy.total_count, 1);
+            assert.deepEqual(policy.branch_policies.map(p => ({name:p.name, type:p.type})), [{name:'main',type:'branch'}]);
+            const response = await fetch('https://apaapapapapa.github.io/FantasySimulation/build.json', {cache:'no-store', signal:AbortSignal.timeout(15000)});
+            assert.equal(response.status, 200);
+            const build = await response.json();
+            assert.equal(build.sourceSha, sha);
+            const listing = {...repo, workflow_id:'publication.yml', branch:'main', event:'workflow_dispatch', per_page:100};
+            const prior = new Set((await github.rest.actions.listWorkflowRuns(listing)).data.workflow_runs.map(r => r.id));
+            const inputs = {ci_run_id:'36024584299', plan_input:'sample', mode:'publish'};
+            const started = Date.now();
+            const dispatched = await github.request('POST /repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches', {...repo, workflow_id:'publication.yml', ref:'main', inputs, headers:{'X-GitHub-Api-Version':'2026-03-10'}});
+            let id = dispatched.data?.workflow_run_id;
+            for (let i=0; !id && i<12; i++) {
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              const candidates = (await github.rest.actions.listWorkflowRuns(listing)).data.workflow_runs.filter(r => !prior.has(r.id) && r.head_sha===sha && r.actor?.login==='github-actions[bot]' && Date.parse(r.created_at)>=started-2000);
+              assert.ok(candidates.length <= 1, 'Ambiguous dispatch; do not retry the write');
+              id = candidates[0]?.id;
+            }
+            assert.ok(Number.isSafeInteger(id) && id > 0, 'Dispatch outcome unknown; inspect runs before retrying');
+            core.setOutput('run-id', String(id));
+            const evidence = {sourceSha:sha, dryRun:dry.id, dryAttempt:dry.run_attempt, ciRun:36024584299, environment:settings.name, branches:policy.branch_policies.map(p=>({name:p.name,type:p.type})), viewer:build, publicationRun:id, inputs};
+            console.log('ACTIVATION_DISPATCH='+JSON.stringify(evidence));
+            await core.summary.addHeading('Explicit production publication').addRaw(JSON.stringify(evidence, null, 2)).write();
+  verify:
+    needs: dispatch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        env:
+          PUBLICATION_RUN_ID: ${{ needs.dispatch.outputs.run-id }}
+        with:
+          retries: 0
+          script: |
+            const assert = (await import('node:assert/strict')).default;
+            const repo = {owner:'apaapapapapa',repo:'FantasySimulation'};
+            const run_id = Number(process.env.PUBLICATION_RUN_ID);
+            assert.ok(Number.isSafeInteger(run_id) && run_id > 0);
+            let run;
+            for (let i=0; i<48; i++) {
+              run = (await github.rest.actions.getWorkflowRun({...repo,run_id})).data;
+              assert.equal(run.head_sha,'4618f3cc78942b354e1b8271f845f288cd4582c6');
+              assert.equal(run.path,'.github/workflows/publication.yml');
+              assert.equal(run.event,'workflow_dispatch');
+              assert.equal(run.head_branch,'main');
+              if (run.status==='completed') break;
+              await new Promise(resolve=>setTimeout(resolve,10000));
+            }
+            const evidence={runId:run_id,sha:run.head_sha,status:run.status,conclusion:run.conclusion,attempt:run.run_attempt,url:run.html_url};
+            console.log('PUBLICATION_OUTCOME='+JSON.stringify(evidence));
+            await core.summary.addHeading('Production publication outcome').addRaw(JSON.stringify(evidence,null,2)).write();
+            assert.equal(run.status,'completed');
+            assert.equal(run.conclusion,'success','Production publication is not verified');
