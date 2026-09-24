@@ -55,6 +55,7 @@ it('ignores unrelated contracts, samples, application code, scripts, dev depende
     `${DOMAIN}/src/spatial/publication.ts`,
     `${DOMAIN}/src/spatial/api.ts`,
     `${SPATIAL}/types.ts`,
+    `${SPATIAL}/manifest-builder.ts`,
   ])
     f.write(path, 'export type Hidden = number; export const unrelated = 2;\n');
   f.write(

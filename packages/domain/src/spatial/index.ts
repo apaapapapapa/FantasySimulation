@@ -1,4 +1,5 @@
 export * from './canonical.ts';
+export * from './revision-graph.ts';
 export * from './contracts.ts';
 export * from './records.ts';
 export * from './resources.ts';

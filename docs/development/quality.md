@@ -21,6 +21,8 @@ resolves both graphs, including workspace exports, TS path aliases and `.js` to 
 resolution. No second graph resolver, older TypeScript, parser package or compiler is added.
 
 Public edges enforce domain/engine/API/web boundaries; runtime edges enforce cycle freedom.
+ManifestBuilder may depend on execution; execution cannot import that construction module.
+The public entry exports both; the narrow execution entry keeps builder edits out of identity.
 Type-only edges cannot conceal a domain-to-server dependency, but a legitimate reverse
 physics type reference is not a runtime cycle. Rapier is allowed only in
 `packages/engine/src/spatial/physics.ts`. Browser/domain code cannot depend on platform

@@ -2,7 +2,7 @@ import { beforeAll, expect, it } from 'vite-plus/test';
 import { AI_RULES, DEFAULT_BUDGET } from '@fantasy/domain/spatial';
 import { aiFixture, initialStatus, incomingArrow } from '../../test-support/ai.ts';
 import { initializePhysics } from './physics.ts';
-import { sealRevision } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import { reapplicationEstimate, rememberThreat, seenAttack } from './threat-memory.ts';
 import { assessAbility } from './assessment.ts';
 import type { ThreatExperience } from './perception.ts';

@@ -15,6 +15,24 @@ afterEach(() => {
 });
 it.each([
   [
+    'packages/engine/src/spatial/manifest-builder.ts',
+    'packages/engine/src/spatial/prepare.ts',
+    './prepare.ts',
+    null,
+  ],
+  [
+    'packages/engine/src/spatial/index.ts',
+    'packages/engine/src/spatial/manifest-builder.ts',
+    './manifest-builder.ts',
+    null,
+  ],
+  [
+    'packages/engine/src/spatial/prepare.ts',
+    'packages/engine/src/spatial/manifest-builder.ts',
+    './manifest-builder.ts',
+    'execution-does-not-import-builder',
+  ],
+  [
     'packages/engine/src/spatial/run.ts',
     'packages/domain/src/spatial/execution.ts',
     '../../../domain/src/spatial/execution.ts',
@@ -63,6 +81,15 @@ it.each([
     else expect(violations).toEqual([]);
   },
 );
+it('fails when a construction import cannot be resolved', async () => {
+  const f = fixture({
+    'packages/engine/src/spatial/run.ts': "export { value } from './manifest-builder.ts';",
+  });
+  const graph = await architecture(f.root, f.paths);
+  expect(graph.publicGraph.summary.violations.map((violation) => violation.rule.name)).toContain(
+    'unresolved',
+  );
+});
 it('native TS7 parsing includes type imports, mixed imports, reexports and import types', () => {
   const path = 'packages/domain/src/a.ts';
   const f = fixture({

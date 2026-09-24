@@ -1,4 +1,6 @@
 export * from './prepare.ts';
+export * from './manifest-builder.ts';
+export * from './execution-policy.ts';
 export { initializePhysics } from './physics.ts';
 export { createBattleWorld, bodyCapsule, metres } from './terrain.ts';
 export {

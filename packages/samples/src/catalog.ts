@@ -1,8 +1,8 @@
 import {
-  abilityEffects,
+  revisionIndex,
+  resolveClosure,
   actorSeed,
   compareIds,
-  statusTransformationRefs,
   type Definition,
   type DefinitionKind,
   type Manifest,
@@ -707,32 +707,13 @@ export function revisionClosure(
   revisions: readonly Revision[],
   roots: readonly { kind: DefinitionKind; ref: RevisionRef }[],
 ): Revision[] {
-  const found = new Map<string, Revision>();
-  function visit(kind: DefinitionKind, ref: RevisionRef) {
-    const key = `${kind}:${ref.id}:${ref.revision}`;
-    const revision = revisions.find(
-      (r) => r.kind === kind && r.id === ref.id && r.revision === ref.revision,
-    );
-    if (!revision || revision.contentHash !== ref.contentHash)
-      throw new Error('Missing or mismatched revision: ' + key);
-    if (found.has(key)) return;
-    if (found.size >= 256) throw new Error('Revision closure exceeds limit');
-    found.set(key, revision);
-    if (revision.kind === 'character') {
-      visit('policy', revision.definition.policy);
-      for (const r of revision.definition.abilities) visit('ability', r);
-      for (const r of revision.definition.equipment) visit('equipment', r);
-    } else if (revision.kind === 'equipment') {
-      for (const r of revision.definition.abilities) visit('ability', r);
-    } else if (revision.kind === 'ability') {
-      for (const effect of abilityEffects(revision.definition))
-        if (effect.kind === 'apply-status') visit('status', effect.status);
-    } else if (revision.kind === 'status') {
-      for (const ref of statusTransformationRefs(revision.definition)) visit('status', ref);
-    }
-  }
-  for (const root of roots) visit(root.kind, root.ref);
-  return structuredClone([...found.values()]);
+  const get = revisionIndex(revisions);
+  return structuredClone(
+    resolveClosure(
+      roots.map(({ kind, ref }) => get(kind, ref)),
+      get,
+    ),
+  );
 }
 export async function catalogManifest(
   left = 'swordsman',

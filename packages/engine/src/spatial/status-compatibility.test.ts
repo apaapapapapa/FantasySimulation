@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { StatusSchema, type Definition } from '@fantasy/domain/spatial';
 import { initialStatus } from '../../test-support/ai.ts';
-import { prepareBattle, reference, sealRevision } from './prepare.ts';
+import { prepareBattle, reference } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import { sampleManifest } from '@fantasy/samples';
 import { applyStatuses, effectiveStats, statusBoundary } from './status.ts';
 import { resolveEffects, type EffectApplication } from './effects.ts';

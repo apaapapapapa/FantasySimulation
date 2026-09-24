@@ -1,6 +1,7 @@
 import { expect, it } from 'vite-plus/test';
 import { boxObstacle, combatManifest, editScenario, glassWall } from './fixtures.ts';
-import { prepareBattle, reference, sealRevision } from '../src/spatial/prepare.ts';
+import { prepareBattle, reference } from '../src/spatial/prepare.ts';
+import { sealRevision } from '../src/spatial/manifest-builder.ts';
 
 it('creates fresh nested obstacle inputs without sharing caller vectors or block flags', () => {
   const center = { x: 1, y: 2, z: 3 };

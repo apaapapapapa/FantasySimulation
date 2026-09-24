@@ -14,7 +14,8 @@ import {
 } from '../../test-support/ai.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
 import { initializePhysics } from './physics.ts';
-import { prepareBattle, reference, sealRevision } from './prepare.ts';
+import { prepareBattle, reference } from './prepare.ts';
+import { sealRevision } from './manifest-builder.ts';
 import { runBattle } from './run.ts';
 import { emptyMemory, perceive, observeImpact, observeReveal } from './perception.ts';
 import { choosePolicy } from './policy.ts';
