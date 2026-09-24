@@ -1,0 +1,52 @@
+name: Issue 81 activation evidence
+on:
+  push:
+    branches: [ops/81-activation-20260925]
+    paths: [.github/workflows/activation-81.yml]
+permissions:
+  contents: read
+concurrency:
+  group: issue-81-activation-evidence
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      checks: read
+      statuses: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: 81c58a17da1ffa27bacad6f1cf07e0016a232fd8
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Verify the clean candidate independently of the operations commit
+        run: |
+          test "$(git rev-parse HEAD)" = 81c58a17da1ffa27bacad6f1cf07e0016a232fd8
+          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp run harness source .generated/harness/activation-source
+          vp run harness report .generated/harness/activation-source/report.json source-clean source-verify
+      - name: Collect current PR delivery evidence with read-only authorization
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          vp run harness github-snapshot apaapapapapa/FantasySimulation 105 .generated/harness/activation-pr
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import {conversationDigest} from './scripts/harness/delivery.ts';
+          const s=JSON.parse(readFileSync('.generated/harness/activation-pr/github-snapshot.json','utf8'));
+          console.log('ACTIVATION_REVIEW_INPUT='+JSON.stringify({candidate:s.pull.head.sha,base:s.pull.base.sha,digest:conversationDigest(s),reviewDecision:s.reviewDecision,files:s.files.map(f=>f.filename),comments:s.comments.map(c=>({id:c.id,body:c.body})),reviews:s.reviews.map(r=>({id:r.id,body:r.body,state:r.state,commit:r.commit_id})),errors:s.errors}));
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: activation-81-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
