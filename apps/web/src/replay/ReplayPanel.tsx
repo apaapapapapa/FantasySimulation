@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { ReplayCheckpoint } from '@fantasy/domain/spatial';
 import { openReplay, type OpenedReplay, type ReplaySource } from './open-replay.ts';
 import { seekStep } from './seek-step.ts';
-import { errorText } from '../api-client.ts';
+import { replayErrorText as errorText } from './load-message.ts';
 import { SceneBoundary } from './SceneBoundary.tsx';
 import { playbackStep } from './playback-clock.ts';
 import type { CameraMode } from './Scene.tsx';

@@ -16,6 +16,8 @@ allowBuilds:
   better-sqlite3: true
   esbuild: true
   vite-plus: true
+  # Wrangler's pinned local runtime; used only by explicit administrator deployment.
+  workerd: true
 
 # Fiber 9.8 is the first release whose peer range includes the existing React 19.3 pin.
 # Explicitly reviewed exact renderer version; other new packages keep the age gate.

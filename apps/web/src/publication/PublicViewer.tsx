@@ -3,7 +3,7 @@ import type { PublicCatalog, PublicMatchPage, PublicReplaySet } from '@fantasy/d
 import { publicHashName } from '@fantasy/domain/spatial';
 import { publicLibrary } from '../replay/public-source.ts';
 import { ReplayPanel } from '../replay/ReplayPanel.tsx';
-import { errorText } from '../api-client.ts';
+import { replayErrorText as errorText } from '../replay/load-message.ts';
 import { MatchTable, matchLink } from './MatchTable.tsx';
 
 function readRoute() {

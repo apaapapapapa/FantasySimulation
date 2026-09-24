@@ -106,3 +106,14 @@ it('rejects aborted late responses and invalid public roots', async () => {
   ])
     expect(() => publicLibrary(url)).toThrow();
 });
+
+it.each([
+  [404, '', 'gone'],
+  [429, '', 'limit'],
+  [503, '<h1>Error 1027</h1>', 'limit'],
+  [503, '{"error":"storage-unavailable"}', 'unavailable'],
+  [503, 'x'.repeat(20000), 'unavailable'],
+] as const)('distinguishes HTTP %s %s as %s', async (status, body, kind) => {
+  const { library } = served(() => new Response(body, { status }));
+  await expect(library.catalog()).rejects.toMatchObject({ kind });
+});
