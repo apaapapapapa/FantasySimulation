@@ -5,7 +5,7 @@ import type {
   ProjectileDisplay,
   Stage,
   StageContact,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { add, sub, mul, unit, length, turnToward, type Vec3 } from './math.ts';
 import { ballShape, SpatialBudgetError, type SpatialWorld, type Trace } from './physics.ts';
 import type { AbilityRevision } from './combat-state.ts';

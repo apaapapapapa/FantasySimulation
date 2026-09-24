@@ -1,4 +1,4 @@
-import type { DeepReadonly, Definition } from '@fantasy/domain/spatial';
+import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import type { ActorState } from './combat-state.ts';
 import type { DecisionView } from './perception.ts';
 import { effectiveStats, statusKnowledge, type StatusRevision } from './status.ts';

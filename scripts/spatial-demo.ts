@@ -1,4 +1,5 @@
-import { runBattle, catalogManifest } from '../packages/engine/src/spatial/index.ts';
+import { runBattle } from '../packages/engine/src/spatial/index.ts';
+import { catalogManifest } from '@fantasy/samples';
 
 const [left = 'swordsman', right = 'sky-mage', scenario = 'pillars'] = process.argv.slice(2);
 const { result, records } = await runBattle(await catalogManifest(left, right, scenario));

@@ -4,7 +4,7 @@ import {
   type CandidateAssessment,
   type Cognition,
   type Posture,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { length, mul, sub, unit, ZERO, type Vec3 } from './math.ts';
 import type { MotionIntent } from './movement.ts';
 import { Navigator, type NavigationResult } from './navigation.ts';

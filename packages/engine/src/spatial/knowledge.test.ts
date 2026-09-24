@@ -13,7 +13,7 @@ import { aiFixture, impactEvidence } from '../../test-support/ai.ts';
 import { knownTerrainWorld } from './known-terrain.ts';
 import { Navigator } from './navigation.ts';
 import { contactObservation } from './combat-effects.ts';
-import { TACTICAL_AI } from './tactical-samples.ts';
+import { TACTICAL_AI } from '@fantasy/samples';
 
 beforeAll(initializePhysics);
 describe('private delayed bounded cognition', () => {

@@ -1,4 +1,4 @@
-import type { DeepReadonly, Definition, Posture } from '@fantasy/domain/spatial';
+import type { DeepReadonly, Definition, Posture } from '@fantasy/domain/spatial/execution';
 import type { MotionState } from './movement.ts';
 import { capsuleShape, firstContact, straight, type SpatialWorld } from './physics.ts';
 import { bodyCapsule } from './terrain.ts';

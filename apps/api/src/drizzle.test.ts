@@ -7,7 +7,8 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { afterEach, describe, expect, it } from 'vite-plus/test';
 import { canonicalJson, RevisionSchema } from '@fantasy/domain/spatial';
-import { catalogManifest, prepareBattle, reference } from '@fantasy/engine/spatial';
+import { prepareBattle, reference } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import { repositoryRoot } from './config.ts';
 import { openStore, readSampleRevisions } from './store.ts';
 

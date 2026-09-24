@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { join } from 'node:path';
 import { StreamRecordSchema } from '@fantasy/domain/spatial';
-import { catalogManifest, reference, sealRevision, runBattle } from '@fantasy/engine/spatial';
+import { reference, sealRevision, runBattle } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import { withRuntime, specInput } from '../test-support/runtime.ts';
 import { withReplayDirectory } from '../test-support/replays.ts';
 import { batchInput, batchSource } from '../test-support/batches.ts';

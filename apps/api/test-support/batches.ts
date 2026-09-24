@@ -1,4 +1,4 @@
-import { catalogManifest } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import {
   DEFAULT_BUDGET,
   BatchInputSchema,

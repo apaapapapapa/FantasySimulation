@@ -8,7 +8,7 @@ import {
   type BattleResult,
   type ProjectileDisplay,
   type StageContact,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import {
   actionClock,
   declarationCost,

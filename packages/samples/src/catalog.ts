@@ -9,7 +9,7 @@ import {
   type Revision,
   type RevisionRef,
 } from '@fantasy/domain/spatial';
-import { reference, sealRevision } from './prepare.ts';
+import { reference, sealRevision } from '@fantasy/engine/spatial';
 import { sampleManifest } from './sample.ts';
 import { addTacticalSamples } from './tactical-samples.ts';
 import {

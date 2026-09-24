@@ -8,11 +8,11 @@ import {
 } from '../../packages/domain/src/spatial/index.ts';
 import {
   prepareBattle,
-  sampleManifest,
   runBattle,
   sealRevision,
   reference,
 } from '../../packages/engine/src/spatial/index.ts';
+import { sampleManifest } from '@fantasy/samples';
 import {
   resolveEffects,
   type EffectApplication,

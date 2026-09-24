@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { initializePhysics, SpatialWorld, type Obstacle } from './physics.ts';
 import { prepareBattle } from './prepare.ts';
-import { sampleManifest } from './sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 import { initialMotion } from './movement.ts';
 import {
   bodyPoint,

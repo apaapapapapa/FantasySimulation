@@ -1,4 +1,8 @@
-import { AI_RULES, type CandidateAssessment, type Cognition } from '@fantasy/domain/spatial';
+import {
+  AI_RULES,
+  type CandidateAssessment,
+  type Cognition,
+} from '@fantasy/domain/spatial/execution';
 import type { DecisionView } from './perception.ts';
 import { initialMovementRandom, weightedChoice, recordDecisionWeights } from './decision-random.ts';
 import type { AbilityRevision } from './combat-state.ts';

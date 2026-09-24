@@ -1,4 +1,4 @@
-import type { DeepReadonly, Definition, Stage } from '@fantasy/domain/spatial';
+import type { DeepReadonly, Definition, Stage } from '@fantasy/domain/spatial/execution';
 import type { DecisionView } from './perception.ts';
 import { bodyPoint } from './perception.ts';
 import { bladePose } from './blades.ts';

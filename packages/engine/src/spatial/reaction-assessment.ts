@@ -1,4 +1,8 @@
-import { compareIds, type ReactionEstimate, type ObservedReaction } from '@fantasy/domain/spatial';
+import {
+  compareIds,
+  type ReactionEstimate,
+  type ObservedReaction,
+} from '@fantasy/domain/spatial/execution';
 import type { ActorState } from './combat-state.ts';
 import { assessAbility, boundedWeight } from './assessment.ts';
 import { conditionMatches, type DecisionView } from './perception.ts';

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { contentHash, RevisionSchema, type StreamRecord } from '@fantasy/domain/spatial';
-import { sampleCatalog, catalogManifest, revisionClosure } from './catalog.ts';
+import { sampleCatalog, catalogManifest, revisionClosure } from '@fantasy/samples';
 import { prepareBattle, reference } from './prepare.ts';
 import { initializePhysics } from './physics.ts';
 import { createBattleWorld } from './terrain.ts';

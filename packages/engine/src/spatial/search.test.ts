@@ -3,7 +3,7 @@ import { aiFixture, withEvaluation } from '../../test-support/ai.ts';
 import { tacticalManifest } from '../../test-support/tactics.ts';
 import { initializePhysics } from './physics.ts';
 import { surveySearch, chooseSearch } from './search.ts';
-import { TACTICAL_AI } from './tactical-samples.ts';
+import { TACTICAL_AI } from '@fantasy/samples';
 import { runBattle } from './run.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
 import { choosePolicy } from './policy.ts';

@@ -11,7 +11,7 @@ import { initialActor } from './combat-state.ts';
 import { commitEffects, commitTransactionStatuses } from './combat-effects.ts';
 import { Journal } from './journal.ts';
 import { reference } from './prepare.ts';
-import { TACTICAL_AI } from './tactical-samples.ts';
+import { TACTICAL_AI } from '@fantasy/samples';
 import { surveySearch, chooseSearch } from './search.ts';
 import { selfView } from './self-view.ts';
 

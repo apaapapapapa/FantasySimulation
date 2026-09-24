@@ -8,13 +8,13 @@ import {
   trajectoryHashLine,
   type BattleResult,
   type Budget,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import {
   finalizeBattleResult,
   initializePhysics,
   prepareBattle,
   simulate,
-} from '@fantasy/engine/spatial';
+} from '@fantasy/engine/spatial/execution';
 import { measureWasmInitialization } from './wasm-metrics.ts';
 
 export type WorkerTask = { manifest: unknown; budget: Budget; port: MessagePort };

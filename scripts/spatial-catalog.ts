@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { contentHash } from '../packages/domain/src/spatial/index.ts';
-import { sampleCatalog } from '../packages/engine/src/spatial/catalog.ts';
+import { sampleCatalog } from '@fantasy/samples';
 import { assertPublishedRevisions } from './catalog-history.ts';
 const directory = new URL('../data/spatial/', import.meta.url);
 const file = new URL('catalog.json', directory);

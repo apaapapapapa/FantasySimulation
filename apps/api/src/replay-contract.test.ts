@@ -8,7 +8,8 @@ import {
   type StreamRecord,
   type Manifest,
 } from '@fantasy/domain/spatial';
-import { catalogManifest, prepareBattle, runBattle } from '@fantasy/engine/spatial';
+import { prepareBattle, runBattle } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 
 const savedManifest = async (...args: Parameters<typeof catalogManifest>) =>
   structuredClone((await prepareBattle(await catalogManifest(...args))).manifest) as Manifest;

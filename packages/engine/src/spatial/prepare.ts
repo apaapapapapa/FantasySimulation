@@ -17,7 +17,7 @@ import {
   type StoredManifest,
   type Revision,
   type RevisionRef,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import implementation from './implementation.json' with { type: 'json' };
 import profile from './profile.json' with { type: 'json' };
 import { statusKnowledge } from './status.ts';

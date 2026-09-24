@@ -1,6 +1,6 @@
 import RAPIER from '@dimforge/rapier3d-compat';
-import type { MotionProjection } from '@fantasy/domain/spatial';
-export type { MotionProjection } from '@fantasy/domain/spatial';
+import type { MotionProjection } from '@fantasy/domain/spatial/execution';
+export type { MotionProjection } from '@fantasy/domain/spatial/execution';
 import {
   capsuleOverlapsObstacle,
   capsuleObstacleContact,

@@ -4,7 +4,7 @@ import type {
   BattleEvent,
   StageContact,
   ObservedStage,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import type { AbilityRevision, ActionState, ActorState, MeleeState } from './combat-state.ts';
 import { conditionMatches, type DecisionView } from './perception.ts';
 import { inObservedRange } from './attacks.ts';

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { availableParallelism } from 'node:os';
 import { DEFAULT_BUDGET, type StreamRecord } from '@fantasy/domain/spatial';
-import { catalogManifest, runBattle } from '@fantasy/engine/spatial';
+import { runBattle } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import { BattlePool } from './worker-pool.ts';
 
 describe('reused calculation Workers', () => {

@@ -1,4 +1,4 @@
-import type { DeepReadonly, Definition, ResourceState } from '@fantasy/domain/spatial';
+import type { DeepReadonly, Definition, ResourceState } from '@fantasy/domain/spatial/execution';
 import type { DecisionView } from './perception.ts';
 import type { StatusCohort } from './status.ts';
 import { staminaExhausted } from './resources.ts';

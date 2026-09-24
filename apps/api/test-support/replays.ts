@@ -1,7 +1,8 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { prepareBattle, catalogManifest, runPreparedBattle } from '@fantasy/engine/spatial';
+import { prepareBattle, runPreparedBattle } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import { ReplayWriter } from '../src/replay-writer.ts';
 import type { ReplayManifest } from '@fantasy/domain/spatial';
 

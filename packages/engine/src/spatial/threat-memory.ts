@@ -1,4 +1,4 @@
-import type { DeepReadonly, Effect } from '@fantasy/domain/spatial';
+import type { DeepReadonly, Effect } from '@fantasy/domain/spatial/execution';
 import {
   canSee,
   bodyPoint,

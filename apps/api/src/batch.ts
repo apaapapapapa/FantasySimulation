@@ -26,7 +26,7 @@ async function main() {
   });
   const [command, input, output, ...rest] = positionals;
   if (command === 'sample' && input && !output) {
-    const { catalogManifest } = await import('@fantasy/engine/spatial');
+    const { catalogManifest } = await import('@fantasy/samples');
     const revisions = new Map<string, Revision>(),
       matches = [];
     for (const [index, pair] of [

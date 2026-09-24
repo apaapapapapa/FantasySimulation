@@ -1,7 +1,7 @@
 import { AI_RULES } from '@fantasy/domain/spatial';
 import { combatManifest } from './fixtures.ts';
 import { locomotion } from './locomotion.ts';
-import { STANDARD_MOVEMENT } from '../src/spatial/sample.ts';
+import { STANDARD_MOVEMENT } from '@fantasy/samples';
 import { reference, sealRevision } from '../src/spatial/prepare.ts';
 
 export async function simultaneousManifest(maxSteps = 70, withStamina = true) {

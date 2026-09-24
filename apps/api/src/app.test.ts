@@ -10,7 +10,8 @@ import {
   SpecInputSchema,
   type Definition,
 } from '@fantasy/domain/spatial';
-import { catalogManifest, reference } from '@fantasy/engine/spatial';
+import { reference } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import { createApp } from './app.ts';
 import { openStore, readSampleRevisions } from './store.ts';
 const apps: ReturnType<typeof createApp>[] = [];

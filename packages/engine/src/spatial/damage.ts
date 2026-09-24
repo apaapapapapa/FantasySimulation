@@ -1,4 +1,4 @@
-import type { DeepReadonly, Effect } from '@fantasy/domain/spatial';
+import type { DeepReadonly, Effect } from '@fantasy/domain/spatial/execution';
 
 export type DamageEffect = DeepReadonly<Extract<Effect, { kind: 'damage' }>>;
 export type DamageSource = { attack: number; magicPower?: number };

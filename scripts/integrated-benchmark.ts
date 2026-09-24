@@ -8,7 +8,8 @@ import {
   type Manifest,
   type Revision,
 } from '../packages/domain/src/spatial/index.ts';
-import { catalogManifest, implementation } from '../packages/engine/src/spatial/index.ts';
+import { implementation } from '../packages/engine/src/spatial/index.ts';
+import { catalogManifest } from '@fantasy/samples';
 import { createBatchPlan, executionSource } from '../apps/api/src/batch-plan.ts';
 import { runBatch } from '../apps/api/src/batch-runner.ts';
 import { openStore } from '../apps/api/src/store.ts';

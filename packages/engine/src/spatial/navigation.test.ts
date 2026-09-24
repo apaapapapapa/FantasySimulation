@@ -3,7 +3,7 @@ import type { Definition } from '@fantasy/domain/spatial';
 import { initializePhysics } from './physics.ts';
 import { prepareBattle } from './prepare.ts';
 import { editScenario } from '../../test-support/fixtures.ts';
-import { sampleManifest } from './sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 import { createBattleWorld } from './terrain.ts';
 import { Navigator } from './navigation.ts';
 import { choosePolicy, steerPolicy } from './policy.ts';

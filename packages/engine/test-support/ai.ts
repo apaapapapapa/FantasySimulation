@@ -1,5 +1,5 @@
 import { AI_RULES, type Definition, type Experience } from '@fantasy/domain/spatial';
-import { sampleManifest } from '../src/spatial/sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 import { prepareBattle, reference, sealRevision } from '../src/spatial/prepare.ts';
 import { initialMotion } from '../src/spatial/movement.ts';
 import { SpatialWorld } from '../src/spatial/physics.ts';

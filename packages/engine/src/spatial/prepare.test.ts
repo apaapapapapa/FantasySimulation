@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { contentHash, type Revision } from '@fantasy/domain/spatial';
-import { sampleManifest } from './sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 import { prepareBattle, reference, revisionHash, sealRevision } from './prepare.ts';
 
 describe('immutable spatial manifest resolution', () => {

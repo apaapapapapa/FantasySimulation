@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { cpus, availableParallelism } from 'node:os';
@@ -14,6 +14,7 @@ import {
 } from './load-contract.ts';
 import type * as Engine from '../../packages/engine/src/spatial/index.ts';
 import type * as Domain from '../../packages/domain/src/spatial/index.ts';
+import type * as Samples from '@fantasy/samples';
 import type { Recipe } from './corpus.ts';
 
 /** One pinned driver executes the target's real exported engine; generation/preparation is outside timing. */
@@ -52,14 +53,20 @@ export async function measure(
   const domain = (await import(
     pathToFileURL(join(root, 'packages/domain/src/spatial/index.ts')).href
   )) as typeof Domain;
+  // The same driver must measure the immutable pre-separation baseline as well.
+  const samplesApi = (
+    existsSync(join(root, 'packages/samples/package.json'))
+      ? await import(pathToFileURL(join(root, 'packages/samples/src/index.ts')).href)
+      : engine
+  ) as typeof Samples;
   const rows: Sample[] = [];
   const selected = shard === null ? Object.keys(profile.limits) : loadShardCases(profile, shard);
   for (const entry of corpus.entries.filter((entry) => selected.includes(entry.id))) {
     const r = entry.recipe;
     const manifest =
       r.kind === 'sample'
-        ? await engine.sampleManifest(r.maxSteps)
-        : await engine.catalogManifest(r.left, r.right, r.scenario, r.maxSteps, r.seed);
+        ? await samplesApi.sampleManifest(r.maxSteps)
+        : await samplesApi.catalogManifest(r.left, r.right, r.scenario, r.maxSteps, r.seed);
     const prepared = await engine.prepareBattle(manifest);
     const { implementationDigest: _, ...semantic } = prepared.manifest;
     const inputHash = await domain.contentHash(semantic);

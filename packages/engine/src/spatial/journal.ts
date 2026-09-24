@@ -6,7 +6,7 @@ import {
   type BattleEvent,
   type Budget,
   type StreamRecord,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { SpatialBudgetError } from './physics.ts';
 export type EventInput = Pick<BattleEvent, 'kind' | 'step' | 'phase' | 'ruleId'> &
   Partial<Omit<BattleEvent, 'id' | 'sequence' | 'schemaVersion'>>;

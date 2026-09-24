@@ -4,7 +4,7 @@ import { abilityCategories, blockedBySilence, dispelMatchesCategory } from './ca
 import { initializePhysics } from './physics.ts';
 import { choosePolicy } from './policy.ts';
 import { runBattle } from './run.ts';
-import { sampleManifest } from './sample.ts';
+import { sampleManifest } from '@fantasy/samples';
 import { aiFixture, initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
 

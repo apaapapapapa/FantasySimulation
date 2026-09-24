@@ -13,13 +13,12 @@ import {
   type RevisionRef,
 } from '../../packages/domain/src/spatial/index.ts';
 import {
-  catalogManifest,
   implementation,
   prepareBattle,
   runBattle,
-  sampleManifest,
   type PreparedBattle,
 } from '../../packages/engine/src/spatial/index.ts';
+import { catalogManifest, sampleManifest } from '@fantasy/samples';
 import { readBoundedBytes, readBoundedJson } from './files.ts';
 import { runCommand, type CommandResult } from './process.ts';
 import { assessReport, evidenceUri, record, text } from './report.ts';

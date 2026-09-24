@@ -1,0 +1,13 @@
+{
+  "name": "@fantasy/samples",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@fantasy/domain": "workspace:*",
+    "@fantasy/engine": "workspace:*"
+  }
+}

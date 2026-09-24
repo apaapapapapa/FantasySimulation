@@ -12,6 +12,9 @@ importers:
 
   .:
     devDependencies:
+      '@fantasy/samples':
+        specifier: workspace:*
+        version: link:packages/samples
       '@fontsource/noto-sans-jp':
         specifier: 5.2.8
         version: 5.2.8
@@ -54,6 +57,9 @@ importers:
       fast-check:
         specifier: 4.10.2
         version: 4.10.2
+      js-yaml:
+        specifier: 4.3.2
+        version: 4.3.2
       semantic-release:
         specifier: 25.0.9
         version: 25.0.9(supports-color@10.2.2)(typescript@7.0.2)
@@ -75,6 +81,9 @@ importers:
       '@fantasy/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@fantasy/samples':
+        specifier: workspace:*
+        version: link:../../packages/samples
       better-sqlite3:
         specifier: 13.0.3
         version: 13.0.3
@@ -162,6 +171,15 @@ importers:
       '@fantasy/domain':
         specifier: workspace:*
         version: link:../domain
+
+  packages/samples:
+    dependencies:
+      '@fantasy/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@fantasy/engine':
+        specifier: workspace:*
+        version: link:../engine
 
 packages:
 

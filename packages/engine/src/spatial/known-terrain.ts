@@ -1,4 +1,4 @@
-import type { DeepReadonly, ObservedSurface } from '@fantasy/domain/spatial';
+import type { DeepReadonly, ObservedSurface } from '@fantasy/domain/spatial/execution';
 import { length, mul, sub, unit, type Vec3 } from './math.ts';
 import { SpatialWorld, type Obstacle } from './physics.ts';
 import { metres } from './terrain.ts';

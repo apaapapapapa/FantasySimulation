@@ -4,7 +4,7 @@ import {
   type DeepReadonly,
   type Effect,
   type ForceContribution,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import type { ActorState } from './combat-state.ts';
 import type { MovedActor } from './movement.ts';
 import { length, sub, unit, type Vec3 } from './math.ts';

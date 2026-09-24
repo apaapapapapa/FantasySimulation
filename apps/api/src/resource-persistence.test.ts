@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { ReplayState, replayContext } from '@fantasy/domain/spatial';
-import { catalogManifest, prepareBattle, reference, sealRevision } from '@fantasy/engine/spatial';
+import { prepareBattle, reference, sealRevision } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import priorStamina from '../fixtures/compatibility/stamina-v1.11.json' with { type: 'json' };
 import { specInput, withRuntime } from '../test-support/runtime.ts';
 import { seekReplay, verifyReplay } from './replay-reader.ts';

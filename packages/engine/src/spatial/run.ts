@@ -8,12 +8,12 @@ import {
   type BattleResult,
   type Budget,
   type StreamRecord,
-} from '@fantasy/domain/spatial';
+} from '@fantasy/domain/spatial/execution';
 import { initializePhysics } from './physics.ts';
 import { prepareBattle, type PreparedBattle } from './prepare.ts';
 import { simulate, type SimulationEnd } from './simulate.ts';
 
-export { eventHashLine, trajectoryHashLine } from '@fantasy/domain/spatial';
+export { eventHashLine, trajectoryHashLine } from '@fantasy/domain/spatial/execution';
 export async function finalizeBattleResult(
   simulationHash: string,
   end: SimulationEnd,

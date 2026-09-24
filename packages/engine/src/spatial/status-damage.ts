@@ -1,4 +1,4 @@
-import { ElementSchema } from '@fantasy/domain/spatial';
+import { ElementSchema } from '@fantasy/domain/spatial/execution';
 import type { ActorState, AbilityRevision } from './combat-state.ts';
 import { damageSource, type DamageSource } from './damage.ts';
 import { abilityCategories } from './categories.ts';

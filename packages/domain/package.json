@@ -5,7 +5,12 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./spatial": "./src/spatial/index.ts"
+    "./spatial": "./src/spatial/index.ts",
+    "./spatial/api": "./src/spatial/api.ts",
+    "./spatial/batch": "./src/spatial/batch.ts",
+    "./spatial/execution": "./src/spatial/execution.ts",
+    "./spatial/publication": "./src/spatial/publication.ts",
+    "./spatial/replay": "./src/spatial/replay.ts"
   },
   "dependencies": {
     "zod": "4.6.5"

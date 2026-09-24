@@ -4,7 +4,7 @@ import { initializePhysics } from './physics.ts';
 import { runBattle } from './run.ts';
 import { aiFixture, flyingBody, initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { battleEvents, editScenario, glassWall } from '../../test-support/fixtures.ts';
-import { catalogManifest } from './catalog.ts';
+import { catalogManifest } from '@fantasy/samples';
 
 beforeAll(initializePhysics);
 describe('common engine cognition and effects', () => {
