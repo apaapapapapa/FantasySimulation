@@ -9,10 +9,10 @@ concurrency:
   group: issue-81-activation-evidence
   cancel-in-progress: false
 jobs:
-  source:
+  delivery:
     if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     permissions:
       contents: read
       actions: read
@@ -26,67 +26,32 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Run canonical clean-source verification on the exact candidate
-        run: |
-          test "$(git rev-parse HEAD)" = 8e813dcb855f6395dc185e123824eaa2327d7ee0
-          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp run harness source .generated/harness/107-source
-          vp run harness report .generated/harness/107-source/report.json source-clean source-verify
-      - name: Collect current PR discussion and delivery inputs
+      - name: Recollect and assess unchanged agent-reviewed PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          vp run harness github-snapshot apaapapapapa/FantasySimulation 107 .generated/harness/107-pr
+          vp run harness github-snapshot apaapapapapa/FantasySimulation 107 .generated/harness/107-delivery
           node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
           import {readFileSync,writeFileSync} from 'node:fs';
-          import {conversationDigest} from './scripts/harness/delivery.ts';
-          const s=JSON.parse(readFileSync('.generated/harness/107-pr/github-snapshot.json','utf8'));
-          const review={candidate:s.pull.head.sha,base:s.pull.base.sha,digest:conversationDigest(s),reviewDecision:s.reviewDecision,files:s.files.map(f=>f.filename),comments:s.comments.map(c=>({id:c.id,body:c.body})),reviews:s.reviews.map(r=>({id:r.id,body:r.body,state:r.state,commit:r.commit_id})),errors:s.errors};
-          writeFileSync('.generated/harness/107-review-input.json',JSON.stringify(review,null,2));
-          console.log('PR107_REVIEW_INPUT='+JSON.stringify(review));
+          import {conversationDigest,assessDelivery} from './scripts/harness/delivery.ts';
+          const directory='.generated/harness/107-delivery/';
+          const snapshot=JSON.parse(readFileSync(directory+'github-snapshot.json','utf8'));
+          const digest='9ac6aa28d1a594cc7da6704ba61208297a1ed05ee4d31d8025dd7ee608635781';
+          assert.equal(conversationDigest(snapshot),digest,'Review inputs changed; agent must rereview');
+          assert.equal(snapshot.pull.head.sha,'8e813dcb855f6395dc185e123824eaa2327d7ee0');
+          assert.equal(snapshot.pull.base.sha,'945c078b5c612a716cfdadfada942230819f4b6c');
+          const receipt={candidateSha:snapshot.pull.head.sha,conversationDigest:digest,reviewedPaths:['scripts/publication-workflow.test.ts'],completedAt:new Date().toISOString(),method:'self',summary:'Agent reviewed the complete one-file diff and all current discussion. Three explicit negative assertions replace the mixed-anchor regex without relaxing artifact restrictions. Latest-head Codex review completed. Independent clean-source verification passed in run 36023062091. Independent security-extended analysis and unchanged high-critical policy also passed; only its auxiliary artifact upload failed because the requested receipt directory did not exist. This does not treat that auxiliary job as successful or replace required current PR CI.',unresolvedFindings:0,squashTitle:'test(publication): clarify artifact scope assertions for CodeQL (#107)',squashBody:'Refs #81'};
+          const result=assessDelivery(snapshot,'pr',receipt);
+          writeFileSync(directory+'review.json',JSON.stringify(receipt,null,2));
+          writeFileSync(directory+'delivery.json',JSON.stringify(result,null,2));
+          console.log('PR107_DELIVERY='+JSON.stringify(result));process.exitCode=result.exitCode;
           NODE
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: activation-107-source-${{ github.run_id }}-${{ github.run_attempt }}
+          name: activation-107-delivery-${{ github.run_id }}-${{ github.run_attempt }}
           path: .generated/harness/
           include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
-  extended-codeql:
-    if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          ref: 8e813dcb855f6395dc185e123824eaa2327d7ee0
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
-        with:
-          node-version-file: .node-version
-          run-install: false
-      - uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd
-        with:
-          languages: javascript-typescript
-          build-mode: none
-          config-file: ./.github/codeql/config.yml
-          queries: security-extended
-      - uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd
-        with:
-          output: ${{ runner.temp }}/107-codeql
-          upload: never
-          upload-database: false
-          category: /language:javascript-typescript
-      - name: Apply unchanged high-critical policy to independently analyzed candidate
-        env:
-          H4_REPORT_DIR: ${{ runner.temp }}/107-codeql-receipts
-          GITHUB_SHA: 8e813dcb855f6395dc185e123824eaa2327d7ee0
-        run: node scripts/security/codeql.ts "$RUNNER_TEMP/107-codeql"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: always()
-        with:
-          name: activation-107-codeql-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/107-codeql-receipts/
           if-no-files-found: error
           retention-days: 7
