@@ -1,0 +1,17 @@
+{
+  "name": "@fantasy/replay-reader",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vp pack",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@fantasy/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260915.1",
+    "wrangler": "4.134.0"
+  }
+}

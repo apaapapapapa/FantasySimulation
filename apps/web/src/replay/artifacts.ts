@@ -1,7 +1,13 @@
 import { hashBytes, type ArtifactRef } from '@fantasy/domain/spatial';
 
 /** Viewer-facing failure categories (#79): format, missing/damaged data, delivery, cancel. */
-export type ReplayLoadErrorKind = 'unsupported' | 'damaged' | 'unavailable' | 'aborted';
+export type ReplayLoadErrorKind =
+  | 'unsupported'
+  | 'damaged'
+  | 'unavailable'
+  | 'aborted'
+  | 'limit'
+  | 'gone';
 export class ReplayLoadError extends Error {
   constructor(
     readonly kind: ReplayLoadErrorKind,

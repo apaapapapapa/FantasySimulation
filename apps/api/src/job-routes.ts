@@ -45,7 +45,9 @@ export function addJobRoutes(app: FastifyInstance, runtime: BattleRuntime) {
   app.post('/api/battle-jobs/:id/retry', async (request, reply) => {
     const { id } = idParams.parse(request.params),
       input = parseJson(RetryJobSchema, request.body);
-    return reply.code(202).send({ job: runtime.retry(id, input.expectedAttempts, input.budget) });
+    return reply
+      .code(202)
+      .send({ job: await runtime.retry(id, input.expectedAttempts, input.budget) });
   });
   app.get('/api/battle-results/:id', async (request) => {
     const row = runtime.jobs.result(idParams.parse(request.params).id);

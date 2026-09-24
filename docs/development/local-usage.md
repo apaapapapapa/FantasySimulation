@@ -1,122 +1,119 @@
-# ローカル利用
+# Local usage
 
-導入は[README](../../README.md)。固定版とコマンド一覧は[package.json](../../package.json)が正本です。
+Start with [README](../../README.md); pinned versions/scripts are in
+[package.json](../../package.json). Copy `.env.example` to root `.env` only for overrides.
+DB paths are repository-relative. Vite proxies `/api`; restart after changing `API_PORT`.
+The unauthenticated API listens on loopback only.
 
-## 設定
+## Build and edit
 
-既定値のままで起動できます。変更する場合だけ、ルートの`.env.example`を`.env`にコピーしてください。
+`vp run build`, then `vp run --filter @fantasy/api start` and, separately,
+`vp run --filter @fantasy/web preview` (<http://127.0.0.1:4173>).
+Outputs: app `dist`. Run inside the repo for `db/drizzle` and `data/spatial`.
+Native SQLite builds require Python/C++.
 
-```dotenv
-API_HOST=127.0.0.1
-API_PORT=3001
-DATABASE_PATH=./data/fantasy.sqlite
-```
+UI: edit/validate drafts, publish immutable revisions, manage seeded battles/cancel/retry.
+Saved IDs reopen drafts. Replay controls step/speed/camera without engine execution
+([ADR 0006](../adr/0006-recorded-replay.md)). Increase the budget to retry truncated jobs.
 
-`DATABASE_PATH`の相対パスはリポジトリのルートを基準に解決します。
-画面の`/api`リクエストはViteのプロキシからAPIへ送信されます。
-`.env`の`API_PORT`を変更したら、開発サーバーを再起動してください。
-ローカル利用を前提としており、認証は未実装です。APIは既定でループバックにのみ待ち受けます。
+All routes below use `/api`.
 
-## ビルドして起動
+| API                                      | Contract                        |
+| ---------------------------------------- | ------------------------------- |
+| `GET /health`                            | Startup/Drizzle health          |
+| `GET /characters`                        | Latest; `limit` <=100, `cursor` |
+| `GET /characters/{id}?revision=1`        | Revision; default latest        |
+| `GET /rulesets`, `/scenarios`            | Rules/scenarios                 |
+| `GET /revisions/{kind}/{id}/{revision}`  | Fixed definition                |
+| `POST /drafts`, `GET /drafts/{id}`       | Create/read draft               |
+| `PATCH /drafts/{id}`                     | `{expectedVersion, definition}` |
+| `POST /drafts/{id}/validate`, `/publish` | Publish: `{expectedVersion}`    |
 
-`vp run build`後、APIは`vp run --filter @fantasy/api start`、画面は別ターミナルで`vp run --filter @fantasy/web preview`。
-画面は <http://127.0.0.1:4173>、成果物は各appの`dist`です。APIはルートの`db/drizzle`と`data/spatial`を参照するため、リポジトリ内で起動します。
-SQLiteのネイティブビルドが必要な環境ではPythonとC++ツールも用意します。
+Create drafts with `{kind, definitionId, base, definition}`. `base` is the original
+`{id, revision, contentHash}`, or null for new IDs. Stale edits, duplicate publication
+or another draft changing the base return 409. Drafts may be incomplete; publication
+validates types/references and returns an immutable revision plus updated draft.
+Published revisions cannot be overwritten/deleted.
 
-## 下書きと公開revision
+## Samples and asynchronous API
 
-公開済みの設定は上書き・削除できません。`GET /api/characters/{id}`等で取得し、
-`POST /api/drafts` に `{kind, definitionId, base, definition}` を送って編集します。
-`base` は編集元の `{id, revision, contentHash}`（新規IDは`null`）。他の下書きから公開された場合も409を返します。
-`PATCH` は `{expectedVersion, definition}`、`publish` は `{expectedVersion}` を要求し、
-古い版による編集・二重公開は409です。未完成の下書きは保存できますが、公開時は型・参照を検証します。
-公開に成功すると不変の新revisionと更新後の下書きが返ります。
+`pnpm demo:spatial` demonstrates sword/flying mage in pillars; custom example:
+`pnpm demo:spatial archer guardian flat`. `data/spatial/catalog.json` contains 15
+characters/69 revisions. `pnpm catalog:spatial` checks it; review `--write` changes.
+Use new IDs per [version policy](../adr/0010-battle-version-compatibility.md).
+Startup/`db:seed` adds missing IDs. Manifests include only reachable revisions, so
+unrelated additions do not change battle hashes. Scenarios include flat and pillars.
 
-| API                                         | 用途                                               |
-| ------------------------------------------- | -------------------------------------------------- |
-| `GET /api/health`                           | 起動・Drizzle接続確認                              |
-| `GET /api/characters`                       | 最新revisionの一覧。`limit`最大100、`cursor`で続き |
-| `GET /api/characters/{id}?revision=1`       | 指定revision。省略時は最新                         |
-| `GET /api/rulesets`、`GET /api/scenarios`   | ルール・戦場revision一覧                           |
-| `GET /api/revisions/{kind}/{id}/{revision}` | 能力・装備・状態・方針を含む固定revision取得       |
-| `POST /api/drafts`、`GET /api/drafts/{id}`  | 下書き作成・取得                                   |
-| `PATCH /api/drafts/{id}`                    | 競合検出付きの編集                                 |
-| `POST /api/drafts/{id}/validate`            | 公開可能な構造・参照の検証                         |
-| `POST /api/drafts/{id}/publish`             | 検証済みsnapshotの新revision公開                   |
+[ADR 0007](../adr/0007-worker-runtime.md) owns leases, reservations, recovery,
+result conflicts and cache. Under `/api`; creation and replay recovery require
+`X-Client-Id` and `Idempotency-Key`:
 
-画面ではキャラクター・能力のJSONを下書き保存→検証→新revision公開できます。
-対戦は設定とseedを選んで開始し、中止・再試行・結果・保存ログを確認します。
-ログ上限で中断した場合は計算予算を増やして再試行します。公開revisionは保持されます。
-保存IDから下書きを再開できます。保存ログはstep・速度・カメラを変えて3D観戦できます。
-描画時はengineを実行しません（[ADR 0006](../adr/0006-recorded-replay.md)）。
+| API                                            | Contract                                       |
+| ---------------------------------------------- | ---------------------------------------------- |
+| `POST /battle-jobs`                            | `{spec,budget?}`; 202 or cached 200            |
+| `GET /battle-jobs/:id`                         | State/attempt/progress/diagnostics/metrics     |
+| `POST /battle-jobs/:id/cancel`                 | Commit cancellation, then stop worker          |
+| `POST /battle-jobs/:id/retry`                  | `{expectedAttempts,budget}`                    |
+| `GET /battle-results/:id`                      | Verified; missing/corrupt/quarantined: 503     |
+| `POST /battle-results/:id/replay-recovery`     | `{budget}` plus idempotency headers            |
+| `GET /replays/:id`, `/replays/:id/files/:file` | Manifest/allowlisted gzip; no Content-Encoding |
 
-静的観戦版は`apps/web`で`VITE_PUBLICATION_ROOT=https://データ配信先/ vp build --mode public`。
-成果物`dist`を`/FantasySimulation/`に配信します。データ側はこのoriginへのCORSを許可し、
-`.gz`は`application/gzip`で配信、HTTPの`Content-Encoding`を付けません。API/DBは不要です。
+Defaults: `ARTIFACT_PATH=./data/replays`, `BATTLE_WORKERS=1`, `BATTLE_TIMEOUT_MS=30000`,
+`BATTLE_QUEUE_LIMIT=128`, `BATTLE_STORAGE_BYTES=17179869184`, `BATTLE_RSS_BYTES=1610612736`.
 
-## 3Dサンプル対戦
+## Batch and publication
 
-`pnpm demo:spatial` は柱のある広場で剣士と飛行術師を対戦させます。
-`pnpm demo:spatial archer guardian flat` のように2体と戦場を指定できます。
-画面・DBなしで同じmanifest/seedの対戦を再現します。
-
-`data/spatial/catalog.json` は15体と能力・装備・方針・状態・戦場・ルールの69revisionです。
-型付き部品で構成し、キャラクター固有の実行分岐はありません。
-`pnpm catalog:spatial` で生成元との一致を確認し、変更時は
-`pnpm catalog:spatial --write` の差分をレビューしてください。
-配布済みサンプルは[版更新規則](../adr/0010-battle-version-compatibility.md)に従い新しいIDで追加します。起動時・`db:seed`で未登録のIDをDBへ追加します。
-
-戦場は `flat` と `pillars`。manifestには選択した参加者と戦場から辿れるrevisionだけを含めるため、
-無関係なキャラクターの追加が既存対戦のhashを変えることはありません。
-
-## 非同期対戦とリプレイ
-
-所有権・lease・再試行・容量予約・cacheと復旧条件は[ADR 0007](../adr/0007-worker-runtime.md)を正本とします。
-失敗時の記録保持、結果hash不一致の隔離、欠落/破損結果を明示復旧まで保留する契約も含みます。
-
-| API                                            | 用途                                                                                    |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `POST /api/battle-jobs`                        | `{spec, budget?}` を受付。`X-Client-Id`と`Idempotency-Key`が必要。202、確定cacheなら200 |
-| `GET /api/battle-jobs/:id`                     | 状態、attempt、進捗、診断、計測値                                                       |
-| `POST /api/battle-jobs/:id/cancel`             | 中止を確定してからWorkerを停止                                                          |
-| `POST /api/battle-jobs/:id/retry`              | `{expectedAttempts, budget}` で明示再試行                                               |
-| `GET /api/battle-results/:id`                  | 保存記録を検証した結果。欠落・破損・隔離時は503で保留                                   |
-| `POST /api/battle-results/:id/replay-recovery` | `{budget}` と冪等headersで欠落/破損記録の復旧を明示要求                                 |
-| `GET /api/replays/:id`                         | 検証済みmanifest                                                                        |
-| `GET /api/replays/:id/files/:file`             | manifestに列挙されたgzip bytes。Content-Encodingなし                                    |
-
-既定設定は`ARTIFACT_PATH=./data/replays`、`BATTLE_WORKERS=1`、
-`BATTLE_TIMEOUT_MS=30000`、`BATTLE_QUEUE_LIMIT=128`、
-`BATTLE_STORAGE_BYTES=17179869184`、`BATTLE_RSS_BYTES=1610612736`。
-
-## Headlessバッチ
-
-cleanなcommitから計画を作り、同じcommit/toolchainで実行します。HTTPは不要です。
-入力は公開revision、最大1,000の予定枠、計算予算、予測保存量と2種類の容量上限を含みます。
+Create/execute plans on the same clean commit/toolchain; no HTTP needed. Inputs carry
+published revisions, <=1,000 slots, calculation budget and output/work capacity.
+Commands run in `apps/api`, so relative arguments resolve there:
 
 ```sh
-vp run batch sample .generated/batch-input.json
-vp run batch plan .generated/batch-input.json .generated/batch-plan.json
-vp run batch run .generated/batch-plan.json .generated/batch-output --workers 1
+vp run batch sample .generated/input.json
+vp run batch plan .generated/input.json .generated/plan.json
+vp run batch run .generated/plan.json .generated/output --workers 1
+vp run batch check .generated/plan.json path/to/index.json .generated/output
+vp run batch export .generated/plan.json .generated/public path/to/index.json .generated/output
 ```
 
-`--shard 0/4`から`--shard 3/4`は各shardを実行します。並列実行では別々の出力先を指定します。
-同じ計画/出力先で再実行すると完全な結果を検証して再利用します。failed/cancelledを
-再試行する場合は`--retry-failed`を明示します。`--deadline`はミリ秒、最大1,800,000です。
-出力には不変のindexファイルのパスが表示されます。全体の照合には各indexと出力先を渡します。
+Use `--shard 0/4` through `3/4` with separate outputs. Repeating plan/output reuses
+verified results. `--retry-failed` explicitly retries failed/cancelled slots;
+`--deadline` is milliseconds, <=1,800,000. Run prints immutable index paths.
+Check/export accept additional index/root pairs. Missing slots remain pending;
+exit 0 complete, 2 incomplete, 1 invalid. `.work/` remains private; disk needs output
+limit + work limit +256 MiB. [ADR 0008](../adr/0008-headless-batch.md) owns the contracts.
+Built CLI: `node apps/api/dist/batch.mjs` (arguments relative to current directory).
+
+For R2, keep bucket-scoped Object Read & Write credentials only in local root `.env`:
+`R2_ACCOUNT_ID`, `R2_BUCKET=fantasysimulation-replays`, `R2_ACCESS_KEY_ID`,
+`R2_SECRET_ACCESS_KEY`. Never put these in GitHub Secrets, commits, logs or browser builds.
+Set `PUBLICATION_VIEWER_URL=https://apaapapapapa.github.io/FantasySimulation/` and
+`PUBLICATION_WORKER_URL=https://fantasysimulation-replay-reader.tokyojp.workers.dev/`.
+Fetch main first so the local Git graph contains the deployed viewer SHA.
 
 ```sh
-vp run batch check .generated/batch-plan.json path/to/index.json .generated/batch-output
+vp run publication publish .generated/plan.json .generated/public path/to/index.json .generated/output --dry-run
+vp run publication publish .generated/plan.json .generated/public path/to/index.json .generated/output
+vp run publication prune .generated/public
+# Review orphan keys/bytes; only then explicitly delete:
+vp run publication prune .generated/public --confirm
 ```
 
-不完全なshardや破損を成功として数えません。不完全ならexit 2、入力/整合性エラーはexit 1です。
-公開用directoryの生成（未完了なら全枠を残してexit 2、不正ならexit 1）:
+Publish runs batch check/export first. One administrator runs publish/cleanup sequentially;
+`public-dir.remote-lock` must be removed manually only after confirming no process remains.
+Interrupted uploads resume with the same inputs. `commit-unknown` or `committed-unverified`
+means rerun/read-back is required, not success. Exit 2 preserves incomplete rows honestly.
+`PUBLICATION_MAX_BYTES` defaults/caps at 8GB; writes default 10,000, transfer 256MB,
+Worker read-back 200 requests (`PUBLICATION_MAX_WRITES`, `_TRANSFER_BYTES`, `_WORKER_REQUESTS`).
+Retries/deadlines and conditional writes are bounded.
 
-```sh
-vp run batch export .generated/batch-plan.json .generated/public path/to/index.json .generated/batch-output
-```
+## Public viewer and reader
 
-R2書込みは後続です。公開layout/理由コード/容量は[ADR 0008](../adr/0008-headless-batch.md)。
-配布ビルドでは`node apps/api/dist/batch.mjs`を使用できます。
-出力の`.work/`はローカルDB/作業記録です。必要ディスク容量は最終出力上限＋作業replay上限＋256 MiB。
-[計画・保存・再開の契約](../adr/0008-headless-batch.md)を参照してください。
+Build: `VITE_PUBLICATION_ROOT=https://<reader>.workers.dev/ vp run --filter @fantasy/web build --mode public`.
+Base defaults `/FantasySimulation/`; `VITE_PUBLIC_BASE=/` supports a custom domain.
+Hash routes survive reload. `build.json` carries source SHA/formats; CSP permits self/data
+origin only. Static output has no API/DB/credentials. Data CORS permits the viewer origin.
+`Public viewer` checks successful main push CI/ci-gate before build and deploy.
+Manual rollback requires a successful main CI run ID and verified main ancestry.
+Reader: `vp run --filter @fantasy/replay-reader build`, then
+`vp run --filter @fantasy/replay-reader deploy` using separately authorized Cloudflare tooling.
+Keep R2 public access disabled; the reader validates GET/HEAD/OPTIONS keys without listing.

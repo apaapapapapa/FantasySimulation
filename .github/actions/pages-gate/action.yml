@@ -1,0 +1,29 @@
+name: Verify Pages source
+description: Fresh exact-attempt main CI and repository checks before build or deployment
+inputs:
+  run-id:
+    required: true
+    description: Completed CI run ID
+outputs:
+  sha:
+    description: Verified source SHA
+    value: ${{ steps.gate.outputs.sha }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      id: gate
+      env:
+        CI_RUN_ID: ${{ inputs.run-id }}
+      with:
+        script: |
+          const { pagesSource } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/pages-policy.ts`);
+          const repo = {owner: context.repo.owner, repo: context.repo.repo};
+          const run_id = Number(process.env.CI_RUN_ID);
+          if (!Number.isSafeInteger(run_id) || run_id < 1) throw new Error('Invalid CI run');
+          const {data: run} = await github.rest.actions.getWorkflowRun({...repo, run_id});
+          const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {...repo, run_id, attempt_number: run.run_attempt, per_page: 100});
+          const {data: main} = await github.rest.repos.getBranch({...repo, branch: 'main'});
+          const manual = context.eventName === 'workflow_dispatch';
+          const comparison = manual ? (await github.rest.repos.compareCommits({...repo, base: run.head_sha, head: main.commit.sha})).data.status : 'identical';
+          core.setOutput('sha', pagesSource(run, jobs, main.commit.sha, manual, comparison));

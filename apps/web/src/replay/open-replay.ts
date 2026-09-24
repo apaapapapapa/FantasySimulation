@@ -1,11 +1,10 @@
+import { SUPPORTED_REPLAY_FORMAT } from '@fantasy/domain';
 import {
   deepFreeze,
-  RECORDING_PROFILE,
   ReplayManifestSchema,
   replayChunkRecords,
   replayContext,
   seekReplayState,
-  StoredManifestSchema,
   type ArtifactRef,
   type ReplayContext,
   type ReplayManifest,
@@ -24,13 +23,7 @@ export interface ReplaySource {
   file(ref: ArtifactRef, signal?: AbortSignal): Promise<Uint8Array<ArrayBuffer>>;
 }
 /** Saved formats this viewer reads, taken from the domain schemas it is built with. */
-export const SUPPORTED_REPLAY_FORMAT = Object.freeze({
-  manifestSchema: ReplayManifestSchema.shape.schemaVersion.value,
-  inputSchema: StoredManifestSchema.shape.schemaVersion.value,
-  eventSchema: StoredManifestSchema.shape.eventSchemaVersion.value,
-  replaySchema: StoredManifestSchema.shape.replaySchemaVersion.value,
-  profile: RECORDING_PROFILE.id,
-});
+export { SUPPORTED_REPLAY_FORMAT };
 export interface OpenedReplay {
   readonly manifest: ReplayManifest;
   readonly context: ReplayContext;

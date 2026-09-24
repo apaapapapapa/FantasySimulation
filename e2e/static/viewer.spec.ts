@@ -23,6 +23,7 @@ test('static-selection', async ({ page }) => {
   await page.keyboard.press('Enter');
   await expect(page.getByLabel('リプレイID', { exact: true })).toHaveText(complete.manifest.id);
   expect(page.url()).toContain(complete.row.slotId.slice(7));
+  await expect(page.getByLabel('現在のstep')).toHaveText('0');
   await page.reload();
   await expect(page.getByLabel('現在のstep')).toHaveText('0');
   await expect(page.getByLabel('リプレイID', { exact: true })).toHaveText(complete.manifest.id);
@@ -193,17 +194,33 @@ test('static-webgl-fallback', async ({ page }) => {
 });
 
 test.describe('static origin guard', () => {
-  test.use({ expectedBlockedOrigins: ['https://example.invalid', 'ws://127.0.0.1:12345'] });
+  // HTTP is blocked by production CSP before the external-network fixture sees it.
+  test.use({ expectedBlockedOrigins: ['ws://127.0.0.1:12345'] });
   test('static-network-boundary', async ({ page }) => {
     await page.goto(complete.url);
     await expect(page.getByLabel('現在のstep')).toHaveText('0');
-    await page.evaluate(async () => {
+    const blocked = await page.evaluate(async () => {
+      const violation = new Promise<{ url: string; directive: string }>((resolve) => {
+        window.addEventListener(
+          'securitypolicyviolation',
+          (event) =>
+            resolve({
+              url: event.blockedURI,
+              directive: event.effectiveDirective,
+            }),
+          { once: true },
+        );
+      });
       await fetch('https://example.invalid/forbidden').catch(() => {});
+      const blocked = await violation;
       await new Promise<void>((resolve) => {
         const socket = new WebSocket('ws://127.0.0.1:12345');
         socket.onclose = () => resolve();
         socket.onerror = () => resolve();
       });
+      return blocked;
     });
+    expect(new URL(blocked.url).origin).toBe('https://example.invalid');
+    expect(blocked.directive).toBe('connect-src');
   });
 });
