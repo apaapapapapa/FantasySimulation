@@ -1,6 +1,7 @@
 import { readBoundedJson } from './harness/files.ts';
 import { assessReport } from './harness/report.ts';
 import { collectSource } from './harness/source.ts';
+import { harnessFailure } from './harness/diagnostics.ts';
 
 const json = (path: string) => readBoundedJson(path, 32 * 1024 * 1024);
 
@@ -100,9 +101,7 @@ try {
     if (command === 'corpus') console.log(`FANTASY_CORPUS_REPORT=${JSON.stringify(result.report)}`);
     process.exitCode = result.exitCode;
   }
-} catch {
-  console.error(
-    'Harness input or collection failed; evidence is incomplete. See .github/harness/README.md.',
-  );
+} catch (error) {
+  console.error(harnessFailure(process.argv.slice(2), error));
   process.exitCode = 2;
 }
