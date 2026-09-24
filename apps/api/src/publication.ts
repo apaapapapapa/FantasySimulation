@@ -25,11 +25,16 @@ const required = (name: string) => {
 async function main() {
   const { positionals, values } = parseArgs({
     allowPositionals: true,
-    options: { 'dry-run': { type: 'boolean' }, confirm: { type: 'boolean' } },
+    options: {
+      'dry-run': { type: 'boolean' },
+      'require-complete-input': { type: 'boolean' },
+      confirm: { type: 'boolean' },
+    },
   });
   const [command, input, output, ...files] = positionals;
   if (
     !input ||
+    (values['require-complete-input'] && command !== 'publish') ||
     !(
       (command === 'publish' &&
         output &&
@@ -42,7 +47,7 @@ async function main() {
     )
   )
     throw new Error(
-      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] | restore new-public-dir | prune public-dir [--confirm]',
+      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] [--require-complete-input] | restore new-public-dir | prune public-dir [--confirm]',
     );
   const root = resolve(command === 'publish' ? output! : input),
     lock = root + '.remote-lock';
@@ -59,6 +64,8 @@ async function main() {
         });
       const exported = await exportPublication(await readJson(input, 8_000_000), indexes, root);
       console.log(canonicalJson({ phase: 'export', complete: exported.complete }));
+      if (values['require-complete-input'] && !exported.complete)
+        throw new Error('The current publication input must be complete');
     }
     store = new PublicationS3({
       accountId: required('R2_ACCOUNT_ID'),
@@ -94,7 +101,8 @@ async function main() {
         observe: (report) => console.log(canonicalJson({ phase: 'preflight', ...report })),
       });
       console.log(canonicalJson(result));
-      if (result.incompleteRows) process.exitCode = 2;
+      // Complete-input mode preserves historical counts without misclassifying verified uploads.
+      if (result.incompleteRows && !values['require-complete-input']) process.exitCode = 2;
     }
   } finally {
     if (store) console.log(canonicalJson({ phase: 's3-transport', ...store.metrics() }));

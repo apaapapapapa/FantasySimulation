@@ -38,7 +38,11 @@ export async function restorePublication(
     };
     const pointer = 'catalog/current.json';
     const before = await remote(pointer, MAX_PUBLIC_JSON_BYTES);
-    if (!before) return { status: 'empty' as const, files: 0, downloadBytes, reads };
+    if (!before) {
+      if (await remote(pointer, MAX_PUBLIC_JSON_BYTES))
+        throw new Error('Publication generation changed during restore');
+      return { status: 'empty' as const, files: 0, downloadBytes, reads };
+    }
     const downloaded = new Set<string>();
     const graph = await publicationGraph(async (key, limit) => {
       const path = join(root, PublicKeySchema.parse(key));

@@ -61,8 +61,21 @@ it('recovers exact bytes on a fresh runner, reuses a set, and retains the prior 
 it('creates an empty first-publication directory without requiring existing objects', async () => {
   const { restored } = await snapshot();
   const result = await restorePublication(restored, { read: async () => null });
-  expect(result).toEqual({ status: 'empty', files: 0, downloadBytes: 0, reads: 1 });
+  expect(result).toEqual({ status: 'empty', files: 0, downloadBytes: 0, reads: 2 });
   expect((await stat(restored)).isDirectory()).toBe(true);
+});
+
+it('rejects a concurrent first publication instead of reporting an empty restore', async () => {
+  const { original, restored, reader } = await snapshot();
+  let calls = 0;
+  await expect(
+    restorePublication(restored, {
+      read: async (key, limit) => (++calls === 1 ? null : reader.read(key, limit)),
+    }),
+  ).rejects.toThrow('generation changed');
+  expect(calls).toBe(2);
+  await expect(stat(restored)).rejects.toMatchObject({ code: 'ENOENT' });
+  expect((await stat(original)).isDirectory()).toBe(true);
 });
 
 it.each(['directory', 'symlink'] as const)('never overwrites an existing %s', async (kind) => {

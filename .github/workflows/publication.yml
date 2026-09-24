@@ -133,8 +133,8 @@ jobs:
           MODE: ${{ inputs.mode }}
         run: |
           test -n "$R2_ACCOUNT_ID" && test -n "$R2_ACCESS_KEY_ID" && test -n "$R2_SECRET_ACCESS_KEY"
-          args=()
-          case "$MODE" in dry-run) args=(--dry-run) ;; publish) ;; *) exit 1 ;; esac
+          args=(--require-complete-input)
+          case "$MODE" in dry-run) args+=(--dry-run) ;; publish) ;; *) exit 1 ;; esac
           vp run publication restore .generated/cloud/public
           vp run publication publish .generated/cloud/plan.json .generated/cloud/public .generated/cloud/index.json .generated/cloud/output "${args[@]}"
       - name: Record the publication outcome without secrets

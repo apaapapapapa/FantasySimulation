@@ -38,7 +38,8 @@ it('isolates production credentials from calculation and artifacts', () => {
 
 it('defaults to dry run and restores before publishing without deletion', () => {
   expect(workflow).toContain('default: dry-run');
-  expect(workflow).toContain('args=(--dry-run)');
+  expect(workflow).toContain('args=(--require-complete-input)');
+  expect(workflow).toContain('args+=(--dry-run)');
   expect(workflow).toContain("PUBLICATION_MAX_RESTORE_BYTES: '256000000'");
   expect(workflow.indexOf('vp run publication restore')).toBeLessThan(
     workflow.indexOf('vp run publication publish'),
