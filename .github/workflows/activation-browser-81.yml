@@ -1,0 +1,157 @@
+name: Issue 81 production browser acceptance
+on:
+  push:
+    branches: [ops/81-activation-20260925]
+    paths: [.github/workflows/activation-browser-81.yml]
+permissions:
+  contents: read
+concurrency:
+  group: issue-81-production-browser
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: 4618f3cc78942b354e1b8271f845f288cd4582c6
+          persist-credentials: false
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          retries: 0
+          script: |
+            const assert = (await import('node:assert/strict')).default;
+            let run;
+            for (let i=0; i<48; i++) {
+              run = (await github.rest.actions.getWorkflowRun({owner:'apaapapapapa',repo:'FantasySimulation',run_id:36057392026})).data;
+              assert.equal(run.head_sha,'4618f3cc78942b354e1b8271f845f288cd4582c6');
+              assert.equal(run.path,'.github/workflows/publication.yml');
+              assert.equal(run.event,'workflow_dispatch');
+              if (run.status==='completed') break;
+              await new Promise(resolve=>setTimeout(resolve,10000));
+            }
+            assert.equal(run.status,'completed');
+            assert.equal(run.conclusion,'success','Publish must be verified before browser acceptance');
+            console.log('PUBLISH_VERIFIED='+JSON.stringify({runId:run.id,attempt:run.run_attempt,sha:run.head_sha}));
+      - uses: ./.github/actions/setup-project
+      - uses: ./.github/actions/setup-playwright
+      - name: Check the actual public graph and both browser engines without mocks
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: |
+          cd apps/api
+          node --import tsx --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {mkdir,writeFile} from 'node:fs/promises';
+          import {chromium,webkit,expect} from '@playwright/test';
+          import {publicationGraph} from './src/publication-graph.ts';
+          import {publicHttp} from './src/publication-http.ts';
+          const output='../../.generated/activation-browser';
+          await mkdir(output,{recursive:true});
+          const viewer='https://apaapapapapa.github.io/FantasySimulation/';
+          const reader='https://fantasysimulation-replay-reader.tokyojp.workers.dev/';
+          const sourceSha='4618f3cc78942b354e1b8271f845f288cd4582c6';
+          const report={sourceSha,publicationRun:36057392026,startedAt:new Date().toISOString(),status:'incomplete',browsers:[]};
+          try {
+            const build=JSON.parse((await publicHttp(viewer)('build.json',4096)).toString('utf8'));
+            assert.equal(build.sourceSha,sourceSha);
+            const get=publicHttp(reader);
+            let graphRequests=0;
+            const graph=await publicationGraph(async (key,limit)=>{graphRequests++;return get(key,limit);});
+            assert.deepEqual([...graph.sources],[sourceSha]);
+            assert.equal(graph.catalog.sets.length,1);
+            const set=[...graph.sets.values()][0];
+            assert.equal(set.totalRows,2);assert.equal(set.incompleteRows,0);
+            assert.equal(graph.objects.size,2);
+            report.graph={catalogHash:graph.current.catalogHash,files:graph.files.size,bytes:graph.totalBytes,sets:graph.sets.size,matches:set.totalRows,incomplete:set.incompleteRows,requests:graphRequests};
+            console.log('PRODUCTION_GRAPH='+JSON.stringify(report.graph));
+            for (const [name,engine] of [['chromium',chromium],['webkit',webkit]]) {
+              const record={name,viewport:{width:390,height:844},status:'incomplete',matches:[],readerRequests:0,apiRequests:0,pageErrors:[],httpErrors:[]};
+              report.browsers.push(record);
+              const browser=await engine.launch({headless:true,...(name==='chromium'?{args:['--use-gl=angle','--use-angle=swiftshader','--enable-webgl','--enable-unsafe-swiftshader']}: {})});
+              const context=await browser.newContext({viewport:record.viewport,hasTouch:true});
+              const page=await context.newPage();
+              page.setDefaultTimeout(20000);
+              page.on('request',request=>{
+                if(request.url().startsWith(reader))record.readerRequests++;
+                if(new URL(request.url()).pathname.startsWith('/api/'))record.apiRequests++;
+              });
+              page.on('pageerror',error=>record.pageErrors.push(error.message));
+              page.on('response',response=>{
+                if(response.status()>=400 && (response.url().startsWith(reader)||response.url().startsWith(viewer)))
+                  record.httpErrors.push({url:response.url(),status:response.status()});
+              });
+              try {
+                await page.goto(viewer,{waitUntil:'domcontentloaded'});
+                await expect(page.getByRole('heading',{name:'公開リプレイ',exact:true})).toBeVisible();
+                await expect(page.getByRole('table',{name:'公開試合一覧'}).getByRole('row')).toHaveCount(3);
+                await expect(page.getByRole('region',{name:'試合の選択'})).toContainText('全2件');
+                const links=page.getByRole('link',{name:/^リプレイを開く /});
+                await expect(links).toHaveCount(2);
+                record.listRequests=record.readerRequests;
+                await page.screenshot({path:output+'/'+name+'-list.png',fullPage:true});
+                for(let i=0;i<2;i++) {
+                  const before=record.readerRequests;
+                  await links.nth(i).click();
+                  await expect(page.getByLabel('現在のstep')).toHaveText('0');
+                  const canvas=page.getByRole('img',{name:'保存ログの3D表示'});
+                  await expect(canvas).toHaveAttribute('data-rendered','true');
+                  const replayId=await page.getByLabel('リプレイID',{exact:true}).textContent();
+                  assert.ok(replayId && replayId.length>0);
+                  await page.getByLabel('再生速度').selectOption('2');
+                  await page.getByRole('button',{name:'再生',exact:true}).click();
+                  await expect.poll(async()=>Number(await page.getByLabel('現在のstep').textContent()),{timeout:20000}).toBeGreaterThan(0);
+                  const pause=page.getByRole('button',{name:'一時停止',exact:true});
+                  if(await pause.isVisible())await pause.click();
+                  await page.getByLabel('表示stepを入力').fill('1');
+                  await expect(page.getByLabel('現在のstep')).toHaveText('1');
+                  await page.getByRole('combobox',{name:'カメラ',exact:true}).selectOption('side');
+                  await expect(canvas).toHaveAttribute('data-rendered','true');
+                  await page.screenshot({path:output+'/'+name+'-match-'+i+'.png',fullPage:true});
+                  const url=page.url();
+                  assert.match(url,/#\/sets\/[a-f0-9]{64}\/pages\/0\/matches\/[a-f0-9]{64}$/);
+                  const playbackRequests=record.readerRequests-before;
+                  const beforeReload=record.readerRequests;
+                  await page.reload({waitUntil:'domcontentloaded'});
+                  await expect(page.getByLabel('現在のstep')).toHaveText('0');
+                  await expect(page.getByLabel('リプレイID',{exact:true})).toHaveText(replayId);
+                  await expect(canvas).toHaveAttribute('data-rendered','true');
+                  await expect(page.getByRole('alert')).toHaveCount(0);
+                  record.matches.push({replayId,url,playbackRequests,reloadRequests:record.readerRequests-beforeReload,status:'pass'});
+                }
+                assert.equal(record.apiRequests,0);
+                assert.deepEqual(record.pageErrors,[]);
+                assert.deepEqual(record.httpErrors,[]);
+                assert.ok(record.readerRequests<300,'Bound production acceptance reads');
+                record.status='pass';
+                console.log('PRODUCTION_BROWSER='+JSON.stringify(record));
+              } catch(error) {
+                record.status='fail';record.error=String(error);
+                await page.screenshot({path:output+'/'+name+'-failure.png',fullPage:true}).catch(()=>{});
+                throw error;
+              } finally {await context.close();await browser.close();}
+            }
+            const after=JSON.parse((await get('catalog/current.json',4096)).toString('utf8'));
+            assert.deepEqual(after,graph.current,'Published generation changed during acceptance');
+            report.status='pass';
+          } catch(error) {report.status='fail';report.error=String(error);throw error;}
+          finally {
+            report.finishedAt=new Date().toISOString();
+            await writeFile(output+'/report.json',JSON.stringify(report,null,2));
+            console.log('PRODUCTION_ACCEPTANCE='+JSON.stringify(report));
+          }
+          NODE
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: production-browser-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/activation-browser/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
