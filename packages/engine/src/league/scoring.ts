@@ -1,7 +1,6 @@
 import {
   canonicalJson,
   compareIds,
-  contentHash,
   LeagueAttemptSchema,
   LeagueScoreInputSchema,
   LeagueSlotSchema,
@@ -17,7 +16,7 @@ import {
   type LeagueAttempt,
 } from '@fantasy/domain/spatial';
 import { fraction, type Fraction } from '../spatial/rules/effects.ts';
-import { leagueTrialSeed, validateLeagueRevision } from './index.ts';
+import { leagueMatches, validateLeagueRevision } from './index.ts';
 
 export function compareLeagueFractions(a: Fraction, b: Fraction): number {
   const difference =
@@ -175,7 +174,8 @@ function definitive(outcome: LeagueAttempt['outcome']) {
   return outcome.kind === 'win' || outcome.kind === 'draw';
 }
 function selectAttempts(slots: Map<string, LeagueSlot>, input: readonly LeagueAttempt[]) {
-  if (input.length > slots.size * 2) throw new Error('Excessive league attempt history');
+  // Transport bound is independent of the two unique attempt numbers allowed per slot.
+  if (input.length > MAX_LEAGUE_SLOTS * 4) throw new Error('Excessive league delivery list');
   const seen = new Map<string, string>(),
     selected = new Map<string, LeagueAttempt>();
   for (const value of input) {
@@ -241,34 +241,15 @@ export async function aggregateLeague(
   if (input.length > MAX_LEAGUE_SLOTS) throw new Error('Excessive planned slots');
   const slots = new Map<string, LeagueSlot>(),
     cells = plannedCells(definition);
-  const seeds = await Promise.all(
-    Array.from({ length: definition.trials }, (_, trial) =>
-      leagueTrialSeed(definition.masterSeed, trial),
-    ),
-  );
+  const expected = new Map<string, string>();
+  for await (const match of leagueMatches(league))
+    expected.set(match.slot.id, canonicalJson(match.slot));
   for (const value of input) {
     const slot = LeagueSlotSchema.parse(value);
-    const field = definition.battlefields.find(
-      (candidate) => canonicalJson(candidate.scenario) === canonicalJson(slot.scenario),
-    );
-    if (
-      !field ||
-      slot.seed !== seeds[slot.trial] ||
-      slots.has(slot.id) ||
-      slot.characters.some(
-        (ref) =>
-          !definition.characters.some(
-            (character) => canonicalJson(character) === canonicalJson(ref),
-          ),
-      )
-    )
-      throw new Error('Unknown or duplicate league slot');
-    const { characters, scenario, placement, trial } = slot;
-    if (
-      slot.id !==
-      (await contentHash({ characters, scenario, placement, trial, starts: field.starts }))
-    )
-      throw new Error('League slot identity mismatch');
+    if (expected.get(slot.id) !== canonicalJson(slot))
+      throw new Error('Unknown, duplicate or incompatible league slot');
+    expected.delete(slot.id);
+    const { characters, scenario } = slot;
     const cell = cells.get(
       cellKey(
         characters.map((character) => character.id),

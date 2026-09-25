@@ -2,6 +2,7 @@ import { expect, it } from 'vite-plus/test';
 import type { LeagueAttempt, LeagueScoreInput } from '@fantasy/domain/spatial';
 import { leagueFixture, plannedLeague } from '../../test-support/league.ts';
 import { aggregateLeague, compareLeagueFractions, scoreLeagueCounts } from './scoring.ts';
+import { sealRevision, reference } from '@fantasy/engine/spatial';
 
 function example(): LeagueScoreInput {
   return {
@@ -162,6 +163,13 @@ it('counts a successful retry once, ignores duplicate delivery and rejects confl
     },
   };
   const result = await aggregateLeague(league, slots, [failed, won, won]);
+  expect(
+    await aggregateLeague(
+      league,
+      slots,
+      Array.from({ length: 9 }, () => won),
+    ),
+  ).toEqual(result);
   expect(result.rows[0]!.overall).toMatchObject({
     lower: { numerator: '25', denominator: '1' },
     counts: { planned: 4, wins: 1, unresolved: 3 },
@@ -184,4 +192,52 @@ it('counts a successful retry once, ignores duplicate delivery and rejects confl
       },
     ]),
   ).rejects.toThrow(/Winner/);
+});
+
+it('rejects authentic slots from another ruleset even when coordinates and seeds agree', async () => {
+  const definition = await leagueFixture(2, 1);
+  const first = await plannedLeague(definition);
+  const rules = definition.revisions.find((r) => r.kind === 'ruleset')!;
+  if (rules.kind !== 'ruleset') throw new Error('Missing rules');
+  const other = await sealRevision('ruleset', 'other-league-rules', 1, {
+    ...rules.definition,
+    maxSteps: 21,
+  });
+  definition.ruleset = reference(other);
+  definition.revisions.push(other);
+  const second = await plannedLeague(definition);
+  expect(second.matches.map((m) => m.slot.id)).toEqual(first.matches.map((m) => m.slot.id));
+  await expect(
+    aggregateLeague(
+      second.league,
+      first.matches.map((m) => m.slot),
+      [],
+    ),
+  ).rejects.toThrow(/incompatible/);
+});
+
+it('represents valid coprime planned denominators beyond 96 decimal digits exactly', () => {
+  const primes: number[] = [];
+  for (let candidate = 2; primes.length < 63; candidate++)
+    if (primes.every((p) => candidate % p !== 0)) primes.push(candidate);
+  const characters = Array.from({ length: 64 }, (_, i) => `actor-${String(i).padStart(2, '0')}`);
+  const cells: LeagueScoreInput['cells'] = [];
+  for (let a = 0; a < 64; a++)
+    for (let b = a + 1; b < 64; b++)
+      cells.push({
+        characters: [characters[a]!, characters[b]!],
+        scenario: 'flat',
+        planned: a === 0 ? primes[b - 1]! : 1,
+        wins: a === 0 ? [1, 0] : [0, 0],
+        draws: 0,
+      });
+  const result = scoreLeagueCounts({
+    characters,
+    battlefields: [{ scenario: 'flat', weight: { numerator: '1', denominator: '1' } }],
+    cells,
+  });
+  expect(result.planned).toBe(10535);
+  expect(
+    result.rows.find((row) => row.character === 'actor-00')!.overall.lower.denominator,
+  ).toHaveLength(124);
 });
