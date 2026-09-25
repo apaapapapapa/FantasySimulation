@@ -3,6 +3,8 @@ import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
+export const MAX_BATTLE_STEPS = 6_000;
+export const MAX_FRAME_BYTES = 4_000_000;
 export const CURRENT_ENGINE_VERSION = 'spatial-v1.19' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
@@ -101,7 +103,7 @@ export const PerceptionSchema = z.strictObject({
   rangeMm: positive(200_000),
   fovMilliDegrees: positive(360_000),
   reactionSteps: positive(500),
-  memorySteps: uint(6_000),
+  memorySteps: uint(MAX_BATTLE_STEPS),
   revealWardBps: uint(10_000).optional(),
 });
 export const AppearanceSchema = z.strictObject({
@@ -381,7 +383,7 @@ export const StatusSchema = z.strictObject({
   stackKey: IdSchema,
   stacking: z.enum(['sum', 'replace', 'refresh', 'reject']),
   maxStacks: positive(32),
-  durationSteps: positive(6_000),
+  durationSteps: positive(MAX_BATTLE_STEPS),
   categories: categoryList(StatusCategorySchema).optional(),
   burning: z.strictObject({ waterExtinguishable: z.boolean() }).optional(),
   flightStaminaPerSecond: uint(1_000_000).optional(),
@@ -407,13 +409,13 @@ export const StatusSchema = z.strictObject({
     .array(
       z.union([
         z.strictObject({
-          everySteps: positive(6_000),
+          everySteps: positive(MAX_BATTLE_STEPS),
           kind: z.enum(['damage', 'heal']),
           amount: uint(1_000_000),
           element: ElementSchema,
         }),
         z.strictObject({
-          everySteps: positive(6_000),
+          everySteps: positive(MAX_BATTLE_STEPS),
           kind: z.literal('resource'),
           resource: z.enum(['mp', 'stamina']),
           amount: z.number().int().min(-1_000_000).max(1_000_000),
@@ -454,7 +456,7 @@ export const AttackSchema = z.discriminatedUnion('kind', [
     kind: z.literal('projectile'),
     speedMmPerSecond: positive(1_000_000),
     radiusMm: positive(5_000),
-    lifetimeSteps: positive(6_000),
+    lifetimeSteps: positive(MAX_BATTLE_STEPS),
     gravityScaleBps: uint(30_000),
     homingTurnMilliDegreesPerSecond: uint(720_000),
     observation: z.enum(['launch-only', 'owner-visible']),
@@ -465,12 +467,12 @@ export const AttackSchema = z.discriminatedUnion('kind', [
 export const StageHitSchema = z.strictObject({
   group: IdSchema,
   maxHits: positive(16),
-  minIntervalSteps: positive(6000),
+  minIntervalSteps: positive(MAX_BATTLE_STEPS),
   requireSeparation: z.boolean(),
 });
 export const StageSchema = z.strictObject({
   id: IdSchema,
-  offsetSteps: uint(6000),
+  offsetSteps: uint(MAX_BATTLE_STEPS),
   durationSteps: positive(100),
   attack: AttackSchema.nullable(),
   effects: z.array(EffectSchema).max(16),
@@ -533,11 +535,11 @@ export const AbilitySchema = z
       hp: uint(1_000_000),
       mp: uint(1_000_000),
       stamina: uint(1_000_000).optional(),
-      uses: uint(6_000),
+      uses: uint(MAX_BATTLE_STEPS),
     }),
-    castSteps: uint(6_000),
-    recoverySteps: positive(6_000),
-    cooldownSteps: uint(6_000),
+    castSteps: uint(MAX_BATTLE_STEPS),
+    recoverySteps: positive(MAX_BATTLE_STEPS),
+    cooldownSteps: uint(MAX_BATTLE_STEPS),
     movementWhileCasting: z.enum(['allow', 'stop']),
     rangeMm: uint(200_000),
     aimErrorMilliDegrees: uint(45_000),
@@ -632,7 +634,7 @@ export const AbilitySchema = z
       for (const [i, stage] of stages.entries()) {
         const previous = stages[i - 1];
         if (
-          stage.offsetSteps + stage.durationSteps > 6000 ||
+          stage.offsetSteps + stage.durationSteps > MAX_BATTLE_STEPS ||
           (previous && stage.offsetSteps < previous.offsetSteps + previous.durationSteps)
         )
           ctx.addIssue({
@@ -857,7 +859,7 @@ export const RulesetSchema = z.strictObject({
   rulesVersion: IdSchema,
   ai: AiRulesSchema.optional(),
   stepMs: z.literal(20),
-  maxSteps: positive(6_000),
+  maxSteps: positive(MAX_BATTLE_STEPS),
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),
   fallSafeSpeedMmPerSecond: uint(30_000),
   fallDamagePerMeterPerSecond: uint(100_000),
@@ -880,11 +882,11 @@ const revision = <K extends string, S extends z.ZodType>(kind: K, definition: S)
 export const RevisionSchema = z.discriminatedUnion('kind', [
   revision('character', CharacterSchema),
   revision('ability', AbilitySchema),
-  revision('status', StatusSchema),
   revision('equipment', EquipmentSchema),
   revision('policy', PolicySchema),
-  revision('scenario', ScenarioSchema),
+  revision('status', StatusSchema),
   revision('ruleset', RulesetSchema),
+  revision('scenario', ScenarioSchema),
 ]);
 export type Revision = z.infer<typeof RevisionSchema>;
 export type DefinitionKind = Revision['kind'];
@@ -907,7 +909,7 @@ export const PhysicsProfileSchema = z.strictObject({
   inputUnits: z.literal('integer-mm-ms'),
   stepMs: z.literal(20),
   aiMs: z.literal(100),
-  maxSteps: z.literal(6000),
+  maxSteps: z.literal(MAX_BATTLE_STEPS),
   gravityMmPerSecond2: z.literal(-9807),
   skinMm: z.literal(2),
   contactTimeEpsilon: z.literal(0.000001),
@@ -961,7 +963,7 @@ export type Manifest = z.infer<typeof ManifestSchema>;
 export const BudgetSchema = z.strictObject({
   maxEvents: positive(1_000_000),
   maxBytes: positive(256_000_000),
-  maxFrameBytes: positive(4_000_000),
+  maxFrameBytes: positive(MAX_FRAME_BYTES),
   maxCasts: positive(10_000_000),
   maxCandidates: positive(10_000_000),
   maxPathNodes: positive(100_000),

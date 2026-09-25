@@ -1,3 +1,4 @@
+import { ARTIFACT_RESERVATION_BYTES } from '@fantasy/domain/spatial';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import {
@@ -63,8 +64,8 @@ export class BattleRuntime {
       if (!Number.isSafeInteger(value) || value <= 0 || value > max)
         throw new Error(`Invalid ${name} limit`);
     // Leave physical headroom for every active writer, including cancelled diagnostics not yet committed.
-    const storageBytes = config.storageBytes - config.workers * 20 * 1024 ** 2;
-    if (storageBytes < 20 * 1024 ** 2)
+    const storageBytes = config.storageBytes - config.workers * ARTIFACT_RESERVATION_BYTES;
+    if (storageBytes < ARTIFACT_RESERVATION_BYTES)
       throw new Error('Storage limit cannot fit worker reservations');
     const jobs = new JobStore(store, { ...JOB_LIMITS, queued: config.queueLimit, storageBytes });
     const owner = await ownRuntime(jobs, root);

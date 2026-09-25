@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { ResultSchema } from './records.ts';
 import {
   BudgetSchema,
+  MAX_BATTLE_STEPS,
   DEFAULT_BUDGET,
   HashSchema,
   IdSchema,
@@ -9,15 +10,13 @@ import {
   RefSchema,
   RevisionSchema,
 } from './contracts.ts';
-export const DefinitionKindSchema = z.enum([
-  'character',
-  'ability',
-  'equipment',
-  'policy',
-  'status',
-  'ruleset',
-  'scenario',
-]);
+export const DEFINITION_KINDS = [
+  RevisionSchema.options[0].shape.kind.value,
+  ...RevisionSchema.options.slice(1).map((schema) => schema.shape.kind.value),
+] as const;
+export const DefinitionKindSchema = z.enum(DEFINITION_KINDS);
+export const ARTIFACT_RESERVATION_BYTES = 20 * 1024 ** 2;
+export const MAX_JOB_ATTEMPTS = 3;
 const version = z.number().int().min(1).max(2147483647);
 export const DraftInputSchema = z.strictObject({
   kind: DefinitionKindSchema,
@@ -77,7 +76,7 @@ export const JobRequestSchema = z.strictObject({
   budget: BudgetSchema.default(DEFAULT_BUDGET),
 });
 export const RetryJobSchema = z.strictObject({
-  expectedAttempts: z.number().int().min(0).max(3),
+  expectedAttempts: z.number().int().min(0).max(MAX_JOB_ATTEMPTS),
   budget: BudgetSchema,
 });
 
@@ -86,8 +85,8 @@ export const JobViewSchema = z.object({
   id: IdSchema,
   simulationHash: HashSchema,
   state: z.enum(['queued', 'running', 'completed', 'failed', 'cancelled']),
-  attempts: z.number().int().min(0).max(3),
-  maxAttempts: z.number().int().min(1).max(3),
+  attempts: z.number().int().min(0).max(MAX_JOB_ATTEMPTS),
+  maxAttempts: z.number().int().min(1).max(MAX_JOB_ATTEMPTS),
   resultId: IdSchema.nullable(),
   error: z.string().max(10000).nullable(),
 });
@@ -97,14 +96,14 @@ export const JobStatusSchema = JobResponseSchema.extend({
     .array(
       z.object({
         id: IdSchema,
-        number: z.number().int().min(1).max(3),
+        number: z.number().int().min(1).max(MAX_JOB_ATTEMPTS),
         state: z.enum(['running', 'completed', 'failed', 'cancelled', 'expired', 'conflict']),
-        progressStep: z.number().int().min(0).max(6000),
+        progressStep: z.number().int().min(0).max(MAX_BATTLE_STEPS),
         replayId: IdSchema.nullable(),
         error: z.string().max(10000).nullable(),
       }),
     )
-    .max(3),
+    .max(MAX_JOB_ATTEMPTS),
 });
 export const BattleResultResponseSchema = z.strictObject({
   id: IdSchema,

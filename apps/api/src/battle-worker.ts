@@ -1,3 +1,4 @@
+import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { performance } from 'node:perf_hooks';
@@ -111,7 +112,7 @@ export default async function battleWorker(task: WorkerTask): Promise<WorkerResu
       const record = next.value,
         line = canonicalJson(record) + '\n';
       const size = Buffer.byteLength(line);
-      if (size > 4_000_001) throw new Error('Worker record exceeds transfer limit');
+      if (size > MAX_RECORD_BYTES) throw new Error('Worker record exceeds transfer limit');
       if (bytes + size > 131072) await flush();
       if ('events' in record)
         for (const event of record.events) events.update(eventHashLine(event));

@@ -1,3 +1,4 @@
+import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { MessageChannel } from 'node:worker_threads';
@@ -45,7 +46,7 @@ export class BattlePool {
     const controller = new AbortController();
     let failure: unknown;
     port1.on('message', (input: unknown) => {
-      if (receiving || !(input instanceof Uint8Array) || input.byteLength > 4_000_001) {
+      if (receiving || !(input instanceof Uint8Array) || input.byteLength > MAX_RECORD_BYTES) {
         failure = new Error('Worker exceeded the one-batch transfer window');
         controller.abort();
         return;

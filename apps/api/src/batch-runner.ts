@@ -1,3 +1,4 @@
+import { ARTIFACT_RESERVATION_BYTES } from '@fantasy/domain/spatial';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
@@ -35,7 +36,7 @@ export async function runBatch(
   const deadlineMs = options.deadlineMs ?? 1_800_000;
   if (!Number.isSafeInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 1_800_000)
     throw new Error('Invalid batch deadline');
-  if (plan.maxWorkBytes < (workers * 2 + 1) * 20 * 1024 ** 2)
+  if (plan.maxWorkBytes < (workers * 2 + 1) * ARTIFACT_RESERVATION_BYTES)
     throw new Error('Work capacity cannot fit concurrent Worker reservations; use fewer Workers');
   const selected = shardSlots(plan, shardIndex, shardCount);
   const slots = options.reverse ? [...selected].reverse() : selected;

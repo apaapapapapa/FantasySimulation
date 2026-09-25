@@ -1,3 +1,4 @@
+import { MAX_BATTLE_STEPS } from './contracts.ts';
 import { z } from 'zod';
 import { IdSchema, RefSchema, StageContactSchema, PostureSchema, BodySchema } from './contracts.ts';
 import {
@@ -10,7 +11,7 @@ import {
   ReactionContextSchema,
 } from './records.ts';
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
-const step = z.number().int().min(0).max(6000);
+const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
 const fraction = z.number().min(0).max(1);
 export const SegmentSchema = z
   .strictObject({

@@ -1,3 +1,4 @@
+import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { createHash, randomUUID } from 'node:crypto';
 import { constants, createWriteStream } from 'node:fs';
 import { lstat, open, stat, link, rm } from 'node:fs/promises';
@@ -98,7 +99,7 @@ export async function readCompressed(directory: string, input: ArtifactRef) {
 }
 export async function writeCompressed(directory: string, file: string, raw: string) {
   const rawBytes = Buffer.byteLength(raw);
-  if (rawBytes > 4_000_001) throw new Error('Record/checkpoint byte limit');
+  if (rawBytes > MAX_RECORD_BYTES) throw new Error('Record/checkpoint byte limit');
   const path = join(directory, file);
   await pipeline(
     Readable.from([raw]),

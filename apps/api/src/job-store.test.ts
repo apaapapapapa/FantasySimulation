@@ -8,6 +8,24 @@ import { withJobs, artifactFor } from '../test-support/jobs.ts';
 import { withReplayDirectory } from '../test-support/replays.ts';
 
 describe('persistent simulation job ownership', () => {
+  it('keeps persisted capacity, attempt and progress boundaries aligned with the existing DB', async () => {
+    await withJobs(async ({ store, jobs, submit }) => {
+      const job = submit('limits'),
+        claim = jobs.claim(100)!;
+      const attempts = store.db.prepare('UPDATE simulation_jobs SET max_attempts=? WHERE id=?');
+      attempts.run(3, job.id);
+      expect(() => attempts.run(4, job.id)).toThrow(/job_attempt_limit/);
+      jobs.progress(claim, 6000);
+      expect(() => jobs.progress(claim, 6001)).toThrow(/attempt_progress/);
+      jobs.cancel(job.id, 101);
+      expect(jobs.saveDiagnostic(claim, { ...artifactFor(claim), bytes: 20_971_520 })).toBe(true);
+      expect(() =>
+        store.db
+          .prepare('UPDATE replay_artifacts SET bytes=? WHERE id=?')
+          .run(20_971_521, artifactFor(claim).id),
+      ).toThrow(/artifact_bytes/);
+    });
+  });
   it('scopes idempotency separately from simulation identity and rejects changed requests', async () => {
     await withJobs(async ({ jobs, submit }) => {
       const one = submit('same');

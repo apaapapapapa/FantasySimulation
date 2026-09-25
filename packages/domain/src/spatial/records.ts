@@ -1,3 +1,4 @@
+import { MAX_BATTLE_STEPS } from './contracts.ts';
 import { z } from 'zod';
 import {
   DamageDefenseSchema,
@@ -9,7 +10,7 @@ import {
 } from './contracts.ts';
 import { CognitionSchema } from './cognition.ts';
 
-const step = z.number().int().min(0).max(6000);
+const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 export const PhysicalVectorSchema = z.strictObject({
   x: z.number().min(-2000).max(2000),
@@ -45,7 +46,7 @@ export const ForceContributionSchema = z
     id: IdSchema,
     actorId: IdSchema.nullable(),
     abilityId: IdSchema.nullable(),
-    startAt: z.number().int().min(1).max(6000),
+    startAt: z.number().int().min(1).max(MAX_BATTLE_STEPS),
     endAt: z.number().int().min(2).max(6100),
     velocityMmPerSecond: z.strictObject({
       x: z.number().int().min(-100000).max(100000),

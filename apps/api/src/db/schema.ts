@@ -1,3 +1,9 @@
+import {
+  ARTIFACT_RESERVATION_BYTES,
+  MAX_JOB_ATTEMPTS,
+  MAX_BATTLE_STEPS,
+  DEFINITION_KINDS,
+} from '@fantasy/domain/spatial';
 import { sql } from 'drizzle-orm';
 import {
   check,
@@ -9,15 +15,9 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/sqlite-core';
 
-const kinds = [
-  'character',
-  'ability',
-  'equipment',
-  'policy',
-  'status',
-  'ruleset',
-  'scenario',
-] as const;
+const kinds = DEFINITION_KINDS;
+// Only schema-owned enum literals enter generated DDL; runtime values remain bound parameters.
+const kindCheck = sql.raw(kinds.map((kind) => `'${kind.replaceAll("'", "''")}'`).join(','));
 
 export const publishedRevisions = sqliteTable(
   'published_revisions',
@@ -31,10 +31,7 @@ export const publishedRevisions = sqliteTable(
   },
   (table) => [
     primaryKey({ columns: [table.kind, table.definitionId, table.revision] }),
-    check(
-      'published_revisions_kind',
-      sql`${table.kind} IN ('character','ability','equipment','policy','status','ruleset','scenario')`,
-    ),
+    check('published_revisions_kind', sql`${table.kind} IN (${kindCheck})`),
     check('published_revisions_positive_revision', sql`${table.revision} > 0`),
     check('published_revisions_valid_json', sql`json_valid(${table.revisionJson})`),
   ],
@@ -54,10 +51,7 @@ export const definitionDrafts = sqliteTable(
     baseRevisionJson: text('base_revision_json'),
   },
   (table) => [
-    check(
-      'definition_drafts_kind',
-      sql`${table.kind} IN ('character','ability','equipment','policy','status','ruleset','scenario')`,
-    ),
+    check('definition_drafts_kind', sql`${table.kind} IN (${kindCheck})`),
     check('definition_drafts_positive_version', sql`${table.version} > 0`),
     check('definition_drafts_valid_json', sql`json_valid(${table.definitionJson})`),
     check(
@@ -109,7 +103,7 @@ export const simulationJobs = sqliteTable(
     check('job_state', sql`${t.state} IN ('queued','running','completed','failed','cancelled')`),
     check(
       'job_attempt_limit',
-      sql`${t.attempts} >= 0 AND ${t.attempts} <= ${t.maxAttempts} AND ${t.maxAttempts} BETWEEN 1 AND 3`,
+      sql`${t.attempts} >= 0 AND ${t.attempts} <= ${t.maxAttempts} AND ${t.maxAttempts} BETWEEN 1 AND ${sql.raw(String(MAX_JOB_ATTEMPTS))}`,
     ),
     check('job_budget_json', sql`json_valid(${t.budgetJson})`),
   ],
@@ -184,7 +178,10 @@ export const replayArtifacts = sqliteTable(
   (t) => [
     uniqueIndex('artifact_attempt').on(t.attemptId),
     check('artifact_state', sql`${t.state} IN ('ready','missing','corrupt','quarantined')`),
-    check('artifact_bytes', sql`${t.bytes} > 0 AND ${t.bytes} <= 20971520`),
+    check(
+      'artifact_bytes',
+      sql`${t.bytes} > 0 AND ${t.bytes} <= ${sql.raw(String(ARTIFACT_RESERVATION_BYTES))}`,
+    ),
   ],
 );
 
@@ -213,7 +210,10 @@ export const attemptMetrics = sqliteTable(
     metricsJson: text('metrics_json'),
   },
   (t) => [
-    check('attempt_progress', sql`${t.progressStep} BETWEEN 0 AND 6000`),
+    check(
+      'attempt_progress',
+      sql`${t.progressStep} BETWEEN 0 AND ${sql.raw(String(MAX_BATTLE_STEPS))}`,
+    ),
     check('attempt_metrics_json', sql`${t.metricsJson} IS NULL OR json_valid(${t.metricsJson})`),
   ],
 );
