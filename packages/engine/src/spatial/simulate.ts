@@ -8,15 +8,15 @@ import {
   type StreamRecord,
   type BattleResult,
 } from '@fantasy/domain/spatial/execution';
-import { initialActor, decisionState, displayActor } from './combat-state.ts';
-import { Journal, recordBytes } from './journal.ts';
-import { Navigator } from './navigation.ts';
-import { SpatialBudgetError } from './physics.ts';
-import { UnresolvedRuleError } from './status.ts';
-import { createBattleWorld } from './terrain.ts';
-import { type ProjectileState } from './projectiles.ts';
-import { attachedStageAlive } from './stages.ts';
-import { HitLedger } from './hit-ledger.ts';
+import { initialActor, decisionState, displayActor } from './sim/combat-state.ts';
+import { Journal, recordBytes } from './rules/journal.ts';
+import { Navigator } from './world/navigation.ts';
+import { SpatialBudgetError } from './world/physics.ts';
+import { UnresolvedRuleError } from './rules/status.ts';
+import { createBattleWorld } from './world/terrain.ts';
+import { type ProjectileState } from './rules/projectiles.ts';
+import { attachedStageAlive } from './rules/stages.ts';
+import { HitLedger } from './rules/hit-ledger.ts';
 import { StepTransaction, actorId } from './sim/step-transaction.ts';
 import { WorkMeter } from './sim/work-meter.ts';
 import { boundaryPhase } from './sim/phase-boundary.ts';

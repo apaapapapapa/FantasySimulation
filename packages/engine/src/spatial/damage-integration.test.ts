@@ -7,8 +7,8 @@ import {
   withInitialStatus,
 } from '../../test-support/ai.ts';
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';
-import { assessAbility, efficacy } from './assessment.ts';
-import { initializePhysics } from './physics.ts';
+import { assessAbility, efficacy } from './ai/assessment.ts';
+import { initializePhysics } from './world/physics.ts';
 import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { sampleManifest } from '@fantasy/samples';

@@ -2,12 +2,14 @@ import type { Obstacle } from './geometry-types.ts';
 import type { DecisionView } from './state.ts';
 import { decisionView, withAbilities } from '../../test-support/ai.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
-import { initializePhysics, SpatialWorld } from './physics.ts';
+import { initializePhysics, SpatialWorld } from './world/physics.ts';
 import { prepareBattle } from './prepare.ts';
 import { sampleManifest } from '@fantasy/samples';
-import { initialMotion } from './movement.ts';
-import { bodyPoint, canSee, conditionMatches, emptyMemory, perceive } from './perception.ts';
-import { choosePolicy } from './policy.ts';
+import { initialMotion } from './world/movement.ts';
+import { emptyMemory, perceive } from './ai/perception.ts';
+import { bodyPoint, canSee } from './world/visibility.ts';
+import { conditionMatches } from './rules/conditions.ts';
+import { choosePolicy } from './ai/policy.ts';
 beforeAll(initializePhysics);
 const wall: Obstacle = {
   id: 'wall',

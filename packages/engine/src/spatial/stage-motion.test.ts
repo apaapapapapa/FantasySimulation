@@ -1,10 +1,10 @@
 import { recordedCheckpoints } from '../../test-support/replay.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { ReplayState } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { runBattle } from './run.ts';
-import { admitPair } from './pair-admission.ts';
-import { ResourceBudget } from './resources.ts';
+import { admitPair } from './rules/pair-admission.ts';
+import { ResourceBudget } from './rules/resources.ts';
 import { locomotionFixture, advanceLocomotion } from '../../test-support/locomotion.ts';
 import { boxObstacle, battleEvents } from '../../test-support/fixtures.ts';
 import { movingSweepStages, stagedManifest } from '../../test-support/stages.ts';

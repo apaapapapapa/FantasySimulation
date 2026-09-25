@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { AbilitySchema, StatusSchema, type Definition } from '@fantasy/domain/spatial';
-import { abilityCategories, blockedBySilence, dispelMatchesCategory } from './categories.ts';
-import { initializePhysics } from './physics.ts';
-import { choosePolicy } from './policy.ts';
+import { abilityCategories, blockedBySilence, dispelMatchesCategory } from './rules/categories.ts';
+import { initializePhysics } from './world/physics.ts';
+import { choosePolicy } from './ai/policy.ts';
 import { runBattle } from './run.ts';
 import { sampleManifest } from '@fantasy/samples';
 import { aiFixture, initialStatus, withInitialStatus } from '../../test-support/ai.ts';

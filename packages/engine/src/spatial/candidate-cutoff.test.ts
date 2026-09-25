@@ -1,12 +1,16 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { AI_RULES, AiRulesSchema, CognitionSchema } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { runBattle } from './run.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
-import { initialDecisionRandom, initialMovementRandom, weightedChoice } from './decision-random.ts';
-import { choosePolicy } from './policy.ts';
+import {
+  initialDecisionRandom,
+  initialMovementRandom,
+  weightedChoice,
+} from './ai/decision-random.ts';
+import { choosePolicy } from './ai/policy.ts';
 import { aiFixture, dodgeFixture } from '../../test-support/ai.ts';
 
 beforeAll(initializePhysics);

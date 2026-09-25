@@ -16,8 +16,8 @@ import { sampleManifest } from '@fantasy/samples';
 import {
   resolveEffects,
   type EffectApplication,
-} from '../../packages/engine/src/spatial/effects.ts';
-import { applyStatuses, statusBoundary } from '../../packages/engine/src/spatial/status.ts';
+} from '../../packages/engine/src/spatial/rules/effects.ts';
+import { applyStatuses, statusBoundary } from '../../packages/engine/src/spatial/rules/status.ts';
 import { combatManifest, battleEvents } from '../../packages/engine/test-support/fixtures.ts';
 import { checkProperty } from './test-support/property.ts';
 import minimized from './fixtures/minimized-hp.json' with { type: 'json' };

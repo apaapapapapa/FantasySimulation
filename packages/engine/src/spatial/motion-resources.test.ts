@@ -2,14 +2,15 @@ import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { DEFAULT_BUDGET, CharacterSchema } from '@fantasy/domain/spatial';
 import { advanceLocomotion, locomotionFixture } from '../../test-support/locomotion.ts';
 import { boxObstacle } from '../../test-support/fixtures.ts';
-import { initializePhysics } from './physics.ts';
-import { ResourceBudget } from './resources.ts';
-import { reserveMotion } from './motion-resources.ts';
-import { moveActors } from './movement.ts';
-import { recoverActorResources } from './resource-step.ts';
-import { Journal } from './journal.ts';
-import { chooseGait, gaitProfile } from './locomotion.ts';
-import { selfView } from './self-view.ts';
+import { initializePhysics } from './world/physics.ts';
+import { ResourceBudget } from './rules/resources.ts';
+import { reserveMotion } from './rules/motion-resources.ts';
+import { moveActors } from './world/movement.ts';
+import { recoverActorResources } from './rules/resource-step.ts';
+import { Journal } from './rules/journal.ts';
+import { gaitProfile } from './rules/locomotion.ts';
+import { chooseGait } from './ai/choose-gait.ts';
+import { selfView } from './ai/self-view.ts';
 
 beforeAll(initializePhysics);
 describe('one interval budget for physical locomotion', () => {

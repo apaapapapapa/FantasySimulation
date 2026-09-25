@@ -1,7 +1,7 @@
 import { beforeAll, expect, it } from 'vite-plus/test';
 import { locomotionFixture } from '../../test-support/locomotion.ts';
-import { cloneActor } from './combat-state.ts';
-import { initializePhysics } from './physics.ts';
+import { cloneActor } from './sim/combat-state.ts';
+import { initializePhysics } from './world/physics.ts';
 
 beforeAll(initializePhysics);
 

@@ -2,18 +2,18 @@ import type { ThreatExperience } from './state.ts';
 import { beforeAll, expect, it } from 'vite-plus/test';
 import { AI_RULES, DEFAULT_BUDGET } from '@fantasy/domain/spatial';
 import { aiFixture, initialStatus, incomingArrow } from '../../test-support/ai.ts';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { sealRevision } from './manifest-builder.ts';
-import { reapplicationEstimate, rememberThreat, seenAttack } from './threat-memory.ts';
-import { assessAbility } from './assessment.ts';
-import { perceive, emptyMemory } from './perception.ts';
-import { initialActor } from './combat-state.ts';
-import { commitEffects, commitTransactionStatuses } from './combat-effects.ts';
-import { Journal } from './journal.ts';
+import { reapplicationEstimate, rememberThreat, seenAttack } from './ai/threat-memory.ts';
+import { assessAbility } from './ai/assessment.ts';
+import { perceive, emptyMemory } from './ai/perception.ts';
+import { initialActor } from './sim/combat-state.ts';
+import { commitEffects, commitTransactionStatuses } from './sim/combat-effects.ts';
+import { Journal } from './rules/journal.ts';
 import { reference } from './prepare.ts';
 import { TACTICAL_AI } from '@fantasy/samples';
-import { surveySearch, chooseSearch } from './search.ts';
-import { selfView } from './self-view.ts';
+import { surveySearch, chooseSearch } from './ai/search.ts';
+import { selfView } from './ai/self-view.ts';
 
 beforeAll(initializePhysics);
 it('does not reinterpret a continuously visible projectile as a new attack when history rolls over', async () => {

@@ -1,11 +1,11 @@
-import { actionClock, declarationCost, inObservedRange } from '../attacks.ts';
-import { ResourceBudget } from '../resources.ts';
-import { resourceReady } from '../locomotion.ts';
-import { selfView } from '../self-view.ts';
-import { blockedBySilence } from '../categories.ts';
-import { conditionMatches } from '../perception.ts';
-import { admitPair, rejectPair } from '../pair-admission.ts';
-import { postureAllows } from '../posture.ts';
+import { actionClock, declarationCost, inObservedRange } from '../rules/attacks.ts';
+import { ResourceBudget } from '../rules/resources.ts';
+import { resourceReady } from '../rules/locomotion.ts';
+import { selfView } from '../ai/self-view.ts';
+import { blockedBySilence } from '../rules/categories.ts';
+import { conditionMatches } from '../rules/conditions.ts';
+import { admitPair, rejectPair } from '../rules/pair-admission.ts';
+import { postureAllows } from '../rules/posture.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 export function startPhase(tx: StepTransaction) {
   const { battle } = tx.context;

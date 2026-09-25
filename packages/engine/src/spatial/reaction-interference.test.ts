@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { type Definition, DEFAULT_BUDGET } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { runBattle } from './run.ts';
 import { reactionManifest } from '../../test-support/reactions.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
@@ -8,7 +8,7 @@ import { initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
 import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
-import { recordBytes } from './journal.ts';
+import { recordBytes } from './rules/journal.ts';
 
 beforeAll(initializePhysics);
 const stats = {

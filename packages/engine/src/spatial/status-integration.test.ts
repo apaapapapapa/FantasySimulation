@@ -1,4 +1,4 @@
-import { initialActor } from './combat-state.ts';
+import { initialActor } from './sim/combat-state.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import {
   StreamRecordSchema,
@@ -14,18 +14,18 @@ import {
   withInitialStatus,
 } from '../../test-support/ai.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { prepareBattle, reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { runBattle } from './run.ts';
-import { emptyMemory, perceive, observeImpact, observeReveal } from './perception.ts';
-import { choosePolicy } from './policy.ts';
-import { assessAbility, efficacy } from './assessment.ts';
-import { assessStatusEffect } from './status-assessment.ts';
-import { copyPublicStatuses, statusVision } from './status-observation.ts';
-import { selfView } from './self-view.ts';
-import { applyStatuses } from './status.ts';
-import { planStatusReactions } from './status-reactions.ts';
+import { emptyMemory, perceive, observeImpact, observeReveal } from './ai/perception.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { assessAbility, efficacy } from './ai/assessment.ts';
+import { assessStatusEffect } from './ai/status-assessment.ts';
+import { copyPublicStatuses, statusVision } from './rules/status-observation.ts';
+import { selfView } from './ai/self-view.ts';
+import { applyStatuses } from './rules/status.ts';
+import { planStatusReactions } from './rules/status-reactions.ts';
 
 beforeAll(initializePhysics);
 const water: Effect = { kind: 'damage', amount: 25, attackScaleBps: 0, element: 'water' };

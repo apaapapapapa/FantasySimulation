@@ -9,12 +9,12 @@ import {
   meleeTrace,
   payCost,
   traceAttack,
-} from './attacks.ts';
-import { initializePhysics, SpatialWorld, straight } from './physics.ts';
+} from './rules/attacks.ts';
+import { initializePhysics, SpatialWorld, straight } from './world/physics.ts';
 import { prepareBattle } from './prepare.ts';
 import { sampleManifest } from '@fantasy/samples';
-import { initialMotion } from './movement.ts';
-import { emptyMemory } from './perception.ts';
+import { initialMotion } from './world/movement.ts';
+import { emptyMemory } from './ai/perception.ts';
 import { length, mul, sub } from './math.ts';
 beforeAll(initializePhysics);
 const wall: Obstacle = {

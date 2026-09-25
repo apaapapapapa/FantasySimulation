@@ -192,7 +192,10 @@ export function determinism(path: string, file: SourceFile, checker: Checker): F
       } else if (
         !spec.startsWith('.') &&
         !(spec === '@fantasy/domain' || spec.startsWith('@fantasy/domain/')) &&
-        !(spec === '@dimforge/rapier3d-compat' && path === 'packages/engine/src/spatial/physics.ts')
+        !(
+          spec === '@dimforge/rapier3d-compat' &&
+          path === 'packages/engine/src/spatial/world/physics.ts'
+        )
       )
         add(
           'engine-dependency-policy',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { StaminaSchema, type ResourceState } from '@fantasy/domain/spatial';
-import { ResourceBudget, staminaExhausted, updateResources } from './resources.ts';
+import { ResourceBudget, staminaExhausted, updateResources } from './rules/resources.ts';
 
 const initial = () => ({ hp: 20, mp: 12, shield: 3, stamina: 10 });
 const limits = { hp: 20, mp: 15, stamina: 10 };

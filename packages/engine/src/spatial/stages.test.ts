@@ -7,12 +7,12 @@ import {
   type StageContact,
   type Definition,
 } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { runBattle } from './run.ts';
 import { prepareBattle } from './prepare.ts';
-import { actionClock } from './attacks.ts';
+import { actionClock } from './rules/attacks.ts';
 import { simulate } from './simulate.ts';
-import { HitLedger } from './hit-ledger.ts';
+import { HitLedger } from './rules/hit-ledger.ts';
 import { comboStages, stagedManifest } from '../../test-support/stages.ts';
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';
 

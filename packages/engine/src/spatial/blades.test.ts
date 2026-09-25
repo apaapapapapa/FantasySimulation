@@ -7,8 +7,8 @@ import {
   ReplayState,
   type Definition,
 } from '@fantasy/domain/spatial';
-import { sweepBlade } from './blades.ts';
-import { initializePhysics, SpatialWorld, straight } from './physics.ts';
+import { sweepBlade } from './rules/blades.ts';
+import { initializePhysics, SpatialWorld, straight } from './world/physics.ts';
 import { ZERO } from './math.ts';
 import { runBattle } from './run.ts';
 import { locomotionFixture } from '../../test-support/locomotion.ts';

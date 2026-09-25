@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { beforeAll, expect, it } from 'vite-plus/test';
-import { initializePhysics } from './physics.ts';
-import { probeInputs, runProbe } from './probe.ts';
+import { initializePhysics } from './world/physics.ts';
+import { probeInputs, runProbe } from './world/probe.ts';
 
 beforeAll(initializePhysics);
 const fixtures = JSON.parse(

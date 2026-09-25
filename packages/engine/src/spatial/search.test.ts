@@ -1,13 +1,13 @@
 import { beforeAll, expect, it } from 'vite-plus/test';
 import { aiFixture, withEvaluation } from '../../test-support/ai.ts';
 import { tacticalManifest } from '../../test-support/tactics.ts';
-import { initializePhysics } from './physics.ts';
-import { surveySearch, chooseSearch } from './search.ts';
+import { initializePhysics } from './world/physics.ts';
+import { surveySearch, chooseSearch } from './ai/search.ts';
 import { TACTICAL_AI } from '@fantasy/samples';
 import { runBattle } from './run.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
-import { choosePolicy } from './policy.ts';
-import { initialDecisionRandom } from './decision-random.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { initialDecisionRandom } from './ai/decision-random.ts';
 
 beforeAll(initializePhysics);
 it('requires low delayed sight, revisits old cells and overrides hold at the common waiting limit', async () => {

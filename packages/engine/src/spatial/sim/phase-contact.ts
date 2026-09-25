@@ -1,14 +1,14 @@
 import type { MeleeState } from '../state.ts';
-import { meleeTrace, traceAttack, type AttackContact } from '../attacks.ts';
-import { contactObservation } from '../combat-effects.ts';
-import { moveActors } from '../movement.ts';
-import { reserveMotion } from '../motion-resources.ts';
-import { clipTrace } from '../physics.ts';
-import { isDodgeDecision } from '../policy.ts';
-import { stepProjectiles } from '../projectile-step.ts';
-import { copyDamageSnapshot } from '../status-damage.ts';
-import { settleForcedInterval } from '../forces.ts';
-import { sweepBlade } from '../blades.ts';
+import { meleeTrace, traceAttack, type AttackContact } from '../rules/attacks.ts';
+import { contactObservation } from './combat-effects.ts';
+import { moveActors } from '../world/movement.ts';
+import { reserveMotion } from '../rules/motion-resources.ts';
+import { clipTrace } from '../world/physics.ts';
+import { isDodgeDecision } from '../ai/policy.ts';
+import { stepProjectiles } from './projectile-step.ts';
+import { copyDamageSnapshot } from '../rules/status-damage.ts';
+import { settleForcedInterval } from '../rules/forces.ts';
+import { sweepBlade } from '../rules/blades.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 export function contactPhase(tx: StepTransaction) {
   const { battle, budget, world, work } = tx.context;

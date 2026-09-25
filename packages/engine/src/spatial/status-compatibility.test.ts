@@ -4,8 +4,8 @@ import { initialStatus } from '../../test-support/ai.ts';
 import { prepareBattle, reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { sampleManifest } from '@fantasy/samples';
-import { applyStatuses, effectiveStats, statusBoundary } from './status.ts';
-import { resolveEffects, type EffectApplication } from './effects.ts';
+import { applyStatuses, effectiveStats, statusBoundary } from './rules/status.ts';
+import { resolveEffects, type EffectApplication } from './rules/effects.ts';
 
 async function legacyState(burning = true) {
   const battle = await prepareBattle(await sampleManifest());

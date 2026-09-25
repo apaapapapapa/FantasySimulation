@@ -2,18 +2,18 @@ import type { StatusRevision } from './state.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import type { Definition, Effect } from '@fantasy/domain/spatial';
 import { withAbilities, aiFixture, initialStatus } from '../../test-support/ai.ts';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
-import { assessAbility } from './assessment.ts';
-import { assessStatusEffects } from './status-assessment.ts';
-import { applyStatuses, statusBoundary } from './status.ts';
-import { planStatusEffects } from './status-reactions.ts';
-import { resolveEffects } from './effects.ts';
-import { publicStatuses } from './status-observation.ts';
-import { choosePolicy } from './policy.ts';
-import { initialDecisionRandom } from './decision-random.ts';
-import { knownPeriodicDamage } from './status-risk.ts';
+import { assessAbility } from './ai/assessment.ts';
+import { assessStatusEffects } from './ai/status-assessment.ts';
+import { applyStatuses, statusBoundary } from './rules/status.ts';
+import { planStatusEffects } from './rules/status-reactions.ts';
+import { resolveEffects } from './rules/effects.ts';
+import { publicStatuses } from './rules/status-observation.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { initialDecisionRandom } from './ai/decision-random.ts';
+import { knownPeriodicDamage } from './rules/status-risk.ts';
 
 beforeAll(initializePhysics);
 const cohort = (revision: StatusRevision, endStep = 100, stacks = 1) => ({

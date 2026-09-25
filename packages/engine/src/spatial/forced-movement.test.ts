@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
-import { initializePhysics, SpatialWorld, type MotionProjection } from './physics.ts';
-import { moveActors, projectForcedMotion } from './movement.ts';
+import { initializePhysics, SpatialWorld, type MotionProjection } from './world/physics.ts';
+import { moveActors, projectForcedMotion } from './world/movement.ts';
 import { ZERO } from './math.ts';
 import { locomotionFixture } from '../../test-support/locomotion.ts';
 import { boxObstacle } from '../../test-support/fixtures.ts';

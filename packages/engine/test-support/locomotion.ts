@@ -2,12 +2,12 @@ import { DEFAULT_BUDGET, type Definition } from '@fantasy/domain/spatial';
 import { sampleManifest } from '@fantasy/samples';
 import { combatManifest, editScenario, type BoxObstacle } from './fixtures.ts';
 import { prepareBattle } from '../src/spatial/prepare.ts';
-import { createBattleWorld } from '../src/spatial/terrain.ts';
-import { initialActor } from '../src/spatial/combat-state.ts';
-import { reserveMotion } from '../src/spatial/motion-resources.ts';
-import { ResourceBudget } from '../src/spatial/resources.ts';
-import { moveActors } from '../src/spatial/movement.ts';
-import { Journal } from '../src/spatial/journal.ts';
+import { createBattleWorld } from '../src/spatial/world/terrain.ts';
+import { initialActor } from '../src/spatial/sim/combat-state.ts';
+import { reserveMotion } from '../src/spatial/rules/motion-resources.ts';
+import { ResourceBudget } from '../src/spatial/rules/resources.ts';
+import { moveActors } from '../src/spatial/world/movement.ts';
+import { Journal } from '../src/spatial/rules/journal.ts';
 
 export const locomotion = (): NonNullable<Definition<'character'>['movement']['locomotion']> => ({
   walk: { speedMmPerSecond: 2000, staminaPerMeter: 2 },

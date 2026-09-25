@@ -6,16 +6,16 @@ import type {
   ProjectileDisplay,
   StreamRecord,
 } from '@fantasy/domain/spatial/execution';
-import { cloneActor, displayActor } from '../combat-state.ts';
-import type { PendingEffect } from '../combat-effects.ts';
-import type { beginForcedInterval } from '../forces.ts';
-import type { HitLedger } from '../hit-ledger.ts';
-import { displayChanges, Journal } from '../journal.ts';
-import type { Navigator } from '../navigation.ts';
-import type { SpatialWorld } from '../physics.ts';
-import type { ProjectileState } from '../projectiles.ts';
-import type { ResourceBudget } from '../resources.ts';
-import { attachedStageAlive } from '../stages.ts';
+import { cloneActor, displayActor } from './combat-state.ts';
+import type { PendingEffect } from './combat-effects.ts';
+import type { beginForcedInterval } from '../rules/forces.ts';
+import type { HitLedger } from '../rules/hit-ledger.ts';
+import { displayChanges, Journal } from '../rules/journal.ts';
+import type { Navigator } from '../world/navigation.ts';
+import type { SpatialWorld } from '../world/physics.ts';
+import type { ProjectileState } from '../rules/projectiles.ts';
+import type { ResourceBudget } from '../rules/resources.ts';
+import { attachedStageAlive } from '../rules/stages.ts';
 import type { WorkMeter } from './work-meter.ts';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;

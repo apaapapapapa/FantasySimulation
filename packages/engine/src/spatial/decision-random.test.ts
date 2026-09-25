@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { nextRandom } from '@fantasy/domain/spatial';
-import { initialDecisionRandom, weightedChoice } from './decision-random.ts';
-import { launchDirection } from './attacks.ts';
+import { initialDecisionRandom, weightedChoice } from './ai/decision-random.ts';
+import { launchDirection } from './rules/attacks.ts';
 
 describe('purpose-separated unbiased decision draws', () => {
   it('retains state for no candidate or a sole positive candidate and rejects invalid weights', () => {

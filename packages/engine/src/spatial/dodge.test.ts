@@ -1,10 +1,10 @@
 import type { DecisionView } from './state.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
-import { initializePhysics, SpatialWorld } from './physics.ts';
-import { dodgeOptions } from './dodge.ts';
-import { choosePolicy } from './policy.ts';
-import { initialDecisionRandom } from './decision-random.ts';
-import { Navigator } from './navigation.ts';
+import { initializePhysics, SpatialWorld } from './world/physics.ts';
+import { dodgeOptions } from './ai/dodge.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { initialDecisionRandom } from './ai/decision-random.ts';
+import { Navigator } from './world/navigation.ts';
 import { dodgeFixture } from '../../test-support/ai.ts';
 
 beforeAll(initializePhysics);

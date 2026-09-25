@@ -5,12 +5,12 @@ import {
   ReplayState,
   type Definition,
 } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { runBattle } from './run.ts';
 import { reactionManifest } from '../../test-support/reactions.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
-import { ReactionBudget } from './reactions.ts';
+import { ReactionBudget } from './sim/reactions.ts';
 
 beforeAll(initializePhysics);
 const counter: Partial<Definition<'ability'>> = {

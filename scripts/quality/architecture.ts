@@ -22,6 +22,17 @@ const rule = (
   comment: string,
 ): IRegularForbiddenRuleType => ({ name, from, to, comment, severity: 'error' });
 export const boundaryRules: IRegularForbiddenRuleType[] = [
+  ...(['world', 'rules', 'ai'] as const).map((layer, index) =>
+    rule(
+      `engine-${layer}-direction`,
+      { path: `^packages/engine/src/spatial/${layer}/` },
+      {
+        path: '^packages/engine/src/',
+        pathNot: `^packages/engine/src/spatial/(?:(?:${['world', 'rules', 'ai'].slice(0, index + 1).join('|')})/|(?:state|geometry-types|math)[.]ts$|(?:profile|sine-table)[.]json$)`,
+      },
+      'Engine layers depend only on their own layer, lower layers and foundational state/math.',
+    ),
+  ),
   rule(
     'no-engine-type-cycle',
     { path: '^packages/engine/src/' },
@@ -173,7 +184,7 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
   ),
   rule(
     'rapier-physics-boundary',
-    { path: '^(apps|packages)/', pathNot: '^packages/engine/src/spatial/physics[.]ts$' },
+    { path: '^(apps|packages)/', pathNot: '^packages/engine/src/spatial/world/physics[.]ts$' },
     { path: '(?:^|/)node_modules/@dimforge/' },
     'Import Rapier only from the physics boundary.',
   ),

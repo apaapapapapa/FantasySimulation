@@ -10,7 +10,7 @@ import {
   type Budget,
   type StreamRecord,
 } from '@fantasy/domain/spatial/execution';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { prepareBattle } from './prepare.ts';
 import { simulate, type SimulationEnd } from './simulate.ts';
 

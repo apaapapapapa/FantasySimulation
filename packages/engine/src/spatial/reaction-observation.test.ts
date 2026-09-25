@@ -1,10 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { CognitionSchema, ReplayState, type Definition } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
-import { assessReactions, visibleReactionCue } from './reaction-assessment.ts';
-import { choosePolicy } from './policy.ts';
-import { emptyMemory, perceive } from './perception.ts';
-import { initialActor } from './combat-state.ts';
+import { initializePhysics } from './world/physics.ts';
+import { assessReactions, visibleReactionCue } from './ai/reaction-assessment.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { emptyMemory, perceive } from './ai/perception.ts';
+import { initialActor } from './sim/combat-state.ts';
 import { aiFixture, incomingArrow, initialStatus } from '../../test-support/ai.ts';
 import { reactionManifest } from '../../test-support/reactions.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';

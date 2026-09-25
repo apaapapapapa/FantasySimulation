@@ -7,14 +7,14 @@ import {
   ReplayState,
   AbilitySchema,
 } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { aiFixture, flyingBody, initialStatus, incomingArrow } from '../../test-support/ai.ts';
 import { advanceLocomotion, locomotion, locomotionFixture } from '../../test-support/locomotion.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
-import { choosePolicy } from './policy.ts';
-import { initialDecisionRandom, initialMovementRandom } from './decision-random.ts';
-import { admitPair, rejectPair } from './pair-admission.ts';
-import { ResourceBudget } from './resources.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { initialDecisionRandom, initialMovementRandom } from './ai/decision-random.ts';
+import { admitPair, rejectPair } from './rules/pair-admission.ts';
+import { ResourceBudget } from './rules/resources.ts';
 import { prepareBattle } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { runBattle } from './run.ts';
