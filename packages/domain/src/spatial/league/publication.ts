@@ -22,6 +22,8 @@ export const PublicLeagueSlotPageSchema = z.strictObject({
         setHash: HashSchema,
         pageHash: HashSchema,
         rowId: HashSchema,
+        // Older publications omit this; batch failed rows alone cannot prove cancellation.
+        cancelled: z.literal(true).optional(),
       }),
     )
     .min(1)

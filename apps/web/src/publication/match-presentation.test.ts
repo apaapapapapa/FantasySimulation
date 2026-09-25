@@ -4,6 +4,8 @@ import { createElement } from 'react';
 import { selectionGenerations } from '../../../../e2e/selection-fixtures.ts';
 import { matchDuration, matchResult, reasonLabels, playbackLabels } from './match-presentation.ts';
 import { MatchTable } from './MatchTable.tsx';
+import { SelectedMatch } from './SelectedMatch.tsx';
+import { publicLibrary } from '../replay/public-source.ts';
 
 it('shows the winning character/slot and game time without turning unresolved outcomes into draws', () => {
   const row = structuredClone(selectionGenerations[0]!.rows[0]!);
@@ -37,4 +39,29 @@ it('renders exact participant revisions, placements, identity links and playback
   expect(html).toContain(reasonLabels[row.reason]);
   expect(html).toContain(playbackLabels[row.playback]);
   expect(html).toContain('順位表ではありません');
+});
+
+it('distinguishes a recorded league cancellation from legacy failure without loading playback', () => {
+  const row = structuredClone(selectionGenerations[0]!.rows[0]!);
+  Object.assign(row, {
+    state: 'failed',
+    reason: 'execution-failed',
+    result: null,
+    replay: null,
+    playback: 'unavailable',
+    records: 0,
+    lastVerifiedStep: null,
+    reused: false,
+  });
+  const library = publicLibrary('https://example.test/', () => {
+    throw new Error('An unrecorded match must not fetch a replay');
+  });
+  const render = (cancelled = false) =>
+    renderToStaticMarkup(createElement(SelectedMatch, { library, row, back: '#/', cancelled }));
+  const cancelled = render(true);
+  expect(cancelled).toContain('cancelled');
+  expect(cancelled).toContain('実行がキャンセルされ、再生できる記録がありません');
+  expect(cancelled).not.toContain('aria-label="保存リプレイ"');
+  expect(render()).toContain('failed');
+  expect(render()).not.toContain('cancelled');
 });

@@ -31,6 +31,9 @@ export async function exportLeague(
 ) {
   const checked = await checkLeague(input, completed),
     { plan, standings } = checked;
+  const latestOutcomes = new Map(
+    checked.attempts.map((attempt) => [attempt.slotId, attempt.outcome.kind] as const),
+  );
   if (partitions.length !== plan.partitions.length)
     throw new Error('Missing league partition definition');
   const files = new Map<string, PublicationFile>();
@@ -74,6 +77,7 @@ export async function exportLeague(
         setHash: built.setHash,
         pageHash: built.set.pages[Math.floor(rowIndex / 100)]!.pageHash,
         rowId: batchSlot.id,
+        ...(latestOutcomes.get(slot.id) === 'cancelled' ? { cancelled: true as const } : {}),
       });
       pairs.set(key, rows);
     }

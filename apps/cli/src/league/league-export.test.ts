@@ -8,6 +8,7 @@ import {
   PublicLeagueSlotPageSchema,
   PublicMatchPageSchema,
   type LeagueFileRef,
+  type LeagueProgress,
 } from '@fantasy/domain/spatial';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { planLeague, reserveLeaguePartition } from '@fantasy/api/tooling';
@@ -24,6 +25,46 @@ async function leagueJson(root: string, ref: LeagueFileRef) {
     await readFile(join(root, 'leagues', ref.hash.slice(7) + '.json'), 'utf8'),
   ) as unknown;
 }
+
+it.each(['cancelled', 'failed', 'reserved'] as const)(
+  'preserves exhausted %s attempts without inventing a replay',
+  async (state) => {
+    await withReplayDirectory(async (root) => {
+      const definition = await leagueFixture(2, 1);
+      const prepared = await planLeague(definition, publicationLeagueSource, leagueEstimate);
+      const history: LeagueProgress[] = prepared.partitions.flatMap(({ partition }) =>
+        partition.slots.map((slot) => ({
+          simulationHash: slot.simulationHash,
+          attempts: ([1, 2] as const).map((attempt) => ({
+            attempt,
+            executionId: `previous-${attempt}`,
+            state,
+            objectHash: null,
+          })),
+        })),
+      );
+      const fixture = await leaguePublicationFixture(join(root, 'run'), { definition, history });
+      const target = join(root, 'public');
+      await exportLeague(fixture.plan, fixture.partitions, fixture.completed, target);
+      const graph = await localPublicationGraph(target);
+      const snapshot = PublicLeagueSnapshotSchema.parse(
+        await leagueJson(target, graph.catalog.leagues![0]!),
+      );
+      expect(snapshot.standings).toMatchObject({ status: 'provisional', planned: 4, resolved: 0 });
+      const detail = PublicLeagueDetailSchema.parse(
+        await leagueJson(target, snapshot.standings.rows[0]!.detail),
+      );
+      const page = PublicLeagueSlotPageSchema.parse(
+        await leagueJson(target, detail.opponents[0]!.pages[0]!),
+      );
+      expect(page.rows.map((row) => row.cancelled)).toEqual(
+        Array(4).fill(state === 'failed' ? undefined : true),
+      );
+      expect(graph.objects.size).toBe(0);
+    });
+  },
+  30000,
+);
 
 it('publishes all scheduled partitions, lazy pair pages and exact scores in one generation', async () => {
   await withReplayDirectory(async (root) => {

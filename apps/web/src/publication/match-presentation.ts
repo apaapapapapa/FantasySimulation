@@ -6,6 +6,8 @@ export const playbackLabels = {
   unavailable: '再生できません',
 } satisfies Record<PublicMatchRow['playback'], string>;
 
+export const cancellationReason = '実行がキャンセルされ、再生できる記録がありません';
+
 export const reasonLabels = {
   'verified-result': '結果と保存記録を確認済み',
   'recorded-unresolved': 'ルール未確定のため終了',

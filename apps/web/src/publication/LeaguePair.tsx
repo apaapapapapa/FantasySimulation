@@ -14,7 +14,12 @@ import type {
 import type { PublicLibrary } from '../replay/public-source.ts';
 import { leaguePair, leaguePairMatches } from './league-source.ts';
 import { leagueLink, type LeagueRoute } from './league-route.ts';
-import { matchResult, playbackLabels, reasonLabels } from './match-presentation.ts';
+import {
+  cancellationReason,
+  matchResult,
+  playbackLabels,
+  reasonLabels,
+} from './match-presentation.ts';
 import { usePublicData } from './use-public-data.ts';
 import { DataTable } from './DataTable.tsx';
 import { SelectedMatch } from './SelectedMatch.tsx';
@@ -87,6 +92,7 @@ export function LeaguePair({
           <SelectedMatch
             library={library}
             row={selected.row}
+            cancelled={selected.planned.cancelled ?? false}
             back={leagueLink(route.snapshot, route.character, route.opponent, route.page)}
           />
         </>
@@ -114,7 +120,10 @@ function PairTable({ matches, route }: { matches: Match[]; route: LeagueRoute })
           <>
             {matchResult(row.original.row)}
             <small>
-              {row.original.row.state} · {reasonLabels[row.original.row.reason]}
+              {row.original.planned.cancelled ? 'cancelled' : row.original.row.state} ·{' '}
+              {row.original.planned.cancelled
+                ? cancellationReason
+                : reasonLabels[row.original.row.reason]}
             </small>
           </>
         ),

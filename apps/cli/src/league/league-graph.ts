@@ -148,6 +148,7 @@ export async function validatePublicLeague(
           if (
             !set ||
             !match ||
+            (row.cancelled && match.state !== 'failed') ||
             set.source.sha !== revision.sourceSha ||
             set.engineVersion !== engineVersion ||
             set.implementationDigest !== implementationDigest ||
