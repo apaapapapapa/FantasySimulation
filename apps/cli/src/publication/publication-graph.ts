@@ -12,6 +12,10 @@ import {
   canonicalJson,
   publicHashName,
   type PublicReplaySet,
+  type PublicMatchPage,
+  type PublicCatalog,
+  type BundleReceipt,
+  type LeagueFileRef,
 } from '@fantasy/domain/spatial';
 import { BattleBundles } from '@fantasy/api/artifacts';
 import { readBoundedFile, sha256 } from '@fantasy/api/artifacts';
@@ -34,6 +38,11 @@ export async function publicationGraph(source: PublicationRead) {
   const results = new Map<string, string>(),
     objects = new Set<string>(),
     sets = new Map<string, PublicReplaySet>();
+  const pages = new Map<string, PublicMatchPage>(),
+    receipts = new Map<string, BundleReceipt>();
+  const leagues = new Map<string, NonNullable<PublicCatalog['leagues']>[number]>();
+  const leagueWork = new Map<string, LeagueFileRef>();
+  const catalogs: PublicCatalog[] = [];
   let totalBytes = 0,
     reads = 0,
     readBytes = 0;
@@ -93,6 +102,19 @@ export async function publicationGraph(source: PublicationRead) {
     assertPublicData(generation);
     add({ key, bytes: bytes.length, checksum: hash });
     catalog ??= generation;
+    catalogs.push(generation);
+    for (const ref of generation.leagues ?? []) {
+      const prior = leagues.get(ref.hash);
+      if (prior && canonicalJson(prior) !== canonicalJson(ref))
+        throw new Error('Conflicting league catalog reference');
+      leagues.set(ref.hash, ref);
+    }
+    if (generation.leagueWork) {
+      const ref = generation.leagueWork;
+      if (leagueWork.has(ref.hash) && leagueWork.get(ref.hash)!.bytes !== ref.bytes)
+        throw new Error('Conflicting league work size');
+      leagueWork.set(ref.hash, ref);
+    }
     for (const ref of generation.sets) {
       const prefix = `sets/${publicHashName(ref.setHash)}/`;
       if (sets.has(ref.setHash)) {
@@ -113,6 +135,7 @@ export async function publicationGraph(source: PublicationRead) {
           pageRef.pageHash,
         );
         assertPublicPageBinding(set, page);
+        pages.set(`${ref.setHash}/${pageRef.pageHash}`, page);
         if (page.index !== pageRef.index) throw new Error('Public page index mismatch');
         for (const row of page.rows) {
           if (row.slotId <= lastSlot) throw new Error('Public rows are not globally ordered');
@@ -127,6 +150,7 @@ export async function publicationGraph(source: PublicationRead) {
           )
             throw new Error('Receipt checksum mismatch');
           const receipt = receiptIdentity(objectPrefix + 'receipt.json', receiptData, results);
+          receipts.set(receipt.objectHash, receipt);
           assertPublicData(receipt);
           add({
             key: objectPrefix + 'receipt.json',
@@ -145,11 +169,12 @@ export async function publicationGraph(source: PublicationRead) {
           assertPublicData(manifest);
           assertPublicReplayBinding(row, receipt, manifest);
           if (
-            canonicalJson(receipt.source) !== canonicalJson(set.source) ||
+            (!row.reused && canonicalJson(receipt.source) !== canonicalJson(set.source)) ||
             manifest.input.engineVersion !== set.engineVersion ||
             manifest.input.implementationDigest !== set.implementationDigest
           )
             throw new Error('Public source identity mismatch');
+          sources.add(receipt.source.sha);
           add({
             key: objectPrefix + 'manifest.json',
             bytes: manifestBytes.length,
@@ -176,6 +201,60 @@ export async function publicationGraph(source: PublicationRead) {
     }
     hash = generation.previousCatalogHash;
     expectedBytes = undefined;
+  }
+  if (leagues.size || leagueWork.size) {
+    const { validatePublicLeague, validatePublicLeagueWork, assertLeagueWorkTransition } =
+      await import('../league/league-graph.ts');
+    const cached = new Map<string, { bytes: number; value: unknown }>();
+    const leagueJson = async <T>(
+      ref: LeagueFileRef,
+      schema: { parse(value: unknown): T },
+    ): Promise<T> => {
+      const old = cached.get(ref.hash);
+      if (old && old.bytes !== ref.bytes) throw new Error('League reference size mismatch');
+      if (old) return schema.parse(old.value);
+      const value = await json(
+        `leagues/${publicHashName(ref.hash)}.json`,
+        schema,
+        ref.bytes,
+        ref.hash,
+      );
+      cached.set(ref.hash, { bytes: ref.bytes, value });
+      return value;
+    };
+    for (const ref of leagues.values()) {
+      const snapshot = await validatePublicLeague(ref, leagueJson, sets, pages);
+      sources.add(snapshot.sourceSha);
+    }
+    const workStates = new Map<string, Awaited<ReturnType<typeof validatePublicLeagueWork>>>();
+    for (const ref of leagueWork.values()) {
+      const state = await validatePublicLeagueWork(ref, leagueJson, receipts),
+        { work } = state;
+      if (work.previousWork && !leagueWork.has(work.previousWork.hash))
+        throw new Error('Missing retained league work generation');
+      workStates.set(ref.hash, state);
+      sources.add(work.sourceSha);
+    }
+    for (const state of workStates.values())
+      if (state.work.previousWork) {
+        const ref = leagueWork.get(state.work.previousWork.hash)!;
+        if (ref.bytes !== state.work.previousWork.bytes)
+          throw new Error('League work ancestor size mismatch');
+        assertLeagueWorkTransition(workStates.get(ref.hash)!, state);
+      }
+    let previousWork: LeagueFileRef | undefined;
+    for (const generation of catalogs.reverse()) {
+      const currentWork = generation.leagueWork;
+      if (previousWork && !currentWork) throw new Error('Catalog drops the durable league journal');
+      if (
+        currentWork &&
+        currentWork.hash !== previousWork?.hash &&
+        canonicalJson(workStates.get(currentWork.hash)!.work.previousWork) !==
+          canonicalJson(previousWork ?? null)
+      )
+        throw new Error('Catalog rewinds the durable league journal');
+      previousWork = currentWork;
+    }
   }
   return { current, catalog: catalog!, files, sources, results, objects, sets, totalBytes };
 }

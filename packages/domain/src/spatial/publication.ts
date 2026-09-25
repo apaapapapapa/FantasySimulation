@@ -12,6 +12,7 @@ import { SpecInputSchema } from './api.ts';
 import { BatchSlotResultSchema, BundleReceiptSchema, ExecutionSourceSchema } from './batch.ts';
 import { ResultSchema } from './records.ts';
 import { ReplayManifestSchema, type ReplayManifest } from './replay.ts';
+import { LeagueFileRefSchema, PublicLeagueCatalogRefSchema } from './league/publication.ts';
 
 export const PUBLIC_PAGE_ROWS = 100;
 export const MAX_PUBLIC_JSON_BYTES = 4_000_000;
@@ -156,14 +157,20 @@ export const PublicCatalogSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
     previousCatalogHash: HashSchema.nullable(),
-    sets: z
-      .array(z.strictObject({ setHash: HashSchema, bytes }))
-      .min(1)
-      .max(1000),
+    leagues: z.array(PublicLeagueCatalogRefSchema).max(1000).optional(),
+    leagueWork: LeagueFileRefSchema.optional(),
+    sets: z.array(z.strictObject({ setHash: HashSchema, bytes })).max(1000),
   })
   .superRefine((catalog, ctx) => {
+    if (catalog.sets.length === 0 && !catalog.leagueWork)
+      ctx.addIssue({
+        code: 'custom',
+        message: 'An empty replay catalog requires a durable league journal',
+      });
     if (catalog.sets.some((set, i) => i > 0 && catalog.sets[i - 1]!.setHash >= set.setHash))
       ctx.addIssue({ code: 'custom', message: 'Catalog sets must be unique and ordered by hash' });
+    if (catalog.leagues?.some((league, i) => i > 0 && catalog.leagues![i - 1]!.id >= league.id))
+      ctx.addIssue({ code: 'custom', message: 'Catalog leagues must be unique and ordered by ID' });
   });
 export type PublicCatalog = z.infer<typeof PublicCatalogSchema>;
 export const PublicCatalogCurrentSchema = z.strictObject({
@@ -178,7 +185,7 @@ export const publicHashName = (hash: string) => HashSchema.parse(hash).slice(7);
 export const PublicKeySchema = z
   .string()
   .regex(
-    /^(?:catalog\/(?:current|[0-9a-f]{64})\.json|sets\/[0-9a-f]{64}\/(?:set|[0-9a-f]{64})\.json|objects\/[0-9a-f]{64}\/(?:receipt\.json|manifest\.json|chunk-[0-9]{5}\.ndjson\.gz|checkpoint-[0-9]{5}\.json\.gz))$/,
+    /^(?:catalog\/(?:current|[0-9a-f]{64})\.json|leagues\/[0-9a-f]{64}\.json|sets\/[0-9a-f]{64}\/(?:set|[0-9a-f]{64})\.json|objects\/[0-9a-f]{64}\/(?:receipt\.json|manifest\.json|chunk-[0-9]{5}\.ndjson\.gz|checkpoint-[0-9]{5}\.json\.gz))$/,
   );
 
 /** A transport must verify receipt/manifest bytes before using this reference check. */

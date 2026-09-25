@@ -152,7 +152,7 @@ it('never overwrites a colliding immutable object', async () => {
 });
 it('rejects a second valid result for the same simulation even in an orphan', async () => {
   const { root, directory, store, options } = await setup();
-  const conflict = await publicationFixture(join(root, 'conflict'), 'truncated');
+  const conflict = await publicationFixture(join(root, 'conflict'), 'complete', undefined, true);
   const key = `objects/${conflict.receipt.objectHash.slice(7)}/receipt.json`;
   store.objects.set(key, {
     data: await readFile(join(conflict.object, 'receipt.json')),

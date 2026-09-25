@@ -19,5 +19,6 @@ export {
   normalizeLeagueDefinition,
   leagueTrialSeed,
   leagueMatches,
+  leagueCoordinates,
 } from '../league/index.ts';
 export { aggregateLeague, scoreLeagueCounts, compareLeagueFractions } from '../league/scoring.ts';

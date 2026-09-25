@@ -34,16 +34,19 @@ export function receiptIdentity(key: string, bytes: Buffer, results: Map<string,
     JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)),
   );
   const { objectHash, ...body } = receipt;
+  const definitive =
+    receipt.result.outcome.kind === 'win' || receipt.result.outcome.kind === 'draw';
   if (
     key !== `objects/${publicHashName(objectHash)}/receipt.json` ||
     sha256(canonicalJson(body)) !== objectHash ||
     sha256(canonicalJson(receipt.result)) !== receipt.resultHash ||
     receipt.result.simulationHash !== receipt.simulationHash ||
-    (results.has(receipt.simulationHash) &&
+    (definitive &&
+      results.has(receipt.simulationHash) &&
       results.get(receipt.simulationHash) !== receipt.resultHash)
   )
     throw new Error('Existing simulation result conflict');
-  results.set(receipt.simulationHash, receipt.resultHash);
+  if (definitive) results.set(receipt.simulationHash, receipt.resultHash);
   return receipt;
 }
 
@@ -122,7 +125,7 @@ async function inventory(root: string) {
         path = join(directory, entry.name);
       if (
         entry.isDirectory() &&
-        /^(?:catalog|sets|objects|(?:sets|objects)\/[0-9a-f]{64})$/.test(key)
+        /^(?:catalog|leagues|sets|objects|(?:sets|objects)\/[0-9a-f]{64})$/.test(key)
       )
         await walk(path, key + '/');
       else if (entry.isFile()) {

@@ -32,6 +32,7 @@ export async function publicationFixture(
   root: string,
   kind: 'complete' | 'truncated' | 'unresolved' = 'complete',
   syntheticSeed?: number,
+  conflicting = false,
 ) {
   const input = StoredManifestSchema.parse(recording.input),
     result = ResultSchema.parse(recording.result);
@@ -43,21 +44,28 @@ export async function publicationFixture(
       participant.rngSeed = actorSeed(syntheticSeed, participant.rngStream);
     result.simulationHash = await contentHash(input);
   }
-  if (kind !== 'complete') {
+  if (kind !== 'complete' || conflicting) {
     const terminal = records.at(-1)!;
     if (terminal.kind !== 'terminal') throw new Error('Fixture terminal missing');
     const outcome =
-      kind === 'truncated'
-        ? ({ kind, resource: 'events', reason: 'fixture limit' } as const)
-        : ({
-            kind,
-            ruleId: 'fixture.conflict',
-            revisions: [] as string[],
-            reason: 'fixture conflict',
-          } as const);
+      kind === 'complete'
+        ? result.outcome
+        : kind === 'truncated'
+          ? ({ kind, resource: 'events', reason: 'fixture limit' } as const)
+          : ({
+              kind,
+              ruleId: 'fixture.conflict',
+              revisions: [] as string[],
+              reason: 'fixture conflict',
+            } as const);
     terminal.outcome = outcome;
-    terminal.events[0]!.ruleId = `battle.${kind}`;
-    terminal.events[0]!.reason = outcome.reason;
+    terminal.events[0]!.ruleId = `battle.${outcome.kind}`;
+    terminal.events[0]!.reason = 'reason' in outcome ? outcome.reason : outcome.winner;
+    if (conflicting) {
+      const step = records.find((r) => r.kind === 'interval' && r.events.length > 0);
+      if (!step || step.kind !== 'interval') throw new Error('Fixture step event missing');
+      step.events[0]!.reason = 'Conflicting recorded event';
+    }
     result.outcome = outcome;
     result.eventHash = sha256(
       records

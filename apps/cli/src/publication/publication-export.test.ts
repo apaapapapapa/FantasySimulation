@@ -218,12 +218,30 @@ describe('public saved-batch export', () => {
   it('rejects a different verified result for the same simulation in a later export', async () => {
     await withReplayDirectory(async (root) => {
       const a = await publicationFixture(join(root, 'a')),
-        b = await publicationFixture(join(root, 'b'), 'truncated'),
+        b = await publicationFixture(join(root, 'b'), 'complete', undefined, true),
         target = join(root, 'public');
       await exportPublication(a.plan, [a], target);
       const pointer = await readFile(join(target, 'catalog/current.json'));
       await expect(exportPublication(b.plan, [b], target)).rejects.toThrow(/result conflict/);
       expect(await readFile(join(target, 'catalog/current.json'))).toEqual(pointer);
+    });
+  });
+
+  it('retains the partial result when a later attempt completes the same simulation', async () => {
+    await withReplayDirectory(async (root) => {
+      const partial = await publicationFixture(join(root, 'partial'), 'truncated');
+      const complete = await publicationFixture(join(root, 'complete'));
+      const target = join(root, 'public');
+      const first = await exportPublication(partial.plan, [partial], target);
+      await exportPublication(complete.plan, [complete], target);
+      const { sets } = await readPublication(target);
+      expect(sets.find((s) => s.ref.setHash === first.setHash)!.rows[0]!.state).toBe('truncated');
+      expect(sets.flatMap((s) => s.rows).filter((r) => r.state === 'complete')).toHaveLength(1);
+      expect(
+        await readFile(
+          join(target, 'objects', partial.receipt.objectHash.slice(7), 'receipt.json'),
+        ),
+      ).toEqual(await readFile(join(partial.object, 'receipt.json')));
     });
   });
 

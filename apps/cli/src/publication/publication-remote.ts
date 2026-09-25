@@ -61,7 +61,9 @@ const rank = (key: string) =>
       ? key.endsWith('/set.json')
         ? 2
         : 1
-      : 3;
+      : key.startsWith('leagues/')
+        ? 3
+        : 4;
 async function exact(store: PublicationStore, file: PublicationFile) {
   const value = await store.read(file.key, file.bytes);
   if (!value || value.data.length !== file.bytes || sha256(value.data) !== file.checksum)
@@ -146,6 +148,10 @@ export async function publishPublication(
       for (const page of set.pages) selected.add(prefix + publicHashName(page.pageHash) + '.json');
     }
     const sample = [...graph.objects].sort()[0];
+    for (const ref of graph.catalog.leagues ?? [])
+      selected.add(`leagues/${publicHashName(ref.hash)}.json`);
+    if (graph.catalog.leagueWork)
+      selected.add(`leagues/${publicHashName(graph.catalog.leagueWork.hash)}.json`);
     if (sample)
       for (const key of graph.files.keys())
         if (key.startsWith(`objects/${publicHashName(sample)}/`)) selected.add(key);
