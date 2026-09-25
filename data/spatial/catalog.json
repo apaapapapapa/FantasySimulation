@@ -3414,6 +3414,72 @@
   },
   {
     "kind": "ruleset",
+    "id": "standard-engagement-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e86502fcae5fd6a57d147a0230898e2ac3425d088da6a4ebd510062fe61ade3d",
+    "definition": {
+      "name": "標準3D",
+      "rulesVersion": "spatial-v1.20",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1"
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
     "id": "standard-evaluation-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -3973,6 +4039,84 @@
         "relativeImpactBps": [2500, 7500, 12500],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
+        "search": {
+          "maxWaitSteps": 500,
+          "cellsPerSide": 5,
+          "revisitSteps": 500,
+          "lowSightMm": 100,
+          "goalTimeoutSteps": 150
+        }
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard-tactics-v2",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:0ddc0ff66a1e5950a36d0b5ec1798b40fede3af99599f1438abcd3dd499a409c",
+    "definition": {
+      "name": "観測・索敵・姿勢・脅威時の遮蔽",
+      "rulesVersion": "spatial-v1.20",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1",
+        "minimumCandidateWeightBps": 500,
+        "relativeImpactBps": [2500, 7500, 12500],
+        "reapplication": "self-observed-v1",
+        "groundEvasion": "posture-jump-v1",
+        "cover": "observed-threat-v1",
         "search": {
           "maxWaitSteps": 500,
           "cellsPerSide": 5,

@@ -54,15 +54,60 @@ it('performs a seeded ground jump against a real projectile without granting fli
   expect(heights.at(-1)).toBeLessThan(0.903);
   expect((await runBattle(input)).result).toEqual(run.result);
 });
+it('offers observed-threat cover only after an observed shot or cast; omitted mode is unchanged', async () => {
+  const f = await fixture();
+  const wall = {
+    id: 'cover',
+    position: { x: -2, y: 1.5, z: 0 },
+    halfExtents: { x: 0.15, y: 1.5, z: 0.5 },
+    blocks: { movement: true, vision: true, attack: true },
+  };
+  const world = new SpatialWorld([wall]);
+  try {
+    const navigator = new Navigator(world, f.self.actor, f.battle.scenario, f.battle.rules);
+    const options = (rules: typeof TACTICAL_AI, observation = f.view.memory.observation!) =>
+      coverOptions(
+        { ...f.view, self: f.self, rules, memory: { ...f.view.memory, observation } },
+        {
+          bounds: f.battle.scenario.bounds,
+          obstacles: [wall],
+          blocked: (a, b, layer) => world.occluded(a, b, layer),
+        },
+        (a, b, body) => navigator.knownClearance(a, b, body),
+      ).length;
+    const threat = { ...TACTICAL_AI, cover: 'observed-threat-v1' as const };
+    const seen = f.view.memory.observation!;
+    expect(options(TACTICAL_AI)).toBeGreaterThan(0);
+    expect(options(threat)).toBe(0);
+    expect(options(threat, { ...seen, projectiles: [incomingArrow(f.self.position)] })).toBe(
+      options(TACTICAL_AI, { ...seen, projectiles: [incomingArrow(f.self.position)] }),
+    );
+    expect(options(threat, { ...seen, enemy: { ...seen.enemy!, action: 'cast' } })).toBeGreaterThan(
+      0,
+    );
+  } finally {
+    world.free();
+    f.world.free();
+  }
+});
+it('lets visible melee actors engage around pillars instead of both sheltering until time runs out', async () => {
+  const input = (rules?: string) =>
+    catalogManifest('guardian', 'posture-duelist-v1', 'pillars-surveyed-v1', 6000, 42, rules);
+  const casts = (run: Awaited<ReturnType<typeof runBattle>>) =>
+    battleEvents(run.records).filter((e) => e.kind === 'cast-start').length;
+  // Same tactical AI with the cover option omitted, as in standard-tactics-v1.
+  const sheltered = await runBattle(await withTacticalRules(await input()));
+  expect(sheltered.result.outcome).toEqual({ kind: 'draw', reason: 'time-limit' });
+  expect(casts(sheltered)).toBe(0);
+  const engaged = await runBattle(await input('standard-tactics-v2'));
+  expect(casts(engaged)).toBeGreaterThan(0);
+  expect(engaged.result.outcome.kind).toBe('win');
+  expect((await runBattle(await input('standard-tactics-v2'))).result).toEqual(engaged.result);
+}, 60000);
 it('never turns an arena floor into cover beyond the public bounds', async () => {
   const run = await runBattle(
-    await catalogManifest(
-      'posture-archer-v1',
-      'posture-duelist-v1',
-      'flat-surveyed-v1',
-      200,
-      42,
-      'standard-tactics-v1',
+    await withTacticalRules(
+      await catalogManifest('posture-archer-v1', 'posture-duelist-v1', 'flat-surveyed-v1', 200, 42),
     ),
   );
   expect(

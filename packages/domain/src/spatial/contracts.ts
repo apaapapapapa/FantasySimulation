@@ -5,7 +5,7 @@ export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 export const MAX_BATTLE_STEPS = 6_000;
 export const MAX_FRAME_BYTES = 4_000_000;
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.19' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.20' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -191,6 +191,7 @@ export const AiRulesSchema = z.strictObject({
     .optional(),
   reapplication: z.literal('self-observed-v1').optional(),
   groundEvasion: z.literal('posture-jump-v1').optional(),
+  cover: z.literal('observed-threat-v1').optional(),
   search: z
     .strictObject({
       maxWaitSteps: positive(1000),
