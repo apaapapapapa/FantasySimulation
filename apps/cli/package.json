@@ -10,6 +10,7 @@
   "scripts": {
     "build": "vp pack",
     "batch": "node --import tsx src/batch.ts",
+    "league": "node --import tsx src/league.ts",
     "publication": "node --env-file-if-exists=../../.env --import tsx src/publication.ts"
   },
   "dependencies": {

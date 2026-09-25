@@ -12,6 +12,7 @@ import {
   parseJson,
   type ExecutionSource,
   type BundleReceipt,
+  type ReplayManifest,
 } from '@fantasy/domain/spatial';
 import {
   readBoundedFile,
@@ -175,12 +176,6 @@ export class BattleBundles {
     const snapshot = await runtime.resultSnapshot(resultId);
     const { manifest, response: result } = snapshot;
     const simulationHash = result.result.simulationHash;
-    const original = await this.cached(simulationHash);
-    if (original) {
-      if (original.resultHash !== snapshot.resultHash)
-        throw new Error('Definitive bundle result disagreement');
-      return original;
-    }
     const body = parseJson(BundleReceiptBodySchema, {
       schemaVersion: 1,
       source,
@@ -194,6 +189,50 @@ export class BattleBundles {
       result: result.result,
     });
     const receipt: BundleReceipt = { ...body, objectHash: await contentHash(body) };
+    return this.publishObject(receipt, manifest, (ref) =>
+      runtime.replayFile(manifest.id, ref.file),
+    );
+  }
+  /** Retained results enter a new shard only after complete receipt/replay verification. */
+  async importConfirmed(source: BattleBundles, objectHash: string) {
+    return this.importBundle(source, objectHash, true);
+  }
+  /** Copy historical partial attempts without making them eligible for result reuse. */
+  async importRecorded(source: BattleBundles, objectHash: string) {
+    return this.importBundle(source, objectHash, false);
+  }
+  private async importBundle(source: BattleBundles, objectHash: string, definitive: boolean) {
+    const receipt = await source.verify(objectHash);
+    if (definitive && !['win', 'draw'].includes(receipt.result.outcome.kind))
+      throw new Error('Only definitive bundles can be reused');
+    const directory = source.objectPath(objectHash);
+    const manifest = parseJson(
+      ReplayManifestSchema,
+      JSON.parse(
+        (
+          await readBoundedFile(join(directory, 'manifest.json'), MAX_REPLAY_MANIFEST_BYTES)
+        ).toString('utf8'),
+      ),
+    );
+    if (sha256(canonicalJson(manifest)) !== receipt.manifestChecksum)
+      throw new Error('Retained manifest changed during import');
+    return this.publishObject(receipt, manifest, (ref) =>
+      readBoundedFile(join(directory, ref.file), ref.bytes),
+    );
+  }
+  private async publishObject(
+    receipt: BundleReceipt,
+    manifest: ReplayManifest,
+    load: (
+      ref: ReplayManifest['chunks'][number] | ReplayManifest['checkpoints'][number],
+    ) => Promise<Buffer>,
+  ) {
+    const original = await this.cached(receipt.simulationHash);
+    if (original && ['win', 'draw'].includes(receipt.result.outcome.kind)) {
+      if (original.resultHash !== receipt.resultHash)
+        throw new Error('Definitive bundle result disagreement');
+      return original;
+    }
     const receiptText = canonicalJson(receipt);
     // A crash after object rename but before pointer publication must not double-count its bytes.
     try {
@@ -210,7 +249,7 @@ export class BattleBundles {
     await mkdir(staging);
     try {
       for (const ref of [...manifest.chunks, ...manifest.checkpoints]) {
-        const bytes = await runtime.replayFile(manifest.id, ref.file);
+        const bytes = await load(ref);
         if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
           throw new Error('Replay changed during export');
         await writeDurableFile(join(staging, ref.file), bytes);
