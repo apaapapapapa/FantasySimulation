@@ -74,6 +74,7 @@ test('static-replay-controls', async ({ page }, info) => {
   await expect(page.locator('canvas')).toHaveCount(1);
   await expect(state).toHaveText(savedState!);
   await page.getByText('イベントログを開く', { exact: true }).click();
+  await page.getByLabel('ログの区間').selectOption('0');
   await page
     .getByRole('button', { name: `step ${event.step}へ: ${event.id} ${event.kind}`, exact: true })
     .click();

@@ -99,6 +99,36 @@ const abortOnChunk = (controller: AbortController, file: string) => (url: string
 };
 
 describe('saved replay loading through the local API adapter', () => {
+  it('skips intermediate chunks on a distant seek and retains every event at the displayed step', async () => {
+    const saved = await savedReplay(),
+      { api, opening } = open(saved);
+    const player = new ReplayPlayer(await opening);
+    await player.frame(0);
+    await player.frame(240);
+    expect(api.requests.filter((url) => url.endsWith('.ndjson.gz'))).toEqual([
+      `${ROOT}/files/chunk-00000.ndjson.gz`,
+      `${ROOT}/files/chunk-00003.ndjson.gz`,
+    ]);
+    const records = saved.manifest.chunks.flatMap((ref) =>
+      expand(saved, ref.file)
+        .toString()
+        .trimEnd()
+        .split('\n')
+        .map((line) => JSON.parse(line)),
+    );
+    for (const step of [240, 0, 91, 92, 159, 160, 239, 240, 240]) {
+      const frame = await player.frame(step);
+      expect(frame.records).toEqual(
+        records.filter(
+          (record) => (record.kind === 'interval' ? record.toStep : record.step) === step,
+        ),
+      );
+      expect(frame.checkpoint.step).toBe(step);
+      expect(frame.events).toEqual(
+        records.flatMap((r) => r.events ?? []).filter((e) => e.step === step),
+      );
+    }
+  });
   it('projects every forward step with one validation per chunk, and restores backward seeks', async () => {
     const saved = await savedReplay(),
       expected = await sequentialCheckpoints(saved);
@@ -356,7 +386,7 @@ describe('saved replay loading through the local API adapter', () => {
     [404, 'damaged'],
     [503, 'damaged'],
     [500, 'unavailable'],
-    [429, 'unavailable'],
+    [429, 'limit'],
   ])('maps a %i manifest response to %s', async (status, kind) => {
     const { opening } = open(await savedReplay(), (url) =>
       url === ROOT

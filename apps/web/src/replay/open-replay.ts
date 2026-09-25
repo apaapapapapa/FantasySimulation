@@ -16,6 +16,7 @@ import {
   toLoadError,
   type ReplayLoadErrorKind,
 } from './artifacts.ts';
+import { LoadSlots } from './load-slots.ts';
 
 /** Transport only (local API now, static layout of #81 later); the loader verifies all bytes. */
 export interface ReplaySource {
@@ -85,6 +86,9 @@ export async function openReplay(
 ): Promise<OpenedReplay> {
   const { signal } = options,
     limit = options.cachedFiles ?? 8;
+  if (!Number.isInteger(limit) || limit < 1 || limit > 8)
+    throw new RangeError('Decoded replay cache must hold 1–8 files');
+  const slots = new LoadSlots();
   const raw = await guarded(signal, 'unavailable', () => source.manifest(signal));
   const { manifest, context } = await guarded(signal, 'damaged', async () => {
     const manifest = parseSavedManifest(raw);
@@ -101,7 +105,7 @@ export async function openReplay(
       cache.set(key, value);
       return value;
     }
-    const value = await load();
+    const value = await slots.run(signal, load);
     // A file still loading when its request was cancelled is neither delivered nor kept.
     signal?.throwIfAborted();
     cache.set(key, value);

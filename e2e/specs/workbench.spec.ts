@@ -160,12 +160,12 @@ test('battle-cancel-retry', async ({ page }) => {
   await expect(battle.getByRole('button', { name: '対戦を再試行', exact: true })).toBeDisabled();
 });
 
-test('battle-truncated-result', async ({ page }) => {
+test('battle-truncated-result', async ({ page }, info) => {
   await page.goto('/');
   const battle = page.getByRole('region', { name: '非同期対戦' });
   await battle.getByLabel('参加者A').selectOption('swordsman');
   await battle.getByLabel('参加者B').selectOption('sky-mage');
-  await battle.getByLabel('乱数seed').fill('7092');
+  await battle.getByLabel('乱数seed').fill(String(7092 + info.retry));
   await battle.getByText('計算予算', { exact: true }).click();
   await battle.getByLabel('ログ上限bytes').fill('1');
   await battle.getByRole('button', { name: '対戦を開始' }).click();
