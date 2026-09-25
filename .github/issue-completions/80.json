@@ -30,7 +30,7 @@
     },
     {
       "task": "未確定の枠と再生できない枠の状態・理由を表示し、集約値を1試合として再生しない",
-      "evidence": "LeaguePair reuses PublicMatchRow and SelectedMatch. Pending/missing, failed and recorded unresolved/truncated rows retain reasons and bounded playback. This PR preserves explicit cancelled history as optional immutable pair metadata and renders cancellation separately without a replay; absent historical metadata is not inferred. Export regressions cover all-failed/all-cancelled exhausted partitions with no bundle directory (as after Actions transfer), 0 resolved / 4 planned and no invented object; recorded rows cannot be marked cancelled. Aggregate cells only link to member lists."
+      "evidence": "LeaguePair reuses PublicMatchRow and SelectedMatch. Pending/missing, failed and recorded unresolved/truncated rows retain reasons and bounded playback. This PR preserves checked cancellation outcomes (including abandoned reserved attempts) as optional immutable pair metadata and renders cancellation separately without a replay; absent historical metadata is not inferred. Export regressions cover all-failed/all-cancelled exhausted partitions with no bundle directory (as after Actions transfer), 0 resolved / 4 planned and no invented object; recorded rows cannot be marked cancelled. Aggregate cells only link to member lists."
     },
     {
       "task": "ChromiumとWebKitのE2E、`vp run verify`、Linux CIで確認する",

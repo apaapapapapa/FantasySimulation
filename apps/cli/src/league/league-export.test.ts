@@ -26,7 +26,7 @@ async function leagueJson(root: string, ref: LeagueFileRef) {
   ) as unknown;
 }
 
-it.each(['cancelled', 'failed'] as const)(
+it.each(['cancelled', 'failed', 'reserved'] as const)(
   'preserves exhausted %s attempts without inventing a replay',
   async (state) => {
     await withReplayDirectory(async (root) => {
@@ -58,7 +58,7 @@ it.each(['cancelled', 'failed'] as const)(
         await leagueJson(target, detail.opponents[0]!.pages[0]!),
       );
       expect(page.rows.map((row) => row.cancelled)).toEqual(
-        Array(4).fill(state === 'cancelled' ? true : undefined),
+        Array(4).fill(state === 'failed' ? undefined : true),
       );
       expect(graph.objects.size).toBe(0);
     });

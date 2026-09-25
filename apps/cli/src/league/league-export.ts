@@ -31,6 +31,9 @@ export async function exportLeague(
 ) {
   const checked = await checkLeague(input, completed),
     { plan, standings } = checked;
+  const latestOutcomes = new Map(
+    checked.attempts.map((attempt) => [attempt.slotId, attempt.outcome.kind] as const),
+  );
   if (partitions.length !== plan.partitions.length)
     throw new Error('Missing league partition definition');
   const files = new Map<string, PublicationFile>();
@@ -56,11 +59,6 @@ export async function exportLeague(
     const source = result
       ? completed.find((c) => canonicalJson(c.result) === canonicalJson(result))
       : undefined;
-    const cancelled = new Set(
-      result?.progress.records
-        .filter((record) => record.attempts.at(-1)?.state === 'cancelled')
-        .map((record) => record.simulationHash),
-    );
     const built = await buildPublication(
       batch,
       source ? [{ index: result!.index, bundles: source.bundles }] : [],
@@ -79,7 +77,7 @@ export async function exportLeague(
         setHash: built.setHash,
         pageHash: built.set.pages[Math.floor(rowIndex / 100)]!.pageHash,
         rowId: batchSlot.id,
-        ...(cancelled.has(slot.simulationHash) ? { cancelled: true as const } : {}),
+        ...(latestOutcomes.get(slot.id) === 'cancelled' ? { cancelled: true as const } : {}),
       });
       pairs.set(key, rows);
     }
