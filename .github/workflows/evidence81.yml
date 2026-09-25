@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: c98b0b61c75b2b322dd12e1cbca7769ba5004446
+          ref: d84346c7cc31f7dbecf3aaedeae2d7880bc61bf5
           fetch-depth: 0
           persist-credentials: false
       - name: Wait for final PR CI and the requested review to settle
@@ -30,8 +30,8 @@ jobs:
             const assert = require('node:assert/strict');
             let settled = false;
             for (let i=0;i<48;i++) {
-              const run=(await github.rest.actions.getWorkflowRun({owner:'apaapapapapa',repo:'FantasySimulation',run_id:36149609942})).data;
-              assert.equal(run.head_sha,'c98b0b61c75b2b322dd12e1cbca7769ba5004446');
+              const run=(await github.rest.actions.getWorkflowRun({owner:'apaapapapapa',repo:'FantasySimulation',run_id:36150577175})).data;
+              assert.equal(run.head_sha,'d84346c7cc31f7dbecf3aaedeae2d7880bc61bf5');
               const review=(await github.rest.issues.getComment({owner:'apaapapapapa',repo:'FantasySimulation',comment_id:5834258524})).data;
               if(run.status==='completed' && !review.body.includes('**Running**')) {
                 assert.equal(run.conclusion,'success');
@@ -41,7 +41,7 @@ jobs:
             }
             assert.ok(settled,'CI or requested review did not settle within the observation budget');
             const pr=(await github.rest.pulls.get({owner:'apaapapapapa',repo:'FantasySimulation',pull_number:136})).data;
-            assert.equal(pr.head.sha,'c98b0b61c75b2b322dd12e1cbca7769ba5004446');
+            assert.equal(pr.head.sha,'d84346c7cc31f7dbecf3aaedeae2d7880bc61bf5');
       - uses: ./.github/actions/setup-project
       - name: Collect PR 136 exact-head evidence with the existing read-only harness
         env:
