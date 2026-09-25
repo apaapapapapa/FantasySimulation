@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { describe, expect, it } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vite-plus/test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import {
   replayContext,
   ReplayState,
@@ -12,6 +14,9 @@ import { apiReplaySource } from './api-source.ts';
 import { ReplayLoadError } from './artifacts.ts';
 import { openReplay } from './open-replay.ts';
 import { seekStep } from './seek-step.ts';
+import { ReplayPlayer } from './replay-player.ts';
+import { buildSceneModel } from './scene-model.ts';
+import { Scene2D } from './Scene2D.tsx';
 
 // Fixed bytes from the real ReplayWriter; see test-fixtures/replays/provenance.json.
 const ID = 'swordsman-sky-mage-240';
@@ -85,8 +90,96 @@ function replaceFile(
   });
 }
 const expand = (served: Served, file: string) => gunzipSync(served.files.get(file)!);
+const abortOnChunk = (controller: AbortController, file: string) => (url: string) => {
+  if (url.endsWith(file) && !controller.signal.aborted) {
+    controller.abort();
+    throw controller.signal.reason;
+  }
+  return undefined;
+};
 
 describe('saved replay loading through the local API adapter', () => {
+  it('projects every forward step with one validation per chunk, and restores backward seeks', async () => {
+    const saved = await savedReplay(),
+      expected = await sequentialCheckpoints(saved);
+    const player = new ReplayPlayer(await open(saved).opening);
+    const applied = vi.spyOn(ReplayState.prototype, 'apply');
+    try {
+      for (let step = 0; step <= 240; step++)
+        expect(await player.seek(step)).toEqual(expected.findLast((value) => value.step === step));
+      expect(applied).toHaveBeenCalledTimes(saved.manifest.records);
+      const snapshot = await player.seek(240);
+      snapshot.state!.actors[0]!.resources.hp = -1;
+      expect(await player.seek(240)).toEqual(expected.at(-1));
+      expect(applied).toHaveBeenCalledTimes(saved.manifest.records);
+      for (const step of [100, 0, 91, 159, 240])
+        expect(await player.seek(step)).toEqual(expected.findLast((value) => value.step === step));
+      // The bounded cache evicts older validated chunks, which are validated again on return.
+      expect(applied.mock.calls.length).toBeGreaterThan(saved.manifest.records);
+      await expect(player.seek(241)).rejects.toThrow(RangeError);
+      await expect(player.seek(10, AbortSignal.abort())).rejects.toMatchObject({ kind: 'aborted' });
+    } finally {
+      applied.mockRestore();
+    }
+  });
+  it('builds shared scene geometry and the 2D fallback without a browser or WebGL', async () => {
+    const opened = await open(await savedReplay()).opening;
+    const checkpoint = await new ReplayPlayer(opened).seek(90);
+    const before = structuredClone(checkpoint);
+    const model = buildSceneModel(opened.context, checkpoint);
+    expect(model.actors.map((a) => a.position)).toEqual(
+      checkpoint.state!.actors.map((a) => [a.position.x, a.position.y, a.position.z]),
+    );
+    expect(model.actors[0]!.radius).toBe(opened.context.actors[0]!.character.body.radiusMm / 1000);
+    expect(model.follow).toEqual(model.actors[0]!.position);
+    expect(model.span).toBeGreaterThan(0);
+    expect(model.paths.length).toBeGreaterThan(0);
+    const svg = renderToStaticMarkup(createElement(Scene2D, { model, overlays: true }));
+    expect(svg).toContain('保存ログの2D表示');
+    expect(svg).toContain('<line');
+    expect(checkpoint).toEqual(before);
+  });
+  it('rejects valid-checksum semantic corruption before publishing a playback frame', async () => {
+    const saved = await savedReplay();
+    const file = 'chunk-00000.ndjson.gz';
+    const lines = expand(saved, file).toString().trimEnd().split('\n');
+    const initial = JSON.parse(lines[0]!);
+    initial.state.actors[0].resources.hp = 999999;
+    lines[0] = JSON.stringify(initial);
+    replaceFile(saved, file, Buffer.from(lines.join('\n') + '\n'));
+    await expect(
+      open(saved).opening.then((opened) => new ReplayPlayer(opened).seek(0)),
+    ).rejects.toMatchObject({ kind: 'damaged' });
+  });
+  it('keeps the last cursor and validated chunk when a forward load is cancelled', async () => {
+    const saved = await savedReplay(),
+      expected = await sequentialCheckpoints(saved);
+    const controller = new AbortController();
+    const { opening } = open(saved, abortOnChunk(controller, 'chunk-00001.ndjson.gz'));
+    const player = new ReplayPlayer(await opening);
+    await player.seek(10);
+    await expect(player.seek(100, controller.signal)).rejects.toMatchObject({ kind: 'aborted' });
+    const applied = vi.spyOn(ReplayState.prototype, 'apply');
+    try {
+      expect(await player.seek(11)).toEqual(expected.findLast((value) => value.step === 11));
+      expect(applied).not.toHaveBeenCalled();
+      expect(await player.seek(100)).toEqual(expected.findLast((value) => value.step === 100));
+    } finally {
+      applied.mockRestore();
+    }
+  });
+  it('rejects a resealed checkpoint that disagrees with the preceding chunk', async () => {
+    const saved = await savedReplay(),
+      file = 'checkpoint-00001.json.gz';
+    const checkpoint = JSON.parse(expand(saved, file).toString()) as ReplayCheckpoint;
+    checkpoint.state!.actors[0]!.position.x += 0.001;
+    replaceFile(saved, file, Buffer.from(JSON.stringify(checkpoint)));
+    const player = new ReplayPlayer(await open(saved).opening);
+    await player.seek(90);
+    await expect(player.seek(92)).rejects.toMatchObject({
+      kind: 'damaged',
+    });
+  });
   it('seeks final step states across chunk boundaries without duplicating boundary events', async () => {
     const saved = await savedReplay(),
       expected = await sequentialCheckpoints(saved);
@@ -224,6 +317,11 @@ describe('saved replay loading through the local API adapter', () => {
       kind: 'damaged',
       message: expect.stringMatching(reason),
     });
+    await expect(
+      open(saved).opening.then((opened) =>
+        new ReplayPlayer(opened).seek(Math.min(cursor, opened.manifest.lastVerifiedStep ?? 0)),
+      ),
+    ).rejects.toMatchObject({ kind: 'damaged' });
   });
   it('rejects a response body longer than its reference while reading', async () => {
     const saved = await savedReplay(),
@@ -286,13 +384,7 @@ describe('saved replay loading through the local API adapter', () => {
     ).rejects.toMatchObject({ kind: 'aborted' });
     expect(early.requests).toEqual([]);
     const controller = new AbortController();
-    const { api, opening } = open(saved, (url) => {
-      if (url.endsWith('chunk-00001.ndjson.gz') && !controller.signal.aborted) {
-        controller.abort();
-        throw controller.signal.reason;
-      }
-      return undefined;
-    });
+    const { api, opening } = open(saved, abortOnChunk(controller, 'chunk-00001.ndjson.gz'));
     const opened = await opening;
     await expect(opened.seek(100, controller.signal)).rejects.toMatchObject({ kind: 'aborted' });
     // The interrupted chunk was not cached; a later seek fetches and verifies it again.

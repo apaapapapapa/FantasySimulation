@@ -188,6 +188,7 @@ test('static-webgl-fallback', async ({ page }) => {
   });
   await page.goto(complete.url);
   await expect(page.getByText(/WebGL|3D表示を利用できません/)).toBeVisible();
+  await expect(page.getByRole('img', { name: '保存ログの2D表示' })).toBeVisible();
   await page.getByRole('button', { name: '1step進む' }).click();
   await expect(page.getByLabel('現在のstep')).toHaveText('1');
   await expect(page.getByRole('table', { name: '記録された状態' }).getByRole('row')).toHaveCount(3);
