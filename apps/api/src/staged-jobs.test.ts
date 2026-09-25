@@ -2,8 +2,62 @@ import { describe, expect, it, vi } from 'vite-plus/test';
 import { JobViewSchema, DEFAULT_BUDGET } from '@fantasy/domain/spatial';
 import { withRuntime } from '../test-support/runtime.ts';
 import { createApp } from './app.ts';
+import { JobStore } from './job-store.ts';
 
 describe('shared staged battle admission', { timeout: 30_000 }, () => {
+  it.each([false, true])('waits for retry capacity and respects abort=%s', async (abortWaiting) => {
+    await withRuntime(
+      async ({ runtime, spec, jobs }) => {
+        const previous = await runtime.submit(spec, 'retry-contention', 'retry');
+        const cancelled = runtime.cancel(previous.id);
+        await runtime.wait(previous.id);
+        // Keep the competing request queued until this test explicitly releases capacity.
+        const claim = vi.spyOn(JobStore.prototype, 'claim').mockReturnValue(null);
+        let notifyAttempt!: () => void;
+        const attempted = new Promise<void>((resolve) => {
+          notifyAttempt = resolve;
+        });
+        const originalRetry = runtime.retry.bind(runtime);
+        const retry = vi.spyOn(runtime, 'retry').mockImplementation(async (...args) => {
+          try {
+            return await originalRetry(...args);
+          } finally {
+            notifyAttempt();
+          }
+        });
+        const controller = new AbortController();
+        const stream = runtime.runMany([{ key: 'retry', spec }], 'retry-contention', {
+          retryFailed: true,
+          signal: controller.signal,
+        });
+        try {
+          const blocker = await runtime.submit(spec, 'competing', 'queued');
+          const next = stream.next();
+          await attempted;
+          expect(retry).toHaveBeenCalledTimes(1);
+          expect(jobs.get(previous.id)?.state).toBe('cancelled');
+          if (abortWaiting) controller.abort(new Error('Stop waiting'));
+          claim.mockRestore();
+          runtime.cancel(blocker.id);
+          const result = (await next).value!;
+          if (abortWaiting) {
+            expect(result.job).toBeNull();
+            expect(result.error).toMatchObject({ message: 'Stop waiting' });
+            expect(jobs.get(previous.id)?.attempts).toBe(cancelled.attempts);
+          } else {
+            expect(result.error).toBeNull();
+            expect(result.job?.state).toBe('completed');
+            expect(result.job?.attempts).toBe(cancelled.attempts + 1);
+          }
+        } finally {
+          claim.mockRestore();
+          retry.mockRestore();
+          await stream.return(undefined);
+        }
+      },
+      { queueLimit: 1 },
+    );
+  });
   it('waits for queue capacity, shares HTTP results and preserves per-key failures', async () => {
     await withRuntime(
       async ({ runtime, store, spec }) => {

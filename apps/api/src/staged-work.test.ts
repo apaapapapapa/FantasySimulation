@@ -13,7 +13,8 @@ it('streams 297,000 league inputs in order with a four-item admission window', a
     }
   }
   for await (const id of stagedWork(inputs(), 4, async (id) => id)) {
-    expect(id).toBe(received++);
+    if (id !== received) throw new Error(`Out-of-order result at ${received}: ${id}`);
+    received++;
   }
   expect(received).toBe(297_000);
   expect(peak).toBe(4);

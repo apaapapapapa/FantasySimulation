@@ -150,18 +150,18 @@ export class BattleService {
                 input.budget,
                 input.simulationHash,
               );
+              if (
+                options.retryFailed &&
+                ['failed', 'cancelled'].includes(job.state) &&
+                job.allowedOperations.retry
+              )
+                job = await this.retry(job.id, job.attempts, input.budget ?? DEFAULT_BUDGET);
               break;
             } catch (error) {
               if (!(error instanceof StoreError) || error.code !== 'queue-capacity') throw error;
               await this.capacityChanged(generation, signal);
             }
           }
-          if (
-            options.retryFailed &&
-            ['failed', 'cancelled'].includes(job.state) &&
-            job.allowedOperations.retry
-          )
-            job = await this.retry(job.id, job.attempts, input.budget ?? DEFAULT_BUDGET);
           const cancel = () => {
             this.cancel(job.id);
           };
