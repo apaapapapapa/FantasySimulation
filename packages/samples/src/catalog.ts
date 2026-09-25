@@ -12,6 +12,7 @@ import {
 import { reference, sealRevision } from '@fantasy/engine/spatial';
 import { sampleManifest } from './sample.ts';
 import { addTacticalSamples } from './tactical-samples.ts';
+import { addLeagueTerrain, leagueStarts } from './league-terrain.ts';
 import {
   observedRules,
   statusRules,
@@ -699,6 +700,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
   await add('scenario', 'flat-surveyed-v1', flat.definition);
   await add('scenario', 'pillars-surveyed-v1', pillars.definition);
   await addTacticalSamples(revisions);
+  await addLeagueTerrain(revisions, flat.definition);
   return revisions.sort((a, b) => compareIds(`${a.kind}:${a.id}`, `${b.kind}:${b.id}`));
 }
 
@@ -748,6 +750,7 @@ export async function catalogManifest(
     p.character = reference(get('character', id));
     p.rngSeed = actorSeed(seed, p.rngStream);
     p.position.x = i === 0 ? -6000 : 6000;
+    if (scenarioId === 'aerial-surveyed-v1') p.position.y = leagueStarts(scenarioId)[i]!.position.y;
   }
   template.scenario = reference(scenario);
   template.revisions = revisionClosure(revisions, [

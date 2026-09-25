@@ -560,6 +560,24 @@
       "id": "search-observed-v1",
       "revision": 1,
       "contentHash": "sha256:f7585f44d9b61781ce7e0bed22afe4e975241971f095dd2daae9d3220a539068"
+    },
+    {
+      "kind": "scenario",
+      "id": "aerial-surveyed-v1",
+      "revision": 1,
+      "contentHash": "sha256:44981b5451b18a587ce6fc0508c9086ff48177e50958955de91daf91e7b65fc5"
+    },
+    {
+      "kind": "scenario",
+      "id": "elevation-surveyed-v1",
+      "revision": 1,
+      "contentHash": "sha256:b479631ccc1edc25878bfa47a75eb1b6483f96329b1783cce6627e4a37ce84c2"
+    },
+    {
+      "kind": "scenario",
+      "id": "indoor-surveyed-v1",
+      "revision": 1,
+      "contentHash": "sha256:5486b92d8e06acb712d53b3485c6eff1599d130d19e5537a77434a527e313383"
     }
   ]
 }
