@@ -1,0 +1,37 @@
+name: Issue 81 delivery evidence
+on:
+  push:
+    branches: [ops/81-acceptance-20260925]
+    paths: [.github/workflows/evidence81.yml]
+permissions:
+  contents: read
+jobs:
+  collect:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      checks: read
+      statuses: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: a26b32d104d410a1b355672f3cfb432fe45bbcd5
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Collect existing PR delivery evidence without production keys
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: vp run harness github-snapshot apaapapapapa/FantasySimulation 129 .generated/harness/pr81
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: issue81-delivery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/pr81/
+          include-hidden-files: true
+          retention-days: 30
+          if-no-files-found: error
