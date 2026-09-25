@@ -3,3 +3,16 @@ export { runBatch, reconcileBatch } from './batch/batch-runner.ts';
 export { openStore } from './db/store.ts';
 export { BattlePool } from './jobs/worker-pool.ts';
 export type { WorkerMetrics } from './jobs/battle-worker.ts';
+export {
+  planLeague,
+  validateLeaguePlan,
+  validateLeaguePartition,
+  estimateLeague,
+} from './league/league-plan.ts';
+export { reserveLeaguePartition, runLeaguePartition } from './league/league-runner.ts';
+export {
+  progressPage,
+  validateProgressPage,
+  verifyLeagueProgress,
+} from './league/league-progress.ts';
+export { checkLeague, type LeagueCheckInput } from './league/league-check.ts';

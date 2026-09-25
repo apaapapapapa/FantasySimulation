@@ -3,6 +3,7 @@ export default defineConfig({
   pack: {
     entry: {
       batch: 'src/batch.ts',
+      league: 'src/league.ts',
       publication: 'src/publication.ts',
       'battle-worker': 'src/battle-worker.ts',
     },
