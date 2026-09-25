@@ -15,6 +15,7 @@ import {
   type PublicMatchPage,
   type PublicCatalog,
   type BundleReceipt,
+  type ReplayManifest,
   type LeagueFileRef,
 } from '@fantasy/domain/spatial';
 import { BattleBundles } from '@fantasy/api/artifacts';
@@ -29,10 +30,13 @@ import {
   type PublicationFile,
 } from './publication-files.ts';
 
+import { publicationConcurrency, publicationPool } from './publication-pool.ts';
+
 export type PublicationRead = (key: string, limit: number) => Promise<Buffer>;
 
 /** Traverse all retained generations, validating content-addressed references before any mutation. */
-export async function publicationGraph(source: PublicationRead) {
+export async function publicationGraph(source: PublicationRead, concurrency = 1) {
+  publicationConcurrency(concurrency);
   const files = new Map<string, PublicationFile>(),
     sources = new Set<string>();
   const results = new Map<string, string>(),
@@ -81,6 +85,53 @@ export async function publicationGraph(source: PublicationRead) {
     assertPublicData(value);
     add({ key, bytes: bytes.length, checksum: sha256(bytes) });
     return value;
+  }
+  const bundles = new Map<string, Promise<{ receipt: BundleReceipt; manifest: ReplayManifest }>>();
+  function bundle(objectHash: string) {
+    let promise = bundles.get(objectHash);
+    if (!promise) {
+      promise = (async () => {
+        const objectPrefix = `objects/${publicHashName(objectHash)}/`;
+        const receiptData = await read(objectPrefix + 'receipt.json', 65536);
+        const receipt = receiptIdentity(objectPrefix + 'receipt.json', receiptData, results);
+        receipts.set(receipt.objectHash, receipt);
+        assertPublicData(receipt);
+        add({
+          key: objectPrefix + 'receipt.json',
+          bytes: receiptData.length,
+          checksum: sha256(receiptData),
+        });
+        const manifestBytes = await read(objectPrefix + 'manifest.json', MAX_REPLAY_MANIFEST_BYTES);
+        if (sha256(manifestBytes) !== receipt.manifestChecksum)
+          throw new Error('Manifest checksum mismatch');
+        const manifest = ReplayManifestSchema.parse(
+          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes)),
+        );
+        assertPublicData(manifest);
+        add({
+          key: objectPrefix + 'manifest.json',
+          bytes: manifestBytes.length,
+          checksum: receipt.manifestChecksum,
+        });
+        for (const artifact of [...manifest.chunks, ...manifest.checkpoints]) {
+          const file = {
+            key: objectPrefix + artifact.file,
+            bytes: artifact.bytes,
+            checksum: artifact.checksum,
+          };
+          if (!files.has(file.key)) {
+            const data = await read(file.key, file.bytes);
+            if (data.length !== file.bytes || sha256(data) !== file.checksum)
+              throw new Error('Retained artifact checksum/size mismatch');
+          }
+          add(file);
+        }
+        objects.add(receipt.objectHash);
+        return { receipt, manifest };
+      })();
+      bundles.set(objectHash, promise);
+    }
+    return promise;
   }
   const current = await json('catalog/current.json', PublicCatalogCurrentSchema);
   let hash: string | null = current.catalogHash,
@@ -141,32 +192,18 @@ export async function publicationGraph(source: PublicationRead) {
           if (row.slotId <= lastSlot) throw new Error('Public rows are not globally ordered');
           lastSlot = row.slotId;
           counts[row.state]++;
-          if (!row.replay) continue;
-          const objectPrefix = `objects/${publicHashName(row.replay.objectHash)}/`;
-          const receiptData = await read(objectPrefix + 'receipt.json', row.replay.receiptBytes);
+        }
+        await publicationPool(page.rows, concurrency, async (row) => {
+          if (!row.replay) return;
+          const { receipt, manifest } = await bundle(row.replay.objectHash);
+          const reference = files.get(
+            `objects/${publicHashName(row.replay.objectHash)}/receipt.json`,
+          )!;
           if (
-            receiptData.length !== row.replay.receiptBytes ||
-            sha256(receiptData) !== row.replay.receiptChecksum
+            reference.bytes !== row.replay.receiptBytes ||
+            reference.checksum !== row.replay.receiptChecksum
           )
             throw new Error('Receipt checksum mismatch');
-          const receipt = receiptIdentity(objectPrefix + 'receipt.json', receiptData, results);
-          receipts.set(receipt.objectHash, receipt);
-          assertPublicData(receipt);
-          add({
-            key: objectPrefix + 'receipt.json',
-            bytes: receiptData.length,
-            checksum: sha256(receiptData),
-          });
-          const manifestBytes = await read(
-            objectPrefix + 'manifest.json',
-            MAX_REPLAY_MANIFEST_BYTES,
-          );
-          if (sha256(manifestBytes) !== receipt.manifestChecksum)
-            throw new Error('Manifest checksum mismatch');
-          const manifest = ReplayManifestSchema.parse(
-            JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes)),
-          );
-          assertPublicData(manifest);
           assertPublicReplayBinding(row, receipt, manifest);
           if (
             (!row.reused && canonicalJson(receipt.source) !== canonicalJson(set.source)) ||
@@ -175,26 +212,7 @@ export async function publicationGraph(source: PublicationRead) {
           )
             throw new Error('Public source identity mismatch');
           sources.add(receipt.source.sha);
-          add({
-            key: objectPrefix + 'manifest.json',
-            bytes: manifestBytes.length,
-            checksum: receipt.manifestChecksum,
-          });
-          for (const artifact of [...manifest.chunks, ...manifest.checkpoints]) {
-            const file = {
-              key: objectPrefix + artifact.file,
-              bytes: artifact.bytes,
-              checksum: artifact.checksum,
-            };
-            if (!files.has(file.key)) {
-              const data = await read(file.key, file.bytes);
-              if (data.length !== file.bytes || sha256(data) !== file.checksum)
-                throw new Error('Retained artifact checksum/size mismatch');
-            }
-            add(file);
-          }
-          objects.add(receipt.objectHash);
-        }
+        });
       }
       if (canonicalJson(counts) !== canonicalJson(set.counts))
         throw new Error('Public state counts mismatch');

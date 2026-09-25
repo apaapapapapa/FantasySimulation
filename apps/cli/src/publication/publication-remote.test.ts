@@ -69,33 +69,37 @@ async function setup() {
   };
   return { root, directory, fixture, store, options };
 }
-it('publishes references before current, verifies all sizes, and repeats without writes', async () => {
-  const { directory, store, options } = await setup();
-  const result = await publishPublication(directory, store, options);
-  expect(result.status).toBe('verified');
-  expect(store.writes.at(-1)).toBe('catalog/current.json');
-  const prefixes = store.writes.map((key) =>
-    key.startsWith('objects/')
-      ? 0
-      : key.startsWith('sets/')
-        ? key.endsWith('/set.json')
-          ? 2
-          : 1
-        : key === 'catalog/current.json'
-          ? 4
-          : 3,
-  );
-  expect(prefixes).toEqual([...prefixes].sort((a, b) => a - b));
-  const graph = await localPublicationGraph(directory);
-  expect(store.objects.size).toBe(graph.files.size);
-  const count = store.writes.length;
-  expect(await publishPublication(directory, store, options)).toMatchObject({
-    status: 'verified',
-    writes: 0,
-    addedFiles: 0,
-  });
-  expect(store.writes).toHaveLength(count);
-});
+it.each([1, 4])(
+  'publishes with concurrency %s before current, verifies all sizes, and repeats without writes',
+  async (concurrency) => {
+    const { directory, store, options } = await setup();
+    options.concurrency = concurrency;
+    const result = await publishPublication(directory, store, options);
+    expect(result.status).toBe('verified');
+    expect(store.writes.at(-1)).toBe('catalog/current.json');
+    const prefixes = store.writes.map((key) =>
+      key.startsWith('objects/')
+        ? 0
+        : key.startsWith('sets/')
+          ? key.endsWith('/set.json')
+            ? 2
+            : 1
+          : key === 'catalog/current.json'
+            ? 4
+            : 3,
+    );
+    expect(prefixes).toEqual([...prefixes].sort((a, b) => a - b));
+    const graph = await localPublicationGraph(directory);
+    expect(store.objects.size).toBe(graph.files.size);
+    const count = store.writes.length;
+    expect(await publishPublication(directory, store, options)).toMatchObject({
+      status: 'verified',
+      writes: 0,
+      addedFiles: 0,
+    });
+    expect(store.writes).toHaveLength(count);
+  },
+);
 it.each(['viewer', 'capacity', 'writes', 'transfer', 'worker', 'transport'] as const)(
   'refuses %s preflight with zero writes',
   async (kind) => {

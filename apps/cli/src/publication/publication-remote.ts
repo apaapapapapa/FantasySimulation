@@ -13,6 +13,7 @@ import {
   type PublicationFile,
 } from './publication-files.ts';
 import { sha256 } from '@fantasy/api/artifacts';
+import { publicationConcurrency, publicationPool } from './publication-pool.ts';
 
 export interface RemoteObject {
   data: Buffer;
@@ -34,6 +35,7 @@ export interface PublishOptions {
   maxWrites?: number;
   maxTransferBytes?: number;
   maxWorkerRequests?: number;
+  concurrency?: number;
   dryRun?: boolean;
   observe?(report: PublishReport): void;
 }
@@ -82,7 +84,7 @@ export class PublicationFailure extends Error {
     });
   }
 }
-/** Single administrator, sequential upload; S3 conditional writes make pointer replacement atomic. */
+/** Bounded stage barriers; S3 conditional writes make pointer replacement atomic. */
 export async function publishPublication(
   root: string,
   store: PublicationStore,
@@ -91,9 +93,10 @@ export async function publishPublication(
   let phase: PublicationPhase = 'not-committed';
   try {
     const maxBytes = limit(options.maxBytes, PUBLICATION_MAX_BYTES, PUBLICATION_MAX_BYTES);
-    const maxWrites = limit(options.maxWrites, 10000, 100000);
+    const maxWrites = limit(options.maxWrites, 10000, PUBLICATION_MAX_FILES);
     const maxTransfer = limit(options.maxTransferBytes, 256_000_000, PUBLICATION_MAX_BYTES);
     const maxWorker = limit(options.maxWorkerRequests, 200, 1000);
+    const concurrency = publicationConcurrency(options.concurrency);
     const graph = await localPublicationGraph(root);
     const compatible = async () => {
       const viewer = ViewerBuildSchema.parse(await options.viewer());
@@ -124,18 +127,20 @@ export async function publishPublication(
     }
     const inventory = await store.inventory();
     const resultHashes = new Map(graph.results);
-    for (const key of inventory.keys())
+    await publicationPool([...inventory.keys()], concurrency, async (key) => {
       if (key.endsWith('/receipt.json')) {
         const value = await store.read(key, 65536);
         if (!value) throw new Error('Remote receipt disappeared');
         receiptIdentity(key, value.data, resultHashes);
       }
+    });
     const additions: PublicationFile[] = [];
-    for (const file of graph.files.values())
+    await publicationPool([...graph.files.values()], concurrency, async (file) => {
       if (file.key !== pointer.key) {
         if (inventory.has(file.key)) await exact(store, file);
         else additions.push(file);
       }
+    });
     const selected = new Set<string>([
       pointer.key,
       `catalog/${publicHashName(graph.current.catalogHash)}.json`,
@@ -192,24 +197,30 @@ export async function publishPublication(
         throw new Error('Publication generation changed');
     };
     await sameGeneration();
-    for (const file of additions.sort(
-      (a, b) => rank(a.key) - rank(b.key) || a.key.localeCompare(b.key),
-    )) {
-      try {
-        await store.put(file.key, await publicationBytes(file), null);
-      } catch (error) {
-        // A lost response may follow a successful conditional PUT. Only identical bytes recover it.
-        try {
-          await exact(store, file);
-        } catch {
-          throw error;
-        }
-      }
+    additions.sort((a, b) => a.key.localeCompare(b.key));
+    for (let stage = 0; stage <= 4; stage++) {
+      await publicationPool(
+        additions.filter((file) => rank(file.key) === stage),
+        concurrency,
+        async (file) => {
+          try {
+            await store.put(file.key, await publicationBytes(file), null);
+          } catch (error) {
+            // A lost response may follow a successful conditional PUT. Only identical bytes recover it.
+            try {
+              await exact(store, file);
+            } catch {
+              throw error;
+            }
+          }
+        },
+      );
     }
     // All referenced immutable objects must be present before committing current.json.
-    for (const file of graph.files.values())
+    await publicationPool([...graph.files.values()], concurrency, async (file) => {
       if (file.key !== pointer.key && (await store.head(file.key)) !== file.bytes)
         throw new Error('S3 size verification failed');
+    });
     await compatible();
     await sameGeneration();
     if (!unchanged) {
@@ -228,12 +239,12 @@ export async function publishPublication(
     await exact(store, pointer);
     if ((await store.head(pointer.key)) !== pointer.bytes)
       throw new Error('S3 pointer verification failed');
-    for (const key of selected) {
+    await publicationPool([...selected], concurrency, async (key) => {
       const file = graph.files.get(key)!,
         data = await options.worker(key, file.bytes);
       if (data.length !== file.bytes || sha256(data) !== file.checksum)
         throw new Error('Worker read-back checksum mismatch');
-    }
+    });
     return { status: 'verified' as const, ...report };
   } catch (error) {
     throw new PublicationFailure(phase, error);

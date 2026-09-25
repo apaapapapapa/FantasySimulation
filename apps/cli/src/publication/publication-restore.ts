@@ -5,13 +5,16 @@ import { publicationGraph, localPublicationGraph } from './publication-graph.ts'
 import { publicationDirectory, PUBLICATION_MAX_BYTES } from './publication-files.ts';
 import { readBoundedFile, writeDurableFile } from '@fantasy/api/artifacts';
 import type { PublicationStore } from './publication-remote.ts';
+import { publicationConcurrency } from './publication-pool.ts';
 
 /** Recover retained generations on a fresh runner; never mutate R2 or overwrite local files. */
 export async function restorePublication(
   directory: string,
   store: Pick<PublicationStore, 'read'>,
   maxDownloadBytes = 256_000_000,
+  concurrency = 1,
 ) {
+  publicationConcurrency(concurrency);
   if (
     !Number.isSafeInteger(maxDownloadBytes) ||
     maxDownloadBytes < 1 ||
@@ -23,18 +26,24 @@ export async function restorePublication(
   await mkdir(root); // Exclusive ownership: an existing directory/file/symlink is never removed.
   try {
     let downloadBytes = 0,
+      reservedBytes = 0,
       reads = 0;
     const remote = async (key: string, limit: number) => {
-      const remaining = maxDownloadBytes - downloadBytes;
+      const remaining = maxDownloadBytes - downloadBytes - reservedBytes;
       if (remaining < 1) throw new Error('Publication restore byte limit');
       const allowed = Math.min(limit, remaining);
+      reservedBytes += allowed;
       reads++;
-      const value = await store.read(key, allowed);
-      if (value) {
-        if (value.data.length > allowed) throw new Error('Publication restore byte limit');
-        downloadBytes += value.data.length;
+      try {
+        const value = await store.read(key, allowed);
+        if (value) {
+          if (value.data.length > allowed) throw new Error('Publication restore byte limit');
+          downloadBytes += value.data.length;
+        }
+        return value;
+      } finally {
+        reservedBytes -= allowed;
       }
-      return value;
     };
     const pointer = 'catalog/current.json';
     const before = await remote(pointer, MAX_PUBLIC_JSON_BYTES);
@@ -54,7 +63,7 @@ export async function restorePublication(
       await writeDurableFile(path, value.data);
       downloaded.add(key);
       return value.data;
-    });
+    }, concurrency);
     // Reuse bundle verification and expanded-gzip privacy checks, not just remote checksums.
     await localPublicationGraph(root);
     const after = await remote(pointer, MAX_PUBLIC_JSON_BYTES);

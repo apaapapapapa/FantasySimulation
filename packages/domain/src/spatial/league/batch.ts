@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PUBLICATION_MAX_FILES } from '../publication/index.ts';
 import { HashSchema, IdSchema } from '../contracts.ts';
 import { BatchIndexSchema, BatchInputSchema, ExecutionSourceSchema } from '../batch.ts';
 import { LeagueRevisionSchema, LeagueSlotSchema } from '../league.ts';
@@ -94,7 +95,7 @@ export const LeagueEstimateInputSchema = z.strictObject({
   estimatedBytesPerMatch: BatchInputSchema.shape.estimatedBytesPerMatch,
   estimatedFilesPerMatch: z.number().int().min(2).max(10000),
   retainedBytes: z.number().int().min(0).max(8000000000),
-  retainedFiles: z.number().int().min(0).max(100000),
+  retainedFiles: z.number().int().min(0).max(PUBLICATION_MAX_FILES),
   maxReadRequests: z.number().int().min(1).max(10000000),
   maxWriteRequests: z.number().int().min(1).max(1000000),
   usedReadRequests: z.number().int().min(0).max(10000000),
