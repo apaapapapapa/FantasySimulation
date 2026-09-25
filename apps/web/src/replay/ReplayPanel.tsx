@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { openReplay, type OpenedReplay, type ReplaySource } from './open-replay.ts';
-import { ReplayPlayer, type ReplayFrame } from './replay-player.ts';
+import type { ReplaySource } from './open-replay.ts';
+import type { ReplayFrame } from './replay-player.ts';
+import { openReplaySession, type ReplaySession } from './replay-session.ts';
 import { buildSceneModel } from './scene-model.ts';
 import { Scene2D } from './Scene2D.tsx';
 import { replayErrorText as errorText } from './load-message.ts';
@@ -14,7 +15,7 @@ import { ReplayResources } from './ReplayResources.tsx';
 const Scene = lazy(() => import('./Scene.tsx'));
 
 export function ReplayPanel({ source }: { source: ReplaySource }) {
-  const [replay, setReplay] = useState<OpenedReplay | null>(null);
+  const [replay, setReplay] = useState<ReplaySession | null>(null);
   const [frame, setFrame] = useState<ReplayFrame | null>(null);
   const state = frame?.checkpoint;
   const [target, setTarget] = useState(0);
@@ -24,10 +25,7 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
   const [speed, setSpeed] = useState(1);
   const [cameraMode, setCameraMode] = useState<CameraMode>('overview');
   const [overlays, setOverlays] = useState(NO_OVERLAYS);
-  const player = useMemo(
-    () => (replay?.manifest.end.kind === 'result' ? new ReplayPlayer(replay) : null),
-    [replay],
-  );
+  const player = replay?.manifest.end.kind === 'result' ? replay : null;
   const model = useMemo(
     () =>
       replay && frame
@@ -70,7 +68,7 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
     setError('');
     setLoading(true);
     setPlaying(false);
-    void openReplay(source, { signal: controller.signal })
+    void openReplaySession(source, controller.signal)
       .then((opened) => {
         if (!controller.signal.aborted) {
           setReplay(opened);

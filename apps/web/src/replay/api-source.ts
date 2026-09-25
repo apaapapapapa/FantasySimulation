@@ -41,6 +41,7 @@ export function apiReplaySource(
     }
   }
   return {
+    ...(!options.fetch ? { location: { mode: 'api' as const, id, base: options.base ?? '' } } : {}),
     async manifest(signal) {
       const bytes = await get(root, 'application/json', MAX_REPLAY_MANIFEST_BYTES, signal);
       let value: unknown;

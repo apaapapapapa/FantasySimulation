@@ -8,21 +8,26 @@ import {
 import { publicFixtures } from '../publication-fixtures.ts';
 
 export const files = publicFixtures(process.cwd());
-const pages = [...files]
-  .filter(([key]) => key.startsWith('sets/') && !key.endsWith('/set.json'))
-  .map(([key, value]) => ({
-    key,
-    page: PublicMatchPageSchema.parse(JSON.parse(value.toString())),
-  }));
-export function match(state: 'complete' | 'truncated' | 'unresolved') {
+export function match(
+  state: 'complete' | 'truncated' | 'unresolved',
+  archive = files,
+  accept: (manifest: ReturnType<typeof ReplayManifestSchema.parse>) => boolean = () => true,
+) {
+  const pages = [...archive]
+    .filter(([key]) => key.startsWith('sets/') && !key.endsWith('/set.json'))
+    .map(([key, value]) => ({
+      key,
+      page: PublicMatchPageSchema.parse(JSON.parse(value.toString())),
+    }));
   for (const { key, page } of pages) {
     const row = page.rows.find((row) => row.state === state);
     if (row?.replay) {
       const setHash = `sha256:${key.split('/')[1]}`;
       const prefix = `objects/${publicHashName(row.replay.objectHash)}/`;
       const manifest = ReplayManifestSchema.parse(
-        JSON.parse(files.get(prefix + 'manifest.json')!.toString()),
+        JSON.parse(archive.get(prefix + 'manifest.json')!.toString()),
       );
+      if (!accept(manifest)) continue;
       return {
         row,
         setHash,

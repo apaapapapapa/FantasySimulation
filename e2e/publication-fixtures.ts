@@ -13,8 +13,11 @@ import {
 } from '@fantasy/domain/spatial';
 
 /** Fixed exported bytes, independent of the API/SQLite/engine and browser adapter. */
-export function publicFixtures(root: string) {
-  const directory = join(root, 'apps/web/test-fixtures/publication');
+export function publicFixtures(
+  root: string,
+  name: 'publication' | 'publication-long' = 'publication',
+) {
+  const directory = join(root, 'apps/web/test-fixtures', name);
   const archive = readFileSync(join(directory, 'files.json.gz'));
   const provenance: unknown = JSON.parse(readFileSync(join(directory, 'provenance.json'), 'utf8'));
   if (

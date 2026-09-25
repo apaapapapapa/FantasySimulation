@@ -106,11 +106,11 @@ test('static-partials', async ({ page }) => {
 test('static-errors', async ({ page }) => {
   const key = complete.prefix + complete.manifest.chunks[0]!.file;
   const pattern = `**/fixtures/${key}`;
-  for (const failure of ['missing', 'corrupt', 'oversize', 'http-gzip']) {
+  for (const failure of ['missing', 'corrupt', 'oversize', 'http-gzip', 'limit', 'unavailable']) {
     await page.route(pattern, (route) =>
       route.fulfill(
-        failure === 'missing'
-          ? { status: 404, body: '' }
+        ['missing', 'limit', 'unavailable'].includes(failure)
+          ? { status: failure === 'limit' ? 429 : failure === 'unavailable' ? 500 : 404, body: '' }
           : {
               status: 200,
               headers: {

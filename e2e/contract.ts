@@ -21,6 +21,8 @@ export const UI_STATIC_CASES = [
   'static-stale-navigation',
   'static-webgl-fallback',
   'static-network-boundary',
+  'static-long-replay',
+  'static-timeline-overlays',
 ] as const;
 export const UI_FAULTS = ['startup', 'timeout', 'crash'] as const;
 export type UiScenario = 'smoke' | 'static' | (typeof UI_FAULTS)[number];
