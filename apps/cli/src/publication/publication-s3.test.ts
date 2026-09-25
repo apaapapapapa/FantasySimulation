@@ -1,6 +1,7 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { PublicationS3, type S3PublicationBudget } from './publication-s3.ts';
+import { PUBLICATION_CONTROL_KEY } from './publication-files.ts';
 
 const stores: PublicationS3[] = [];
 afterEach(() => {
@@ -79,6 +80,43 @@ it('bounds streamed objects, distinguishes absence and strips vendor/credential 
   send.mockRejectedValueOnce({ $metadata: { httpStatusCode: 403 }, message: 'fixture-secret' });
   await expect(store.head('catalog/current.json')).rejects.toThrow('HTTP 403');
   await expect(store.remove('catalog/current.json')).rejects.toThrow('Cannot delete');
+});
+
+it('allows only explicit private-ledger operations and includes its bytes in inventory', async () => {
+  const { store, send } = fixture({ maxAttempts: 1 });
+  send.mockResolvedValue({} as never);
+  const data = Buffer.from(
+    JSON.stringify({
+      schemaVersion: 1,
+      month: '2026-09',
+      sequence: 1,
+      leases: [
+        {
+          id: 'run-1',
+          sourceSha: 'a'.repeat(40),
+          day: '2026-09-25',
+          classA: 600,
+          classB: 10,
+          worker: 0,
+        },
+      ],
+    }),
+  );
+  await expect(store.put(PUBLICATION_CONTROL_KEY, data, null)).rejects.toThrow();
+  await expect(store.read(PUBLICATION_CONTROL_KEY, 65536)).rejects.toThrow();
+  expect(send).not.toHaveBeenCalled();
+  await store.putControl(data, null);
+  const command = send.mock.calls[0]![0] as unknown as { input: unknown };
+  expect(command.input).toMatchObject({
+    Key: PUBLICATION_CONTROL_KEY,
+    IfNoneMatch: '*',
+    CacheControl: 'private, no-store',
+  });
+  send.mockResolvedValueOnce({
+    Contents: [{ Key: PUBLICATION_CONTROL_KEY, Size: data.length }],
+  } as never);
+  expect((await store.inventory()).get(PUBLICATION_CONTROL_KEY)).toBe(data.length);
+  await expect(store.remove(PUBLICATION_CONTROL_KEY)).rejects.toThrow();
 });
 
 it('requires explicit league limits and charges failed requests before the next admission', async () => {

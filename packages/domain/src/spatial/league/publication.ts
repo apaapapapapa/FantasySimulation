@@ -95,3 +95,21 @@ export const PublicLeagueWorkSchema = z.strictObject({
     .max(512),
 });
 export type PublicLeagueWork = z.infer<typeof PublicLeagueWorkSchema>;
+
+/** Private operational ledger, never accepted by the public Reader key allowlist. */
+export const LeagueUsageLeaseSchema = z.strictObject({
+  id: IdSchema,
+  sourceSha: LeagueRevisionSchema.shape.sourceSha,
+  day: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/),
+  classA: z.number().int().min(0).max(900000),
+  classB: z.number().int().min(0).max(9000000),
+  worker: z.number().int().min(0).max(90000),
+});
+export type LeagueUsageLease = z.infer<typeof LeagueUsageLeaseSchema>;
+export const LeagueUsageSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  month: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/),
+  sequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+  leases: z.array(LeagueUsageLeaseSchema).min(1).max(256),
+});
+export type LeagueUsage = z.infer<typeof LeagueUsageSchema>;

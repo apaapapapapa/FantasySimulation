@@ -1,0 +1,42 @@
+name: Verified league artifacts
+description: Same-run immutable artifact IDs and SHA256, with explicit public file allowlists
+inputs:
+  operation:
+    required: true
+    description: prepare, input, result or aggregate
+  artifact-id:
+    default: ''
+    description: Expected immutable artifact ID
+  digest:
+    default: ''
+    description: Expected archive SHA256
+  partition:
+    default: ''
+    description: Matrix partition index
+outputs:
+  matrix:
+    value: ${{ steps.transfer.outputs.matrix }}
+    description: Immutable partition input references
+  baseline-id:
+    value: ${{ steps.transfer.outputs.baseline-id }}
+    description: Immutable baseline artifact ID
+  baseline-digest:
+    value: ${{ steps.transfer.outputs.baseline-digest }}
+    description: Baseline archive SHA256
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      id: transfer
+      env:
+        LEAGUE_ARTIFACT_OPERATION: ${{ inputs.operation }}
+        LEAGUE_ARTIFACT_ID: ${{ inputs.artifact-id }}
+        LEAGUE_ARTIFACT_DIGEST: ${{ inputs.digest }}
+        LEAGUE_PARTITION: ${{ inputs.partition }}
+      with:
+        script: |
+          const {execFileSync} = require('node:child_process');
+          execFileSync('node', ['--import', 'tsx', '../../scripts/league-artifacts.ts'], {
+            cwd: `${process.env.GITHUB_WORKSPACE}/apps/cli`, env: process.env,
+            stdio: 'inherit', timeout: 3600000
+          });

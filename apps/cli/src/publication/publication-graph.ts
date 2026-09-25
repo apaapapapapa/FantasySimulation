@@ -47,6 +47,9 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
   const leagues = new Map<string, NonNullable<PublicCatalog['leagues']>[number]>();
   const leagueWork = new Map<string, LeagueFileRef>();
   const catalogs: PublicCatalog[] = [];
+  let latestWork: Awaited<
+    ReturnType<typeof import('../league/league-graph.ts').validatePublicLeagueWork>
+  > | null = null;
   let totalBytes = 0,
     reads = 0,
     readBytes = 0;
@@ -273,8 +276,19 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
         throw new Error('Catalog rewinds the durable league journal');
       previousWork = currentWork;
     }
+    latestWork = catalog?.leagueWork ? workStates.get(catalog.leagueWork.hash)! : null;
   }
-  return { current, catalog: catalog!, files, sources, results, objects, sets, totalBytes };
+  return {
+    current,
+    catalog: catalog!,
+    files,
+    sources,
+    results,
+    objects,
+    sets,
+    totalBytes,
+    latestWork,
+  };
 }
 
 export async function localPublicationGraph(root: string) {

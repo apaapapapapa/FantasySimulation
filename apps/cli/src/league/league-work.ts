@@ -44,7 +44,9 @@ export async function buildLeagueWork(
     const expected = await reserveLeaguePartition(
       plan,
       partition,
-      prior.records,
+      partition.slots.flatMap((slot) =>
+        records.has(slot.simulationHash) ? [records.get(slot.simulationHash)!] : [],
+      ),
       executionId,
       retained,
     );

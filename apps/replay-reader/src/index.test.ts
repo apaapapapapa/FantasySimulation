@@ -36,6 +36,7 @@ it('preserves compressed bytes and serves explicit types, immutable caching, COR
 it.each([
   ['', 'GET', 404],
   ['objects/', 'GET', 404],
+  ['control/league-usage.json', 'GET', 404],
   ['catalog/current.json?list-type=2', 'GET', 404],
   ['objects/%2e%2e%2fsecret', 'GET', 404],
   ['https://other.example/file', 'GET', 404],
