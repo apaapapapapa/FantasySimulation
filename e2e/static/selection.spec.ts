@@ -13,6 +13,7 @@ for (const generation of selectionGenerations) {
       await route.fulfill({
         status: body ? 200 : 404,
         contentType: key.endsWith('.gz') ? 'application/gzip' : 'application/json',
+        headers: { 'access-control-allow-origin': new URL(page.url()).origin },
         body: body ?? '',
       });
     });
