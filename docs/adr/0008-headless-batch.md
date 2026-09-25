@@ -7,8 +7,8 @@ Historical data is read-only; execution reconstructs current engine/source/diges
 
 ## Publication v1
 
-Domain spatial/publication.ts owns strict v1 schemas (unknown fields/versions fail), no I/O.
-Web owns ReplaySource/OpenedReplay. Keys use SHA-256:
+Domain spatial/publication.ts: strict v1 schemas, no I/O, reject unknown fields/versions.
+Web: ReplaySource/OpenedReplay. SHA-256 keys:
 
 ```text
 catalog/current.json                 mutable catalogHash/decoded-byte pointer
@@ -30,8 +30,8 @@ no playback. Preserve IDs/pending rows; fixed reasons exclude raw errors/cancell
 Saved-batch export reuses batch check without SQLite/engine/Git/network, binding
 plan/index/receipt/revisions/manifest/rows. Allowlist fields; scan JSON/expanded gzip for
 absolute paths/private fields/known credentials. Arbitrary secrets remain the administrator's
-responsibility. Exclude .work/DBs/environment/drafts/arbitrary files, symlinks/non-layout keys;
-separate I/O directories. Preflight all collisions/capacity. Reuse identical bytes;
+responsibility. Exclude .work/DBs/environment/drafts/symlinks/non-layout keys; separate I/O.
+Preflight collisions/capacity. Reuse identical bytes;
 conflicting bytes/definitive resultHash for one simulation fail. Retain every generation/link.
 Hard limits: 8,000,000,000 bytes including pointer staging; 500,000 files (revision below).
 
@@ -51,15 +51,17 @@ operations on error. Cached bundles still validate every reference.
 ## Cloud operation
 
 User-approved [smartphone operation](../development/cloud-publication.md), no owner PC.
-The existing [workflow](../../.github/workflows/publication.yml) stays manual/serialized,
-exact successful main CI/ci-gate SHA rechecked after Environment protection. Calculation/export
-is secret-free; pass plan/index/objects by same-run artifact ID. R2 keys belong only to the
+[Manual serialized workflow](../../.github/workflows/publication.yml): recheck exact successful
+main CI/ci-gate SHA after Environment protection. Secret-free calculation/export passes
+plan/index/objects by same-run artifact ID. R2 keys belong only to the
 publication step in main-restricted Environment r2-publication, never repository-wide secrets,
 agents/chat/logs/source/Pages. Worker deployment has separate cloud authorization.
 
 Restore into a new directory using shared graph/bundle/expanded-privacy checks. Reserve in-flight
 bytes before reads; recheck present/absent pointer; failure removes only the owned directory.
-Default/manual restore/upload: 256MB; opt-in <=8GB. Conditional PUT guards other processes.
+Default/manual restore/upload: 256MB. `--league-transfer` on publish/upload/restore selects
+8GB/500k writes/1,000 Worker reads/16 parallel operations and the one-attempt S3 profile above;
+existing environment limits may lower these defaults. Conditional PUT guards other processes.
 --require-complete-input rejects current partial input before S3 access; historical partial rows
 stay visible without exit 2. Otherwise CLI partial-row semantics remain.
 
@@ -76,9 +78,9 @@ Free 100k/day account-wide. Monitor plans/usage/alerts; stop on budget/quota err
 actual costs, bytes/requests, URL/build, browsers/recovery/repeat publication. Mocks do not suffice;
 project counters cannot cap unrelated account traffic.
 
-[Pinned production acceptance](https://github.com/apaapapapapa/FantasySimulation/blob/feb61f3e46e51dc79aeb613f9bc26ec99212f29b/docs/adr/0008-headless-batch.md)
-retains deployed URLs, recovery/mobile checks, owner-approved token scope, actual paid plans,
-invoices and alerts (not caps). Two matches: 34 files/170,759 bytes; repeat transfer 0.
+[Production evidence](https://github.com/apaapapapapa/FantasySimulation/blob/feb61f3e46e51dc79aeb613f9bc26ec99212f29b/docs/adr/0008-headless-batch.md):
+URLs/recovery/mobile, approved token scope, paid plans/invoices/alerts (not caps);
+2 matches/34 files/170,759 bytes; repeat transfer 0.
 
 ## League publication v1 (Refs #134)
 
@@ -99,8 +101,8 @@ Reject missing history, changed reservations and rollback. Actions/official acce
 
 ## Measured capacity revision (2026-09-25)
 
-[Local pilot](../measurements/p5-league-pilot-linux.json): 4 characters/5 fields/2 placements/1 trial,
-60 wins, sequential 32/28 partitions/2 Workers: 63,382ms, public 926 files/6,678,394 bytes;
+[Pilot](../measurements/p5-league-pilot-linux.json): 4 characters/5 fields/2 placements/1 trial,
+60 wins; 32/28 sequential partitions/2 Workers: 63,382ms, 926 files/6,678,394 bytes;
 per-object max 40 files/312,213 bytes. Observed means imply ~115k files/818MB for 7,600,
 exceeding 100k/256MB. This is not a worst-case bound or Actions/production acceptance.
 
@@ -108,4 +110,4 @@ Reviewed file cap: 500k including history; keep 8GB storage, <=1,000 slots/plan,
 Estimate: 128 slots/plan, 4s/600kB/44 files per computation, 24MB metadata/partition;
 60 partitions project 6GB/335,183 files plus measured retention. Add persistent request usage;
 reject excess before admission. Actual limits stop underestimates; never expand automatically.
-League workflow opts into its budget. Monthly reservations/official acceptance remain in #134.
+League workflow opts into its budget.

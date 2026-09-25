@@ -32,6 +32,7 @@ async function main() {
     options: {
       'dry-run': { type: 'boolean' },
       'require-complete-input': { type: 'boolean' },
+      'league-transfer': { type: 'boolean' },
       confirm: { type: 'boolean' },
     },
   });
@@ -39,6 +40,7 @@ async function main() {
   if (
     !input ||
     (values['require-complete-input'] && command !== 'publish') ||
+    (values['league-transfer'] && command === 'prune') ||
     !(
       (command === 'publish' &&
         output &&
@@ -52,7 +54,7 @@ async function main() {
     )
   )
     throw new Error(
-      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] [--require-complete-input] | upload public-dir [--dry-run] | restore new-public-dir | prune public-dir [--confirm]',
+      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] [--require-complete-input] | upload public-dir [--dry-run] | restore new-public-dir | prune public-dir [--confirm]. publish/upload/restore accept --league-transfer.',
     );
   const root = resolve(command === 'publish' ? output! : input),
     lock = root + '.remote-lock';
@@ -72,19 +74,34 @@ async function main() {
       if (values['require-complete-input'] && !exported.complete)
         throw new Error('The current publication input must be complete');
     }
-    store = new PublicationS3({
-      accountId: required('R2_ACCOUNT_ID'),
-      bucket: required('R2_BUCKET'),
-      accessKeyId: required('R2_ACCESS_KEY_ID'),
-      secretAccessKey: required('R2_SECRET_ACCESS_KEY'),
-    });
+    const league = values['league-transfer'] ?? false;
+    store = new PublicationS3(
+      {
+        accountId: required('R2_ACCOUNT_ID'),
+        bucket: required('R2_BUCKET'),
+        accessKeyId: required('R2_ACCESS_KEY_ID'),
+        secretAccessKey: required('R2_SECRET_ACCESS_KEY'),
+      },
+      league
+        ? {
+            maxRequests: 2_000_000,
+            maxClassARequests: 900_000,
+            maxClassBRequests: 2_000_000,
+            deadlineMs: 3_600_000,
+            maxAttempts: 1,
+          }
+        : undefined,
+    );
     if (command === 'restore')
       console.log(
         canonicalJson(
           await restorePublication(
             root,
             store,
-            Number(process.env.PUBLICATION_MAX_RESTORE_BYTES ?? 256_000_000),
+            Number(
+              process.env.PUBLICATION_MAX_RESTORE_BYTES ?? (league ? 8_000_000_000 : 256_000_000),
+            ),
+            league ? 16 : 1,
           ),
         ),
       );
@@ -100,9 +117,14 @@ async function main() {
         ancestor: (source, viewer) => ancestorOf(source, viewer, repository),
         dryRun: values['dry-run'] ?? false,
         maxBytes: Number(process.env.PUBLICATION_MAX_BYTES ?? 8_000_000_000),
-        maxWrites: Number(process.env.PUBLICATION_MAX_WRITES ?? 10000),
-        maxTransferBytes: Number(process.env.PUBLICATION_MAX_TRANSFER_BYTES ?? 256_000_000),
-        maxWorkerRequests: Number(process.env.PUBLICATION_MAX_WORKER_REQUESTS ?? 200),
+        maxWrites: Number(process.env.PUBLICATION_MAX_WRITES ?? (league ? 500000 : 10000)),
+        maxTransferBytes: Number(
+          process.env.PUBLICATION_MAX_TRANSFER_BYTES ?? (league ? 8_000_000_000 : 256_000_000),
+        ),
+        maxWorkerRequests: Number(
+          process.env.PUBLICATION_MAX_WORKER_REQUESTS ?? (league ? 1000 : 200),
+        ),
+        concurrency: league ? 16 : 1,
         observe: (report) => console.log(canonicalJson({ phase: 'preflight', ...report })),
       });
       console.log(canonicalJson(result));
