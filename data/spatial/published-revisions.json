@@ -581,9 +581,15 @@
     },
     {
       "kind": "ruleset",
+      "id": "standard-engagement-v1",
+      "revision": 1,
+      "contentHash": "sha256:e86502fcae5fd6a57d147a0230898e2ac3425d088da6a4ebd510062fe61ade3d"
+    },
+    {
+      "kind": "ruleset",
       "id": "standard-tactics-v2",
       "revision": 1,
-      "contentHash": "sha256:6f2c5c8a3feba3fbf81ad1e86748d1f98d1c04efb8e20e8a20de7ad9432987e0"
+      "contentHash": "sha256:0ddc0ff66a1e5950a36d0b5ec1798b40fede3af99599f1438abcd3dd499a409c"
     }
   ]
 }

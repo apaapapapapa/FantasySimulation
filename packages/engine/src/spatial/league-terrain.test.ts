@@ -22,7 +22,7 @@ const pairs = [
 it.each(fields.flatMap((scenario) => pairs.map(([left, right]) => ({ scenario, left, right }))))(
   'permits actions for $left / $right in $scenario',
   async ({ scenario, left, right }) => {
-    const manifest = await catalogManifest(left, right, scenario, 1200, 42, 'standard-tactics-v1');
+    const manifest = await catalogManifest(left, right, scenario, 1200, 42, 'standard-tactics-v2');
     for (const [i, start] of leagueStarts(scenario).entries())
       Object.assign(manifest.participants[i]!, structuredClone(start));
     const run = await runBattle(manifest);

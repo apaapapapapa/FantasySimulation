@@ -84,3 +84,10 @@ export const reactionsRules = {
   contentHash: 'sha256:bbfc0d71596600236d6f391dadeb4b32b77808c4d02458be9df8652851ce35f6',
   definition: { ...simultaneousRules.definition, rulesVersion: 'spatial-v1.18' },
 } satisfies Revision;
+
+export const evaluationRules = {
+  ...simultaneousRules,
+  id: 'standard-evaluation-v1',
+  contentHash: 'sha256:70daee44c0d02f9d9fd535d7d9bbbf60e383193c27296d1a580a578f013ca2b8',
+  definition: { ...simultaneousRules.definition, rulesVersion: 'spatial-v1.19' },
+} satisfies Revision;

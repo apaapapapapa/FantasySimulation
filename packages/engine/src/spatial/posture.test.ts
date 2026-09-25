@@ -91,11 +91,12 @@ it('offers observed-threat cover only after an observed shot or cast; omitted mo
   }
 });
 it('lets visible melee actors engage around pillars instead of both sheltering until time runs out', async () => {
-  const input = (rules: string) =>
+  const input = (rules?: string) =>
     catalogManifest('guardian', 'posture-duelist-v1', 'pillars-surveyed-v1', 6000, 42, rules);
   const casts = (run: Awaited<ReturnType<typeof runBattle>>) =>
     battleEvents(run.records).filter((e) => e.kind === 'cast-start').length;
-  const sheltered = await runBattle(await input('standard-tactics-v1'));
+  // Same tactical AI with the cover option omitted, as in standard-tactics-v1.
+  const sheltered = await runBattle(await withTacticalRules(await input()));
   expect(sheltered.result.outcome).toEqual({ kind: 'draw', reason: 'time-limit' });
   expect(casts(sheltered)).toBe(0);
   const engaged = await runBattle(await input('standard-tactics-v2'));
@@ -105,13 +106,8 @@ it('lets visible melee actors engage around pillars instead of both sheltering u
 }, 60000);
 it('never turns an arena floor into cover beyond the public bounds', async () => {
   const run = await runBattle(
-    await catalogManifest(
-      'posture-archer-v1',
-      'posture-duelist-v1',
-      'flat-surveyed-v1',
-      200,
-      42,
-      'standard-tactics-v1',
+    await withTacticalRules(
+      await catalogManifest('posture-archer-v1', 'posture-duelist-v1', 'flat-surveyed-v1', 200, 42),
     ),
   );
   expect(

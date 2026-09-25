@@ -30,7 +30,7 @@ no discount. Cleanse benefit ends at predicted reapplication. Memory caps:32 thr
 
 Compatibility record: PR #104.
 
-standard-tactics-v2 (#1 P2) adds `cover: observed-threat-v1`: cover needs an observed
-projectile or enemy cast, so melee pairs stop sheltering to time-limit draws. Omitted: v1.
+spatial-v1.20 (#1 P2): standard-tactics-v2 adds `cover: observed-threat-v1` (cover needs an
+observed projectile/cast; melee pairs stop time-limit sheltering). Current base: standard-engagement-v1.
 
 P4 UI and advanced abilities remain outside this Issue.
