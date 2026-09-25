@@ -19,49 +19,39 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: 7b52751fde0403e80307184ba852c968e84b7b48
+          ref: c98b0b61c75b2b322dd12e1cbca7769ba5004446
           fetch-depth: 0
           persist-credentials: false
-      - uses: ./.github/actions/setup-project
-      - name: Wait for the actual merged main CI
+      - name: Wait for final PR CI and the requested review to settle
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           retries: 0
           script: |
             const assert = require('node:assert/strict');
-            let run;
-            for (let i = 0; i < 40; i++) {
-              const rows = (await github.rest.actions.listWorkflowRuns({owner:'apaapapapapa',repo:'FantasySimulation',workflow_id:'ci.yml',event:'push',branch:'main',head_sha:'7b52751fde0403e80307184ba852c968e84b7b48',per_page:100})).data.workflow_runs;
-              rows.sort((a,b)=>b.id-a.id || b.run_attempt-a.run_attempt);
-              run=rows[0];
-              if (run?.status==='completed') break;
-              await new Promise(resolve=>setTimeout(resolve,15000));
+            let settled = false;
+            for (let i=0;i<48;i++) {
+              const run=(await github.rest.actions.getWorkflowRun({owner:'apaapapapapa',repo:'FantasySimulation',run_id:36149609942})).data;
+              assert.equal(run.head_sha,'c98b0b61c75b2b322dd12e1cbca7769ba5004446');
+              const review=(await github.rest.issues.getComment({owner:'apaapapapapa',repo:'FantasySimulation',comment_id:5834258524})).data;
+              if(run.status==='completed' && !review.body.includes('**Running**')) {
+                assert.equal(run.conclusion,'success');
+                settled=true; break;
+              }
+              await new Promise(resolve=>setTimeout(resolve,10000));
             }
-            assert.equal(run?.head_sha,'7b52751fde0403e80307184ba852c968e84b7b48');
-            assert.equal(run?.conclusion,'success');
-            console.log('MAIN_CI_VERIFIED='+JSON.stringify({id:run.id,sha:run.head_sha,attempt:run.run_attempt}));
-      - name: Collect existing PR delivery evidence without production keys
+            assert.ok(settled,'CI or requested review did not settle within the observation budget');
+            const pr=(await github.rest.pulls.get({owner:'apaapapapapa',repo:'FantasySimulation',pull_number:136})).data;
+            assert.equal(pr.head.sha,'c98b0b61c75b2b322dd12e1cbca7769ba5004446');
+      - uses: ./.github/actions/setup-project
+      - name: Collect PR 136 exact-head evidence with the existing read-only harness
         env:
           GH_TOKEN: ${{ github.token }}
-        run: vp run harness github-snapshot apaapapapapa/FantasySimulation 129 .generated/harness/pr81
-      - name: Assess the actual reviewed PR with the existing delivery harness
-        run: |
-          node --input-type=module <<'NODE'
-          import assert from 'node:assert/strict';
-          import {readFileSync,writeFileSync} from 'node:fs';
-          import {conversationDigest} from './scripts/harness/delivery.ts';
-          const s=JSON.parse(readFileSync('.generated/harness/pr81/github-snapshot.json','utf8'));
-          const receipt={"candidateSha":"a26b32d104d410a1b355672f3cfb432fe45bbcd5","conversationDigest":"56031de27efb2ffaaca39d0ff119d7dc41dda805f4865d3b60717d5d2d90505f","reviewedPaths":["docs/adr/0008-headless-batch.md"],"completedAt":"2026-09-25T09:21:22.264Z","method":"self","summary":"Post-merge self-review: reread the complete changed ADR, its 38 additions and one deletion, both conversation comments, empty review submissions and inline threads, PR wording and actual squash merge. Head a26b32d and conversation digest are unchanged; PR updated_at advanced on merge at 08:50:42Z, so the pre-merge receipt was insufficient for merge assessment. Rechecked production evidence and the explicit billing/key-scope blockers, successful main CI including Release, and live Pages build 7b52751 with unchanged catalog. No findings; no external approval fabricated. Issue 81 remains open.","unresolvedFindings":0,"squashTitle":"docs(publication): record production acceptance and access blockers (#129)","squashBody":"Refs #81"};
-          assert.equal(conversationDigest(s),receipt.conversationDigest,'Reviewed conversation changed');
-          writeFileSync('.generated/harness/pr81/review.json',JSON.stringify(receipt,null,2));
-          NODE
-          vp run harness delivery .generated/harness/pr81/github-snapshot.json merge .generated/harness/pr81/review.json > .generated/harness/pr81/delivery-assessment.json
-          cat .generated/harness/pr81/delivery-assessment.json
+        run: vp run harness github-snapshot apaapapapapa/FantasySimulation 136 .generated/harness/pr81-final
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: issue81-delivery-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .generated/harness/pr81/
+          name: issue81-final-delivery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/pr81-final/
           include-hidden-files: true
           retention-days: 30
           if-no-files-found: error
