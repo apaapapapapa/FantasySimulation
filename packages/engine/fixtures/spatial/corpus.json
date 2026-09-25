@@ -226,19 +226,19 @@
       "name": "bounded generated battle invariants exchanges actor IDs slots positions facings and owned random streams independently of hash equality"
     },
     "worker-corpus": {
-      "file": "apps/api/src/worker-corpus.test.ts",
+      "file": "apps/api/src/jobs/worker-corpus.test.ts",
       "name": "runs the fixed corpus through one and multiple real Workers in reversed submission order"
     },
     "job-timeout": {
-      "file": "apps/api/src/battle-runtime.test.ts",
+      "file": "apps/api/src/jobs/battle-runtime.test.ts",
       "name": "persistent Worker/API orchestration does not resurrect cancellation and records a timeout as failure, never as a game draw"
     },
     "job-recovery": {
-      "file": "apps/api/src/job-store.test.ts",
+      "file": "apps/api/src/jobs/job-store.test.ts",
       "name": "persistent simulation job ownership recovers lease expiry across connections and fences stale or duplicate completion"
     },
     "job-properties": {
-      "file": "apps/api/src/job-properties.test.ts",
+      "file": "apps/api/src/jobs/job-properties.test.ts",
       "name": "compares generated ownership transitions with real SQLite and fences stale notifications"
     },
     "property-resources": {
@@ -314,7 +314,7 @@
       "name": "G-03 status combat and subjective observations retires measured damage from the previous public status context only after observing the change"
     },
     "status-storage": {
-      "file": "apps/api/src/status-dependencies.test.ts",
+      "file": "apps/api/src/db/status-dependencies.test.ts",
       "name": "persisted status transformations validates transformation references and atomically stores their immutable revision closure"
     },
     "status-resource-0": {
@@ -382,11 +382,11 @@
       "name": "resource-aware decisions and full matches keeps both exhausted actors moving even with zero recovery"
     },
     "locomotion-storage": {
-      "file": "apps/api/src/resource-persistence.test.ts",
+      "file": "apps/api/src/jobs/resource-persistence.test.ts",
       "name": "stamina through Worker, SQLite and recorded replay saves new locomotion and paid-flight definitions and reconstructs resource and grant displays"
     },
     "locomotion-published": {
-      "file": "apps/api/src/resource-persistence.test.ts",
+      "file": "apps/api/src/jobs/resource-persistence.test.ts",
       "name": "stamina through Worker, SQLite and recorded replay reads published stamina-only v1.11 displays unchanged and refuses execution under current rules"
     },
     "general-ai-priors": {
@@ -418,7 +418,7 @@
       "name": "status transaction forecasts matches outgoing status qualifiers to known skills and retains permanent grants"
     },
     "general-ai-storage": {
-      "file": "apps/api/src/ai-delivery.test.ts",
+      "file": "apps/api/src/jobs/ai-delivery.test.ts",
       "name": "observed AI delivery through persisted Workers round trips public status experience, observed conditions and weighted reasons through SQLite and replay"
     },
     "general-ai-risk-expiry": {
@@ -458,7 +458,7 @@
       "name": "simultaneous action and evasion executes and restores shooting while evading, with stamina=false"
     },
     "slot-storage": {
-      "file": "apps/api/src/simultaneous-persistence.test.ts",
+      "file": "apps/api/src/jobs/simultaneous-persistence.test.ts",
       "name": "simultaneous slots through persisted Workers preserves joint decisions, costs and replacement displays across forward and backward seeks"
     },
     "slot-rejected-gait-true": {
@@ -502,7 +502,7 @@
       "name": "stage interference and information boundary estimates own future timing and affordability while delayed cues omit private stage plans"
     },
     "stage-storage": {
-      "file": "apps/api/src/simultaneous-persistence.test.ts",
+      "file": "apps/api/src/jobs/simultaneous-persistence.test.ts",
       "name": "simultaneous slots through persisted Workers preserves staged decisions, costs and replacement displays across forward and backward seeks"
     },
     "stage-single-direct": {
@@ -650,7 +650,7 @@
       "name": "stage interference and information boundary estimates own blade coverage, force duration and motion exposure without enemy definition access"
     },
     "motion-worker-persistence": {
-      "file": "apps/api/src/simultaneous-persistence.test.ts",
+      "file": "apps/api/src/jobs/simultaneous-persistence.test.ts",
       "name": "simultaneous slots through persisted Workers preserves motion decisions, costs and replacement displays across forward and backward seeks"
     },
     "motion-catalog": {
@@ -678,7 +678,7 @@
       "name": "rotating whole-blade contact keeps the first body hit but terminates a multi-hit melee at its later wall"
     },
     "g08-01": {
-      "file": "apps/api/src/simultaneous-persistence.test.ts",
+      "file": "apps/api/src/jobs/simultaneous-persistence.test.ts",
       "name": "simultaneous slots through persisted Workers preserves reaction decisions, costs and replacement displays across forward and backward seeks"
     },
     "g08-02": {
@@ -890,7 +890,7 @@
       "name": "remembers real incoming status contacts and only delayed hit directions (transaction=true)"
     },
     "tactical-storage": {
-      "file": "apps/api/src/ai-delivery.test.ts",
+      "file": "apps/api/src/jobs/ai-delivery.test.ts",
       "name": "observed AI delivery through persisted Workers persists tactical samples through API and reproduces posture and search records headlessly"
     }
   },

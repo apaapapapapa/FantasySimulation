@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { eq } from 'drizzle-orm';
 import { SpecInputSchema, parseJson } from '@fantasy/domain/spatial';
-import { openStore } from '../src/store.ts';
-import { BattleService } from '../src/battle-service.ts';
+import { openStore } from '../src/db/store.ts';
+import { BattleService } from '../src/jobs/battle-service.ts';
 import { simulationAttempts } from '../src/db/schema.ts';
 
 // A real abruptly exited coordinator, with an explicitly expired lease, for restart acceptance.

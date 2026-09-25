@@ -68,7 +68,7 @@ the Kit CLI. There is no application-owned runner, generation declaration, check
 ledger, SQL parser or reset implementation. See [ADR 0005](../adr/0005-drizzle-kit.md).
 
 `quality:migrations` runs the actual `drizzle-kit check` command and retains failures
-in the ordinary quality report. Real integration tests in `apps/api/src/drizzle.test.ts`
+in the ordinary quality report. Real integration tests in `apps/api/src/db/drizzle.test.ts`
 verify fresh SQLite initialization, Kit/startup reexecution, legacy data adoption,
 failure rollback, STRICT/JSON/kind/JSON constraints, composite keys and immutable triggers.
 They run Kit generate against a disposable copy of the snapshots to detect uncommitted

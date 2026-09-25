@@ -2,7 +2,7 @@ import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { build, preview, type InlineConfig } from 'vite-plus';
-import { publicBuild } from '../apps/web/public-build.ts';
+import { publicBuild } from '../scripts/public-build.ts';
 
 export async function startWeb(
   root: string,

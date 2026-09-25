@@ -1,7 +1,7 @@
-import { createApp } from './app.ts';
+import { createApp } from './http/app.ts';
 import { readConfig } from './config.ts';
-import { openStore, readSampleRevisions } from './store.ts';
-import { BattleService } from './battle-service.ts';
+import { openStore, readSampleRevisions } from './db/store.ts';
+import { BattleService } from './jobs/battle-service.ts';
 
 const config = readConfig();
 const store = openStore(config.databasePath);

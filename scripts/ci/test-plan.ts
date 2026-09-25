@@ -3,6 +3,7 @@ import { globSync } from 'node:fs';
 export const TEST_INCLUDE = [
   'packages/**/*.test.ts',
   'apps/api/**/*.test.ts',
+  'apps/cli/**/*.test.ts',
   'apps/web/**/*.test.ts',
   'apps/replay-reader/**/*.test.ts',
   'scripts/**/*.test.ts',

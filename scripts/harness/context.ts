@@ -26,7 +26,7 @@ export const CONTEXT_TOPICS = {
   storage: {
     sources: ['apps/api/src/db', 'db/drizzle', 'data/spatial'],
     docs: ['docs/adr/0005-drizzle-kit.md', 'docs/adr/0010-battle-version-compatibility.md'],
-    check: 'vp test run apps/api/src/drizzle.test.ts',
+    check: 'vp test run apps/api/src/db/drizzle.test.ts',
   },
   replay: {
     sources: ['apps/api/src', 'packages/domain/src'],

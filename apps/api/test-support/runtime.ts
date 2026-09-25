@@ -1,9 +1,9 @@
-import { JobStore } from '../src/job-store.ts';
+import { JobStore } from '../src/jobs/job-store.ts';
 import { join } from 'node:path';
 import { catalogManifest } from '@fantasy/samples';
 import { SpecInputSchema, type Manifest } from '@fantasy/domain/spatial';
-import { BattleService, type RuntimeOptions } from '../src/battle-service.ts';
-import { openStore } from '../src/store.ts';
+import { BattleService, type RuntimeOptions } from '../src/jobs/battle-service.ts';
+import { openStore } from '../src/db/store.ts';
 import { withReplayDirectory } from './replays.ts';
 
 export function specInput({ seed, participants, ruleset, scenario }: Manifest) {

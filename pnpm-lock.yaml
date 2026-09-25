@@ -12,6 +12,12 @@ importers:
 
   .:
     devDependencies:
+      '@fantasy/api':
+        specifier: workspace:*
+        version: link:apps/api
+      '@fantasy/cli':
+        specifier: workspace:*
+        version: link:apps/cli
       '@fantasy/domain':
         specifier: workspace:*
         version: link:packages/domain
@@ -78,9 +84,6 @@ importers:
 
   apps/api:
     dependencies:
-      '@aws-sdk/client-s3':
-        specifier: 3.1138.0
-        version: 3.1138.0
       '@fantasy/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -109,6 +112,31 @@ importers:
       '@types/better-sqlite3':
         specifier: 7.6.13
         version: 7.6.13
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
+
+  apps/cli:
+    dependencies:
+      '@aws-sdk/client-s3':
+        specifier: 3.1138.0
+        version: 3.1138.0
+      '@fantasy/api':
+        specifier: workspace:*
+        version: link:../api
+      '@fantasy/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@fantasy/samples':
+        specifier: workspace:*
+        version: link:../../packages/samples
+      better-sqlite3:
+        specifier: 13.0.3
+        version: 13.0.3
+      piscina:
+        specifier: 5.3.2
+        version: 5.3.2
+    devDependencies:
       tsx:
         specifier: 4.23.15
         version: 4.23.15
