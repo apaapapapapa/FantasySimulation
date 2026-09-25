@@ -560,6 +560,12 @@
       "id": "search-observed-v1",
       "revision": 1,
       "contentHash": "sha256:f7585f44d9b61781ce7e0bed22afe4e975241971f095dd2daae9d3220a539068"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-tactics-v2",
+      "revision": 1,
+      "contentHash": "sha256:6f2c5c8a3feba3fbf81ad1e86748d1f98d1c04efb8e20e8a20de7ad9432987e0"
     }
   ]
 }

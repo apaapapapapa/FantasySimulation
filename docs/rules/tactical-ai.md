@@ -28,8 +28,9 @@ own same-status intervals, then visible same-element intervals; absent evidence 
 no discount. Cleanse benefit ends at predicted reapplication. Memory caps:32 threats,
 8 cues,25 cells. Cognition records these decisions/evidence.
 
-Compatibility: preserve 85 revisions/18 characters; add two posture characters/policies,
-two scenarios/two rules. Seven corpus inputs change version/rules only; add tactical
-oracles. Preserve golden outputs. The source digest includes new modules.
+Compatibility record: PR #104.
+
+standard-tactics-v2 (#1 P2) adds `cover: observed-threat-v1`: cover needs an observed
+projectile or enemy cast, so melee pairs stop sheltering to time-limit draws. Omitted: v1.
 
 P4 UI and advanced abilities remain outside this Issue.

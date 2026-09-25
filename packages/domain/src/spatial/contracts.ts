@@ -191,6 +191,7 @@ export const AiRulesSchema = z.strictObject({
     .optional(),
   reapplication: z.literal('self-observed-v1').optional(),
   groundEvasion: z.literal('posture-jump-v1').optional(),
+  cover: z.literal('observed-threat-v1').optional(),
   search: z
     .strictObject({
       maxWaitSteps: positive(1000),

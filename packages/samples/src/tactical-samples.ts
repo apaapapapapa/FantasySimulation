@@ -43,6 +43,11 @@ export async function addTacticalSamples(revisions: Revision[]) {
       name: '観測・索敵・姿勢',
       ai: { ...rules.definition.ai!, ...TACTICAL_AI },
     }),
+    await sealRevision('ruleset', 'standard-tactics-v2', 1, {
+      ...rules.definition,
+      name: '観測・索敵・姿勢・脅威時の遮蔽',
+      ai: { ...rules.definition.ai!, ...TACTICAL_AI, cover: 'observed-threat-v1' },
+    }),
   );
   for (const [base, id] of [
     ['archer', 'posture-archer-v1'],

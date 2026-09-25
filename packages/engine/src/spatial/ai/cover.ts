@@ -32,6 +32,9 @@ export function coverOptions(
   const survival = view.self.actor.policy.evaluation?.survivalBps ?? 10000;
   const pressure =
     1 + (view.memory.observation?.projectiles.length ?? 0) + (target?.action === 'cast' ? 1 : 0);
+  // Without an observed shot or cast, hiding only delays engagement (two melee actors can
+  // otherwise shelter behind the same pillar until time runs out).
+  if (view.rules.cover === 'observed-threat-v1' && pressure === 1) return [];
   const candidates = [];
   const obstacles = terrain.obstacles
     .filter((o) => !o.id.startsWith('boundary.'))
