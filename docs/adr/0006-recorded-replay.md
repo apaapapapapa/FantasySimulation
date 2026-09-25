@@ -38,6 +38,6 @@ Changing semantic acceptance requires a new profile. Checksums remain integrity,
 the coordinator-owned DB is trusted, arbitrary imported metadata is not an attestation.
 
 Measured on Node 24.19/Linux/Xeon 8573C (three alternating pairs; full writer validation excluded):
-50 steps median 18.99→2.19 ms, 6000 steps 913.46→13.07 ms. Raw source-bound evidence is
+50 steps median 19.08→2.02 ms, 6000 steps 1637.78→30.30 ms. Raw source-bound evidence is
 `apps/api/fixtures/revalidation-baseline.json`; repeat via the API-owned revalidation benchmark.
 This sample justifies avoiding repeated semantic work; it is not a production throughput claim.
