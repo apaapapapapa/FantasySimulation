@@ -1,7 +1,9 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReplayCheckpoint } from '@fantasy/domain/spatial';
 import { openReplay, type OpenedReplay, type ReplaySource } from './open-replay.ts';
-import { seekStep } from './seek-step.ts';
+import { ReplayPlayer } from './replay-player.ts';
+import { buildSceneModel } from './scene-model.ts';
+import { Scene2D } from './Scene2D.tsx';
 import { replayErrorText as errorText } from './load-message.ts';
 import { SceneBoundary } from './SceneBoundary.tsx';
 import { playbackStep } from './playback-clock.ts';
@@ -20,6 +22,11 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
   const [speed, setSpeed] = useState(1);
   const [cameraMode, setCameraMode] = useState<CameraMode>('overview');
   const [overlays, setOverlays] = useState(false);
+  const player = useMemo(() => (replay ? new ReplayPlayer(replay) : null), [replay]);
+  const model = useMemo(
+    () => (replay && state ? buildSceneModel(replay.context, state) : null),
+    [replay, state],
+  );
   const panel = useRef<HTMLElement | null>(null);
   const cursor = useRef({ target, loading });
   useEffect(() => {
@@ -57,14 +64,15 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
     return () => controller.abort();
   }, [source]);
   useEffect(() => {
-    if (!replay) return;
+    if (!player) return;
     const controller = new AbortController();
     setLoading(true);
     setError('');
-    void seekStep(replay, target, controller.signal)
+    void player
+      .seek(target, controller.signal)
       .then((next) => {
         if (!controller.signal.aborted) {
-          setState(next.checkpoint());
+          setState(next);
           setLoading(false);
         }
       })
@@ -76,7 +84,7 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
         }
       });
     return () => controller.abort();
-  }, [replay, target]);
+  }, [player, target]);
   useEffect(() => {
     if (!playing || !replay) return;
     const anchor = cursor.current.target,
@@ -135,15 +143,13 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
             <p>{end.result.outcome.reason}</p>
           )}
           {end?.kind !== 'result' && <p>{end?.reason}</p>}
-          {state && (
-            <SceneBoundary key={`scene:${replay.manifest.simulationHash}`}>
+          {model && (
+            <SceneBoundary
+              key={`scene:${replay.manifest.simulationHash}`}
+              fallback={<Scene2D model={model} overlays={overlays} />}
+            >
               <Suspense fallback={<p>3D表示を準備しています</p>}>
-                <Scene
-                  context={replay.context}
-                  state={state}
-                  cameraMode={cameraMode}
-                  overlays={overlays}
-                />
+                <Scene model={model} cameraMode={cameraMode} overlays={overlays} />
               </Suspense>
             </SceneBoundary>
           )}
