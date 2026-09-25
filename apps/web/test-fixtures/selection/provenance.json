@@ -1,0 +1,778 @@
+{
+  "source": {
+    "sha": "c64c796bf185e88ce1b716849a98d6ed5469438b",
+    "node": "24.19.0",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "generator": "node --import ./apps/api/node_modules/tsx/dist/loader.mjs e2e/generate-selection-fixtures.ts",
+  "policy": "Real 30-step battles with seeds 1/2 and exchanged positions/facing/participant slots. Separate execution roots produce different attempts for the same simulation/result; this tests replay selection, not job retry orchestration. The second first-root run verifies cache reuse. Regeneration requires review.",
+  "generations": [
+    {
+      "kind": "original",
+      "setHash": "sha256:912191169bd7a5643322f8209144bfd618320908445888f6c9c8a32c4efffe7e",
+      "rows": [
+        {
+          "slotId": "sha256:0cb94aea0a2282529c22dbf01a1af71cd5a371cff3f1505937a3be80e38025ae",
+          "simulationHash": "sha256:f2dd8d57466fb5e399de9705e6c44ea27cb5b9d5b1e4955e81739b6732c0bf50",
+          "participants": [
+            {
+              "actorId": "right",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435771,
+              "rngStream": 0
+            },
+            {
+              "actorId": "left",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904240,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 2,
+          "state": "complete",
+          "reused": false,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:929b057bed4490308f8c48039df4bea4202d8f7fdc7fd021dc4ef807a48ce2f8",
+            "simulationHash": "sha256:f2dd8d57466fb5e399de9705e6c44ea27cb5b9d5b1e4955e81739b6732c0bf50",
+            "resultId": "d478ab58-5be5-4c3f-ab3b-524b62d1bfd3",
+            "attemptId": "922448a5-21f7-4b1b-a63d-bb3bbe18019d",
+            "replayId": "33a481ce-b0c9-4e55-a4f3-b11a1dcd5225",
+            "manifestChecksum": "sha256:e4cd289f5c6496ff86a3f09e2835fadccb5cdee6feedae53ea67841ead8c6f84",
+            "receiptChecksum": "sha256:d561dddf64500affb356f7991b08a84aab0991408c355b716b627746cafb4ed4",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        },
+        {
+          "slotId": "sha256:486c9d838e4eee5e3b700ccefc91a684e7485b33f11ccf802925a35e15b21446",
+          "simulationHash": "sha256:472d364c57efa7c7879677b245dcc9d3777dbe150e7757c4fb6346910cc1f7dc",
+          "participants": [
+            {
+              "actorId": "left",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435771,
+              "rngStream": 0
+            },
+            {
+              "actorId": "right",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904240,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 2,
+          "state": "complete",
+          "reused": false,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:36bdff1761f6da33e78f163c3a43e1747fb4fafa7ca641aa6217382ca9fb7002",
+            "simulationHash": "sha256:472d364c57efa7c7879677b245dcc9d3777dbe150e7757c4fb6346910cc1f7dc",
+            "resultId": "729dbd90-bb0e-42e1-a3ed-1cb748612736",
+            "attemptId": "a68cc255-1be0-49c3-a141-e4cc574b7a9d",
+            "replayId": "0091d319-c6db-42da-8203-ba15e273d2c8",
+            "manifestChecksum": "sha256:fcb3e8bc83361d3068844bcd9f5795abd9d48255ee514ad6f3916f7b3e2f1528",
+            "receiptChecksum": "sha256:4427dde8c24bb5b3399e3592d47189283783e15d5e0fc23b2dc73c2e837e6fd6",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        },
+        {
+          "slotId": "sha256:caa3465dd2a77377fb9714eeccfc063f58e44393f4437ccc9bb627cf5f0423b9",
+          "simulationHash": "sha256:5993619199692a2aad3a2911067f7eafa0637badc668dac02e7a77db52f6bf69",
+          "participants": [
+            {
+              "actorId": "left",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435768,
+              "rngStream": 0
+            },
+            {
+              "actorId": "right",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904243,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 1,
+          "state": "complete",
+          "reused": false,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:bc94accebc245e5a326699b6dee420313d5e78cbdb28cddbcec06d7ee0cbd6f2",
+            "simulationHash": "sha256:5993619199692a2aad3a2911067f7eafa0637badc668dac02e7a77db52f6bf69",
+            "resultId": "c3e21710-d376-43fb-b63d-91bfe8ae1244",
+            "attemptId": "ea4499c7-b759-484e-ab7c-ea1cdb3f122d",
+            "replayId": "936f9222-73cd-421a-9993-0e8372984dd4",
+            "manifestChecksum": "sha256:def93965b596ba46b2046177f80d26a4050d975edba8e9fa6fe04a784709819e",
+            "receiptChecksum": "sha256:de91c896370fb6088847f676ee6195a64b651acdab4bef4b0d23f234ea6a7b2f",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        }
+      ]
+    },
+    {
+      "kind": "reused",
+      "setHash": "sha256:0b6eac5ae3c4aa1269011119353e74a409ba5345b290a50efe95e610a85acfdd",
+      "rows": [
+        {
+          "slotId": "sha256:0cb94aea0a2282529c22dbf01a1af71cd5a371cff3f1505937a3be80e38025ae",
+          "simulationHash": "sha256:f2dd8d57466fb5e399de9705e6c44ea27cb5b9d5b1e4955e81739b6732c0bf50",
+          "participants": [
+            {
+              "actorId": "right",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435771,
+              "rngStream": 0
+            },
+            {
+              "actorId": "left",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904240,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 2,
+          "state": "complete",
+          "reused": true,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:929b057bed4490308f8c48039df4bea4202d8f7fdc7fd021dc4ef807a48ce2f8",
+            "simulationHash": "sha256:f2dd8d57466fb5e399de9705e6c44ea27cb5b9d5b1e4955e81739b6732c0bf50",
+            "resultId": "d478ab58-5be5-4c3f-ab3b-524b62d1bfd3",
+            "attemptId": "922448a5-21f7-4b1b-a63d-bb3bbe18019d",
+            "replayId": "33a481ce-b0c9-4e55-a4f3-b11a1dcd5225",
+            "manifestChecksum": "sha256:e4cd289f5c6496ff86a3f09e2835fadccb5cdee6feedae53ea67841ead8c6f84",
+            "receiptChecksum": "sha256:d561dddf64500affb356f7991b08a84aab0991408c355b716b627746cafb4ed4",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        },
+        {
+          "slotId": "sha256:486c9d838e4eee5e3b700ccefc91a684e7485b33f11ccf802925a35e15b21446",
+          "simulationHash": "sha256:472d364c57efa7c7879677b245dcc9d3777dbe150e7757c4fb6346910cc1f7dc",
+          "participants": [
+            {
+              "actorId": "left",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435771,
+              "rngStream": 0
+            },
+            {
+              "actorId": "right",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904240,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 2,
+          "state": "complete",
+          "reused": true,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:36bdff1761f6da33e78f163c3a43e1747fb4fafa7ca641aa6217382ca9fb7002",
+            "simulationHash": "sha256:472d364c57efa7c7879677b245dcc9d3777dbe150e7757c4fb6346910cc1f7dc",
+            "resultId": "729dbd90-bb0e-42e1-a3ed-1cb748612736",
+            "attemptId": "a68cc255-1be0-49c3-a141-e4cc574b7a9d",
+            "replayId": "0091d319-c6db-42da-8203-ba15e273d2c8",
+            "manifestChecksum": "sha256:fcb3e8bc83361d3068844bcd9f5795abd9d48255ee514ad6f3916f7b3e2f1528",
+            "receiptChecksum": "sha256:4427dde8c24bb5b3399e3592d47189283783e15d5e0fc23b2dc73c2e837e6fd6",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        },
+        {
+          "slotId": "sha256:caa3465dd2a77377fb9714eeccfc063f58e44393f4437ccc9bb627cf5f0423b9",
+          "simulationHash": "sha256:5993619199692a2aad3a2911067f7eafa0637badc668dac02e7a77db52f6bf69",
+          "participants": [
+            {
+              "actorId": "left",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435768,
+              "rngStream": 0
+            },
+            {
+              "actorId": "right",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904243,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 1,
+          "state": "complete",
+          "reused": true,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:bc94accebc245e5a326699b6dee420313d5e78cbdb28cddbcec06d7ee0cbd6f2",
+            "simulationHash": "sha256:5993619199692a2aad3a2911067f7eafa0637badc668dac02e7a77db52f6bf69",
+            "resultId": "c3e21710-d376-43fb-b63d-91bfe8ae1244",
+            "attemptId": "ea4499c7-b759-484e-ab7c-ea1cdb3f122d",
+            "replayId": "936f9222-73cd-421a-9993-0e8372984dd4",
+            "manifestChecksum": "sha256:def93965b596ba46b2046177f80d26a4050d975edba8e9fa6fe04a784709819e",
+            "receiptChecksum": "sha256:de91c896370fb6088847f676ee6195a64b651acdab4bef4b0d23f234ea6a7b2f",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        }
+      ]
+    },
+    {
+      "kind": "another-attempt",
+      "setHash": "sha256:940a2afa6ba5a8a3d57b45992d8c16341f44dce1fdb4777b79edb27346edb742",
+      "rows": [
+        {
+          "slotId": "sha256:0cb94aea0a2282529c22dbf01a1af71cd5a371cff3f1505937a3be80e38025ae",
+          "simulationHash": "sha256:f2dd8d57466fb5e399de9705e6c44ea27cb5b9d5b1e4955e81739b6732c0bf50",
+          "participants": [
+            {
+              "actorId": "right",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435771,
+              "rngStream": 0
+            },
+            {
+              "actorId": "left",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904240,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 2,
+          "state": "complete",
+          "reused": false,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:1a19a1d06aa43f6d37411161c5bc60657244f5c987e89be8bca9cae1641fd420",
+            "simulationHash": "sha256:f2dd8d57466fb5e399de9705e6c44ea27cb5b9d5b1e4955e81739b6732c0bf50",
+            "resultId": "2c70c5f3-8824-433f-a19b-d0160b43e047",
+            "attemptId": "0cf667a6-7ed1-4b00-9c3e-ea3cf98e7462",
+            "replayId": "ba155c89-ed7a-47c7-900d-4366b9e39eeb",
+            "manifestChecksum": "sha256:d61bfa6351f07f3f1cebac6dc66bbfd50f559730e36c919da8dc7ee00f181c04",
+            "receiptChecksum": "sha256:17bc1dc4c3fd163c4118123b69f811e859240a55649100a95c9ee29beb71f2ab",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        },
+        {
+          "slotId": "sha256:486c9d838e4eee5e3b700ccefc91a684e7485b33f11ccf802925a35e15b21446",
+          "simulationHash": "sha256:472d364c57efa7c7879677b245dcc9d3777dbe150e7757c4fb6346910cc1f7dc",
+          "participants": [
+            {
+              "actorId": "left",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435771,
+              "rngStream": 0
+            },
+            {
+              "actorId": "right",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904240,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 2,
+          "state": "complete",
+          "reused": false,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:9664488cb1035e57ad131ad039a25d7e9e853fae26ed843587776f41fd8ec9a5",
+            "simulationHash": "sha256:472d364c57efa7c7879677b245dcc9d3777dbe150e7757c4fb6346910cc1f7dc",
+            "resultId": "78981ccc-f3aa-4b18-b31a-c7c3e5559a10",
+            "attemptId": "a38de400-2dbb-457f-83c5-cb4c79dab5c5",
+            "replayId": "13a242bd-59e7-4f1b-8d5d-a8158cbd34cd",
+            "manifestChecksum": "sha256:8ab204177b38cd739d96b529ad31c3acf9712e3edb5fb6441d365865f9ebc4e9",
+            "receiptChecksum": "sha256:3a17215dcd769a516b38ddf2c8ffbf03cc8f0bfaa2330b2bfed37337d180f8e6",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        },
+        {
+          "slotId": "sha256:caa3465dd2a77377fb9714eeccfc063f58e44393f4437ccc9bb627cf5f0423b9",
+          "simulationHash": "sha256:5993619199692a2aad3a2911067f7eafa0637badc668dac02e7a77db52f6bf69",
+          "participants": [
+            {
+              "actorId": "left",
+              "character": {
+                "id": "archer",
+                "revision": 1,
+                "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+                "name": "弓使い"
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 2654435768,
+              "rngStream": 0
+            },
+            {
+              "actorId": "right",
+              "character": {
+                "id": "guardian",
+                "revision": 1,
+                "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+                "name": "重装騎士"
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              },
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "rngSeed": 1013904243,
+              "rngStream": 1
+            }
+          ],
+          "scenario": {
+            "id": "flat",
+            "revision": 1,
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "name": "平地"
+          },
+          "ruleset": {
+            "id": "standard-evaluation-v1",
+            "revision": 1,
+            "contentHash": "sha256:cc0b568fff2c9573a20f1759baa505ff24ad34b7d3d38cd25806433d6163b8e8"
+          },
+          "seed": 1,
+          "state": "complete",
+          "reused": false,
+          "reason": "verified-result",
+          "result": {
+            "outcome": {
+              "kind": "draw",
+              "reason": "time-limit"
+            },
+            "steps": 30
+          },
+          "replay": {
+            "objectHash": "sha256:44aec138e24e2c9f8629e1283ace5744acf9bf0f6affbe689ab9024a5653b625",
+            "simulationHash": "sha256:5993619199692a2aad3a2911067f7eafa0637badc668dac02e7a77db52f6bf69",
+            "resultId": "e7f7e7dc-cdec-4286-b897-8a97b0300170",
+            "attemptId": "9a5b3fdb-fc8b-451f-bc00-a210d5b7c37b",
+            "replayId": "f0511ad9-fbf0-49a7-8f74-d8678218910f",
+            "manifestChecksum": "sha256:fbe95471208d6f0571630b988cd6a40eeeab3949f08295ad992a84e77ce005ca",
+            "receiptChecksum": "sha256:522a41320af164db46447c4e86a7c63072df55d3c3ca5dfb778c06ac3d1089fb",
+            "receiptBytes": 1289
+          },
+          "playback": "full",
+          "lastVerifiedStep": 30,
+          "records": 33
+        }
+      ]
+    }
+  ],
+  "archiveHash": "sha256:5a11a96d42a084f7b9eb38164aaaea64a8f3eeb5b1c5ae72d72985f09a38d9e0"
+}
