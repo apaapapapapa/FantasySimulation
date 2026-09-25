@@ -1,15 +1,16 @@
 import { expect, it } from 'vite-plus/test';
+import { canonicalJson, contentHash } from '@fantasy/domain/spatial';
 import { leagueFiles, leagueGenerations } from '../../../../e2e/league-fixtures.ts';
 import { publicLibrary } from '../replay/public-source.ts';
 import { leagueSnapshot, leagueDetail, leaguePair, leaguePairMatches } from './league-source.ts';
 import { openReplay } from '../replay/open-replay.ts';
 
-function libraryFixture(corrupt = '') {
+function libraryFixture(corrupt = '', files = leagueFiles) {
   const requests: string[] = [];
   const library = publicLibrary('https://example.test/', async (input) => {
     const key = new URL(String(input)).pathname.slice(1);
     requests.push(key);
-    const data = leagueFiles.get(key);
+    const data = files.get(key);
     return new Response(key === corrupt ? '{}' : data ? new Uint8Array(data) : null, {
       status: data ? 200 : 404,
       headers: { 'content-type': key.endsWith('.gz') ? 'application/gzip' : 'application/json' },
@@ -45,6 +46,29 @@ it('loads only the overview, then authenticates selected slots and the exact sav
     kind: 'damaged',
   });
 });
+it.each(['duplicate', 'foreign', 'unordered'] as const)(
+  'rejects checksum-valid pair pages with %s slots',
+  async (kind) => {
+    const { library } = libraryFixture();
+    const snapshot = await leagueSnapshot(library, leagueGenerations[1]!.hash);
+    const detail = await leagueDetail(library, snapshot, 'character-0');
+    const pair = await leaguePair(library, snapshot, detail, 'character-1', 0);
+    if (kind === 'duplicate') pair.rows[1] = structuredClone(pair.rows[0]!);
+    else if (kind === 'foreign') pair.rows[0]!.slot.characters[1]!.id = 'character-2';
+    else pair.rows.reverse();
+    const bytes = Buffer.from(canonicalJson(pair));
+    const hash = await contentHash(pair);
+    detail.opponents.find((o) => o.character === 'character-1')!.pages[0] = {
+      hash,
+      bytes: bytes.byteLength,
+      rows: pair.rows.length,
+    };
+    const files = new Map(leagueFiles).set(`leagues/${hash.slice(7)}.json`, bytes);
+    await expect(
+      leaguePair(libraryFixture('', files).library, snapshot, detail, 'character-1', 0),
+    ).rejects.toMatchObject({ kind: 'damaged' });
+  },
+);
 it('keeps historical provisional denominators and rejects corrupt or foreign details', async () => {
   const { library } = libraryFixture();
   const snapshot = await leagueSnapshot(library, leagueGenerations[0]!.hash);

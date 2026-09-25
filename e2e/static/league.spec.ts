@@ -40,6 +40,19 @@ test('static-league-overview', async ({ page, context }, info) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+  expect(await table.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  expect(
+    (await table.getByRole('button', { name: '総合得点', exact: true }).boundingBox())!.height,
+  ).toBeLessThan(60);
+  await table.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth;
+  });
+  await expect(table.getByRole('row').nth(1).getByRole('cell').last()).toContainText(
+    '分母: 予定16枠',
+  );
+  await table.evaluate((element) => {
+    element.scrollLeft = 0;
+  });
   await info.attach('league-mobile', {
     body: await page.screenshot({ fullPage: true }),
     contentType: 'image/png',
@@ -103,7 +116,8 @@ test('static-league-provisional', async ({ page, context }) => {
   await expect(table).toContainText('〜');
   await page.goto('/FantasySimulation/' + leagueLink(hash, 'character-1', 'character-2'));
   const matches = page.getByRole('table', { name: 'リーグ所属試合', exact: true });
-  await expect(matches).toContainText('まだ実行されていません');
+  await expect(matches).toContainText('pending');
+  await expect(matches).toContainText('この枠のバッチ結果がまだ届いていません');
   await matches.getByRole('link').first().click();
   await expect(page.getByRole('region', { name: '選択した試合' })).toContainText('pending');
   await expect(page.getByRole('region', { name: '保存リプレイ' })).toHaveCount(0);

@@ -46,13 +46,14 @@ export function LeaguePair({
   const selected = data.value.find((m) => m.planned.slot.id === route.slot);
   return (
     <>
-      <section className="panel" aria-label="リーグ所属試合">
+      <section className="panel league-results" aria-label="リーグ所属試合">
         <h2>
           {[route.character, route.opponent]
             .map((id) => snapshot.characters.find((c) => c.id === id)?.name)
             .join(' 対 ')}
         </h2>
         <p>各行が1試合です。未確定の試合も予定枠に残ります。</p>
+        <p>横にスクロールして全列を確認できます。</p>
         <label>
           対戦ペアのページ
           <select

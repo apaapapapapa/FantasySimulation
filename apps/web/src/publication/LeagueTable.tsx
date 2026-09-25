@@ -75,7 +75,7 @@ export function LeagueTable({ snapshot, hash }: { snapshot: PublicLeagueSnapshot
     getSortedRowModel: getSortedRowModel(),
   });
   return (
-    <section className="panel" aria-label="リーグ順位表">
+    <section className="panel league-results" aria-label="リーグ順位表">
       <h2>{formal ? '正式ランキング' : '暫定ランキング'}</h2>
       <p>
         {formal
@@ -83,6 +83,7 @@ export function LeagueTable({ snapshot, hash }: { snapshot: PublicLeagueSnapshot
           : '未確定の枠を含む得点区間です。下限による表示順であり、区間が重なる相手との順位は未確定です。'}
       </p>
       <p>列の並べ替えは表示だけを変えます。確定した順位を変更しません。</p>
+      <p>横にスクロールして全列を確認できます。</p>
       <DataTable table={table} label="リーグ順位表" />
     </section>
   );

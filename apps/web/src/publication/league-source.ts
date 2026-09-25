@@ -77,6 +77,15 @@ export async function leaguePair(
     canonicalJson(page.characters) !== canonicalJson(characters)
   )
     throw damaged();
+  let last = '';
+  for (const { slot } of page.rows) {
+    if (
+      slot.id <= last ||
+      canonicalJson(slot.characters.map((character) => character.id)) !== canonicalJson(characters)
+    )
+      throw damaged();
+    last = slot.id;
+  }
   return page;
 }
 
