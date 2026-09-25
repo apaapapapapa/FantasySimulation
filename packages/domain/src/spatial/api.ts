@@ -89,6 +89,7 @@ export const JobViewSchema = z.object({
   maxAttempts: z.number().int().min(1).max(MAX_JOB_ATTEMPTS),
   resultId: IdSchema.nullable(),
   error: z.string().max(10000).nullable(),
+  allowedOperations: z.strictObject({ cancel: z.boolean(), retry: z.boolean() }).optional(),
 });
 export const JobResponseSchema = z.object({ job: JobViewSchema });
 export const JobStatusSchema = JobResponseSchema.extend({

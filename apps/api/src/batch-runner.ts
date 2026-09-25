@@ -5,15 +5,16 @@ import {
   BatchIndexBodySchema,
   compareIds,
   contentHash,
+  canonicalJson,
   parseJson,
   type BatchIndex,
   type ExecutionSource,
 } from '@fantasy/domain/spatial';
-import { BattleRuntime } from './battle-runtime.ts';
+import { BattleService } from './battle-service.ts';
 import { BattleBundles } from './battle-bundle.ts';
 import { validateBatchPlan } from './batch-plan.ts';
 import { shardSlots } from './batch-check.ts';
-import { openStore, jsonValue } from './store.ts';
+import { openStore } from './store.ts';
 
 export async function runBatch(
   input: unknown,
@@ -44,7 +45,7 @@ export async function runBatch(
   if (estimated > plan.maxOutputBytes) throw new Error('Shard estimate exceeds output budget');
   await mkdir(join(root, '.work'), { recursive: true });
   const store = openStore(join(root, '.work', 'database.sqlite'));
-  let runtime: BattleRuntime | undefined;
+  let runtime: BattleService | undefined;
   const started = performance.now(),
     results: BatchIndex['slots'] = [];
   try {
@@ -54,7 +55,7 @@ export async function runBatch(
     if (Number(store.db.pragma(`max_page_count = ${pages}`, { simple: true })) > pages)
       throw new Error('Batch database exceeds the 64 MiB metadata limit');
     await store.loadPinnedRevisions(plan.revisions);
-    runtime = await BattleRuntime.open(store, join(root, '.work', 'replays'), {
+    runtime = await BattleService.open(store, join(root, '.work', 'replays'), {
       workers,
       storageBytes: plan.maxWorkBytes,
     });
@@ -82,7 +83,7 @@ export async function runBatch(
             entry.reused = true;
           } else if (
             options.signal?.aborted ||
-            performance.now() - started + runtime!.options.timeoutMs + 1000 >= deadlineMs
+            performance.now() - started + runtime!.completionReserveMs >= deadlineMs
           )
             entry.reason = 'Batch stopped or deadline reserve reached; no new match was started';
           else {
@@ -113,17 +114,15 @@ export async function runBatch(
               entry.state = 'failed';
               entry.reason = done.error ?? done.state;
             } else {
-              const result = runtime!.jobs.result(done.resultId)!;
               // Only one publisher uses this output directory; independent shards use independent roots.
               const saving = publication.then(async () => {
-                entry.receipt = await bundles.publish(runtime!, result, source);
+                entry.receipt = await bundles.publish(runtime!, done.resultId!, source);
               });
               publication = saving.catch(() => {});
               await saving;
               const kind = entry.receipt!.result.outcome.kind;
               entry.state = kind === 'win' || kind === 'draw' ? 'complete' : kind;
-              entry.reason =
-                entry.state === 'complete' ? '' : JSON.stringify(jsonValue(result.resultJson));
+              entry.reason = entry.state === 'complete' ? '' : canonicalJson(entry.receipt!.result);
               entry.reason = entry.reason.slice(0, 1000);
             }
           }

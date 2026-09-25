@@ -85,6 +85,19 @@ it.each([
     './math.ts',
     null,
   ],
+  ['apps/api/src/job-routes.ts', 'apps/api/src/battle-service.ts', './battle-service.ts', null],
+  [
+    'apps/api/src/job-routes.ts',
+    'apps/api/src/job-store.ts',
+    './job-store.ts',
+    'job-http-application-boundary',
+  ],
+  [
+    'apps/api/src/job-routes.ts',
+    'apps/api/src/artifact-store.ts',
+    './artifact-store.ts',
+    'job-http-application-boundary',
+  ],
   [
     'packages/engine/src/spatial/perception.ts',
     'packages/engine/src/spatial/state.ts',

@@ -1,3 +1,4 @@
+import { canCancelJob, canRetryJob } from './job-transitions.ts';
 import { ARTIFACT_RESERVATION_BYTES, MAX_JOB_ATTEMPTS } from '@fantasy/domain/spatial';
 import { randomUUID } from 'node:crypto';
 import { and, asc, eq, gt, lte, inArray, notInArray, count, sum } from 'drizzle-orm';
@@ -329,8 +330,7 @@ export class JobStore {
     return this.store.transaction(() => {
       const job = this.get(id);
       if (!job) throw new StoreError('not-found', 'Job not found');
-      if (job.state === 'completed' || job.state === 'failed' || job.state === 'cancelled')
-        return job;
+      if (!canCancelJob(job)) return job;
       this.store.orm
         .update(simulationJobs)
         .set({ state: 'cancelled', updatedAt: now, error: 'Cancelled by client' })
@@ -361,24 +361,19 @@ export class JobStore {
       return true;
     });
   }
+  retryable(job: Job) {
+    const result = job.resultId ? this.result(job.resultId) : undefined;
+    const outcome = result
+      ? parseJson(ResultSchema, jsonValue(result.resultJson)).outcome.kind
+      : null;
+    return canRetryJob(job, outcome);
+  }
   retry(id: string, expectedAttempts: number, budget: Budget, now = Date.now()) {
     const parsed = parseJson(BudgetSchema, budget);
     return this.store.transaction(() => {
       const job = this.get(id);
       if (!job) throw new StoreError('not-found', 'Job not found');
-      const result = job.resultId ? this.result(job.resultId) : undefined;
-      const outcome = result
-        ? parseJson(ResultSchema, jsonValue(result.resultJson)).outcome.kind
-        : null;
-      if (
-        job.attempts !== expectedAttempts ||
-        job.attempts >= job.maxAttempts ||
-        job.failureCode === 'determinism-violation' ||
-        job.state === 'running' ||
-        job.state === 'queued' ||
-        outcome === 'win' ||
-        outcome === 'draw'
-      )
+      if (job.attempts !== expectedAttempts || !this.retryable(job))
         throw new StoreError('conflict', 'Job cannot be retried at this version');
       this.store.requireExecutableSpec(job.simulationHash);
       this.checkCapacity();

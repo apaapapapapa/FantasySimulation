@@ -2,14 +2,14 @@ import { readFile } from 'node:fs/promises';
 import { eq } from 'drizzle-orm';
 import { SpecInputSchema, parseJson } from '@fantasy/domain/spatial';
 import { openStore } from '../src/store.ts';
-import { BattleRuntime } from '../src/battle-runtime.ts';
+import { BattleService } from '../src/battle-service.ts';
 import { simulationAttempts } from '../src/db/schema.ts';
 
 // A real abruptly exited coordinator, with an explicitly expired lease, for restart acceptance.
 const [filename, root, input] = process.argv.slice(2);
 if (!filename || !root || !input) throw new Error('Crash fixture requires database/root/spec');
 const store = openStore(filename),
-  runtime = await BattleRuntime.open(store, root);
+  runtime = await BattleService.open(store, root);
 const spec = parseJson(SpecInputSchema, JSON.parse(await readFile(input, 'utf8')) as unknown);
 const job = await runtime.submit(spec, 'crash', 'one');
 store.orm
