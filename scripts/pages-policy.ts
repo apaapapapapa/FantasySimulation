@@ -35,3 +35,17 @@ export function pagesSource(
     throw new Error('Pages requires a successful main CI and current ci-gate at the requested SHA');
   return run.head_sha;
 }
+
+/** Start at current tested main; a long run may finish after a descendant has landed. */
+export function leagueSource(
+  run: Parameters<typeof pagesSource>[0],
+  jobs: Parameters<typeof pagesSource>[1],
+  mainSha: string,
+  checkoutSha: string,
+  phase: string,
+  comparison: string,
+) {
+  if (!['start', 'finish'].includes(phase) || run.head_sha !== checkoutSha)
+    throw new Error('League workflow source mismatch');
+  return pagesSource(run, jobs, mainSha, phase === 'finish', comparison);
+}

@@ -1,5 +1,5 @@
 import { expect, it } from 'vite-plus/test';
-import { pagesSource } from './pages-policy.ts';
+import { pagesSource, leagueSource } from './pages-policy.ts';
 
 it('rejects fork/PR, stale automatic runs, failed CI and a gate from another commit', () => {
   const sha = 'b'.repeat(40);
@@ -29,4 +29,10 @@ it('rejects fork/PR, stale automatic runs, failed CI and a gate from another com
   expect(() => pagesSource(run, [], sha, false, 'identical')).toThrow();
   expect(pagesSource(run, jobs, 'c'.repeat(40), true, 'ahead')).toBe(sha);
   expect(() => pagesSource(run, jobs, 'c'.repeat(40), true, 'diverged')).toThrow();
+  expect(leagueSource(run, jobs, sha, sha, 'start', 'identical')).toBe(sha);
+  expect(() => leagueSource(run, jobs, 'c'.repeat(40), sha, 'start', 'ahead')).toThrow();
+  expect(leagueSource(run, jobs, 'c'.repeat(40), sha, 'finish', 'ahead')).toBe(sha);
+  expect(() => leagueSource(run, jobs, sha, 'c'.repeat(40), 'finish', 'identical')).toThrow();
+  expect(() => leagueSource(run, jobs, 'c'.repeat(40), sha, 'finish', 'diverged')).toThrow();
+  expect(() => leagueSource(run, [], sha, sha, 'finish', 'identical')).toThrow();
 });

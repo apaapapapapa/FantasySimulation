@@ -14,12 +14,14 @@ export function ancestorOf(source: string, viewer: string, repository: string) {
     return false;
   }
 }
-export function publicHttp(root: string) {
+export function publicHttp(root: string, deadlineMs = 300000) {
+  if (!Number.isInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 7200000)
+    throw new Error('Invalid public read-back deadline');
   const base = new URL(root);
   if (base.protocol !== 'https:' || base.username || base.password || base.search || base.hash)
     throw new Error('Expected a public HTTPS directory URL');
   if (!base.pathname.endsWith('/')) base.pathname += '/';
-  const signal = AbortSignal.timeout(300_000);
+  const deadline = AbortSignal.timeout(deadlineMs);
   let requests = 0,
     total = 0;
   return async (key: string, limit: number) => {
@@ -28,7 +30,7 @@ export function publicHttp(root: string) {
     if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname))
       throw new Error('Invalid public read-back path');
     const response = await fetch(url, {
-      signal,
+      signal: AbortSignal.any([deadline, AbortSignal.timeout(300000)]),
       redirect: 'error',
       credentials: 'omit',
       headers: {

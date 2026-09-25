@@ -10,6 +10,7 @@ import {
   receiptIdentity,
   PUBLICATION_MAX_BYTES,
   PUBLICATION_MAX_FILES,
+  PUBLICATION_CONTROL_KEY,
   type PublicationFile,
 } from './publication-files.ts';
 import { sha256 } from '@fantasy/api/artifacts';
@@ -261,7 +262,9 @@ export async function prunePublication(store: PublicationStore, confirm = false)
     return value.data;
   });
   const inventory = await store.inventory();
-  const keys = [...inventory.keys()].filter((key) => !graph.files.has(key));
+  const keys = [...inventory.keys()].filter(
+    (key) => key !== PUBLICATION_CONTROL_KEY && !graph.files.has(key),
+  );
   if (keys.length > 10000) throw new Error('Orphan deletion request limit');
   if (confirm && keys.length * 2 > store.remainingRequests())
     throw new Error('Orphan deletion request budget');

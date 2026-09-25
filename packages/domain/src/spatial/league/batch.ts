@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { PUBLICATION_MAX_FILES } from '../publication/index.ts';
 import { HashSchema, IdSchema } from '../contracts.ts';
-import { BatchIndexSchema, BatchInputSchema, ExecutionSourceSchema } from '../batch.ts';
+import {
+  BatchIndexSchema,
+  BatchInputSchema,
+  BatchPlanSchema,
+  ExecutionSourceSchema,
+} from '../batch.ts';
 import { LeagueRevisionSchema, LeagueSlotSchema } from '../league.ts';
 
 export const LeaguePartitionBodySchema = z.strictObject({
@@ -102,3 +107,29 @@ export const LeagueEstimateInputSchema = z.strictObject({
   usedWriteRequests: z.number().int().min(0).max(1000000),
 });
 export type LeagueEstimateInput = z.infer<typeof LeagueEstimateInputSchema>;
+
+const cloudRef = z.strictObject({ hash: HashSchema, bytes: z.number().int().min(1).max(16000000) });
+export const LeagueCloudInputSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  plan: LeaguePlanSchema,
+  partition: LeaguePartitionSchema,
+  batch: BatchPlanSchema,
+  reservation: LeagueReservationSchema,
+  work: cloudRef,
+});
+export type LeagueCloudInput = z.infer<typeof LeagueCloudInputSchema>;
+export const LeagueCloudPreparedSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  plan: LeaguePlanSchema,
+  executionId: IdSchema,
+  work: cloudRef,
+  inputs: z.array(cloudRef).min(1).max(64),
+});
+export type LeagueCloudPrepared = z.infer<typeof LeagueCloudPreparedSchema>;
+export const LeagueCloudInventorySchema = z.strictObject({
+  files: z.number().int().min(0).max(PUBLICATION_MAX_FILES),
+  bytes: z.number().int().min(0).max(8000000000),
+  receipts: z.number().int().min(0).max(PUBLICATION_MAX_FILES),
+  usedReadRequests: z.number().int().min(0).max(9000000),
+  usedWriteRequests: z.number().int().min(0).max(900000),
+});

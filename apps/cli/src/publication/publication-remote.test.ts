@@ -6,6 +6,7 @@ import { SUPPORTED_REPLAY_FORMAT } from '@fantasy/domain';
 import { publicationFixture } from '../../test-support/publication.ts';
 import { exportPublication } from './publication-export.ts';
 import { localPublicationGraph } from './publication-graph.ts';
+import { PUBLICATION_CONTROL_KEY } from './publication-files.ts';
 import {
   publishPublication,
   prunePublication,
@@ -211,6 +212,10 @@ it('retains every catalog ancestor and deletes only explicit, unreferenced keys'
   await exportPublication(second.plan, [second], directory);
   await publishPublication(directory, store, options);
   const orphan = `catalog/${'f'.repeat(64)}.json`;
+  store.objects.set(PUBLICATION_CONTROL_KEY, {
+    data: Buffer.from('private usage ledger'),
+    etag: 'control',
+  });
   store.objects.set(orphan, { data: Buffer.from('{}'), etag: 'orphan' });
   expect(await prunePublication(store)).toMatchObject({ status: 'planned', keys: [orphan] });
   expect(store.removed).toEqual([]);

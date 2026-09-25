@@ -40,6 +40,7 @@
     "publication": "vp run --filter @fantasy/cli publication"
   },
   "devDependencies": {
+    "@actions/artifact": "6.2.1",
     "@fantasy/api": "workspace:*",
     "@fantasy/cli": "workspace:*",
     "@fantasy/domain": "workspace:*",

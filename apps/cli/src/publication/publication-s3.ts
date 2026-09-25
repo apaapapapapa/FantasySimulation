@@ -6,8 +6,13 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
-import { PublicKeySchema } from '@fantasy/domain/spatial';
-import { PUBLICATION_MAX_BYTES, PUBLICATION_MAX_FILES } from './publication-files.ts';
+import { PublicKeySchema, LeagueUsageSchema } from '@fantasy/domain/spatial';
+import {
+  PUBLICATION_MAX_BYTES,
+  PUBLICATION_MAX_FILES,
+  PUBLICATION_CONTROL_KEY,
+  PUBLICATION_CONTROL_BYTES,
+} from './publication-files.ts';
 import type { PublicationStore } from './publication-remote.ts';
 
 export interface R2Config {
@@ -104,8 +109,11 @@ export class PublicationS3 implements PublicationStore {
     else this.classBRequests++;
     return { abortSignal: this.signal };
   }
-  private input(key: string) {
-    return { Bucket: this.config.bucket, Key: PublicKeySchema.parse(key) };
+  private input(key: string, control = false) {
+    return {
+      Bucket: this.config.bucket,
+      Key: control && key === PUBLICATION_CONTROL_KEY ? key : PublicKeySchema.parse(key),
+    };
   }
   private status(error: unknown) {
     return error && typeof error === 'object'
@@ -133,10 +141,13 @@ export class PublicationS3 implements PublicationStore {
         )
         .catch((e) => this.failure(e));
       for (const item of page.Contents ?? []) {
-        const key = PublicKeySchema.parse(item.Key),
+        const key =
+            item.Key === PUBLICATION_CONTROL_KEY ? item.Key : PublicKeySchema.parse(item.Key),
           size = item.Size;
         if (size === undefined || !Number.isSafeInteger(size) || size < 0 || result.has(key))
           throw new Error('Invalid S3 inventory');
+        if (key === PUBLICATION_CONTROL_KEY && size > PUBLICATION_CONTROL_BYTES)
+          throw new Error('Invalid league usage ledger size');
         result.set(key, size);
         bytes += size;
         if (result.size > PUBLICATION_MAX_FILES || bytes > PUBLICATION_MAX_BYTES)
@@ -151,10 +162,21 @@ export class PublicationS3 implements PublicationStore {
     } while (cursor);
     return result;
   }
-  async read(key: string, limit: number) {
+  read(key: string, limit: number) {
+    return this.readObject(key, limit);
+  }
+  readControl() {
+    return this.readObject(PUBLICATION_CONTROL_KEY, PUBLICATION_CONTROL_BYTES, true);
+  }
+  async putControl(data: Buffer, previousEtag: string | null) {
+    if (data.length > PUBLICATION_CONTROL_BYTES) throw new Error('League usage ledger size limit');
+    LeagueUsageSchema.parse(JSON.parse(data.toString('utf8')));
+    await this.putObject(PUBLICATION_CONTROL_KEY, data, previousEtag, true);
+  }
+  private async readObject(key: string, limit: number, control = false) {
     try {
       const value = await this.client.send(
-        new GetObjectCommand(this.input(key)),
+        new GetObjectCommand(this.input(key, control)),
         this.options('B'),
       );
       if (!value.Body || !value.ETag) throw new Error('Incomplete S3 body');
@@ -193,15 +215,19 @@ export class PublicationS3 implements PublicationStore {
       this.failure(error);
     }
   }
-  async put(key: string, data: Buffer, previousEtag: string | null) {
+  put(key: string, data: Buffer, previousEtag: string | null) {
+    return this.putObject(key, data, previousEtag);
+  }
+  private async putObject(key: string, data: Buffer, previousEtag: string | null, control = false) {
     await this.client
       .send(
         new PutObjectCommand({
-          ...this.input(key),
+          ...this.input(key, control),
           Body: data,
           ContentType: key.endsWith('.gz') ? 'application/gzip' : 'application/json',
-          CacheControl:
-            key === 'catalog/current.json'
+          CacheControl: control
+            ? 'private, no-store'
+            : key === 'catalog/current.json'
               ? 'public, max-age=30, no-transform'
               : 'public, max-age=31536000, immutable, no-transform',
           ...(previousEtag === null ? { IfNoneMatch: '*' } : { IfMatch: previousEtag }),

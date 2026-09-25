@@ -1,0 +1,188 @@
+name: Daily league
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful main CI run for this workflow source
+        required: true
+        type: string
+      mode:
+        description: Preview changed inputs or publish the bounded league
+        default: dry-run
+        type: choice
+        options: [dry-run, publish]
+        required: true
+      definition:
+        description: Committed league definition
+        default: data/leagues/official-20-v1.json
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: r2-publication
+  cancel-in-progress: false
+defaults:
+  run:
+    working-directory: apps/cli
+env:
+  PUBLICATION_VIEWER_URL: https://apaapapapapa.github.io/FantasySimulation/
+  PUBLICATION_WORKER_URL: https://fantasysimulation-replay-reader.tokyojp.workers.dev/
+jobs:
+  probe:
+    if: >-
+      github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      needed: ${{ steps.probe.outputs.needed }}
+      ci-run: ${{ steps.source.outputs.run-id }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/pages-gate
+        id: source
+        with:
+          run-id: ${{ inputs.ci_run_id }}
+          league-phase: start
+      - uses: ./.github/actions/setup-project
+      - name: Check changed inputs and retry eligibility without credentials
+        id: probe
+        env:
+          DEFINITION: ${{ inputs.definition || 'data/leagues/official-20-v1.json' }}
+        run: node --import tsx src/league-cloud.ts probe .generated/league "$DEFINITION"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: league-probe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/cli/.generated/league/probe.json
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7
+  prepare:
+    needs: probe
+    if: needs.probe.outputs.needed == 'true' && (github.event_name == 'schedule' || inputs.mode == 'publish')
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: r2-publication
+    outputs:
+      matrix: ${{ steps.bundle.outputs.matrix }}
+      baseline-id: ${{ steps.bundle.outputs.baseline-id }}
+      baseline-digest: ${{ steps.bundle.outputs.baseline-digest }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/pages-gate
+        with:
+          run-id: ${{ needs.probe.outputs.ci-run }}
+          league-phase: start
+      - name: Require publication environment
+        env:
+          ENABLED: ${{ vars.R2_PUBLICATION_ENABLED }}
+        run: test "$ENABLED" = true
+      - uses: ./.github/actions/setup-project
+      - name: Reserve request budget and restore verified retained data
+        env:
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node --import tsx src/league-cloud.ts restore .generated/league
+      - name: Prepare bounded reservations without credentials
+        env:
+          DEFINITION: ${{ inputs.definition || 'data/leagues/official-20-v1.json' }}
+        run: node --import tsx src/league-cloud.ts prepare .generated/league "$DEFINITION"
+      - name: Persist attempt reservations before admitting workers
+        env:
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node --import tsx src/league-cloud.ts admit .generated/league
+      - uses: ./.github/actions/league-artifacts
+        id: bundle
+        with:
+          operation: prepare
+  compute:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - uses: ./.github/actions/league-artifacts
+        with:
+          operation: input
+          partition: ${{ matrix.index }}
+          artifact-id: ${{ matrix.id }}
+          digest: ${{ matrix.digest }}
+      - name: Run the reserved partition without production credentials
+        run: node --import tsx src/league-cloud.ts run .generated/league
+      - uses: ./.github/actions/league-artifacts
+        if: always()
+        with:
+          operation: result
+          partition: ${{ matrix.index }}
+  publish:
+    needs: [probe, prepare, compute]
+    if: always() && !cancelled() && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: r2-publication
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/pages-gate
+        with:
+          run-id: ${{ needs.probe.outputs.ci-run }}
+          league-phase: finish
+      - name: Recheck publication environment
+        env:
+          ENABLED: ${{ vars.R2_PUBLICATION_ENABLED }}
+        run: test "$ENABLED" = true
+      - uses: ./.github/actions/setup-project
+      - uses: ./.github/actions/league-artifacts
+        with:
+          operation: aggregate
+          artifact-id: ${{ needs.prepare.outputs.baseline-id }}
+          digest: ${{ needs.prepare.outputs.baseline-digest }}
+      - name: Validate received partitions and preserve every missing denominator
+        run: node --import tsx src/league-cloud.ts finish .generated/league
+      - name: Reserve publication budget and verify R2 and Worker readback
+        env:
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node --import tsx src/league-cloud.ts publish .generated/league
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: league-measurements-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/cli/.generated/league/reports/*.json
+            apps/cli/.generated/league/prepared/estimate.json
+            apps/cli/.generated/league/prepared/completion.json
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7

@@ -20,6 +20,8 @@ import {
 } from '@fantasy/api/artifacts';
 
 export { PUBLICATION_MAX_BYTES, PUBLICATION_MAX_FILES } from '@fantasy/domain/spatial';
+export const PUBLICATION_CONTROL_KEY = 'control/league-usage.json';
+export const PUBLICATION_CONTROL_BYTES = 65536;
 export type PublicationFile = {
   key: string;
   bytes: number;
@@ -117,10 +119,11 @@ export async function inspectPublicArtifact(file: PublicationFile, rawBytes?: nu
     assertPublicData(JSON.parse(line) as unknown);
 }
 
-async function inventory(root: string) {
+export async function publicationInventory(root: string, objectsOnly = false) {
   const files = new Map<string, number>();
   async function walk(directory: string, prefix: string) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (objectsOnly && !prefix && entry.name !== 'objects') continue;
       if (!prefix && entry.name === '.publication-lock') continue;
       const key = prefix + entry.name,
         path = join(directory, entry.name);
@@ -149,7 +152,7 @@ export async function writePublication(
 ) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > PUBLICATION_MAX_BYTES)
     throw new Error('Invalid publication capacity');
-  const stored = await inventory(root);
+  const stored = await publicationInventory(root);
   const incoming = new Map<string, string>();
   for (const file of files.filter((f) => f.key.endsWith('/receipt.json'))) {
     receiptIdentity(file.key, await publicationBytes(file), incoming);

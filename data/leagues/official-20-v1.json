@@ -1,0 +1,3783 @@
+{
+  "battlefields": [
+    {
+      "scenario": {
+        "contentHash": "sha256:44981b5451b18a587ce6fc0508c9086ff48177e50958955de91daf91e7b65fc5",
+        "id": "aerial-surveyed-v1",
+        "revision": 1
+      },
+      "starts": [
+        { "facing": { "x": 1, "y": 0, "z": 0 }, "position": { "x": -6000, "y": 8902, "z": 0 } },
+        { "facing": { "x": -1, "y": 0, "z": 0 }, "position": { "x": 6000, "y": 8902, "z": 0 } }
+      ],
+      "weight": { "denominator": "5", "numerator": "1" }
+    },
+    {
+      "scenario": {
+        "contentHash": "sha256:b479631ccc1edc25878bfa47a75eb1b6483f96329b1783cce6627e4a37ce84c2",
+        "id": "elevation-surveyed-v1",
+        "revision": 1
+      },
+      "starts": [
+        { "facing": { "x": 1, "y": 0, "z": 0 }, "position": { "x": -6000, "y": 902, "z": 0 } },
+        { "facing": { "x": -1, "y": 0, "z": 0 }, "position": { "x": 6000, "y": 902, "z": 0 } }
+      ],
+      "weight": { "denominator": "5", "numerator": "1" }
+    },
+    {
+      "scenario": {
+        "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+        "id": "flat-surveyed-v1",
+        "revision": 1
+      },
+      "starts": [
+        { "facing": { "x": 1, "y": 0, "z": 0 }, "position": { "x": -6000, "y": 902, "z": 0 } },
+        { "facing": { "x": -1, "y": 0, "z": 0 }, "position": { "x": 6000, "y": 902, "z": 0 } }
+      ],
+      "weight": { "denominator": "5", "numerator": "1" }
+    },
+    {
+      "scenario": {
+        "contentHash": "sha256:5486b92d8e06acb712d53b3485c6eff1599d130d19e5537a77434a527e313383",
+        "id": "indoor-surveyed-v1",
+        "revision": 1
+      },
+      "starts": [
+        { "facing": { "x": 1, "y": 0, "z": 0 }, "position": { "x": -6000, "y": 902, "z": 0 } },
+        { "facing": { "x": -1, "y": 0, "z": 0 }, "position": { "x": 6000, "y": 902, "z": 0 } }
+      ],
+      "weight": { "denominator": "5", "numerator": "1" }
+    },
+    {
+      "scenario": {
+        "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",
+        "id": "pillars-surveyed-v1",
+        "revision": 1
+      },
+      "starts": [
+        { "facing": { "x": 1, "y": 0, "z": 0 }, "position": { "x": -6000, "y": 902, "z": 2200 } },
+        { "facing": { "x": -1, "y": 0, "z": 0 }, "position": { "x": 6000, "y": 902, "z": 2200 } }
+      ],
+      "weight": { "denominator": "5", "numerator": "1" }
+    }
+  ],
+  "budget": {
+    "maxBytes": 16000000,
+    "maxCandidates": 1000000,
+    "maxCasts": 1000000,
+    "maxCurveSegments": 64,
+    "maxEvents": 50000,
+    "maxForces": 64,
+    "maxFrameBytes": 512000,
+    "maxMoveSegments": 8,
+    "maxPathNodes": 4096,
+    "maxProjectiles": 64,
+    "maxStatusCauses": 2048,
+    "maxStatusTypes": 64
+  },
+  "characters": [
+    {
+      "contentHash": "sha256:efde0ebbb7c06098ae9e55adc65d8b39fcb21e142921da31fcfdaeccddba5bb9",
+      "id": "arcane-archer",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+      "id": "archer",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:afb1cf71bf6a2be45a23001982fd25328d31d0c15f0e0b197a39f953114f923a",
+      "id": "ember-duelist",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:92d6fdbe4449a4cf2df33bc96903f689d77ebe9aa5273b478a3caf88f5fca5b7",
+      "id": "fire-mage",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:fa9724ead3a489542266bccf43fef95c01991c9cc3878fc203820305fe6a3cbb",
+      "id": "fire-seer",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+      "id": "guardian",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:8cc1e799233de3462c00fda0b19421f6b6a8714776a82c47b65a6a0e46a0a33d",
+      "id": "healer",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:229c51fbb2b38b2cd3c66f571dad8fd7f26d6f7e9fbcba00913bdb110e16cbd4",
+      "id": "ice-mage",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:66182d21f131993513596e85ab55858f95bc379c690de511307d2056f9d00e88",
+      "id": "lancer",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:47fe005c185430150be08e70032ca2956843c545ce6e8dd00398b300f2e12143",
+      "id": "posture-archer-v1",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:a866e6fd292cff362d8e094f86dcc944ad5eb02e125a8ce301265bb405550a35",
+      "id": "posture-duelist-v1",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:e0585a005b30ba52b6127defd50ab6b2d20902b2bef64948c66ccafd6290bd64",
+      "id": "reaction-duelist-v1",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8",
+      "id": "sky-mage",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:a3fb9906fc16ad1d20b5c898713d26448154704bd2d6b0c82cf5666c4dbc9c78",
+      "id": "stage-vanguard-v1",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:9f96acc56a9bfacd3479a2575a7fa00008a878ade3be6bcd2f7e012a93e5bf7c",
+      "id": "staged-duelist-v1",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:db4d57a8f991b003531254daf590fa8b462f2e6cf396daea93350f3bdfe9bd27",
+      "id": "stamina-glider-v1",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:e7a4b6231dbf28572760bf3e17af0c29276e1b71c7f48488116889cf3bad7f03",
+      "id": "stamina-scout-v1",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:a9d96cf5dfad37749f6ab4b757a55c872459698647054856a49444778b99a489",
+      "id": "storm-mage",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e",
+      "id": "swordsman",
+      "revision": 1
+    },
+    {
+      "contentHash": "sha256:26185be68cef86a3d3f407b8180ecc3375b8709f343c01362aa44ddf08c9d839",
+      "id": "water-observer",
+      "revision": 1
+    }
+  ],
+  "id": "official-20-v1",
+  "masterSeed": 20260925,
+  "name": "公式リーグ・20体と5戦場",
+  "placements": ["normal", "swapped"],
+  "retryBudget": {
+    "maxBytes": 32000000,
+    "maxCandidates": 2000000,
+    "maxCasts": 2000000,
+    "maxCurveSegments": 64,
+    "maxEvents": 100000,
+    "maxForces": 64,
+    "maxFrameBytes": 512000,
+    "maxMoveSegments": 8,
+    "maxPathNodes": 4096,
+    "maxProjectiles": 64,
+    "maxStatusCauses": 2048,
+    "maxStatusTypes": 64
+  },
+  "revisions": [
+    {
+      "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81",
+      "definition": {
+        "aimErrorMilliDegrees": 500,
+        "attack": {
+          "explosionRadiusMm": 0,
+          "gravityScaleBps": 10000,
+          "homingTurnMilliDegreesPerSecond": 0,
+          "kind": "projectile",
+          "lifetimeSteps": 150,
+          "maxHitsPerTarget": 1,
+          "observation": "launch-only",
+          "radiusMm": 80,
+          "speedMmPerSecond": 30000
+        },
+        "castSteps": 10,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 0, "uses": 0 },
+        "effects": [
+          { "amount": 10, "attackScaleBps": 10000, "element": "physical", "kind": "damage" }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "放物線の矢",
+        "originalText": "放物線の矢",
+        "rangeMm": 30000,
+        "recoverySteps": 30,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "arrow",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:6e039c88be89bf40379ad6a6ae7a74b5b6ab2c492b3cbe417a452187d2d98121",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "direct" },
+        "castSteps": 0,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 5, "uses": 0 },
+        "effects": [{ "kind": "dispel", "statusIds": ["burning", "frost"] }],
+        "movementWhileCasting": "allow",
+        "name": "炎と凍気の解除",
+        "originalText": "炎と凍気の解除",
+        "rangeMm": 0,
+        "recoverySteps": 20,
+        "target": "self",
+        "trigger": "action"
+      },
+      "id": "cleanse",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "activeSteps": 8,
+          "kind": "melee",
+          "maxHitsPerTarget": 1,
+          "radiusMm": 200,
+          "reachMm": 1800
+        },
+        "castSteps": 2,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 30,
+        "costs": { "hp": 0, "mp": 0, "stamina": 6, "uses": 0 },
+        "effects": [
+          { "amount": 14, "attackScaleBps": 0, "element": "physical", "kind": "damage" },
+          {
+            "direction": "away",
+            "durationSteps": 3,
+            "kind": "force",
+            "profile": "linear-v1",
+            "speedMmPerSecond": 12000
+          }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "突進斬り",
+        "originalText": "突進斬り",
+        "rangeMm": 4000,
+        "recoverySteps": 10,
+        "stages": [
+          {
+            "attack": {
+              "activeSteps": 8,
+              "kind": "melee",
+              "maxHitsPerTarget": 1,
+              "radiusMm": 200,
+              "reachMm": 1800
+            },
+            "durationSteps": 8,
+            "effects": [
+              { "amount": 14, "attackScaleBps": 0, "element": "physical", "kind": "damage" },
+              {
+                "direction": "away",
+                "durationSteps": 3,
+                "kind": "force",
+                "profile": "linear-v1",
+                "speedMmPerSecond": 12000
+              }
+            ],
+            "id": "dash-cut",
+            "offsetSteps": 0,
+            "selfMotion": {
+              "accelerationMmPerSecond2": 100000,
+              "kind": "dash",
+              "speedMmPerSecond": 8000
+            }
+          }
+        ],
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "dash-cut-v1",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:e4dc989f853cc05c7b8238c68610c3e32a4b94784ecab7df4113c6ec99d44fc1",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "explosionRadiusMm": 2500,
+          "gravityScaleBps": 0,
+          "homingTurnMilliDegreesPerSecond": 0,
+          "kind": "projectile",
+          "lifetimeSteps": 150,
+          "maxHitsPerTarget": 1,
+          "observation": "launch-only",
+          "radiusMm": 80,
+          "speedMmPerSecond": 16000
+        },
+        "castSteps": 20,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 8, "uses": 0 },
+        "effects": [
+          { "amount": 35, "attackScaleBps": 10000, "element": "fire", "kind": "damage" },
+          {
+            "kind": "apply-status",
+            "status": {
+              "contentHash": "sha256:72d9b975b163b4e18f003e9650dcf6486e554ee1d7d12bcc7d93d2ecdc7a7fa1",
+              "id": "burning",
+              "revision": 1
+            }
+          }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "爆炎弾",
+        "originalText": "爆炎弾",
+        "rangeMm": 30000,
+        "recoverySteps": 35,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "fireball",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "direct" },
+        "castSteps": 0,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 0, "uses": 0 },
+        "effects": [{ "amount": 60, "kind": "shield" }],
+        "movementWhileCasting": "allow",
+        "name": "盾の構え",
+        "originalText": "盾の構え",
+        "rangeMm": 0,
+        "recoverySteps": 20,
+        "target": "self",
+        "trigger": "battle-start"
+      },
+      "id": "guard",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:2ff77c3130c363d1d15d991a0ee1a92f9595759fcabfc85c90f2ebdc922f2231",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "direct" },
+        "castSteps": 5,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 100,
+        "costs": { "hp": 0, "mp": 15, "uses": 0 },
+        "effects": [
+          { "amount": 35, "kind": "heal" },
+          {
+            "kind": "apply-status",
+            "status": {
+              "contentHash": "sha256:dcf1edb121b94689de4d5e26c75168b3256c26be1682490b0d7012216197067d",
+              "id": "regeneration",
+              "revision": 1
+            }
+          }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "癒しと再生",
+        "originalText": "癒しと再生",
+        "rangeMm": 0,
+        "recoverySteps": 20,
+        "target": "self",
+        "trigger": "action"
+      },
+      "id": "heal",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:0102cbd86b2e227894db699bfc4340ca7f727e1767c43e5e7cb41e000b294444",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "hitscan", "radiusMm": 100 },
+        "castSteps": 15,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 5, "uses": 0 },
+        "effects": [
+          { "amount": 15, "attackScaleBps": 10000, "element": "ice", "kind": "damage" },
+          {
+            "kind": "apply-status",
+            "status": {
+              "contentHash": "sha256:ee8f40e6e7b1b8597c4cc3c0db041db0ac9f5e1726eb8788bad69387d18486f4",
+              "id": "frost",
+              "revision": 1
+            }
+          }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "氷の射線",
+        "originalText": "氷の射線",
+        "rangeMm": 25000,
+        "recoverySteps": 30,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "ice",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:72ad3f4db08936dbe3f70f547dd517b355b54f724295c5a17ab843ec28b8f8a8",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "hitscan", "radiusMm": 0 },
+        "castSteps": 8,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 6, "uses": 0 },
+        "effects": [
+          { "amount": 18, "attackScaleBps": 10000, "element": "lightning", "kind": "damage" }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "雷光",
+        "originalText": "雷光",
+        "rangeMm": 20000,
+        "recoverySteps": 25,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "lightning",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "hitscan", "radiusMm": 0 },
+        "castSteps": 4,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 2, "uses": 0 },
+        "effects": [{ "amount": 25, "attackScaleBps": 0, "element": "fire", "kind": "damage" }],
+        "movementWhileCasting": "allow",
+        "name": "fireの観測射撃",
+        "originalText": "fireの観測射撃",
+        "rangeMm": 20000,
+        "recoverySteps": 16,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "measured-fire",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:39b76f7d8ff892a180d7142fcba6d92a7c361d58a4fe5261251ed6f0190696d2",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "hitscan", "radiusMm": 0 },
+        "castSteps": 4,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 2, "uses": 0 },
+        "effects": [{ "amount": 25, "attackScaleBps": 0, "element": "ice", "kind": "damage" }],
+        "movementWhileCasting": "allow",
+        "name": "iceの観測射撃",
+        "originalText": "iceの観測射撃",
+        "rangeMm": 20000,
+        "recoverySteps": 16,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "measured-ice",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:ebe6c0f4194d04a18d9d657a3fdd2b692a86b1ccb82b291d6b5885e17ddc5c42",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "explosionRadiusMm": 0,
+          "gravityScaleBps": 0,
+          "homingTurnMilliDegreesPerSecond": 0,
+          "kind": "projectile",
+          "lifetimeSteps": 150,
+          "maxHitsPerTarget": 1,
+          "observation": "launch-only",
+          "radiusMm": 80,
+          "speedMmPerSecond": 16000
+        },
+        "castSteps": 6,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 3, "uses": 0 },
+        "effects": [
+          { "amount": 20, "attackScaleBps": 0, "element": "fire", "kind": "damage" },
+          {
+            "kind": "apply-status",
+            "status": {
+              "contentHash": "sha256:4d6b455fc9652857bda8fafdb8c1286c858a2638ef5a432dd754b19095442024",
+              "id": "ordinary-burning",
+              "revision": 1
+            }
+          }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "燃焼を与える炎弾",
+        "originalText": "燃焼を与える炎弾",
+        "rangeMm": 20000,
+        "recoverySteps": 24,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "ordinary-flare",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "direct" },
+        "castSteps": 0,
+        "categories": ["technique"],
+        "condition": { "kind": "always" },
+        "cooldownSteps": 60,
+        "costs": { "hp": 0, "mp": 0, "stamina": 4, "uses": 0 },
+        "effects": [],
+        "movementWhileCasting": "allow",
+        "name": "受け流し",
+        "originalText": "受け流し",
+        "rangeMm": 0,
+        "reaction": { "categories": ["physical"], "response": { "kind": "parry", "scope": "all" } },
+        "recoverySteps": 6,
+        "target": "self",
+        "trigger": "before-hit"
+      },
+      "id": "parry-v1",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:396d51406e90fb6d783f0b9037d39f6bcd7f8c034624096c90db34edf3934b7f",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "activeSteps": 2,
+          "kind": "melee",
+          "maxHitsPerTarget": 1,
+          "radiusMm": 200,
+          "reachMm": 1800
+        },
+        "castSteps": 2,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 30,
+        "costs": { "hp": 0, "mp": 0, "stamina": 6, "uses": 0 },
+        "effects": [{ "amount": 10, "attackScaleBps": 0, "element": "physical", "kind": "damage" }],
+        "movementWhileCasting": "allow",
+        "name": "返しの連撃",
+        "originalText": "返しの連撃",
+        "rangeMm": 2500,
+        "recoverySteps": 4,
+        "stages": [
+          {
+            "attack": {
+              "activeSteps": 2,
+              "kind": "melee",
+              "maxHitsPerTarget": 1,
+              "radiusMm": 200,
+              "reachMm": 1800
+            },
+            "durationSteps": 2,
+            "effects": [
+              { "amount": 10, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+            ],
+            "id": "cut",
+            "offsetSteps": 0
+          },
+          {
+            "attack": {
+              "activeSteps": 2,
+              "kind": "melee",
+              "maxHitsPerTarget": 1,
+              "radiusMm": 200,
+              "reachMm": 1800
+            },
+            "cost": { "stamina": 4 },
+            "durationSteps": 2,
+            "effects": [
+              { "amount": 15, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+            ],
+            "id": "return",
+            "offsetSteps": 3
+          }
+        ],
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "return-cut-v1",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:1d54c35a5d79ce021d43eb0cc31b6bccd027ad71846ea9f9ce3dbde71f6c3514",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "hitscan", "radiusMm": 0 },
+        "castSteps": 8,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 100,
+        "costs": { "hp": 0, "mp": 8, "uses": 3 },
+        "effects": [
+          {
+            "delaySteps": 5,
+            "durationSteps": 250,
+            "element": "fire",
+            "field": "resistance",
+            "kind": "reveal",
+            "occlusion": "vision",
+            "powerBps": 6000,
+            "precisionBps": 1000
+          }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "炎耐性の限定鑑定",
+        "originalText": "炎耐性の限定鑑定",
+        "rangeMm": 12000,
+        "recoverySteps": 16,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "reveal-fire",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:07e20804d028d980a6de20a0e8681886ea85b11df719d2db92a5925bb09ebcc4",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "hitscan", "radiusMm": 80 },
+        "castSteps": 0,
+        "categories": ["technique"],
+        "condition": { "kind": "always" },
+        "cooldownSteps": 30,
+        "costs": { "hp": 0, "mp": 0, "stamina": 3, "uses": 8 },
+        "effects": [
+          { "amount": 12, "attackScaleBps": 5000, "element": "physical", "kind": "damage" }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "被弾後の反撃",
+        "originalText": "被弾後の反撃",
+        "rangeMm": 3000,
+        "reaction": { "response": { "kind": "counter" } },
+        "recoverySteps": 4,
+        "target": "enemy",
+        "trigger": "after-damage"
+      },
+      "id": "riposte-v1",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "explosionRadiusMm": 0,
+          "gravityScaleBps": 0,
+          "homingTurnMilliDegreesPerSecond": 90000,
+          "kind": "projectile",
+          "lifetimeSteps": 150,
+          "maxHitsPerTarget": 1,
+          "observation": "owner-visible",
+          "radiusMm": 80,
+          "speedMmPerSecond": 18000
+        },
+        "castSteps": 10,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 4, "uses": 0 },
+        "effects": [
+          { "amount": 12, "attackScaleBps": 10000, "element": "arcane", "kind": "damage" }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "観測誘導弾",
+        "originalText": "観測誘導弾",
+        "rangeMm": 30000,
+        "recoverySteps": 35,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "seeker",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "direct" },
+        "castSteps": 3,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 25,
+        "costs": { "hp": 0, "mp": 4, "uses": 0 },
+        "effects": [{ "extinguish": true, "kind": "water" }],
+        "movementWhileCasting": "allow",
+        "name": "自己への水魔法",
+        "originalText": "自己への水魔法",
+        "rangeMm": 0,
+        "recoverySteps": 12,
+        "target": "self",
+        "trigger": "action"
+      },
+      "id": "self-water",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "activeSteps": 3,
+          "kind": "melee",
+          "maxHitsPerTarget": 1,
+          "radiusMm": 150,
+          "reachMm": 3200
+        },
+        "castSteps": 5,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 0, "uses": 0 },
+        "effects": [
+          { "amount": 10, "attackScaleBps": 10000, "element": "physical", "kind": "damage" }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "槍の突き",
+        "originalText": "槍の突き",
+        "rangeMm": 3500,
+        "recoverySteps": 30,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "spear",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "activeSteps": 2,
+          "kind": "melee",
+          "maxHitsPerTarget": 1,
+          "radiusMm": 200,
+          "reachMm": 1800
+        },
+        "castSteps": 5,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 0, "stamina": 10, "uses": 0 },
+        "effects": [
+          { "amount": 10, "attackScaleBps": 10000, "element": "physical", "kind": "damage" }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "踏み込む斬撃",
+        "originalText": "踏み込む斬撃",
+        "rangeMm": 2000,
+        "recoverySteps": 20,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "stamina-strike-v1",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:74bdae414167ea17a3f92a0489148d03d5a60fd624ae3f97ca73eb0ca950485c",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "direct" },
+        "castSteps": 0,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 0, "stamina": 5, "uses": 1 },
+        "effects": [
+          {
+            "flightStaminaPerSecond": 5,
+            "kind": "apply-status",
+            "status": {
+              "contentHash": "sha256:c49f480d72eda771c15552ae74cfda8f813be5c3a72b1974afacfa5ca5eea761",
+              "id": "stamina-wings-v1",
+              "revision": 1
+            }
+          }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "省力飛行",
+        "originalText": "省力飛行",
+        "rangeMm": 0,
+        "recoverySteps": 20,
+        "target": "self",
+        "trigger": "battle-start"
+      },
+      "id": "stamina-takeoff-v1",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "activeSteps": 2,
+          "kind": "melee",
+          "maxHitsPerTarget": 1,
+          "radiusMm": 200,
+          "reachMm": 1800
+        },
+        "castSteps": 5,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 0, "uses": 0 },
+        "effects": [
+          { "amount": 10, "attackScaleBps": 10000, "element": "physical", "kind": "damage" }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "剣",
+        "originalText": "正面の相手を剣で攻撃する",
+        "rangeMm": 2000,
+        "recoverySteps": 20,
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "sword",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": { "kind": "direct" },
+        "castSteps": 0,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 0,
+        "costs": { "hp": 0, "mp": 0, "uses": 0 },
+        "effects": [
+          {
+            "kind": "apply-status",
+            "status": {
+              "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944",
+              "id": "flight",
+              "revision": 1
+            }
+          }
+        ],
+        "movementWhileCasting": "allow",
+        "name": "開幕の飛行",
+        "originalText": "開幕の飛行",
+        "rangeMm": 0,
+        "recoverySteps": 20,
+        "target": "self",
+        "trigger": "battle-start"
+      },
+      "id": "takeoff",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18",
+      "definition": {
+        "aimErrorMilliDegrees": 0,
+        "attack": {
+          "bladeRadiusMm": 100,
+          "kind": "radial",
+          "reachMm": 2000,
+          "startAngleMilliDegrees": -90000
+        },
+        "castSteps": 3,
+        "condition": { "kind": "always" },
+        "cooldownSteps": 30,
+        "costs": { "hp": 0, "mp": 0, "stamina": 8, "uses": 0 },
+        "effects": [{ "amount": 18, "attackScaleBps": 0, "element": "physical", "kind": "damage" }],
+        "movementWhileCasting": "allow",
+        "name": "全周の薙ぎ払い",
+        "originalText": "全周の薙ぎ払い",
+        "rangeMm": 2400,
+        "recoverySteps": 8,
+        "stages": [
+          {
+            "attack": {
+              "bladeRadiusMm": 100,
+              "kind": "radial",
+              "reachMm": 2000,
+              "startAngleMilliDegrees": -90000
+            },
+            "durationSteps": 20,
+            "effects": [
+              { "amount": 18, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+            ],
+            "id": "sweep",
+            "offsetSteps": 0
+          }
+        ],
+        "target": "enemy",
+        "trigger": "action"
+      },
+      "id": "wide-sweep-v1",
+      "kind": "ability",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:efde0ebbb7c06098ae9e55adc65d8b39fcb21e142921da31fcfdaeccddba5bb9",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3",
+            "id": "seeker",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "魔法弓使い",
+        "originalText": "魔法弓使い。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:8472426e6400c50f121ef90b1efa56a0ecab8acdcce07548fc6f3c8d95b685b4",
+          "id": "arcane-archer-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 85,
+          "mp": 300,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "arcane-archer",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:301136288eae7d1027878c96f08a1a0a66eb6b7cffe909d08a72118a8f7d19bc",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81",
+            "id": "arrow",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "弓使い",
+        "originalText": "弓使い。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:84929035bc77b8b535df55c8c8f5524bcd1cbb906a17fd7dbc2056d4b1a81843",
+          "id": "archer-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 80,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "archer",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:afb1cf71bf6a2be45a23001982fd25328d31d0c15f0e0b197a39f953114f923a",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:ebe6c0f4194d04a18d9d657a3fdd2b692a86b1ccb82b291d6b5885e17ddc5c42",
+            "id": "ordinary-flare",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55",
+            "id": "self-water",
+            "revision": 1
+          }
+        ],
+        "appearance": { "equipment": ["staff"], "silhouette": "humanoid", "surface": "red" },
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 200, "z": 0 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "炎と水の術師",
+        "originalText": "炎と水の術師。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:06cad52985a9446fb07e7081cc5414a55a0f8f68a0dd59214051e15ebe80ff55",
+          "id": "ember-duelist-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 150,
+          "mp": 300,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "ember-duelist",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:92d6fdbe4449a4cf2df33bc96903f689d77ebe9aa5273b478a3caf88f5fca5b7",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:e4dc989f853cc05c7b8238c68610c3e32a4b94784ecab7df4113c6ec99d44fc1",
+            "id": "fireball",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "炎術師",
+        "originalText": "炎術師。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:626da8128a7b437511d969c2df5ed6a5ae987de33287131138f715c294656bd7",
+          "id": "fire-mage-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 90,
+          "mp": 400,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "fire-mage",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:fa9724ead3a489542266bccf43fef95c01991c9cc3878fc203820305fe6a3cbb",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965",
+            "id": "measured-fire",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:39b76f7d8ff892a180d7142fcba6d92a7c361d58a4fe5261251ed6f0190696d2",
+            "id": "measured-ice",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:1d54c35a5d79ce021d43eb0cc31b6bccd027ad71846ea9f9ce3dbde71f6c3514",
+            "id": "reveal-fire",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55",
+            "id": "self-water",
+            "revision": 1
+          }
+        ],
+        "appearance": { "equipment": ["staff"], "silhouette": "humanoid", "surface": "bright" },
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 200, "z": 0 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "炎を鑑定する術師",
+        "originalText": "炎を鑑定する術師。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:0c7c8c1e8bd7edd94b088cfcf8e4a9e6be5fc66107c0c8c1924be45e69d05ddf",
+          "id": "fire-seer-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 120,
+          "mp": 300,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "fire-seer",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+            "id": "sword",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769",
+            "id": "guard",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [
+          {
+            "contentHash": "sha256:96bbdbd35cfb6b454b6a504779ee1a4530d8179c59fbc13c6d508042bdf3feaf",
+            "id": "plate",
+            "revision": 1
+          }
+        ],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 2500,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "重装騎士",
+        "originalText": "重装騎士。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:24fe8f031decaf929218e92cd4cc444ac056cde4c34029ce258d1ec2f2d5bd64",
+          "id": "guardian-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 160,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "guardian",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:8cc1e799233de3462c00fda0b19421f6b6a8714776a82c47b65a6a0e46a0a33d",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+            "id": "sword",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:6e039c88be89bf40379ad6a6ae7a74b5b6ab2c492b3cbe417a452187d2d98121",
+            "id": "cleanse",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:2ff77c3130c363d1d15d991a0ee1a92f9595759fcabfc85c90f2ebdc922f2231",
+            "id": "heal",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "治癒剣士",
+        "originalText": "治癒剣士。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:32a1c0f07b9dca7896ae4bf5ee264c39d046d15006ccffc47fab7383c6ca86da",
+          "id": "healer-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 110,
+          "mp": 180,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "healer",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:229c51fbb2b38b2cd3c66f571dad8fd7f26d6f7e9fbcba00913bdb110e16cbd4",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:0102cbd86b2e227894db699bfc4340ca7f727e1767c43e5e7cb41e000b294444",
+            "id": "ice",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "氷術師",
+        "originalText": "氷術師。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:79ef23078b741061dd9c5b5423b35ce46f938c2af9d0fca9c9cd3c76951288c2",
+          "id": "ice-mage-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 90,
+          "mp": 400,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 4000, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "ice-mage",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:66182d21f131993513596e85ab55858f95bc379c690de511307d2056f9d00e88",
+      "definition": {
+        "abilities": [],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [
+          {
+            "contentHash": "sha256:a00a48880d5a98a202dd40e8c1c396aea301bc1be0f0d02d0c4bd7e6dfced717",
+            "id": "long-spear",
+            "revision": 1
+          }
+        ],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "槍兵",
+        "originalText": "槍兵。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:b280076b1ee04863022b1b18b79e788ac8c957cc28a3608d302b93c31a02e0b9",
+          "id": "lancer-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "lancer",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:47fe005c185430150be08e70032ca2956843c545ce6e8dd00398b300f2e12143",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81",
+            "id": "arrow",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "弓使い・姿勢検証",
+        "originalText": "弓使い。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:2cdad91136d6439d1e4efdbba116246f0a50a6354282af07ef0ba5aaa7e2ac13",
+          "id": "posture-archer-v1-policy",
+          "revision": 1
+        },
+        "postures": {
+          "crouching": {
+            "body": {
+              "aimOffset": { "x": 0, "y": 0, "z": 0 },
+              "eyeOffset": { "x": 0, "y": 350, "z": 0 },
+              "heightMm": 1000,
+              "muzzleOffset": { "x": 0, "y": 0, "z": 0 },
+              "radiusMm": 300
+            },
+            "speedBps": 5000,
+            "transitionSteps": 10
+          },
+          "prone": {
+            "body": {
+              "aimOffset": { "x": 0, "y": 0, "z": 0 },
+              "eyeOffset": { "x": 0, "y": 100, "z": 0 },
+              "heightMm": 600,
+              "muzzleOffset": { "x": 0, "y": 0, "z": 0 },
+              "radiusMm": 300
+            },
+            "speedBps": 2000,
+            "transitionSteps": 20
+          }
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 80,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "posture-archer-v1",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:a866e6fd292cff362d8e094f86dcc944ad5eb02e125a8ce301265bb405550a35",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc",
+            "id": "stamina-strike-v1",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "locomotion": {
+            "dodgeStamina": 8,
+            "exhaustedSpeedMmPerSecond": 500,
+            "jumpStamina": 12,
+            "run": { "speedMmPerSecond": 6000, "staminaPerMeter": 6 },
+            "stepStaminaPerMeter": 10,
+            "walk": { "speedMmPerSecond": 2000, "staminaPerMeter": 2 }
+          },
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "体力を配分する斥候・姿勢検証",
+        "originalText": "体力を配分する斥候。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:f95190a5007d28119959e2225e94c383d3f58addaafc2be49a810151ecaded10",
+          "id": "posture-duelist-v1-policy",
+          "revision": 1
+        },
+        "postures": {
+          "crouching": {
+            "body": {
+              "aimOffset": { "x": 0, "y": 0, "z": 0 },
+              "eyeOffset": { "x": 0, "y": 350, "z": 0 },
+              "heightMm": 1000,
+              "muzzleOffset": { "x": 0, "y": 0, "z": 0 },
+              "radiusMm": 300
+            },
+            "speedBps": 5000,
+            "transitionSteps": 10
+          },
+          "prone": {
+            "body": {
+              "aimOffset": { "x": 0, "y": 0, "z": 0 },
+              "eyeOffset": { "x": 0, "y": 100, "z": 0 },
+              "heightMm": 600,
+              "muzzleOffset": { "x": 0, "y": 0, "z": 0 },
+              "radiusMm": 300
+            },
+            "speedBps": 2000,
+            "transitionSteps": 20
+          }
+        },
+        "stamina": { "max": 100, "recoveryPerSecond": 3, "resumeAt": 20 },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "posture-duelist-v1",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:e0585a005b30ba52b6127defd50ab6b2d20902b2bef64948c66ccafd6290bd64",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+            "id": "sword",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980",
+            "id": "parry-v1",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:07e20804d028d980a6de20a0e8681886ea85b11df719d2db92a5925bb09ebcc4",
+            "id": "riposte-v1",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "locomotion": {
+            "dodgeStamina": 8,
+            "exhaustedSpeedMmPerSecond": 500,
+            "jumpStamina": 12,
+            "run": { "speedMmPerSecond": 6000, "staminaPerMeter": 6 },
+            "stepStaminaPerMeter": 10,
+            "walk": { "speedMmPerSecond": 2000, "staminaPerMeter": 2 }
+          },
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "受け流しと反撃の剣士",
+        "originalText": "受け流しと反撃の剣士。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:6ff8744b894b44831eb9edea8bdd4828f39395abafa416151d33b858819805cb",
+          "id": "reaction-duelist-v1-policy",
+          "revision": 1
+        },
+        "stamina": { "max": 100, "recoveryPerSecond": 3, "resumeAt": 20 },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "reaction-duelist-v1",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3",
+            "id": "seeker",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd",
+            "id": "takeoff",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "飛行術師",
+        "originalText": "飛行術師。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c",
+          "id": "sky-mage-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 400,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "sky-mage",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:a3fb9906fc16ad1d20b5c898713d26448154704bd2d6b0c82cf5666c4dbc9c78",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c",
+            "id": "dash-cut-v1",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18",
+            "id": "wide-sweep-v1",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "locomotion": {
+            "dodgeStamina": 8,
+            "exhaustedSpeedMmPerSecond": 500,
+            "jumpStamina": 12,
+            "run": { "speedMmPerSecond": 6000, "staminaPerMeter": 6 },
+            "stepStaminaPerMeter": 10,
+            "walk": { "speedMmPerSecond": 2000, "staminaPerMeter": 2 }
+          },
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "突進と薙ぎ払いの前衛",
+        "originalText": "突進と薙ぎ払いの前衛。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:9d74211f70745ea4fac5dfe60724ef0496b42edd8fbe75c951e1959c976f1949",
+          "id": "stage-vanguard-v1-policy",
+          "revision": 1
+        },
+        "stamina": { "max": 100, "recoveryPerSecond": 3, "resumeAt": 20 },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "stage-vanguard-v1",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:9f96acc56a9bfacd3479a2575a7fa00008a878ade3be6bcd2f7e012a93e5bf7c",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:396d51406e90fb6d783f0b9037d39f6bcd7f8c034624096c90db34edf3934b7f",
+            "id": "return-cut-v1",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "連撃の剣士",
+        "originalText": "連撃の剣士。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:ab74889e695425c41c762e4f4671833734bf710e1e45882433ccba7456c88e31",
+          "id": "staged-duelist-v1-policy",
+          "revision": 1
+        },
+        "stamina": { "max": 30, "recoveryPerSecond": 5 },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "staged-duelist-v1",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:db4d57a8f991b003531254daf590fa8b462f2e6cf396daea93350f3bdfe9bd27",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81",
+            "id": "arrow",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:74bdae414167ea17a3f92a0489148d03d5a60fd624ae3f97ca73eb0ca950485c",
+            "id": "stamina-takeoff-v1",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "locomotion": {
+            "dodgeStamina": 8,
+            "exhaustedSpeedMmPerSecond": 500,
+            "jumpStamina": 12,
+            "run": { "speedMmPerSecond": 6000, "staminaPerMeter": 6 },
+            "stepStaminaPerMeter": 10,
+            "walk": { "speedMmPerSecond": 2000, "staminaPerMeter": 2 }
+          },
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "滞空時間を選ぶ射手",
+        "originalText": "滞空時間を選ぶ射手。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:99e9d3dbf8fa27c3fec7299dd4a9edb87ae5cb87cf66d2fea69c9a2d15b96afc",
+          "id": "stamina-glider-v1-policy",
+          "revision": 1
+        },
+        "stamina": { "max": 100, "recoveryPerSecond": 3, "resumeAt": 20 },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "stamina-glider-v1",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:e7a4b6231dbf28572760bf3e17af0c29276e1b71c7f48488116889cf3bad7f03",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc",
+            "id": "stamina-strike-v1",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "locomotion": {
+            "dodgeStamina": 8,
+            "exhaustedSpeedMmPerSecond": 500,
+            "jumpStamina": 12,
+            "run": { "speedMmPerSecond": 6000, "staminaPerMeter": 6 },
+            "stepStaminaPerMeter": 10,
+            "walk": { "speedMmPerSecond": 2000, "staminaPerMeter": 2 }
+          },
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "体力を配分する斥候",
+        "originalText": "体力を配分する斥候。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:7e37dbc35065f99612fa6e8e41fe8bea2ac9b9fccdf0a3ae00220053f702df34",
+          "id": "stamina-scout-v1-policy",
+          "revision": 1
+        },
+        "stamina": { "max": 100, "recoveryPerSecond": 3, "resumeAt": 20 },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "stamina-scout-v1",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:a9d96cf5dfad37749f6ab4b757a55c872459698647054856a49444778b99a489",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:72ad3f4db08936dbe3f70f547dd517b355b54f724295c5a17ab843ec28b8f8a8",
+            "id": "lightning",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "雷術師",
+        "originalText": "雷術師。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:974519701fe5f7abe4ca8880cbc17bc6bb2c0c1385b4c26ea671a6cc828563b7",
+          "id": "storm-mage-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 80,
+          "mp": 400,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "storm-mage",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+            "id": "sword",
+            "revision": 1
+          }
+        ],
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "剣士",
+        "originalText": "剣士。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda",
+          "id": "swordsman-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 100,
+          "mp": 100,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "swordsman",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:26185be68cef86a3d3f407b8180ecc3375b8709f343c01362aa44ddf08c9d839",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965",
+            "id": "measured-fire",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:39b76f7d8ff892a180d7142fcba6d92a7c361d58a4fe5261251ed6f0190696d2",
+            "id": "measured-ice",
+            "revision": 1
+          },
+          {
+            "contentHash": "sha256:632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55",
+            "id": "self-water",
+            "revision": 1
+          }
+        ],
+        "appearance": { "equipment": ["staff"], "silhouette": "humanoid", "surface": "neutral" },
+        "body": {
+          "aimOffset": { "x": 0, "y": 200, "z": 0 },
+          "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+          "heightMm": 1800,
+          "muzzleOffset": { "x": 0, "y": 200, "z": 0 },
+          "radiusMm": 300
+        },
+        "equipment": [],
+        "movement": {
+          "accelerationMmPerSecond2": 12000,
+          "flySpeedMmPerSecond": 5000,
+          "jumpMmPerSecond": 5000,
+          "maxSlopeMilliDegrees": 45000,
+          "speedMmPerSecond": 4000,
+          "stepHeightMm": 300,
+          "turnMilliDegreesPerSecond": 360000
+        },
+        "name": "観測する水術師",
+        "originalText": "観測する水術師。能力・装備・方針はすべて公開revisionで固定する。",
+        "perception": {
+          "fovMilliDegrees": 180000,
+          "memorySteps": 250,
+          "rangeMm": 50000,
+          "reactionSteps": 5
+        },
+        "policy": {
+          "contentHash": "sha256:b7596f61912a7a8b22802b3c262a138617f552930a8c59ba0a9e1ae747ef91ca",
+          "id": "water-observer-policy",
+          "revision": 1
+        },
+        "stats": {
+          "actionSpeedBps": 10000,
+          "attack": 20,
+          "defense": 5,
+          "hp": 130,
+          "mp": 300,
+          "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+          "shield": 0
+        }
+      },
+      "id": "water-observer",
+      "kind": "character",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:a00a48880d5a98a202dd40e8c1c396aea301bc1be0f0d02d0c4bd7e6dfced717",
+      "definition": {
+        "abilities": [
+          {
+            "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3",
+            "id": "spear",
+            "revision": 1
+          }
+        ],
+        "attackBonus": 5,
+        "defenseBonus": 0,
+        "name": "長槍",
+        "originalText": "攻撃力を補い、槍の突きを使える装備"
+      },
+      "id": "long-spear",
+      "kind": "equipment",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:96bbdbd35cfb6b454b6a504779ee1a4530d8179c59fbc13c6d508042bdf3feaf",
+      "definition": {
+        "abilities": [],
+        "attackBonus": 0,
+        "defenseBonus": 12,
+        "name": "重装鎧",
+        "originalText": "防御力を補う鎧"
+      },
+      "id": "plate",
+      "kind": "equipment",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:8472426e6400c50f121ef90b1efa56a0ecab8acdcce07548fc6f3c8d95b685b4",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "魔法弓使いの方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 9000,
+        "priorities": [{ "abilityId": "seeker", "when": { "kind": "always" } }]
+      },
+      "id": "arcane-archer-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:84929035bc77b8b535df55c8c8f5524bcd1cbb906a17fd7dbc2056d4b1a81843",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "evade",
+        "name": "弓使いの方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 8000,
+        "priorities": [{ "abilityId": "arrow", "when": { "kind": "always" } }]
+      },
+      "id": "archer-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:06cad52985a9446fb07e7081cc5414a55a0f8f68a0dd59214051e15ebe80ff55",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "炎と水の術師の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 7000,
+        "priorities": [
+          { "abilityId": "ordinary-flare", "when": { "kind": "always" } },
+          { "abilityId": "self-water", "when": { "kind": "always" } }
+        ]
+      },
+      "id": "ember-duelist-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:626da8128a7b437511d969c2df5ed6a5ae987de33287131138f715c294656bd7",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "炎術師の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 7000,
+        "priorities": [{ "abilityId": "fireball", "when": { "kind": "always" } }]
+      },
+      "id": "fire-mage-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:0c7c8c1e8bd7edd94b088cfcf8e4a9e6be5fc66107c0c8c1924be45e69d05ddf",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "炎を鑑定する術師の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 7000,
+        "priorities": [
+          { "abilityId": "measured-fire", "when": { "kind": "always" } },
+          { "abilityId": "measured-ice", "when": { "kind": "always" } },
+          { "abilityId": "reveal-fire", "when": { "kind": "always" } },
+          { "abilityId": "self-water", "when": { "kind": "always" } }
+        ]
+      },
+      "id": "fire-seer-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:24fe8f031decaf929218e92cd4cc444ac056cde4c34029ce258d1ec2f2d5bd64",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "重装騎士の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 1200,
+        "priorities": [{ "abilityId": "sword", "when": { "kind": "always" } }]
+      },
+      "id": "guardian-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:32a1c0f07b9dca7896ae4bf5ee264c39d046d15006ccffc47fab7383c6ca86da",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "治癒剣士の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 1200,
+        "priorities": [
+          {
+            "abilityId": "cleanse",
+            "when": {
+              "children": [
+                { "id": "burning", "kind": "status", "present": true },
+                { "id": "frost", "kind": "status", "present": true }
+              ],
+              "kind": "any"
+            }
+          },
+          {
+            "abilityId": "heal",
+            "when": { "belowBps": 6000, "kind": "resource", "resource": "hp" }
+          },
+          { "abilityId": "sword", "when": { "kind": "always" } }
+        ]
+      },
+      "id": "healer-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:79ef23078b741061dd9c5b5423b35ce46f938c2af9d0fca9c9cd3c76951288c2",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "氷術師の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 7000,
+        "priorities": [{ "abilityId": "ice", "when": { "kind": "always" } }]
+      },
+      "id": "ice-mage-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:b280076b1ee04863022b1b18b79e788ac8c957cc28a3608d302b93c31a02e0b9",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "槍兵の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 2200,
+        "priorities": [{ "abilityId": "spear", "when": { "kind": "always" } }]
+      },
+      "id": "lancer-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:2cdad91136d6439d1e4efdbba116246f0a50a6354282af07ef0ba5aaa7e2ac13",
+      "definition": {
+        "evaluation": {
+          "attackBps": 10000,
+          "explorationBps": 10000,
+          "resourceConservationBps": 15000,
+          "riskToleranceBps": 5000,
+          "searchAggressionBps": 5000,
+          "survivalBps": 10000
+        },
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "evade",
+        "name": "弓使いの方針・姿勢と索敵",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 8000,
+        "priorities": [{ "abilityId": "arrow", "when": { "kind": "always" } }]
+      },
+      "id": "posture-archer-v1-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:f95190a5007d28119959e2225e94c383d3f58addaafc2be49a810151ecaded10",
+      "definition": {
+        "evaluation": {
+          "attackBps": 10000,
+          "explorationBps": 10000,
+          "resourceConservationBps": 15000,
+          "riskToleranceBps": 5000,
+          "searchAggressionBps": 5000,
+          "survivalBps": 10000
+        },
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "体力を配分する斥候の方針・姿勢と索敵",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 1200,
+        "priorities": [{ "abilityId": "stamina-strike-v1", "when": { "kind": "always" } }]
+      },
+      "id": "posture-duelist-v1-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:6ff8744b894b44831eb9edea8bdd4828f39395abafa416151d33b858819805cb",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "受け流しと反撃の剣士の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 1200,
+        "priorities": [{ "abilityId": "sword", "when": { "kind": "always" } }]
+      },
+      "id": "reaction-duelist-v1-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "飛行術師の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 6000,
+        "priorities": [{ "abilityId": "seeker", "when": { "kind": "always" } }]
+      },
+      "id": "sky-mage-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:9d74211f70745ea4fac5dfe60724ef0496b42edd8fbe75c951e1959c976f1949",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "突進と薙ぎ払いの前衛の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 1400,
+        "priorities": [
+          { "abilityId": "dash-cut-v1", "when": { "kind": "always" } },
+          { "abilityId": "wide-sweep-v1", "when": { "kind": "always" } }
+        ]
+      },
+      "id": "stage-vanguard-v1-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:ab74889e695425c41c762e4f4671833734bf710e1e45882433ccba7456c88e31",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "連撃の剣士の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 1200,
+        "priorities": [{ "abilityId": "return-cut-v1", "when": { "kind": "always" } }]
+      },
+      "id": "staged-duelist-v1-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:99e9d3dbf8fa27c3fec7299dd4a9edb87ae5cb87cf66d2fea69c9a2d15b96afc",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "滞空時間を選ぶ射手の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 7000,
+        "priorities": [{ "abilityId": "arrow", "when": { "kind": "always" } }]
+      },
+      "id": "stamina-glider-v1-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:7e37dbc35065f99612fa6e8e41fe8bea2ac9b9fccdf0a3ae00220053f702df34",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "体力を配分する斥候の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 1200,
+        "priorities": [{ "abilityId": "stamina-strike-v1", "when": { "kind": "always" } }]
+      },
+      "id": "stamina-scout-v1-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:974519701fe5f7abe4ca8880cbc17bc6bb2c0c1385b4c26ea671a6cc828563b7",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "雷術師の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 6000,
+        "priorities": [{ "abilityId": "lightning", "when": { "kind": "always" } }]
+      },
+      "id": "storm-mage-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "approach",
+        "name": "剣士の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 1200,
+        "priorities": [{ "abilityId": "sword", "when": { "kind": "always" } }]
+      },
+      "id": "swordsman-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:b7596f61912a7a8b22802b3c262a138617f552930a8c59ba0a9e1ae747ef91ca",
+      "definition": {
+        "flightAltitudeMm": 6000,
+        "jumpWhenBlocked": true,
+        "movement": "keep-distance",
+        "name": "観測する水術師の方針",
+        "originalText": "条件を満たす優先行動と、観測に基づく移動",
+        "preferredDistanceMm": 7000,
+        "priorities": [
+          { "abilityId": "measured-fire", "when": { "kind": "always" } },
+          { "abilityId": "measured-ice", "when": { "kind": "always" } },
+          { "abilityId": "self-water", "when": { "kind": "always" } }
+        ]
+      },
+      "id": "water-observer-policy",
+      "kind": "policy",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:0ddc0ff66a1e5950a36d0b5ec1798b40fede3af99599f1438abcd3dd499a409c",
+      "definition": {
+        "ai": {
+          "actionWeight": 100,
+          "appearancePriors": {
+            "cues": [
+              {
+                "confidenceBps": 1000,
+                "efficacy": [{ "bps": 6500, "element": "fire" }],
+                "match": { "surface": "red" }
+              },
+              {
+                "confidenceBps": 1000,
+                "efficacy": [{ "bps": 6500, "element": "ice" }],
+                "match": { "surface": "blue" }
+              }
+            ],
+            "defaultEfficacyBps": 7500
+          },
+          "cover": "observed-threat-v1",
+          "damageQuantum": 10,
+          "dodgeWeight": 600,
+          "explorationWeight": 60,
+          "groundEvasion": "posture-jump-v1",
+          "healthPrior": 200,
+          "horizonSteps": 50,
+          "initialKnowledge": "empty-match-v1",
+          "killWeight": 2400,
+          "knowledgeTtlSteps": 500,
+          "memorySamples": 32,
+          "minimumCandidateWeightBps": 500,
+          "observation": "visible-coarse-v1",
+          "profile": "observed-utility-v1",
+          "random": "actor-purpose-rejection-v1",
+          "reapplication": "self-observed-v1",
+          "relativeImpactBps": [2500, 7500, 12500],
+          "riskWeight": 800,
+          "search": {
+            "cellsPerSide": 5,
+            "goalTimeoutSteps": 150,
+            "lowSightMm": 100,
+            "maxWaitSteps": 500,
+            "revisitSteps": 500
+          },
+          "slots": "simultaneous-v1"
+        },
+        "aoeOcclusion": "five-samples-equal-linear-v1",
+        "bodyContact": "symmetric-stop",
+        "curveErrorMm": 1,
+        "fallDamagePerMeterPerSecond": 5,
+        "fallSafeSpeedMmPerSecond": 8000,
+        "gravityMmPerSecond2": -9807,
+        "maxSteps": 6000,
+        "name": "観測・索敵・姿勢・脅威時の遮蔽",
+        "rulesVersion": "spatial-v1.20",
+        "simultaneousConflict": "unresolved",
+        "stepMs": 20
+      },
+      "id": "standard-tactics-v2",
+      "kind": "ruleset",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:44981b5451b18a587ce6fc0508c9086ff48177e50958955de91daf91e7b65fc5",
+      "definition": {
+        "bounds": {
+          "max": { "x": 50000, "y": 50000, "z": 50000 },
+          "min": { "x": -50000, "y": -1000, "z": -50000 }
+        },
+        "name": "高所の足場と細い橋・開けた空",
+        "navigation": {
+          "edges": [
+            {
+              "bidirectional": true,
+              "from": "bridge-0",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "bridge-1",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "bridge-1",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "bridge-2",
+              "widthMm": 1800
+            }
+          ],
+          "nodes": [
+            { "id": "bridge-0", "mode": "ground", "position": { "x": -6000, "y": 8902, "z": 0 } },
+            { "id": "bridge-1", "mode": "ground", "position": { "x": 0, "y": 8902, "z": 0 } },
+            { "id": "bridge-2", "mode": "ground", "position": { "x": 6000, "y": 8902, "z": 0 } }
+          ],
+          "version": "support-graph-v1"
+        },
+        "obstacles": [
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": -500, "z": 0 },
+            "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+            "id": "floor",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": 7800, "z": 0 },
+            "halfExtents": { "x": 3000, "y": 200, "z": 900 },
+            "id": "bridge",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -6000, "y": 7800, "z": 0 },
+            "halfExtents": { "x": 3000, "y": 200, "z": 3000 },
+            "id": "platform--1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 6000, "y": 7800, "z": 0 },
+            "halfExtents": { "x": 3000, "y": 200, "z": 3000 },
+            "id": "platform-1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          }
+        ],
+        "terrainKnowledge": "surveyed"
+      },
+      "id": "aerial-surveyed-v1",
+      "kind": "scenario",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:b479631ccc1edc25878bfa47a75eb1b6483f96329b1783cce6627e4a37ce84c2",
+      "definition": {
+        "bounds": {
+          "max": { "x": 50000, "y": 50000, "z": 50000 },
+          "min": { "x": -50000, "y": -1000, "z": -50000 }
+        },
+        "name": "対称の高台・階段と斜面",
+        "navigation": {
+          "edges": [
+            {
+              "bidirectional": true,
+              "from": "stairs--1-0",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-1",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-1",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-2",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-2",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-3",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-3",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-4",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-4",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-5",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-5",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-6",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-6",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-7",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-7",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-8",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-8",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-9",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-9",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-10",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-10",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-11",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-11",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-12",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs--1-12",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs--1-13",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-0",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-1",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-1",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-2",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-2",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-3",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-3",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-4",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-4",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-5",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-5",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-6",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-6",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-7",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-7",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-8",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-8",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-9",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-9",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-10",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-10",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-11",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-11",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-12",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "stairs-1-12",
+              "headroomMm": 12000,
+              "mode": "walk",
+              "to": "stairs-1-13",
+              "widthMm": 1800
+            }
+          ],
+          "nodes": [
+            {
+              "id": "stairs--1-0",
+              "mode": "ground",
+              "position": { "x": 8350, "y": 902, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-1",
+              "mode": "ground",
+              "position": { "x": 7660, "y": 1152, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-2",
+              "mode": "ground",
+              "position": { "x": 7340, "y": 1152, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-3",
+              "mode": "ground",
+              "position": { "x": 6660, "y": 1402, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-4",
+              "mode": "ground",
+              "position": { "x": 6340, "y": 1402, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-5",
+              "mode": "ground",
+              "position": { "x": 5660, "y": 1652, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-6",
+              "mode": "ground",
+              "position": { "x": 5340, "y": 1652, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-7",
+              "mode": "ground",
+              "position": { "x": 4660, "y": 1902, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-8",
+              "mode": "ground",
+              "position": { "x": 4340, "y": 1902, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-9",
+              "mode": "ground",
+              "position": { "x": 3660, "y": 2152, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-10",
+              "mode": "ground",
+              "position": { "x": 3340, "y": 2152, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-11",
+              "mode": "ground",
+              "position": { "x": 2660, "y": 2402, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-12",
+              "mode": "ground",
+              "position": { "x": 2340, "y": 2402, "z": -5500 }
+            },
+            {
+              "id": "stairs--1-13",
+              "mode": "ground",
+              "position": { "x": 0, "y": 2402, "z": -5500 }
+            },
+            {
+              "id": "stairs-1-0",
+              "mode": "ground",
+              "position": { "x": -8350, "y": 902, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-1",
+              "mode": "ground",
+              "position": { "x": -7660, "y": 1152, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-2",
+              "mode": "ground",
+              "position": { "x": -7340, "y": 1152, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-3",
+              "mode": "ground",
+              "position": { "x": -6660, "y": 1402, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-4",
+              "mode": "ground",
+              "position": { "x": -6340, "y": 1402, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-5",
+              "mode": "ground",
+              "position": { "x": -5660, "y": 1652, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-6",
+              "mode": "ground",
+              "position": { "x": -5340, "y": 1652, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-7",
+              "mode": "ground",
+              "position": { "x": -4660, "y": 1902, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-8",
+              "mode": "ground",
+              "position": { "x": -4340, "y": 1902, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-9",
+              "mode": "ground",
+              "position": { "x": -3660, "y": 2152, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-10",
+              "mode": "ground",
+              "position": { "x": -3340, "y": 2152, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-11",
+              "mode": "ground",
+              "position": { "x": -2660, "y": 2402, "z": 5500 }
+            },
+            {
+              "id": "stairs-1-12",
+              "mode": "ground",
+              "position": { "x": -2340, "y": 2402, "z": 5500 }
+            },
+            { "id": "stairs-1-13", "mode": "ground", "position": { "x": 0, "y": 2402, "z": 5500 } }
+          ],
+          "version": "support-graph-v1"
+        },
+        "obstacles": [
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": -500, "z": 0 },
+            "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+            "id": "floor",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": 750, "z": -5500 },
+            "halfExtents": { "x": 2000, "y": 750, "z": 2000 },
+            "id": "terrace--1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 7500, "y": 125, "z": -5500 },
+            "halfExtents": { "x": 500, "y": 125, "z": 1500 },
+            "id": "stair--1-0",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 6500, "y": 250, "z": -5500 },
+            "halfExtents": { "x": 500, "y": 250, "z": 1500 },
+            "id": "stair--1-1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 5500, "y": 375, "z": -5500 },
+            "halfExtents": { "x": 500, "y": 375, "z": 1500 },
+            "id": "stair--1-2",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 4500, "y": 500, "z": -5500 },
+            "halfExtents": { "x": 500, "y": 500, "z": 1500 },
+            "id": "stair--1-3",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 3500, "y": 625, "z": -5500 },
+            "halfExtents": { "x": 500, "y": 625, "z": 1500 },
+            "id": "stair--1-4",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 2500, "y": 750, "z": -5500 },
+            "halfExtents": { "x": 500, "y": 750, "z": 1500 },
+            "id": "stair--1-5",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -4900, "y": 650, "z": -5500 },
+            "halfExtents": { "x": 3000, "y": 100, "z": 1500 },
+            "id": "ramp--1",
+            "kind": "box",
+            "slopeMilliDegrees": 14000,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": 750, "z": 5500 },
+            "halfExtents": { "x": 2000, "y": 750, "z": 2000 },
+            "id": "terrace-1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -7500, "y": 125, "z": 5500 },
+            "halfExtents": { "x": 500, "y": 125, "z": 1500 },
+            "id": "stair-1-0",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -6500, "y": 250, "z": 5500 },
+            "halfExtents": { "x": 500, "y": 250, "z": 1500 },
+            "id": "stair-1-1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -5500, "y": 375, "z": 5500 },
+            "halfExtents": { "x": 500, "y": 375, "z": 1500 },
+            "id": "stair-1-2",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -4500, "y": 500, "z": 5500 },
+            "halfExtents": { "x": 500, "y": 500, "z": 1500 },
+            "id": "stair-1-3",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -3500, "y": 625, "z": 5500 },
+            "halfExtents": { "x": 500, "y": 625, "z": 1500 },
+            "id": "stair-1-4",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -2500, "y": 750, "z": 5500 },
+            "halfExtents": { "x": 500, "y": 750, "z": 1500 },
+            "id": "stair-1-5",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 4900, "y": 650, "z": 5500 },
+            "halfExtents": { "x": 3000, "y": 100, "z": 1500 },
+            "id": "ramp-1",
+            "kind": "box",
+            "slopeMilliDegrees": -14000,
+            "yawMilliDegrees": 0
+          }
+        ],
+        "terrainKnowledge": "surveyed"
+      },
+      "id": "elevation-surveyed-v1",
+      "kind": "scenario",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+      "definition": {
+        "bounds": {
+          "max": { "x": 50000, "y": 50000, "z": 50000 },
+          "min": { "x": -50000, "y": -1000, "z": -50000 }
+        },
+        "name": "平地",
+        "navigation": { "edges": [], "nodes": [], "version": "support-graph-v1" },
+        "obstacles": [
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": -500, "z": 0 },
+            "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+            "id": "floor",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          }
+        ],
+        "terrainKnowledge": "surveyed"
+      },
+      "id": "flat-surveyed-v1",
+      "kind": "scenario",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:5486b92d8e06acb712d53b3485c6eff1599d130d19e5537a77434a527e313383",
+      "definition": {
+        "bounds": {
+          "max": { "x": 12000, "y": 6000, "z": 8000 },
+          "min": { "x": -12000, "y": -1000, "z": -8000 }
+        },
+        "name": "天井のある回廊と四つの部屋",
+        "navigation": {
+          "edges": [
+            {
+              "bidirectional": true,
+              "from": "hall-0",
+              "headroomMm": 4500,
+              "mode": "walk",
+              "to": "hall-1",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "hall-1",
+              "headroomMm": 4500,
+              "mode": "walk",
+              "to": "hall-2",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "rooms--1-0",
+              "headroomMm": 4500,
+              "mode": "walk",
+              "to": "rooms--1-1",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "rooms--1-1",
+              "headroomMm": 4500,
+              "mode": "walk",
+              "to": "rooms--1-2",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "rooms--1-1",
+              "headroomMm": 4500,
+              "mode": "walk",
+              "to": "rooms--1-3",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "rooms-1-0",
+              "headroomMm": 4500,
+              "mode": "walk",
+              "to": "rooms-1-1",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "rooms-1-1",
+              "headroomMm": 4500,
+              "mode": "walk",
+              "to": "rooms-1-2",
+              "widthMm": 1800
+            },
+            {
+              "bidirectional": true,
+              "from": "rooms-1-1",
+              "headroomMm": 4500,
+              "mode": "walk",
+              "to": "rooms-1-3",
+              "widthMm": 1800
+            }
+          ],
+          "nodes": [
+            { "id": "hall-0", "mode": "ground", "position": { "x": -6000, "y": 902, "z": 0 } },
+            { "id": "hall-1", "mode": "ground", "position": { "x": 0, "y": 902, "z": 0 } },
+            { "id": "hall-2", "mode": "ground", "position": { "x": 6000, "y": 902, "z": 0 } },
+            {
+              "id": "rooms--1-0",
+              "mode": "ground",
+              "position": { "x": -6000, "y": 902, "z": -5000 }
+            },
+            { "id": "rooms--1-1", "mode": "ground", "position": { "x": 0, "y": 902, "z": -5000 } },
+            { "id": "rooms--1-2", "mode": "ground", "position": { "x": 0, "y": 902, "z": -1000 } },
+            {
+              "id": "rooms--1-3",
+              "mode": "ground",
+              "position": { "x": 6000, "y": 902, "z": -5000 }
+            },
+            {
+              "id": "rooms-1-0",
+              "mode": "ground",
+              "position": { "x": -6000, "y": 902, "z": 5000 }
+            },
+            { "id": "rooms-1-1", "mode": "ground", "position": { "x": 0, "y": 902, "z": 5000 } },
+            { "id": "rooms-1-2", "mode": "ground", "position": { "x": 0, "y": 902, "z": 1000 } },
+            { "id": "rooms-1-3", "mode": "ground", "position": { "x": 6000, "y": 902, "z": 5000 } }
+          ],
+          "version": "support-graph-v1"
+        },
+        "obstacles": [
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": -500, "z": 0 },
+            "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+            "id": "floor",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": 4700, "z": 0 },
+            "halfExtents": { "x": 12000, "y": 200, "z": 8000 },
+            "id": "ceiling",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -11800, "y": 2250, "z": 0 },
+            "halfExtents": { "x": 200, "y": 2250, "z": 8000 },
+            "id": "end-wall--1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": 2250, "z": -7800 },
+            "halfExtents": { "x": 12000, "y": 2250, "z": 200 },
+            "id": "side-wall--1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -7000, "y": 2250, "z": -2500 },
+            "halfExtents": { "x": 4500, "y": 2250, "z": 200 },
+            "id": "room--1--1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": -7000, "y": 2250, "z": 2500 },
+            "halfExtents": { "x": 4500, "y": 2250, "z": 200 },
+            "id": "room--1-1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 11800, "y": 2250, "z": 0 },
+            "halfExtents": { "x": 200, "y": 2250, "z": 8000 },
+            "id": "end-wall-1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": 2250, "z": 7800 },
+            "halfExtents": { "x": 12000, "y": 2250, "z": 200 },
+            "id": "side-wall-1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 7000, "y": 2250, "z": -2500 },
+            "halfExtents": { "x": 4500, "y": 2250, "z": 200 },
+            "id": "room-1--1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 7000, "y": 2250, "z": 2500 },
+            "halfExtents": { "x": 4500, "y": 2250, "z": 200 },
+            "id": "room-1-1",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          }
+        ],
+        "terrainKnowledge": "surveyed"
+      },
+      "id": "indoor-surveyed-v1",
+      "kind": "scenario",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",
+      "definition": {
+        "bounds": {
+          "max": { "x": 50000, "y": 50000, "z": 50000 },
+          "min": { "x": -50000, "y": -1000, "z": -50000 }
+        },
+        "name": "柱のある広場",
+        "navigation": {
+          "edges": [
+            {
+              "bidirectional": true,
+              "from": "corner-ws",
+              "headroomMm": 10000,
+              "mode": "walk",
+              "to": "corner-wn",
+              "widthMm": 1500
+            },
+            {
+              "bidirectional": true,
+              "from": "corner-ws",
+              "headroomMm": 10000,
+              "mode": "walk",
+              "to": "corner-es",
+              "widthMm": 1500
+            },
+            {
+              "bidirectional": true,
+              "from": "corner-wn",
+              "headroomMm": 10000,
+              "mode": "walk",
+              "to": "corner-en",
+              "widthMm": 1500
+            },
+            {
+              "bidirectional": true,
+              "from": "corner-es",
+              "headroomMm": 10000,
+              "mode": "walk",
+              "to": "corner-en",
+              "widthMm": 1500
+            }
+          ],
+          "nodes": [
+            {
+              "id": "corner-ws",
+              "mode": "ground",
+              "position": { "x": -2200, "y": 902, "z": -2200 }
+            },
+            {
+              "id": "corner-wn",
+              "mode": "ground",
+              "position": { "x": -2200, "y": 902, "z": 2200 }
+            },
+            {
+              "id": "corner-es",
+              "mode": "ground",
+              "position": { "x": 2200, "y": 902, "z": -2200 }
+            },
+            { "id": "corner-en", "mode": "ground", "position": { "x": 2200, "y": 902, "z": 2200 } }
+          ],
+          "version": "support-graph-v1"
+        },
+        "obstacles": [
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": -500, "z": 0 },
+            "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+            "id": "floor",
+            "kind": "box",
+            "slopeMilliDegrees": 0,
+            "yawMilliDegrees": 0
+          },
+          {
+            "blocks": { "attack": true, "movement": true, "vision": true },
+            "center": { "x": 0, "y": 1500, "z": 0 },
+            "halfHeightMm": 1500,
+            "id": "pillar",
+            "kind": "pillar",
+            "radiusMm": 1200
+          }
+        ],
+        "terrainKnowledge": "surveyed"
+      },
+      "id": "pillars-surveyed-v1",
+      "kind": "scenario",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:72d9b975b163b4e18f003e9650dcf6486e554ee1d7d12bcc7d93d2ecdc7a7fa1",
+      "definition": {
+        "durationSteps": 250,
+        "maxStacks": 1,
+        "modifiers": {
+          "attack": 0,
+          "defense": 0,
+          "flight": false,
+          "rooted": false,
+          "speedBps": 10000
+        },
+        "name": "炎上",
+        "originalText": "炎上",
+        "periodic": [{ "amount": 8, "element": "fire", "everySteps": 25, "kind": "damage" }],
+        "stackKey": "burning",
+        "stacking": "refresh"
+      },
+      "id": "burning",
+      "kind": "status",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944",
+      "definition": {
+        "durationSteps": 1000,
+        "maxStacks": 1,
+        "modifiers": {
+          "attack": 0,
+          "defense": 0,
+          "flight": true,
+          "rooted": false,
+          "speedBps": 10000
+        },
+        "name": "魔法飛行",
+        "originalText": "魔法飛行",
+        "periodic": [],
+        "stackKey": "flight",
+        "stacking": "refresh"
+      },
+      "id": "flight",
+      "kind": "status",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:ee8f40e6e7b1b8597c4cc3c0db041db0ac9f5e1726eb8788bad69387d18486f4",
+      "definition": {
+        "durationSteps": 250,
+        "maxStacks": 1,
+        "modifiers": {
+          "attack": 0,
+          "defense": 0,
+          "flight": false,
+          "rooted": false,
+          "speedBps": 5000
+        },
+        "name": "凍気",
+        "originalText": "凍気",
+        "periodic": [],
+        "stackKey": "frost",
+        "stacking": "refresh"
+      },
+      "id": "frost",
+      "kind": "status",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:4d6b455fc9652857bda8fafdb8c1286c858a2638ef5a432dd754b19095442024",
+      "definition": {
+        "burning": { "waterExtinguishable": true },
+        "durationSteps": 250,
+        "maxStacks": 1,
+        "modifiers": {
+          "attack": 0,
+          "defense": 0,
+          "flight": false,
+          "rooted": false,
+          "speedBps": 10000
+        },
+        "name": "水で消える燃焼",
+        "originalText": "水で消える燃焼",
+        "periodic": [{ "amount": 18, "element": "fire", "everySteps": 25, "kind": "damage" }],
+        "stackKey": "ordinary-burning",
+        "stacking": "refresh"
+      },
+      "id": "ordinary-burning",
+      "kind": "status",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:dcf1edb121b94689de4d5e26c75168b3256c26be1682490b0d7012216197067d",
+      "definition": {
+        "durationSteps": 250,
+        "maxStacks": 1,
+        "modifiers": {
+          "attack": 0,
+          "defense": 0,
+          "flight": false,
+          "rooted": false,
+          "speedBps": 10000
+        },
+        "name": "再生",
+        "originalText": "再生",
+        "periodic": [{ "amount": 8, "element": "arcane", "everySteps": 25, "kind": "heal" }],
+        "stackKey": "regeneration",
+        "stacking": "refresh"
+      },
+      "id": "regeneration",
+      "kind": "status",
+      "revision": 1,
+      "schemaVersion": 1
+    },
+    {
+      "contentHash": "sha256:c49f480d72eda771c15552ae74cfda8f813be5c3a72b1974afacfa5ca5eea761",
+      "definition": {
+        "durationSteps": 1000,
+        "flightStaminaPerSecond": 8,
+        "maxStacks": 1,
+        "modifiers": {
+          "attack": 0,
+          "defense": 0,
+          "flight": true,
+          "rooted": false,
+          "speedBps": 10000
+        },
+        "name": "体力で維持する飛行",
+        "originalText": "体力で維持する飛行",
+        "periodic": [],
+        "stackKey": "wings",
+        "stacking": "refresh"
+      },
+      "id": "stamina-wings-v1",
+      "kind": "status",
+      "revision": 1,
+      "schemaVersion": 1
+    }
+  ],
+  "ruleset": {
+    "contentHash": "sha256:0ddc0ff66a1e5950a36d0b5ec1798b40fede3af99599f1438abcd3dd499a409c",
+    "id": "standard-tactics-v2",
+    "revision": 1
+  },
+  "schemaVersion": 1,
+  "scoringVersion": "league-score-v1",
+  "seedDerivation": "league-trial-v1",
+  "trials": 4
+}

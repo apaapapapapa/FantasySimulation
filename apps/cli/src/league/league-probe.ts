@@ -1,0 +1,107 @@
+import {
+  PublicCatalogCurrentSchema,
+  PublicCatalogSchema,
+  PublicLeagueWorkSchema,
+  PublicLeagueSnapshotSchema,
+  type LeagueFileRef,
+  type LeagueProgress,
+  type PublicCatalog,
+} from '@fantasy/domain/spatial';
+import { createLeagueRevision, leagueMatches } from '@fantasy/engine/spatial';
+import { validateProgressPage, estimateLeague } from '@fantasy/api/tooling';
+import { sha256 } from '@fantasy/api/artifacts';
+import type { PublicationRead } from '../publication/publication-graph.ts';
+
+export const LEAGUE_PROFILE = {
+  matchesPerPlan: 128,
+  estimatedMsPerMatch: 4000,
+  estimatedBytesPerMatch: 600000,
+  estimatedFilesPerMatch: 44,
+  retainedBytes: 0,
+  retainedFiles: 0,
+  maxReadRequests: 9000000,
+  maxWriteRequests: 900000,
+  usedReadRequests: 10000,
+  usedWriteRequests: 10000,
+};
+
+/** Cheap checksum-bound metadata probe; actual admission re-verifies every retained bundle. */
+export async function probeLeague(input: unknown, sourceSha: string, read: PublicationRead) {
+  let requests = 0,
+    bytes = 0;
+  const json = async (key: string, ref?: LeagueFileRef): Promise<unknown> => {
+    if (++requests > 96) throw new Error('League probe request budget');
+    const data = await read(key, ref?.bytes ?? 4000000);
+    bytes += data.length;
+    if (
+      bytes > 64000000 ||
+      data.length > (ref?.bytes ?? 4000000) ||
+      (ref && (data.length !== ref.bytes || sha256(data) !== ref.hash))
+    )
+      throw new Error('League probe checksum/size budget');
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data));
+  };
+  const leagueJson = (ref: LeagueFileRef) => json(`leagues/${ref.hash.slice(7)}.json`, ref);
+  let catalog: PublicCatalog | undefined;
+  try {
+    const pointer = PublicCatalogCurrentSchema.parse(await json('catalog/current.json'));
+    catalog = PublicCatalogSchema.parse(
+      await json(`catalog/${pointer.catalogHash.slice(7)}.json`, {
+        hash: pointer.catalogHash,
+        bytes: pointer.bytes,
+      }),
+    );
+  } catch (error) {
+    if (
+      requests !== 1 ||
+      !(error instanceof Error) ||
+      error.message !== 'Public read-back failed (HTTP 404)'
+    )
+      throw error;
+  }
+  const records = new Map<string, LeagueProgress>();
+  if (catalog?.leagueWork) {
+    const work = PublicLeagueWorkSchema.parse(await leagueJson(catalog.leagueWork));
+    for (const ref of work.progress) {
+      const page = await validateProgressPage(await leagueJson(ref));
+      if (page.records.length !== ref.records) throw new Error('League probe progress count');
+      for (const record of page.records) {
+        if (records.has(record.simulationHash)) throw new Error('Duplicate league probe history');
+        records.set(record.simulationHash, record);
+      }
+    }
+  }
+  const revision = await createLeagueRevision(input, sourceSha);
+  let reused = 0,
+    retries = 0,
+    exhausted = 0;
+  for await (const { slot } of leagueMatches(revision)) {
+    const attempts = records.get(slot.simulationHash)?.attempts ?? [];
+    if (['win', 'draw'].includes(attempts.at(-1)?.state ?? '')) reused++;
+    else if (attempts.length >= 2) exhausted++;
+    else if (attempts.length) retries++;
+  }
+  const ref = catalog?.leagues?.find((entry) => entry.id === revision.definition.id);
+  const snapshot = ref ? PublicLeagueSnapshotSchema.parse(await leagueJson(ref)) : undefined;
+  if (ref && (snapshot?.leagueHash !== ref.leagueHash || snapshot.inputHash !== ref.inputHash))
+    throw new Error('League probe catalog identity');
+  const estimate = estimateLeague(revision.definition, LEAGUE_PROFILE, {
+    reused,
+    retries,
+    exhausted,
+  });
+  return {
+    sourceSha,
+    inputHash: revision.inputHash,
+    requests,
+    bytes,
+    estimate,
+    needed:
+      estimate.compute > 0 ||
+      snapshot?.inputHash !== revision.inputHash ||
+      snapshot.standings.resolved !== reused,
+    reuseVerification: 'Published metadata only; admission verifies retained bundle checksums.',
+    retentionVerification:
+      'Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission.',
+  };
+}
