@@ -81,8 +81,18 @@ export function owned(path: string, journal = readJournal(path), requireClean = 
   if (requireClean) clean(dirs.workspace);
   return dirs;
 }
+export const dependencyWorkspaces = [
+  '',
+  'apps/api',
+  'apps/cli',
+  'apps/web',
+  'apps/replay-reader',
+  'packages/domain',
+  'packages/engine',
+  'packages/samples',
+] as const;
 export function copyDependencies(root: string, workspace: string) {
-  for (const prefix of ['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine']) {
+  for (const prefix of dependencyWorkspaces) {
     const dependencies = join(root, prefix, 'node_modules');
     if (existsSync(dependencies))
       cpSync(dependencies, join(workspace, prefix, 'node_modules'), {

@@ -6,7 +6,7 @@ import { assessReport } from '../report.ts';
 import { collectSource, git } from '../source.ts';
 import { readJournal, regularPath } from './journal.ts';
 import { ensure, status, transition } from './state.ts';
-import { operation, owned, scope } from './workspace.ts';
+import { dependencyWorkspaces, operation, owned, scope } from './workspace.ts';
 
 /** No host HOME, token, network or controller checkout is visible to candidate processes. */
 export function sandboxCommand(
@@ -86,10 +86,11 @@ export function writableOutputs(workspace: string) {
     'apps/web/dist',
     'apps/api/dist',
     'apps/cli/dist',
+    'apps/replay-reader/dist',
     'packages/domain/dist',
     'packages/engine/dist',
-    ...['', 'apps/api', 'apps/cli', 'apps/web', 'packages/domain', 'packages/engine'].flatMap(
-      (prefix) => ['.vite', '.vite-temp'].map((cache) => join(prefix, 'node_modules', cache)),
+    ...dependencyWorkspaces.flatMap((prefix) =>
+      ['.vite', '.vite-temp'].map((cache) => join(prefix, 'node_modules', cache)),
     ),
   ];
   ensure(!git(workspace, ['ls-files', '--', ...paths]), 'Writable output contains tracked source');

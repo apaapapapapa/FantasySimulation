@@ -6,7 +6,15 @@ import { testRepository } from '../test-support/repository.ts';
 import { DEFAULT_BUDGET } from './contract.ts';
 import { initialize, readJournal } from './journal.ts';
 import { status } from './state.ts';
-import { applyPatch, beginAttempt, locations, owned, prepare, recover } from './workspace.ts';
+import {
+  applyPatch,
+  beginAttempt,
+  copyDependencies,
+  locations,
+  owned,
+  prepare,
+  recover,
+} from './workspace.ts';
 import { evaluate, isolatedCommand, sandboxCommand, writableOutputs } from './evaluation.ts';
 
 function fixture() {
@@ -51,6 +59,28 @@ function fixture() {
 const change = (name = 'src/value.ts') =>
   `diff --git a/${name} b/${name}\n--- a/${name}\n+++ b/${name}\n@@ -1 +1 @@\n-export const value = 0;\n+export const value = 1;\n`;
 const reservation = { hypothesis: 'Value must be one', externalCalls: 1, costMicros: 0 };
+it('copies package-local dependency links into the isolated workspace', () => {
+  const f = fixture();
+  try {
+    const modules = join(f.repo.root, 'node_modules/shared');
+    mkdirSync(modules, { recursive: true });
+    writeFileSync(join(modules, 'value'), 'original');
+    for (const prefix of ['apps/cli', 'apps/replay-reader', 'packages/samples']) {
+      mkdirSync(join(f.repo.root, prefix, 'node_modules'), { recursive: true });
+      symlinkSync('../../../node_modules/shared', join(f.repo.root, prefix, 'node_modules/shared'));
+    }
+    const target = join(f.store, 'candidate');
+    copyDependencies(f.repo.root, target);
+    writeFileSync(join(target, 'node_modules/shared/value'), 'candidate');
+    for (const prefix of ['apps/cli', 'apps/replay-reader', 'packages/samples'])
+      expect(readFileSync(join(target, prefix, 'node_modules/shared/value'), 'utf8')).toBe(
+        'candidate',
+      );
+    expect(readFileSync(join(modules, 'value'), 'utf8')).toBe('original');
+  } finally {
+    f.dispose();
+  }
+});
 describe('owned workspace and full baseline scope', () => {
   it('keeps the original clean, commits only allowed changes, and deduplicates the patch', async () => {
     const f = fixture();
@@ -271,6 +301,7 @@ describe('owned workspace and full baseline scope', () => {
 it.each([
   'apps/web/dist',
   'apps/cli/dist',
+  'apps/replay-reader/dist',
   'apps/cli/node_modules/.vite',
   'apps/cli/node_modules/.vite-temp',
 ])('never exposes tracked inputs in %s or dangling output symlinks as writable', (output) => {
