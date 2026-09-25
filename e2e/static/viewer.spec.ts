@@ -54,7 +54,7 @@ test('static-replay-controls', async ({ page }, info) => {
   await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2 + 20, { steps: 8 });
   await page.mouse.up();
   await expect.poll(async () => (await canvas.screenshot()).equals(beforeDrag)).toBe(false);
-  await page.getByLabel('記録された軌跡・命中点と形状を表示').check();
+  await page.getByLabel('軌跡（記録された折れ線）').check();
   await expect(state).toHaveText(savedState!);
   await page.getByRole('button', { name: '1step戻る' }).focus();
   await page.keyboard.press('Enter');
