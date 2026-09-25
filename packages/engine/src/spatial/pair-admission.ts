@@ -1,23 +1,23 @@
-import type { ActorState, AbilityRevision } from './combat-state.ts';
+import type { PreviousMovement, ActorState, AbilityRevision } from './state.ts';
 import type { ResourceBudget, ResourceRequest } from './resources.ts';
 import { flightRate } from './locomotion.ts';
 import { declarationCost } from './attacks.ts';
 import { ownsStageMotion } from './stage-motion.ts';
 
 /** Keep the attempted choice in cognition, but restore every input used by motion settlement. */
-export function rejectPair(actor: ActorState, previous: Pick<ActorState, 'intent' | 'decision'>) {
-  const { gait: _, ...decision } = actor.decision;
-  actor.decision = {
+export function rejectPair(actor: ActorState, previous: PreviousMovement) {
+  const { gait: _, ...decision } = actor.mind.decision;
+  actor.mind.decision = {
     ...decision,
     abilityId: null,
     dodge: false,
     ...(previous.decision.gait ? { gait: previous.decision.gait } : {}),
   };
-  actor.intent = {
+  actor.body.intent = {
     ...previous.intent,
-    canMove: actor.intent.canMove,
-    speedBps: actor.intent.speedBps,
-    flight: actor.intent.flight,
+    canMove: actor.body.intent.canMove,
+    speedBps: actor.body.intent.speedBps,
+    flight: actor.body.intent.flight,
   };
 }
 
@@ -33,8 +33,8 @@ export function admitPair(
 ) {
   const definition = ability.definition;
   if (
-    !actor.intent.canMove ||
-    ownsStageMotion(actor.action, step) ||
+    !actor.body.intent.canMove ||
+    ownsStageMotion(actor.actions.action, step) ||
     (definition.castSteps === 0 && !!definition.stages?.[0]?.selfMotion) ||
     (definition.castSteps > 0 && definition.movementWhileCasting === 'stop')
   )
@@ -62,16 +62,19 @@ export function admitMotionCost(
   dodge: boolean,
   authoredJump = false,
 ) {
-  const movement = actor.motion.actor.character.movement.locomotion;
-  const flight = actor.intent.flight ? Math.ceil(flightRate(actor.statuses, step) * 0.02) : 0;
+  const movement = actor.body.motion.actor.character.movement.locomotion;
+  const flight = actor.body.intent.flight ? Math.ceil(flightRate(actor.statuses, step) * 0.02) : 0;
   const jump =
-    actor.intent.canMove && (authoredJump || actor.intent.jump) && actor.motion.grounded
+    actor.body.intent.canMove &&
+    (authoredJump || actor.body.intent.jump) &&
+    actor.body.motion.grounded
       ? (movement?.jumpStamina ?? 0)
       : 0;
   const result = budget.reserve(key, [
     ...requests,
     {
-      stamina: flight + jump + (dodge && actor.intent.canMove ? (movement?.dodgeStamina ?? 0) : 0),
+      stamina:
+        flight + jump + (dodge && actor.body.intent.canMove ? (movement?.dodgeStamina ?? 0) : 0),
     },
   ]);
   if (result.ok) budget.cancel(key);

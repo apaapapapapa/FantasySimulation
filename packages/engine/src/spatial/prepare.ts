@@ -1,3 +1,5 @@
+import type { ResolvedActor, PreparedBattle } from './state.ts';
+export type { ResolvedActor, PreparedBattle } from './state.ts';
 import {
   abilityEffects,
   canonicalJson,
@@ -8,15 +10,12 @@ import {
   resolveClosure,
   contentHash,
   deepFreeze,
-  type DeepReadonly,
   actorSeed,
   ManifestSchema,
   StoredManifestSchema,
   parseJson,
   compareIds,
-  type Definition,
   type Manifest,
-  type Revision,
 } from '@fantasy/domain/spatial/execution';
 import implementation from './implementation.json' with { type: 'json' };
 import profile from './profile.json' with { type: 'json' };
@@ -27,32 +26,10 @@ import {
   requireExecutableRules,
 } from './execution-policy.ts';
 export { revisionHash, revisionReference as reference } from '@fantasy/domain/spatial/execution';
-
 import { statusKnowledge } from './status.ts';
 
 export { implementation, profile };
-export type ResolvedActor = DeepReadonly<{
-  participant: Manifest['participants'][number];
-  character: Definition<'character'>;
-  abilities: Extract<Revision, { kind: 'ability' }>[];
-  decisionAbilities: Extract<Revision, { kind: 'ability' }>[];
-  equipment: Definition<'equipment'>[];
-  policy: Definition<'policy'>;
-  knownStatuses?: Extract<Revision, { kind: 'status' }>[];
-}>;
-export type PreparedBattle = DeepReadonly<{
-  manifest: Manifest;
-  simulationHash: string;
-  rules: Definition<'ruleset'> & {
-    ai: NonNullable<Definition<'ruleset'>['ai']>;
-    forcedSpeedCapMmPerSecond: number;
-  };
-  scenario: Definition<'scenario'> & {
-    terrainKnowledge: NonNullable<Definition<'scenario'>['terrainKnowledge']>;
-  };
-  actors: [ResolvedActor, ResolvedActor];
-  statuses: Extract<Revision, { kind: 'status' }>[];
-}>;
+
 /** One canonical ordering per prepared actor; ID ordering remains separate for startup and records. */
 export function decisionAbilityOrder(
   abilities: ResolvedActor['abilities'],

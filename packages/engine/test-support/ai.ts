@@ -1,15 +1,11 @@
+import type { ResolvedActor, DecisionView } from '../src/spatial/state.ts';
 import { AI_RULES, type Definition, type Experience } from '@fantasy/domain/spatial';
 import { sampleManifest } from '@fantasy/samples';
-import {
-  prepareBattle,
-  reference,
-  decisionAbilityOrder,
-  type ResolvedActor,
-} from '../src/spatial/prepare.ts';
+import { prepareBattle, reference, decisionAbilityOrder } from '../src/spatial/prepare.ts';
 import { sealRevision } from '../src/spatial/manifest-builder.ts';
 import { initialMotion } from '../src/spatial/movement.ts';
 import { SpatialWorld } from '../src/spatial/physics.ts';
-import { emptyMemory, type DecisionView } from '../src/spatial/perception.ts';
+import { emptyMemory } from '../src/spatial/perception.ts';
 
 /** Keep manually edited test actors consistent with prepared canonical decision order. */
 export const withAbilities = (

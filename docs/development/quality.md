@@ -20,11 +20,13 @@ projections: all dependencies and runtime dependencies without type-only edges. 
 resolves both graphs, including workspace exports, TS path aliases and `.js` to `.ts`
 resolution. No second graph resolver, older TypeScript, parser package or compiler is added.
 
-Public edges enforce domain/engine/API/web boundaries; runtime edges enforce cycle freedom.
+Public edges enforce domain/engine/API/web boundaries and reject all engine cycles, including
+type-only cycles. Runtime edges enforce cycle freedom throughout the project.
+Engine state and geometry types depend only on domain contracts and vector types;
+runtime modules consume these foundational definitions.
 ManifestBuilder may depend on execution; execution cannot import that construction module.
 The public entry exports both; the narrow execution entry keeps builder edits out of identity.
-Type-only edges cannot conceal a domain-to-server dependency, but a legitimate reverse
-physics type reference is not a runtime cycle. Rapier is allowed only in
+Type-only edges cannot conceal a domain-to-server dependency. Rapier is allowed only in
 `packages/engine/src/spatial/physics.ts`. Browser/domain code cannot depend on platform
 builtins. Application modules cannot import development harness scripts. Core crypto is limited
 to `packages/engine/src/hashing.ts`, a reserved dedicated adapter; current runtime

@@ -85,7 +85,7 @@ describe('contact-frozen forces', () => {
   it('queues the next boundary, retains only gravity on expiry, and truncates excess contributions', async () => {
     const f = await locomotionFixture();
     try {
-      f.actor.motion.velocity = { x: 50, y: 4, z: 9 };
+      f.actor.body.motion.velocity = { x: 50, y: 4, z: 9 };
       queueForce(
         f.actor,
         force(),
@@ -97,11 +97,11 @@ describe('contact-frozen forces', () => {
       );
       expect(beginForcedInterval(f.actor, 5, 100000)?.active).toBe(false);
       expect(beginForcedInterval(f.actor, 6, 100000)?.gravity).toEqual({ x: 0, y: 4, z: 0 });
-      f.actor.motion.velocity = { x: 80, y: 12, z: 0 };
-      f.actor.forceGravity = { ...ZERO };
+      f.actor.body.motion.velocity = { x: 80, y: 12, z: 0 };
+      f.actor.body.forceGravity = { ...ZERO };
       expect(beginForcedInterval(f.actor, 8, 100000)?.active).toBe(false);
-      expect(f.actor.motion.velocity).toEqual(ZERO);
-      expect(f.actor.forceGravity).toBeUndefined();
+      expect(f.actor.body.motion.velocity).toEqual(ZERO);
+      expect(f.actor.body.forceGravity).toBeUndefined();
       queueForce(
         f.actor,
         force(),
@@ -197,8 +197,8 @@ describe('contact-frozen forces', () => {
       queueForce(
         enemy,
         { ...force(), speedMmPerSecond: 1000, durationSteps: 1 },
-        f.actor.motion.position,
-        enemy.motion.position,
+        f.actor.body.motion.position,
+        enemy.body.motion.position,
         { id: 'e.0', actorId: 'left', abilityId: 'push' },
         4,
         DEFAULT_BUDGET,
@@ -206,21 +206,29 @@ describe('contact-frozen forces', () => {
       expect(visibleStageCue(enemy, 4)).toBeUndefined();
       const cue = visibleStageCue(enemy, 5);
       expect(cue).toEqual({ shape: 'hold', state: 'active', motion: 'forced' });
-      const sampled = perceive(f.world, f.actor.motion, enemy.motion, [], 5, emptyMemory(), {
-        resources: enemy.resources,
-        action: 'idle',
-        stage: cue,
-      });
+      const sampled = perceive(
+        f.world,
+        f.actor.body.motion,
+        enemy.body.motion,
+        [],
+        5,
+        emptyMemory(),
+        {
+          resources: enemy.vitals.resources,
+          action: 'idle',
+          stage: cue,
+        },
+      );
       expect(sampled.observation).toBeNull();
       const plan = beginForcedInterval(enemy, 5, 100000)!;
       const moved = moveActors(
         f.world,
-        [enemy.motion],
+        [enemy.body.motion],
         new Map([
           [
             'right',
             {
-              ...enemy.intent,
+              ...enemy.body.intent,
               forced: { force: plan.force, gravity: plan.gravity! },
             },
           ],
@@ -228,14 +236,22 @@ describe('contact-frozen forces', () => {
         f.battle.rules,
       )[0]!;
       settleForcedInterval(enemy, plan, moved, 5);
-      expect(enemy.forceDisplay?.active).toBe(true);
+      expect(enemy.body.forceDisplay?.active).toBe(true);
       expect(visibleStageCue(enemy, 6)).toBeUndefined();
-      const expired = perceive(f.world, f.actor.motion, enemy.motion, [], 6, emptyMemory(), {
-        resources: enemy.resources,
-        action: 'idle',
-        stage: visibleStageCue(enemy, 6),
-      });
-      const delivered = perceive(f.world, f.actor.motion, enemy.motion, [], 10, sampled);
+      const expired = perceive(
+        f.world,
+        f.actor.body.motion,
+        enemy.body.motion,
+        [],
+        6,
+        emptyMemory(),
+        {
+          resources: enemy.vitals.resources,
+          action: 'idle',
+          stage: visibleStageCue(enemy, 6),
+        },
+      );
+      const delivered = perceive(f.world, f.actor.body.motion, enemy.body.motion, [], 10, sampled);
       expect(delivered.observation?.sampledAt).toBe(5);
       expect(delivered.observation?.enemy?.stage).toEqual({
         shape: 'hold',
@@ -243,7 +259,8 @@ describe('contact-frozen forces', () => {
         motion: 'forced',
       });
       expect(
-        perceive(f.world, f.actor.motion, enemy.motion, [], 11, expired).observation?.enemy?.stage,
+        perceive(f.world, f.actor.body.motion, enemy.body.motion, [], 11, expired).observation
+          ?.enemy?.stage,
       ).toBeUndefined();
     } finally {
       f.world.free();

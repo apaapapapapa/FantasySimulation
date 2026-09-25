@@ -1,3 +1,4 @@
+import type { DecisionView } from './state.ts';
 import type {
   Cognition,
   Posture,
@@ -5,7 +6,6 @@ import type {
   DeepReadonly,
 } from '@fantasy/domain/spatial/execution';
 import { add, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
-import type { DecisionView } from './perception.ts';
 import type { KnownClearance } from './assessment.ts';
 import { resourceReady } from './locomotion.ts';
 import { postureBody, postureDuration, posturePosition, postureRequiresWalk } from './posture.ts';

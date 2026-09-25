@@ -20,7 +20,7 @@ export function resolutionPhase(tx: StepTransaction) {
       phase: 'resolution',
       budget,
       world,
-      aliveAtStart: new Set(actors.filter((a) => a.resources.hp > 0).map(actorId)),
+      aliveAtStart: new Set(actors.filter((a) => a.vitals.resources.hp > 0).map(actorId)),
     },
     work.reactions,
   );
@@ -35,7 +35,7 @@ export function resolutionPhase(tx: StepTransaction) {
     );
   finishStages(next, step + 1, journal);
   for (const actor of next) {
-    if (!actor.staminaClock) continue;
+    if (!actor.vitals.staminaClock) continue;
     const start = actors.find((a) => actorId(a) === actorId(actor))!;
     recoverActorResources(
       actor,

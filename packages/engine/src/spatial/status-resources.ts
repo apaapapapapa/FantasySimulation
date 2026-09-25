@@ -1,5 +1,5 @@
+import type { ActorState, StatusCohort } from './state.ts';
 import { compareIds } from '@fantasy/domain/spatial/execution';
-import type { ActorState } from './combat-state.ts';
 import type { Journal } from './journal.ts';
 import {
   resourceLimits,
@@ -8,7 +8,7 @@ import {
   type ResourceDelta,
 } from './resources.ts';
 import { statusAdjustmentTotals } from './status-modifiers.ts';
-import type { StatusCohort, statusBoundary } from './status.ts';
+import type { statusBoundary } from './status.ts';
 
 export function statusRecoveryAdjustment(statuses: readonly StatusCohort[], step: number) {
   const { addition, multiplier } = statusAdjustmentTotals('staminaRecovery', statuses, step);
@@ -30,20 +30,20 @@ export function applyStatusResourcePulses(
     for (const cause of pulse.causes) causes[pulse.effect.resource].add(cause);
   }
   if (!deltas.length) return;
-  const before = { ...actor.resources },
-    definition = actor.motion.actor.character.stamina;
-  const exhausted = staminaExhausted(before, definition, actor.staminaClock?.exhausted);
+  const before = { ...actor.vitals.resources },
+    definition = actor.body.motion.actor.character.stamina;
+  const exhausted = staminaExhausted(before, definition, actor.vitals.staminaClock?.exhausted);
   const update = updateResources(
     before,
-    resourceLimits(actor.motion.actor.character),
+    resourceLimits(actor.body.motion.actor.character),
     deltas,
-    actor.staminaClock
-      ? { elapsedMs: 0, perSecond: 0, remainder: actor.staminaClock.remainder }
+    actor.vitals.staminaClock
+      ? { elapsedMs: 0, perSecond: 0, remainder: actor.vitals.staminaClock.remainder }
       : undefined,
   );
-  actor.resources = update.resources;
-  if (actor.staminaClock)
-    actor.staminaClock = {
+  actor.vitals.resources = update.resources;
+  if (actor.vitals.staminaClock)
+    actor.vitals.staminaClock = {
       remainder: update.remainder,
       exhausted: staminaExhausted(update.resources, definition, exhausted),
     };
@@ -54,7 +54,7 @@ export function applyStatusResourcePulses(
       kind: 'resource',
       step,
       phase: 'boundary',
-      actorId: actor.motion.actor.participant.actorId,
+      actorId: actor.body.motion.actor.participant.actorId,
       ruleId: 'status.resource-pulse',
       reason: `${resource}:${amount > 0 ? 'increase' : 'decrease'}`,
       amount: Math.abs(amount),

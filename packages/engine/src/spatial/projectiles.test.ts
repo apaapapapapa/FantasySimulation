@@ -1,3 +1,4 @@
+import type { Obstacle } from './geometry-types.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import {
   DEFAULT_BUDGET,
@@ -6,7 +7,7 @@ import {
   type Manifest,
 } from '@fantasy/domain/spatial';
 import { projectileCurve, explosionCoverage, type ProjectileState } from './projectiles.ts';
-import { at, initializePhysics, SpatialWorld, straight, type Obstacle } from './physics.ts';
+import { at, initializePhysics, SpatialWorld, straight } from './physics.ts';
 import { traceAttack } from './attacks.ts';
 import { emptyMemory, perceive } from './perception.ts';
 import { initialMotion } from './movement.ts';

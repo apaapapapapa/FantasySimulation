@@ -1,11 +1,10 @@
+import type { DecisionView, StatusCohort, Gait } from './state.ts';
+export type { Gait } from './state.ts';
 import type { DeepReadonly, Definition, ResourceState } from '@fantasy/domain/spatial/execution';
-import type { DecisionView } from './perception.ts';
-import type { StatusCohort } from './status.ts';
 import { staminaExhausted } from './resources.ts';
 import { length, sub } from './math.ts';
 import { postureRequiresWalk } from './posture.ts';
 
-export type Gait = 'walk' | 'run' | 'slow';
 export function gaitProfile(character: DeepReadonly<Definition<'character'>>, gait: Gait) {
   const m = character.movement;
   if (!m.locomotion)

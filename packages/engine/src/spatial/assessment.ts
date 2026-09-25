@@ -1,3 +1,4 @@
+import type { AbilityRevision, DecisionView } from './state.ts';
 import {
   canonicalJson,
   type CandidateAssessment,
@@ -5,8 +6,7 @@ import {
   type Definition,
   type DamageDefense,
 } from '@fantasy/domain/spatial/execution';
-import type { AbilityRevision } from './combat-state.ts';
-import { conditionMatches, type DecisionView } from './perception.ts';
+import { conditionMatches } from './perception.ts';
 import { length, sub } from './math.ts';
 import { actionClock, payCost } from './attacks.ts';
 import { ResourceBudget, staminaExhausted } from './resources.ts';

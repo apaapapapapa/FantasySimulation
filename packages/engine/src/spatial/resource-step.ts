@@ -1,4 +1,4 @@
-import type { ActorState } from './combat-state.ts';
+import type { ActorState } from './state.ts';
 import type { Journal } from './journal.ts';
 import { resourceLimits, staminaExhausted, updateResources } from './resources.ts';
 
@@ -13,18 +13,18 @@ export function recoverActorResources(
   journal: Journal,
   adjustment: { addPerSecond?: number; multiplierBps?: number } = {},
 ) {
-  const definition = actor.motion.actor.character.stamina;
-  if (!definition || !actor.staminaClock) return;
-  const before = { ...actor.resources };
-  const exhausted = staminaExhausted(before, definition, actor.staminaClock.exhausted);
-  const updated = updateResources(before, resourceLimits(actor.motion.actor.character), [], {
+  const definition = actor.body.motion.actor.character.stamina;
+  if (!definition || !actor.vitals.staminaClock) return;
+  const before = { ...actor.vitals.resources };
+  const exhausted = staminaExhausted(before, definition, actor.vitals.staminaClock.exhausted);
+  const updated = updateResources(before, resourceLimits(actor.body.motion.actor.character), [], {
     ...adjustment,
     elapsedMs,
     perSecond: definition.recoveryPerSecond,
-    remainder: actor.staminaClock.remainder,
+    remainder: actor.vitals.staminaClock.remainder,
   });
-  actor.resources = updated.resources;
-  actor.staminaClock = {
+  actor.vitals.resources = updated.resources;
+  actor.vitals.staminaClock = {
     remainder: updated.remainder,
     exhausted: staminaExhausted(updated.resources, definition, exhausted),
   };
@@ -33,7 +33,7 @@ export function recoverActorResources(
       kind: 'resource',
       step: boundaryStep,
       phase: 'resolution',
-      actorId: actor.motion.actor.participant.actorId,
+      actorId: actor.body.motion.actor.participant.actorId,
       ruleId: 'resource.stamina-recovery',
       before,
       after: { ...updated.resources },

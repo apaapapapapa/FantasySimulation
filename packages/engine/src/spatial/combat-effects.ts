@@ -1,3 +1,4 @@
+import type { DamageSnapshot, ActorState, PreparedBattle, MotionState } from './state.ts';
 import type {
   BattleEvent,
   Budget,
@@ -8,13 +9,10 @@ import type {
 } from '@fantasy/domain/spatial/execution';
 import { resolveEffects } from './effects.ts';
 import { damagePower } from './damage.ts';
-import type { DamageSnapshot } from './status-damage.ts';
-import type { ActorState } from './combat-state.ts';
-import type { PreparedBattle } from './prepare.ts';
 import type { Journal } from './journal.ts';
 import { observeImpact, observeReveal, rememberExperience } from './perception.ts';
 import { at, type SpatialWorld } from './physics.ts';
-import type { MotionState, MovedActor } from './movement.ts';
+import type { MovedActor } from './movement.ts';
 import { queueForce } from './forces.ts';
 import { planStatusEffects } from './status-reactions.ts';
 import { applyStatuses, UnresolvedRuleError } from './status.ts';
@@ -100,7 +98,11 @@ export function commitEffects(
     return { ...effect, id: event.id, event };
   });
   const resolved = resolveEffects(
-    actors.map((a) => ({ actor: a.motion.actor, resources: a.resources, statuses: a.statuses })),
+    actors.map((a) => ({
+      actor: a.body.motion.actor,
+      resources: a.vitals.resources,
+      statuses: a.statuses,
+    })),
     applications,
     battle.statuses,
     step,
@@ -109,9 +111,9 @@ export function commitEffects(
     deferStatuses,
   );
   for (const result of resolved) {
-    const actor = actors.find((a) => a.motion.actor.participant.actorId === result.actorId)!;
+    const actor = actors.find((a) => a.body.motion.actor.participant.actorId === result.actorId)!;
     for (const app of applications.filter((a) => a.targetId === result.actorId)) {
-      app.event.before = { ...actor.resources };
+      app.event.before = { ...actor.vitals.resources };
       app.event.after = { ...result.resources };
       const detail = result.damage.find((d) => d.applicationId === app.id);
       if (detail) {
@@ -127,33 +129,34 @@ export function commitEffects(
       } else if (app.effect.kind === 'shield') {
         app.event.amount = Math.floor((app.effect.amount * (app.scaleBps ?? 10000)) / 10000);
       }
-      const observer = actors.find((a) => a.motion.actor.participant.actorId === app.actorId);
+      const observer = actors.find((a) => a.body.motion.actor.participant.actorId === app.actorId);
       if (
         app.effect.kind === 'damage' &&
         detail &&
         observer &&
         observer !== actor &&
-        actor.memory.search
+        actor.mind.memory.search
       ) {
         const direction =
           app.incomingDirection ??
           unit(
             sub(
-              app.observation?.self.position ?? observer.motion.position,
-              app.observation?.target.position ?? actor.motion.position,
+              app.observation?.self.position ?? observer.body.motion.position,
+              app.observation?.target.position ?? actor.body.motion.position,
             ),
           );
-        actor.memory = {
-          ...actor.memory,
+        actor.mind.memory = {
+          ...actor.mind.memory,
           search: {
-            ...actor.memory.search,
+            ...actor.mind.memory.search,
             cues: [
-              ...actor.memory.search.cues,
+              ...actor.mind.memory.search.cues,
               {
                 id: app.id,
                 sampledAt: activationStep,
-                availableAt: activationStep + actor.motion.actor.character.perception.reactionSteps,
-                origin: { ...actor.motion.position },
+                availableAt:
+                  activationStep + actor.body.motion.actor.character.perception.reactionSteps,
+                origin: { ...actor.body.motion.position },
                 direction: { ...direction },
               },
             ].slice(-8),
@@ -162,8 +165,8 @@ export function commitEffects(
       }
       if (app.effect.kind === 'force') {
         const geometry = app.observation ?? {
-          self: observer?.motion ?? actor.motion,
-          target: actor.motion,
+          self: observer?.body.motion ?? actor.body.motion,
+          target: actor.body.motion,
         };
         app.event.force = queueForce(
           actor,
@@ -183,9 +186,12 @@ export function commitEffects(
           ? 'coincident-zero-force'
           : 'contact-frozen-linear-force';
       }
-      const ability = observer?.motion.actor.abilities.find((a) => a.id === app.abilityId);
+      const ability = observer?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
       if (observer && ability && observer !== actor) {
-        const geometry = app.observation ?? { self: observer.motion, target: actor.motion };
+        const geometry = app.observation ?? {
+          self: observer.body.motion,
+          target: actor.body.motion,
+        };
         const ref = {
           id: ability.id,
           revision: ability.revision,
@@ -228,12 +234,12 @@ export function commitEffects(
                   battle.rules.ai,
                 )
               : null;
-        if (experience) observer.memory = rememberExperience(observer.memory, experience);
+        if (experience) observer.mind.memory = rememberExperience(observer.mind.memory, experience);
       }
     }
     emitStatusChanges(result, journal, activationStep, phase);
     if (!deferStatuses) rememberApplications(actor, result.changes, applications, context);
-    actor.resources = result.resources;
+    actor.vitals.resources = result.resources;
     actor.statuses = result.statuses;
   }
   return { applications, resolved };
@@ -281,7 +287,7 @@ export function commitTransactionStatuses(
 ) {
   const { battle, journal, step, activationStep, phase, budget } = context;
   for (const actor of actors) {
-    const id = actor.motion.actor.participant.actorId;
+    const id = actor.body.motion.actor.participant.actorId;
     const incoming = applications.filter((a) => a.targetId === id);
     let plan: ReturnType<typeof planStatusEffects>;
     try {
@@ -327,7 +333,7 @@ function rememberApplications(
     const cause = incoming.find(
       (e) =>
         e.actorId &&
-        e.actorId !== actor.motion.actor.participant.actorId &&
+        e.actorId !== actor.body.motion.actor.participant.actorId &&
         change.causes.includes(e.id),
     );
     if (!cause?.actorId) continue;
@@ -345,13 +351,13 @@ function rememberApplications(
         : change.revision.definition.periodic.flatMap((p) =>
             p.kind === 'damage' ? [p.element] : [],
           )[0];
-    actor.memory = rememberThreat(actor.memory, {
+    actor.mind.memory = rememberThreat(actor.mind.memory, {
       eventId: cause.id,
       sourceId: cause.actorId,
       statusId: change.revision.id,
       ...(element ? { element } : {}),
       sampledAt: activationStep,
-      availableAt: activationStep + actor.motion.actor.character.perception.reactionSteps,
+      availableAt: activationStep + actor.body.motion.actor.character.perception.reactionSteps,
       expiresAt: activationStep + battle.rules.ai.knowledgeTtlSteps,
     });
   }

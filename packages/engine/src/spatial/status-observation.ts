@@ -1,3 +1,4 @@
+import type { StatusCohort, MotionState } from './state.ts';
 import {
   canonicalJson,
   compareIds,
@@ -9,8 +10,7 @@ import {
 import { permanentStatus, statusCategories } from './categories.ts';
 import { adjustedStatusValue } from './status-modifiers.ts';
 import { statusReactions } from './status-reactions.ts';
-import { periodicPulseCount, type StatusCohort } from './status.ts';
-import type { MotionState } from './movement.ts';
+import { periodicPulseCount } from './status.ts';
 
 type Status = DeepReadonly<Definition<'status'>>;
 export const copyPublicStatuses = (

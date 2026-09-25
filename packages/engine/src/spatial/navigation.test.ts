@@ -1,3 +1,4 @@
+import type { DecisionView } from './state.ts';
 import { decisionView, withAbilities } from '../../test-support/ai.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import type { Definition } from '@fantasy/domain/spatial';
@@ -10,7 +11,7 @@ import { Navigator } from './navigation.ts';
 import { choosePolicy, steerPolicy } from './policy.ts';
 import { locomotion } from '../../test-support/locomotion.ts';
 import { initialMotion } from './movement.ts';
-import { emptyMemory, type DecisionView } from './perception.ts';
+import { emptyMemory } from './perception.ts';
 beforeAll(initializePhysics);
 const blocks = { movement: true, vision: true, attack: true };
 const wall: Definition<'scenario'>['obstacles'][number] = {

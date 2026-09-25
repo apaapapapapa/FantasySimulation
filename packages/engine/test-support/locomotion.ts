@@ -37,7 +37,7 @@ export async function locomotionFixture(obstacles: BoxObstacle[] = []) {
   const battle = await prepareBattle(manifest),
     world = createBattleWorld(battle);
   const actor = initialActor(world, battle.actors[0]);
-  actor.intent.direction = { x: 1, y: 0, z: 0 };
+  actor.body.intent.direction = { x: 1, y: 0, z: 0 };
   return { manifest, battle, world, actor };
 }
 export function advanceLocomotion(
@@ -47,17 +47,17 @@ export function advanceLocomotion(
 ) {
   const plan = reserveMotion(
     f.actor,
-    options.budget ?? new ResourceBudget(f.actor.resources),
+    options.budget ?? new ResourceBudget(f.actor.vitals.resources),
     step,
     options.dodge ?? false,
   );
   const moved = moveActors(
     f.world,
-    [f.actor.motion],
+    [f.actor.body.motion],
     new Map([['left', plan.intent]]),
     f.battle.rules,
   )[0]!;
   plan.settle(moved, options.journal ?? new Journal(0, 0, DEFAULT_BUDGET));
-  f.actor.motion = moved.state;
+  f.actor.body.motion = moved.state;
   return { plan, moved };
 }

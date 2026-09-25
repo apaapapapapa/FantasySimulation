@@ -1,24 +1,9 @@
+import type { MotionState, Observation, DecisionView, SearchMemory } from './state.ts';
+export type { DirectionCue, SearchMemory } from './state.ts';
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
-import type { MotionState } from './movement.ts';
-import type { Observation, DecisionView } from './perception.ts';
 import { add, mul, sub, length, unit, type Vec3 } from './math.ts';
 import { initialSearchRandom, weightedChoice, recordDecisionWeights } from './decision-random.ts';
 
-export type DirectionCue = {
-  id: string;
-  sampledAt: number;
-  availableAt: number;
-  origin: Vec3;
-  direction: Vec3;
-};
-export type SearchMemory = {
-  cells: { position: Vec3; confirmedAt: number | null; attemptedAt?: number }[];
-  pending: { sampledAt: number; availableAt: number; cells: number[] }[];
-  cues: DirectionCue[];
-  lastContactAt: number;
-  investigatedAt: number;
-  goal?: { key: string; position: Vec3; since: number; evidenceAt: number };
-};
 type SearchRules = NonNullable<NonNullable<Definition<'ruleset'>['ai']>['search']>;
 
 /** Public arena bounds define cells; only low, delayed sight measurements mark them checked. */

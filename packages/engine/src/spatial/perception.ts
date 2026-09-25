@@ -1,3 +1,19 @@
+import type {
+  MotionState,
+  StatusCohort,
+  ObservedActor,
+  ObservableProjectile,
+  PerceptionMemory,
+  DecisionView,
+} from './state.ts';
+export type {
+  ObservedActor,
+  ObservableProjectile,
+  Observation,
+  PerceptionMemory,
+  ThreatExperience,
+  DecisionView,
+} from './state.ts';
 import {
   deepFreeze,
   compareIds,
@@ -11,74 +27,16 @@ import {
   type DeepReadonly,
   type ResourceState,
   type VectorMm,
-  type ObservedStatus,
   type ObservedStage,
   type ObservedReaction,
-  type Posture,
 } from '@fantasy/domain/spatial/execution';
 import { add, cosDegrees, cross, dot, length, mul, sub, unit, type Vec3 } from './math.ts';
-import type { MotionState } from './movement.ts';
 import type { SpatialWorld } from './physics.ts';
 import { metres } from './terrain.ts';
 import { publicStatuses } from './status-observation.ts';
-import type { StatusCohort } from './status.ts';
 import { observedCondition } from './observed-conditions.ts';
-import { surveySearch, type SearchMemory } from './search.ts';
+import { surveySearch } from './search.ts';
 
-export type ObservedActor = {
-  id: string;
-  position: Vec3;
-  velocity: Vec3;
-  facing: Vec3;
-  step: number;
-  appearance?: Definition<'character'>['appearance'];
-  wounds?: 'unknown' | 'unhurt' | 'hurt' | 'severe' | 'critical';
-  action?: 'idle' | 'cast' | 'active' | 'recovery';
-  size?: { radiusMm: number; heightMm: number };
-  statuses?: ObservedStatus[];
-  stage?: ObservedStage;
-  reaction?: ObservedReaction;
-  posture?: Posture;
-};
-export type ObservableProjectile = {
-  id: string;
-  ownerId: string;
-  position: Vec3;
-  velocity: Vec3;
-  radiusMm?: number;
-  element?: Experience['element'] | undefined;
-  attackCueId?: string;
-};
-export type Observation = DeepReadonly<{
-  sampledAt: number;
-  availableAt: number;
-  enemy: ObservedActor | null;
-  projectiles: ObservableProjectile[];
-  terrain?: ObservedSurface[];
-}>;
-export type PerceptionMemory = DeepReadonly<{
-  sampledAt: number;
-  pending: Observation[];
-  observation: Observation | null;
-  lastSeen: ObservedActor | null;
-  pendingExperience: Experience[];
-  knowledge: Experience[];
-  learned: Experience[];
-  expired: string[];
-  terrain: ObservedSurface[];
-  statusChangedAt?: number;
-  threatHistory?: ThreatExperience[];
-  search?: SearchMemory;
-}>;
-export type ThreatExperience = {
-  eventId: string;
-  sourceId: string;
-  sampledAt: number;
-  availableAt: number;
-  expiresAt: number;
-  element?: Experience['element'];
-  statusId?: string;
-};
 export const emptyMemory = (): PerceptionMemory => ({
   sampledAt: -1,
   pending: [],
@@ -478,31 +436,7 @@ export function perceive(
     ),
   });
 }
-export type DecisionView = {
-  self: MotionState;
-  resources: ResourceState;
-  staminaExhausted: boolean;
-  statusIds: readonly string[];
-  memory: PerceptionMemory;
-  step: number;
-  gravityMmPerSecond2: number;
-  used: Readonly<Record<string, number>>;
-  reactionReadyAt: Readonly<Record<string, number>>;
-  canAct: boolean;
-  activeAbility: DeepReadonly<Definition<'ability'>> | undefined;
-  canMove: boolean;
-  stageOwnsMotion: boolean;
-  speedBps: number;
-  flightStaminaPerSecond: number;
-  silenced: boolean;
-  incapacitated: boolean;
-  ownStatuses: readonly StatusCohort[] | undefined;
-  burnDamage: number | undefined;
-  waterExtinguishable: boolean;
-  attack: number;
-  magicPower: number;
-  rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>>;
-};
+
 export function conditionMatches(condition: DeepReadonly<Condition>, view: DecisionView): boolean {
   return evaluateCondition(condition, view) === true;
 }

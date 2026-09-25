@@ -31,13 +31,13 @@ export function releasePhase(tx: StepTransaction) {
     bullets = tx.next.projectiles,
     nextLedger = tx.next.ledger;
   for (const actor of next) {
-    const action = actor.action;
+    const action = actor.actions.action;
     if (!action) continue;
     if (!action.stages && (action.released || action.launchAt !== step)) continue;
     const releaseView = selfView(actor, step, battle.rules.ai, battle.statuses);
     const staged = action.stages
       ? releaseStage(actor, releaseView, step, resourceBudgets.get(actorId(actor))!, journal, {
-          dodge: aiBoundary && isDodgeDecision(actor.decision),
+          dodge: aiBoundary && isDodgeDecision(actor.mind.decision),
           previous: previousMovement.get(actorId(actor))!,
         })
       : null;
@@ -46,7 +46,7 @@ export function releasePhase(tx: StepTransaction) {
     const ability = staged?.ability ?? action.ability;
     const definition = ability.definition;
     if (
-      !postureAllows(actor.motion, definition) ||
+      !postureAllows(actor.body.motion, definition) ||
       (!staged &&
         (!inObservedRange(definition, releaseView) ||
           releaseView.incapacitated ||
@@ -82,24 +82,28 @@ export function releasePhase(tx: StepTransaction) {
     }
     const enemy = next.find((a) => actorId(a) !== actorId(actor))!;
     if (battle.rules.ai.reapplication)
-      enemy.memory = seenAttack(
+      enemy.mind.memory = seenAttack(
         world,
-        enemy.motion,
-        actor.motion,
+        enemy.body.motion,
+        actor.body.motion,
         definition.effects,
         launch.id,
         step,
-        enemy.memory,
+        enemy.mind.memory,
         battle.rules.ai.knowledgeTtlSteps,
       );
-    const aim = launchDirection(actor.motion.facing, definition.aimErrorMilliDegrees, actor.random);
-    actor.random = aim.random;
+    const aim = launchDirection(
+      actor.body.motion.facing,
+      definition.aimErrorMilliDegrees,
+      actor.mind.random,
+    );
+    actor.mind.random = aim.random;
     if (
       (definition.attack.kind === 'melee' ||
         definition.attack.kind === 'projectile' ||
         definition.attack.kind === 'arc' ||
         definition.attack.kind === 'radial') &&
-      muzzleBlocked(world, actor.motion)
+      muzzleBlocked(world, actor.body.motion)
     ) {
       journal.emit({
         kind: 'fizzle',
@@ -117,14 +121,17 @@ export function releasePhase(tx: StepTransaction) {
       work.candidate();
       const contact = hitscan(
         world,
-        actor.motion,
-        enemy.motion,
+        actor.body.motion,
+        enemy.body.motion,
         aim.direction,
         definition.rangeMm / 1000,
         definition.attack.radiusMm / 1000,
       );
       if (staged) {
-        const origin = bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset);
+        const origin = bodyPoint(
+          actor.body.motion,
+          actor.body.motion.actor.character.body.muzzleOffset,
+        );
         action.stages!.geometry = {
           kind: 'ray',
           radiusMm: definition.attack.radiusMm,
@@ -155,7 +162,7 @@ export function releasePhase(tx: StepTransaction) {
             ...effectsOf(actor, ability, actorId(enemy), hit.id, step, staged?.contact).map(
               (effect) => ({
                 ...effect,
-                observation: { self: actor.motion, target: enemy.motion },
+                observation: { self: actor.body.motion, target: enemy.body.motion },
               }),
             ),
           );
@@ -173,15 +180,15 @@ export function releasePhase(tx: StepTransaction) {
         launchStep: step,
         direction: aim.direction,
         offset: sub(
-          bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
-          actor.motion.position,
+          bodyPoint(actor.body.motion, actor.body.motion.actor.character.body.muzzleOffset),
+          actor.body.motion.position,
         ),
         ...statusDamageSource(actor, ability, step),
         hits: 0,
         ...(staged ? { stage: staged.contact, ...(staged.hit ? { hit: staged.hit } : {}) } : {}),
       });
     } else if (definition.attack.kind === 'projectile') {
-      const target = actor.memory.observation?.enemy ?? actor.memory.lastSeen;
+      const target = actor.mind.memory.observation?.enemy ?? actor.mind.memory.lastSeen;
       const projectile: ProjectileState = {
         id: `projectile.${staged?.id ?? action.id}`,
         ownerId: actorId(actor),
@@ -189,7 +196,7 @@ export function releasePhase(tx: StepTransaction) {
         ability,
         cause: launch.id,
         launchStep: step,
-        position: bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset),
+        position: bodyPoint(actor.body.motion, actor.body.motion.actor.character.body.muzzleOffset),
         velocity: mul(aim.direction, definition.attack.speedMmPerSecond / 1000),
         ...statusDamageSource(actor, ability, step),
         target: target ? { ...target.position } : null,
@@ -213,7 +220,7 @@ export function releasePhase(tx: StepTransaction) {
   }
   for (const actor of next) {
     const force = forcePlans.get(actorId(actor));
-    if (force?.active) actor.intent.forced = { gravity: force.gravity!, force: force.force };
+    if (force?.active) actor.body.intent.forced = { gravity: force.gravity!, force: force.force };
     applyStageMotion(actor, step);
   }
   effects.push(

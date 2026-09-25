@@ -56,12 +56,12 @@ describe('shared forced-motion projections', () => {
     try {
       const moved = moveActors(
         f.world,
-        [f.actor.motion],
+        [f.actor.body.motion],
         new Map([
           [
             'left',
             {
-              ...f.actor.intent,
+              ...f.actor.body.intent,
               canMove: false,
               jump: true,
               forced: { gravity: { ...ZERO }, force: { x: 80, y: 0, z: 0 } },
@@ -87,12 +87,12 @@ describe('shared forced-motion projections', () => {
       const rules = { ...f.battle.rules, gravityMmPerSecond2: -10000 };
       const launch = moveActors(
         f.world,
-        [f.actor.motion],
+        [f.actor.body.motion],
         new Map([
           [
             'left',
             {
-              ...f.actor.intent,
+              ...f.actor.body.intent,
               canMove: false,
               forced: { gravity: { x: 0, y: 4, z: 0 }, force: { x: 0, y: 12, z: 0 } },
             },
@@ -107,7 +107,7 @@ describe('shared forced-motion projections', () => {
       const fall = moveActors(
         f.world,
         [launch.state],
-        new Map([['left', { ...f.actor.intent, canMove: false }]]),
+        new Map([['left', { ...f.actor.body.intent, canMove: false }]]),
         rules,
       )[0]!;
       expect(fall.state.velocity.y).toBeCloseTo(-0.2, 8);
@@ -122,19 +122,22 @@ describe('shared forced-motion projections', () => {
     ]);
     try {
       const target = {
-        ...f.actor.motion,
+        ...f.actor.body.motion,
         actor: f.battle.actors[1],
-        position: { ...f.actor.motion.position, x: -3 },
+        position: { ...f.actor.body.motion.position, x: -3 },
       };
       const moved = moveActors(
         f.world,
-        [f.actor.motion, target],
+        [f.actor.body.motion, target],
         new Map([
           [
             'left',
-            { ...f.actor.intent, forced: { gravity: { ...ZERO }, force: { x: 100, y: 0, z: 0 } } },
+            {
+              ...f.actor.body.intent,
+              forced: { gravity: { ...ZERO }, force: { x: 100, y: 0, z: 0 } },
+            },
           ],
-          ['right', { ...f.actor.intent, canMove: false }],
+          ['right', { ...f.actor.body.intent, canMove: false }],
         ]),
         f.battle.rules,
       );
@@ -152,8 +155,8 @@ describe('shared forced-motion projections', () => {
     const f = await locomotionFixture();
     try {
       const start = {
-        ...f.actor.motion,
-        position: { ...f.actor.motion.position, y: 1.2 },
+        ...f.actor.body.motion,
+        position: { ...f.actor.body.motion.position, y: 1.2 },
         grounded: false,
       };
       const landed = moveActors(
@@ -163,7 +166,7 @@ describe('shared forced-motion projections', () => {
           [
             'left',
             {
-              ...f.actor.intent,
+              ...f.actor.body.intent,
               forced: { gravity: { x: 0, y: -20, z: 0 }, force: { x: 0, y: -20, z: 0 } },
             },
           ],
@@ -180,7 +183,7 @@ describe('shared forced-motion projections', () => {
           [
             'left',
             {
-              ...f.actor.intent,
+              ...f.actor.body.intent,
               flight: true,
               forced: { gravity: { x: 0, y: -20, z: 0 }, force: { x: 80, y: 0, z: 0 } },
             },

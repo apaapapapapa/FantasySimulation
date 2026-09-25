@@ -1,3 +1,5 @@
+import type { Trace } from './geometry-types.ts';
+import type { MotionState } from './state.ts';
 import type {
   AttackGeometry,
   Budget,
@@ -12,9 +14,7 @@ import {
   firstImpact,
   SpatialBudgetError,
   type SpatialWorld,
-  type Trace,
 } from './physics.ts';
-import type { MotionState } from './movement.ts';
 import { bodyCapsule } from './terrain.ts';
 import type { AttackContact } from './attacks.ts';
 

@@ -1,8 +1,8 @@
-import type { ActorState } from './combat-state.ts';
+import type { ActorState, MotionIntent, Gait } from './state.ts';
 import type { Journal } from './journal.ts';
 import { length, sub } from './math.ts';
-import type { MotionIntent, MovedActor } from './movement.ts';
-import { canMaintainFlight, flightRate, gaitProfile, type Gait } from './locomotion.ts';
+import type { MovedActor } from './movement.ts';
+import { canMaintainFlight, flightRate, gaitProfile } from './locomotion.ts';
 import { ResourceBudget, staminaExhausted } from './resources.ts';
 import { postureRequiresWalk } from './posture.ts';
 
@@ -16,23 +16,23 @@ export function reserveMotion(
   step: number,
   dodge: boolean,
 ) {
-  const character = actor.motion.actor.character,
+  const character = actor.body.motion.actor.character,
     m = character.movement.locomotion;
   const displayMotion =
-    !!character.stamina || !!actor.locomotion || actor.decision.dodge !== undefined;
+    !!character.stamina || !!actor.body.locomotion || actor.mind.decision.dodge !== undefined;
   const ready = !staminaExhausted(
     budget.available,
     character.stamina,
-    actor.staminaClock?.exhausted,
+    actor.vitals.staminaClock?.exhausted,
   );
-  let intent: MotionIntent = { ...actor.intent };
+  let intent: MotionIntent = { ...actor.body.intent };
   if (intent.forced) intent = { ...intent, canMove: false, jump: false, canStep: false };
   else if (intent.authored) intent.jump = intent.authored.jump;
   if (!m && ready && !intent.flight) delete intent.speedMmPerSecond;
   const rate = intent.flight ? flightRate(actor.statuses, step) : 0;
   let flightUnits = 0n;
   if (intent.flight && rate > 0) {
-    flightUnits = BigInt(rate) * 20_000n + BigInt(actor.motionClock?.flightRemainder ?? 0);
+    flightUnits = BigInt(rate) * 20_000n + BigInt(actor.body.motionClock?.flightRemainder ?? 0);
     if (
       !canMaintainFlight(budget.available, rate, ready) ||
       !budget.reserve('flight', [{ stamina: Number(flightUnits / unit) }]).ok
@@ -48,11 +48,11 @@ export function reserveMotion(
     if (!dodgePaid) intent.canMove = false;
   }
   let gait: Gait = ready
-    ? postureRequiresWalk(actor.motion)
+    ? postureRequiresWalk(actor.body.motion)
       ? 'walk'
-      : (actor.decision.gait ?? 'walk')
+      : (actor.mind.decision.gait ?? 'walk')
     : 'slow';
-  if (actor.motion.posture?.current === 'prone' || actor.motion.posture?.transition)
+  if (actor.body.motion.posture?.current === 'prone' || actor.body.motion.posture?.transition)
     intent.jump = false;
   let fixed = 0,
     motionUnits = 0n,
@@ -61,18 +61,18 @@ export function reserveMotion(
   const charged = !!m && !intent.flight && !intent.forced;
   if (character.stamina && !ready) intent.jump = false;
   if (charged) {
-    const carry = BigInt(actor.motionClock?.remainder ?? 0);
+    const carry = BigInt(actor.body.motionClock?.remainder ?? 0);
     for (const choice of [gait, 'walk', 'slow'] as const) {
       gait = choice;
       profile = intent.authored
         ? { speedMmPerSecond: intent.authored.speedMmPerSecond, staminaPerMeter: 0 }
         : gaitProfile(character, gait);
-      const jump = intent.canMove && intent.jump && actor.motion.grounded && ready;
+      const jump = intent.canMove && intent.jump && actor.body.motion.grounded && ready;
       fixed = jump ? m.jumpStamina : 0;
-      const canStep = intent.canMove && actor.motion.grounded && !jump && gait !== 'slow';
+      const canStep = intent.canMove && actor.body.motion.grounded && !jump && gait !== 'slow';
       stepRate = canStep ? m.stepStaminaPerMeter : 0;
       const maximumSpeed = Math.max(
-        length({ ...actor.motion.velocity, y: 0 }),
+        length({ ...actor.body.motion.velocity, y: 0 }),
         ((profile.speedMmPerSecond / 1000) * intent.speedBps) / 10000,
       );
       const maximumDistance = intent.canMove ? maximumSpeed * 0.02 + 0.000001 : 0;
@@ -96,7 +96,7 @@ export function reserveMotion(
   return {
     intent,
     settle(moved: MovedActor, journal: Journal) {
-      const before = { ...actor.resources };
+      const before = { ...actor.vitals.resources };
       let changed = false;
       if (dodgePaid) {
         budget.commit('dodge');
@@ -104,9 +104,9 @@ export function reserveMotion(
       }
       if (flightUnits > 0n) {
         budget.commit('flight', { stamina: Number(flightUnits / unit) });
-        actor.motionClock = {
-          ...actor.motionClock,
-          remainder: actor.motionClock?.remainder ?? 0,
+        actor.body.motionClock = {
+          ...actor.body.motionClock,
+          remainder: actor.body.motionClock?.remainder ?? 0,
           flightRemainder: Number(flightUnits % unit),
         };
         changed = true;
@@ -129,13 +129,13 @@ export function reserveMotion(
         const actual =
           distanceUnits(distance, profile.staminaPerMeter) +
           distanceUnits(lift, stepRate) +
-          BigInt(actor.motionClock?.remainder ?? 0);
+          BigInt(actor.body.motionClock?.remainder ?? 0);
         const burst = moved.jumped ? m.jumpStamina : 0;
         budget.commit('motion', { stamina: Number(actual / unit) + burst });
-        actor.motionClock = {
-          ...actor.motionClock,
+        actor.body.motionClock = {
+          ...actor.body.motionClock,
           remainder: Number(actual % unit),
-          flightRemainder: actor.motionClock?.flightRemainder ?? 0,
+          flightRemainder: actor.body.motionClock?.flightRemainder ?? 0,
         };
         changed = true;
       }
@@ -148,47 +148,47 @@ export function reserveMotion(
         !intent.forced &&
         (!m || dodgePaid)
       )
-        actor.motionClock = {
-          remainder: actor.motionClock?.remainder ?? 0,
-          flightRemainder: actor.motionClock?.flightRemainder ?? 0,
+        actor.body.motionClock = {
+          remainder: actor.body.motionClock?.remainder ?? 0,
+          flightRemainder: actor.body.motionClock?.flightRemainder ?? 0,
           dodgeUntilStep: step + 5,
         };
       if (displayMotion)
-        actor.locomotion = {
+        actor.body.locomotion = {
           mode: intent.flight
             ? 'flight'
-            : length({ ...sub(moved.state.position, actor.motion.position), y: 0 }) > 1e-6
+            : length({ ...sub(moved.state.position, actor.body.motion.position), y: 0 }) > 1e-6
               ? gait
               : 'idle',
           jumping:
             !moved.state.grounded &&
             !intent.flight &&
-            (moved.jumped || (actor.locomotion?.jumping ?? false)),
+            (moved.jumped || (actor.body.locomotion?.jumping ?? false)),
           dodging:
             ready &&
             !intent.forced &&
             !intent.authored &&
-            (actor.motionClock?.dodgeUntilStep ?? 0) > step,
+            (actor.body.motionClock?.dodgeUntilStep ?? 0) > step,
         };
       const final = budget.finish();
-      actor.resources = final.resources;
-      actor.used = final.used;
-      if (actor.staminaClock)
-        actor.staminaClock.exhausted = staminaExhausted(
-          actor.resources,
+      actor.vitals.resources = final.resources;
+      actor.actions.used = final.used;
+      if (actor.vitals.staminaClock)
+        actor.vitals.staminaClock.exhausted = staminaExhausted(
+          actor.vitals.resources,
           character.stamina,
-          actor.staminaClock.exhausted,
+          actor.vitals.staminaClock.exhausted,
         );
-      if (changed && before.stamina !== actor.resources.stamina)
+      if (changed && before.stamina !== actor.vitals.resources.stamina)
         journal.emit({
           kind: 'cost',
           step,
           phase: 'contact',
-          actorId: actor.motion.actor.participant.actorId,
+          actorId: actor.body.motion.actor.participant.actorId,
           ruleId: 'movement.cost',
           before,
-          after: { ...actor.resources },
-          amount: before.stamina! - actor.resources.stamina!,
+          after: { ...actor.vitals.resources },
+          amount: before.stamina! - actor.vitals.resources.stamina!,
           reason: `${intent.flight ? 'flight' : gait}; jump=${moved.jumped}; step=${moved.stepped}; dodge=${dodgePaid}`,
         });
     },

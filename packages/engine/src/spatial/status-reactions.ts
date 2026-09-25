@@ -1,3 +1,4 @@
+import type { StatusCohort, StatusRevision } from './state.ts';
 import {
   compareIds,
   type DeepReadonly,
@@ -10,8 +11,6 @@ import {
   UnresolvedRuleError,
   type StatusApplication,
   type StatusChange,
-  type StatusCohort,
-  type StatusRevision,
   type DispelTarget,
 } from './status.ts';
 

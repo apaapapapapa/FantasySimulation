@@ -1,3 +1,4 @@
+import type { ActorState, MeleeState, PreparedBattle } from './state.ts';
 import {
   BudgetSchema,
   DEFAULT_BUDGET,
@@ -7,17 +8,10 @@ import {
   type StreamRecord,
   type BattleResult,
 } from '@fantasy/domain/spatial/execution';
-import {
-  initialActor,
-  decisionState,
-  displayActor,
-  type ActorState,
-  type MeleeState,
-} from './combat-state.ts';
+import { initialActor, decisionState, displayActor } from './combat-state.ts';
 import { Journal, recordBytes } from './journal.ts';
 import { Navigator } from './navigation.ts';
 import { SpatialBudgetError } from './physics.ts';
-import type { PreparedBattle } from './prepare.ts';
 import { UnresolvedRuleError } from './status.ts';
 import { createBattleWorld } from './terrain.ts';
 import { type ProjectileState } from './projectiles.ts';
@@ -39,7 +33,7 @@ export type SimulationEnd = {
   stats: BattleResult['stats'];
 };
 const verdict = (actors: ActorState[]): Outcome | null => {
-  const alive = actors.filter((a) => a.resources.hp > 0);
+  const alive = actors.filter((a) => a.vitals.resources.hp > 0);
   return alive.length === 0
     ? { kind: 'draw', reason: 'mutual-defeat' }
     : alive.length === 1
@@ -83,7 +77,7 @@ export function* simulate(
     const navigators = new Map(
       actors.map((a) => [
         actorId(a),
-        new Navigator(world, a.motion.actor, battle.scenario, battle.rules),
+        new Navigator(world, a.body.motion.actor, battle.scenario, battle.rules),
       ]),
     );
     world.casts = 0;

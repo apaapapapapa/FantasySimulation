@@ -1,3 +1,5 @@
+import type { Trace } from './geometry-types.ts';
+import type { AbilityRevision, PerceptionMemory, MotionState, DamageSnapshot } from './state.ts';
 import type {
   Budget,
   DeepReadonly,
@@ -7,12 +9,8 @@ import type {
   StageContact,
 } from '@fantasy/domain/spatial/execution';
 import { add, sub, mul, unit, length, turnToward, type Vec3 } from './math.ts';
-import { ballShape, SpatialBudgetError, type SpatialWorld, type Trace } from './physics.ts';
-import type { AbilityRevision } from './combat-state.ts';
-import type { PerceptionMemory } from './perception.ts';
-import type { MotionState } from './movement.ts';
+import { ballShape, SpatialBudgetError, type SpatialWorld } from './physics.ts';
 import { bodyCapsule } from './terrain.ts';
-import type { DamageSnapshot } from './status-damage.ts';
 
 export type ProjectileState = DamageSnapshot & {
   id: string;

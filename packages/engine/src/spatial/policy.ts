@@ -1,3 +1,5 @@
+import type { MotionIntent, DecisionView, DecisionRandom, Decision } from './state.ts';
+export type { Decision } from './state.ts';
 import {
   compareIds,
   type CandidateAssessment,
@@ -5,9 +7,8 @@ import {
   type Posture,
 } from '@fantasy/domain/spatial/execution';
 import { length, mul, sub, unit, ZERO, type Vec3 } from './math.ts';
-import type { MotionIntent } from './movement.ts';
 import { Navigator, type NavigationResult } from './navigation.ts';
-import { conditionMatches, type DecisionView } from './perception.ts';
+import { conditionMatches } from './perception.ts';
 import { declarationCost, inObservedRange, payCost } from './attacks.ts';
 import { copyPublicStatuses } from './status-observation.ts';
 import { usesObservedConditions } from './observed-conditions.ts';
@@ -16,36 +17,12 @@ import { assessAbility, type KnownClearance } from './assessment.ts';
 import { assessReactions } from './reaction-assessment.ts';
 import { dodgeOptions } from './dodge.ts';
 import { chooseMovementSlot, dodgeAssessment, passiveAssessment } from './movement-choice.ts';
-import { chooseSearch, type SearchMemory } from './search.ts';
+import { chooseSearch } from './search.ts';
 import { postureAllows, postureRequiresWalk } from './posture.ts';
 import { chooseCover, type TacticalTerrain } from './cover.ts';
-import {
-  initialDecisionRandom,
-  weightedChoice,
-  recordDecisionWeights,
-  type DecisionRandom,
-} from './decision-random.ts';
-import {
-  canMaintainFlight,
-  chooseGait,
-  gaitProfile,
-  resourceReady,
-  type Gait,
-} from './locomotion.ts';
+import { initialDecisionRandom, weightedChoice, recordDecisionWeights } from './decision-random.ts';
+import { canMaintainFlight, chooseGait, gaitProfile, resourceReady } from './locomotion.ts';
 
-export type Decision = {
-  abilityId: string | null;
-  goal: Vec3 | null;
-  facing: Vec3;
-  cognition?: Extract<Cognition, { kind: 'decision' }>;
-  random?: DecisionRandom;
-  gait?: Gait;
-  dodge?: boolean;
-  search?: SearchMemory;
-  posture?: Posture;
-  postureUntil?: number;
-  jump?: boolean;
-};
 export const isDodgeDecision = (decision: Decision) =>
   decision.dodge ?? decision.cognition?.selection === 'dodge';
 const vectorUnits = (p: Vec3, scale: number) => ({

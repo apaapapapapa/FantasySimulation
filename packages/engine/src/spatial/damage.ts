@@ -1,7 +1,9 @@
+import type { DamageSource } from './state.ts';
+export type { DamageSource } from './state.ts';
 import type { DeepReadonly, Effect } from '@fantasy/domain/spatial/execution';
 
 export type DamageEffect = DeepReadonly<Extract<Effect, { kind: 'damage' }>>;
-export type DamageSource = { attack: number; magicPower?: number };
+
 export type DamageTarget = { defense: number; magicDefense?: number; resistance: number };
 /** G-03 supplies status-adjusted stats/resistance and these aggregate multipliers. */
 export type DamageModifiers = { dealtBps?: number; receivedBps?: number };

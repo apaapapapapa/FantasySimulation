@@ -1,3 +1,4 @@
+import type { DecisionView } from './state.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { initializePhysics, SpatialWorld } from './physics.ts';
 import { dodgeOptions } from './dodge.ts';
@@ -5,7 +6,6 @@ import { choosePolicy } from './policy.ts';
 import { initialDecisionRandom } from './decision-random.ts';
 import { Navigator } from './navigation.ts';
 import { dodgeFixture } from '../../test-support/ai.ts';
-import type { DecisionView } from './perception.ts';
 
 beforeAll(initializePhysics);
 describe('conditional observed 3D evasion', () => {

@@ -1,7 +1,6 @@
+import type { DecisionView, AbilityRevision } from './state.ts';
 import { type CandidateAssessment, type Cognition } from '@fantasy/domain/spatial/execution';
-import type { DecisionView } from './perception.ts';
 import { initialMovementRandom, weightedChoice, recordDecisionWeights } from './decision-random.ts';
-import type { AbilityRevision } from './combat-state.ts';
 import { payCost } from './attacks.ts';
 import { canMaintainFlight, resourceReady } from './locomotion.ts';
 import { dodgeOptions } from './dodge.ts';

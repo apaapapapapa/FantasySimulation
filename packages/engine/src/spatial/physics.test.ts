@@ -1,3 +1,4 @@
+import type { Obstacle } from './geometry-types.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { createHash } from 'node:crypto';
 import {
@@ -20,7 +21,6 @@ import {
   SpatialWorld,
   stopAt,
   straight,
-  type Obstacle,
 } from './physics.ts';
 
 beforeAll(initializePhysics);

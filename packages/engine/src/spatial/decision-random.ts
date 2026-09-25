@@ -1,13 +1,8 @@
+import type { DecisionRandom } from './state.ts';
+export type { DecisionRandom } from './state.ts';
 import { nextRandom } from '@fantasy/domain/spatial/execution';
 import { SpatialBudgetError } from './physics.ts';
 
-export type DecisionRandom = {
-  action: number;
-  dodge: number;
-  movement?: number;
-  search?: number;
-  cover?: number;
-};
 export const initialSearchRandom = (seed: number) => nextRandom((seed ^ 0xa4093822) >>> 0 || 1);
 export const initialCoverRandom = (seed: number) => nextRandom((seed ^ 0x299f31d0) >>> 0 || 1);
 export const initialMovementRandom = (actorSeed: number) =>

@@ -1,3 +1,4 @@
+import type { ThreatExperience } from './state.ts';
 import { beforeAll, expect, it } from 'vite-plus/test';
 import { AI_RULES, DEFAULT_BUDGET } from '@fantasy/domain/spatial';
 import { aiFixture, initialStatus, incomingArrow } from '../../test-support/ai.ts';
@@ -5,7 +6,6 @@ import { initializePhysics } from './physics.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { reapplicationEstimate, rememberThreat, seenAttack } from './threat-memory.ts';
 import { assessAbility } from './assessment.ts';
-import type { ThreatExperience } from './perception.ts';
 import { perceive, emptyMemory } from './perception.ts';
 import { initialActor } from './combat-state.ts';
 import { commitEffects, commitTransactionStatuses } from './combat-effects.ts';
@@ -59,10 +59,10 @@ it.each([false, true])(
       );
       const victim = initialActor(f.world, f.self.actor),
         attacker = initialActor(f.world, f.enemy.actor);
-      victim.memory = {
-        ...victim.memory,
+      victim.mind.memory = {
+        ...victim.mind.memory,
         search: surveySearch(
-          victim.motion,
+          victim.body.motion,
           f.battle.scenario.bounds,
           TACTICAL_AI.search!,
           0,
@@ -110,10 +110,10 @@ it.each([false, true])(
         effectiveSteps: 15,
         basis: 'self-application',
       });
-      expect(victim.memory.search!.cues.map((c) => c.availableAt)).toEqual([15, 35]);
+      expect(victim.mind.memory.search!.cues.map((c) => c.availableAt)).toEqual([15, 35]);
       expect(chooseSearch({ ...view, step: 14 }, 1)).toBeNull();
       expect(chooseSearch({ ...view, step: 15 }, 1)?.goal).toEqual({
-        ...victim.motion.position,
+        ...victim.body.motion.position,
         z: 3,
       });
     } finally {

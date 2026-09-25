@@ -1,3 +1,4 @@
+import type { MotionState } from './state.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import {
@@ -9,7 +10,6 @@ import {
 import { sweepBlade } from './blades.ts';
 import { initializePhysics, SpatialWorld, straight } from './physics.ts';
 import { ZERO } from './math.ts';
-import type { MotionState } from './movement.ts';
 import { runBattle } from './run.ts';
 import { locomotionFixture } from '../../test-support/locomotion.ts';
 import { stagedManifest } from '../../test-support/stages.ts';
@@ -50,7 +50,7 @@ describe('rotating whole-blade contact', () => {
     const f = await locomotionFixture(),
       world = new SpatialWorld([]);
     try {
-      const target = { ...f.actor.motion, position: { x: 0.75, y: 0, z: 0 } };
+      const target = { ...f.actor.body.motion, position: { x: 0.75, y: 0, z: 0 } };
       const sweep = sweepFromOrigin(world, target, f.battle.rules, arc());
       expect(sweep.contact?.kind).toBe('body');
       expect(sweep.contact!.time).toBeGreaterThan(0.3);
@@ -76,7 +76,7 @@ describe('rotating whole-blade contact', () => {
     };
     const far = { ...wall, id: 'far', position: { x: 10, y: 0, z: 0 } };
     try {
-      const target = { ...f.actor.motion, position: { x: 0.75, y: 0, z: 0 } },
+      const target = { ...f.actor.body.motion, position: { x: 0.75, y: 0, z: 0 } },
         results = [];
       for (const obstacles of [
         [wall, far],
@@ -111,7 +111,7 @@ describe('rotating whole-blade contact', () => {
     const f = await locomotionFixture(),
       world = new SpatialWorld([]);
     try {
-      const target = { ...f.actor.motion, position: { x: 20, y: 0, z: 0 } },
+      const target = { ...f.actor.body.motion, position: { x: 20, y: 0, z: 0 } },
         shape = {
           kind: 'radial' as const,
           reachMm: 500,
@@ -192,7 +192,7 @@ describe('rotating whole-blade contact', () => {
         },
       ]);
     try {
-      const target = { ...f.actor.motion, position: { x: 0.75, y: 0, z: 0 } };
+      const target = { ...f.actor.body.motion, position: { x: 0.75, y: 0, z: 0 } };
       const owner = split
         ? [
             { from: 0, to: 0.5, start: ZERO, end: ZERO },

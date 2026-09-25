@@ -1,8 +1,7 @@
+import type { ActorState, DecisionView, StatusRevision } from './state.ts';
 import profile from './profile.json' with { type: 'json' };
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
-import type { ActorState } from './combat-state.ts';
-import type { DecisionView } from './perception.ts';
-import { effectiveStats, statusKnowledge, type StatusRevision } from './status.ts';
+import { effectiveStats, statusKnowledge } from './status.ts';
 import { damageSource } from './damage.ts';
 import { statusReactions } from './status-reactions.ts';
 import { knownPeriodicDamage } from './status-risk.ts';
@@ -13,66 +12,54 @@ import { postureSpeed } from './posture.ts';
 
 /** Own resources and active statuses are proprioception, never a lookup of an opponent. */
 export function selfView(
-  actor: Pick<
-    ActorState,
-    | 'motion'
-    | 'statuses'
-    | 'resources'
-    | 'memory'
-    | 'used'
-    | 'readyAt'
-    | 'action'
-    | 'staminaClock'
-    | 'forces'
-  > &
-    Partial<Pick<ActorState, 'cooldowns'>>,
+  actor: ActorState,
   step: number,
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>>,
   definitions: readonly StatusRevision[],
   gravityMmPerSecond2 = profile.gravityMmPerSecond2,
 ): DecisionView {
-  const stats = effectiveStats(actor.motion.actor, actor.statuses, step);
+  const stats = effectiveStats(actor.body.motion.actor, actor.statuses, step);
   const active = actor.statuses.filter((s) => s.startStep <= step && step < s.endStep);
-  const known = actor.motion.actor.knownStatuses ?? [];
+  const known = actor.body.motion.actor.knownStatuses ?? [];
   const knowledge = statusKnowledge([...known, ...active.map((s) => s.revision)], definitions);
   const self =
     knowledge.length === known.length && knowledge.every((s, i) => s === known[i])
-      ? actor.motion
-      : { ...actor.motion, actor: { ...actor.motion.actor, knownStatuses: knowledge } };
+      ? actor.body.motion
+      : { ...actor.body.motion, actor: { ...actor.body.motion.actor, knownStatuses: knowledge } };
   const burnDamage = knownPeriodicDamage(
     self.actor,
     active,
-    actor.resources,
+    actor.vitals.resources,
     step,
     rules.horizonSteps,
   );
   return {
     self,
-    resources: actor.resources,
-    staminaExhausted: actor.staminaClock?.exhausted ?? false,
+    resources: actor.vitals.resources,
+    staminaExhausted: actor.vitals.staminaClock?.exhausted ?? false,
     flightStaminaPerSecond: stats.flight ? flightRate(actor.statuses, step) : 0,
-    memory: actor.memory,
+    memory: actor.mind.memory,
     statusIds: active.map((s) => s.revision.id),
     step,
     gravityMmPerSecond2,
-    used: actor.used,
-    reactionReadyAt: actor.cooldowns ?? {},
+    used: actor.actions.used,
+    reactionReadyAt: actor.actions.cooldowns,
     ownStatuses: active,
     incapacitated: stats.incapacitated,
-    canAct: step >= actor.readyAt && !actor.action && !stats.incapacitated,
-    activeAbility: actor.action?.ability.definition,
-    stageOwnsMotion: ownsStageMotion(actor.action, step),
+    canAct: step >= actor.actions.readyAt && !actor.actions.action && !stats.incapacitated,
+    activeAbility: actor.actions.action?.ability.definition,
+    stageOwnsMotion: ownsStageMotion(actor.actions.action, step),
     canMove:
-      !hasForcedMotion(actor, step) &&
+      !hasForcedMotion(actor.body, step) &&
       !stats.rooted &&
       !stats.incapacitated &&
       !(
-        actor.action &&
-        step < actor.action.launchAt &&
-        actor.action.ability.definition.movementWhileCasting === 'stop'
+        actor.actions.action &&
+        step < actor.actions.action.launchAt &&
+        actor.actions.action.ability.definition.movementWhileCasting === 'stop'
       ),
     silenced: stats.silenced,
-    speedBps: Math.floor((stats.speedBps * postureSpeed(actor.motion)) / 10000),
+    speedBps: Math.floor((stats.speedBps * postureSpeed(actor.body.motion)) / 10000),
     ...damageSource(stats),
     magicPower: stats.magicPower ?? stats.attack,
     burnDamage,

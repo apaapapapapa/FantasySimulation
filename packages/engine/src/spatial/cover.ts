@@ -1,7 +1,7 @@
+import type { Obstacle } from './geometry-types.ts';
+import type { DecisionView } from './state.ts';
 import type { Definition, DeepReadonly, Posture } from '@fantasy/domain/spatial/execution';
-import type { DecisionView } from './perception.ts';
 import type { KnownClearance } from './assessment.ts';
-import type { Obstacle } from './physics.ts';
 import { add, sub, mul, length, unit, type Vec3 } from './math.ts';
 import { postureBody, postureAllows } from './posture.ts';
 import { initialCoverRandom, weightedChoice, recordDecisionWeights } from './decision-random.ts';

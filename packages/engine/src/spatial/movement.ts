@@ -1,3 +1,6 @@
+import type { Trace } from './geometry-types.ts';
+import type { ResolvedActor, MotionState, MotionIntent } from './state.ts';
+export type { MotionState, MotionIntent } from './state.ts';
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import {
   add,
@@ -21,41 +24,10 @@ import {
   SpatialBudgetError,
   stopAt,
   straight,
-  type Trace,
   type MotionProjection,
 } from './physics.ts';
-import type { ResolvedActor } from './prepare.ts';
 import { bodyCapsule, metres } from './terrain.ts';
-import type { PostureState } from './posture.ts';
 
-export type MotionState = {
-  actor: ResolvedActor;
-  position: Vec3;
-  velocity: Vec3;
-  facing: Vec3;
-  grounded: boolean;
-  posture?: PostureState;
-  vision?: { rangeMm: number; fovMilliDegrees: number; enabled: boolean; visible: boolean };
-};
-export type MotionIntent = {
-  direction: Vec3;
-  facing: Vec3;
-  jump: boolean;
-  flight: boolean;
-  canMove: boolean;
-  speedBps: number;
-  speedMmPerSecond?: number;
-  canStep?: boolean;
-  /** External force mode supplies separate carry and force; only gravity is retained. */
-  forced?: { gravity: Vec3; force: Vec3 };
-  accelerationMmPerSecond2?: number;
-  authored?: {
-    direction: Vec3;
-    speedMmPerSecond: number;
-    accelerationMmPerSecond2: number;
-    jump: boolean;
-  };
-};
 export type MovedActor = {
   state: MotionState;
   trace: Trace;

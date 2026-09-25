@@ -1,15 +1,10 @@
+import type { MotionState } from './state.ts';
+export type { PostureState } from './state.ts';
 import type { DeepReadonly, Definition, Posture } from '@fantasy/domain/spatial/execution';
-import type { MotionState } from './movement.ts';
 import { capsuleShape, firstContact, straight, type SpatialWorld } from './physics.ts';
 import { bodyCapsule } from './terrain.ts';
 import { abilityCategories } from './categories.ts';
 
-export type PostureState = {
-  current: Posture;
-  standingBody: DeepReadonly<Definition<'character'>['body']>;
-  transition?: { to: Posture; completeAt: number };
-  holdUntil?: number;
-};
 export function postureBody(self: MotionState, posture: Posture) {
   return posture === 'standing'
     ? (self.posture?.standingBody ?? self.actor.character.body)

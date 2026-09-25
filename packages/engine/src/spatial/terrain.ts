@@ -1,13 +1,9 @@
+import type { Capsule } from './geometry-types.ts';
+import type { Obstacle } from './geometry-types.ts';
+import type { PreparedBattle } from './state.ts';
 import type { DeepReadonly, Definition, VectorMm } from '@fantasy/domain/spatial/execution';
 import { cosDegrees, sinDegrees, type Vec3 } from './math.ts';
-import {
-  capsuleShape,
-  CONTACT_TOLERANCE,
-  SpatialWorld,
-  type Capsule,
-  type Obstacle,
-} from './physics.ts';
-import type { PreparedBattle } from './prepare.ts';
+import { capsuleShape, CONTACT_TOLERANCE, SpatialWorld } from './physics.ts';
 
 export const metres = (value: VectorMm): Vec3 => ({
   x: value.x / 1000,

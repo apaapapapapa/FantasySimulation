@@ -1,3 +1,4 @@
+import { initialActor } from './combat-state.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import {
   StreamRecordSchema,
@@ -559,15 +560,10 @@ describe('G-03 status combat and subjective observations', () => {
       );
       const battle = await prepareBattle(f.manifest);
       expect(battle.actors[0].knownStatuses).toBeUndefined();
-      const actor = {
-        motion: { ...f.self, actor: battle.actors[0] },
-        resources: f.view.resources,
-        memory: f.view.memory,
-        used: {},
-        readyAt: 0,
-        action: null,
-        statuses: [],
-      };
+      const actor = initialActor(f.world, battle.actors[0]);
+      actor.body.motion = { ...f.self, actor: battle.actors[0] };
+      actor.vitals.resources = f.view.resources;
+      actor.mind.memory = f.view.memory;
       expect(
         selfView(actor, 5, AI_RULES, battle.statuses).self.actor.knownStatuses,
       ).toBeUndefined();

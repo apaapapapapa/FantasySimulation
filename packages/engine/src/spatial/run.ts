@@ -1,3 +1,4 @@
+import type { PreparedBattle } from './state.ts';
 import {
   eventHashLine,
   trajectoryHashLine,
@@ -10,7 +11,7 @@ import {
   type StreamRecord,
 } from '@fantasy/domain/spatial/execution';
 import { initializePhysics } from './physics.ts';
-import { prepareBattle, type PreparedBattle } from './prepare.ts';
+import { prepareBattle } from './prepare.ts';
 import { simulate, type SimulationEnd } from './simulate.ts';
 
 export { eventHashLine, trajectoryHashLine } from '@fantasy/domain/spatial/execution';
