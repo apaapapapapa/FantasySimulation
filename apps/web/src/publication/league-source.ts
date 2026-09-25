@@ -118,6 +118,7 @@ export async function leaguePairMatches(
     const row = page.rows.find((r) => r.slotId === planned.rowId);
     if (
       !row ||
+      (planned.cancelled && row.state !== 'failed') ||
       set.source.sha !== snapshot.sourceSha ||
       set.engineVersion !== snapshot.engineVersion ||
       set.implementationDigest !== snapshot.implementationDigest ||

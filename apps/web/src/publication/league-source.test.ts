@@ -41,6 +41,11 @@ it('loads only the overview, then authenticates selected slots and the exact sav
     resultId: selected.replay!.resultId,
   });
   const altered = structuredClone(pair);
+  altered.rows[0]!.cancelled = true;
+  await expect(leaguePairMatches(library, catalog, snapshot, altered)).rejects.toMatchObject({
+    kind: 'damaged',
+  });
+  delete altered.rows[0]!.cancelled;
   altered.rows[0]!.rowId = 'sha256:' + 'f'.repeat(64);
   await expect(leaguePairMatches(library, catalog, snapshot, altered)).rejects.toMatchObject({
     kind: 'damaged',

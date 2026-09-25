@@ -1,6 +1,7 @@
 import { join, resolve, sep } from 'node:path';
 import {
   PublicMatchPageSchema,
+  BatchIndexSchema,
   PublicMatchRowSchema,
   PublicReplaySetSchema,
   ReplayManifestSchema,
@@ -51,6 +52,8 @@ export async function buildPublication(
   for (const value of indexes) {
     if (overlaps(root, resolve(value.bundles.root)))
       throw new Error('Publication and bundle roots must be separate');
+    // Empty artifact directories are absent after Actions transfers; no recording is read.
+    if (!parseJson(BatchIndexSchema, value.index).slots.some((slot) => slot.receipt)) continue;
     await publicationDirectory(value.bundles.root);
     await publicationDirectory(join(value.bundles.root, 'objects'));
   }

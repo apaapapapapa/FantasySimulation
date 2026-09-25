@@ -56,6 +56,11 @@ export async function exportLeague(
     const source = result
       ? completed.find((c) => canonicalJson(c.result) === canonicalJson(result))
       : undefined;
+    const cancelled = new Set(
+      result?.progress.records
+        .filter((record) => record.attempts.at(-1)?.state === 'cancelled')
+        .map((record) => record.simulationHash),
+    );
     const built = await buildPublication(
       batch,
       source ? [{ index: result!.index, bundles: source.bundles }] : [],
@@ -74,6 +79,7 @@ export async function exportLeague(
         setHash: built.setHash,
         pageHash: built.set.pages[Math.floor(rowIndex / 100)]!.pageHash,
         rowId: batchSlot.id,
+        ...(cancelled.has(slot.simulationHash) ? { cancelled: true as const } : {}),
       });
       pairs.set(key, rows);
     }
