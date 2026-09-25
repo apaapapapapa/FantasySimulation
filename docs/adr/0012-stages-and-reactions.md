@@ -1,87 +1,57 @@
-# ADR 0012: 技の段・攻撃形状・移動・反応型発動
+# ADR 0012: Stages, motion and reactions
 
-状態: **設計承認済み**（[承認](https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5792777109)）。
+Status: design approved in [PR #86](https://github.com/apaapapapapa/FantasySimulation/pull/86#issuecomment-5792777109).
 Refs #61 G-06/§2-E,F, #45, #59, #1 P6.
+[Design history](https://github.com/apaapapapapa/FantasySimulation/blob/6ea13284e6c7845c7badef202054a951be7144b6/docs/adr/0012-stages-and-reactions.md)
+retains implementation order and tabletop examples. Later #45/#59/#61 decisions prevail.
 
-## 1. 採用案・前提
+## Implemented contracts
 
-G-01–05 are merged; #45 simultaneous slots precede G-07. Recheck live main/PRs.
-Later #45/#59/#61 override parent text; G-05 confirmed §7.
+One 20ms clock, stage/shared ledger and bounded transactional waves compose existing
+category/damage/status/resource/geometry/view rules. No duplicate loops, recursive
+callbacks, contact-order HP, character scripts or future prepayment. Interrupt at
+boundaries; finer timing needs versioning.
 
-One20ms clock, stage/shared ledger and bounded transactional waves; simulate.ts orchestrates
-G-01 categories/G-02 damage/G-03 status/G-04 resources/geometry and G-05 views.
-No duplicate loops, recursive callbacks, contact-order HP, character scripts or future prepayment.
-Interruption is boundary-based; finer timing needs versioning.
+[Stage/motion rules](../rules/stages-motion.md) own G-07 clocks, costs, interruption,
+shapes, forces, movement and simultaneous resource selection. G-08's
+[reaction rules](../rules/reactions.md) own before-hit/after-damage/before-defeat,
+grouped current-resource payment, old-cohort status union, shared shield/clamp,
+whole/damage parry and paid deferred counters. They own the executable acceptance
+matrix, atomicity, delayed visible observations and saved clocks/queues/geometry.
+Replay validation does not execute the engine.
 
-## 2. 段・時計・中断
-
-G-07a implements the stage clocks, costs and interruption contract in
-[canonical rules](../rules/stages-motion.md). G-07b extends them; G-08 owns reaction waves.
-
-## 3. 形状・命中・移動
-
-G-07 implements the [shape/force/motion contract](../rules/stages-motion.md).
-Future emitter/beam/area/teleport and posture capabilities remain rejected until their own acceptance work.
-
-## 4–5. 同時選択・資源・処理順
-
-G-07 implements the [shared stage/movement resource contract](../rules/stages-motion.md#同時選択資源).
-G-08 implements the [reaction contract](../rules/reactions.md): before-hit, after-damage,
-before-defeat; grouped current-resource payment; old-cohort status union; shared
-shield/clamp; whole/damage parry and paid deferred counters. That document owns
-implemented clocks, filters, atomicity, information boundaries and acceptance.
-
-P6 hooks are designed, not implemented in G-06/G-08:
-
-- Absorption diverts post-modifier/pre-shield damage to same-wave healing. That
-  portion cannot also drain shield/reflect; competing absorbers need a fraction rule.
-- Reflection basis: hostile post-defense/resistance/**shield**, before remaining-HP
-  clipping or simultaneous-heal cancellation (#1). Exclude costs, environmental/
-  nonhostile damage and reflections. Rational component attribution, floor once per
-  owner/source/component after reflection Bps; no new attack scaling/dealt bonus.
-  Recipient defense/resistance/shield still apply; preserve causes even at HP0.
-  Reflections may be defended, never reflected again.
-- Same-wave healing precedes before-defeat. Revival is explicit restoration, not
-  ordinary heal/counter recursion. Gather all HP0 owners, reserve all-or-none per
-  owner; finite uses/explicit rules govern competing revivals. Undefined revive/
-  annihilation or competing replacement is unresolved.
-
-## 6–7. 上限・原子性・観測・保存
-
-[Canonical reaction rules](../rules/reactions.md#atomic-waves-and-limits) implement
-64/transaction,1024/match,depth8 with cross-interval ancestry and rollback; existing
-geometry/record limits remain. G-08 exposes only actual delayed visible reactions,
-records paid queues/clocks/geometry and validates replay without engine execution.
-P6 additionally caps revival at4/actor/match. Undefined revival/annihilation or
-competing replacement remains unresolved; no P6 capability is implemented here.
-
-## 8. データ例と机上受入（実装試験ではない）
-
-G-07 numerical acceptance is executable in the mapped stage/motion/force/blade tests.
-Reaction examples below use zero defenses unless stated; G-08 tests execute the non-P6 cases.
-
-- 受け流し／反撃: full parry consumes hit/cancels payload; positive-damage counter
-  queues n+1, actual geometry decides its hit.
-- 同時致死: bothHP10/take15, A heals6 → A1/B0 after reactions/A wins;
-  without heal/revival → draw.
-- 反射／蘇生(P6): B HP10/shield5 takes30/heals8 → basis25,B0;
-  50% reflection12 kills A HP12, no re-reflect. B revival7→B wins; neither→draw.
-- 上限: eligible65th with cap64 rolls back all64/cost/PRNG/hits. Undefined
-  parry-vs-pierce→unresolved; neither omits a reaction to award a winner.
-
-## 9. 実装・検証
-
-G-07a #95 and G-07b #97 follow merged #45. G-08 follows G-07, with one
-owner for coordinator/domain/log changes and shared G-03/G-04/G-05 adapters.
-[Stage](../rules/stages-motion.md) and [reaction](../rules/reactions.md) rules own the
-implemented acceptance matrix. #61 §2-I, independent fixtures, saved replay/Worker
-round trips, Linux verify/clean-source/latest-head review and post-merge CI apply.
+Reaction limits remain 64/transaction, 1024/match, depth 8 with cross-interval
+ancestry and complete rollback; existing geometry/record limits remain.
+Future emitter/beam/area/teleport extensions remain rejected until their own
+acceptance work. Existing crouch/prone postures follow [tactical AI](../rules/tactical-ai.md).
 Reflection/absorption/revival and P4/P5 remain separate.
 
-## 10. 版更新・承認証跡
+## P6 design hooks (not implemented here)
 
-[ADR0010](0010-battle-version-compatibility.md) owns additive schema, published
+- Absorption diverts post-modifier/pre-shield damage into same-wave healing; that
+  portion cannot drain shields or reflect. Competing absorbers need a fraction rule.
+- Reflection uses hostile post-defense/resistance/shield damage, before remaining-HP
+  clipping or simultaneous healing. Exclude costs, environmental/nonhostile damage
+  and reflections. Attribute components rationally; floor once per owner/source/
+  component after reflection Bps, without new attack scaling/dealt bonus. Recipient
+  defense/resistance/shield apply; preserve causes at HP0. Reflections may be defended
+  but never reflected again.
+- Same-wave healing precedes before-defeat. Revival restores explicitly, never via
+  ordinary heal/counter recursion. Gather all HP0 owners and reserve all-or-none per
+  owner. Use finite uses/explicit competition rules; cap revival at 4/actor/match.
+  Undefined revival/annihilation or competing replacements remain unresolved.
+
+For example, HP10/shield5 taking30/healing8 gives reflection basis25 and HP0;
+50% reflection deals12, with no re-reflection. Revival to7 can then decide victory.
+The 65th eligible reaction under cap64 rolls back all costs/PRNG/hits; undefined
+parry-versus-pierce stays unresolved, never silently omits a reaction to award a win.
+
+## Compatibility and delivery
+
+[ADR 0010](0010-battle-version-compatibility.md) owns additive schemas, published
 identity preservation, versioned mechanics, reviewed digest/corpus inputs and old
-readers/execution rejection. No historical engine or DB conversion. PRs record
-head/reviewer/findings; self-review is not approval. User design approval above
-and implementation delivery/main CI are separate evidence in #61.
+readers/execution rejection. No historical engine or DB conversion. #61 §2-I,
+independent fixtures, replay/Worker round trips, Linux verify/clean-source,
+latest-head review and main CI apply. Preserve one owner for coordinator/domain/log
+changes and reuse existing adapters. Design approval above is distinct from
+implementation delivery; PRs record head/reviewer/findings, and self-review is not approval.

@@ -22,6 +22,8 @@ import type {
 } from '@fantasy/domain/spatial/execution';
 import type { Vec3 } from './math.ts';
 export type DamageSource = { attack: number; magicPower?: number };
+/** The current execution contract is a two-participant duel (ADR 0014). */
+export type DuelPair<T> = [T, T];
 
 export type ResolvedActor = DeepReadonly<{
   participant: Manifest['participants'][number];
@@ -43,7 +45,7 @@ export type PreparedBattle = DeepReadonly<{
   scenario: Definition<'scenario'> & {
     terrainKnowledge: NonNullable<Definition<'scenario'>['terrainKnowledge']>;
   };
-  actors: [ResolvedActor, ResolvedActor];
+  actors: DuelPair<ResolvedActor>;
   statuses: Extract<Revision, { kind: 'status' }>[];
 }>;
 

@@ -1,3 +1,4 @@
+import { opponentInDuel } from './duel.ts';
 import type { ActorState, PreparedBattle } from '../state.ts';
 import type { Budget, DisplayPath, ProjectileChanges } from '@fantasy/domain/spatial/execution';
 import { contactObservation, type PendingEffect } from './combat-effects.ts';
@@ -34,7 +35,11 @@ export function stepProjectiles(
     const owner = actors.find(
       (a) => a.body.motion.actor.participant.actorId === projectile.ownerId,
     )!;
-    const enemy = moved.find((a) => a.state.actor.participant.actorId !== projectile.ownerId)!;
+    const enemy = opponentInDuel(
+      moved,
+      projectile.ownerId,
+      (a) => a.state.actor.participant.actorId,
+    );
     const curve = projectileCurve(projectile, owner.mind.memory, battle.rules, budget);
     candidate();
     const { contact } = contactAttack(shape, {

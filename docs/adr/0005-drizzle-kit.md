@@ -1,69 +1,46 @@
 # Drizzle Kit owns schema evolution
 
 Status: accepted by the user's complete migration request, 2026-09-23.
-Supersedes ADR 0003 and the migration/reset portions of ADR 0004, not its 3D model.
+Supersedes ADR 0003 and migration/reset in ADR 0004, not its 3D model.
+[Adoption history](https://github.com/apaapapapapa/FantasySimulation/blob/6ea13284e6c7845c7badef202054a951be7144b6/docs/adr/0005-drizzle-kit.md)
+retains the concurrent-main decision and original verification record.
 
-## Decision
+## Current contract
 
-Pin stable Drizzle ORM 0.45.3, Kit 0.31.11 and better-sqlite3 13.0.3.
-Replace node:sqlite instead of adding a bespoke adapter to an RC driver. Kit CLI,
-API startup and tests share the generated SQL/journal and __drizzle_migrations.
-The application directly invokes the official ORM migrator. No application runner,
-SQL splitter, generation validator, checksum ledger, custom reset, down executor
-or parallel migration implementation remains. Store queries and short synchronous
-transactions use Drizzle ORM. Zod still validates domain JSON and published inputs.
-Runtime library/driver versions are shared with root tooling in the real lockfile.
+Pin Drizzle ORM 0.45.3, Kit 0.31.11 and better-sqlite3 13.0.3 in the shared lockfile.
+Kit CLI and API startup use the same generated SQL/journal and __drizzle_migrations;
+the application calls the official ORM migrator. Drizzle owns queries and short
+synchronous transactions; Zod validates domain JSON. No custom runner, SQL splitter,
+checksum/generation ledger, reset/down executor or RC-driver adapter is supported.
 
-## Concurrent main and existing database adoption
+Back up SQLite and stop the API before first db:migrate; serialize schema changes.
+There is no distributed migration lock. Reviewed IF NOT EXISTS DDL adopts existing
+spatial-v1 databases with former migrations 002/003, preserving revisions, drafts
+and BattleSpecs. The official transaction removes only old schema_generation and
+schema_migrations bookkeeping. It does not translate receipts, infer arbitrary
+partial schemas, convert local-v1 rows or delete unrelated tables. Use DATABASE_PATH
+for a fresh disposable database; no automatic reset is provided.
 
-The task began against local-v1. While implementing it, main d7dc7ed introduced
-spatial revisions, drafts and immutable BattleSpecs, removing the legacy engine/API.
-Integrate that work without resurrecting old contracts. The initial, unreleased
-Drizzle baseline is generated for these current three tables, not the old tables.
-Existing spatial-v1 databases with former migrations 002 and 003 applied are adopted
-using reviewed IF NOT EXISTS DDL. Their revisions, draft versions/bases, JSON and
-specifications remain unchanged. The official transaction removes only the old
-schema_generation and schema_migrations bookkeeping tables. No legacy receipts are
-read, translated or maintained. Arbitrary partial/ad-hoc schemas are not supported.
-
-Back up an existing SQLite database and stop the API before the first db:migrate.
-Old local-v1 domain rows are not converted to 3D definitions or exposed by a legacy
-API; unrelated tables/rows are not deleted. A new disposable database can be selected
-with DATABASE_PATH. No reset, automatic deletion or broad schema inference is added.
-Run schema changes serially. This does not add a custom distributed migration lock.
-
-For later battle-version changes, [ADR 0010](0010-battle-version-compatibility.md)
-preserves readable definitions/results/replays in the same database through additive
-schemas and new rules/sample IDs. A rules-version bump alone does not select a new
-database or reject the old one. An unavoidable incompatible change needs its own
-reviewed ADR before implementing separate DB/artifact paths and explicit-path rejection.
-Previous-version fixtures, unsupported-job handling and catalog-history checks remain
-implementation work under Issue #59; this decision does not claim they already pass.
+[ADR 0010](0010-battle-version-compatibility.md) governs later version changes:
+keep saved definitions/results/replays readable through additive schemas and new
+rules/sample IDs. A rules bump alone never selects a new database. Incompatible
+DB/artifact separation or explicit-path rejection needs a reviewed ADR.
 
 ## Generation and verification
 
-The relational source is apps/api/src/db/schema.ts. Kit generate writes SQL/snapshots
-to db/drizzle; Kit check verifies history. Use a relative out path: Kit 0.31 snapshot
-validation prefixes paths with ./, so absolute out paths fail on subsequent runs.
-Tests verify actual successful no-change output, not exit 0 alone, because some Kit
-generation errors exit 0. Temporary generation tests use their own cwd and relative
-output, including across Windows drive boundaries. Never replace reviewed SQL with push.
+apps/api/src/db/schema.ts is the source; Kit generate/check owns db/drizzle SQL,
+snapshots and history. Use a relative out path and isolated cwd: Kit 0.31 prefixes
+snapshot paths with ./ and some errors exit 0. Assert actual no-change output,
+including temporary generation across drive boundaries; never substitute push.
+STRICT and immutable triggers need explicit SQL review and preservation on rebuilds.
 
-Stable snapshots do not represent STRICT or immutable triggers. Review those SQL
-amendments explicitly and preserve them on table rebuilds. Fresh/current-schema
-adoption, CLI/startup interoperability, incremental upgrades, rollback, constraints,
-trigger immutability, revision paging, optimistic publication across connections and
-saved specifications are real integration tests. Git checks keep committed Drizzle
-SQL/snapshots append-only; they neither parse nor execute SQL. The existing source
-harness and both-platform CI remain canonical and unweakened.
+Real integration tests cover adoption, CLI/startup reexecution, upgrades/rollback,
+constraints/triggers, revision paging, concurrent optimistic publication and saved
+specifications. Append-only Git checks protect committed SQL/snapshots; they do not
+parse/execute migrations or promise runtime drift detection. Revision hashes and
+draft versions retain their business purpose. Current Linux source/CI verification
+remains canonical. Restamps require reviewed input changes, never hidden regressions.
 
-Removed runtime checksum/generation guarantees are not claimed as Drizzle features.
-Git review/CI guard source immutability; domain revision hashes and optimistic draft
-versions retain their distinct business purpose. Engine identity is explicitly
-restamped for reviewed toolchain/input changes, not to hide simulation regressions.
-
-References:
-
-- https://orm.drizzle.team/docs/drizzle-kit-generate
-- https://orm.drizzle.team/docs/drizzle-kit-migrate
-- https://orm.drizzle.team/docs/sqlite/kit-custom-migrations
+References: [generate](https://orm.drizzle.team/docs/drizzle-kit-generate),
+[migrate](https://orm.drizzle.team/docs/drizzle-kit-migrate),
+[custom SQL](https://orm.drizzle.team/docs/sqlite/kit-custom-migrations).

@@ -1,3 +1,4 @@
+import { opponentInDuel } from './duel.ts';
 import {
   matchAttack,
   type AttackHandlers,
@@ -37,7 +38,7 @@ function spatial<K extends Exclude<AttackVariant['kind'], 'direct'>>(
   const { world, battle } = tx.context;
   const definition = ability.definition,
     step = tx.step;
-  const enemy = tx.next.actors.find((a) => actorId(a) !== actorId(actor))!;
+  const enemy = opponentInDuel(tx.next.actors, actorId(actor), actorId);
   if (battle.rules.ai.reapplication)
     enemy.mind.memory = seenAttack(
       world,
