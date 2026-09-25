@@ -1,0 +1,244 @@
+{
+  "schemaVersion": 1,
+  "issue": 79,
+  "browserEvidence": {
+    "candidateSha": "262b9a4f18f276ebd859384c876362b5d31c5f3d",
+    "ciRun": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36123069493",
+    "artifactId": 10858159919,
+    "artifactName": "harness-ui-36123069493-1",
+    "resultFile": "static/results.json",
+    "attachment": "replay-6000-performance",
+    "command": "vp exec node scripts/harness.ts ui .generated/harness/ui",
+    "testMergeSha": "403404ccafe7bb91029b8392c82f9d0c68edc011",
+    "softwareGL": true,
+    "staticTests": {
+      "startTime": "2026-09-25T10:18:37.533Z",
+      "duration": 98550.981,
+      "expected": 30,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    }
+  },
+  "measurements": [
+    {
+      "schemaVersion": 1,
+      "input": {
+        "objectHash": "sha256:0e1431701a6ddfc6908e361269239426d1829c48c47ce0e1928b7fb8430f4221",
+        "simulationHash": "sha256:92c05a2fd64253b7142b3cda20551531f405883741247e5bf928c15f60e7c66e",
+        "resultId": "result-6000",
+        "attemptId": "attempt-6000",
+        "replayId": "measure-6000",
+        "manifestChecksum": "sha256:67525e0099156bdc4ed439ca986f327a2f3e8fb0fac02629ba1b1e2f4e88d5a2",
+        "receiptChecksum": "sha256:2f642dbd87fec5c7a59aa8b30c1e88d5f1f3fbdd1127ee2b39b7713e1d00dd9d",
+        "receiptBytes": 1225
+      },
+      "chunks": 53,
+      "environment": {
+        "browser": "chromium",
+        "version": "153.0.8010.12",
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "logicalCpus": 4,
+        "node": "v24.19.0",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        }
+      },
+      "initialMs": 1137.952783,
+      "initialBytes": 39700,
+      "initialChunks": [
+        "objects/0e1431701a6ddfc6908e361269239426d1829c48c47ce0e1928b7fb8430f4221/chunk-00000.ndjson.gz"
+      ],
+      "seeks": [
+        {
+          "step": 3000,
+          "milliseconds": 145.48010700000032,
+          "bytes": 3792
+        },
+        {
+          "step": 6000,
+          "milliseconds": 74.15464500000007,
+          "bytes": 2198
+        },
+        {
+          "step": 120,
+          "milliseconds": 104.05681400000003,
+          "bytes": 3774
+        },
+        {
+          "step": 3000,
+          "milliseconds": 79.28385700000035,
+          "bytes": 0
+        }
+      ],
+      "totalDataBytes": 57039,
+      "browserDescendantRssKiB": [467368, 734172, 739352, 748676, 753364, 759560],
+      "maxSampledBrowserRssKiB": 759560,
+      "method": "Wall time includes Playwright input/polling. RSS is sampled at milestones for descendants of the test worker, excluding ps; shared pages may be counted more than once. Data bytes are fulfilled payload bytes, including repeat requests, excluding headers and JS assets. Linux CI, not a physical phone."
+    },
+    {
+      "schemaVersion": 1,
+      "input": {
+        "objectHash": "sha256:0e1431701a6ddfc6908e361269239426d1829c48c47ce0e1928b7fb8430f4221",
+        "simulationHash": "sha256:92c05a2fd64253b7142b3cda20551531f405883741247e5bf928c15f60e7c66e",
+        "resultId": "result-6000",
+        "attemptId": "attempt-6000",
+        "replayId": "measure-6000",
+        "manifestChecksum": "sha256:67525e0099156bdc4ed439ca986f327a2f3e8fb0fac02629ba1b1e2f4e88d5a2",
+        "receiptChecksum": "sha256:2f642dbd87fec5c7a59aa8b30c1e88d5f1f3fbdd1127ee2b39b7713e1d00dd9d",
+        "receiptBytes": 1225
+      },
+      "chunks": 53,
+      "environment": {
+        "browser": "webkit",
+        "version": "26.6",
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "AMD EPYC 7763 64-Core Processor",
+        "logicalCpus": 4,
+        "node": "v24.19.0",
+        "viewport": {
+          "width": 1280,
+          "height": 720
+        }
+      },
+      "initialMs": 1602.7212130000003,
+      "initialBytes": 39700,
+      "initialChunks": [
+        "objects/0e1431701a6ddfc6908e361269239426d1829c48c47ce0e1928b7fb8430f4221/chunk-00000.ndjson.gz"
+      ],
+      "seeks": [
+        {
+          "step": 3000,
+          "milliseconds": 181.27365700000018,
+          "bytes": 3792
+        },
+        {
+          "step": 6000,
+          "milliseconds": 115.08345199999985,
+          "bytes": 2198
+        },
+        {
+          "step": 120,
+          "milliseconds": 156.36444100000017,
+          "bytes": 3774
+        },
+        {
+          "step": 3000,
+          "milliseconds": 104.51710599999979,
+          "bytes": 0
+        }
+      ],
+      "totalDataBytes": 57039,
+      "browserDescendantRssKiB": [486700, 779548, 796656, 796148, 800888, 801508],
+      "maxSampledBrowserRssKiB": 801508,
+      "method": "Wall time includes Playwright input/polling. RSS is sampled at milestones for descendants of the test worker, excluding ps; shared pages may be counted more than once. Data bytes are fulfilled payload bytes, including repeat requests, excluding headers and JS assets. Linux CI, not a physical phone."
+    }
+  ],
+  "interpretation": [
+    "One sample per browser on the same fixed Linux CI runner class and saved input; these are observations, not production latency guarantees.",
+    "Initial time ends after step 0 and the first rendered 3D frame. Seek time includes Playwright input and assertion polling.",
+    "RSS sums browser-process descendants at milestones; it is not peak memory, JavaScript heap or incremental replay allocation. Shared pages may be counted repeatedly.",
+    "Payload bytes include repeated fixture responses, exclude HTTP headers and application bundles. Both browsers initially fetch 1 of 53 chunks (39700 payload bytes).",
+    "The unchanged 6000-step writer recording and receipt/checksums are in apps/web/test-fixtures/publication-long/provenance.json; regeneration requires review."
+  ],
+  "bundle": {
+    "candidateSha": "262b9a4f18f276ebd859384c876362b5d31c5f3d",
+    "node": "24.19.0",
+    "pnpm": "11.27.1",
+    "vitePlus": "0.3.3",
+    "platform": "Linux x64",
+    "command": "cd apps/web && VITE_PUBLICATION_ROOT=http://127.0.0.1:49152/fixtures/ vp build --mode public --outDir ../../.generated/public-79-262b9a4",
+    "gzip": "Python gzip.compress(data, compresslevel=9, mtime=0)",
+    "assets": [
+      {
+        "file": "Scene-C2FtmcED.js",
+        "bytes": 946810,
+        "gzipBytes": 247731
+      },
+      {
+        "file": "index-C2S2E3FZ.js",
+        "bytes": 435885,
+        "gzipBytes": 130330
+      },
+      {
+        "file": "index-sCkwFdZm.css",
+        "bytes": 5810,
+        "gzipBytes": 1934
+      },
+      {
+        "file": "replay-worker-C0of73z2.js",
+        "bytes": 165485,
+        "gzipBytes": 47631
+      }
+    ],
+    "loading": "Scene is dynamically imported by ReplayPanel; the Three/Fiber/Drei chunk loads on replay entry. Worker is a separate module. The 500 kB build warning remains visible; no size limit was raised."
+  },
+  "dependencies": {
+    "lockfile": "pnpm-lock.yaml",
+    "directBrowserLibraries": [
+      {
+        "name": "react",
+        "version": "19.3.0",
+        "license": "MIT"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.3.0",
+        "license": "MIT"
+      },
+      {
+        "name": "three",
+        "version": "0.186.0",
+        "license": "MIT"
+      },
+      {
+        "name": "@react-three/fiber",
+        "version": "9.8.0",
+        "license": "MIT"
+      },
+      {
+        "name": "@react-three/drei",
+        "version": "10.7.8",
+        "license": "MIT"
+      }
+    ],
+    "compatibility": "React/DOM 19.3.0 satisfies Fiber >=19 <19.4 and Drei ^19; Three 0.186.0 satisfies Fiber >=0.156 and Drei >=0.159. Optional native/Expo peers are not browser requirements.",
+    "assets": "Production adds no external model, texture, asset CDN or physics engine. E2E font injection is a local test fixture."
+  },
+  "supportedFormats": {
+    "replayManifestSchema": 1,
+    "storedManifestSchema": 3,
+    "eventSchema": 1,
+    "replaySchema": 1,
+    "profile": "display-ndjson-gzip-v1"
+  },
+  "observedCoverage": [
+    {
+      "fixture": "publication / swordsman-sky-mage-240",
+      "scope": "Saved terrain occlusion (wall hits at steps 107/187/231), flight and fast projectiles; interval hit at step 139 tests timestamp and contact/path pairing. This recording ends before flight expiry."
+    },
+    {
+      "fixture": "publication-expiry / status-expiry-240",
+      "scope": "New engine-generated input with flight/takeoff/sky-mage revision 2; duration 5, actual status-remove flight:expired at step 5. static-status-expiry compares the state at 4, 5 and reverse seek to 4."
+    },
+    {
+      "fixture": "publication-long / fixture-replay",
+      "scope": "Domain mutual-hit display fixture: both HP meters reach zero at the same step. It is display restoration evidence, not a new combat oracle."
+    },
+    {
+      "fixture": "publication-long / measure-6000",
+      "scope": "Initial bounded loading, distant/backward/cached/overlapping seeks, camera interaction, speed and simulated visibility pause/resume preserve recorded state and result hash."
+    }
+  ],
+  "limitations": [
+    "Physical iPhone, iPad and Android devices, touch controls and actual operating-system suspension have not been tested. Chromium/WebKit on Linux CI do not prove physical-device support (#82).",
+    "Visibility testing overrides document.hidden and dispatches visibilitychange; it does not emulate OS process eviction.",
+    "Teleport and other unimplemented discontinuous abilities have no claimed fixture coverage. Add their saved display fixtures when those abilities are implemented.",
+    "Launch events without coordinates and effective vision altered by status without a recorded value are omitted and explained; coordinates/ranges are not invented.",
+    "Checksums demonstrate file integrity, not authenticity of an official result."
+  ]
+}
