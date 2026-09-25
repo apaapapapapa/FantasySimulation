@@ -1,3 +1,4 @@
+import { opponentInDuel } from './duel.ts';
 import { displayActor } from './combat-state.ts';
 import { canMaintainFlight, resourceReady } from '../rules/locomotion.ts';
 import { Navigator } from '../world/navigation.ts';
@@ -37,7 +38,7 @@ export function decisionPhase(tx: StepTransaction) {
   );
   // Observe and choose before either participant pays or declares anything.
   for (const actor of next) {
-    const enemy = actors.find((a) => actorId(a) !== actorId(actor))!;
+    const enemy = opponentInDuel(actors, actorId(actor), actorId);
     const previousStatuses = actor.mind.memory.observation?.enemy?.statuses;
     actor.body.motion = statusVision(actor.body.motion, actor.statuses, step);
     actor.mind.memory = perceive(

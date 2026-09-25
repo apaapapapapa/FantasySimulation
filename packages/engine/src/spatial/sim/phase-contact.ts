@@ -1,3 +1,4 @@
+import { opponentInDuel } from './duel.ts';
 import type { MeleeState } from '../state.ts';
 import { contactAttack, isAttachedAttack } from '../rules/attack-contact.ts';
 import { contactObservation } from './combat-effects.ts';
@@ -59,7 +60,7 @@ export function contactPhase(tx: StepTransaction) {
     const shape = attack.ability.definition.attack;
     if (!isAttachedAttack(shape)) throw new Error('Invalid attached attack');
     const owner = moved.find((a) => a.state.actor.participant.actorId === attack.actorId)!;
-    const enemy = moved.find((a) => a.state.actor.participant.actorId !== attack.actorId)!;
+    const enemy = opponentInDuel(moved, attack.actorId, (a) => a.state.actor.participant.actorId);
     work.candidate();
     const result = contactAttack(shape, {
       world,
@@ -125,7 +126,7 @@ export function contactPhase(tx: StepTransaction) {
             observation: contactObservation(
               moved,
               next.find((a) => actorId(a) === attack.actorId)!.body.motion,
-              next.find((a) => actorId(a) !== attack.actorId)!.body.motion,
+              opponentInDuel(next, attack.actorId, actorId).body.motion,
               contact.time,
             ),
           });
