@@ -5,16 +5,17 @@ import { randomUUID } from 'node:crypto';
 import {
   BudgetSchema,
   DEFAULT_BUDGET,
-  SpecInputSchema,
+  BattleInputSchema,
   StreamRecordSchema,
   ResultSchema,
   canonicalJson,
   parseJson,
   type Budget,
-  type SpecInput,
+  type BattleInput,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
 import { prepareBattle } from '@fantasy/engine/spatial/execution';
+import { ManifestBuilder } from '@fantasy/engine/spatial';
 import { JobStore, JOB_LIMITS, type Claim, type Job } from './job-store.ts';
 import { Store, StoreError, jsonValue } from './store.ts';
 import { sha256 } from './replay-files.ts';
@@ -25,7 +26,7 @@ import { ArtifactStore } from './artifact-store.ts';
 
 export type BattleSubmission = {
   key: string;
-  spec: SpecInput;
+  spec: BattleInput;
   budget?: Budget;
   simulationHash?: string;
 };
@@ -87,7 +88,7 @@ export class BattleService {
     }
   }
   async submit(
-    input: SpecInput,
+    input: BattleInput,
     clientId: string,
     key: string,
     inputBudget: Budget = DEFAULT_BUDGET,
@@ -95,8 +96,15 @@ export class BattleService {
   ) {
     if (this.stopped || this.failure)
       throw new StoreError('unavailable', this.failure?.message ?? 'Runtime closed');
-    const spec = parseJson(SpecInputSchema, input),
+    const request = parseJson(BattleInputSchema, input),
       budget = parseJson(BudgetSchema, inputBudget);
+    const spec = {
+      ...request,
+      participants:
+        'rngSeed' in request.participants[0]
+          ? (request.participants as import('@fantasy/domain/spatial').SpecInput['participants'])
+          : ManifestBuilder.participants(request.seed, request.participants),
+    };
     const requestHash = sha256(canonicalJson({ spec, budget }));
     const previous = this.jobs.request(clientId, key);
     if (previous) {
