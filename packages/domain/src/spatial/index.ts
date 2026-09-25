@@ -12,5 +12,6 @@ export * from './cognition.ts';
 export * from './status-references.ts';
 export * from './numeric.ts';
 export * from './league.ts';
+export * from './league-results.ts';
 export * from './replay.ts';
 export * from './replay-state.ts';
