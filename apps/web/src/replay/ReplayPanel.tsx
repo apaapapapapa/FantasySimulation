@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { openReplay, type OpenedReplay, type ReplaySource } from './open-replay.ts';
 import { ReplayPlayer, type ReplayFrame } from './replay-player.ts';
 import { buildSceneModel } from './scene-model.ts';
@@ -22,13 +22,22 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
   const [speed, setSpeed] = useState(1);
   const [cameraMode, setCameraMode] = useState<CameraMode>('overview');
   const [overlays, setOverlays] = useState(false);
-  const player = useMemo(() => (replay ? new ReplayPlayer(replay) : null), [replay]);
+  const player = useMemo(
+    () => (replay?.manifest.end.kind === 'result' ? new ReplayPlayer(replay) : null),
+    [replay],
+  );
   const model = useMemo(
     () => (replay && state ? buildSceneModel(replay.context, state) : null),
     [replay, state],
   );
   const panel = useRef<HTMLElement | null>(null);
   const cursor = useRef({ target, loading });
+  const failed = useCallback((error: unknown, signal: AbortSignal) => {
+    if (signal.aborted) return;
+    setError(errorText(error));
+    setLoading(false);
+    setPlaying(false);
+  }, []);
   useEffect(() => {
     if (replay) {
       panel.current?.focus({ preventScroll: true });
@@ -52,17 +61,14 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
     setPlaying(false);
     void openReplay(source, { signal: controller.signal })
       .then((opened) => {
-        if (!controller.signal.aborted) setReplay(opened);
-      })
-      .catch((e: unknown) => {
         if (!controller.signal.aborted) {
-          setError(errorText(e));
-          setLoading(false);
-          setPlaying(false);
+          setReplay(opened);
+          if (opened.manifest.end.kind !== 'result') setLoading(false);
         }
-      });
+      })
+      .catch((error: unknown) => failed(error, controller.signal));
     return () => controller.abort();
-  }, [source]);
+  }, [source, failed]);
   useEffect(() => {
     if (!player) return;
     const controller = new AbortController();
@@ -76,15 +82,9 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
           setLoading(false);
         }
       })
-      .catch((e: unknown) => {
-        if (!controller.signal.aborted) {
-          setError(errorText(e));
-          setLoading(false);
-          setPlaying(false);
-        }
-      });
+      .catch((error: unknown) => failed(error, controller.signal));
     return () => controller.abort();
-  }, [player, target]);
+  }, [player, target, failed]);
   useEffect(() => {
     if (!playing || !replay) return;
     const anchor = cursor.current.target,

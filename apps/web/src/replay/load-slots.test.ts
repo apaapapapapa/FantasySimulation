@@ -1,4 +1,4 @@
-import { expect, it } from 'vite-plus/test';
+import { expect, it, vi } from 'vite-plus/test';
 import { LoadSlots } from './load-slots.ts';
 
 it('bounds overlapping loads and releases slots after failure and cancellation', async () => {
@@ -27,4 +27,40 @@ it('bounds overlapping loads and releases slots after failure and cancellation',
   expect(await Promise.all([second, fourth])).toEqual([2, 4]);
   await expect(load(5, AbortSignal.abort())).rejects.toThrow();
   expect(started).not.toContain(5);
+});
+
+it('passes a slot onward when a woken request aborts before its continuation', async () => {
+  const slots = new LoadSlots(),
+    controller = new AbortController();
+  let release!: () => void;
+  const first = slots.run(
+    undefined,
+    () =>
+      new Promise<void>((done) => {
+        release = done;
+      }),
+  );
+  let finishStalled!: () => void;
+  const stalled = slots.run(
+    undefined,
+    () =>
+      new Promise<void>((done) => {
+        finishStalled = done;
+      }),
+  );
+  const runCancelled = vi.fn(async () => 3);
+  const cancelled = slots.run(controller.signal, runCancelled);
+  const last = slots.run(undefined, async () => 4);
+  const remove = controller.signal.removeEventListener.bind(controller.signal);
+  vi.spyOn(controller.signal, 'removeEventListener').mockImplementation((...args) => {
+    remove(...args);
+    controller.abort(); // interrupt exactly as the slot is handed off
+  });
+  release();
+  await first;
+  await expect(cancelled).rejects.toThrow();
+  expect(await last).toBe(4); // the other active fetch has still not finished
+  expect(runCancelled).not.toHaveBeenCalled();
+  finishStalled();
+  await stalled;
 });

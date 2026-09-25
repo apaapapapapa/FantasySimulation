@@ -17,7 +17,7 @@ export function CurrentEvents({
   const [page, setPage] = useState(0);
   const visible = events.slice(page * 50, (page + 1) * 50);
   return (
-    <section aria-label="現在のstepのログ">
+    <section aria-label="再生時刻のログ">
       <h3>step {step}のログ</h3>
       <p>AIの判断・知識は各主体の観測と推定による主観です。判定ログ（全知）とは異なります。</p>
       {(['判定ログ（全知）', 'AI判断ログ（主観）'] as const).map((label, i) => (
