@@ -10,7 +10,7 @@
   "acceptance": [
     {
       "task": "R2のbucketを作成する（公開アクセスは無効のまま）。CloudflareのWorkersのプラン（Free/Paid）と課金の設定を確認して記録する",
-      "evidence": "Cloudflare confirmed private Standard fantasysimulation-replays (managed r2.dev disabled; custom domains empty). Deployment record: https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5805398131 . Owner subscription evidence at comment 5833872466 confirms Workers Paid ending (date column 2026-10-12), R2 Paid active; no Free migration is claimed. Current usage evidence at comment 5833944717 reports $0.00 metered cost, separately from fixed subscriptions and prior paid invoices. ADR 0008 records these observations."
+      "evidence": "Cloudflare confirmed private Standard fantasysimulation-replays (managed r2.dev disabled; custom domains empty). Deployment record: https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5805398131 . Owner subscription evidence at comment 5833872466 confirms Workers Paid ending (date column 2026-10-12), R2 Paid active; no Free migration is claimed. Owner invoices (comment 5833872466) show Sep 12 $5.50 and Sep 6 $1.07 Paid, without line items or project attribution. Current usage (comment 5833944717) is $0.00 metered only; the account invoices are not zero and fixed subscription costs are separate. ADR 0008 records these observations."
     },
     {
       "task": "ユーザー承認済みの現行R2キーを、GitHub Environment `r2-publication`の`R2_ACCESS_KEY_ID`・`R2_SECRET_ACCESS_KEY`へ登録する。Environmentはbranch `main`だけを許可し、変数`R2_ACCOUNT_ID`・`R2_PUBLICATION_ENABLED=true`を設定する。ローカル`.env`は不要",
@@ -34,7 +34,7 @@
     },
     {
       "task": "APIを止めた状態で、Pagesの画面からWorker経由でデータを読み、試合一覧→選択→再生→直接URLの再読込が成立する。CIのE2Eでは、Workerの代わりに別originのローカル静的サーバーを使う。本番での確認は手動で行い、記録する",
-      "evidence": "PR #96/#100/#128/#131/#132: CI uses a separate-origin static fixture server without the API. Manual production list/select/play/direct-URL reload passed (2D fallback without WebGL). Latest viewer 3a81e83358b338daf40483407a0c5c574f95830f verified by production run 36148144955: Chromium/WebKit at 390x844, both saved replay IDs, 3D rendering, complete playback to steps 121/747, seek, direct-URL reload to step 0, zero API requests/page/HTTP errors and unchanged graph. Prior rollback/restore 36113472940 separately verified older viewer compatibility."
+      "evidence": "PR #96/#100/#128/#131/#132: CI uses a separate-origin static fixture server without the API. Manual browser without WebGL advanced the recorded step using 2D fallback; full playback/reload evidence below uses 3D. Latest viewer 3a81e83358b338daf40483407a0c5c574f95830f verified by production run 36148144955: Chromium/WebKit at 390x844, both saved replay IDs, 3D rendering, complete playback to steps 121/747, seek, direct-URL reload to step 0, zero API requests/page/HTTP errors and unchanged graph. Prior rollback/restore 36113472940 separately verified older viewer compatibility."
     },
     {
       "task": "新しいrunnerでの復元・再公開でも同じobjectを再利用し、hashが一貫する。過去のリンクが別の内容に変わらない",
@@ -54,7 +54,7 @@
     },
     {
       "task": "上限を超える公開・復元を拒否する。実測の保存量・書込回数・リクエスト数・費用と、保持の方針をADRに記録する",
-      "evidence": "publication-export/remote/restore fixtures reject storage/file/transfer/read/time budget violations, with default 8GB publication and 256MB Actions restore limits. ADR 0008 records 34 retained files/170759 bytes, 34 initial writes and zero repeat writes, S3 logical counters, 12/28 cold full-view requests and 8 direct-start requests, account R2 metrics and explicit retained-generation/no-auto-deletion policy. Owner Billable Usage evidence (comment 5833944717) reports Sep 12-25 $0.00 metered cost, all usage included, cycle Sep 12-Oct 11; fixed subscriptions and future costs are explicitly excluded from that observation. Latest viewer run 36148144955 used 4 list reads, 8 short playback reads and 18/16 long playback reads (Chromium/WebKit); each direct reload 8."
+      "evidence": "publication-export/remote/restore fixtures reject storage/file/transfer/read/time budget violations, with default 8GB publication and 256MB Actions restore limits. ADR 0008 records 34 retained files/170759 bytes, 34 initial writes and zero repeat writes, S3 logical counters, 12/28 cold full-view requests and 8 direct-start requests, account R2 metrics and explicit retained-generation/no-auto-deletion policy. Owner Billable Usage evidence (comment 5833944717) reports Sep 12-25 $0.00 metered cost, all usage included, cycle Sep 12-Oct 11; the metered observation excludes fixed subscriptions/future costs. Owner paid account invoices Sep 12 $5.50 and Sep 6 $1.07 are separately recorded in the ADR, without inferred line items/project allocation. Latest viewer run 36148144955 used 4 list reads, 8 short playback reads and 18/16 long playback reads (Chromium/WebKit); each direct reload 8."
     },
     {
       "task": "PagesへのdeployとR2公開が、mainの合格したSHAからだけ行われる。R2公開は明示的な手動起動・既定dry-run・逐次実行で、Environmentの制限後にも最新attemptのCIを確認する",

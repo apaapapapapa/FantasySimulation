@@ -88,14 +88,14 @@ S3 logical requests: restore+publish 2+73 initially, 35+75 on repeat (not billin
 [Rollback/restore run 36113472940](https://github.com/apaapapapapa/FantasySimulation/actions/runs/36113472940)
 deployed `4618f3c`, restored `d0b32d0` through the successful-main-CI gate.
 Both: unchanged graph/links, Chromium/WebKit 390x844, 3D/playback/seek/direct-URL reload,
-zero API requests/page/HTTP errors. Manual browser playback/reload also passed with 2D fallback.
+zero API requests/page/HTTP errors. Manual 2D fallback advanced the recorded step.
 Separately, remote/restore/reader fixtures passed 88 tests for interrupted/lost-response recovery,
 stale generations, collisions and budgets.
 
 [Full playback 36113835189](https://github.com/apaapapapapa/FantasySimulation/actions/runs/36113835189):
 both browsers reached steps 121/747; list 4 + playback 8/24 = 12/28 cold reader requests;
-direct-URL reload/startup 8. Free 100k/day permits at most 3,571 longer views, excluding
-retries/publishing/other traffic: a conditional estimate, not measured billing or audience guarantee.
+direct-URL reload/startup 8. Free 100k/day gives a conditional maximum of 3,571 longer views
+before retries/publishing/other account traffic, not billing/audience evidence.
 
 Cloudflare: Standard/private `fantasysimulation-replays`, no public custom domain/object expiry;
 `REPLAYS` binding, workers.dev enabled/previews disabled. Deployment
@@ -106,11 +106,11 @@ Account R2 metrics: 253,096,620 payload bytes, 300,630 metadata bytes, 1,612 obj
 Two existing $10 billing alerts are enabled. They are notifications, not a spending cap.
 
 [Owner evidence](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833944717)
-closes the API-access gap (billing 10000, token metadata 9109): Workers Paid is ending
-(date column 2026-10-12), R2 Paid active. Free migration is not claimed. Billable Usage
-observed Sep 12–25 of the Sep 12–Oct 11 cycle (14/30 days): total, projected and daily-average
-usage costs $0.00; all usage within included tiers. This excludes fixed subscriptions,
-is not a project-specific invoice and does not guarantee future zero costs.
+shows Workers Paid ending (date column 2026-10-12), R2 Paid active; no Free migration.
+Paid account invoices: Sep 12 $5.50, Sep 6 $1.07 (comment 5833872466); line items/project
+attribution are not shown. Billable Usage Sep 12–25, cycle Sep 12–Oct 11 (14/30 days):
+total/projected/daily-average $0.00, all usage included. This metered figure excludes
+fixed subscriptions: it does not make the paid invoices zero or guarantee future zero cost.
 [Owner decision](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833903078)
 accepts the existing account-wide R2 token instead of requiring bucket-only replacement.
 No new privileges or credentials were supplied. Environment/step isolation, private storage,
