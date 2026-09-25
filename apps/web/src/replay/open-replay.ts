@@ -143,5 +143,6 @@ export async function openReplay(
       }),
     );
   }
+  deepFreeze(manifest);
   return { manifest, context, records, seek };
 }

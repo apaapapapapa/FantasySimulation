@@ -85,10 +85,11 @@ export function writableOutputs(workspace: string) {
     '.generated',
     'apps/web/dist',
     'apps/api/dist',
+    'apps/cli/dist',
     'packages/domain/dist',
     'packages/engine/dist',
-    ...['', 'apps/api', 'apps/web', 'packages/domain', 'packages/engine'].flatMap((prefix) =>
-      ['.vite', '.vite-temp'].map((cache) => join(prefix, 'node_modules', cache)),
+    ...['', 'apps/api', 'apps/cli', 'apps/web', 'packages/domain', 'packages/engine'].flatMap(
+      (prefix) => ['.vite', '.vite-temp'].map((cache) => join(prefix, 'node_modules', cache)),
     ),
   ];
   ensure(!git(workspace, ['ls-files', '--', ...paths]), 'Writable output contains tracked source');

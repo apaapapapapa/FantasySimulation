@@ -268,17 +268,22 @@ describe('owned workspace and full baseline scope', () => {
     }
   });
 });
-it('never exposes tracked build inputs or dangling output symlinks as writable', () => {
+it.each([
+  'apps/web/dist',
+  'apps/cli/dist',
+  'apps/cli/node_modules/.vite',
+  'apps/cli/node_modules/.vite-temp',
+])('never exposes tracked inputs in %s or dangling output symlinks as writable', (output) => {
   const f = fixture();
   try {
     symlinkSync(join(f.store, 'absent-host-target'), join(f.repo.root, '.generated'));
     expect(() => writableOutputs(f.repo.root)).toThrow(/Symlink/);
     rmSync(join(f.repo.root, '.generated'));
-    mkdirSync(join(f.repo.root, 'apps/web/dist'), { recursive: true });
-    writeFileSync(join(f.repo.root, 'apps/web/dist/input.ts'), 'tracked input');
-    f.repo.git('add', '-f', 'apps/web/dist/input.ts');
+    mkdirSync(join(f.repo.root, output), { recursive: true });
+    writeFileSync(join(f.repo.root, output, 'input.ts'), 'tracked input');
+    f.repo.git('add', '-f', `${output}/input.ts`);
     expect(() => writableOutputs(f.repo.root)).toThrow(/tracked/);
-    expect(readFileSync(join(f.repo.root, 'apps/web/dist/input.ts'), 'utf8')).toBe('tracked input');
+    expect(readFileSync(join(f.repo.root, output, 'input.ts'), 'utf8')).toBe('tracked input');
   } finally {
     f.dispose();
   }
