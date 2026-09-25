@@ -141,7 +141,12 @@ async function main() {
         process.off('SIGTERM', stop);
       }
     }
-  } else if (command === 'check' && input && output && !rest.length) {
+  } else if (
+    (command === 'check' || command === 'export') &&
+    input &&
+    output &&
+    rest.length === (command === 'export' ? 1 : 0)
+  ) {
     const directory = resolve(input),
       plan = await validateLeaguePlan(await readJson(join(directory, 'league.json'))),
       completed: LeagueCheckInput[] = [];
@@ -161,6 +166,16 @@ async function main() {
         bundles: new BattleBundles(join(root, 'bundles')),
       });
     }
+    if (command === 'export') {
+      const { exportLeague } = await import('./league/league-export.ts');
+      const partitions = [];
+      for (let i = 0; i < plan.partitions.length; i++)
+        partitions.push(await partitionAt(directory, plan, i));
+      console.log(
+        canonicalJson(await exportLeague(plan, partitions, completed, resolve(rest[0]!))),
+      );
+      return;
+    }
     const result = await checkLeague(plan, completed);
     console.log(
       canonicalJson({
@@ -172,7 +187,7 @@ async function main() {
     );
   } else
     throw new Error(
-      'Usage: league plan definition.json plan-dir [--estimate-only --profile profile.json --history dir --retained bundles] | reserve plan-dir partition reservation.json --execution-id ID [--history dir --retained bundles] | run plan-dir partition output-dir --execution-id ID --reservation file [--retained bundles --workers 1 --deadline 1500000] | check plan-dir results-dir',
+      'Usage: league plan definition.json plan-dir [--estimate-only --profile profile.json --history dir --retained bundles] | reserve plan-dir partition reservation.json --execution-id ID [--history dir --retained bundles] | run plan-dir partition output-dir --execution-id ID --reservation file [--retained bundles --workers 1 --deadline 1500000] | check plan-dir results-dir | export plan-dir results-dir public-dir',
     );
 }
 await main().catch((error: unknown) => {

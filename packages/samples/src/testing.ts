@@ -1,4 +1,9 @@
-import { DEFAULT_BUDGET, revisionReference, type LeagueDefinition } from '@fantasy/domain/spatial';
+import {
+  DEFAULT_BUDGET,
+  revisionReference,
+  type LeagueDefinition,
+  type LeagueEstimateInput,
+} from '@fantasy/domain/spatial';
 import { sampleManifest } from './sample.ts';
 import { createLeagueRevision, leagueMatches } from '@fantasy/engine/spatial';
 
@@ -45,3 +50,16 @@ export async function plannedLeague(definition: LeagueDefinition) {
   for await (const match of leagueMatches(league)) matches.push(match);
   return { league, matches };
 }
+
+export const leagueEstimate: LeagueEstimateInput = {
+  matchesPerPlan: 128,
+  estimatedMsPerMatch: 2000,
+  estimatedBytesPerMatch: 250000,
+  estimatedFilesPerMatch: 10,
+  retainedBytes: 0,
+  retainedFiles: 0,
+  maxReadRequests: 10000000,
+  maxWriteRequests: 1000000,
+  usedReadRequests: 0,
+  usedWriteRequests: 0,
+};

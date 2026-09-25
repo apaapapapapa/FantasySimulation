@@ -1,14 +1,10 @@
-import { mkdir, rm } from 'node:fs/promises';
 import { join, resolve, sep } from 'node:path';
 import {
-  PublicCatalogCurrentSchema,
-  PublicCatalogSchema,
   PublicMatchPageSchema,
   PublicMatchRowSchema,
   PublicReplaySetSchema,
   ReplayManifestSchema,
   PUBLIC_PAGE_ROWS,
-  MAX_PUBLIC_JSON_BYTES,
   MAX_REPLAY_MANIFEST_BYTES,
   assertPublicReplayBinding,
   canonicalJson,
@@ -24,14 +20,12 @@ import { checkedBatch, type BatchCheckInput } from '@fantasy/api/artifacts';
 import { readBoundedFile, sha256 } from '@fantasy/api/artifacts';
 import {
   inspectPublicArtifact,
-  optionalPublicationFile,
   publicationDirectory,
   publicationJson,
-  writePublication,
-  PUBLICATION_MAX_BYTES,
   PUBLICATION_MAX_FILES,
   type PublicationFile,
 } from './publication-files.ts';
+import { commitPublication } from './publication-catalog.ts';
 
 function namedRevision(plan: BatchPlan, kind: 'character' | 'scenario', ref: RevisionRef) {
   const revision = plan.revisions.find(
@@ -48,11 +42,10 @@ const overlaps = (a: string, b: string) =>
   a === b || a.startsWith(b + sep) || b.startsWith(a + sep);
 
 /** Read-only batch export. No SQLite, engine execution, source checkout or network is required. */
-export async function exportPublication(
+export async function buildPublication(
   input: unknown,
   indexes: BatchCheckInput[],
   directory: string,
-  maxBytes = PUBLICATION_MAX_BYTES,
 ) {
   const root = resolve(directory);
   for (const value of indexes) {
@@ -203,64 +196,30 @@ export async function exportPublication(
     })),
     setFile,
   );
-  await publicationDirectory(root, true);
-  const lock = join(root, '.publication-lock');
-  await mkdir(lock); // One local publisher; an interrupted lock requires explicit operator recovery.
-  try {
-    const previous = await optionalPublicationFile(
-      join(root, 'catalog/current.json'),
-      MAX_PUBLIC_JSON_BYTES,
-    );
-    let priorHash: string | null = null,
-      sets = [{ setHash, bytes: setFile.bytes }];
-    let catalogFile: PublicationFile;
-    if (previous) {
-      const pointer = PublicCatalogCurrentSchema.parse(JSON.parse(previous.toString('utf8')));
-      const key = `catalog/${publicHashName(pointer.catalogHash)}.json`;
-      const data = await readBoundedFile(join(root, key), pointer.bytes);
-      if (data.length !== pointer.bytes || sha256(data) !== pointer.catalogHash)
-        throw new Error('Existing catalog checksum mismatch');
-      const prior = PublicCatalogSchema.parse(JSON.parse(data.toString('utf8')));
-      priorHash = pointer.catalogHash;
-      sets = prior.sets;
-      const existing = sets.find((s) => s.setHash === setHash);
-      if (existing && existing.bytes !== setFile.bytes)
-        throw new Error('Existing set size mismatch');
-      if (!existing) sets = [...sets, { setHash, bytes: setFile.bytes }];
-      catalogFile = existing
-        ? { key, bytes: data.length, checksum: pointer.catalogHash, data }
-        : makeCatalog();
-    } else catalogFile = makeCatalog();
-    function makeCatalog() {
-      const value = PublicCatalogSchema.parse({
-        schemaVersion: 1,
-        previousCatalogHash: priorHash,
-        sets: sets.sort((a, b) => compareIds(a.setHash, b.setHash)),
-      });
-      const file = publicationJson(`catalog/${'0'.repeat(64)}.json`, value);
-      file.key = `catalog/${publicHashName(file.checksum)}.json`;
-      return file;
-    }
-    files.push(catalogFile);
-    const current = publicationJson(
-      'catalog/current.json',
-      PublicCatalogCurrentSchema.parse({
-        schemaVersion: 1,
-        catalogHash: catalogFile.checksum,
-        bytes: catalogFile.bytes,
-      }),
-    );
-    const written = await writePublication(root, files, current, previous, maxBytes);
-    return {
-      setHash,
-      catalogHash: catalogFile.checksum,
-      totalRows: set.totalRows,
-      counts,
-      incompleteRows: set.incompleteRows,
-      complete: checked.summary.complete,
-      ...written,
-    };
-  } finally {
-    await rm(lock, { recursive: true });
-  }
+  return {
+    files,
+    setHash,
+    set,
+    rows,
+    complete: checked.summary.complete,
+    setRef: { setHash, bytes: setFile.bytes },
+  };
+}
+
+export async function exportPublication(
+  input: unknown,
+  indexes: BatchCheckInput[],
+  directory: string,
+  maxBytes?: number,
+) {
+  const built = await buildPublication(input, indexes, directory);
+  const written = await commitPublication(directory, built.files, [built.setRef], { maxBytes });
+  return {
+    setHash: built.setHash,
+    totalRows: built.set.totalRows,
+    counts: built.set.counts,
+    incompleteRows: built.set.incompleteRows,
+    complete: built.complete,
+    ...written,
+  };
 }

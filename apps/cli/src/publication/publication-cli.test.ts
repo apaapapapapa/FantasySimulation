@@ -78,3 +78,15 @@ it('never treats a remote verification failure as success in complete-input mode
   transport.publish.mockRejectedValue(new Error('fixture read-back failure'));
   expect(await run('complete', ['--require-complete-input'])).toBe(1);
 });
+it('reports a verified pre-exported league upload as success while preserving provisional counts', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'league-upload-'));
+  roots.push(root);
+  transport.publish.mockResolvedValue({ status: 'verified', incompleteRows: 4 });
+  process.argv = ['node', 'publication.ts', 'upload', join(root, 'public')];
+  await import('../publication.ts');
+  expect(process.exitCode ?? 0).toBe(0);
+  expect(transport.publish).toHaveBeenCalledOnce();
+  expect(console.log).toHaveBeenCalledWith(
+    JSON.stringify({ incompleteRows: 4, status: 'verified' }),
+  );
+});

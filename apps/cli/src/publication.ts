@@ -47,11 +47,12 @@ async function main() {
         files.length <= 128 &&
         !values.confirm) ||
       (command === 'prune' && !output && !values['dry-run']) ||
-      (command === 'restore' && !output && !values['dry-run'] && !values.confirm)
+      (command === 'restore' && !output && !values['dry-run'] && !values.confirm) ||
+      (command === 'upload' && !output && !values.confirm)
     )
   )
     throw new Error(
-      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] [--require-complete-input] | restore new-public-dir | prune public-dir [--confirm]',
+      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] [--require-complete-input] | upload public-dir [--dry-run] | restore new-public-dir | prune public-dir [--confirm]',
     );
   const root = resolve(command === 'publish' ? output! : input),
     lock = root + '.remote-lock';
@@ -106,7 +107,8 @@ async function main() {
       });
       console.log(canonicalJson(result));
       // Complete-input mode preserves historical counts without misclassifying verified uploads.
-      if (result.incompleteRows && !values['require-complete-input']) process.exitCode = 2;
+      if (command === 'publish' && result.incompleteRows && !values['require-complete-input'])
+        process.exitCode = 2;
     }
   } finally {
     if (store) console.log(canonicalJson({ phase: 's3-transport', ...store.metrics() }));

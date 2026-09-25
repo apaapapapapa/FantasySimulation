@@ -29,13 +29,13 @@ raw errors/cancelled diagnostics/reaction internals stay outside listings.
 
 ## Export and transport
 
-Export reuses batch check without SQLite/engine/Git/network, binding plan/index/receipt,
+Saved-batch export reuses batch check without SQLite/engine/Git/network, binding plan/index/receipt,
 revisions, manifest inputs and rows. Allowlist public fields; scan JSON/expanded gzip for
 absolute paths/private fields/known credentials. Arbitrary secrets remain the administrator's
 responsibility. Exclude .work/DBs/environment/drafts/arbitrary files, symlinks and non-layout keys. Separate I/O
 directories. Preflight collisions/capacity, then object -> page
--> set -> catalog -> current. Reuse identical bytes; conflicting bytes/resultHash for one
-simulation fail. Retain all generations/links.
+-> set -> catalog -> current. Reuse identical bytes; conflicting bytes/definitive resultHash
+for one simulation fail. Retain all generations/links.
 Cap storage at 8,000,000,000 bytes including pointer staging, and 100,000 files.
 
 Multi-object writes are not atomic. Local lock plus pointer recheck protects replacement;
@@ -79,18 +79,33 @@ and recovery/republication evidence. Mocks alone do not establish production acc
 
 ### Production acceptance (2026-09-25)
 
-[Pinned production evidence](https://github.com/apaapapapapa/FantasySimulation/blob/3a81e83358b338daf40483407a0c5c574f95830f/docs/adr/0008-headless-batch.md)
-pins publish/republish, rollback, full playback (Chromium/WebKit 390x844), manual 2D step
-progression, deployment/account observations. Two complete matches: 34 files/170,759 bytes;
-repeat transfer zero. Cold playback 12/28 reads (not bills). R2 Standard/private, no object
-expiry; two $10 alerts, not caps. Preserve historical links/measurements for P5 sizing.
+[Pinned acceptance](https://github.com/apaapapapapa/FantasySimulation/blob/feb61f3e46e51dc79aeb613f9bc26ec99212f29b/docs/adr/0008-headless-batch.md)
+retains deployment, republish/rollback, Chromium/WebKit 390x844 playback/manual-step,
+account screenshots and owner authorization for the existing account-wide R2 token.
+Two complete matches: 34 files/170,759 bytes; repeat transfer zero; cold playback 12/28
+reads (not bills). R2 Standard/private, no expiry, two $10 alerts (not caps).
+Workers Paid ending 2026-10-12, R2 Paid active; no Free migration. Paid invoices
+$5.50/$1.07 lack project attribution; metered usage $0 excludes fixed fees.
 
-[Owner evidence](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833944717)
-shows Workers Paid ending (date column 2026-10-12), R2 Paid active; no Free migration.
-Paid account invoices: Sep 12 $5.50, Sep 6 $1.07 (comment 5833872466); line items/project
-attribution are not shown. Billable Usage Sep 12–25, cycle Sep 12–Oct 11 (14/30 days):
-total/projected/daily-average $0.00, all usage included. Metered $0 excludes fixed fees;
-paid invoices and future costs are not zero-cost claims.
-[Owner decision](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833903078)
-accepts the existing account-wide R2 token; no replacement or new credentials/privileges.
-Environment/step isolation, private storage, bounds and cost monitoring remain required.
+## League publication v1 (Refs #134)
+
+Optional catalog.leagues (latest snapshot per ID) and leagueWork retain old catalog bytes.
+leagues/<hash>.json stores revision, summary, per-character detail, <=100-slot pair pages,
+progress pages and admission journals. Overview omits opponent details/slot lists; load
+on demand. A slot links leagueHash/slot ID to setHash/pageHash/rowId and its immutable replay.
+Empty sets are allowed only with a journal. Every graph reference/checksum and exact score
+is checked before upload; saved schedule/scoring validation executes no battle or database.
+`league export` validates current plans; the existing saved-batch export remains execution-free.
+
+Commit objects -> pages -> sets -> league documents -> catalog -> current, once for all
+partitions. Keep partial receipts; only conflicting definitive win/draw results fail.
+Reused receipts may predate the new set source; pin equal simulation/engine/digest and require
+both sources in viewer ancestry. Restore and readback traverse retained league generations.
+`publication upload` publishes an already exported graph: verified provisional data exits 0;
+its unresolved counts and rank status remain explicit.
+
+Journal before admission; finish only its reserved execution. Carry all simulation histories,
+including absent/killed workers, across days. Two attempts maximum; reserved counts as consumed.
+Refund only verified never-admitted work. Reject missing history, changed reservations and
+catalog journal rollback. Actions integration/official measurements remain in #134.
+Existing 1,000-slot plans, 100,000 files, 8GB storage and 256MB default restore/transfer remain.

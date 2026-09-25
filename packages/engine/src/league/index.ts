@@ -121,6 +121,19 @@ export async function* leagueMatches(
     throw new Error('Invalid league match range');
   let ordinal = 0;
   const builder = ManifestBuilder.from(definition.revisions);
+  for await (const planned of leagueCoordinates(definition)) {
+    if (ordinal++ < range.offset) continue;
+    if (ordinal > range.offset + range.limit) return;
+    const battle = await builder.build(planned.spec);
+    yield {
+      slot: { ...planned.slot, simulationHash: battle.simulationHash },
+      manifest: parseJson(ManifestSchema, battle.manifest),
+    };
+  }
+}
+
+/** Versioned schedule metadata only: safe for validating saved league records without execution. */
+export async function* leagueCoordinates(definition: LeagueDefinition) {
   const seeds = await Promise.all(
     Array.from({ length: definition.trials }, (_, trial) =>
       leagueTrialSeed(definition.masterSeed, trial),
@@ -137,8 +150,6 @@ export async function* leagueMatches(
         if (field.weight.numerator === '0') continue;
         for (const placement of definition.placements) {
           for (let trial = 0; trial < seeds.length; trial++) {
-            if (ordinal++ < range.offset) continue;
-            if (ordinal > range.offset + range.limit) return;
             const seed = seeds[trial]!;
             const participants = ManifestBuilder.participants(seed, [
               {
@@ -153,21 +164,20 @@ export async function* leagueMatches(
               },
             ]);
             if (placement === 'swapped') participants.reverse();
-            const battle = await builder.build({
+            const spec = {
               seed,
               participants,
               ruleset: definition.ruleset,
               scenario: field.scenario,
-            });
+            };
             const coordinate = { characters, scenario: field.scenario, placement, trial };
             yield {
               slot: {
                 ...coordinate,
                 id: await contentHash({ ...coordinate, starts: field.starts }),
                 seed,
-                simulationHash: battle.simulationHash,
               },
-              manifest: parseJson(ManifestSchema, battle.manifest),
+              spec,
             };
           }
         }
