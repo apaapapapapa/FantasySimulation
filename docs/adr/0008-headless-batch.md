@@ -53,7 +53,7 @@ stops on pointer change. No automatic deletion or upgrade.
 User-approved: [smartphone-only setup](../development/cloud-publication.md), no owner PC.
 The [workflow](../../.github/workflows/publication.yml) is manual/serialized, exact successful main
 CI/ci-gate SHA rechecked after Environment protection. Calculation/export is secret-free; pass plan/index/objects
-by same-run artifact ID. Bucket-only keys belong to main-restricted Environment r2-publication,
+by same-run artifact ID. R2 keys belong to main-restricted Environment r2-publication,
 only its publication step, never repository-wide secrets, agents, chat, logs, source or Pages.
 
 Restore all retained generations into a new directory before export using shared graph/bundle/
@@ -73,23 +73,24 @@ missing/damaged/unsupported/unavailable/visible 429 or 1027; CORS-hidden failure
 
 2026-09-25 baseline: [R2](https://developers.cloudflare.com/r2/pricing/) Standard includes 10GB-month,
 1M Class A/10M Class B monthly, free egress; [Workers Free](https://developers.cloudflare.com/workers/platform/pricing/)
-100k/day account-wide. No zero-charge guarantee: inspect whole-account usage/plans/alerts;
-stop on budget/quota errors. Record actual plan, retained bytes, upload/Worker requests, costs,
-URL/build SHA, browser replay/CORS/compression and interruption/republication evidence.
-Mocks or workflow implementation alone never establish production acceptance.
+100k/day account-wide. Monitor account usage/plans/alerts; stop on budget/quota errors.
+Acceptance needs actual plan/costs, storage/write/request counts, URL/build, browser checks
+and recovery/republication evidence. Mocks alone do not establish production acceptance.
 
-### Production observations (2026-09-25; Issue #81 remains open)
+### Production acceptance (2026-09-25)
 
-[Pinned production evidence](https://github.com/apaapapapapa/FantasySimulation/blob/3a81e83358b338daf40483407a0c5c574f95830f/docs/adr/0008-headless-batch.md#production-observations-2026-09-25-issue-81-remains-open)
-records publication/republication, viewer rollback, Chromium/WebKit 390x844 full playback,
-2D fallback, deployment identity and account observations. Baseline: two complete matches,
-34 retained files/170,759 bytes; repeated publication transferred zero bytes. Cold full
-playback used 12/28 reader requests. These transport counts are not billing evidence.
-R2 was Standard/private without published-object expiry. Two $10 alerts were notifications,
-not spending caps. Preserve historical links and measurements when sizing P5.
+[Pinned production evidence](https://github.com/apaapapapapa/FantasySimulation/blob/3a81e83358b338daf40483407a0c5c574f95830f/docs/adr/0008-headless-batch.md)
+pins publish/republish, rollback, full playback (Chromium/WebKit 390x844), manual 2D step
+progression, deployment/account observations. Two complete matches: 34 files/170,759 bytes;
+repeat transfer zero. Cold playback 12/28 reads (not bills). R2 Standard/private, no object
+expiry; two $10 alerts, not caps. Preserve historical links/measurements for P5 sizing.
 
-**Unverified:** Workers Free/Paid, billed/current-period costs, and the stored key's bucket-only
-policy. Subscription/billing APIs return 10000; token-metadata APIs return 9109. Dashboard
-verification blocks this cloud browser. `usage_model=standard`, small storage and successful
-publication do not prove a free subscription or key scope. Obtain redacted dashboard evidence
-or authorized API access; never request the key value. Do not declare #81 complete before this.
+[Owner evidence](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833944717)
+shows Workers Paid ending (date column 2026-10-12), R2 Paid active; no Free migration.
+Paid account invoices: Sep 12 $5.50, Sep 6 $1.07 (comment 5833872466); line items/project
+attribution are not shown. Billable Usage Sep 12–25, cycle Sep 12–Oct 11 (14/30 days):
+total/projected/daily-average $0.00, all usage included. Metered $0 excludes fixed fees;
+paid invoices and future costs are not zero-cost claims.
+[Owner decision](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833903078)
+accepts the existing account-wide R2 token; no replacement or new credentials/privileges.
+Environment/step isolation, private storage, bounds and cost monitoring remain required.
