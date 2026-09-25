@@ -81,7 +81,7 @@ async function main() {
     );
     await appendFile(required('GITHUB_STEP_SUMMARY'), `League result: ${JSON.stringify(result)}\n`);
   } else {
-    const viewer = publicHttp(required('PUBLICATION_VIEWER_URL'));
+    const viewer = publicHttp(required('PUBLICATION_VIEWER_URL'), 7200000);
     const inventory = await transferCloudLeague(
       {
         accountId: required('R2_ACCOUNT_ID'),
@@ -101,7 +101,7 @@ async function main() {
         : {
             viewer: async () =>
               JSON.parse((await viewer('build.json', 4096)).toString('utf8')) as unknown,
-            worker: publicHttp(required('PUBLICATION_WORKER_URL')),
+            worker: publicHttp(required('PUBLICATION_WORKER_URL'), 7200000),
             ancestor: (data, deployed) => ancestorOf(data, deployed, repository),
           },
     );

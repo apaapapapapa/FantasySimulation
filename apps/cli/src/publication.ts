@@ -108,8 +108,8 @@ async function main() {
     else if (command === 'prune')
       console.log(canonicalJson(await prunePublication(store, values.confirm ?? false)));
     else {
-      const viewer = publicHttp(required('PUBLICATION_VIEWER_URL')),
-        worker = publicHttp(required('PUBLICATION_WORKER_URL'));
+      const viewer = publicHttp(required('PUBLICATION_VIEWER_URL'), league ? 7200000 : 300000),
+        worker = publicHttp(required('PUBLICATION_WORKER_URL'), league ? 7200000 : 300000);
       const result = await publishPublication(root, store, {
         viewer: async () =>
           JSON.parse((await viewer('build.json', 4096)).toString('utf8')) as unknown,
