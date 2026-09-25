@@ -31,7 +31,13 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
   const model = useMemo(
     () =>
       replay && frame
-        ? buildSceneModel(replay.context, frame.checkpoint, frame.records, frame.events)
+        ? buildSceneModel(
+            replay.context,
+            frame.checkpoint,
+            frame.records,
+            frame.events,
+            frame.eventRecords,
+          )
         : null,
     [replay, frame],
   );

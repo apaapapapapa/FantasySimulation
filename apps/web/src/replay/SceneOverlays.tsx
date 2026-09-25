@@ -1,6 +1,6 @@
 import { Line } from '@react-three/drei';
 import { Quaternion, Vector3 } from 'three';
-import type { Point, SceneModel } from './scene-model.ts';
+import { visionRing, type SceneModel } from './scene-model.ts';
 import type { Overlays } from './overlays.ts';
 
 function Sweep({ shape }: { shape: SceneModel['shapes'][number] }) {
@@ -23,16 +23,10 @@ function Sweep({ shape }: { shape: SceneModel['shapes'][number] }) {
 function Vision({ actor }: { actor: SceneModel['actors'][number] }) {
   if (!actor.vision) return null;
   const { range, angle } = actor.vision;
-  const direction = new Vector3(...actor.facing).normalize();
-  const rotation = new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), direction);
   // This is the defined cone boundary; it does not claim visibility through terrain.
-  const ring = Array.from({ length: 49 }, (_, i): Point => [
-    Math.cos((i * Math.PI) / 24) * range * Math.sin(angle / 2),
-    range * Math.cos(angle / 2),
-    Math.sin((i * Math.PI) / 24) * range * Math.sin(angle / 2),
-  ]);
+  const ring = visionRing(actor);
   return (
-    <group position={actor.vision.position} quaternion={rotation}>
+    <group position={actor.vision.position}>
       {angle >= Math.PI * 2 ? (
         <mesh>
           <sphereGeometry args={[range, 16, 8]} />

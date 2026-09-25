@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {
   replayContext,
   ReplayState,
+  StreamRecordSchema,
   type ReplayCheckpoint,
   type ReplayManifest,
 } from '@fantasy/domain/spatial';
@@ -101,6 +102,59 @@ const abortOnChunk = (controller: AbortController, file: string) => (url: string
 };
 
 describe('saved replay loading through the local API adapter', () => {
+  it('pairs a hit with its own interval at event time and never invents point-less launch positions', async () => {
+    const saved = await savedReplay();
+    const opened = await open(saved).opening;
+    const records = saved.manifest.chunks.flatMap((chunk) =>
+      gunzipSync(saved.files.get(chunk.file)!)
+        .toString()
+        .trim()
+        .split('\n')
+        .map((line) => StreamRecordSchema.parse(JSON.parse(line))),
+    );
+    const interval = records.find(
+      (r) =>
+        r.kind === 'interval' &&
+        r.events.some(
+          (e) => e.kind === 'hit' && e.point && r.paths.some((p) => p.entityId === e.entityId),
+        ),
+    )!;
+    expect(interval?.kind).toBe('interval');
+    if (interval.kind !== 'interval') throw new Error('Expected recorded hit fixture');
+    const hit = interval.events.find(
+      (e) => e.kind === 'hit' && e.point && interval.paths.some((p) => p.entityId === e.entityId),
+    )!;
+    const frame = await new ReplayPlayer(opened).frame(hit.step);
+    const model = buildSceneModel(
+      opened.context,
+      frame.checkpoint,
+      frame.records,
+      frame.events,
+      frame.eventRecords,
+    );
+    expect(model.rays.some((r) => r.id.startsWith(hit.id))).toBe(true);
+    const launch = records
+      .flatMap((r) => ('events' in r ? r.events : []))
+      .find((e) => e.kind === 'launch' && !e.point)!;
+    expect(launch).toBeDefined();
+    const launched = await new ReplayPlayer(opened).frame(launch.step);
+    const effects = buildSceneModel(
+      opened.context,
+      launched.checkpoint,
+      launched.records,
+      launched.events,
+      launched.eventRecords,
+    ).effects;
+    expect(effects.some((effect) => effect.id === launch.id)).toBe(false);
+    const svg = renderToStaticMarkup(
+      createElement(Scene2D, {
+        model,
+        overlays: { vision: true, collision: true, paths: true, hits: true, rays: true },
+      }),
+    );
+    expect(svg).toContain('#f3e59b');
+    expect(svg).toContain('#97d6ff');
+  });
   it('draws recorded posture dimensions and all same-step paths without guessing missing hit coordinates', async () => {
     const opened = await open(await savedReplay()).opening;
     const frame = await new ReplayPlayer(opened).frame(240);

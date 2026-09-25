@@ -1,4 +1,4 @@
-import type { SceneModel } from './scene-model.ts';
+import { visionRing, type SceneModel } from './scene-model.ts';
 import type { Overlays } from './overlays.ts';
 
 /** Top view of the same geometry consumed by the Three renderer; no WebGL required. */
@@ -29,7 +29,14 @@ export function Scene2D({ model, overlays }: { model: SceneModel; overlays: Over
       )}
       {model.actors.map((a) => (
         <g key={a.id}>
-          <circle cx={a.position[0]} cy={a.position[2]} r={a.radius} fill={a.colour}>
+          <circle
+            cx={a.position[0]}
+            cy={a.position[2]}
+            r={a.radius}
+            fill={a.colour}
+            stroke={overlays.collision ? '#e5f3ff' : 'none'}
+            strokeWidth={0.05}
+          >
             <title>{a.id}</title>
           </circle>
           {overlays.collision && (
@@ -45,8 +52,71 @@ export function Scene2D({ model, overlays }: { model: SceneModel; overlays: Over
         </g>
       ))}
       {model.projectiles.map((p) => (
-        <circle key={p.id} cx={p.position[0]} cy={p.position[2]} r={p.radius} fill="#f0bd67" />
+        <circle
+          key={p.id}
+          cx={p.position[0]}
+          cy={p.position[2]}
+          r={p.radius}
+          fill="#f0bd67"
+          stroke={overlays.collision ? '#e5f3ff' : 'none'}
+          strokeWidth={0.05}
+        />
       ))}
+      {overlays.vision &&
+        model.actors
+          .filter((a) => a.vision)
+          .map((a) => (
+            <g
+              key={a.id}
+              transform={`translate(${a.vision!.position[0]} ${a.vision!.position[2]})`}
+              fill="none"
+              stroke="#97d6ff"
+              strokeWidth={0.05}
+              opacity={0.5}
+            >
+              {a.vision!.angle >= Math.PI * 2 ? (
+                <circle r={a.vision!.range} />
+              ) : (
+                <>
+                  <polyline
+                    points={visionRing(a)
+                      .map((p) => `${p[0]},${p[2]}`)
+                      .join(' ')}
+                  />
+                  {[0, 12, 24, 36].map((i) => {
+                    const p = visionRing(a)[i]!;
+                    return <line key={i} x1={0} y1={0} x2={p[0]} y2={p[2]} />;
+                  })}
+                </>
+              )}
+            </g>
+          ))}
+      {overlays.collision &&
+        model.shapes.map((s) => (
+          <line
+            key={s.id}
+            x1={s.points[0][0]}
+            y1={s.points[0][2]}
+            x2={s.points[1][0]}
+            y2={s.points[1][2]}
+            stroke="#e5f3ff"
+            opacity={0.45}
+            strokeLinecap="round"
+            strokeWidth={Math.max(0.02, s.radius * 2)}
+          />
+        ))}
+      {overlays.rays &&
+        model.rays.map((r) => (
+          <line
+            key={r.id}
+            x1={r.points[0][0]}
+            y1={r.points[0][2]}
+            x2={r.points[1][0]}
+            y2={r.points[1][2]}
+            stroke="#f3e59b"
+            strokeWidth={0.06}
+          />
+        ))}
       {overlays.paths &&
         model.paths.map((p) => (
           <line

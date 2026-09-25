@@ -27,6 +27,7 @@ export function buildSceneModel(
   checkpoint: ReplayCheckpoint,
   records: readonly StreamRecord[] = checkpoint.lastRecord ? [checkpoint.lastRecord] : [],
   events: readonly BattleEvent[] = records.flatMap((r) => ('events' in r ? r.events : [])),
+  eventRecords: readonly StreamRecord[] = records,
 ) {
   const scenario = context.manifest.revisions.find(
     (r) =>
@@ -171,28 +172,59 @@ export function buildSceneModel(
     events: hits,
     rays: [
       ...shapes.filter((shape) => shape.kind === 'ray'),
-      ...events.flatMap((event) =>
-        event.kind === 'hit' && event.point
-          ? paths
-              .filter(
-                (path) =>
-                  path.entityId === event.entityId &&
-                  path.points[1].every((n, i) => n === point(event.point!)[i]),
-              )
-              .map((path) => ({ id: `${event.id}:${path.id}`, points: path.points }))
+      ...eventRecords.flatMap((record) =>
+        record.kind === 'interval'
+          ? record.events.flatMap((event) =>
+              event.kind === 'hit' &&
+              event.point &&
+              events.some((visible) => visible.id === event.id)
+                ? record.paths
+                    .filter((path) => path.entityId === event.entityId)
+                    .flatMap((path) =>
+                      path.segments
+                        .filter(
+                          (segment) =>
+                            event.subtimeMicros >= Math.round(segment.from * 1_000_000) &&
+                            event.subtimeMicros <= Math.round(segment.to * 1_000_000),
+                        )
+                        .slice(0, 1)
+                        .map((segment, i) => ({
+                          id: `${event.id}:${path.entityId}:${i}`,
+                          points: [point(segment.start), point(event.point!)] as [Point, Point],
+                        })),
+                    )
+                : [],
+            )
           : [],
       ),
     ],
     effects: events.flatMap((event) => {
       if (!['launch', 'hit'].includes(event.kind)) return [];
-      const actor = actors.find((a) => a.id === event.actorId);
-      const position = event.point
-        ? point(event.point)
-        : event.kind === 'launch'
-          ? actor?.position
-          : undefined;
+      const position = event.point ? point(event.point) : undefined;
       return position ? [{ id: event.id, kind: event.kind, position }] : [];
     }),
   };
 }
 export type SceneModel = ReturnType<typeof buildSceneModel>;
+
+/** The same 3D cone boundary is projected by both renderers; no visibility is inferred. */
+export function visionRing(actor: SceneModel['actors'][number]): Point[] {
+  if (!actor.vision) return [];
+  const length = Math.hypot(...actor.facing) || 1;
+  const f = actor.facing.map((n) => n / length) as Point;
+  const horizontal = Math.hypot(f[0], f[2]);
+  const u: Point = horizontal ? [-f[2] / horizontal, 0, f[0] / horizontal] : [1, 0, 0];
+  const v: Point = [f[1] * u[2], f[2] * u[0] - f[0] * u[2], -f[1] * u[0]];
+  const radius = actor.vision.range * Math.sin(actor.vision.angle / 2);
+  const distance = actor.vision.range * Math.cos(actor.vision.angle / 2);
+  return Array.from(
+    { length: 49 },
+    (_, i) =>
+      f.map(
+        (n, axis) =>
+          n * distance +
+          radius *
+            (u[axis]! * Math.cos((i * Math.PI) / 24) + v[axis]! * Math.sin((i * Math.PI) / 24)),
+      ) as Point,
+  );
+}

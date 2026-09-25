@@ -15,6 +15,7 @@ export type ReplayFrame = {
   checkpoint: ReplayCheckpoint;
   records: readonly StreamRecord[];
   events: readonly BattleEvent[];
+  eventRecords: readonly StreamRecord[];
 };
 const recordStep = (r: StreamRecord) => (r.kind === 'interval' ? r.toStep : r.step);
 const orderedState = (state: DisplayState): DisplayState => ({
@@ -154,7 +155,7 @@ export class ReplayPlayer {
   }
 
   private finish(
-    cursor: Omit<ReplayFrame, 'events'>,
+    cursor: Pick<ReplayFrame, 'checkpoint' | 'records'>,
     request: number,
     signal?: AbortSignal,
     next?: StreamRecord,
@@ -162,10 +163,11 @@ export class ReplayPlayer {
     signal?.throwIfAborted();
     // Interval events keep their own timestamp (some belong to fromStep). Inspect
     // the next verified record without applying its future state or trajectories.
-    const events = [...cursor.records, ...(next ? [next] : [])]
+    const eventRecords = [...cursor.records, ...(next ? [next] : [])];
+    const events = eventRecords
       .flatMap((r) => ('events' in r ? r.events : []))
       .filter((event) => event.step === cursor.checkpoint.step);
-    const frame = { ...cursor, events };
+    const frame = { ...cursor, events, eventRecords };
     if (request === this.request) this.cursor = frame;
     // UI callers own the returned snapshot; mutations cannot poison the verified cache/cursor.
     return structuredClone(frame);
