@@ -25,6 +25,8 @@ import { createBatchPlan, validateBatchPlan } from '../batch/batch-plan.ts';
 import type { BattleBundles } from '../batch/battle-bundle.ts';
 import { nextLeagueAttempt, verifyLeagueProgress } from './league-progress.ts';
 import { canonicalJson } from '@fantasy/domain/spatial';
+const WORK_BYTES = 512 * 1024 ** 2;
+const BUNDLE_METADATA_BYTES = 24_000_000;
 
 export function estimateLeague(
   definition: LeagueDefinition,
@@ -43,12 +45,15 @@ export function estimateLeague(
   const matchesPerPlan = Math.min(
     options.matchesPerPlan,
     Math.floor(1500000 / options.estimatedMsPerMatch),
+    Math.floor((WORK_BYTES - 40 * 1024 ** 2) / options.estimatedBytesPerMatch),
   );
   if (matchesPerPlan < 1 || Math.ceil(planned / matchesPerPlan) > 512)
     throw new Error('League cannot fit bounded plans; revise the measured estimate');
   const partitions = Math.ceil(planned / matchesPerPlan);
   const estimatedBytes =
-    options.retainedBytes + compute * options.estimatedBytesPerMatch + partitions * 2000000;
+    options.retainedBytes +
+    compute * options.estimatedBytesPerMatch +
+    partitions * BUNDLE_METADATA_BYTES;
   const estimatedFiles =
     options.retainedFiles + compute * options.estimatedFilesPerMatch + partitions * 13 + 3;
   // Existing-object inspection and readback, plus object/page/catalog writes; conservative per-run ceiling.
@@ -86,6 +91,17 @@ export async function planLeague(
 ) {
   const revision = await createLeagueRevision(input, source.sha),
     progress = await verifyLeagueProgress(history, bundles);
+  const retainedSizes = new Map<string, number>();
+  for (const record of progress.values())
+    for (const attempt of record.attempts) {
+      if (!attempt.objectHash || retainedSizes.has(attempt.objectHash)) continue;
+      const receipt = await bundles!.verify(attempt.objectHash);
+      retainedSizes.set(
+        attempt.objectHash,
+        receipt.bytes + Buffer.byteLength(canonicalJson(receipt)) + 100,
+      );
+    }
+  const measuredRetained = [...retainedSizes.values()].reduce((sum, n) => sum + n, 0);
   const generated: { partition: LeaguePartition; batch: BatchPlan }[] = [];
   const matches: {
     slot: LeaguePartition['slots'][number];
@@ -103,9 +119,25 @@ export async function planLeague(
     const { seed, participants, ruleset, scenario } = manifest;
     matches.push({ slot, spec: SpecInputSchema.parse({ seed, participants, ruleset, scenario }) });
   }
-  const estimate = estimateLeague(revision.definition, options, { reused, retries, exhausted });
+  const estimate = estimateLeague(
+    revision.definition,
+    { ...options, retainedBytes: Math.max(options.retainedBytes, measuredRetained) },
+    { reused, retries, exhausted },
+  );
   for (let start = 0; start < matches.length; start += estimate.matchesPerPlan) {
     const entries = matches.slice(start, start + estimate.matchesPerPlan);
+    const retainedObjects = new Set(
+      entries.flatMap(
+        ({ slot }) =>
+          progress
+            .get(slot.simulationHash)
+            ?.attempts.flatMap((a) => (a.objectHash ? [a.objectHash] : [])) ?? [],
+      ),
+    );
+    const retainedBytes = [...retainedObjects].reduce(
+      (sum, hash) => sum + retainedSizes.get(hash)!,
+      0,
+    );
     const batch = await createBatchPlan(
       {
         schemaVersion: 1,
@@ -115,9 +147,9 @@ export async function planLeague(
         estimatedBytesPerMatch: options.estimatedBytesPerMatch,
         maxOutputBytes: Math.max(
           256 * 1024 ** 2,
-          entries.length * options.estimatedBytesPerMatch + 4000000,
+          retainedBytes + entries.length * options.estimatedBytesPerMatch + BUNDLE_METADATA_BYTES,
         ),
-        maxWorkBytes: 512 * 1024 ** 2,
+        maxWorkBytes: WORK_BYTES,
       },
       source,
     );

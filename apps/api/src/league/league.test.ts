@@ -1,7 +1,7 @@
 import { expect, it } from 'vite-plus/test';
 import { join } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
-import { contentHash } from '@fantasy/domain/spatial';
+import { contentHash, canonicalJson } from '@fantasy/domain/spatial';
 import { leagueInput, leagueEstimate } from '../../test-support/leagues.ts';
 import { batchSource } from '../../test-support/batches.ts';
 import { withReplayDirectory } from '../../test-support/replays.ts';
@@ -61,6 +61,47 @@ it('persists at most one extra attempt across daily reservations, including kill
   expect(third.progress).toEqual(second.progress);
   expect(third.progress.records.map(nextLeagueAttempt)).toEqual([null, null, null, null]);
 });
+
+it('reduces partition sizes to fit the existing work-byte reserve', async () => {
+  const profile = { ...leagueEstimate, estimatedBytesPerMatch: 5 * 1024 ** 2 };
+  const prepared = await planLeague(await leagueInput(12), batchSource, profile);
+  expect(prepared.partitions.map((p) => p.batch.slots.length)).toEqual([94, 94, 76]);
+  for (const { batch } of prepared.partitions)
+    expect(
+      batch.slots.length * profile.estimatedBytesPerMatch + 40 * 1024 ** 2,
+    ).toBeLessThanOrEqual(batch.maxWorkBytes);
+}, 30000);
+
+it('budgets verified retained partial bytes in addition to the next attempt', async () => {
+  await withReplayDirectory(async (root) => {
+    const input = await leagueInput();
+    input.trials = 12;
+    input.budget.maxEvents = 1;
+    const profile = { ...leagueEstimate, estimatedBytesPerMatch: 20 * 1024 ** 2 };
+    const first = await planLeague(input, batchSource, profile);
+    const { partition, batch } = first.partitions[0]!;
+    expect(batch.slots).toHaveLength(23);
+    const reservation = await reserveLeaguePartition(first.plan, partition, [], 'small-output');
+    const output = join(root, 'run');
+    const result = await runLeaguePartition(
+      first.plan,
+      partition,
+      batch,
+      reservation,
+      output,
+      batchSource,
+      'small-output',
+    );
+    const bundles = new BattleBundles(join(output, 'bundles'));
+    const next = await planLeague(input, batchSource, profile, result.progress.records, bundles);
+    const receiptBytes = result.index.slots.reduce(
+      (sum, s) => sum + s.receipt!.bytes + Buffer.byteLength(canonicalJson(s.receipt)) + 100,
+      0,
+    );
+    expect(next.partitions[0]!.batch.maxOutputBytes - batch.maxOutputBytes).toBe(receiptBytes);
+    expect(next.estimate.estimatedBytes - first.estimate.estimatedBytes).toBe(receiptBytes);
+  });
+}, 30000);
 
 it('leaves never-admitted slots pending and uses the same slots on resumption', async () => {
   await withReplayDirectory(async (root) => {

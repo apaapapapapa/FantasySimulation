@@ -1,12 +1,7 @@
 import { parseArgs } from 'node:util';
 import { mkdir, readdir } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
-import {
-  canonicalJson,
-  LeagueEstimateInputSchema,
-  type LeagueProgress,
-  type LeaguePlan,
-} from '@fantasy/domain/spatial';
+import { canonicalJson, LeagueEstimateInputSchema, type LeaguePlan } from '@fantasy/domain/spatial';
 import { BattleBundles, readBoundedFile, publishImmutableFile } from '@fantasy/api/artifacts';
 import {
   planLeague,
@@ -14,10 +9,10 @@ import {
   reserveLeaguePartition,
   runLeaguePartition,
   checkLeague,
-  validateProgressPage,
   executionSource,
   type LeagueCheckInput,
 } from '@fantasy/api/tooling';
+import { readLeagueHistory } from './league/league-history.ts';
 
 const readJson = async (path: string, limit = 4000000): Promise<unknown> =>
   JSON.parse((await readBoundedFile(resolve(path), limit)).toString('utf8'));
@@ -30,20 +25,6 @@ async function immutableJson(directory: string) {
   if (files.length !== 1 || !/^[0-9a-f]{64}[.]json$/.test(files[0]!))
     throw new Error('Expected exactly one immutable document');
   return readJson(join(directory, files[0]!));
-}
-async function history(directory?: string) {
-  const records: LeagueProgress[] = [];
-  if (directory)
-    for (const file of (await readdir(directory)).sort()) {
-      if (!/^[0-9a-f]{64}[.]json$/.test(file))
-        throw new Error('History contains an unexpected file');
-      const page = await validateProgressPage(await readJson(join(directory, file)));
-      if (file !== page.id.slice(7) + '.json')
-        throw new Error('History filename checksum mismatch');
-      records.push(...page.records);
-      if (records.length > 64000) throw new Error('History exceeds league slot limit');
-    }
-  return records;
 }
 async function partitionAt(directory: string, plan: LeaguePlan, index: number) {
   if (!Number.isInteger(index) || index < 0 || index >= plan.partitions.length)
@@ -91,7 +72,7 @@ async function main() {
       await readJson(input),
       executionSource(),
       options,
-      await history(values.history),
+      await readLeagueHistory(values.history),
       retained,
     );
     console.log(canonicalJson(result.estimate));
@@ -118,7 +99,7 @@ async function main() {
       const reservation = await reserveLeaguePartition(
         plan,
         partition,
-        await history(values.history),
+        await readLeagueHistory(values.history),
         values['execution-id'],
         retained,
       );

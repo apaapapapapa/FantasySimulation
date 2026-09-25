@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { HashSchema, IdSchema } from '../contracts.ts';
-import { BatchIndexSchema, ExecutionSourceSchema } from '../batch.ts';
+import { BatchIndexSchema, BatchInputSchema, ExecutionSourceSchema } from '../batch.ts';
 import { LeagueRevisionSchema, LeagueSlotSchema } from '../league.ts';
 
 export const LeaguePartitionBodySchema = z.strictObject({
@@ -91,7 +91,7 @@ export type LeaguePartitionResult = z.infer<typeof LeaguePartitionResultSchema>;
 export const LeagueEstimateInputSchema = z.strictObject({
   matchesPerPlan: z.number().int().min(1).max(1000),
   estimatedMsPerMatch: z.number().int().min(1).max(1800000),
-  estimatedBytesPerMatch: z.number().int().min(1).max(40000000),
+  estimatedBytesPerMatch: BatchInputSchema.shape.estimatedBytesPerMatch,
   estimatedFilesPerMatch: z.number().int().min(2).max(10000),
   retainedBytes: z.number().int().min(0).max(8000000000),
   retainedFiles: z.number().int().min(0).max(100000),
