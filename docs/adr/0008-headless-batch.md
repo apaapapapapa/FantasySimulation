@@ -80,34 +80,13 @@ Mocks or workflow implementation alone never establish production acceptance.
 
 ### Production observations (2026-09-25; Issue #81 remains open)
 
-[Publish run 36057392026](https://github.com/apaapapapapa/FantasySimulation/actions/runs/36057392026)
-used source `4618f3c`: attempt 1 verified 34 writes/170,759 uploaded bytes and 26 reader requests;
-attempt 2 restored 34 files, reused 33 immutable files and verified zero writes/transfer bytes.
-The retained graph has two complete matches, 34 files and 170,759 bytes. No objects were deleted.
-S3 logical requests were 2 restore + 73 publish initially and 35 restore + 75 publish on repeat;
-these are transport counters, not Cloudflare billing statements.
-
-[Rollback/restore run 36113472940](https://github.com/apaapapapapa/FantasySimulation/actions/runs/36113472940)
-deployed viewer `4618f3c`, then restored `d0b32d0`, through the existing successful-main-CI gate.
-Both deployments read the unchanged graph/links in Chromium and WebKit at 390x844, including
-3D rendering, playback, seek and direct-URL reload; API requests and page/HTTP errors were zero.
-The actual browser without WebGL also advanced the recorded state using the 2D fallback.
-Interruption/lost-response recovery, stale generations, collisions and budgets were separately
-verified by `publication-remote.test.ts`, `publication-restore.test.ts` and reader fixtures (88 focused tests).
-
-[Full playback 36113835189](https://github.com/apaapapapapa/FantasySimulation/actions/runs/36113835189):
-both browsers reached steps 121/747; list 4 + playback 8/24 = 12/28 cold reader requests.
-Direct-URL reload/startup used 8. At 28 requests, an otherwise unused Free 100k/day quota
-allows at most 3,571 such views before retries, publishing and other account traffic.
-This estimate is not measured billing or a guaranteed daily audience.
-
-Cloudflare confirmed Standard/private `fantasysimulation-replays`, no public custom domain,
-reader binding `REPLAYS`, workers.dev enabled/previews disabled, and no published-object expiry.
-Deployment version remains `0c8ff026-eb60-4978-a319-9bdf3040c7ce`; code SHA-256 is
-`73651b0fb4fb254e3e63f096fd557098f89ecf3f7786c421030b012fe7a16554` (241,609 bytes;
-[deployment record](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5805398131)).
-Account R2 metrics: 253,096,620 payload bytes, 300,630 metadata bytes, 1,612 objects; IA zero.
-Two existing $10 billing alerts are enabled. They are notifications, not a spending cap.
+[Pinned production evidence](https://github.com/apaapapapapa/FantasySimulation/blob/3a81e83358b338daf40483407a0c5c574f95830f/docs/adr/0008-headless-batch.md#production-observations-2026-09-25-issue-81-remains-open)
+records publication/republication, viewer rollback, Chromium/WebKit 390x844 full playback,
+2D fallback, deployment identity and account observations. Baseline: two complete matches,
+34 retained files/170,759 bytes; repeated publication transferred zero bytes. Cold full
+playback used 12/28 reader requests. These transport counts are not billing evidence.
+R2 was Standard/private without published-object expiry. Two $10 alerts were notifications,
+not spending caps. Preserve historical links and measurements when sizing P5.
 
 **Unverified:** Workers Free/Paid, billed/current-period costs, and the stored key's bucket-only
 policy. Subscription/billing APIs return 10000; token-metadata APIs return 9109. Dashboard
