@@ -4,12 +4,27 @@ import {
   deepFreeze,
   type ReplayCheckpoint,
   type StreamRecord,
+  type DisplayState,
 } from '@fantasy/domain/spatial';
 import type { OpenedReplay } from './open-replay.ts';
 import { toLoadError } from './artifacts.ts';
 
 type ValidatedChunk = { before: ReplayCheckpoint; records: readonly StreamRecord[] };
 const recordStep = (r: StreamRecord) => (r.kind === 'interval' ? r.toStep : r.step);
+const orderedState = (state: DisplayState): DisplayState => ({
+  actors: [...state.actors].sort((a, b) => compareIds(a.id, b.id)),
+  projectiles: [...state.projectiles].sort((a, b) => compareIds(a.id, b.id)),
+});
+function orderedCheckpoint(value: ReplayCheckpoint): ReplayCheckpoint {
+  return {
+    ...value,
+    state: value.state && orderedState(value.state),
+    lastRecord:
+      value.lastRecord?.kind === 'initial'
+        ? { ...value.lastRecord, state: orderedState(value.lastRecord.state) }
+        : value.lastRecord,
+  };
+}
 
 /** Private projection: callers cannot supply records or bypass the existing validator. */
 function advance(before: ReplayCheckpoint, record: StreamRecord): ReplayCheckpoint {
@@ -24,20 +39,13 @@ function advance(before: ReplayCheckpoint, record: StreamRecord): ReplayCheckpoi
       const removed = new Set(record.projectiles.remove.map((delta) => delta.id));
       projectiles = [...projectiles, ...record.projectiles.spawn]
         .filter((p) => !removed.has(p.id))
-        .map((p) => ({ ...p, ...updates.get(p.id) }))
-        .sort((a, b) => compareIds(a.id, b.id));
+        .map((p) => ({ ...p, ...updates.get(p.id) }));
     }
     state = { actors, projectiles };
   }
-  // Initial actors are normalized by the validator; preserve its canonical entity order.
-  if (record.kind === 'initial')
-    state = {
-      ...record.state,
-      actors: [...record.state.actors].sort((a, b) => compareIds(a.id, b.id)),
-    };
   return {
     ...before,
-    state,
+    state: orderedState(state!),
     step: recordStep(record),
     nextRecord: before.nextRecord + 1,
     nextEvent: before.nextEvent + ('events' in record ? record.events.length : 0),
@@ -63,7 +71,8 @@ export class ReplayPlayer {
     }
     const ref = this.replay.manifest.chunks[index]!;
     const validator = await this.replay.seek(ref.firstRecord, signal);
-    const before = validator.checkpoint();
+    // Checkpoint schemas accept entity enumeration differences; continuity compares canonical state.
+    const before = orderedCheckpoint(validator.checkpoint());
     const raw = await this.replay.records(index, signal);
     if (raw.length !== ref.records) throw new Error('Replay chunk record count');
     const records = raw.map((value) => {

@@ -151,6 +151,20 @@ describe('saved replay loading through the local API adapter', () => {
       open(saved).opening.then((opened) => new ReplayPlayer(opened).seek(0)),
     ).rejects.toMatchObject({ kind: 'damaged' });
   });
+  it('normalizes accepted checkpoint entity order for random and forward playback', async () => {
+    const saved = await savedReplay(),
+      expected = await sequentialCheckpoints(saved);
+    for (const ref of saved.manifest.checkpoints) {
+      const checkpoint = JSON.parse(expand(saved, ref.file).toString()) as ReplayCheckpoint;
+      if (!checkpoint.state) continue;
+      checkpoint.state.actors.reverse();
+      checkpoint.state.projectiles.reverse();
+      replaceFile(saved, ref.file, Buffer.from(JSON.stringify(checkpoint)));
+    }
+    const player = new ReplayPlayer(await open(saved).opening);
+    for (const step of [100, 159, 240, 0, 240])
+      expect(await player.seek(step)).toEqual(expected.findLast((value) => value.step === step));
+  });
   it('keeps the last cursor and validated chunk when a forward load is cancelled', async () => {
     const saved = await savedReplay(),
       expected = await sequentialCheckpoints(saved);
