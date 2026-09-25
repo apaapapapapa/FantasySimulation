@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { BattleEvent } from '@fantasy/domain/spatial';
-import type { OpenedReplay } from './open-replay.ts';
+import type { ReplayInfo, ReplayControls } from './worker-contract.ts';
 import { replayErrorText as errorText } from './load-message.ts';
-import type { ReplayPlayer } from './replay-player.ts';
 import { EventEntries } from './EventEntries.tsx';
 
 export function CurrentEvents({
@@ -53,8 +52,8 @@ export function ReplayEvents({
   step,
   onSeek,
 }: {
-  replay: OpenedReplay;
-  player: ReplayPlayer;
+  replay: ReplayInfo;
+  player: ReplayControls;
   step: number;
   onSeek(step: number): void;
 }) {

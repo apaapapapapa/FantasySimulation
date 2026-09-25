@@ -143,6 +143,12 @@ test('battle-cancel-retry', async ({ page }) => {
   await expect(battle.getByRole('status', { name: '対戦の状態' })).toHaveText('完了');
   await battle.getByRole('button', { name: '結果のリプレイを見る' }).click();
   await expect(page.getByRole('table', { name: '記録された状態' }).getByRole('row')).toHaveCount(3);
+  const last = (await page
+    .getByRole('slider', { name: '表示step', exact: true })
+    .getAttribute('max'))!;
+  await page.getByLabel('表示stepを入力').fill(last);
+  await expect(page.getByLabel('現在のstep')).toHaveText(last);
+  await expect(page.getByRole('button', { name: '1step進む' })).toBeDisabled();
   await page.route('**/api/battle-jobs/*', async (route) => {
     const response = await route.fetch();
     const saved = await response.json();

@@ -77,7 +77,15 @@ export async function expandArtifact(
     throw new ReplayLoadError('damaged', `${ref.file} does not match its size and checksum`);
   let raw: Uint8Array;
   try {
-    const gunzip = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    // WebKit may implement Blob.stream() in a worker through a blob: URL request.
+    // Feed the already bounded bytes directly, keeping decompression free of extra I/O.
+    const compressed = new ReadableStream<Uint8Array<ArrayBuffer>>({
+      start(controller) {
+        controller.enqueue(bytes);
+        controller.close();
+      },
+    });
+    const gunzip = compressed.pipeThrough(new DecompressionStream('gzip'));
     raw = await readBounded(gunzip, ref.rawBytes, ref.file);
   } catch (error) {
     throw toLoadError(error, 'damaged');

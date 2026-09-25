@@ -17,9 +17,11 @@ import {
   type ReplayLoadErrorKind,
 } from './artifacts.ts';
 import { LoadSlots } from './load-slots.ts';
+import type { ReplayLocation } from './worker-contract.ts';
 
 /** Transport only (local API now, static layout of #81 later); the loader verifies all bytes. */
 export interface ReplaySource {
+  readonly location?: ReplayLocation;
   manifest(signal?: AbortSignal): Promise<unknown>;
   file(ref: ArtifactRef, signal?: AbortSignal): Promise<Uint8Array<ArrayBuffer>>;
 }

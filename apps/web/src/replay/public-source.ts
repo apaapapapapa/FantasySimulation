@@ -131,6 +131,7 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
     const prefix = `objects/${publicHashName(ref.objectHash)}/`;
     let allowed: readonly ArtifactRef[] = [];
     return {
+      ...(request === fetch ? { location: { mode: 'public' as const, root: base.href, row } } : {}),
       async manifest(signal) {
         const receipt = await json(`${prefix}receipt.json`, BundleReceiptSchema, signal, {
           checksum: ref.receiptChecksum,
