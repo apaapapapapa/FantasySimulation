@@ -14,7 +14,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { EngineInputError, rulesExecutionEligibility } from '@fantasy/engine/spatial';
 import { StoreError, type Store } from './store.ts';
-import type { BattleRuntime } from './battle-runtime.ts';
+import type { BattleService } from './battle-service.ts';
 import { addJobRoutes } from './job-routes.ts';
 
 const idParams = z.strictObject({ id: IdSchema });
@@ -35,7 +35,7 @@ function body<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
     );
   }
 }
-export function createApp(store: Store, logger = false, runtime?: BattleRuntime) {
+export function createApp(store: Store, logger = false, runtime?: BattleService) {
   const app = Fastify({ logger, bodyLimit: 512 * 1024 });
   app.addHook('onClose', async () => {
     await runtime?.close();

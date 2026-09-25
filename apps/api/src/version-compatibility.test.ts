@@ -1,3 +1,4 @@
+import { JobStore } from './job-store.ts';
 import { cp, readFile, readdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { hostname } from 'node:os';
@@ -9,7 +10,7 @@ import { prepareBattle, reference } from '@fantasy/engine/spatial';
 import { withReplayDirectory } from '../test-support/replays.ts';
 import { openStore, readSampleRevisions } from './store.ts';
 import { createApp } from './app.ts';
-import { BattleRuntime } from './battle-runtime.ts';
+import { BattleService } from './battle-service.ts';
 import { BattlePool } from './worker-pool.ts';
 import legacy from '../fixtures/compatibility/v1.10/metadata.json' with { type: 'json' };
 import observed from '../fixtures/compatibility/v1.11/metadata.json' with { type: 'json' };
@@ -56,7 +57,8 @@ describe('previous-code database and replay compatibility', () => {
         const surveyed = store.getRevision('scenario', 'flat-surveyed-v1', 1)!;
         expect(surveyed.definition).toHaveProperty('terrainKnowledge', 'surveyed');
         const run = vi.spyOn(BattlePool.prototype, 'run');
-        const runtime = await BattleRuntime.open(store, root);
+        const runtime = await BattleService.open(store, root),
+          jobs = new JobStore(store);
         const app = createApp(store, false, runtime);
         try {
           expect((await app.inject('/api/health')).statusCode).toBe(200);
@@ -86,11 +88,12 @@ describe('previous-code database and replay compatibility', () => {
             });
             expect(retry.statusCode).toBe(409);
             expect(retry.json().error).toMatch(/Unsupported engine/);
-            expect(runtime.jobs.get(id)?.attempts).toBe(failed.attempts);
+            expect(jobs.get(id)?.attempts).toBe(failed.attempts);
+            expect(runtime.status(id).job.allowedOperations.retry).toBe(false);
           }
           expect(run).not.toHaveBeenCalled();
           await writeFile(join(root, replayId, file), 'damaged fixture copy');
-          await expect(runtime.artifacts.verified(replayId)).rejects.toThrow(/corrupt/);
+          await expect(runtime.replay(replayId)).rejects.toThrow(/corrupt/);
           const recovery = await app.inject({
             method: 'POST',
             url: `/api/battle-results/${metadata.complete.resultId}/replay-recovery`,
@@ -111,7 +114,7 @@ describe('previous-code database and replay compatibility', () => {
             expect(creation.json().error).toMatch(/Unsupported rules version/);
           }
           expect(store.getSpec(metadata.complete.simulationHash)).toEqual(saved);
-          expect(runtime.jobs.result(metadata.complete.resultId!)).toBeDefined();
+          expect(jobs.result(metadata.complete.resultId!)).toBeDefined();
         } finally {
           await app.close();
           run.mockRestore();

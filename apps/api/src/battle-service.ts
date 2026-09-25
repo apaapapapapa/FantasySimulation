@@ -1,6 +1,6 @@
+import { canCancelJob } from './job-transitions.ts';
 import { ARTIFACT_RESERVATION_BYTES } from '@fantasy/domain/spatial';
 import { randomUUID } from 'node:crypto';
-import { setTimeout as delay } from 'node:timers/promises';
 import {
   BudgetSchema,
   DEFAULT_BUDGET,
@@ -14,7 +14,7 @@ import {
   type StreamRecord,
 } from '@fantasy/domain/spatial';
 import { prepareBattle } from '@fantasy/engine/spatial/execution';
-import { JobStore, JOB_LIMITS, type Claim } from './job-store.ts';
+import { JobStore, JOB_LIMITS, type Claim, type Job } from './job-store.ts';
 import { Store, StoreError, jsonValue } from './store.ts';
 import { sha256 } from './replay-files.ts';
 import { ReplayWriter } from './replay-writer.ts';
@@ -29,17 +29,19 @@ export type RuntimeOptions = {
   queueLimit?: number;
   storageBytes?: number;
 };
-export class BattleRuntime {
-  readonly artifacts: ArtifactStore;
-  readonly active = new Map<string, { controller: AbortController; done: Promise<void> }>();
+export class BattleService {
+  private readonly artifacts: ArtifactStore;
+  private readonly active = new Map<string, { controller: AbortController; done: Promise<void> }>();
   private readonly timer: ReturnType<typeof setInterval>;
+  private readonly waiters = new Set<() => void>();
   private stopped = false;
   private failure: Error | null = null;
   private constructor(
-    readonly jobs: JobStore,
-    readonly pool: BattlePool,
-    readonly owner: Awaited<ReturnType<typeof ownRuntime>>,
-    readonly options: Required<RuntimeOptions>,
+    private readonly store: Store,
+    private readonly jobs: JobStore,
+    private readonly pool: BattlePool,
+    private readonly owner: Awaited<ReturnType<typeof ownRuntime>>,
+    private readonly options: Required<RuntimeOptions>,
   ) {
     this.artifacts = new ArtifactStore(jobs, owner.root);
     this.timer = setInterval(() => this.tick(), 250);
@@ -70,7 +72,7 @@ export class BattleRuntime {
     const jobs = new JobStore(store, { ...JOB_LIMITS, queued: config.queueLimit, storageBytes });
     const owner = await ownRuntime(jobs, root);
     try {
-      return new BattleRuntime(jobs, new BattlePool(config.workers), owner, config);
+      return new BattleService(store, jobs, new BattlePool(config.workers), owner, config);
     } catch (error) {
       owner.release();
       throw error;
@@ -91,15 +93,15 @@ export class BattleRuntime {
     if (previous) {
       if (previous.requestHash !== requestHash)
         throw new StoreError('conflict', 'Idempotency key belongs to another request');
-      return previous;
+      return this.view(previous);
     }
-    const battle = await this.jobs.store.prepareSpec(spec);
+    const battle = await this.store.prepareSpec(spec);
     const canonical =
       this.jobs.canonical(battle.simulationHash) ??
       this.jobs.canonicalRecord(battle.simulationHash);
     if (canonical) await this.artifacts.verified(canonical.replayId);
-    const job = this.jobs.store.transaction(() => {
-      this.jobs.store.saveSpec(battle);
+    const job = this.store.transaction(() => {
+      this.store.saveSpec(battle);
       return this.jobs.submit({
         simulationHash: battle.simulationHash,
         clientId,
@@ -110,7 +112,7 @@ export class BattleRuntime {
       });
     });
     this.tick();
-    return job;
+    return this.view(job);
   }
   async recoverReplay(resultId: string, clientId: string, key: string, inputBudget: Budget) {
     if (this.stopped || this.failure) throw new StoreError('unavailable', 'Runtime unavailable');
@@ -120,7 +122,7 @@ export class BattleRuntime {
     if (prior) {
       if (prior.requestHash !== requestHash)
         throw new StoreError('conflict', 'Idempotency key belongs to another request');
-      return prior;
+      return this.view(prior);
     }
     const result = this.jobs.result(resultId);
     if (!result) throw new StoreError('not-found', 'Result not found');
@@ -135,7 +137,7 @@ export class BattleRuntime {
     )
       throw new StoreError('conflict', 'Only a missing/corrupt definitive replay can be recovered');
     try {
-      const spec = this.jobs.store.requireExecutableSpec(result.simulationHash);
+      const spec = this.store.requireExecutableSpec(result.simulationHash);
       await prepareBattle(spec.manifest);
     } catch {
       throw new StoreError('conflict', 'Saved engine identity is unsupported; replay remains held');
@@ -148,15 +150,19 @@ export class BattleRuntime {
       budget,
     });
     this.tick();
-    return job;
+    return this.view(job);
+  }
+  private changed() {
+    for (const listener of [...this.waiters]) listener();
   }
   private tick() {
     if (this.stopped || this.failure) return;
     try {
-      this.jobs.recover();
+      if (this.jobs.recover()) this.changed();
       if (process.memoryUsage.rss() > this.options.maxRssBytes) {
         this.failure = new Error('Process RSS safety limit exceeded');
         for (const task of this.active.values()) task.controller.abort(this.failure);
+        this.changed();
         return;
       }
       while (this.active.size < this.pool.workers) {
@@ -170,12 +176,14 @@ export class BattleRuntime {
           })
           .finally(() => {
             this.active.delete(claim.job.id);
+            this.changed();
             this.tick();
           });
         this.active.set(claim.job.id, { controller, done });
       }
     } catch (error) {
       this.failure = error instanceof Error ? error : new Error(String(error));
+      this.changed();
     }
   }
   private async execute(claim: Claim, controller: AbortController) {
@@ -207,7 +215,7 @@ export class BattleRuntime {
       Math.floor(JOB_LIMITS.leaseMs / 3),
     );
     try {
-      const spec = this.jobs.store.requireExecutableSpec(claim.job.simulationHash);
+      const spec = this.store.requireExecutableSpec(claim.job.simulationHash);
       writer = await ReplayWriter.create(this.owner.root, {
         id,
         attemptId: claim.attempt.id,
@@ -282,7 +290,8 @@ export class BattleRuntime {
     const job = this.jobs.cancel(id);
     if (job.state === 'cancelled')
       this.active.get(id)?.controller.abort(new Error('Cancelled by client'));
-    return job;
+    this.changed();
+    return this.view(job);
   }
   async retry(id: string, expectedAttempts: number, budget: Budget) {
     if (this.stopped || this.failure) throw new StoreError('unavailable', 'Runtime unavailable');
@@ -312,22 +321,100 @@ export class BattleRuntime {
     if (this.stopped || this.failure) throw new StoreError('unavailable', 'Runtime unavailable');
     const job = this.jobs.retry(id, expectedAttempts, budget);
     this.tick();
-    return job;
+    return this.view(job);
   }
-  async wait(id: string, timeoutMs = 60_000) {
-    const deadline = Date.now() + timeoutMs;
-    for (;;) {
-      const job = this.jobs.get(id);
-      if (!job) throw new StoreError('not-found', 'Job not found');
-      if (!['queued', 'running'].includes(job.state) && !this.active.has(id)) return job;
-      if (this.failure) throw this.failure;
-      if (Date.now() >= deadline) throw new Error('Job wait timeout');
-      await delay(10);
+  wait(id: string, timeoutMs = 60_000): Promise<Job> {
+    return new Promise((resolve, reject) => {
+      const finish = (outcome: { job: Job } | { error: unknown }) => {
+        clearTimeout(timer);
+        this.waiters.delete(check);
+        if ('error' in outcome) reject(outcome.error);
+        else resolve(outcome.job);
+      };
+      const check = () => {
+        try {
+          const job = this.jobs.get(id);
+          if (!job) throw new StoreError('not-found', 'Job not found');
+          if (!['queued', 'running'].includes(job.state) && !this.active.has(id))
+            return finish({ job });
+          if (this.failure) throw this.failure;
+          if (this.stopped && !this.active.has(id))
+            throw new StoreError('unavailable', 'Runtime closed');
+        } catch (error) {
+          finish({ error });
+        }
+      };
+      const timer = setTimeout(() => finish({ error: new Error('Job wait timeout') }), timeoutMs);
+      // Subscribe before reading so completion cannot be lost between the two operations.
+      this.waiters.add(check);
+      check();
+    });
+  }
+  get completionReserveMs() {
+    return this.options.timeoutMs + 1000;
+  }
+  private view(job: Job) {
+    let retry = false;
+    try {
+      if (this.jobs.retryable(job)) {
+        this.store.requireExecutableSpec(job.simulationHash);
+        retry = true;
+      }
+    } catch {
+      /* Invalid/unavailable saved inputs do not grant an operation. */
     }
+    return { ...job, allowedOperations: { cancel: canCancelJob(job), retry } };
+  }
+  status(id: string) {
+    const job = this.jobs.get(id);
+    if (!job) throw new StoreError('not-found', 'Job not found');
+    const attempts = this.jobs.attempts(id).map((attempt) => {
+      const { token: _, budgetJson, ...publicAttempt } = attempt;
+      const metrics = this.jobs.metrics(attempt.id);
+      return {
+        ...publicAttempt,
+        budget: jsonValue(budgetJson),
+        progressStep: metrics?.progressStep ?? 0,
+        metrics: metrics?.metricsJson ? jsonValue(metrics.metricsJson) : null,
+      };
+    });
+    return { job: this.view(job), attempts };
+  }
+  async resultSnapshot(id: string) {
+    const row = this.jobs.result(id);
+    if (!row) throw new StoreError('not-found', 'Result not found');
+    const manifest = await this.artifacts.verified(row.replayId);
+    if (
+      manifest.resultId !== row.id ||
+      manifest.end.kind !== 'result' ||
+      sha256(canonicalJson(manifest.end.result)) !== row.resultHash ||
+      canonicalJson(manifest.end.result) !== row.resultJson
+    )
+      throw new StoreError('unavailable', 'Result/replay binding mismatch');
+    return {
+      response: {
+        id: row.id,
+        result: parseJson(ResultSchema, jsonValue(row.resultJson)),
+        replayId: row.replayId,
+      },
+      manifest,
+      bytes: this.artifacts.metadata(manifest).bytes,
+      resultHash: row.resultHash,
+    };
+  }
+  async result(id: string) {
+    return (await this.resultSnapshot(id)).response;
+  }
+  replay(id: string) {
+    return this.artifacts.verified(id);
+  }
+  replayFile(id: string, file: string) {
+    return this.artifacts.file(id, file);
   }
   async close() {
     if (this.stopped) return;
     this.stopped = true;
+    this.changed();
     clearInterval(this.timer);
     for (const task of this.active.values())
       task.controller.abort(new Error('Coordinator shutdown'));

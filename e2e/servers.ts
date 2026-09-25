@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { startWeb } from './web-server.ts';
 import { createApp } from '../apps/api/src/app.ts';
 import { openStore, readSampleRevisions } from '../apps/api/src/store.ts';
-import { BattleRuntime } from '../apps/api/src/battle-runtime.ts';
+import { BattleService } from '../apps/api/src/battle-service.ts';
 import { readConfig } from '../apps/api/src/config.ts';
 import { RevisionSchema } from '@fantasy/domain/spatial';
 
@@ -31,7 +31,7 @@ export async function startServers(
   try {
     const samples = readSampleRevisions().map((value) => RevisionSchema.parse(value));
     await store.seedRevisions(samples);
-    const runtime = await BattleRuntime.open(
+    const runtime = await BattleService.open(
       store,
       join(temporary, 'replays'),
       readConfig().runtime,

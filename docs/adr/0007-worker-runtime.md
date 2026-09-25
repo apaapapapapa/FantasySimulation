@@ -16,6 +16,11 @@ P3 / Issue #1・#10の単一ホスト実行。計算はPiscina 5.3.2の再利用
 6. 保存側は各recordを検証・圧縮し、全件のhashとcheckpointを再検証して確定配置する。
 7. token・有効lease・中止状態を再確認し、結果/参照を一つのDB transactionで確定する。
 
+HTTPとbatchは`BattleService`の投入・状態・検証済み結果・replay操作を使う。
+JobStore/Worker/所有rootはサービス内部に置く。完了待ちは状態変更と資源解放の
+通知で解決し、読取ポーリングを行わない。期限・停止も待機を解除する。
+状態遷移の純粋な判定を保存と許可操作の応答で共有し、未対応の保存入力には再試行を許可しない。
+
 leaseは約3.3秒ごとに更新する。失効したattemptを再取得するとtokenが変わり、
 古い完了は拒否される。再取得は最大3回。中止のDB確定をWorker停止より先に行う。
 timeoutは既定30秒でfailedを記録し、Workerを停止する。終了後もI/Oの解放を待つ。

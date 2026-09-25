@@ -23,6 +23,12 @@ const rule = (
 ): IRegularForbiddenRuleType => ({ name, from, to, comment, severity: 'error' });
 export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
+    'job-http-application-boundary',
+    { path: '^apps/api/src/job-routes[.]ts$' },
+    { path: '^apps/api/src/', pathNot: '^apps/api/src/battle-service[.]ts$' },
+    'Job HTTP routes depend on the application service, never persistence or replay internals.',
+  ),
+  rule(
     'api-uses-public-engine',
     { path: '^apps/api/' },
     {

@@ -15,7 +15,6 @@ import {
 } from '@fantasy/domain/spatial';
 import {
   readBoundedFile,
-  replayDirectory,
   sha256,
   syncDirectory,
   writeDurableFile,
@@ -23,8 +22,7 @@ import {
   GENERATED_UUID,
 } from './replay-files.ts';
 import { verifyReplayDirectory } from './replay-reader.ts';
-import type { BattleRuntime } from './battle-runtime.ts';
-import type { StoredResult } from './job-store.ts';
+import type { BattleService } from './battle-service.ts';
 
 const hashName = (hash: string) => HashSchema.parse(hash).slice(7);
 export class BattleBundles {
@@ -173,31 +171,27 @@ export class BattleBundles {
     );
     this.bytes! += Buffer.byteLength(text);
   }
-  async publish(runtime: BattleRuntime, result: StoredResult, source: ExecutionSource) {
-    const manifest = await runtime.artifacts.verified(result.replayId);
-    if (
-      manifest.end.kind !== 'result' ||
-      manifest.resultId !== result.id ||
-      canonicalJson(manifest.end.result) !== result.resultJson
-    )
-      throw new Error('Cannot export an inconsistent result');
-    const original = await this.cached(result.simulationHash);
+  async publish(runtime: BattleService, resultId: string, source: ExecutionSource) {
+    const snapshot = await runtime.resultSnapshot(resultId);
+    const { manifest, response: result } = snapshot;
+    const simulationHash = result.result.simulationHash;
+    const original = await this.cached(simulationHash);
     if (original) {
-      if (original.resultHash !== result.resultHash)
+      if (original.resultHash !== snapshot.resultHash)
         throw new Error('Definitive bundle result disagreement');
       return original;
     }
     const body = parseJson(BundleReceiptBodySchema, {
       schemaVersion: 1,
       source,
-      simulationHash: result.simulationHash,
+      simulationHash,
       resultId: result.id,
       replayId: manifest.id,
       attemptId: manifest.attemptId,
-      resultHash: result.resultHash,
+      resultHash: snapshot.resultHash,
       manifestChecksum: sha256(canonicalJson(manifest)),
-      bytes: runtime.artifacts.metadata(manifest).bytes,
-      result: manifest.end.result,
+      bytes: snapshot.bytes,
+      result: result.result,
     });
     const receipt: BundleReceipt = { ...body, objectHash: await contentHash(body) };
     const receiptText = canonicalJson(receipt);
@@ -216,10 +210,7 @@ export class BattleBundles {
     await mkdir(staging);
     try {
       for (const ref of [...manifest.chunks, ...manifest.checkpoints]) {
-        const bytes = await readBoundedFile(
-          join(replayDirectory(runtime.owner.root, manifest.id), ref.file),
-          ref.bytes,
-        );
+        const bytes = await runtime.replayFile(manifest.id, ref.file);
         if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
           throw new Error('Replay changed during export');
         await writeDurableFile(join(staging, ref.file), bytes);

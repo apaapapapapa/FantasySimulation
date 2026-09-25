@@ -1,7 +1,8 @@
+import { JobStore } from '../src/job-store.ts';
 import { join } from 'node:path';
 import { catalogManifest } from '@fantasy/samples';
 import { SpecInputSchema, type Manifest } from '@fantasy/domain/spatial';
-import { BattleRuntime, type RuntimeOptions } from '../src/battle-runtime.ts';
+import { BattleService, type RuntimeOptions } from '../src/battle-service.ts';
 import { openStore } from '../src/store.ts';
 import { withReplayDirectory } from './replays.ts';
 
@@ -31,6 +32,6 @@ async function runtimeFixture(directory: string, options: RuntimeOptions, maxSte
   const manifest = await catalogManifest('archer', 'guardian', 'flat', maxSteps);
   await store.seedRevisions(manifest.revisions);
   const spec = specInput(manifest);
-  const runtime = await BattleRuntime.open(store, root, options);
-  return { directory, filename, root, store, manifest, spec, runtime };
+  const runtime = await BattleService.open(store, root, options);
+  return { directory, filename, root, store, manifest, spec, runtime, jobs: new JobStore(store) };
 }

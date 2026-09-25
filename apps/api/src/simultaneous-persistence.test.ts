@@ -15,7 +15,7 @@ describe('simultaneous slots through persisted Workers', () => {
     'preserves %s decisions, costs and replacement displays across forward and backward seeks',
     async (mode) => {
       await withRuntime(
-        async ({ runtime, store, root }) => {
+        async ({ runtime, jobs, store, root }) => {
           const input = await (mode === 'joint'
             ? simultaneousManifest()
             : mode === 'staged'
@@ -60,7 +60,7 @@ describe('simultaneous slots through persisted Workers', () => {
           const submitted = await runtime.submit(specInput(input), 'simultaneous', 'persist');
           const done = await runtime.wait(submitted.id);
           expect(done.state).toBe('completed');
-          const result = runtime.jobs.result(done.resultId!)!;
+          const result = jobs.result(done.resultId!)!;
           expect(JSON.parse(result.resultJson)).toEqual(direct.result);
           const manifest = await readReplayManifest(root, result.replayId);
           const verified = await verifyReplay(root, result.replayId);

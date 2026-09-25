@@ -16,7 +16,7 @@ import { BattleBundles } from './battle-bundle.ts';
 describe('observed AI delivery through persisted Workers', () => {
   it('persists tactical samples through API and reproduces posture and search records headlessly', async () => {
     await withRuntime(
-      async ({ runtime, store, root }) => {
+      async ({ runtime, jobs, store, root }) => {
         const input = await catalogManifest(
           'posture-archer-v1',
           'posture-duelist-v1',
@@ -37,7 +37,7 @@ describe('observed AI delivery through persisted Workers', () => {
           expect(response.statusCode).toBe(202);
           const done = await runtime.wait(response.json().job.id);
           expect(done.state, JSON.stringify(done)).toBe('completed');
-          const row = runtime.jobs.result(done.resultId!)!;
+          const row = jobs.result(done.resultId!)!;
           const saved = (await verifyReplay(root, row.replayId)).manifest;
           const direct = await runBattle(saved.input);
           expect(JSON.parse(row.resultJson)).toEqual(direct.result);
@@ -66,7 +66,7 @@ describe('observed AI delivery through persisted Workers', () => {
   }, 30000);
   it('round trips public status experience, observed conditions and weighted reasons through SQLite and replay', async () => {
     await withRuntime(
-      async ({ runtime, store, root }) => {
+      async ({ runtime, jobs, store, root }) => {
         const manifest = await catalogManifest('water-observer', 'ember-duelist', 'flat', 60, 4);
         const burn = manifest.revisions.find(
           (r) => r.kind === 'status' && r.id === 'ordinary-burning',
@@ -133,7 +133,7 @@ describe('observed AI delivery through persisted Workers', () => {
         const job = await runtime.submit(specInput(manifest), 'g05', 'public-context');
         const done = await runtime.wait(job.id);
         expect(done.state).toBe('completed');
-        const row = runtime.jobs.result(done.resultId!)!;
+        const row = jobs.result(done.resultId!)!;
         const verified = await verifyReplay(root, row.replayId),
           saved = verified.manifest;
         expect(JSON.parse(row.resultJson)).toEqual((await runBattle(saved.input)).result);
@@ -180,7 +180,7 @@ describe('observed AI delivery through persisted Workers', () => {
 
   it('prepares new typed characters through API, saves cognition, and isolates reused Worker knowledge', async () => {
     await withRuntime(
-      async ({ runtime, store, root }) => {
+      async ({ runtime, jobs, store, root }) => {
         const manifest = await catalogManifest('fire-seer', 'ember-duelist', 'flat', 250, 42);
         await store.loadPinnedRevisions(manifest.revisions);
         const spec = specInput(manifest),
@@ -195,8 +195,8 @@ describe('observed AI delivery through persisted Workers', () => {
           expect(response.statusCode).toBe(202);
           const done = await runtime.wait(response.json().job.id);
           expect(done.state).toBe('completed');
-          const row = runtime.jobs.result(done.resultId!)!,
-            saved = await runtime.artifacts.verified(row.replayId);
+          const row = jobs.result(done.resultId!)!,
+            saved = await runtime.replay(row.replayId);
           expect(saved.input.aiProfile).toBe('observed-utility-v1');
           const records = [];
           for (let i = 0; i < saved.chunks.length; i++)
@@ -218,7 +218,7 @@ describe('observed AI delivery through persisted Workers', () => {
           const job = await runtime.submit(specInput(next), 'isolation', 'two');
           const finished = await runtime.wait(job.id);
           expect(finished.state).toBe('completed');
-          const actual = runtime.jobs.result(finished.resultId!)!;
+          const actual = jobs.result(finished.resultId!)!;
           expect(JSON.parse(actual.resultJson)).toEqual((await runBattle(next)).result);
         } finally {
           await app.close();

@@ -20,7 +20,7 @@ describe('stamina through Worker, SQLite and recorded replay', () => {
   });
   it('saves new locomotion and paid-flight definitions and reconstructs resource and grant displays', async () => {
     await withRuntime(
-      async ({ runtime, store, root }) => {
+      async ({ runtime, jobs, store, root }) => {
         const input = await catalogManifest(
           'stamina-glider-v1',
           'stamina-scout-v1',
@@ -39,7 +39,7 @@ describe('stamina through Worker, SQLite and recorded replay', () => {
           'movement.locomotion.run.speedMmPerSecond',
           6000,
         );
-        const result = runtime.jobs.result(done.resultId!)!;
+        const result = jobs.result(done.resultId!)!;
         const verified = await verifyReplay(root, result.replayId);
         const restored = await seekReplay(root, result.replayId, verified.checkpoint.nextRecord);
         expect(restored).toEqual(verified.checkpoint);
@@ -54,7 +54,7 @@ describe('stamina through Worker, SQLite and recorded replay', () => {
     );
   });
   it('persists optional definitions and restores charged/recovered resources from verified artifacts', async () => {
-    await withRuntime(async ({ runtime, store, root, manifest, spec }) => {
+    await withRuntime(async ({ runtime, jobs, store, root, manifest, spec }) => {
       const base = manifest.revisions.find((r) => r.kind === 'ability')!;
       const startup = await sealRevision('ability', 'resource-startup', 1, {
         ...base.definition,
@@ -84,7 +84,7 @@ describe('stamina through Worker, SQLite and recorded replay', () => {
       expect(
         saved.manifest.revisions.find((r) => r.id === character.id)?.definition,
       ).toHaveProperty('stamina', { max: 10, recoveryPerSecond: 3 });
-      const result = runtime.jobs.result(done.resultId!)!;
+      const result = jobs.result(done.resultId!)!;
       const verified = await verifyReplay(root, result.replayId);
       const restored = await seekReplay(root, result.replayId, verified.checkpoint.nextRecord);
       expect(restored).toEqual(verified.checkpoint);
