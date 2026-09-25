@@ -15,7 +15,7 @@ jobs:
       actions: read
     env:
       ACCEPTANCE_PHASE: full-playback
-      EXPECTED_VIEWER_SHA: d0b32d0cccc74d6f5ccf0c26fcb1fa32a13671f5
+      EXPECTED_VIEWER_SHA: 3a81e83358b338daf40483407a0c5c574f95830f
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
       LIBGL_ALWAYS_SOFTWARE: '1'
     steps:
@@ -29,12 +29,12 @@ jobs:
             const assert = require('node:assert/strict');
             let run;
             for (let i = 0; i < 48; i++) {
-              run = (await github.rest.actions.getWorkflowRun({owner:'apaapapapapa',repo:'FantasySimulation',run_id:36113472940})).data;
-              assert.equal(run.head_sha,'58ed4f84f5f9813538fb27f5a2ef8166a5fcb934');
+              run = (await github.rest.actions.getWorkflowRun({owner:'apaapapapapa',repo:'FantasySimulation',run_id:36124819453})).data;
+              assert.equal(run.head_sha,'3a81e83358b338daf40483407a0c5c574f95830f');
               if (run.status === 'completed') break;
               await new Promise(resolve => setTimeout(resolve,15000));
             }
-            assert.equal(run.conclusion,'success','Rollback and restore must finish first');
+            assert.equal(run.conclusion,'success','Current main CI must pass');
       - uses: ./.github/actions/setup-project
       - uses: ./.github/actions/setup-playwright
       - name: Play both production matches to the final recorded step and measure requests
