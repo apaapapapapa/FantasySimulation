@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { initializePhysics } from '../packages/engine/src/spatial/world/physics.ts';
-import { probeInputs, runProbe } from '../packages/engine/src/spatial/world/probe.ts';
+import { initializePhysics } from '@fantasy/engine/spatial';
+import { probeInputs, runProbe } from '@fantasy/engine/tooling';
 
 await initializePhysics();
 const path = new URL('../packages/engine/fixtures/spatial/probe.json', import.meta.url);

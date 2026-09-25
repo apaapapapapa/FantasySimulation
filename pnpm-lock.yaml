@@ -12,6 +12,12 @@ importers:
 
   .:
     devDependencies:
+      '@fantasy/domain':
+        specifier: workspace:*
+        version: link:packages/domain
+      '@fantasy/engine':
+        specifier: workspace:*
+        version: link:packages/engine
       '@fantasy/samples':
         specifier: workspace:*
         version: link:packages/samples

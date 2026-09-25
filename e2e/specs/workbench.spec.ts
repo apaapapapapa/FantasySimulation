@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures.ts';
-import { RevisionSchema } from '../../packages/domain/src/spatial/index.ts';
+import { RevisionSchema } from '@fantasy/domain/spatial';
 
 test('draft-revisions', async ({ page }, info) => {
   await page.goto('/');

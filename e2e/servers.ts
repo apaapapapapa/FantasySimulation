@@ -4,7 +4,7 @@ import { createApp } from '../apps/api/src/app.ts';
 import { openStore, readSampleRevisions } from '../apps/api/src/store.ts';
 import { BattleRuntime } from '../apps/api/src/battle-runtime.ts';
 import { readConfig } from '../apps/api/src/config.ts';
-import { RevisionSchema } from '../packages/domain/src/spatial/index.ts';
+import { RevisionSchema } from '@fantasy/domain/spatial';
 
 /** Ports are assigned by bind(0), never probed/released or reused from another server. */
 export interface ServerState {

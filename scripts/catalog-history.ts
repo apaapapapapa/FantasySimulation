@@ -1,9 +1,5 @@
-import {
-  DefinitionKindSchema,
-  RefSchema,
-  type Revision,
-} from '../packages/domain/src/spatial/index.ts';
-import { revisionHash } from '../packages/engine/src/spatial/prepare.ts';
+import { DefinitionKindSchema, RefSchema, type Revision } from '@fantasy/domain/spatial';
+import { revisionHash } from '@fantasy/engine/spatial';
 import published from '../data/spatial/published-revisions.json' with { type: 'json' };
 
 /** The reviewed release inventory is append-only; replacements need new definition IDs. */

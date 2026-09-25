@@ -1,28 +1,16 @@
 import assert from 'node:assert/strict';
 import { describe, expect, it } from 'vite-plus/test';
 import fc from 'fast-check';
-import {
-  actorSeed,
-  contentHash,
-  type Definition,
-} from '../../packages/domain/src/spatial/index.ts';
-import {
-  prepareBattle,
-  runBattle,
-  sealRevision,
-  reference,
-} from '../../packages/engine/src/spatial/index.ts';
+import { actorSeed, contentHash, type Definition } from '@fantasy/domain/spatial';
+import { prepareBattle, runBattle, sealRevision, reference } from '@fantasy/engine/spatial';
 import { sampleManifest } from '@fantasy/samples';
-import {
-  resolveEffects,
-  type EffectApplication,
-} from '../../packages/engine/src/spatial/rules/effects.ts';
-import { applyStatuses, statusBoundary } from '../../packages/engine/src/spatial/rules/status.ts';
-import { combatManifest, battleEvents } from '../../packages/engine/test-support/fixtures.ts';
-import { checkProperty } from './test-support/property.ts';
-import minimized from './fixtures/minimized-hp.json' with { type: 'json' };
+import { resolveEffects, type EffectApplication } from './rules/effects.ts';
+import { applyStatuses, statusBoundary } from './rules/status.ts';
+import { combatManifest, battleEvents } from '../../test-support/fixtures.ts';
+import { checkProperty } from '../../../../scripts/harness/test-support/property.ts';
+import minimized from '../../fixtures/spatial/minimized-hp.json' with { type: 'json' };
 
-const file = 'scripts/harness/properties.test.ts';
+const file = 'packages/engine/src/spatial/properties.test.ts';
 describe('bounded generated battle invariants', { timeout: 45000 }, () => {
   it('checks HP MP resistance and shared shield boundaries against integer arithmetic', async () => {
     const battle = await prepareBattle(await sampleManifest(1));

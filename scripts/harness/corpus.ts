@@ -11,13 +11,13 @@ import {
   RefSchema,
   type BattleResult,
   type RevisionRef,
-} from '../../packages/domain/src/spatial/index.ts';
+} from '@fantasy/domain/spatial';
 import {
   implementation,
   prepareBattle,
   runBattle,
   type PreparedBattle,
-} from '../../packages/engine/src/spatial/index.ts';
+} from '@fantasy/engine/spatial';
 import { catalogManifest, sampleManifest } from '@fantasy/samples';
 import { readBoundedBytes, readBoundedJson } from './files.ts';
 import { runCommand, type CommandResult } from './process.ts';

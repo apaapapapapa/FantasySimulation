@@ -28,7 +28,9 @@ Engine `world` (geometry/physics), `rules` (combat derivations), `ai` (subjectiv
 observation/decisions), and `sim` (step orchestration) depend downward in that order.
 Only orchestration uses all layers; lower layers cannot import execution entry points.
 ManifestBuilder may depend on execution; execution cannot import that construction module.
-The public entry exports both; the narrow execution entry keeps builder edits out of identity.
+The public entry exposes execution and manifest construction; internal world/rules/AI/state modules
+are not public. API imports (including types) use these entries. Deterministic probes use the separate
+`@fantasy/engine/tooling` entry. The execution entry keeps builder edits out of identity.
 Type-only edges cannot conceal a domain-to-server dependency. Rapier is allowed only in
 `packages/engine/src/spatial/world/physics.ts`. Browser/domain code cannot depend on platform
 builtins. Application modules cannot import development harness scripts. Core crypto is limited

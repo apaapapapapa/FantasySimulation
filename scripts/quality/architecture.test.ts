@@ -14,6 +14,26 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 it.each([
+  ['index.ts', true],
+  ['spatial/index.ts', true],
+  ['spatial/execution.ts', true],
+  ['spatial/prepare.ts', false],
+  ['spatial/state.ts', false],
+  ['spatial/rules/effects.ts', false],
+  ['tooling.ts', false],
+] as const)('requires the public engine entry from API: %s', async (entry, allowed) => {
+  for (const typeOnly of [true, false]) {
+    const f = fixture({
+      'apps/api/src/use.ts': `export ${typeOnly ? 'type' : ''} {Value} from '../../../packages/engine/src/${entry}';`,
+      [`packages/engine/src/${entry}`]: 'export class Value {}',
+    });
+    const result = await architecture(f.root, f.paths);
+    expect(
+      result.publicGraph.summary.violations.some((v) => v.rule.name === 'api-uses-public-engine'),
+    ).toBe(!allowed);
+  }
+});
+it.each([
   ['world', 'world', true],
   ['rules', 'world', true],
   ['rules', 'rules', true],

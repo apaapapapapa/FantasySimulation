@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./spatial": "./src/spatial/index.ts",
-    "./spatial/execution": "./src/spatial/execution.ts"
+    "./spatial/execution": "./src/spatial/execution.ts",
+    "./tooling": "./src/tooling.ts"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "0.20.0",

@@ -39,6 +39,8 @@
     "publication": "vp run --filter @fantasy/api publication"
   },
   "devDependencies": {
+    "@fantasy/domain": "workspace:*",
+    "@fantasy/engine": "workspace:*",
     "@fantasy/samples": "workspace:*",
     "@fontsource/noto-sans-jp": "5.2.8",
     "@octokit/core": "7.0.8",

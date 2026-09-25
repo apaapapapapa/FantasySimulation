@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'vite-plus/test';
-import type { BattleResult } from '../../packages/domain/src/spatial/index.ts';
-import { prepareBattle, runBattle } from '../../packages/engine/src/spatial/index.ts';
+import type { BattleResult } from '@fantasy/domain/spatial';
+import { prepareBattle, runBattle } from '@fantasy/engine/spatial';
 import { sampleManifest } from '@fantasy/samples';
 import {
   collectCorpus,

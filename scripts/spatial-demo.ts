@@ -1,4 +1,4 @@
-import { runBattle } from '../packages/engine/src/spatial/index.ts';
+import { runBattle } from '@fantasy/engine/spatial';
 import { catalogManifest } from '@fantasy/samples';
 
 const [left = 'swordsman', right = 'sky-mage', scenario = 'pillars'] = process.argv.slice(2);

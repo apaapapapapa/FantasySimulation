@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { availableParallelism, cpus, platform, arch, totalmem } from 'node:os';
 import { performance } from 'node:perf_hooks';
-import { initializePhysics } from '../packages/engine/src/spatial/world/physics.ts';
-import { probeInputs, runProbe } from '../packages/engine/src/spatial/world/probe.ts';
-import identity from '../packages/engine/src/spatial/implementation.json' with { type: 'json' };
+import { initializePhysics } from '@fantasy/engine/spatial';
+import { probeInputs, runProbe } from '@fantasy/engine/tooling';
+import { implementation as identity } from '@fantasy/engine/spatial';
 
 const before = performance.now();
 await initializePhysics();

@@ -4,7 +4,7 @@ import {
   ReplayManifestSchema,
   StreamRecordSchema,
   publicHashName,
-} from '../../packages/domain/src/spatial/index.ts';
+} from '@fantasy/domain/spatial';
 import { publicFixtures } from '../publication-fixtures.ts';
 
 export const files = publicFixtures(process.cwd());
