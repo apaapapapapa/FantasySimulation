@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
@@ -9,6 +8,7 @@ import {
   type SortingState,
 } from '@tanstack/react-table';
 import type { PublicMatchRow } from '@fantasy/domain/spatial';
+import { DataTable } from './DataTable.tsx';
 import { matchLink } from './match-route.ts';
 import { matchDuration, matchResult, playbackLabels, reasonLabels } from './match-presentation.ts';
 
@@ -92,9 +92,35 @@ export function MatchTable({
 }) {
   const [sorting, setSorting] = useState<SortingState>([]),
     [filter, setFilter] = useState('');
+  const displayColumns = useMemo<ColumnDef<PublicMatchRow>[]>(
+    () => [
+      ...columns,
+      {
+        id: 'replay',
+        header: 'リプレイ',
+        enableSorting: false,
+        cell: ({ row }) => (
+          <>
+            <small>{playbackLabels[row.original.playback]}</small>
+            {row.original.replay ? (
+              <a
+                href={matchLink(setHash, page, row.original.slotId)}
+                aria-label={`リプレイを開く ${row.original.slotId}`}
+              >
+                {row.original.playback === 'partial' ? '記録済み範囲を開く' : '開く'}
+              </a>
+            ) : (
+              <span>{reasonLabels[row.original.reason]}</span>
+            )}
+          </>
+        ),
+      },
+    ],
+    [setHash, page],
+  );
   const table = useReactTable({
     data: rows,
-    columns,
+    columns: displayColumns,
     state: { sorting, globalFilter: filter },
     onSortingChange: setSorting,
     onGlobalFilterChange: setFilter,
@@ -110,53 +136,7 @@ export function MatchTable({
         このページを絞り込み
         <input type="search" value={filter} onChange={(e) => setFilter(e.target.value)} />
       </label>
-      <table aria-label="公開試合一覧">
-        <thead>
-          {table.getHeaderGroups().map((group) => (
-            <tr key={group.id}>
-              {group.headers.map((header) => (
-                <th
-                  key={header.id}
-                  aria-sort={
-                    header.column.getIsSorted() === 'asc'
-                      ? 'ascending'
-                      : header.column.getIsSorted() === 'desc'
-                        ? 'descending'
-                        : 'none'
-                  }
-                >
-                  <button onClick={header.column.getToggleSortingHandler()}>
-                    {flexRender(header.column.columnDef.header, header.getContext())}
-                  </button>
-                </th>
-              ))}
-              <th>リプレイ</th>
-            </tr>
-          ))}
-        </thead>
-        <tbody>
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} aria-label={`試合 ${row.original.slotId}`}>
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-              ))}
-              <td>
-                <small>{playbackLabels[row.original.playback]}</small>
-                {row.original.replay ? (
-                  <a
-                    href={matchLink(setHash, page, row.original.slotId)}
-                    aria-label={`リプレイを開く ${row.original.slotId}`}
-                  >
-                    {row.original.playback === 'partial' ? '記録済み範囲を開く' : '開く'}
-                  </a>
-                ) : (
-                  <span>{reasonLabels[row.original.reason]}</span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <DataTable table={table} label="公開試合一覧" />
       <p>
         {table.getRowModel().rows.length} / {rows.length}件を表示
       </p>

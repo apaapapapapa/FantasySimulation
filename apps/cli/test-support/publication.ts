@@ -200,3 +200,5 @@ export async function readPublication(root: string) {
   );
   return { current, catalog, sets };
 }
+
+export { leaguePublicationFixture } from './leagues.ts';

@@ -37,7 +37,7 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
     key: string,
     limit: number,
     signal?: AbortSignal,
-    expected?: { checksum: string; bytes: number },
+    expected?: { checksum: string; bytes?: number },
   ) {
     try {
       signal?.throwIfAborted();
@@ -76,7 +76,8 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
       signal?.throwIfAborted();
       if (
         expected &&
-        (value.byteLength !== expected.bytes || (await hashBytes(value)) !== expected.checksum)
+        ((expected.bytes !== undefined && value.byteLength !== expected.bytes) ||
+          (await hashBytes(value)) !== expected.checksum)
       )
         throw new ReplayLoadError('damaged', `Public data checksum/size mismatch: ${key}`);
       return value;
@@ -88,7 +89,7 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
     key: string,
     schema: { parse(value: unknown): T },
     signal?: AbortSignal,
-    expected?: { checksum: string; bytes: number },
+    expected?: { checksum: string; bytes?: number },
   ) {
     try {
       const raw = await bytes(key, expected?.bytes ?? MAX_PUBLIC_JSON_BYTES, signal, expected);
@@ -157,5 +158,16 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
       },
     };
   }
-  return { catalog, set, page, source };
+  function leagueDocument<T>(
+    ref: { hash: string; bytes?: number },
+    schema: { parse(value: unknown): T },
+    signal?: AbortSignal,
+  ) {
+    return json(`leagues/${publicHashName(ref.hash)}.json`, schema, signal, {
+      checksum: ref.hash,
+      ...(ref.bytes === undefined ? {} : { bytes: ref.bytes }),
+    });
+  }
+  return { catalog, set, page, source, leagueDocument };
 }
+export type PublicLibrary = ReturnType<typeof publicLibrary>;

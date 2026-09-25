@@ -1,20 +1,78 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { PublicCatalog, PublicMatchPage, PublicReplaySet } from '@fantasy/domain/spatial';
 import { publicHashName } from '@fantasy/domain/spatial';
-import { publicLibrary } from '../replay/public-source.ts';
-import { ReplayPanel } from '../replay/ReplayPanel.tsx';
+import { publicLibrary, type PublicLibrary } from '../replay/public-source.ts';
 import { replayErrorText as errorText } from '../replay/load-message.ts';
 import { MatchTable } from './MatchTable.tsx';
 import { matchLink, readMatchRoute } from './match-route.ts';
-import { playbackLabels, reasonLabels } from './match-presentation.ts';
+import { SelectedMatch } from './SelectedMatch.tsx';
+import { LeagueViewer } from './LeagueViewer.tsx';
+import { leagueLink } from './league-route.ts';
+import { usePublicData } from './use-public-data.ts';
 
 export function PublicViewer({ root }: { root: string }) {
   return <LibraryViewer key={root} root={root} />;
 }
 function LibraryViewer({ root }: { root: string }) {
   const library = useMemo(() => publicLibrary(root), [root]);
-  const [route, setRoute] = useState(() => readMatchRoute(window.location.hash));
-  const [catalog, setCatalog] = useState<PublicCatalog | null>(null);
+  const [hash, setHash] = useState(window.location.hash);
+  const read = useCallback((signal: AbortSignal) => library.catalog(signal), [library]);
+  const loaded = usePublicData(read);
+  const catalog = loaded?.value;
+  const league =
+    hash.startsWith('#/leagues/') || ((!hash || hash === '#/') && !!catalog?.leagues?.length);
+  useEffect(() => {
+    const change = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', change);
+    return () => window.removeEventListener('hashchange', change);
+  }, []);
+  return (
+    <main className="app-shell">
+      <header>
+        <p className="eyebrow">Fantasy Simulation · Replay Library</p>
+        <h1>{league ? 'リーグ結果' : '保存リプレイ一覧'}</h1>
+        <p>保存された試合を選んで観戦できます。</p>
+        {['localhost', '127.0.0.1', '[::1]'].includes(new URL(root).hostname) && (
+          <p>ローカルのデータを表示しています。このURLは他の端末との共有には使えません。</p>
+        )}
+        {catalog && (
+          <nav className="actions" aria-label="公開データ">
+            {catalog.leagues?.map((ref) => (
+              <a key={ref.id} href={leagueLink(ref.hash)}>
+                {ref.id}
+              </a>
+            ))}
+            {catalog.sets[0] && (
+              <a href={matchLink(catalog.sets[0].setHash, 0)}>保存リプレイ一覧</a>
+            )}
+          </nav>
+        )}
+      </header>
+      {loaded?.error && (
+        <p role="alert" className="message error">
+          {loaded.error}
+        </p>
+      )}
+      {!loaded && <p role="status">公開一覧を読み込んでいます</p>}
+      {catalog &&
+        (league ? (
+          <LeagueViewer library={library} catalog={catalog} hash={hash || '#/'} />
+        ) : (
+          <MatchViewer library={library} catalog={catalog} hash={hash} />
+        ))}
+    </main>
+  );
+}
+function MatchViewer({
+  library,
+  catalog,
+  hash,
+}: {
+  library: PublicLibrary;
+  catalog: PublicCatalog;
+  hash: string;
+}) {
+  const route = readMatchRoute(hash);
   const [loadedSet, setLoadedSet] = useState<{ hash: string; value: PublicReplaySet } | null>(null);
   const [loadedPage, setLoadedPage] = useState<{ hash: string; value: PublicMatchPage } | null>(
     null,
@@ -27,26 +85,6 @@ function LibraryViewer({ root }: { root: string }) {
       ? loadedPage.value
       : null;
   const row = page?.rows.find((row) => row.slotId === route.slotId);
-  const source = useMemo(() => (row?.replay ? library.source(row) : null), [library, row]);
-  useEffect(() => {
-    const change = () => setRoute(readMatchRoute(window.location.hash));
-    window.addEventListener('hashchange', change);
-    return () => window.removeEventListener('hashchange', change);
-  }, []);
-  useEffect(() => {
-    const controller = new AbortController();
-    setCatalog(null);
-    setError('');
-    void library
-      .catalog(controller.signal)
-      .then((next) => {
-        if (!controller.signal.aborted) setCatalog(next);
-      })
-      .catch((e: unknown) => {
-        if (!controller.signal.aborted) setError(errorText(e));
-      });
-    return () => controller.abort();
-  }, [library]);
   useEffect(() => {
     if (!catalog || !setHash) return;
     const controller = new AbortController();
@@ -81,15 +119,7 @@ function LibraryViewer({ root }: { root: string }) {
     return () => controller.abort();
   }, [library, set, setHash, route.page]);
   return (
-    <main className="app-shell">
-      <header>
-        <p className="eyebrow">Fantasy Simulation · Replay Library</p>
-        <h1>保存リプレイ一覧</h1>
-        <p>保存された試合を選んで観戦できます。</p>
-        {['localhost', '127.0.0.1', '[::1]'].includes(new URL(root).hostname) && (
-          <p>ローカルのデータを表示しています。このURLは他の端末との共有には使えません。</p>
-        )}
-      </header>
+    <>
       {(error || route.error) && (
         <p role="alert" className="message error">
           {route.error || error}
@@ -148,36 +178,8 @@ function LibraryViewer({ root }: { root: string }) {
       )}
       {route.slotId && page && !row && <p role="alert">指定した試合はこのページにありません</p>}
       {row && setHash && (
-        <section className="panel" aria-label="選択した試合">
-          <a href={matchLink(setHash, route.page)}>試合一覧へ戻る</a>
-          <p>
-            {row.state} · {reasonLabels[row.reason]} · {playbackLabels[row.playback]}
-          </p>
-          <p>
-            予定枠: <code aria-label="選択した予定枠">{row.slotId}</code>
-          </p>
-          {row.replay && (
-            <details>
-              <summary>この試合の保存記録</summary>
-              <dl>
-                <dt>bundle</dt>
-                <dd>
-                  <code aria-label="選択したbundle">{row.replay.objectHash}</code>
-                </dd>
-                <dt>result</dt>
-                <dd>
-                  <code aria-label="選択したresult">{row.replay.resultId}</code>
-                </dd>
-                <dt>attempt</dt>
-                <dd>
-                  <code aria-label="選択したattempt">{row.replay.attemptId}</code>
-                </dd>
-              </dl>
-            </details>
-          )}
-        </section>
+        <SelectedMatch library={library} row={row} back={matchLink(setHash, route.page)} />
       )}
-      {source && <ReplayPanel key={`${setHash}:${route.slotId}`} source={source} />}
-    </main>
+    </>
   );
 }

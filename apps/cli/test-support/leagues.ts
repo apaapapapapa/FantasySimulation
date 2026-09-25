@@ -23,13 +23,15 @@ export async function leaguePublicationFixture(
     history?: LeagueProgress[];
     retained?: BattleBundles;
     executionId?: string;
+    source?: typeof publicationLeagueSource;
   } = {},
 ) {
   const history = options.history ?? [],
-    executionId = options.executionId ?? 'league-fixture';
+    executionId = options.executionId ?? 'league-fixture',
+    source = options.source ?? publicationLeagueSource;
   const prepared = await planLeague(
     options.definition ?? (await leagueFixture(2, 1)),
-    publicationLeagueSource,
+    source,
     { ...leagueEstimate, matchesPerPlan: options.size ?? 128 },
     history,
     options.retained,
@@ -51,7 +53,7 @@ export async function leaguePublicationFixture(
       entry.batch,
       reservation,
       output,
-      publicationLeagueSource,
+      source,
       executionId,
       { ...(options.retained ? { retained: options.retained } : {}) },
     );

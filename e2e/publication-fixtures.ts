@@ -5,6 +5,10 @@ import { gunzipSync, gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import {
   PublicKeySchema,
+  LeagueRevisionSchema,
+  PublicLeagueSnapshotSchema,
+  PublicLeagueDetailSchema,
+  PublicLeagueSlotPageSchema,
   PublicCatalogCurrentSchema,
   PublicCatalogSchema,
   PublicReplaySetSchema,
@@ -16,7 +20,12 @@ import {
 /** Fixed exported bytes, independent of the API/SQLite/engine and browser adapter. */
 export function publicFixtures(
   root: string,
-  fixture: 'publication' | 'publication-long' | 'publication-expiry' | 'selection' = 'publication',
+  fixture:
+    | 'publication'
+    | 'publication-long'
+    | 'publication-expiry'
+    | 'selection'
+    | 'league' = 'publication',
 ) {
   const directory = join(root, 'apps/web/test-fixtures', fixture);
   const archive = readFileSync(join(directory, 'files.json.gz'));
@@ -46,6 +55,11 @@ export function publicFixtures(
       const json: unknown = JSON.parse(bytes.toString('utf8'));
       if (key === 'catalog/current.json') PublicCatalogCurrentSchema.parse(json);
       else if (key.startsWith('catalog/')) PublicCatalogSchema.parse(json);
+      else if (key.startsWith('leagues/'))
+        LeagueRevisionSchema.or(PublicLeagueSnapshotSchema)
+          .or(PublicLeagueDetailSchema)
+          .or(PublicLeagueSlotPageSchema)
+          .parse(json);
       else if (key.endsWith('/set.json')) PublicReplaySetSchema.parse(json);
       else if (key.startsWith('sets/')) PublicMatchPageSchema.parse(json);
       else if (key.endsWith('/receipt.json')) BundleReceiptSchema.parse(json);
