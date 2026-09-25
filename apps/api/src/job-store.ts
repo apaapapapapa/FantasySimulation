@@ -139,9 +139,10 @@ export class JobStore {
         .get()?.value ?? 0,
     );
     // Reserve one maximum-size artifact for each admitted outstanding job.
-    if (pending >= this.limits.queued) throw new StoreError(429, 'Job queue capacity exceeded');
+    if (pending >= this.limits.queued)
+      throw new StoreError('queue-capacity', 'Job queue capacity exceeded');
     if (bytes + (pending + 1) * ARTIFACT_RESERVATION_BYTES > this.limits.storageBytes)
-      throw new StoreError(507, 'Replay storage capacity exceeded');
+      throw new StoreError('storage-capacity', 'Replay storage capacity exceeded');
   }
   private insertArtifact(artifact: StoredArtifact, consumedReservations = 0) {
     const bytes = Number(
@@ -156,7 +157,7 @@ export class JobStore {
         Math.max(0, this.pending() - consumedReservations) * ARTIFACT_RESERVATION_BYTES >
       this.limits.storageBytes
     )
-      throw new StoreError(507, 'Replay storage capacity exceeded');
+      throw new StoreError('storage-capacity', 'Replay storage capacity exceeded');
     this.store.orm.insert(replayArtifacts).values(artifact).run();
   }
   submit(
@@ -184,7 +185,7 @@ export class JobStore {
         .get();
       if (existing) {
         if (existing.requestHash !== input.requestHash)
-          throw new StoreError(409, 'Idempotency key belongs to another request');
+          throw new StoreError('conflict', 'Idempotency key belongs to another request');
         return existing;
       }
       const cached = input.cachedResult;
@@ -193,7 +194,7 @@ export class JobStore {
         (cached.simulationHash !== input.simulationHash ||
           this.canonical(input.simulationHash)?.id !== cached.id)
       )
-        throw new StoreError(409, 'Cached result became unavailable');
+        throw new StoreError('conflict', 'Cached result became unavailable');
       if (!cached) this.checkCapacity();
       const id = randomUUID();
       this.store.orm
@@ -327,7 +328,7 @@ export class JobStore {
   cancel(id: string, now = Date.now()) {
     return this.store.transaction(() => {
       const job = this.get(id);
-      if (!job) throw new StoreError(404, 'Job not found');
+      if (!job) throw new StoreError('not-found', 'Job not found');
       if (job.state === 'completed' || job.state === 'failed' || job.state === 'cancelled')
         return job;
       this.store.orm
@@ -364,7 +365,7 @@ export class JobStore {
     const parsed = parseJson(BudgetSchema, budget);
     return this.store.transaction(() => {
       const job = this.get(id);
-      if (!job) throw new StoreError(404, 'Job not found');
+      if (!job) throw new StoreError('not-found', 'Job not found');
       const result = job.resultId ? this.result(job.resultId) : undefined;
       const outcome = result
         ? parseJson(ResultSchema, jsonValue(result.resultJson)).outcome.kind
@@ -372,13 +373,13 @@ export class JobStore {
       if (
         job.attempts !== expectedAttempts ||
         job.attempts >= job.maxAttempts ||
-        job.error === 'Determinism violation' ||
+        job.failureCode === 'determinism-violation' ||
         job.state === 'running' ||
         job.state === 'queued' ||
         outcome === 'win' ||
         outcome === 'draw'
       )
-        throw new StoreError(409, 'Job cannot be retried at this version');
+        throw new StoreError('conflict', 'Job cannot be retried at this version');
       this.store.requireExecutableSpec(job.simulationHash);
       this.checkCapacity();
       this.store.orm
@@ -388,6 +389,7 @@ export class JobStore {
           budgetJson: canonicalJson(parsed),
           currentAttemptId: null,
           resultId: null,
+          failureCode: null,
           updatedAt: now,
           error: null,
         })
@@ -460,6 +462,7 @@ export class JobStore {
         .set({
           state: conflict ? 'failed' : 'completed',
           resultId,
+          failureCode: conflict ? 'determinism-violation' : null,
           error: conflict ? 'Determinism violation' : null,
           updatedAt: now,
         })

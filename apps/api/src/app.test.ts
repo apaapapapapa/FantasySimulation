@@ -188,7 +188,7 @@ describe('3D revision API and Drizzle persistence', () => {
       ]);
       expect(attempts.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
       expect(attempts.find((r) => r.status === 'rejected')).toMatchObject({
-        reason: { statusCode: 409 },
+        reason: { code: 'conflict' },
       });
       // Asynchronous validation does not guarantee that the first caller wins.
       const winner = attempts[0]!.status === 'fulfilled' ? first : stale;
@@ -222,7 +222,7 @@ describe('3D revision API and Drizzle persistence', () => {
     const attempts = await Promise.allSettled(drafts.map((d) => store.publishDraft(d.id, 1)));
     expect(attempts.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
     expect(attempts.find((r) => r.status === 'rejected')).toMatchObject({
-      reason: { statusCode: 409 },
+      reason: { code: 'conflict' },
     });
     expect(store.getRevision('character', 'new')?.revision).toBe(1);
   });
@@ -237,7 +237,7 @@ describe('3D revision API and Drizzle persistence', () => {
     });
     const pending = store.publishDraft(draft.id, 1);
     store.patchDraft(draft.id, 1, { ...r.definition, name: '編集競合' });
-    await expect(pending).rejects.toMatchObject({ statusCode: 409 });
+    await expect(pending).rejects.toMatchObject({ code: 'conflict' });
     expect(store.getRevision('character', 'new-swordsman')).toBeUndefined();
   });
   it('persists resolved specifications across restart and keeps later edits and seeding out of the saved input', async () => {

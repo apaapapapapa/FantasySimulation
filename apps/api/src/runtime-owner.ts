@@ -35,7 +35,7 @@ export async function ownRuntime(jobs: JobStore, inputRoot: string) {
         processAlive(existing.pid))
     )
       throw new StoreError(
-        503,
+        'unavailable',
         'Database coordinator is active or belongs to another host/artifact root',
       );
     const row = {

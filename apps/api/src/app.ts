@@ -1,3 +1,4 @@
+import { storeErrorStatus } from './http-errors.ts';
 import Fastify from 'fastify';
 import { z } from 'zod';
 import {
@@ -29,7 +30,7 @@ function body<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
     return parseJson(schema, input);
   } catch (error) {
     throw new StoreError(
-      400,
+      'invalid-input',
       (error instanceof Error ? error.message : 'Invalid JSON').slice(0, 1000),
     );
   }
@@ -47,7 +48,7 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
         .send({ error: error.message });
     if (error instanceof RevisionGraphError) return reply.code(400).send({ error: error.message });
     if (error instanceof StoreError)
-      return reply.code(error.statusCode).send({ error: error.message });
+      return reply.code(storeErrorStatus(error)).send({ error: error.message });
     if (error instanceof z.ZodError)
       return reply.code(400).send({ error: error.message.slice(0, 1000) });
     if (
@@ -102,7 +103,7 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
     const { id } = idParams.parse(request.params),
       q = revisionQuery.parse(request.query),
       revision = store.getRevision('character', id, q.revision);
-    if (!revision) throw new StoreError(404, 'Character revision not found');
+    if (!revision) throw new StoreError('not-found', 'Character revision not found');
     return revision;
   });
   app.get('/api/revisions/:kind', async (request) => {
@@ -119,7 +120,7 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
       })
       .parse(request.params);
     const r = store.getRevision(p.kind, p.id, p.revision);
-    if (!r) throw new StoreError(404, 'Revision not found');
+    if (!r) throw new StoreError('not-found', 'Revision not found');
     return r;
   });
   app.post('/api/drafts', async (request, reply) =>
@@ -127,7 +128,7 @@ export function createApp(store: Store, logger = false, runtime?: BattleRuntime)
   );
   app.get('/api/drafts/:id', async (request) => {
     const draft = store.getDraft(idParams.parse(request.params).id);
-    if (!draft) throw new StoreError(404, 'Draft not found');
+    if (!draft) throw new StoreError('not-found', 'Draft not found');
     return draft;
   });
   app.patch('/api/drafts/:id', async (request) => {
