@@ -1,3 +1,4 @@
+import { matchAttack, type AttackHandlers } from './variants.ts';
 import type { DeepReadonly } from './canonical.ts';
 import type { Definition, Stage } from './contracts.ts';
 import type { ForceContribution } from './records.ts';
@@ -5,8 +6,16 @@ import type { ForceContribution } from './records.ts';
 export const DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND = 100_000;
 
 type Ability = DeepReadonly<Definition<'ability'>>;
+const activeSteps: AttackHandlers<undefined, number> = {
+  direct: () => 1,
+  arc: () => 1,
+  radial: () => 1,
+  hitscan: () => 1,
+  projectile: () => 1,
+  melee: (shape) => shape.activeSteps,
+};
 export const attackActiveSteps = (attack: Ability['attack']) =>
-  attack.kind === 'melee' ? attack.activeSteps : 1;
+  matchAttack(attack, activeSteps, undefined);
 export function stageWindow(launchAt: number, stage: Pick<Stage, 'offsetSteps' | 'durationSteps'>) {
   const startAt = launchAt + stage.offsetSteps;
   return { startAt, endAt: startAt + stage.durationSteps };

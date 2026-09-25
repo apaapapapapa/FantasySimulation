@@ -1,15 +1,28 @@
 import type { DecisionView } from '../state.ts';
-import type { DeepReadonly, Definition, Stage } from '@fantasy/domain/spatial/execution';
+import {
+  matchAttack,
+  type AttackHandlers,
+  type AttackVariant,
+  type DeepReadonly,
+  type Stage,
+} from '@fantasy/domain/spatial/execution';
 import { bodyPoint } from '../world/visibility.ts';
 import { bladePose } from '../rules/blades.ts';
 import { dot, length, mul, sub } from '../math.ts';
 
-/** Own geometry and delayed visible size/position only. A coarse estimate never guarantees contact. */
-export function shapeEstimate(
-  view: DecisionView,
-  attack: DeepReadonly<Definition<'ability'>['attack']>,
-) {
-  if (attack.kind !== 'arc' && attack.kind !== 'radial') return 1;
+const shapeHandlers: AttackHandlers<DecisionView, number> = {
+  direct: () => 1,
+  hitscan: () => 1,
+  projectile: () => 1,
+  melee: () => 1,
+  arc: (shape, view) => bladeEstimate(view, shape),
+  radial: (shape, view) => bladeEstimate(view, shape),
+};
+/** Own geometry and delayed visible size/position only. An estimate never guarantees contact. */
+export function shapeEstimate(view: DecisionView, attack: AttackVariant) {
+  return matchAttack(attack, shapeHandlers, view);
+}
+function bladeEstimate(view: DecisionView, attack: AttackVariant<'arc' | 'radial'>) {
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen;
   if (!target) return 0.25;
   const root = bodyPoint(view.self, view.self.actor.character.body.muzzleOffset);

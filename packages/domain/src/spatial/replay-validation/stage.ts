@@ -4,7 +4,8 @@ import type { StageContact } from '../contracts.ts';
 import type { RecordedManifest } from '../replay.ts';
 import type { ActorDisplay } from '../stream.ts';
 import type { ReplayActor } from './context.ts';
-import { fail, requireReplay, same } from './common.ts';
+import { fail, requireReplay } from './common.ts';
+import { validateGeometry } from './geometry.ts';
 type RecordedRevision = RecordedManifest['revisions'][number];
 export function recordedStage(
   ability: DeepReadonly<Extract<RecordedRevision, { kind: 'ability' }>> | undefined,
@@ -55,43 +56,7 @@ export function validateStage(
           (step >= action.stage.endAt && step < activeUntil)),
       'stage state window',
     );
-    if (action.stage.geometry) {
-      const geometry = action.stage.geometry,
-        shape = stage.attack;
-      if (geometry.kind === 'blade') {
-        if (shape?.kind !== 'arc' && shape?.kind !== 'radial') return fail('blade shape');
-        requireReplay(
-          geometry.radiusMm === shape.bladeRadiusMm && geometry.poses[0]!.fraction === 0,
-          'blade radius/start',
-        );
-        for (const [i, pose] of geometry.poses.entries())
-          requireReplay(
-            pose.root.y === pose.tip.y &&
-              Math.abs(
-                Math.sqrt((pose.tip.x - pose.root.x) ** 2 + (pose.tip.z - pose.root.z) ** 2) -
-                  shape.reachMm / 1000,
-              ) < 1e-6 &&
-              (i === 0 || pose.fraction > geometry.poses[i - 1]!.fraction),
-            'blade length/time',
-          );
-      } else {
-        requireReplay(
-          !!shape &&
-            (shape.kind === 'melee' || shape.kind === 'hitscan') &&
-            geometry.kind === (shape.kind === 'melee' ? 'sphere' : 'ray') &&
-            geometry.radiusMm === shape.radiusMm,
-          'stage geometry shape',
-        );
-        for (let i = 1; i < geometry.segments.length; i++) {
-          const previous = geometry.segments[i - 1]!,
-            current = geometry.segments[i]!;
-          requireReplay(
-            Math.abs(previous.to - current.from) <= 1e-12 && same(previous.end, current.start),
-            'stage geometry continuity',
-          );
-        }
-      }
-    }
+    if (action.stage.geometry) validateGeometry(stage.attack, action.stage.geometry);
     if (action.stage.motion) {
       const motion = action.stage.motion,
         configured = stage.selfMotion;

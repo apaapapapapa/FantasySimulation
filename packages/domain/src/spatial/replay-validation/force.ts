@@ -1,3 +1,4 @@
+import { matchesForceDisplay } from './effect.ts';
 import { composeForce, DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND } from '../combat-derivations.ts';
 import type { ActorDisplay } from '../stream.ts';
 import type { ForceContribution } from '../records.ts';
@@ -11,10 +12,7 @@ export function validateForce(context: ReplayContext, force: ForceContribution) 
   const effects = force.stage
     ? recordedStage(ability, force.stage).effects
     : ability?.definition.effects;
-  requireReplay(
-    !!effects?.some((e) => e.kind === 'force' && e.durationSteps === force.endAt - force.startAt),
-    'force definition',
-  );
+  requireReplay(!!effects?.some((e) => matchesForceDisplay(e, force)), 'force definition');
 }
 
 export function validateForces(context: ReplayContext, actor: ActorDisplay, step: number) {
