@@ -17,6 +17,23 @@ import {
 } from '@fantasy/domain/spatial';
 import { readBoundedFile, readCompressed, replayDirectory, sha256 } from './replay-files.ts';
 
+// Bump when semantic acceptance changes. Only this full validator can issue the receipt.
+export const REPLAY_VALIDATION_PROFILE = 'record-validation-v1';
+const verifiedManifests = new WeakMap<ReplayManifest, string>();
+export function replayValidationProfile(manifest: ReplayManifest) {
+  return verifiedManifests.get(manifest) === sha256(canonicalJson(manifest))
+    ? REPLAY_VALIDATION_PROFILE
+    : null;
+}
+/** Trusted DB receipts bind prior semantic verification to these exact compressed bytes. */
+export async function verifyReplayChecksums(directory: string, manifest: ReplayManifest) {
+  for (const ref of [...manifest.chunks, ...manifest.checkpoints]) {
+    const bytes = await readBoundedFile(join(directory, ref.file), ref.bytes);
+    if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
+      throw new Error('Replay file size or checksum mismatch');
+  }
+}
+
 export async function readReplayManifest(
   root: string,
   id: string,
@@ -41,7 +58,7 @@ export async function readReplayChunk(directory: string, manifest: ReplayManifes
 }
 const readCheckpoint = async (directory: string, manifest: ReplayManifest, index: number) =>
   JSON.parse(await readCompressed(directory, manifest.checkpoints[index]!)) as unknown;
-/** Full verification precedes cache use or publication. No combat/physics execution. */
+/** Full verification precedes writing, untrusted import/publication and legacy receipt adoption. */
 export async function verifyReplayDirectory(directory: string, manifest: ReplayManifest) {
   const context = await replayContext(manifest.input, manifest.simulationHash);
   const replay = new ReplayState(context),
@@ -75,6 +92,7 @@ export async function verifyReplayDirectory(directory: string, manifest: ReplayM
     )
       throw new Error('Replay terminal/result mismatch');
   } else if (replay.ended) throw new Error('Diagnostic cannot replace a recorded result');
+  verifiedManifests.set(manifest, sha256(canonicalJson(manifest)));
   return checkpoint;
 }
 export async function verifyReplay(root: string, id: string) {

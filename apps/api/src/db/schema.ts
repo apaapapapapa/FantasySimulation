@@ -172,6 +172,7 @@ export const replayArtifacts = sqliteTable(
       .notNull()
       .references(() => simulationAttempts.id),
     manifestChecksum: text('manifest_checksum').notNull(),
+    validationProfile: text('validation_profile'),
     bytes: integer('bytes').notNull(),
     state: text('state', { enum: ['ready', 'missing', 'corrupt', 'quarantined'] }).notNull(),
     createdAt: integer('created_at').notNull(),

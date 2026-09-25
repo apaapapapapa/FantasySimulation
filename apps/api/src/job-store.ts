@@ -117,6 +117,21 @@ export class JobStore {
       .limit(1)
       .get()?.result;
   }
+  markArtifactValidated(id: string, checksum: string, profile: string) {
+    return (
+      this.store.orm
+        .update(replayArtifacts)
+        .set({ validationProfile: profile })
+        .where(
+          and(
+            eq(replayArtifacts.id, id),
+            eq(replayArtifacts.manifestChecksum, checksum),
+            eq(replayArtifacts.state, 'ready'),
+          ),
+        )
+        .run().changes === 1
+    );
+  }
   markArtifact(id: string, state: 'missing' | 'corrupt') {
     this.store.orm
       .update(replayArtifacts)
