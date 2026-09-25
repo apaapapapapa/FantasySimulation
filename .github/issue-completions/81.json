@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "issue": 81,
+  "issueBodySha256": "29796fde8c20b00e7581d3bf26d8e634247b56f896b29493d6472ce2bdbe9ee4",
+  "issueUpdatedAt": "2026-09-25T14:21:41Z",
+  "complete": true,
+  "summary": "R2の不変公開layout・照合付きexport/publish/restore、読取専用Worker、成功main CIに拘束したPages配信と保護EnvironmentによるPC不要の手動公開を実装した。実bucketの初回公開・追加書込み0の再公開、API不要の一覧/完全再生/直接URL再読込、過去viewerへの切戻し/復帰、要求数と保持量を検証。所有者提供画面でWorkers Paid終了中・R2 Paidアクティブ、当期従量課金$0.00を確認（固定契約料・将来料金・Free移行とは区別）。現行アカウント全体のR2権限は所有者の明示承認により受入。容量・CI・Environment・Secret保護は維持した。",
+  "remainingWork": [],
+  "pullRequests": [84, 90, 91, 96, 100, 102, 103, 105, 107, 125, 128, 129, 130, 131, 132, 133, 136],
+  "acceptance": [
+    {
+      "task": "R2のbucketを作成する（公開アクセスは無効のまま）。CloudflareのWorkersのプラン（Free/Paid）と課金の設定を確認して記録する",
+      "evidence": "Cloudflare confirmed private Standard fantasysimulation-replays (managed r2.dev disabled; custom domains empty). Deployment record: https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5805398131 . Owner subscription evidence at comment 5833872466 confirms Workers Paid ending (date column 2026-10-12), R2 Paid active; no Free migration is claimed. Current usage evidence at comment 5833944717 reports $0.00 metered cost, separately from fixed subscriptions and prior paid invoices. ADR 0008 records these observations."
+    },
+    {
+      "task": "ユーザー承認済みの現行R2キーを、GitHub Environment `r2-publication`の`R2_ACCESS_KEY_ID`・`R2_SECRET_ACCESS_KEY`へ登録する。Environmentはbranch `main`だけを許可し、変数`R2_ACCOUNT_ID`・`R2_PUBLICATION_ENABLED=true`を設定する。ローカル`.env`は不要",
+      "evidence": "PR #105 stores production S3 credentials only in Environment r2-publication and passes them solely to the publication step. Environment policy verification run 36024686537 confirmed only branch main; actual successful publication run 36057392026 validates the enabled flag/account configuration and credential registration. Owner explicitly accepted the existing account-wide token on 2026-09-25: https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833903078 . This is approved existing scope, not bucket-only verification. No owner PC, local .env or credential disclosure."
+    },
+    {
+      "task": "読取WorkerをR2 binding付きでクラウドからデプロイし、URL・コードhashを記録する",
+      "evidence": "PR #102 deployed https://fantasysimulation-replay-reader.tokyojp.workers.dev/ with REPLAYS binding. Live version 0c8ff026-eb60-4978-a319-9bdf3040c7ce; code SHA256 73651b0fb4fb254e3e63f096fd557098f89ecf3f7786c421030b012fe7a16554, 241609 bytes; workers.dev enabled and previews disabled. Deployment evidence https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5805398131 and ADR 0008."
+    },
+    {
+      "task": "利用量と費用を確認する方法（通知等）を設定する",
+      "evidence": "Cloudflare API confirmed two enabled $10 billing-budget notifications. Owner Billable Usage screenshot at 2026-09-25 23:17 JST also shows two budget alerts. ADR 0008 and cloud-publication.md require account-wide usage/plan/cost checks; notifications are not hard spending caps. The accepted screenshot reports the current observed cycle and $0.00 usage costs."
+    },
+    {
+      "task": "リポジトリのPagesの公開元を「GitHub Actions」にする",
+      "evidence": "PR #100: Pages source GitHub Actions, .github/workflows/pages.yml uses verified main CI, official Pages artifact/deploy steps and deployment-only write/OIDC permissions. Public viewer run 36125283444 succeeded for 3a81e83358b338daf40483407a0c5c574f95830f; HTTP build.json matched that SHA. Final main deployment is separately observed after the completion PR."
+    },
+    {
+      "task": "ユーザーPCを使わず、GitHub Actionsで計算したバッチ結果をlayoutのとおりにR2へ保存し、Worker経由で読み戻して照合できる",
+      "evidence": "PR #90/#103/#105/#107; https://github.com/apaapapapapa/FantasySimulation/actions/runs/36057392026 attempt 1 calculated on Linux Actions from source 4618f3c, restored an empty publication, exported and verified 34 writes/170759 bytes, with 26 Worker read-back requests. Catalog sha256:4aeaf1d03e15f71e99fad1b22b14f8798fe051ea21f492e90d29b13e56fadf9d, two complete matches. S3 existence/size and Worker checksum validation succeeded without owner PC."
+    },
+    {
+      "task": "APIを止めた状態で、Pagesの画面からWorker経由でデータを読み、試合一覧→選択→再生→直接URLの再読込が成立する。CIのE2Eでは、Workerの代わりに別originのローカル静的サーバーを使う。本番での確認は手動で行い、記録する",
+      "evidence": "PR #96/#100/#128/#131/#132: CI uses a separate-origin static fixture server without the API. Manual production list/select/play/direct-URL reload passed (2D fallback without WebGL). Latest viewer 3a81e83358b338daf40483407a0c5c574f95830f verified by production run 36148144955: Chromium/WebKit at 390x844, both saved replay IDs, 3D rendering, complete playback to steps 121/747, seek, direct-URL reload to step 0, zero API requests/page/HTTP errors and unchanged graph. Prior rollback/restore 36113472940 separately verified older viewer compatibility."
+    },
+    {
+      "task": "新しいrunnerでの復元・再公開でも同じobjectを再利用し、hashが一貫する。過去のリンクが別の内容に変わらない",
+      "evidence": "Publication run 36057392026 attempt 2 used a fresh runner, restored 34 files (35 logical reads including pointer recheck), reused 33 immutable files and verified zero additional writes/transfer bytes. Catalog and old links remained identical. Rollback/restore run 36113472940 read the same graph through viewers 4618f3c and d0b32d0, with no R2 writes/deletes. ADR 0008 preserves these production observations separately from fixtures."
+    },
+    {
+      "task": "公開途中の停止と再実行、既存objectとの不一致、古い世代での上書き、viewerと非互換のデータを、fakeのS3等を使ったfixtureで検証する。許可済みのbucketでの受入試験とは区別する",
+      "evidence": "apps/cli/src/publication/publication-remote.test.ts, publication-restore.test.ts and publication-s3.test.ts cover interrupted/lost-response writes, retry/idempotence, collisions, stale/conditional pointer updates, changed restore generation, source ancestry and viewer format rejection. Prior targeted remote/restore/reader/workflow suite passed 88 tests. Those fixtures are distinct from real-bucket publication runs, and are included in canonical verify and Linux CI."
+    },
+    {
+      "task": "公開データと生成物に、秘密情報、ローカルDB、絶対パスが含まれないことを検査する。PR/Codexの開発環境に本番Secretを渡さない",
+      "evidence": "publication-export/files/graph/restore validate strict public schemas, checksums, expanded gzip and secret/absolute-path fields; tests reject non-layout, symlink, DB and private artifacts. .github/workflows/publication.yml separates secret-free calculation from protected publication, passes only the same-run immutable allowlisted artifact and exposes production credentials only to its publication step. PR tests and these development/acceptance runs do not receive production R2 Secrets. PR #107 corrects artifact-scope security assertions without relaxing checks."
+    },
+    {
+      "task": "Workerが書込・一覧・形式外のkeyを拒否し、CORSが公開originだけを許可する",
+      "evidence": "apps/replay-reader/src/index.ts and index.test.ts restrict methods to GET/HEAD/OPTIONS, validate PublicKeySchema, reject listing/query/foreign-origin paths and allow only https://apaapapapapa.github.io for CORS. The deployed Worker passed eight real HTTP acceptance checks at its recorded deployment version (comment 5805398131), and remains the same code version. Subsequent production browser reads confirm the configured origin works."
+    },
+    {
+      "task": "上限を超える公開・復元を拒否する。実測の保存量・書込回数・リクエスト数・費用と、保持の方針をADRに記録する",
+      "evidence": "publication-export/remote/restore fixtures reject storage/file/transfer/read/time budget violations, with default 8GB publication and 256MB Actions restore limits. ADR 0008 records 34 retained files/170759 bytes, 34 initial writes and zero repeat writes, S3 logical counters, 12/28 cold full-view requests and 8 direct-start requests, account R2 metrics and explicit retained-generation/no-auto-deletion policy. Owner Billable Usage evidence (comment 5833944717) reports Sep 12-25 $0.00 metered cost, all usage included, cycle Sep 12-Oct 11; fixed subscriptions and future costs are explicitly excluded from that observation. Latest viewer run 36148144955 used 4 list reads, 8 short playback reads and 18/16 long playback reads (Chromium/WebKit); each direct reload 8."
+    },
+    {
+      "task": "PagesへのdeployとR2公開が、mainの合格したSHAからだけ行われる。R2公開は明示的な手動起動・既定dry-run・逐次実行で、Environmentの制限後にも最新attemptのCIを確認する",
+      "evidence": ".github/workflows/pages.yml and publication.yml plus scripts/pages-policy.test.ts and publication-workflow.test.ts bind delivery to successful main push CI/ci-gate at its latest attempt and exact source. Publication is explicit workflow_dispatch, defaults dry-run, serializes writes, validates ancestry/formats and rechecks CI after the main-only Environment gate. Dry-run 36025358696 performed zero writes; publication 36057392026 and rollback/restore 36113472940 used the existing gates."
+    },
+    {
+      "task": "`vp run verify`、Linux CI、#5の証跡で確認する",
+      "evidence": "Canonical vp run verify passed all 1114 tests in 141 files plus security, quality, corpus, bounded load and builds before this declaration. PR #136 binds final verification to its exact head through clean-source source-clean/source-verify, reviewed PR conversation and latest Linux CI using the unchanged #5 harness. Production run 36148144955 passed current viewer 3a81e833. After merge the dedicated Issue completion workflow requires the actual latest main CI, including full Linux source evidence and Release, before updating/closing the live Issue."
+    }
+  ]
+}
