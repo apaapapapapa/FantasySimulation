@@ -15,7 +15,7 @@ import {
 /** Fixed exported bytes, independent of the API/SQLite/engine and browser adapter. */
 export function publicFixtures(
   root: string,
-  name: 'publication' | 'publication-long' = 'publication',
+  name: 'publication' | 'publication-long' | 'publication-expiry' = 'publication',
 ) {
   const directory = join(root, 'apps/web/test-fixtures', name);
   const archive = readFileSync(join(directory, 'files.json.gz'));

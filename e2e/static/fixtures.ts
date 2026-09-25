@@ -6,6 +6,27 @@ import {
   publicHashName,
 } from '@fantasy/domain/spatial';
 import { publicFixtures } from '../publication-fixtures.ts';
+import type { BrowserContext } from '@playwright/test';
+
+export async function serveFixture(
+  context: BrowserContext,
+  archive: ReadonlyMap<string, Buffer>,
+  received: (key: string, bytes: number) => void = () => {},
+) {
+  await context.route('**/fixtures/**', async (route) => {
+    const key = new URL(route.request().url()).pathname.split('/fixtures/')[1]!;
+    const body = archive.get(key);
+    received(key, body?.byteLength ?? 0);
+    await route.fulfill({
+      status: body ? 200 : 404,
+      body: body ?? '',
+      headers: {
+        'content-type': key.endsWith('.gz') ? 'application/gzip' : 'application/json',
+        'access-control-allow-origin': '*',
+      },
+    });
+  });
+}
 
 export const files = publicFixtures(process.cwd());
 export function match(

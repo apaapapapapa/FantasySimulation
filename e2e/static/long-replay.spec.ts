@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { cpus, platform, arch } from 'node:os';
 import { test, expect } from '../fixtures.ts';
 import { publicFixtures } from '../publication-fixtures.ts';
-import { match } from './fixtures.ts';
+import { match, serveFixture } from './fixtures.ts';
 import { OVERLAY_LABELS } from '../../apps/web/src/replay/overlays.ts';
 
 const archive = publicFixtures(process.cwd(), 'publication-long');
@@ -32,19 +32,9 @@ function browserRssKiB() {
 test('static-long-replay', async ({ page, context, browser }, info) => {
   const requested: string[] = [];
   let transferred = 0;
-  await context.route('**/fixtures/**', async (route) => {
-    const key = new URL(route.request().url()).pathname.split('/fixtures/')[1]!;
-    const body = archive.get(key);
+  await serveFixture(context, archive, (key, bytes) => {
     requested.push(key);
-    transferred += body?.byteLength ?? 0;
-    await route.fulfill({
-      status: body ? 200 : 404,
-      body: body ?? '',
-      headers: {
-        'content-type': key.endsWith('.gz') ? 'application/gzip' : 'application/json',
-        'access-control-allow-origin': '*',
-      },
-    });
+    transferred += bytes;
   });
   const memory = [browserRssKiB()];
   const start = performance.now();
@@ -138,18 +128,7 @@ test('static-long-replay', async ({ page, context, browser }, info) => {
 });
 
 test('static-timeline-overlays', async ({ page, context }, info) => {
-  await context.route('**/fixtures/**', async (route) => {
-    const key = new URL(route.request().url()).pathname.split('/fixtures/')[1]!;
-    const body = archive.get(key);
-    await route.fulfill({
-      status: body ? 200 : 404,
-      body: body ?? '',
-      headers: {
-        'content-type': key.endsWith('.gz') ? 'application/gzip' : 'application/json',
-        'access-control-allow-origin': '*',
-      },
-    });
-  });
+  await serveFixture(context, archive);
   await page.goto(mutual.url);
   await expect(page.getByLabel('現在のstep')).toHaveText('0');
   await page.getByLabel('表示stepを入力').fill(String(mutual.manifest.lastVerifiedStep));

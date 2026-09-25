@@ -23,6 +23,7 @@ export const UI_STATIC_CASES = [
   'static-network-boundary',
   'static-long-replay',
   'static-timeline-overlays',
+  'static-status-expiry',
 ] as const;
 export const UI_FAULTS = ['startup', 'timeout', 'crash'] as const;
 export type UiScenario = 'smoke' | 'static' | (typeof UI_FAULTS)[number];
