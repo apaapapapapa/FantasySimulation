@@ -15,6 +15,11 @@ export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cl
 export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics', 'ui:static-replay'] as const;
 export const UI_STATIC_CASES = [
   'static-selection',
+  'static-selection-original',
+  'static-selection-reused',
+  'static-selection-another-attempt',
+  'static-list-cost-and-states',
+  'static-selection-invalid-link',
   'static-replay-controls',
   'static-partials',
   'static-errors',

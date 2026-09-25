@@ -4,6 +4,7 @@ import { publicFixtures } from '../../../../e2e/publication-fixtures.ts';
 import { publicLibrary } from './public-source.ts';
 import { openReplay } from './open-replay.ts';
 import { seekStep } from './seek-step.ts';
+import { selectionFiles, selectionGenerations } from '../../../../e2e/selection-fixtures.ts';
 
 const root = 'http://127.0.0.1:12345/fixtures/';
 const files = publicFixtures(process.cwd());
@@ -11,7 +12,7 @@ const pages = [...files]
   .filter(([key]) => key.startsWith('sets/') && !key.endsWith('/set.json'))
   .map(([, value]) => PublicMatchPageSchema.parse(JSON.parse(value.toString())));
 const row = pages.flatMap((page) => page.rows).find((row) => row.state === 'complete')!;
-function served(change?: (key: string) => Response | undefined) {
+function served(change?: (key: string) => Response | undefined, fixtureFiles = files) {
   const requests: string[] = [];
   const request: typeof fetch = async (input, init) => {
     const url = input instanceof Request ? input.url : input.toString();
@@ -22,7 +23,7 @@ function served(change?: (key: string) => Response | undefined) {
     requests.push(key);
     const altered = change?.(key);
     if (altered) return altered;
-    const bytes = files.get(key);
+    const bytes = fixtureFiles.get(key);
     return bytes
       ? new Response(new Uint8Array(bytes), {
           headers: {
@@ -90,6 +91,64 @@ it('binds the selected immutable row to receipt/manifest rather than trusting a 
     'verified manifest',
   );
 });
+
+it('opens each pinned seed, exchanged placement, separate attempt and reused bundle', async () => {
+  const [original, reused, retried] = selectionGenerations;
+  expect(original!.rows.map((row) => row.seed).sort()).toEqual([1, 2, 2]);
+  const exchanged = original!.rows.filter((row) => row.seed === 2);
+  expect(exchanged[0]!.participants[0].position).toEqual(exchanged[1]!.participants[1].position);
+  expect(exchanged[0]!.participants[0].actorId).toBe(exchanged[1]!.participants[1].actorId);
+  for (const first of original!.rows) {
+    const cached = reused!.rows.find((row) => row.slotId === first.slotId)!;
+    const next = retried!.rows.find((row) => row.slotId === first.slotId)!;
+    expect(cached.reused).toBe(true);
+    expect(cached.replay).toEqual(first.replay);
+    expect(next.simulationHash).toBe(first.simulationHash);
+    expect(next.result).toEqual(first.result);
+    expect(next.replay!.attemptId).not.toBe(first.replay!.attemptId);
+    expect(next.replay!.objectHash).not.toBe(first.replay!.objectHash);
+  }
+  for (const generation of selectionGenerations) {
+    for (const selected of generation.rows) {
+      const { library, requests } = served(undefined, selectionFiles);
+      const replay = await openReplay(library.source(selected));
+      expect(replay.manifest).toMatchObject({
+        simulationHash: selected.simulationHash,
+        id: selected.replay!.replayId,
+        resultId: selected.replay!.resultId,
+        attemptId: selected.replay!.attemptId,
+        input: {
+          seed: selected.seed,
+          participants: selected.participants.map(
+            ({ character: { name: _, ...character }, ...p }) => ({ ...p, character }),
+          ),
+        },
+        end: { kind: 'result', result: selected.result },
+      });
+      expect((await seekStep(replay, 30)).ended).toBe(true);
+      expect(
+        requests.every((key) => key.startsWith(`objects/${selected.replay!.objectHash.slice(7)}/`)),
+      ).toBe(true);
+    }
+  }
+});
+
+it.each(['simulation', 'attempt', 'result', 'bundle', 'placement', 'outcome'] as const)(
+  'refuses a row with mismatched %s before loading any recording chunk',
+  async (field) => {
+    const { library, requests } = served(undefined, selectionFiles);
+    const selected = structuredClone(selectionGenerations[0]!.rows[0]!);
+    if (field === 'simulation') selected.simulationHash = 'sha256:' + 'f'.repeat(64);
+    if (field === 'attempt') selected.replay!.attemptId = 'wrong-attempt';
+    if (field === 'result') selected.replay!.resultId = 'wrong-result';
+    if (field === 'bundle')
+      selected.replay!.objectHash = selectionGenerations[2]!.rows[0]!.replay!.objectHash;
+    if (field === 'placement') selected.participants[0].position.x++;
+    if (field === 'outcome') selected.result!.steps--;
+    await expect(openReplay(library.source(selected))).rejects.toThrow();
+    expect(requests.some((key) => key.endsWith('.gz'))).toBe(false);
+  },
+);
 
 it('rejects aborted late responses and invalid public roots', async () => {
   const controller = new AbortController();

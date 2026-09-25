@@ -68,7 +68,9 @@ committed-unverified require identical-input retry/read-back. PUBLICATION_MAX_BY
 MAX_RESTORE_BYTES=256MB (all PUBLICATION_ prefixed). CLI exit 2 remains the default;
 Actions uses --require-complete-input.
 
-Public web build uses VITE_PUBLICATION_ROOT and --mode public; base /FantasySimulation/ is
-overridable by VITE_PUBLIC_BASE=/. Hash routing survives reload. build.json carries source/formats;
-CSP permits self/data origin only. No API/DB/keys enter the build. Public viewer requires successful
-main CI; rollback requires that run ID/ancestry. Reader build/deploy uses separate cloud authorization.
+Public build: VITE_PUBLICATION_ROOT and --mode public; VITE_PUBLIC_BASE defaults to
+/FantasySimulation/. Hash links pin set/page/slot; reload preserves the selected attempt.
+The 100-row list sorts/filters within its page, not league standings. See [load bytes](../measurements/match-list.json).
+Loopback URLs are local. build.json carries source/formats; CSP permits self/data only.
+No API/DB/keys enter the build. Deploy/rollback requires successful main CI and ancestry;
+reader deployment uses separate cloud authorization. P5 league integration remains pending.
