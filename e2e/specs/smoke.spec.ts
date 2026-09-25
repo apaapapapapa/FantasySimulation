@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures.ts';
-import { RevisionPageSchema } from '../../packages/domain/src/spatial/index.ts';
+import { RevisionPageSchema } from '@fantasy/domain/spatial';
 
 test('local-health', async ({ page }) => {
   await page.goto('/');

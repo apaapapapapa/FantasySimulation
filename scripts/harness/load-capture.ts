@@ -1,5 +1,6 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { existsSync, readFileSync, writeFileSync, realpathSync } from 'node:fs';
+import { resolve, join, relative, sep } from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { cpus, availableParallelism } from 'node:os';
 import { performance } from 'node:perf_hooks';
@@ -12,10 +13,27 @@ import {
   type Capture,
   type Sample,
 } from './load-contract.ts';
-import type * as Engine from '../../packages/engine/src/spatial/index.ts';
-import type * as Domain from '../../packages/domain/src/spatial/index.ts';
+import type * as Engine from '@fantasy/engine/spatial';
+import type * as Domain from '@fantasy/domain/spatial';
 import type * as Samples from '@fantasy/samples';
 import type { Recipe } from './corpus.ts';
+
+const targetPackages = {
+  '@fantasy/engine/spatial': 'engine',
+  '@fantasy/domain/spatial': 'domain',
+  '@fantasy/samples': 'samples',
+} as const;
+/** Resolve each target checkout's public export, never the driver's installed workspace. */
+export function targetEntry(root: string, entry: keyof typeof targetPackages): string {
+  if (!Object.hasOwn(targetPackages, entry)) throw new Error('Unknown load target entry');
+  const directory = realpathSync(join(root, 'packages', targetPackages[entry]));
+  const resolver = createRequire(join(directory, 'package.json'));
+  const resolved = realpathSync(resolver.resolve(entry));
+  const sub = relative(directory, resolved);
+  if (sub === '..' || sub.startsWith('..' + sep) || resolve(directory, sub) !== resolved)
+    throw new Error('Load target export escapes its workspace package');
+  return pathToFileURL(resolved).href;
+}
 
 /** One pinned driver executes the target's real exported engine; generation/preparation is outside timing. */
 export async function measure(
@@ -47,16 +65,12 @@ export async function measure(
       .join()
   )
     throw new Error('Profile/fixture coverage mismatch');
-  const engine = (await import(
-    pathToFileURL(join(root, 'packages/engine/src/spatial/index.ts')).href
-  )) as typeof Engine;
-  const domain = (await import(
-    pathToFileURL(join(root, 'packages/domain/src/spatial/index.ts')).href
-  )) as typeof Domain;
+  const engine = (await import(targetEntry(root, '@fantasy/engine/spatial'))) as typeof Engine;
+  const domain = (await import(targetEntry(root, '@fantasy/domain/spatial'))) as typeof Domain;
   // The same driver must measure the immutable pre-separation baseline as well.
   const samplesApi = (
     existsSync(join(root, 'packages/samples/package.json'))
-      ? await import(pathToFileURL(join(root, 'packages/samples/src/index.ts')).href)
+      ? await import(targetEntry(root, '@fantasy/samples'))
       : engine
   ) as typeof Samples;
   const rows: Sample[] = [];

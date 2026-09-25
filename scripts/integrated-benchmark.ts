@@ -2,13 +2,8 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { availableParallelism, arch, cpus, platform, totalmem } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import {
-  actorSeed,
-  DEFAULT_BUDGET,
-  type Manifest,
-  type Revision,
-} from '../packages/domain/src/spatial/index.ts';
-import { implementation } from '../packages/engine/src/spatial/index.ts';
+import { actorSeed, DEFAULT_BUDGET, type Manifest, type Revision } from '@fantasy/domain/spatial';
+import { implementation } from '@fantasy/engine/spatial';
 import { catalogManifest } from '@fantasy/samples';
 import { createBatchPlan, executionSource } from '../apps/api/src/batch-plan.ts';
 import { runBatch } from '../apps/api/src/batch-runner.ts';

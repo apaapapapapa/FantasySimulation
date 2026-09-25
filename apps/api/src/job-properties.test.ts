@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { it } from 'vite-plus/test';
 import fc from 'fast-check';
-import { DEFAULT_BUDGET } from '../../packages/domain/src/spatial/index.ts';
-import { JobStore, JOB_LIMITS, type Claim } from '../../apps/api/src/job-store.ts';
-import { withJobs, artifactFor } from '../../apps/api/test-support/jobs.ts';
-import { checkProperty } from './test-support/property.ts';
+import { DEFAULT_BUDGET } from '@fantasy/domain/spatial';
+import { JobStore, JOB_LIMITS, type Claim } from './job-store.ts';
+import { withJobs, artifactFor } from '../test-support/jobs.ts';
+import { checkProperty } from '../../../scripts/harness/test-support/property.ts';
 
 it(
   'compares generated ownership transitions with real SQLite and fences stale notifications',
@@ -25,7 +25,7 @@ it(
     );
     await checkProperty(
       'sqlite-job-transitions',
-      'scripts/harness/job-properties.test.ts',
+      'apps/api/src/job-properties.test.ts',
       fc.asyncProperty(operations, async (actions) => {
         await withJobs(async ({ store, jobs: initial, submit, result }) => {
           let jobs = initial;

@@ -11,7 +11,7 @@ import {
   canonicalJson,
   contentHash,
   hashBytes,
-} from '../packages/domain/src/spatial/index.ts';
+} from '@fantasy/domain/spatial';
 import { BattleBundles } from '../apps/api/src/battle-bundle.ts';
 import { exportPublication } from '../apps/api/src/publication-export.ts';
 import {

@@ -45,7 +45,7 @@ Its transitive pure-rand is test-only; xorshift32-v1/actor-stream-v1 remain unch
 minimal input, launch/reproduction command and applicable manifest hash/battle seed.
 Discards/interruption never pass. Set FANTASY_PROPERTY_ID/SEED/PATH from the receipt and run its
 command to reproduce that case; this is not full-suite evidence. Corpus raw results retain exact commands.
-`scripts/harness/fixtures/minimized-hp.json` is a deliberate corruption control, not a historical bug.
+`packages/engine/fixtures/spatial/minimized-hp.json` is a deliberate corruption control, not a historical bug.
 
 Fairness exchanges IDs, slots, horizontal position/facing and actor-owned streams, comparing mapped
 victory/step/damage, not hashes from different manifests. Priority/enumeration tests stay separate.

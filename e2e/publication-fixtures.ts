@@ -10,7 +10,7 @@ import {
   PublicMatchPageSchema,
   BundleReceiptSchema,
   ReplayManifestSchema,
-} from '../packages/domain/src/spatial/index.ts';
+} from '@fantasy/domain/spatial';
 
 /** Fixed exported bytes, independent of the API/SQLite/engine and browser adapter. */
 export function publicFixtures(root: string) {

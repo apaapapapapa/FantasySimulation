@@ -22,6 +22,15 @@ const rule = (
   comment: string,
 ): IRegularForbiddenRuleType => ({ name, from, to, comment, severity: 'error' });
 export const boundaryRules: IRegularForbiddenRuleType[] = [
+  rule(
+    'api-uses-public-engine',
+    { path: '^apps/api/' },
+    {
+      path: '^packages/engine/',
+      pathNot: '^packages/engine/src/(?:index|spatial/(?:index|execution))[.]ts$',
+    },
+    'API code uses the public engine contract, including type-only dependencies.',
+  ),
   ...(['world', 'rules', 'ai'] as const).map((layer, index) =>
     rule(
       `engine-${layer}-direction`,
