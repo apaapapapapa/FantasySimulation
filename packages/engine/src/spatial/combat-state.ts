@@ -1,123 +1,85 @@
-import {
-  type ActorDisplay,
-  type DeepReadonly,
-  type ResourceState,
-  type Revision,
-  type StageContact,
-  type Stage,
-  type ForceContribution,
-  type ReactionDisplay,
-} from '@fantasy/domain/spatial/execution';
-import { initialMotion, type MotionIntent, type MotionState } from './movement.ts';
-import { emptyMemory, type PerceptionMemory } from './perception.ts';
-import type { Decision } from './policy.ts';
-import type { StatusCohort } from './status.ts';
-import type { Vec3 } from './math.ts';
-import { initialDecisionRandom, type DecisionRandom } from './decision-random.ts';
-import type { DamageSnapshot } from './status-damage.ts';
+import type { ResolvedActor, ActorState } from './state.ts';
+export type { AbilityRevision, ActionState, ActorState, MeleeState } from './state.ts';
+import { type ActorDisplay } from '@fantasy/domain/spatial/execution';
+import { initialMotion } from './movement.ts';
+import { emptyMemory } from './perception.ts';
+import { initialDecisionRandom } from './decision-random.ts';
 import type { SpatialWorld } from './physics.ts';
-import type { ResolvedActor } from './prepare.ts';
 import { initialResources } from './resources.ts';
-import { stageDisplay, type StageRuntime } from './stages.ts';
-export type AbilityRevision = DeepReadonly<Extract<Revision, { kind: 'ability' }>>;
-export type ActionState = {
-  id: string;
-  ability: AbilityRevision;
-  cause: string;
-  startedAt: number;
-  launchAt: number;
-  recoveryUntil: number;
-  released: boolean;
-  stages?: StageRuntime;
-};
-export type ActorState = {
-  motion: MotionState;
-  resources: ResourceState;
-  staminaClock?: { remainder: number; exhausted: boolean };
-  motionClock?: { remainder: number; flightRemainder: number; dodgeUntilStep?: number };
-  locomotion?: ActorDisplay['locomotion'];
-  forces?: ForceContribution[];
-  forceGravity?: Vec3;
-  forceDisplay?: ActorDisplay['force'];
-  reactions?: ReactionDisplay[];
-  statuses: StatusCohort[];
-  memory: PerceptionMemory;
-  decision: Decision;
-  intent: MotionIntent;
-  action: ActionState | null;
-  readyAt: number;
-  used: Record<string, number>;
-  cooldowns: Record<string, number>;
-  random: number;
-  decisionRandom: DecisionRandom;
-};
-export type MeleeState = DamageSnapshot & {
-  id: string;
-  actorId: string;
-  ability: AbilityRevision;
-  cause: string;
-  launchStep: number;
-  direction: Vec3;
-  offset: Vec3;
-  hits: number;
-  stage?: StageContact;
-  hit?: DeepReadonly<Stage['hit']>;
-};
+import { stageDisplay } from './stages.ts';
+
 export function initialActor(world: SpatialWorld, actor: ResolvedActor): ActorState {
   return {
-    motion: initialMotion(world, actor),
-    resources: initialResources(actor.character),
-    ...(actor.character.stamina ? { staminaClock: { remainder: 0, exhausted: false } } : {}),
-    ...(actor.character.stamina
-      ? { locomotion: { mode: 'idle' as const, jumping: false, dodging: false } }
-      : {}),
-    statuses: [],
-    memory: emptyMemory(),
-    decision: { abilityId: null, goal: null, facing: actor.participant.facing },
-    intent: {
-      direction: { x: 0, y: 0, z: 0 },
-      facing: actor.participant.facing,
-      jump: false,
-      flight: false,
-      canMove: true,
-      speedBps: 10000,
+    body: {
+      motion: initialMotion(world, actor),
+      ...(actor.character.stamina
+        ? { locomotion: { mode: 'idle' as const, jumping: false, dodging: false } }
+        : {}),
+      intent: {
+        direction: { x: 0, y: 0, z: 0 },
+        facing: actor.participant.facing,
+        jump: false,
+        flight: false,
+        canMove: true,
+        speedBps: 10000,
+      },
     },
-    action: null,
-    readyAt: 0,
-    used: {},
-    cooldowns: {},
-    random: actor.participant.rngSeed,
-    decisionRandom: initialDecisionRandom(actor.participant.rngSeed),
+    vitals: {
+      resources: initialResources(actor.character),
+      ...(actor.character.stamina ? { staminaClock: { remainder: 0, exhausted: false } } : {}),
+    },
+    statuses: [],
+    mind: {
+      memory: emptyMemory(),
+      decision: { abilityId: null, goal: null, facing: actor.participant.facing },
+      random: actor.participant.rngSeed,
+      decisionRandom: initialDecisionRandom(actor.participant.rngSeed),
+    },
+    actions: { action: null, readyAt: 0, used: {}, cooldowns: {} },
   };
 }
 export const cloneActor = (state: ActorState): ActorState => ({
   ...state,
-  motion: {
-    ...state.motion,
-    position: { ...state.motion.position },
-    velocity: { ...state.motion.velocity },
-    facing: { ...state.motion.facing },
+  body: {
+    ...state.body,
+    motion: {
+      ...state.body.motion,
+      position: { ...state.body.motion.position },
+      velocity: { ...state.body.motion.velocity },
+      facing: { ...state.body.motion.facing },
+    },
+    ...(state.body.motionClock ? { motionClock: { ...state.body.motionClock } } : {}),
+    ...(state.body.locomotion ? { locomotion: { ...state.body.locomotion } } : {}),
+    ...(state.body.forces ? { forces: structuredClone(state.body.forces) } : {}),
+    ...(state.body.forceGravity ? { forceGravity: { ...state.body.forceGravity } } : {}),
+    ...(state.body.forceDisplay !== undefined
+      ? { forceDisplay: structuredClone(state.body.forceDisplay) }
+      : {}),
+    intent: { ...state.body.intent },
   },
-  resources: { ...state.resources },
-  ...(state.staminaClock ? { staminaClock: { ...state.staminaClock } } : {}),
-  ...(state.motionClock ? { motionClock: { ...state.motionClock } } : {}),
-  ...(state.locomotion ? { locomotion: { ...state.locomotion } } : {}),
-  ...(state.forces ? { forces: structuredClone(state.forces) } : {}),
-  ...(state.reactions ? { reactions: structuredClone(state.reactions) } : {}),
-  ...(state.forceGravity ? { forceGravity: { ...state.forceGravity } } : {}),
-  ...(state.forceDisplay !== undefined
-    ? { forceDisplay: structuredClone(state.forceDisplay) }
-    : {}),
-  statuses: state.statuses.map((s) => ({ ...s, causes: [...s.causes] })),
-  used: { ...state.used },
-  cooldowns: { ...state.cooldowns },
-  action: state.action
-    ? { ...state.action, ...(state.action.stages ? { stages: { ...state.action.stages } } : {}) }
-    : null,
-  intent: { ...state.intent },
+  vitals: {
+    ...state.vitals,
+    resources: { ...state.vitals.resources },
+    ...(state.vitals.staminaClock ? { staminaClock: { ...state.vitals.staminaClock } } : {}),
+  },
+  actions: {
+    ...state.actions,
+    ...(state.actions.reactions ? { reactions: structuredClone(state.actions.reactions) } : {}),
+    used: { ...state.actions.used },
+    cooldowns: { ...state.actions.cooldowns },
+    action: state.actions.action
+      ? {
+          ...state.actions.action,
+          ...(state.actions.action.stages ? { stages: { ...state.actions.action.stages } } : {}),
+        }
+      : null,
+  },
+  mind: { ...state.mind },
+  statuses: state.statuses.map((status) => ({ ...status, causes: [...status.causes] })),
 });
 export function displayActor(state: ActorState, step: number): ActorDisplay {
-  const { motion, action } = state;
+  const { motion } = state.body;
+  const { action } = state.actions;
   const stage = action ? stageDisplay(action, step) : undefined;
   const last = action?.ability.definition.stages?.at(-1);
   const active =
@@ -139,10 +101,12 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
           },
         }
       : {}),
-    ...(state.reactions ? { reactions: structuredClone(state.reactions) } : {}),
-    ...(state.forceDisplay !== undefined ? { force: structuredClone(state.forceDisplay) } : {}),
-    resources: { ...state.resources },
-    ...(state.locomotion ? { locomotion: { ...state.locomotion } } : {}),
+    ...(state.actions.reactions ? { reactions: structuredClone(state.actions.reactions) } : {}),
+    ...(state.body.forceDisplay !== undefined
+      ? { force: structuredClone(state.body.forceDisplay) }
+      : {}),
+    resources: { ...state.vitals.resources },
+    ...(state.body.locomotion ? { locomotion: { ...state.body.locomotion } } : {}),
     statuses: state.statuses.map((s) => ({
       revision: {
         id: s.revision.id,
@@ -183,7 +147,14 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
 }
 /** Compact decision state, distinct from display checkpoints and a supported resume snapshot. */
 export function decisionState(state: ActorState) {
-  const { motion, statuses, action, ...rest } = state;
+  // Preserve the existing compact wire shape and TS-state digest after splitting runtime ownership.
+  const { motion, statuses, action, ...rest } = {
+    ...state.body,
+    ...state.vitals,
+    ...state.actions,
+    ...state.mind,
+    statuses: state.statuses,
+  };
   return {
     ...rest,
     motion: { ...motion, actor: motion.actor.participant.actorId },

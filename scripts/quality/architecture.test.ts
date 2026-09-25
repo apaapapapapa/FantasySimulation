@@ -15,6 +15,30 @@ afterEach(() => {
 });
 it.each([
   [
+    'packages/engine/src/spatial/state.ts',
+    'packages/engine/src/spatial/math.ts',
+    './math.ts',
+    null,
+  ],
+  [
+    'packages/engine/src/spatial/perception.ts',
+    'packages/engine/src/spatial/state.ts',
+    './state.ts',
+    null,
+  ],
+  [
+    'packages/engine/src/spatial/state.ts',
+    'packages/engine/src/spatial/perception.ts',
+    './perception.ts',
+    'engine-state-foundation',
+  ],
+  [
+    'packages/engine/src/spatial/geometry-types.ts',
+    'packages/engine/src/spatial/physics.ts',
+    './physics.ts',
+    'engine-state-foundation',
+  ],
+  [
     'packages/engine/src/spatial/manifest-builder.ts',
     'packages/engine/src/spatial/prepare.ts',
     './prepare.ts',
@@ -123,9 +147,20 @@ it('dependency-cruiser distinguishes runtime cycles from type-only reverse refer
     });
     const result = await architecture(f.root, f.paths);
     expect(
+      result.publicGraph.summary.violations.some((v) => v.rule.name === 'no-engine-type-cycle'),
+    ).toBe(true);
+    expect(
       result.runtimeGraph.summary.violations.some((v) => v.rule.name === 'no-runtime-cycle'),
     ).toBe(!typeOnly);
   }
+});
+it('does not omit an unresolved state dependency from the engine graph', async () => {
+  const f = fixture({
+    'packages/engine/src/spatial/sim/step.ts':
+      "import type {ActorState} from '../state.ts'; export type Step = ActorState;",
+  });
+  const graph = await architecture(f.root, f.paths);
+  expect(graph.publicGraph.summary.violations.map((v) => v.rule.name)).toContain('unresolved');
 });
 it('detects aliases, type-only boundary leaks and unresolved source', async () => {
   const f = fixture({

@@ -1,6 +1,7 @@
+import type { Obstacle } from './geometry-types.ts';
 import type { DeepReadonly, ObservedSurface } from '@fantasy/domain/spatial/execution';
 import { length, mul, sub, unit, type Vec3 } from './math.ts';
-import { SpatialWorld, type Obstacle } from './physics.ts';
+import { SpatialWorld } from './physics.ts';
 import { metres } from './terrain.ts';
 
 /** A small sensed surface patch is a fallible local map, never a copy of an unseen collider. */

@@ -15,23 +15,23 @@ export function boundaryPhase(tx: StepTransaction) {
   const actors = tx.previous.actors,
     next = tx.next.actors;
   for (const actor of next)
-    actor.motion = advancePosture(
-      actor.motion,
+    actor.body.motion = advancePosture(
+      actor.body.motion,
       undefined,
       step,
       world,
-      actors.map((a) => a.motion),
+      actors.map((a) => a.body.motion),
     );
   if (step === 0) {
     const effects = tx.effects;
     for (const actor of next) {
       const startupView = selfView(actor, step, battle.rules.ai, battle.statuses);
-      const startup = actor.motion.actor.abilities.filter(
+      const startup = actor.body.motion.actor.abilities.filter(
         (a) =>
           a.definition.trigger === 'battle-start' &&
           conditionMatches(a.definition.condition, startupView),
       );
-      const budget = new ResourceBudget(actor.resources, actor.used);
+      const budget = new ResourceBudget(actor.vitals.resources, actor.actions.used);
       const reserved = budget.reserve(
         'startup',
         startup.map((a) => ({
@@ -52,11 +52,11 @@ export function boundaryPhase(tx: StepTransaction) {
           });
         continue;
       }
-      const old = { ...actor.resources };
+      const old = { ...actor.vitals.resources };
       budget.commit('startup');
       const payment = budget.finish();
-      actor.resources = payment.resources;
-      actor.used = payment.used;
+      actor.vitals.resources = payment.resources;
+      actor.actions.used = payment.used;
       const cost = startup.length
         ? journal.emit({
             kind: 'cost',
@@ -65,7 +65,7 @@ export function boundaryPhase(tx: StepTransaction) {
             actorId: actorId(actor),
             ruleId: 'startup.cost-group',
             before: old,
-            after: { ...actor.resources },
+            after: { ...actor.vitals.resources },
             reason: 'Simultaneous startup cost group',
           })
         : null;
@@ -132,7 +132,9 @@ export function boundaryPhase(tx: StepTransaction) {
   if (
     periodic.length ||
     next.some(
-      (a) => a.resources.hp === 0 && a.motion.actor.abilities.some((b) => b.definition.reaction),
+      (a) =>
+        a.vitals.resources.hp === 0 &&
+        a.body.motion.actor.abilities.some((b) => b.definition.reaction),
     )
   )
     commitReactiveEffects(
@@ -146,7 +148,7 @@ export function boundaryPhase(tx: StepTransaction) {
         phase: 'boundary',
         budget,
         world,
-        aliveAtStart: new Set(actors.filter((a) => a.resources.hp > 0).map(actorId)),
+        aliveAtStart: new Set(actors.filter((a) => a.vitals.resources.hp > 0).map(actorId)),
       },
       work.reactions,
     );

@@ -1,3 +1,4 @@
+import type { StatusRevision } from './state.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import type { Definition, Effect } from '@fantasy/domain/spatial';
 import { withAbilities, aiFixture, initialStatus } from '../../test-support/ai.ts';
@@ -6,7 +7,7 @@ import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { assessAbility } from './assessment.ts';
 import { assessStatusEffects } from './status-assessment.ts';
-import { applyStatuses, statusBoundary, type StatusRevision } from './status.ts';
+import { applyStatuses, statusBoundary } from './status.ts';
 import { planStatusEffects } from './status-reactions.ts';
 import { resolveEffects } from './effects.ts';
 import { publicStatuses } from './status-observation.ts';

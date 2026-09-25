@@ -1,10 +1,10 @@
+import type { StatusCohort } from './state.ts';
 import type {
   AbilityCategory,
   Definition,
   Effect,
   StatusAdjustment,
 } from '@fantasy/domain/spatial/execution';
-import type { StatusCohort } from './status.ts';
 
 export type ModifierSelector = {
   element?: Extract<Effect, { kind: 'damage' }>['element'];

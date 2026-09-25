@@ -17,22 +17,33 @@ export function startPhase(tx: StepTransaction) {
   const resourceBudgets = new Map(
     next.map((actor) => [
       actorId(actor),
-      new ResourceBudget(actor.resources, actor.used, resourceReady(views.get(actorId(actor))!)),
+      new ResourceBudget(
+        actor.vitals.resources,
+        actor.actions.used,
+        resourceReady(views.get(actorId(actor))!),
+      ),
     ]),
   );
   for (const actor of next) {
     const view = views.get(actorId(actor))!;
-    if (aiBoundary && step >= actor.readyAt && actor.decision.abilityId && !view.incapacitated) {
-      const ability = actor.motion.actor.abilities.find((a) => a.id === actor.decision.abilityId)!;
+    if (
+      aiBoundary &&
+      step >= actor.actions.readyAt &&
+      actor.mind.decision.abilityId &&
+      !view.incapacitated
+    ) {
+      const ability = actor.body.motion.actor.abilities.find(
+        (a) => a.id === actor.mind.decision.abilityId,
+      )!;
       const definition = ability.definition;
       const clock = actionClock(
         definition,
-        actor.motion.actor.character.stats.actionSpeedBps,
+        actor.body.motion.actor.character.stats.actionSpeedBps,
         step,
       );
       if (clock) {
         const resources = resourceBudgets.get(actorId(actor))!;
-        if (actor.decision.dodge) {
+        if (actor.mind.decision.dodge) {
           const admission = admitPair(actor, ability, resources, step);
           const legal =
             inObservedRange(definition, view) &&
@@ -60,19 +71,19 @@ export function startPhase(tx: StepTransaction) {
         ]);
         const silenced = !!view.silenced && blockedBySilence(definition);
         if (
-          !postureAllows(actor.motion, definition) ||
+          !postureAllows(actor.body.motion, definition) ||
           !inObservedRange(definition, view) ||
           !payment.ok ||
           silenced
         ) {
           if (payment.ok) resources.cancel('action');
-          actor.readyAt =
+          actor.actions.readyAt =
             step +
             Math.max(
               1,
               Math.ceil(
                 (definition.recoverySteps * 10000) /
-                  actor.motion.actor.character.stats.actionSpeedBps,
+                  actor.body.motion.actor.character.stats.actionSpeedBps,
               ),
             );
           journal.emit({
@@ -86,7 +97,7 @@ export function startPhase(tx: StepTransaction) {
               ? `insufficient-${payment.reason}`
               : silenced
                 ? 'silenced'
-                : !postureAllows(actor.motion, definition)
+                : !postureAllows(actor.body.motion, definition)
                   ? 'posture'
                   : 'observed-range-or-facing',
           });
@@ -108,14 +119,14 @@ export function startPhase(tx: StepTransaction) {
             abilityId: ability.id,
             parentEventId: start.id,
             ruleId: 'action.cost',
-            before: { ...actor.resources },
+            before: { ...actor.vitals.resources },
             after: { ...paid.after },
           });
-          actor.resources = paid.after;
-          actor.used = resources.finish().used;
-          actor.cooldowns[ability.id] = clock.cooldownUntil;
-          actor.readyAt = clock.recoveryUntil;
-          actor.action = {
+          actor.vitals.resources = paid.after;
+          actor.actions.used = resources.finish().used;
+          actor.actions.cooldowns[ability.id] = clock.cooldownUntil;
+          actor.actions.readyAt = clock.recoveryUntil;
+          actor.actions.action = {
             id: `a.${tx.next.serial++}`,
             ability,
             cause: start.id,
@@ -127,7 +138,7 @@ export function startPhase(tx: StepTransaction) {
               : {}),
           };
           if (definition.movementWhileCasting === 'stop' && definition.castSteps > 0)
-            actor.intent = { ...actor.intent, canMove: false };
+            actor.body.intent = { ...actor.body.intent, canMove: false };
         }
       }
     }

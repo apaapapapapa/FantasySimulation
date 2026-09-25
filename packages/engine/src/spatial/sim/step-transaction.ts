@@ -1,3 +1,4 @@
+import type { PreviousMovement, ActorState, MeleeState, PreparedBattle } from '../state.ts';
 import type {
   Budget,
   DisplayPath,
@@ -5,20 +6,19 @@ import type {
   ProjectileDisplay,
   StreamRecord,
 } from '@fantasy/domain/spatial/execution';
-import { cloneActor, displayActor, type ActorState, type MeleeState } from '../combat-state.ts';
+import { cloneActor, displayActor } from '../combat-state.ts';
 import type { PendingEffect } from '../combat-effects.ts';
 import type { beginForcedInterval } from '../forces.ts';
 import type { HitLedger } from '../hit-ledger.ts';
 import { displayChanges, Journal } from '../journal.ts';
 import type { Navigator } from '../navigation.ts';
 import type { SpatialWorld } from '../physics.ts';
-import type { PreparedBattle } from '../prepare.ts';
 import type { ProjectileState } from '../projectiles.ts';
 import type { ResourceBudget } from '../resources.ts';
 import { attachedStageAlive } from '../stages.ts';
 import type { WorkMeter } from './work-meter.ts';
 
-export const actorId = (actor: ActorState) => actor.motion.actor.participant.actorId;
+export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
 export type SimulationState = {
   actors: ActorState[];
   melees: MeleeState[];
@@ -46,7 +46,7 @@ export class StepTransaction {
   readonly effects: PendingEffect[] = [];
   readonly spawns: ProjectileDisplay[] = [];
   forcePlans = new Map<string, ReturnType<typeof beginForcedInterval>>();
-  previousMovement = new Map<string, Pick<ActorState, 'intent' | 'decision'>>();
+  previousMovement = new Map<string, PreviousMovement>();
   resourceBudgets = new Map<string, ResourceBudget>();
   paths: DisplayPath[] = [];
   projectileChanges: ProjectileChanges = { spawn: [], update: [], remove: [] };
@@ -105,7 +105,9 @@ export class StepTransaction {
   finishInterval() {
     this.next.ledger.prune(
       new Set([
-        ...this.next.actors.flatMap((actor) => (actor.action?.stages ? [actor.action.id] : [])),
+        ...this.next.actors.flatMap((actor) =>
+          actor.actions.action?.stages ? [actor.actions.action.id] : [],
+        ),
         ...this.next.projectiles.flatMap((projectile) =>
           projectile.stage ? [projectile.stage.actionId] : [],
         ),

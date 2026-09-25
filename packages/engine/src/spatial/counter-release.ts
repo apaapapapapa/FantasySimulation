@@ -1,6 +1,5 @@
-import type { ActorState } from './combat-state.ts';
+import type { ActorState, PreparedBattle } from './state.ts';
 import type { PendingEffect } from './combat-effects.ts';
-import type { PreparedBattle } from './prepare.ts';
 import type { Journal } from './journal.ts';
 import type { HitLedger } from './hit-ledger.ts';
 import { hitscan, inObservedRange, launchDirection } from './attacks.ts';
@@ -24,18 +23,20 @@ export function releaseCounters(
 ): PendingEffect[] {
   const effects: PendingEffect[] = [];
   for (const actor of actors) {
-    const actorId = actor.motion.actor.participant.actorId;
-    for (const reaction of actor.reactions ?? []) {
+    const actorId = actor.body.motion.actor.participant.actorId;
+    for (const reaction of actor.actions.reactions ?? []) {
       if (reaction.state !== 'queued' || reaction.readyAt > step) continue;
-      const ability = actor.motion.actor.abilities.find((a) => a.id === reaction.abilityId)!;
+      const ability = actor.body.motion.actor.abilities.find((a) => a.id === reaction.abilityId)!;
       const definition = ability.definition;
       const view = selfView(actor, step, battle.rules.ai, battle.statuses);
-      const enemy = actors.find((a) => a.motion.actor.participant.actorId === reaction.targetId)!;
+      const enemy = actors.find(
+        (a) => a.body.motion.actor.participant.actorId === reaction.targetId,
+      )!;
       const valid =
-        actor.resources.hp > 0 &&
-        enemy.resources.hp > 0 &&
+        actor.vitals.resources.hp > 0 &&
+        enemy.vitals.resources.hp > 0 &&
         !view.incapacitated &&
-        postureAllows(actor.motion, definition) &&
+        postureAllows(actor.body.motion, definition) &&
         !(view.silenced && blockedBySilence(definition)) &&
         conditionMatches(definition.condition, view) &&
         inObservedRange(definition, view);
@@ -57,21 +58,24 @@ export function releaseCounters(
       if (!valid) continue;
       if (definition.attack.kind !== 'hitscan') throw new Error('Unsupported counter geometry');
       const aim = launchDirection(
-        actor.motion.facing,
+        actor.body.motion.facing,
         definition.aimErrorMilliDegrees,
-        actor.random,
+        actor.mind.random,
       );
-      actor.random = aim.random;
+      actor.mind.random = aim.random;
       countCandidate();
       const contact = hitscan(
         world,
-        actor.motion,
-        enemy.motion,
+        actor.body.motion,
+        enemy.body.motion,
         aim.direction,
         definition.rangeMm / 1000,
         definition.attack.radiusMm / 1000,
       );
-      const origin = bodyPoint(actor.motion, actor.motion.actor.character.body.muzzleOffset);
+      const origin = bodyPoint(
+        actor.body.motion,
+        actor.body.motion.actor.character.body.muzzleOffset,
+      );
       reaction.geometry = {
         kind: 'ray',
         radiusMm: definition.attack.radiusMm,
@@ -111,7 +115,7 @@ export function releaseCounters(
       effects.push(
         ...reactionPayload(actor, ability, reaction, hit.id, step).map((app) => ({
           ...app,
-          observation: { self: actor.motion, target: enemy.motion },
+          observation: { self: actor.body.motion, target: enemy.body.motion },
         })),
       );
     }

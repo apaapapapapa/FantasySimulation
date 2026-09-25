@@ -1,7 +1,8 @@
+import type { Trace } from './geometry-types.ts';
+import type { ResolvedActor } from './state.ts';
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import { cosDegrees, cross, dot, length, lerp, sub, unit, type Vec3 } from './math.ts';
-import { capsuleShape, COLLISION_SKIN, type SpatialWorld, type Trace } from './physics.ts';
-import type { ResolvedActor } from './prepare.ts';
+import { capsuleShape, COLLISION_SKIN, type SpatialWorld } from './physics.ts';
 import { bodyCapsule, metres } from './terrain.ts';
 
 type Mode = 'walk' | 'jump' | 'fly';

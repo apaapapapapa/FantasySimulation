@@ -35,21 +35,21 @@ describe('flight grants and their shared stamina budget', () => {
         [],
         0,
       ).statuses;
-      f.actor.intent = { ...f.actor.intent, flight: true, canMove: false };
-      f.actor.motion.position.y = 5;
-      f.actor.motion.grounded = false;
+      f.actor.body.intent = { ...f.actor.body.intent, flight: true, canMove: false };
+      f.actor.body.motion.position.y = 5;
+      f.actor.body.motion.grounded = false;
       const journal = new Journal(0, 0, DEFAULT_BUDGET);
       for (let step = 0; step < 10; step++) {
         advanceLocomotion(f, step, { journal });
       }
-      expect(f.actor.resources.stamina).toBe(95);
-      expect(f.actor.motion.position.y).toBe(5);
-      f.actor.resources.stamina = 0;
-      const plan = reserveMotion(f.actor, new ResourceBudget(f.actor.resources), 10, false);
+      expect(f.actor.vitals.resources.stamina).toBe(95);
+      expect(f.actor.body.motion.position.y).toBe(5);
+      f.actor.vitals.resources.stamina = 0;
+      const plan = reserveMotion(f.actor, new ResourceBudget(f.actor.vitals.resources), 10, false);
       expect(plan.intent.flight).toBe(false);
       const falling = moveActors(
         f.world,
-        [f.actor.motion],
+        [f.actor.body.motion],
         new Map([['left', plan.intent]]),
         f.battle.rules,
       )[0]!;
@@ -64,7 +64,7 @@ describe('flight grants and their shared stamina budget', () => {
     try {
       const revision = await grant(20);
       const resolved = resolveEffects(
-        [{ actor: f.actor.motion.actor, resources: f.actor.resources, statuses: [] }],
+        [{ actor: f.actor.body.motion.actor, resources: f.actor.vitals.resources, statuses: [] }],
         [7, 3].map((rate) => ({
           id: `grant-${rate}`,
           actorId: 'left',
@@ -86,23 +86,23 @@ describe('flight grants and their shared stamina budget', () => {
       const free = await grant();
       f.actor.statuses = applyStatuses([], [{ revision: free, cause: 'free' }], [], 0).statuses;
       expect(flightRate(f.actor.statuses, 1)).toBe(0);
-      f.actor.resources.stamina = 0;
-      f.actor.intent.flight = true;
+      f.actor.vitals.resources.stamina = 0;
+      f.actor.body.intent.flight = true;
       const plan = reserveMotion(
         f.actor,
-        new ResourceBudget(f.actor.resources, {}, false),
+        new ResourceBudget(f.actor.vitals.resources, {}, false),
         1,
         false,
       );
       expect(plan.intent.flight).toBe(true);
       const moved = moveActors(
         f.world,
-        [f.actor.motion],
+        [f.actor.body.motion],
         new Map([['left', plan.intent]]),
         f.battle.rules,
       )[0]!;
       plan.settle(moved, new Journal(0, 0, DEFAULT_BUDGET));
-      expect(f.actor.resources.stamina).toBe(0);
+      expect(f.actor.vitals.resources.stamina).toBe(0);
     } finally {
       f.world.free();
     }
@@ -116,17 +116,17 @@ describe('flight grants and their shared stamina budget', () => {
         [],
         0,
       ).statuses;
-      f.actor.resources.stamina = 1;
-      f.actor.motionClock = { remainder: 0, flightRemainder: 960000 };
-      f.actor.intent = { ...f.actor.intent, flight: true, canMove: false };
-      f.actor.motion.position.y = 5;
-      f.actor.motion.grounded = false;
+      f.actor.vitals.resources.stamina = 1;
+      f.actor.body.motionClock = { remainder: 0, flightRemainder: 960000 };
+      f.actor.body.intent = { ...f.actor.body.intent, flight: true, canMove: false };
+      f.actor.body.motion.position.y = 5;
+      f.actor.body.motion.grounded = false;
       advanceLocomotion(f, 1);
-      expect(f.actor.resources.stamina).toBe(0);
-      expect(f.actor.motionClock.flightRemainder).toBe(120000);
-      expect(f.actor.motion.position.y).toBe(5);
+      expect(f.actor.vitals.resources.stamina).toBe(0);
+      expect(f.actor.body.motionClock.flightRemainder).toBe(120000);
+      expect(f.actor.body.motion.position.y).toBe(5);
       advanceLocomotion(f, 2);
-      expect(f.actor.motion.position.y).toBeLessThan(5);
+      expect(f.actor.body.motion.position.y).toBeLessThan(5);
     } finally {
       f.world.free();
     }

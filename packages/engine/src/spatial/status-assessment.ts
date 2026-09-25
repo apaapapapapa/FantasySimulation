@@ -1,10 +1,10 @@
+import type { StatusCohort, DecisionView } from './state.ts';
 import { abilityEffects, type DeepReadonly, type Effect } from '@fantasy/domain/spatial/execution';
 import { statusBenefit } from './status-observation.ts';
 import { planStatusEffects } from './status-reactions.ts';
-import { applyStatuses, UnresolvedRuleError, type StatusCohort } from './status.ts';
+import { applyStatuses, UnresolvedRuleError } from './status.ts';
 import { knownPeriodicDamage } from './status-risk.ts';
 import { SpatialBudgetError } from './physics.ts';
-import type { DecisionView } from './perception.ts';
 import { abilityCategories } from './categories.ts';
 import { reapplicationEstimate } from './threat-memory.ts';
 

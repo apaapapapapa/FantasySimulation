@@ -1,5 +1,5 @@
+import type { DecisionView } from './state.ts';
 import type { Condition, DeepReadonly } from '@fantasy/domain/spatial/execution';
-import type { DecisionView } from './perception.ts';
 import { dot, length, sub, unit } from './math.ts';
 
 export function usesObservedConditions(condition: DeepReadonly<Condition>): boolean {

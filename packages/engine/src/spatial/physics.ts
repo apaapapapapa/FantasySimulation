@@ -1,3 +1,5 @@
+import type { Trace, Capsule, Obstacle, Layer } from './geometry-types.ts';
+export type { Segment, Trace, Capsule, Obstacle, Layer } from './geometry-types.ts';
 import RAPIER from '@dimforge/rapier3d-compat';
 import type { MotionProjection } from '@fantasy/domain/spatial/execution';
 export type { MotionProjection } from '@fantasy/domain/spatial/execution';
@@ -14,18 +16,6 @@ let ready: Promise<void> | undefined;
 export async function initializePhysics(): Promise<void> {
   await (ready ??= RAPIER.init());
 }
-export type Segment = { start: Vec3; end: Vec3; from: number; to: number };
-export type Trace = Segment[];
-export type Capsule = { radius: number; halfHeight: number };
-export type Obstacle = {
-  id: string;
-  kind?: 'pillar';
-  position: Vec3;
-  halfExtents: Vec3;
-  rotation?: { x: number; y: number; z: number; w: number };
-  blocks: { movement: boolean; vision: boolean; attack: boolean };
-};
-export type Layer = keyof Obstacle['blocks'];
 type SweepHit = { time_of_impact: number; normal1: Vec3; obstacleId: string };
 export const COLLISION_SKIN = 0.002;
 export const CONTACT_TOLERANCE = 1e-6;

@@ -19,8 +19,8 @@ describe('resource-aware decisions and full matches', () => {
         false,
       );
       expect(unseen.gait).toBe('walk');
-      f.actor.memory = {
-        ...f.actor.memory,
+      f.actor.mind.memory = {
+        ...f.actor.mind.memory,
         observation: {
           sampledAt: 0,
           availableAt: 5,
@@ -35,7 +35,7 @@ describe('resource-aware decisions and full matches', () => {
         },
       };
       const decide = (stamina: number) => {
-        f.actor.resources.stamina = stamina;
+        f.actor.vitals.resources.stamina = stamina;
         return choosePolicy(
           selfView(f.actor, 0, f.battle.rules.ai, f.battle.statuses),
           new Set(),
@@ -98,7 +98,7 @@ describe('resource-aware decisions and full matches', () => {
   it('keeps both exhausted actors moving even with zero recovery', async () => {
     const f = await locomotionFixture();
     try {
-      const movement = CharacterSchema.parse(f.actor.motion.actor.character).movement;
+      const movement = CharacterSchema.parse(f.actor.body.motion.actor.character).movement;
       const manifest = await combatManifest(50, {
         character: { movement, stamina: { max: 100, recoveryPerSecond: 0 } },
         ability: {

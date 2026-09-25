@@ -1,12 +1,6 @@
+import type { DecisionView, PerceptionMemory, ThreatExperience, MotionState } from './state.ts';
 import type { DeepReadonly, Effect } from '@fantasy/domain/spatial/execution';
-import {
-  canSee,
-  bodyPoint,
-  type DecisionView,
-  type PerceptionMemory,
-  type ThreatExperience,
-} from './perception.ts';
-import type { MotionState } from './movement.ts';
+import { canSee, bodyPoint } from './perception.ts';
 import type { SpatialWorld } from './physics.ts';
 
 /** Self impacts and visible attack cues cross the same delayed, bounded memory boundary. */

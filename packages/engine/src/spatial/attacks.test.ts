@@ -1,3 +1,4 @@
+import type { Obstacle } from './geometry-types.ts';
 import { decisionView } from '../../test-support/ai.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import {
@@ -9,7 +10,7 @@ import {
   payCost,
   traceAttack,
 } from './attacks.ts';
-import { initializePhysics, SpatialWorld, straight, type Obstacle } from './physics.ts';
+import { initializePhysics, SpatialWorld, straight } from './physics.ts';
 import { prepareBattle } from './prepare.ts';
 import { sampleManifest } from '@fantasy/samples';
 import { initialMotion } from './movement.ts';

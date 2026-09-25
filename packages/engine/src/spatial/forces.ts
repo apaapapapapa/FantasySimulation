@@ -1,3 +1,4 @@
+import type { ActorBodyState, ActorState } from './state.ts';
 import {
   compareIds,
   type Budget,
@@ -5,7 +6,6 @@ import {
   type Effect,
   type ForceContribution,
 } from '@fantasy/domain/spatial/execution';
-import type { ActorState } from './combat-state.ts';
 import type { MovedActor } from './movement.ts';
 import { length, sub, unit, type Vec3 } from './math.ts';
 import { SpatialBudgetError } from './physics.ts';
@@ -37,7 +37,7 @@ export function queueForce(
   budget: Budget,
 ): ForceContribution {
   const startAt = contactStep + 1;
-  const active = (target.forces ?? []).filter((f) => f.endAt > startAt);
+  const active = (target.body.forces ?? []).filter((f) => f.endAt > startAt);
   const maximum = budget.maxForces ?? 64;
   if (active.length + 1 > maximum)
     throw new SpatialBudgetError('forces', `${active.length + 1}/${maximum};cause=${identity.id}`);
@@ -47,7 +47,7 @@ export function queueForce(
     endAt: startAt + effect.durationSteps,
     velocityMmPerSecond: freezeForce(effect, origin, position),
   };
-  target.forces = [...active, contribution].sort((a, b) => compareIds(a.id, b.id));
+  target.body.forces = [...active, contribution].sort((a, b) => compareIds(a.id, b.id));
   return contribution;
 }
 
@@ -80,22 +80,22 @@ export function forceSum(
 
 /** Mode transitions happen before observation/selection on the provisional interval state. */
 export function beginForcedInterval(actor: ActorState, step: number, capMmPerSecond: number) {
-  if (!actor.forces && !actor.forceGravity) return null;
-  const forces = (actor.forces ?? []).filter((f) => f.endAt > step);
-  if (forces.length) actor.forces = forces;
-  else delete actor.forces;
+  if (!actor.body.forces && !actor.body.forceGravity) return null;
+  const forces = (actor.body.forces ?? []).filter((f) => f.endAt > step);
+  if (forces.length) actor.body.forces = forces;
+  else delete actor.body.forces;
   const plan = forceSum(forces, step, capMmPerSecond),
     active = length(plan.force) > 0;
-  const previousGravity = actor.forceGravity ? { ...actor.forceGravity } : null;
-  if (active) actor.forceGravity ??= { x: 0, y: actor.motion.velocity.y, z: 0 };
-  else if (actor.forceGravity) {
-    actor.motion.velocity = { ...actor.forceGravity };
-    delete actor.forceGravity;
+  const previousGravity = actor.body.forceGravity ? { ...actor.body.forceGravity } : null;
+  if (active) actor.body.forceGravity ??= { x: 0, y: actor.body.motion.velocity.y, z: 0 };
+  else if (actor.body.forceGravity) {
+    actor.body.motion.velocity = { ...actor.body.forceGravity };
+    delete actor.body.forceGravity;
   }
   return {
     ...plan,
     active,
-    gravity: actor.forceGravity ? { ...actor.forceGravity } : previousGravity,
+    gravity: actor.body.forceGravity ? { ...actor.body.forceGravity } : previousGravity,
   };
 }
 
@@ -106,12 +106,12 @@ export function settleForcedInterval(
   step: number,
 ) {
   if (!plan || !plan.contributors.length) {
-    if (actor.forceDisplay !== undefined) actor.forceDisplay = null;
+    if (actor.body.forceDisplay !== undefined) actor.body.forceDisplay = null;
     return;
   }
   if (plan.active && !moved.forced) throw Error('Missing forced movement settlement');
-  if (moved.forced) actor.forceGravity = { ...moved.forced.gravity };
-  actor.forceDisplay = {
+  if (moved.forced) actor.body.forceGravity = { ...moved.forced.gravity };
+  actor.body.forceDisplay = {
     fromStep: step,
     active: plan.active,
     contributors: structuredClone(plan.contributors),
@@ -126,6 +126,6 @@ export function settleForcedInterval(
   };
 }
 
-export function hasForcedMotion(actor: Pick<ActorState, 'forces'>, step: number, cap = 100000) {
+export function hasForcedMotion(actor: Pick<ActorBodyState, 'forces'>, step: number, cap = 100000) {
   return !!actor.forces?.length && length(forceSum(actor.forces, step, cap).force) > 0;
 }

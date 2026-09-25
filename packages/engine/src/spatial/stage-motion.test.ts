@@ -23,13 +23,13 @@ describe('authored movement through shared physics and resources', () => {
       boxObstacle('stop', { x: -3200, y: 1000, z: 0 }, { x: 50, y: 1000, z: 1000 }),
     ]);
     try {
-      f.actor.intent.authored = authored();
+      f.actor.body.intent.authored = authored();
       const results = [];
       for (let step = 0; step < 5; step++)
         results.push(advanceLocomotion(f, step, { dodge: true }).moved);
-      expect(f.actor.motion.position.x).toBeCloseTo(-3.552, 5);
-      expect(f.actor.resources.stamina).toBe(100);
-      expect(f.actor.locomotion?.dodging).toBe(false);
+      expect(f.actor.body.motion.position.x).toBeCloseTo(-3.552, 5);
+      expect(f.actor.vitals.resources.stamina).toBe(100);
+      expect(f.actor.body.locomotion?.dodging).toBe(false);
       expect(results.at(-1)!.state.velocity.x).toBe(0);
       expect(results.some((m) => m.trace.length > 1)).toBe(true);
     } finally {
@@ -41,17 +41,17 @@ describe('authored movement through shared physics and resources', () => {
       boxObstacle('ceiling', { x: -4000, y: 2000, z: 0 }, { x: 1000, y: 100, z: 1000 }),
     ]);
     try {
-      f.actor.intent.authored = authored(true);
+      f.actor.body.intent.authored = authored(true);
       const first = advanceLocomotion(f, 0).moved;
       expect(first.jumped).toBe(true);
-      expect(f.actor.resources.stamina).toBe(92);
-      f.actor.intent.authored.jump = false;
+      expect(f.actor.vitals.resources.stamina).toBe(92);
+      f.actor.body.intent.authored.jump = false;
       const positions = [first.state.position.y];
       for (let step = 1; step < 4; step++)
         positions.push(advanceLocomotion(f, step).moved.state.position.y);
       expect(Math.max(...positions)).toBeLessThanOrEqual(0.998001);
       expect(positions.at(-1)!).toBeLessThan(Math.max(...positions));
-      expect(f.actor.resources.stamina).toBe(92);
+      expect(f.actor.vitals.resources.stamina).toBe(92);
     } finally {
       f.world.free();
     }
@@ -59,12 +59,12 @@ describe('authored movement through shared physics and resources', () => {
   it('gives force priority over authored movement and keeps its target free of movement charges', async () => {
     const f = await locomotionFixture();
     try {
-      f.actor.intent.authored = authored(true);
-      f.actor.intent.forced = { gravity: { x: 0, y: 0, z: 0 }, force: { x: -80, y: 0, z: 0 } };
+      f.actor.body.intent.authored = authored(true);
+      f.actor.body.intent.forced = { gravity: { x: 0, y: 0, z: 0 }, force: { x: -80, y: 0, z: 0 } };
       const moved = advanceLocomotion(f, 0, { dodge: true }).moved;
       expect(moved.state.position.x).toBeCloseTo(-5.6, 8);
       expect(moved.jumped).toBe(false);
-      expect(f.actor.resources.stamina).toBe(100);
+      expect(f.actor.vitals.resources.stamina).toBe(100);
     } finally {
       f.world.free();
     }
@@ -76,9 +76,9 @@ describe('authored movement through shared physics and resources', () => {
         const ability = (
           await stagedManifest({ stages: movingSweepStages(), ability: { castSteps } })
         ).revisions.find((r) => r.kind === 'ability')!;
-        const budget = new ResourceBudget(f.actor.resources);
+        const budget = new ResourceBudget(f.actor.vitals.resources);
         expect(admitPair(f.actor, ability, budget, 0).ok).toBe(castSteps === 2);
-        expect(budget.finish().resources).toEqual(f.actor.resources);
+        expect(budget.finish().resources).toEqual(f.actor.vitals.resources);
       }
     } finally {
       f.world.free();

@@ -1,6 +1,6 @@
+import type { ResolvedActor, StatusCohort } from './state.ts';
 import type { ResourceState } from '@fantasy/domain/spatial/execution';
-import type { ResolvedActor } from './prepare.ts';
-import { statusBoundary, UnresolvedRuleError, type StatusCohort } from './status.ts';
+import { statusBoundary, UnresolvedRuleError } from './status.ts';
 import { resolveEffects, type EffectApplication } from './effects.ts';
 import { SpatialBudgetError } from './physics.ts';
 

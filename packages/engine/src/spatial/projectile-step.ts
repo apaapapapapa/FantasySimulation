@@ -1,9 +1,8 @@
+import type { ActorState, PreparedBattle } from './state.ts';
 import type { Budget, DisplayPath, ProjectileChanges } from '@fantasy/domain/spatial/execution';
-import type { ActorState } from './combat-state.ts';
 import { contactObservation, type PendingEffect } from './combat-effects.ts';
 import type { Journal } from './journal.ts';
 import type { MovedActor } from './movement.ts';
-import type { PreparedBattle } from './prepare.ts';
 import { at, clipTrace, type SpatialWorld } from './physics.ts';
 import { copyDamageSnapshot } from './status-damage.ts';
 import { traceAttack } from './attacks.ts';
@@ -32,9 +31,11 @@ export function stepProjectiles(
     const shape = projectile.ability.definition.attack;
     if (shape.kind !== 'projectile' || projectile.launchStep + shape.lifetimeSteps <= step)
       throw new Error('Invalid active projectile lifetime');
-    const owner = actors.find((a) => a.motion.actor.participant.actorId === projectile.ownerId)!;
+    const owner = actors.find(
+      (a) => a.body.motion.actor.participant.actorId === projectile.ownerId,
+    )!;
     const enemy = moved.find((a) => a.state.actor.participant.actorId !== projectile.ownerId)!;
-    const curve = projectileCurve(projectile, owner.memory, battle.rules, budget);
+    const curve = projectileCurve(projectile, owner.mind.memory, battle.rules, budget);
     candidate();
     const contact = traceAttack(
       world,
@@ -115,8 +116,8 @@ export function stepProjectiles(
             ),
             observation: contactObservation(
               moved,
-              owner.motion,
-              actors.find((a) => a.motion.actor.participant.actorId === targetId)!.motion,
+              owner.body.motion,
+              actors.find((a) => a.body.motion.actor.participant.actorId === targetId)!.body.motion,
               contact.time,
             ),
           });

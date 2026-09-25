@@ -16,17 +16,17 @@ describe('one interval budget for physical locomotion', () => {
   async function travel(gait: 'walk' | 'run', jump = false) {
     const f = await locomotionFixture();
     try {
-      f.actor.decision.gait = gait;
+      f.actor.mind.decision.gait = gait;
       let highest = 0;
       const journal = new Journal(0, 0, DEFAULT_BUDGET);
       for (let step = 0; step < 50; step++) {
-        f.actor.intent.jump = jump && step === 0;
+        f.actor.body.intent.jump = jump && step === 0;
         const { moved } = advanceLocomotion(f, step, { journal });
         highest = Math.max(highest, moved.state.position.y);
       }
       return {
-        distance: f.actor.motion.position.x + 4,
-        stamina: f.actor.resources.stamina!,
+        distance: f.actor.body.motion.position.x + 4,
+        stamina: f.actor.vitals.resources.stamina!,
         highest,
       };
     } finally {
@@ -54,16 +54,16 @@ describe('one interval budget for physical locomotion', () => {
       const f = await locomotionFixture();
       try {
         if (!configured) {
-          const character = CharacterSchema.parse(f.actor.motion.actor.character);
+          const character = CharacterSchema.parse(f.actor.body.motion.actor.character);
           delete character.movement.locomotion;
-          f.actor.motion.actor = { ...f.actor.motion.actor, character };
+          f.actor.body.motion.actor = { ...f.actor.body.motion.actor, character };
         }
         advanceLocomotion(f, 0, { dodge: true });
-        expect(f.actor.locomotion?.dodging).toBe(true);
-        expect(f.actor.resources.stamina).toBe(configured ? 95 : 100);
+        expect(f.actor.body.locomotion?.dodging).toBe(true);
+        expect(f.actor.vitals.resources.stamina).toBe(configured ? 95 : 100);
         for (let step = 1; step <= 5; step++) advanceLocomotion(f, step);
-        expect(f.actor.locomotion?.dodging).toBe(false);
-        expect(f.actor.resources.stamina).toBe(configured ? 95 : 100);
+        expect(f.actor.body.locomotion?.dodging).toBe(false);
+        expect(f.actor.vitals.resources.stamina).toBe(configured ? 95 : 100);
       } finally {
         f.world.free();
       }
@@ -77,14 +77,14 @@ describe('one interval budget for physical locomotion', () => {
     async ({ multiplierBps, final }) => {
       const f = await locomotionFixture();
       try {
-        f.actor.resources.stamina = 50;
-        f.actor.decision.gait = 'walk';
+        f.actor.vitals.resources.stamina = 50;
+        f.actor.mind.decision.gait = 'walk';
         const journal = new Journal(0, 0, DEFAULT_BUDGET);
         for (let step = 0; step < 50; step++) {
           advanceLocomotion(f, step, { journal });
           recoverActorResources(f.actor, 20, step + 1, journal, { multiplierBps });
         }
-        expect(f.actor.resources.stamina).toBe(final);
+        expect(f.actor.vitals.resources.stamina).toBe(final);
       } finally {
         f.world.free();
       }
@@ -99,7 +99,7 @@ describe('one interval budget for physical locomotion', () => {
       for (let step = 0; step < 20; step++) {
         advanceLocomotion(f, step, { journal });
       }
-      expect(f.actor.resources.stamina).toBe(100);
+      expect(f.actor.vitals.resources.stamina).toBe(100);
       expect(journal.events.filter((e) => e.ruleId === 'movement.cost')).toEqual([]);
     } finally {
       f.world.free();
@@ -110,19 +110,19 @@ describe('one interval budget for physical locomotion', () => {
     try {
       const plan = reserveMotion(
         stepScene.actor,
-        new ResourceBudget(stepScene.actor.resources),
+        new ResourceBudget(stepScene.actor.vitals.resources),
         0,
         false,
       );
       const moved = moveActors(
         stepScene.world,
-        [stepScene.actor.motion],
+        [stepScene.actor.body.motion],
         new Map([['left', plan.intent]]),
         stepScene.battle.rules,
       )[0]!;
       plan.settle(moved, new Journal(0, 0, DEFAULT_BUDGET));
       expect(moved.stepped).toBe(true);
-      expect(stepScene.actor.resources.stamina).toBe(98);
+      expect(stepScene.actor.vitals.resources.stamina).toBe(98);
     } finally {
       stepScene.world.free();
     }
@@ -130,26 +130,26 @@ describe('one interval budget for physical locomotion', () => {
   it('shares the remaining skill budget and falls back to slow walk through exhaustion, then resumes', async () => {
     const f = await locomotionFixture();
     try {
-      f.actor.resources.stamina = 8;
-      f.actor.decision.gait = 'run';
-      f.actor.intent.jump = true;
-      const budget = new ResourceBudget(f.actor.resources);
+      f.actor.vitals.resources.stamina = 8;
+      f.actor.mind.decision.gait = 'run';
+      f.actor.body.intent.jump = true;
+      const budget = new ResourceBudget(f.actor.vitals.resources);
       expect(budget.reserve('skill', [{ stamina: 8 }]).ok).toBe(true);
-      f.actor.resources = budget.commit('skill').after;
+      f.actor.vitals.resources = budget.commit('skill').after;
       const plan = reserveMotion(f.actor, budget, 0, true);
       expect(plan.intent).toMatchObject({ speedMmPerSecond: 500, jump: false, canStep: false });
       const moved = moveActors(
         f.world,
-        [f.actor.motion],
+        [f.actor.body.motion],
         new Map([['left', plan.intent]]),
         f.battle.rules,
       )[0]!;
       const journal = new Journal(0, 0, DEFAULT_BUDGET);
       plan.settle(moved, journal);
-      f.actor.motion = moved.state;
+      f.actor.body.motion = moved.state;
       expect(moved.state.position.x).toBeGreaterThan(-4);
-      expect(f.actor.resources.stamina).toBe(0);
-      expect(f.actor.staminaClock?.exhausted).toBe(true);
+      expect(f.actor.vitals.resources.stamina).toBe(0);
+      expect(f.actor.vitals.staminaClock?.exhausted).toBe(true);
       recoverActorResources(f.actor, 900, 45, journal);
       expect(chooseGait(selfView(f.actor, 45, f.battle.rules.ai, f.battle.statuses), 0)?.gait).toBe(
         'slow',
@@ -158,7 +158,7 @@ describe('one interval budget for physical locomotion', () => {
       expect(chooseGait(selfView(f.actor, 50, f.battle.rules.ai, f.battle.statuses), 0)?.gait).toBe(
         'walk',
       );
-      expect(f.actor.staminaClock?.exhausted).toBe(false);
+      expect(f.actor.vitals.staminaClock?.exhausted).toBe(false);
     } finally {
       f.world.free();
     }
@@ -166,7 +166,7 @@ describe('one interval budget for physical locomotion', () => {
   it('validates locomotion requires stamina and running is faster and costlier', async () => {
     const f = await locomotionFixture();
     try {
-      const c = CharacterSchema.parse(f.actor.motion.actor.character);
+      const c = CharacterSchema.parse(f.actor.body.motion.actor.character);
       expect(CharacterSchema.safeParse({ ...c, stamina: undefined }).success).toBe(false);
       c.movement.locomotion!.run.staminaPerMeter = 1;
       expect(CharacterSchema.safeParse(c).success).toBe(false);

@@ -1,3 +1,4 @@
+import type { ActorState, AbilityRevision } from './state.ts';
 import {
   compareIds,
   type Budget,
@@ -5,7 +6,6 @@ import {
   type ReactionContext,
   type ReactionDisplay,
 } from '@fantasy/domain/spatial/execution';
-import type { ActorState, AbilityRevision } from './combat-state.ts';
 import {
   commitEffects,
   commitTransactionStatuses,
@@ -24,7 +24,7 @@ import { SpatialBudgetError } from './physics.ts';
 import { statusDamageSource } from './status-damage.ts';
 
 type Point = ReactionContext['point'];
-const idOf = (actor: ActorState) => actor.motion.actor.participant.actorId;
+const idOf = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
 export type ReactionWork = { attempts: number };
 /** Work is external to provisional actor state; semantic uses are committed with the actors. */
 export class ReactionBudget {
@@ -57,7 +57,7 @@ function matches(ability: AbilityRevision, app: PendingEffect, actors: ActorStat
   const reaction = ability.definition.reaction!;
   const source = actors
     .find((a) => idOf(a) === app.actorId)
-    ?.motion.actor.abilities.find((a) => a.id === app.abilityId);
+    ?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
   if (
     reaction.categories &&
     (!source || !reaction.categories.some((c) => abilityCategories(source.definition).includes(c)))
@@ -96,8 +96,8 @@ export function cancelDeadCounters(
   phase: BattleEvent['phase'],
 ) {
   for (const actor of actors)
-    for (const reaction of actor.reactions ?? [])
-      if (actor.resources.hp === 0 && reaction.state === 'queued') {
+    for (const reaction of actor.actions.reactions ?? [])
+      if (actor.vitals.resources.hp === 0 && reaction.state === 'queued') {
         reaction.state = 'cancelled';
         journal.emit({
           kind: 'reaction',
@@ -123,19 +123,20 @@ export function commitReactiveEffects(
   work: ReactionWork,
 ) {
   const { battle, journal, step, activationStep, phase, budget } = context;
-  if (!actors.some((a) => a.motion.actor.abilities.some((b) => b.definition.reaction))) {
+  if (!actors.some((a) => a.body.motion.actor.abilities.some((b) => b.definition.reaction))) {
     commitEffects(actors, effects, context);
     return;
   }
-  const alive = context.aliveAtStart ?? new Set(actors.filter((a) => a.resources.hp > 0).map(idOf));
+  const alive =
+    context.aliveAtStart ?? new Set(actors.filter((a) => a.vitals.resources.hp > 0).map(idOf));
   const limit = new ReactionBudget(
     budget,
     actors.reduce(
       (sum, a) =>
         sum +
-        a.motion.actor.abilities
+        a.body.motion.actor.abilities
           .filter((b) => b.definition.reaction)
-          .reduce((n, b) => n + (a.used[b.id] ?? 0), 0),
+          .reduce((n, b) => n + (a.actions.used[b.id] ?? 0), 0),
       0,
     ),
     work,
@@ -154,20 +155,20 @@ export function commitReactiveEffects(
       matches: PendingEffect[];
     }[] = [];
     for (const actor of [...actors].sort((a, b) => compareIds(idOf(a), idOf(b)))) {
-      if (!alive.has(idOf(actor)) || (point === 'before-defeat' && actor.resources.hp > 0))
+      if (!alive.has(idOf(actor)) || (point === 'before-defeat' && actor.vitals.resources.hp > 0))
         continue;
       const view = selfView(actor, step, battle.rules.ai, battle.statuses);
-      const eligible = actor.motion.actor.abilities
+      const eligible = actor.body.motion.actor.abilities
         .filter((a) => {
           const d = a.definition;
           return (
             d.reaction &&
             d.trigger === point &&
             !view.incapacitated &&
-            postureAllows(actor.motion, d) &&
+            postureAllows(actor.body.motion, d) &&
             !(view.silenced && blockedBySilence(d)) &&
-            (actor.cooldowns[a.id] ?? 0) <= activationStep &&
-            (!d.costs.uses || (actor.used[a.id] ?? 0) < d.costs.uses) &&
+            (actor.actions.cooldowns[a.id] ?? 0) <= activationStep &&
+            (!d.costs.uses || (actor.actions.used[a.id] ?? 0) < d.costs.uses) &&
             conditionMatches(d.condition, view)
           );
         })
@@ -178,14 +179,18 @@ export function commitReactiveEffects(
           ),
           clock: actionClock(
             ability.definition,
-            actor.motion.actor.character.stats.actionSpeedBps,
+            actor.body.motion.actor.character.stats.actionSpeedBps,
             activationStep,
           ),
         }))
         .filter((a) => a.clock && (point === 'before-defeat' || a.matches.length))
         .sort((a, b) => compareIds(a.ability.id, b.ability.id));
       if (!eligible.length) continue;
-      const resources = new ResourceBudget(actor.resources, actor.used, resourceReady(view));
+      const resources = new ResourceBudget(
+        actor.vitals.resources,
+        actor.actions.used,
+        resourceReady(view),
+      );
       const held = resources.reserve(
         'reaction',
         eligible.map(({ ability }) => ({
@@ -222,8 +227,8 @@ export function commitReactiveEffects(
       });
       const payment = resources.commit('reaction');
       const settled = resources.finish();
-      actor.resources = settled.resources;
-      actor.used = settled.used;
+      actor.vitals.resources = settled.resources;
+      actor.actions.used = settled.used;
       const cost = journal.emit({
         kind: 'cost',
         step: activationStep,
@@ -266,12 +271,15 @@ export function commitReactiveEffects(
           cooldownUntil: clock!.cooldownUntil,
           state: counter ? 'queued' : 'applied',
         };
-        actor.cooldowns[ability.id] = Math.max(display.recoveryUntil, display.cooldownUntil);
-        actor.reactions ??= [];
-        actor.reactions = actor.reactions.filter((r) => r.abilityId !== ability.id);
-        actor.reactions.push(display);
-        actor.reactions.sort((a, b) => compareIds(a.abilityId, b.abilityId));
-        const queued = actor.reactions.filter((r) => r.state === 'queued').length;
+        actor.actions.cooldowns[ability.id] = Math.max(
+          display.recoveryUntil,
+          display.cooldownUntil,
+        );
+        actor.actions.reactions ??= [];
+        actor.actions.reactions = actor.actions.reactions.filter((r) => r.abilityId !== ability.id);
+        actor.actions.reactions.push(display);
+        actor.actions.reactions.sort((a, b) => compareIds(a.abilityId, b.abilityId));
+        const queued = actor.actions.reactions.filter((r) => r.state === 'queued').length;
         if (queued > 64)
           throw new SpatialBudgetError(
             'reaction-queue',

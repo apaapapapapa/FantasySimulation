@@ -1,12 +1,19 @@
 import type {
+  PreviousMovement,
+  AbilityRevision,
+  ActionState,
+  ActorState,
+  MeleeState,
+  DecisionView,
+} from './state.ts';
+export type { StageRuntime } from './state.ts';
+import type {
   ActorDisplay,
-  AttackGeometry,
   BattleEvent,
   StageContact,
   ObservedStage,
 } from '@fantasy/domain/spatial/execution';
-import type { AbilityRevision, ActionState, ActorState, MeleeState } from './combat-state.ts';
-import { conditionMatches, type DecisionView } from './perception.ts';
+import { conditionMatches } from './perception.ts';
 import { inObservedRange } from './attacks.ts';
 import { blockedBySilence } from './categories.ts';
 import { postureAllows } from './posture.ts';
@@ -16,19 +23,11 @@ import { admitMotionCost, rejectPair } from './pair-admission.ts';
 import { mul, unit } from './math.ts';
 import { hasForcedMotion } from './forces.ts';
 
-export type StageRuntime = {
-  index: number;
-  next: number;
-  active: boolean;
-  cause: string;
-  interruptedAt?: number;
-  geometry?: AttackGeometry;
-  motion?: NonNullable<NonNullable<ActorDisplay['action']>['stage']>['motion'];
-};
 /** Attached volumes disappear with their owner window; detached projectiles use their snapshots. */
 export function attachedStageAlive(attack: MeleeState, actors: readonly ActorState[], at: number) {
   if (!attack.stage) return true;
-  const action = actors.find((a) => a.motion.actor.participant.actorId === attack.actorId)?.action;
+  const action = actors.find((a) => a.body.motion.actor.participant.actorId === attack.actorId)
+    ?.actions.action;
   const stage = action?.ability.definition.stages?.[attack.stage.stageIndex];
   return (
     action?.id === attack.stage.actionId &&
@@ -82,7 +81,7 @@ export function interruptStage(
   reason: string,
   causes: string[] = [],
 ) {
-  const action = actor.action,
+  const action = actor.actions.action,
     runtime = action?.stages;
   if (!action || !runtime || runtime.interruptedAt !== undefined) return;
   runtime.interruptedAt = at;
@@ -91,7 +90,7 @@ export function interruptStage(
     kind: 'stage-interrupt',
     step: at,
     phase,
-    actorId: actor.motion.actor.participant.actorId,
+    actorId: actor.body.motion.actor.participant.actorId,
     abilityId: action.ability.id,
     parentEventId: runtime.cause,
     causes,
@@ -102,8 +101,9 @@ export function interruptStage(
 }
 /** A visible cue has no plan IDs, future windows, costs or definition references. */
 export function visibleStageCue(actor: ActorState, step: number): ObservedStage | undefined {
-  if (hasForcedMotion(actor, step)) return { shape: 'hold', state: 'active', motion: 'forced' };
-  const display = actor.action && stageDisplay(actor.action, step);
+  if (hasForcedMotion(actor.body, step))
+    return { shape: 'hold', state: 'active', motion: 'forced' };
+  const display = actor.actions.action && stageDisplay(actor.actions.action, step);
   if (!display || display.state === 'preparing' || display.state === 'complete') return undefined;
   return {
     shape: display.state === 'active' ? display.shape : 'hold',
@@ -121,7 +121,7 @@ export function checkStageInterruption(
   journal: Journal,
   phase: BattleEvent['phase'],
 ) {
-  const action = actor.action,
+  const action = actor.actions.action,
     runtime = action?.stages;
   if (!action || !runtime || runtime.interruptedAt !== undefined) return;
   const stage = action.ability.definition.stages![Math.max(0, runtime.index)]!;
@@ -135,7 +135,7 @@ export function checkStageInterruption(
     step < action.launchAt ||
     (runtime.active && step < action.launchAt + stage.offsetSteps + stage.durationSteps);
   const reason =
-    actor.resources.hp === 0
+    actor.vitals.resources.hp === 0
       ? 'defeated'
       : view.incapacitated
         ? 'incapacitated'
@@ -154,7 +154,7 @@ export function interruptDamagedStages(
   phase: BattleEvent['phase'],
 ) {
   for (const actor of actors) {
-    const action = actor.action,
+    const action = actor.actions.action,
       runtime = action?.stages;
     if (!action || !runtime || (!runtime.active && at > action.launchAt)) continue;
     const stage = action.ability.definition.stages![Math.max(0, runtime.index)]!;
@@ -163,7 +163,7 @@ export function interruptDamagedStages(
       .filter(
         (e) =>
           e.kind === 'damage' &&
-          e.targetId === actor.motion.actor.participant.actorId &&
+          e.targetId === actor.body.motion.actor.participant.actorId &&
           e.damage &&
           BigInt(e.damage.toHp.numerator) > 0n,
       )
@@ -173,7 +173,7 @@ export function interruptDamagedStages(
 }
 export function finishStages(actors: readonly ActorState[], at: number, journal: Journal) {
   for (const actor of actors) {
-    const action = actor.action,
+    const action = actor.actions.action,
       runtime = action?.stages;
     if (!action || !runtime?.active) continue;
     const stage = action.ability.definition.stages![runtime.index]!;
@@ -183,7 +183,7 @@ export function finishStages(actors: readonly ActorState[], at: number, journal:
       kind: 'stage-end',
       step: at,
       phase: 'resolution',
-      actorId: actor.motion.actor.participant.actorId,
+      actorId: actor.body.motion.actor.participant.actorId,
       abilityId: action.ability.id,
       parentEventId: runtime.cause,
       stage: stageContact(action, runtime.index),
@@ -198,9 +198,9 @@ export function releaseStage(
   step: number,
   budget: ResourceBudget,
   journal: Journal,
-  movement: { dodge: boolean; previous: Pick<ActorState, 'intent' | 'decision'> },
+  movement: { dodge: boolean; previous: PreviousMovement },
 ) {
-  const action = actor.action!,
+  const action = actor.actions.action!,
     runtime = action.stages!,
     plan = action.ability.definition.stages!;
   const index = runtime.next,
@@ -210,7 +210,7 @@ export function releaseStage(
   runtime.index = index;
   delete runtime.geometry;
   const definition = action.ability.definition;
-  const reason = !postureAllows(actor.motion, definition)
+  const reason = !postureAllows(actor.body.motion, definition)
     ? 'posture'
     : view.incapacitated
       ? 'incapacitated'
@@ -230,19 +230,19 @@ export function releaseStage(
   }
   if (
     stage.selfMotion?.kind === 'leap' &&
-    (!view.canMove || !actor.motion.grounded || actor.intent.flight)
+    (!view.canMove || !actor.body.motion.grounded || actor.body.intent.flight)
   ) {
     interruptStage(actor, step, journal, 'launch', 'leap-requires-supported-voluntary-motion');
     return null;
   }
-  if (stage.selfMotion && movement.dodge && actor.intent.canMove) {
+  if (stage.selfMotion && movement.dodge && actor.body.intent.canMove) {
     rejectPair(actor, movement.previous);
     movement = { ...movement, dodge: false };
     journal.emit({
       kind: 'fizzle',
       step,
       phase: 'launch',
-      actorId: actor.motion.actor.participant.actorId,
+      actorId: actor.body.motion.actor.participant.actorId,
       ruleId: 'stage.motion-slot',
       reason: 'Existing stage owns this interval; new dodge is infeasible',
     });
@@ -258,9 +258,9 @@ export function releaseStage(
       stage.selfMotion?.kind === 'leap',
     );
     if (!admission.ok) {
-      if (movement.dodge || actor.intent.jump) {
+      if (movement.dodge || actor.body.intent.jump) {
         rejectPair(actor, movement.previous);
-        actor.intent.jump = false;
+        actor.body.intent.jump = false;
       }
       interruptStage(actor, step, journal, 'launch', `insufficient-${admission.reason}`);
       return null;
@@ -273,12 +273,12 @@ export function releaseStage(
       return null;
     }
     const paid = budget.commit('stage');
-    actor.resources = paid.after;
+    actor.vitals.resources = paid.after;
     journal.emit({
       kind: 'cost',
       step,
       phase: 'launch',
-      actorId: actor.motion.actor.participant.actorId,
+      actorId: actor.body.motion.actor.participant.actorId,
       abilityId: action.ability.id,
       parentEventId: action.cause,
       stage: stageContact(action, index),
@@ -291,7 +291,7 @@ export function releaseStage(
     kind: 'stage-start',
     step,
     phase: 'launch',
-    actorId: actor.motion.actor.participant.actorId,
+    actorId: actor.body.motion.actor.participant.actorId,
     abilityId: action.ability.id,
     parentEventId: action.cause,
     stage: stageContact(action, index),
@@ -300,7 +300,7 @@ export function releaseStage(
   action.released = true;
   action.stages = { index, next: index + 1, active: true, cause: start.id };
   if (stage.selfMotion) {
-    const direction = unit({ ...actor.motion.facing, y: 0 });
+    const direction = unit({ ...actor.body.motion.facing, y: 0 });
     if (direction.x === 0 && direction.z === 0) direction.x = 1;
     action.stages.motion = {
       ...stage.selfMotion,

@@ -1,5 +1,5 @@
+import type { MeleeState } from '../state.ts';
 import { meleeTrace, traceAttack, type AttackContact } from '../attacks.ts';
-import { type MeleeState } from '../combat-state.ts';
 import { contactObservation } from '../combat-effects.ts';
 import { moveActors } from '../movement.ts';
 import { reserveMotion } from '../motion-resources.ts';
@@ -22,14 +22,14 @@ export function contactPhase(tx: StepTransaction) {
       actor,
       resourceBudgets.get(actorId(actor))!,
       step,
-      aiBoundary && isDodgeDecision(actor.decision),
+      aiBoundary && isDodgeDecision(actor.mind.decision),
     ),
   );
-  for (const [index, actor] of next.entries()) actor.intent = motionPlans[index]!.intent;
+  for (const [index, actor] of next.entries()) actor.body.intent = motionPlans[index]!.intent;
   const moved = moveActors(
     world,
-    next.map((a) => a.motion),
-    new Map(next.map((a) => [actorId(a), a.intent])),
+    next.map((a) => a.body.motion),
+    new Map(next.map((a) => [actorId(a), a.body.intent])),
     battle.rules,
     budget.maxMoveSegments,
   );
@@ -54,8 +54,8 @@ export function contactPhase(tx: StepTransaction) {
     const ownerActor = next.find((a) => actorId(a) === attack.actorId)!;
     if (
       attack.stage &&
-      (ownerActor.action?.id !== attack.stage.actionId ||
-        ownerActor.action.stages?.interruptedAt !== undefined)
+      (ownerActor.actions.action?.id !== attack.stage.actionId ||
+        ownerActor.actions.action.stages?.interruptedAt !== undefined)
     )
       continue;
     const shape = attack.ability.definition.attack;
@@ -66,7 +66,8 @@ export function contactPhase(tx: StepTransaction) {
     const activeSteps =
       shape.kind === 'melee'
         ? shape.activeSteps
-        : ownerActor.action!.ability.definition.stages![attack.stage!.stageIndex]!.durationSteps;
+        : ownerActor.actions.action!.ability.definition.stages![attack.stage!.stageIndex]!
+            .durationSteps;
     work.candidate();
     const blade =
       shape.kind !== 'melee'
@@ -108,7 +109,7 @@ export function contactPhase(tx: StepTransaction) {
           )
         : blade!.contact;
     if (attack.stage)
-      ownerActor.action!.stages!.geometry =
+      ownerActor.actions.action!.stages!.geometry =
         shape.kind === 'melee'
           ? {
               kind: 'sphere',
@@ -158,8 +159,8 @@ export function contactPhase(tx: StepTransaction) {
             ...(attack.stage ? { stage: attack.stage } : {}),
             observation: contactObservation(
               moved,
-              next.find((a) => actorId(a) === attack.actorId)!.motion,
-              next.find((a) => actorId(a) !== attack.actorId)!.motion,
+              next.find((a) => actorId(a) === attack.actorId)!.body.motion,
+              next.find((a) => actorId(a) !== attack.actorId)!.body.motion,
               contact.time,
             ),
           });
@@ -189,7 +190,7 @@ export function contactPhase(tx: StepTransaction) {
   }
   for (const actor of next) {
     const movement = moved.find((m) => m.state.actor.participant.actorId === actorId(actor))!;
-    actor.motion = movement.state;
+    actor.body.motion = movement.state;
     settleForcedInterval(actor, forcePlans.get(actorId(actor)) ?? null, movement, step);
     if (movement.landed) {
       const land = journal.emit({
@@ -199,7 +200,7 @@ export function contactPhase(tx: StepTransaction) {
         subtimeMicros: 1_000_000,
         actorId: actorId(actor),
         ruleId: 'movement.land',
-        point: actor.motion.position,
+        point: actor.body.motion.position,
         amount: movement.fallDamage,
       });
       if (movement.fallDamage)

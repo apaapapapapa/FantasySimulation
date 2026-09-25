@@ -1,3 +1,4 @@
+import type { DamageSnapshot, ResolvedActor, StatusCohort, StatusRevision } from './state.ts';
 import {
   DEFAULT_BUDGET,
   compareIds,
@@ -7,17 +8,9 @@ import {
   type BattleEvent,
 } from '@fantasy/domain/spatial/execution';
 import { calculateDamage, damageDefense, hasDamageFormula, type DamageEffect } from './damage.ts';
-import type { DamageSnapshot } from './status-damage.ts';
-import type { ResolvedActor } from './prepare.ts';
 import { adjustedStatusValue, damageStatusBps, statusResistance } from './status-modifiers.ts';
 import { planStatusEffects, reactionDamageBps } from './status-reactions.ts';
-import {
-  applyStatuses,
-  effectiveStats,
-  type StatusCohort,
-  type StatusRevision,
-  type StatusLimits,
-} from './status.ts';
+import { applyStatuses, effectiveStats, type StatusLimits } from './status.ts';
 export type Fraction = { numerator: string; denominator: string };
 export function fraction(n: bigint, d: bigint): Fraction {
   if (n < 0n || d <= 0n) throw new Error('Invalid nonnegative fraction');

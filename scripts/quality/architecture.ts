@@ -23,6 +23,18 @@ const rule = (
 ): IRegularForbiddenRuleType => ({ name, from, to, comment, severity: 'error' });
 export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
+    'no-engine-type-cycle',
+    { path: '^packages/engine/src/' },
+    { path: '^packages/engine/src/', circular: true },
+    'Engine state and runtime dependencies must remain acyclic, including type-only edges.',
+  ),
+  rule(
+    'engine-state-foundation',
+    { path: '^packages/engine/src/spatial/(?:state|geometry-types)[.]ts$' },
+    { path: '^packages/engine/src/', pathNot: '^packages/engine/src/spatial/math[.]ts$' },
+    'State definitions may depend on shared contracts and vector types, never runtime behavior.',
+  ),
+  rule(
     'execution-does-not-import-builder',
     { path: '^packages/engine/src/', pathNot: '/(?:index|manifest-builder)[.]ts$' },
     { path: '^packages/engine/src/spatial/manifest-builder[.]ts$' },

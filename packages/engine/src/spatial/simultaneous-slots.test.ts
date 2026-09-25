@@ -5,6 +5,7 @@ import {
   CognitionSchema,
   replayContext,
   ReplayState,
+  AbilitySchema,
 } from '@fantasy/domain/spatial';
 import { initializePhysics } from './physics.ts';
 import { aiFixture, flyingBody, initialStatus, incomingArrow } from '../../test-support/ai.ts';
@@ -19,7 +20,6 @@ import { sealRevision } from './manifest-builder.ts';
 import { runBattle } from './run.ts';
 import { STANDARD_MOVEMENT } from '@fantasy/samples';
 import { simultaneousManifest } from '../../test-support/simultaneous.ts';
-import { AbilitySchema } from '@fantasy/domain/spatial';
 
 beforeAll(initializePhysics);
 async function simultaneousFixture(cost = 6, stop = false) {
@@ -117,7 +117,7 @@ describe('simultaneous action and evasion', () => {
   it('admits the whole shared cost or nothing, protecting flight upkeep', async () => {
     const f = await locomotionFixture();
     try {
-      const base = f.actor.motion.actor.abilities[0]!;
+      const base = f.actor.body.motion.actor.abilities[0]!;
       const ability = await sealRevision('ability', 'paired-action', 1, {
         ...AbilitySchema.parse(base.definition),
         costs: { hp: 0, mp: 0, stamina: 6, uses: 1 },
@@ -126,7 +126,7 @@ describe('simultaneous action and evasion', () => {
         [10, false],
         [11, true],
       ] as const) {
-        const budget = new ResourceBudget({ ...f.actor.resources, stamina });
+        const budget = new ResourceBudget({ ...f.actor.vitals.resources, stamina });
         expect(admitPair(f.actor, ability, budget, 0).ok).toBe(ok);
         expect(budget.finish()).toMatchObject({ resources: { stamina }, used: {} });
       }
@@ -140,8 +140,8 @@ describe('simultaneous action and evasion', () => {
         }),
       );
       f.actor.statuses = [{ revision: status, startStep: 0, endStep: 100, stacks: 1, causes: [] }];
-      f.actor.intent.flight = true;
-      const budget = new ResourceBudget({ ...f.actor.resources, stamina: 11 });
+      f.actor.body.intent.flight = true;
+      const budget = new ResourceBudget({ ...f.actor.vitals.resources, stamina: 11 });
       expect(admitPair(f.actor, ability, budget, 1).ok).toBe(false);
       expect(budget.available.stamina).toBe(11);
     } finally {
@@ -153,27 +153,36 @@ describe('simultaneous action and evasion', () => {
     async (explicitGait) => {
       const f = await locomotionFixture();
       try {
-        f.actor.resources.stamina = 11;
-        if (explicitGait) f.actor.decision.gait = 'walk';
-        const previous = { intent: { ...f.actor.intent }, decision: f.actor.decision };
+        f.actor.vitals.resources.stamina = 11;
+        if (explicitGait) f.actor.mind.decision.gait = 'walk';
+        const previous = { intent: { ...f.actor.body.intent }, decision: f.actor.mind.decision };
         const ability = await sealRevision('ability', 'costly-jump-shot', 1, {
-          ...AbilitySchema.parse(f.actor.motion.actor.abilities[0]!.definition),
+          ...AbilitySchema.parse(f.actor.body.motion.actor.abilities[0]!.definition),
           costs: { hp: 0, mp: 0, stamina: 6, uses: 1 },
         });
-        f.actor.intent = { ...f.actor.intent, direction: { x: 0, y: 0, z: 1 }, jump: true };
-        f.actor.decision = { ...f.actor.decision, abilityId: ability.id, gait: 'run', dodge: true };
-        const budget = new ResourceBudget(f.actor.resources);
+        f.actor.body.intent = {
+          ...f.actor.body.intent,
+          direction: { x: 0, y: 0, z: 1 },
+          jump: true,
+        };
+        f.actor.mind.decision = {
+          ...f.actor.mind.decision,
+          abilityId: ability.id,
+          gait: 'run',
+          dodge: true,
+        };
+        const budget = new ResourceBudget(f.actor.vitals.resources);
         expect(admitPair(f.actor, ability, budget, 0)).toEqual({ ok: false, reason: 'stamina' });
         rejectPair(f.actor, previous);
-        expect(f.actor.decision.gait).toBe(explicitGait ? 'walk' : undefined);
-        expect(f.actor.intent.jump).toBe(false);
+        expect(f.actor.mind.decision.gait).toBe(explicitGait ? 'walk' : undefined);
+        expect(f.actor.body.intent.jump).toBe(false);
         advanceLocomotion(f, 0, { budget });
         for (let step = 1; step < 50; step++) advanceLocomotion(f, step);
-        expect(f.actor.motion.position.x + 4).toBeCloseTo(2, 2);
-        expect(f.actor.motion.position.z).toBe(0);
-        expect(f.actor.resources.stamina).toBe(7);
-        expect(f.actor.used).toEqual({});
-        expect(f.actor.readyAt).toBe(0);
+        expect(f.actor.body.motion.position.x + 4).toBeCloseTo(2, 2);
+        expect(f.actor.body.motion.position.z).toBe(0);
+        expect(f.actor.vitals.resources.stamina).toBe(7);
+        expect(f.actor.actions.used).toEqual({});
+        expect(f.actor.actions.readyAt).toBe(0);
       } finally {
         f.world.free();
       }

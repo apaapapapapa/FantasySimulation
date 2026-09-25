@@ -1,3 +1,5 @@
+import type { Trace } from './geometry-types.ts';
+import type { DecisionView, MotionState } from './state.ts';
 import {
   nextRandom,
   type DeepReadonly,
@@ -24,10 +26,8 @@ import {
   firstImpact,
   straight,
   type SpatialWorld,
-  type Trace,
 } from './physics.ts';
-import { bodyPoint, type DecisionView } from './perception.ts';
-import type { MotionState } from './movement.ts';
+import { bodyPoint } from './perception.ts';
 import { bodyCapsule } from './terrain.ts';
 import { ResourceBudget } from './resources.ts';
 

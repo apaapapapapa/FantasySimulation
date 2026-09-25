@@ -2,8 +2,13 @@ import { beforeAll, expect, it } from 'vite-plus/test';
 import { aiFixture, incomingArrow } from '../../test-support/ai.ts';
 import { initializePhysics, SpatialWorld } from './physics.ts';
 import { advancePosture, postureAllows, postureSpeed } from './posture.ts';
-import { TACTICAL_AI, tacticalPostures } from '@fantasy/samples';
-import { STANDARD_BODY } from '@fantasy/samples';
+import {
+  TACTICAL_AI,
+  tacticalPostures,
+  STANDARD_BODY,
+  catalogManifest,
+  sampleCatalog,
+} from '@fantasy/samples';
 import { hitscan } from './attacks.ts';
 import { perceive, emptyMemory } from './perception.ts';
 import { dodgeOptions } from './dodge.ts';
@@ -11,7 +16,6 @@ import { coverOptions } from './cover.ts';
 import { Navigator } from './navigation.ts';
 import { advanceLocomotion, locomotionFixture, locomotion } from '../../test-support/locomotion.ts';
 import { runBattle } from './run.ts';
-import { catalogManifest, sampleCatalog } from '@fantasy/samples';
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';
 import { withTacticalRules } from '../../test-support/tactics.ts';
 import { chooseGait } from './locomotion.ts';
@@ -70,37 +74,40 @@ it.each(['crouching', 'prone'] as const)(
   async (stance) => {
     const f = await locomotionFixture();
     try {
-      const actor = f.actor.motion.actor;
-      f.actor.motion = {
-        ...f.actor.motion,
+      const actor = f.actor.body.motion.actor;
+      f.actor.body.motion = {
+        ...f.actor.body.motion,
         posture: { current: 'standing', standingBody: actor.character.body },
         actor: {
           ...actor,
           character: { ...actor.character, postures: tacticalPostures(actor.character.body) },
         },
       };
-      f.actor.motion = advancePosture(f.actor.motion, stance, 0, f.world, []);
-      f.actor.decision.gait = 'run';
-      f.actor.intent.speedBps = postureSpeed(f.actor.motion);
-      f.actor.intent.jump = true;
-      const startX = f.actor.motion.position.x;
+      f.actor.body.motion = advancePosture(f.actor.body.motion, stance, 0, f.world, []);
+      f.actor.mind.decision.gait = 'run';
+      f.actor.body.intent.speedBps = postureSpeed(f.actor.body.motion);
+      f.actor.body.intent.jump = true;
+      const startX = f.actor.body.motion.position.x;
       for (let step = 0; step < (stance === 'prone' ? 20 : 10); step++) {
         const { moved } = advanceLocomotion(f, step);
         expect(moved.jumped).toBe(false);
       }
-      expect(f.actor.motion.posture?.current).toBe('standing');
-      expect(f.actor.motion.position.x - startX).toBeCloseTo(stance === 'prone' ? 0.16 : 0.2, 4);
-      expect(f.actor.resources.stamina).toBe(100);
-      expect(f.actor.motionClock?.remainder).toBe(stance === 'prone' ? 320000 : 400000);
+      expect(f.actor.body.motion.posture?.current).toBe('standing');
+      expect(f.actor.body.motion.position.x - startX).toBeCloseTo(
+        stance === 'prone' ? 0.16 : 0.2,
+        4,
+      );
+      expect(f.actor.vitals.resources.stamina).toBe(100);
+      expect(f.actor.body.motionClock?.remainder).toBe(stance === 'prone' ? 320000 : 400000);
       expect(chooseGait(selfView(f.actor, 9, TACTICAL_AI, f.battle.statuses), 0, true)?.gait).toBe(
         'walk',
       );
-      f.actor.motion = advancePosture(f.actor.motion, undefined, 20, f.world, []);
+      f.actor.body.motion = advancePosture(f.actor.body.motion, undefined, 20, f.world, []);
       const { plan, moved } = advanceLocomotion(f, 21);
       expect(plan.intent.speedMmPerSecond).toBe(2000);
       expect(plan.intent.speedBps).toBe(stance === 'prone' ? 2000 : 5000);
       expect(moved.jumped).toBe(stance === 'crouching');
-      expect(f.actor.resources.stamina).toBe(stance === 'prone' ? 100 : 92);
+      expect(f.actor.vitals.resources.stamina).toBe(stance === 'prone' ? 100 : 92);
     } finally {
       f.world.free();
     }

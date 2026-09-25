@@ -5,14 +5,13 @@ import { assessReactions, visibleReactionCue } from './reaction-assessment.ts';
 import { choosePolicy } from './policy.ts';
 import { emptyMemory, perceive } from './perception.ts';
 import { initialActor } from './combat-state.ts';
-import { aiFixture, incomingArrow } from '../../test-support/ai.ts';
+import { aiFixture, incomingArrow, initialStatus } from '../../test-support/ai.ts';
 import { reactionManifest } from '../../test-support/reactions.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
 import { runBattle } from './run.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
 import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
-import { initialStatus } from '../../test-support/ai.ts';
 
 beforeAll(initializePhysics);
 const parry: Partial<Definition<'ability'>> = {
@@ -106,7 +105,7 @@ describe('reaction information and release validation', () => {
     try {
       const actor = initialActor(f.world, f.battle.actors[1]);
       expect(visibleReactionCue(actor, 5)).toBeUndefined();
-      actor.reactions = [
+      actor.actions.reactions = [
         {
           context: { activationId: 'e.15', point: 'before-hit', wave: 0, depth: 1 },
           abilityId: 'choice-0',

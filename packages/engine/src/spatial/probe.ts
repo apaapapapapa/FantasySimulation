@@ -1,3 +1,4 @@
+import type { Obstacle } from './geometry-types.ts';
 import { add, encodeNumericState, sub, turnToward, type Vec3 } from './math.ts';
 import {
   at,
@@ -7,7 +8,6 @@ import {
   SpatialWorld,
   stopAt,
   straight,
-  type Obstacle,
 } from './physics.ts';
 
 export const probeInputs = [

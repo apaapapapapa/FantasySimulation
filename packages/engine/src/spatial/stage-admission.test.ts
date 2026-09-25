@@ -44,28 +44,36 @@ describe('due stage and movement admission', () => {
           flightStaminaPerSecond: 100,
         }),
       );
-      const motion = structuredClone(f.actor.motion);
+      const motion = structuredClone(f.actor.body.motion);
       for (const enough of [false, true]) {
         const stamina = choice.total - (enough ? 0 : 1);
-        f.actor.motion = structuredClone(motion);
-        f.actor.resources.stamina = stamina;
-        f.actor.motionClock = { remainder: 0, flightRemainder: 0 };
+        f.actor.body.motion = structuredClone(motion);
+        f.actor.vitals.resources.stamina = stamina;
+        f.actor.body.motionClock = { remainder: 0, flightRemainder: 0 };
         f.actor.statuses = choice.flight
           ? [{ revision: status, startStep: 0, endStep: 100, stacks: 1, causes: [] }]
           : [];
-        f.actor.intent = {
-          ...f.actor.intent,
+        f.actor.body.intent = {
+          ...f.actor.body.intent,
           jump: false,
           flight: choice.flight,
           direction: { x: 0, y: 0, z: 0 },
           canMove,
         };
-        f.actor.decision = { ...f.actor.decision, abilityId: null, dodge: false, gait: 'walk' };
-        const previous = { intent: { ...f.actor.intent }, decision: { ...f.actor.decision } };
-        f.actor.intent.jump = choice.jump;
-        f.actor.decision.dodge = choice.dodge;
+        f.actor.mind.decision = {
+          ...f.actor.mind.decision,
+          abilityId: null,
+          dodge: false,
+          gait: 'walk',
+        };
+        const previous = {
+          intent: { ...f.actor.body.intent },
+          decision: { ...f.actor.mind.decision },
+        };
+        f.actor.body.intent.jump = choice.jump;
+        f.actor.mind.decision.dodge = choice.dodge;
         const clock = actionClock(ability.definition, 10000, 0)!;
-        f.actor.action = {
+        f.actor.actions.action = {
           id: 'a.0',
           ability,
           cause: 'e.0',
@@ -74,9 +82,9 @@ describe('due stage and movement admission', () => {
           released: true,
           stages: { index: 0, next: 1, active: false, cause: 'e.0' },
         };
-        f.actor.readyAt = clock.recoveryUntil;
-        f.actor.cooldowns[ability.id] = clock.cooldownUntil;
-        const budget = new ResourceBudget(f.actor.resources),
+        f.actor.actions.readyAt = clock.recoveryUntil;
+        f.actor.actions.cooldowns[ability.id] = clock.cooldownUntil;
+        const budget = new ResourceBudget(f.actor.vitals.resources),
           journal = new Journal(1, 0, DEFAULT_BUDGET);
         const released = releaseStage(
           f.actor,
@@ -87,20 +95,22 @@ describe('due stage and movement admission', () => {
           { dodge: choice.dodge, previous },
         );
         expect(released !== null).toBe(enough);
-        advanceLocomotion(f, 3, { budget, journal, dodge: !!f.actor.decision.dodge });
-        expect(f.actor.resources.stamina).toBe(enough ? 0 : stamina - (choice.flight ? 2 : 0));
-        expect(f.actor.used).toEqual({});
-        expect(f.actor.readyAt).toBe(clock.recoveryUntil);
-        expect(f.actor.cooldowns[ability.id]).toBe(clock.cooldownUntil);
-        expect(f.actor.locomotion?.mode === 'flight').toBe(choice.flight);
+        advanceLocomotion(f, 3, { budget, journal, dodge: !!f.actor.mind.decision.dodge });
+        expect(f.actor.vitals.resources.stamina).toBe(
+          enough ? 0 : stamina - (choice.flight ? 2 : 0),
+        );
+        expect(f.actor.actions.used).toEqual({});
+        expect(f.actor.actions.readyAt).toBe(clock.recoveryUntil);
+        expect(f.actor.actions.cooldowns[ability.id]).toBe(clock.cooldownUntil);
+        expect(f.actor.body.locomotion?.mode === 'flight').toBe(choice.flight);
         expect(journal.events.filter((e) => e.ruleId === 'stage.cost')).toHaveLength(
           enough ? 1 : 0,
         );
         expect(journal.events.filter((e) => e.kind === 'stage-interrupt')).toHaveLength(
           enough ? 0 : 1,
         );
-        expect(f.actor.locomotion?.dodging).toBe(enough && choice.dodge && canMove);
-        expect(f.actor.locomotion?.jumping).toBe(enough && choice.jump && canMove);
+        expect(f.actor.body.locomotion?.dodging).toBe(enough && choice.dodge && canMove);
+        expect(f.actor.body.locomotion?.jumping).toBe(enough && choice.jump && canMove);
       }
     } finally {
       f.world.free();

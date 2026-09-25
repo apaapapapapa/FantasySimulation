@@ -1,5 +1,5 @@
+import type { DecisionView } from './state.ts';
 import type { DeepReadonly, Definition, Stage } from '@fantasy/domain/spatial/execution';
-import type { DecisionView } from './perception.ts';
 import { bodyPoint } from './perception.ts';
 import { bladePose } from './blades.ts';
 import { dot, length, mul, sub } from './math.ts';

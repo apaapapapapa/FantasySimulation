@@ -1,11 +1,11 @@
+import type { ActorState, DecisionView } from './state.ts';
 import {
   compareIds,
   type ReactionEstimate,
   type ObservedReaction,
 } from '@fantasy/domain/spatial/execution';
-import type { ActorState } from './combat-state.ts';
 import { assessAbility, boundedWeight } from './assessment.ts';
-import { conditionMatches, type DecisionView } from './perception.ts';
+import { conditionMatches } from './perception.ts';
 import { blockedBySilence } from './categories.ts';
 import { postureAllows } from './posture.ts';
 import { payCost } from './attacks.ts';
@@ -74,10 +74,10 @@ export function assessReactions(view: DecisionView) {
 }
 /** Public cue of an actual activation only. Never expose costs, IDs, clocks or a pending queue. */
 export function visibleReactionCue(actor: ActorState, step: number): ObservedReaction | undefined {
-  const active = (actor.reactions ?? [])
+  const active = (actor.actions.reactions ?? [])
     .filter((r) => r.activatedAt <= step && step < r.recoveryUntil && r.state !== 'cancelled')
     .sort((a, b) => b.activatedAt - a.activatedAt || compareIds(a.abilityId, b.abilityId))[0];
   if (!active) return undefined;
-  const ability = actor.motion.actor.abilities.find((a) => a.id === active.abilityId)!;
+  const ability = actor.body.motion.actor.abilities.find((a) => a.id === active.abilityId)!;
   return { point: active.context.point, response: ability.definition.reaction!.response.kind };
 }

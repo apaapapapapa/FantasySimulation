@@ -1,22 +1,18 @@
+import type { ActorState, AbilityRevision, DamageSnapshot } from './state.ts';
+export type { DamageSnapshot } from './state.ts';
 import { ElementSchema } from '@fantasy/domain/spatial/execution';
-import type { ActorState, AbilityRevision } from './combat-state.ts';
-import { damageSource, type DamageSource } from './damage.ts';
+import { damageSource } from './damage.ts';
 import { abilityCategories } from './categories.ts';
 import { damageStatusBps } from './status-modifiers.ts';
 import { effectiveStats } from './status.ts';
 
-export type DamageSnapshot = DamageSource & {
-  dealtByElement?: Readonly<
-    Partial<Record<(typeof ElementSchema.enum)[keyof typeof ElementSchema.enum], number>>
-  >;
-};
 /** Preserve launch-time damage modifiers for melee and projectile contacts after the status expires. */
 export function statusDamageSource(
   actor: ActorState,
   ability: AbilityRevision,
   step: number,
 ): DamageSnapshot {
-  const source = damageSource(effectiveStats(actor.motion.actor, actor.statuses, step));
+  const source = damageSource(effectiveStats(actor.body.motion.actor, actor.statuses, step));
   const entries = ElementSchema.options.map(
     (element) =>
       [

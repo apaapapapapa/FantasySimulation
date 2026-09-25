@@ -1,12 +1,11 @@
+import type { PreparedBattle, MotionIntent, MotionState } from './state.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { contentHash, type Definition, type Manifest } from '@fantasy/domain/spatial';
 import { encodeNumericState, mul, ZERO } from './math.ts';
-import { initializePhysics } from './physics.ts';
-import type { PreparedBattle } from './prepare.ts';
+import { initializePhysics, capsuleShape, type SpatialWorld } from './physics.ts';
 import { terrainBattle } from '../../test-support/fixtures.ts';
 import { bodyCapsule, createBattleWorld } from './terrain.ts';
-import { capsuleShape, type SpatialWorld } from './physics.ts';
-import { initialMotion, moveActors, type MotionIntent, type MotionState } from './movement.ts';
+import { initialMotion, moveActors } from './movement.ts';
 
 beforeAll(initializePhysics);
 const intent = (direction = { x: 1, y: 0, z: 0 }): MotionIntent => ({

@@ -1,16 +1,15 @@
+import type { ResolvedActor, StatusRevision, StatusCohort } from './state.ts';
+export type { StatusRevision, StatusCohort } from './state.ts';
 import {
   DEFAULT_BUDGET,
   compareIds,
   statusTransformationRefs,
-  type DeepReadonly,
-  type Revision,
 } from '@fantasy/domain/spatial/execution';
-import type { ResolvedActor } from './prepare.ts';
 import { SpatialBudgetError } from './physics.ts';
 import { permanentStatus } from './categories.ts';
 import { adjustedStatusValue } from './status-modifiers.ts';
 export type StatusLimits = { maxStatusTypes: number; maxStatusCauses: number };
-export type StatusRevision = DeepReadonly<Extract<Revision, { kind: 'status' }>>;
+
 /** Only definitions reachable from known abilities or currently owned states enter self knowledge. */
 export function statusKnowledge<T extends StatusRevision>(
   roots: readonly T[],
@@ -32,14 +31,7 @@ export function statusKnowledge<T extends StatusRevision>(
   roots.forEach(visit);
   return [...known.values()];
 }
-export type StatusCohort = {
-  revision: StatusRevision;
-  startStep: number;
-  endStep: number;
-  stacks: number;
-  causes: string[];
-  flightStaminaPerSecond?: number;
-};
+
 export type StatusApplication = {
   revision: StatusRevision;
   cause: string;

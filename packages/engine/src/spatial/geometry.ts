@@ -1,5 +1,6 @@
+import type { Capsule } from './geometry-types.ts';
+import type { Obstacle } from './geometry-types.ts';
 import { add, cross, dot, mul, sub, unit, type Vec3 } from './math.ts';
-import type { Capsule, Obstacle } from './physics.ts';
 
 type Rotation = { x: number; y: number; z: number; w: number };
 export function rotate(vector: Vec3, rotation: Rotation): Vec3 {
