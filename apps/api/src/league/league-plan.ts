@@ -8,6 +8,8 @@ import {
   LeaguePlanSchema,
   LeagueEstimateInputSchema,
   LeaguePartitionSchema,
+  PUBLICATION_MAX_BYTES,
+  PUBLICATION_MAX_FILES,
   type LeagueDefinition,
   type LeaguePlan,
   type LeaguePartition,
@@ -61,8 +63,8 @@ export function estimateLeague(
     (counts.reused + compute) * options.estimatedFilesPerMatch * 2 + partitions * 26 + 6;
   const writeRequests = compute * options.estimatedFilesPerMatch + partitions * 13 + 3;
   if (
-    estimatedBytes > 8000000000 ||
-    estimatedFiles > 100000 ||
+    estimatedBytes > PUBLICATION_MAX_BYTES ||
+    estimatedFiles > PUBLICATION_MAX_FILES ||
     readRequests + options.usedReadRequests > options.maxReadRequests ||
     writeRequests + options.usedWriteRequests > options.maxWriteRequests
   )

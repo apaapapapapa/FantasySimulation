@@ -4,15 +4,16 @@ import { tmpdir } from 'node:os';
 import { afterEach, beforeEach, expect, it, vi } from 'vite-plus/test';
 import { publicationFixture } from '../../test-support/publication.ts';
 
-const transport = vi.hoisted(() => ({ publish: vi.fn(), opened: vi.fn() }));
+const transport = vi.hoisted(() => ({ publish: vi.fn(), restore: vi.fn(), opened: vi.fn() }));
+vi.mock('./publication-restore.ts', () => ({ restorePublication: transport.restore }));
 vi.mock('./publication-remote.ts', async (original) => ({
   ...(await original<typeof import('./publication-remote.ts')>()),
   publishPublication: transport.publish,
 }));
 vi.mock('./publication-s3.ts', () => ({
   PublicationS3: class {
-    constructor() {
-      transport.opened();
+    constructor(...args: unknown[]) {
+      transport.opened(...args);
     }
     metrics() {
       return {};
@@ -26,6 +27,7 @@ const originalExitCode = process.exitCode;
 beforeEach(() => {
   vi.resetModules();
   transport.publish.mockReset();
+  transport.restore.mockReset();
   transport.opened.mockClear();
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -90,3 +92,33 @@ it('reports a verified pre-exported league upload as success while preserving pr
     JSON.stringify({ incompleteRows: 4, status: 'verified' }),
   );
 });
+
+it.each(['upload', 'restore'])(
+  'forwards explicit league transfer to %s and its S3 transport',
+  async (command) => {
+    const root = await mkdtemp(join(tmpdir(), 'league-transfer-cli-'));
+    roots.push(root);
+    transport.publish.mockResolvedValue({ status: 'verified', incompleteRows: 0 });
+    transport.restore.mockResolvedValue({ status: 'restored' });
+    process.argv = ['node', 'publication.ts', command, join(root, 'public'), '--league-transfer'];
+    await import('../publication.ts');
+    expect(process.exitCode ?? 0).toBe(0);
+    expect(transport.opened.mock.calls[0]![1]).toEqual({
+      maxRequests: 2000000,
+      maxClassARequests: 900000,
+      maxClassBRequests: 2000000,
+      deadlineMs: 3600000,
+      maxAttempts: 1,
+    });
+    if (command === 'restore') {
+      expect(transport.restore.mock.calls[0]!.slice(2)).toEqual([8000000000, 16]);
+    } else {
+      expect(transport.publish.mock.calls[0]![2]).toMatchObject({
+        maxWrites: 500000,
+        maxTransferBytes: 8000000000,
+        maxWorkerRequests: 1000,
+        concurrency: 16,
+      });
+    }
+  },
+);

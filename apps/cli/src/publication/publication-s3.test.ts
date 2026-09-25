@@ -1,20 +1,23 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { afterEach, expect, it, vi } from 'vite-plus/test';
-import { PublicationS3 } from './publication-s3.ts';
+import { PublicationS3, type S3PublicationBudget } from './publication-s3.ts';
 
 const stores: PublicationS3[] = [];
 afterEach(() => {
   stores.splice(0).forEach((store) => store.close());
   vi.restoreAllMocks();
 });
-function fixture() {
+function fixture(budget?: Partial<S3PublicationBudget>) {
   const send = vi.spyOn(S3Client.prototype, 'send');
-  const store = new PublicationS3({
-    accountId: 'a'.repeat(32),
-    bucket: 'public-replays',
-    accessKeyId: 'fixture-access',
-    secretAccessKey: 'fixture-secret',
-  });
+  const store = new PublicationS3(
+    {
+      accountId: 'a'.repeat(32),
+      bucket: 'public-replays',
+      accessKeyId: 'fixture-access',
+      secretAccessKey: 'fixture-secret',
+    },
+    budget,
+  );
   stores.push(store);
   return { store, send };
 }
@@ -76,4 +79,38 @@ it('bounds streamed objects, distinguishes absence and strips vendor/credential 
   send.mockRejectedValueOnce({ $metadata: { httpStatusCode: 403 }, message: 'fixture-secret' });
   await expect(store.head('catalog/current.json')).rejects.toThrow('HTTP 403');
   await expect(store.remove('catalog/current.json')).rejects.toThrow('Cannot delete');
+});
+
+it('requires explicit league limits and charges failed requests before the next admission', async () => {
+  const { store, send } = fixture({
+    maxRequests: 1500000,
+    maxClassARequests: 1,
+    maxClassBRequests: 2,
+    deadlineMs: 3600000,
+    maxAttempts: 1,
+  });
+  send.mockResolvedValue({} as never);
+  await store.put('catalog/current.json', Buffer.from('{}'), null);
+  expect(await (send.mock.contexts[0] as S3Client).config.maxAttempts()).toBe(1);
+  await expect(store.inventory()).rejects.toThrow('class budget');
+  send.mockRejectedValue({ $metadata: { httpStatusCode: 503 } });
+  await expect(store.head('catalog/current.json')).rejects.toThrow('HTTP 503');
+  await expect(store.head('catalog/current.json')).rejects.toThrow('HTTP 503');
+  await expect(store.head('catalog/current.json')).rejects.toThrow('S3 operation failed');
+  expect(send).toHaveBeenCalledTimes(3);
+  expect(store.metrics()).toMatchObject({
+    logicalRequests: 3,
+    classARequests: 1,
+    classBRequests: 2,
+    maxAttempts: 1,
+  });
+});
+
+it.each([
+  { maxRequests: 2000001 },
+  { maxClassARequests: 900001 },
+  { deadlineMs: 3600001 },
+  { maxClassBRequests: 0 },
+])('rejects an out-of-policy transport budget before any request', (budget) => {
+  expect(() => fixture(budget)).toThrow('budget');
 });

@@ -1,0 +1,3261 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-league-pilot",
+  "source": {
+    "arch": "x64",
+    "node": "24.19.0",
+    "platform": "linux",
+    "sha": "6890ef7b481310c6377f838b9cefaf478ba8ff90"
+  },
+  "revision": {
+    "definition": {
+      "battlefields": [
+        {
+          "scenario": {
+            "contentHash": "sha256:44981b5451b18a587ce6fc0508c9086ff48177e50958955de91daf91e7b65fc5",
+            "id": "aerial-surveyed-v1",
+            "revision": 1
+          },
+          "starts": [
+            {
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": -6000,
+                "y": 8902,
+                "z": 0
+              }
+            },
+            {
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": 6000,
+                "y": 8902,
+                "z": 0
+              }
+            }
+          ],
+          "weight": {
+            "denominator": "5",
+            "numerator": "1"
+          }
+        },
+        {
+          "scenario": {
+            "contentHash": "sha256:b479631ccc1edc25878bfa47a75eb1b6483f96329b1783cce6627e4a37ce84c2",
+            "id": "elevation-surveyed-v1",
+            "revision": 1
+          },
+          "starts": [
+            {
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              }
+            },
+            {
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              }
+            }
+          ],
+          "weight": {
+            "denominator": "5",
+            "numerator": "1"
+          }
+        },
+        {
+          "scenario": {
+            "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+            "id": "flat-surveyed-v1",
+            "revision": 1
+          },
+          "starts": [
+            {
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              }
+            },
+            {
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              }
+            }
+          ],
+          "weight": {
+            "denominator": "5",
+            "numerator": "1"
+          }
+        },
+        {
+          "scenario": {
+            "contentHash": "sha256:5486b92d8e06acb712d53b3485c6eff1599d130d19e5537a77434a527e313383",
+            "id": "indoor-surveyed-v1",
+            "revision": 1
+          },
+          "starts": [
+            {
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 0
+              }
+            },
+            {
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 0
+              }
+            }
+          ],
+          "weight": {
+            "denominator": "5",
+            "numerator": "1"
+          }
+        },
+        {
+          "scenario": {
+            "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",
+            "id": "pillars-surveyed-v1",
+            "revision": 1
+          },
+          "starts": [
+            {
+              "facing": {
+                "x": 1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": -6000,
+                "y": 902,
+                "z": 2200
+              }
+            },
+            {
+              "facing": {
+                "x": -1,
+                "y": 0,
+                "z": 0
+              },
+              "position": {
+                "x": 6000,
+                "y": 902,
+                "z": 2200
+              }
+            }
+          ],
+          "weight": {
+            "denominator": "5",
+            "numerator": "1"
+          }
+        }
+      ],
+      "budget": {
+        "maxBytes": 16000000,
+        "maxCandidates": 1000000,
+        "maxCasts": 1000000,
+        "maxCurveSegments": 64,
+        "maxEvents": 50000,
+        "maxForces": 64,
+        "maxFrameBytes": 512000,
+        "maxMoveSegments": 8,
+        "maxPathNodes": 4096,
+        "maxProjectiles": 64,
+        "maxStatusCauses": 2048,
+        "maxStatusTypes": 64
+      },
+      "characters": [
+        {
+          "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+          "id": "guardian",
+          "revision": 1
+        },
+        {
+          "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8",
+          "id": "sky-mage",
+          "revision": 1
+        },
+        {
+          "contentHash": "sha256:db4d57a8f991b003531254daf590fa8b462f2e6cf396daea93350f3bdfe9bd27",
+          "id": "stamina-glider-v1",
+          "revision": 1
+        },
+        {
+          "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e",
+          "id": "swordsman",
+          "revision": 1
+        }
+      ],
+      "id": "pilot-60",
+      "masterSeed": 20260925,
+      "name": "P5 capacity pilot",
+      "placements": ["normal", "swapped"],
+      "retryBudget": {
+        "maxBytes": 32000000,
+        "maxCandidates": 2000000,
+        "maxCasts": 2000000,
+        "maxCurveSegments": 64,
+        "maxEvents": 100000,
+        "maxForces": 64,
+        "maxFrameBytes": 512000,
+        "maxMoveSegments": 8,
+        "maxPathNodes": 4096,
+        "maxProjectiles": 64,
+        "maxStatusCauses": 2048,
+        "maxStatusTypes": 64
+      },
+      "revisions": [
+        {
+          "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81",
+          "definition": {
+            "aimErrorMilliDegrees": 500,
+            "attack": {
+              "explosionRadiusMm": 0,
+              "gravityScaleBps": 10000,
+              "homingTurnMilliDegreesPerSecond": 0,
+              "kind": "projectile",
+              "lifetimeSteps": 150,
+              "maxHitsPerTarget": 1,
+              "observation": "launch-only",
+              "radiusMm": 80,
+              "speedMmPerSecond": 30000
+            },
+            "castSteps": 10,
+            "condition": {
+              "kind": "always"
+            },
+            "cooldownSteps": 0,
+            "costs": {
+              "hp": 0,
+              "mp": 0,
+              "uses": 0
+            },
+            "effects": [
+              {
+                "amount": 10,
+                "attackScaleBps": 10000,
+                "element": "physical",
+                "kind": "damage"
+              }
+            ],
+            "movementWhileCasting": "allow",
+            "name": "放物線の矢",
+            "originalText": "放物線の矢",
+            "rangeMm": 30000,
+            "recoverySteps": 30,
+            "target": "enemy",
+            "trigger": "action"
+          },
+          "id": "arrow",
+          "kind": "ability",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769",
+          "definition": {
+            "aimErrorMilliDegrees": 0,
+            "attack": {
+              "kind": "direct"
+            },
+            "castSteps": 0,
+            "condition": {
+              "kind": "always"
+            },
+            "cooldownSteps": 0,
+            "costs": {
+              "hp": 0,
+              "mp": 0,
+              "uses": 0
+            },
+            "effects": [
+              {
+                "amount": 60,
+                "kind": "shield"
+              }
+            ],
+            "movementWhileCasting": "allow",
+            "name": "盾の構え",
+            "originalText": "盾の構え",
+            "rangeMm": 0,
+            "recoverySteps": 20,
+            "target": "self",
+            "trigger": "battle-start"
+          },
+          "id": "guard",
+          "kind": "ability",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3",
+          "definition": {
+            "aimErrorMilliDegrees": 0,
+            "attack": {
+              "explosionRadiusMm": 0,
+              "gravityScaleBps": 0,
+              "homingTurnMilliDegreesPerSecond": 90000,
+              "kind": "projectile",
+              "lifetimeSteps": 150,
+              "maxHitsPerTarget": 1,
+              "observation": "owner-visible",
+              "radiusMm": 80,
+              "speedMmPerSecond": 18000
+            },
+            "castSteps": 10,
+            "condition": {
+              "kind": "always"
+            },
+            "cooldownSteps": 0,
+            "costs": {
+              "hp": 0,
+              "mp": 4,
+              "uses": 0
+            },
+            "effects": [
+              {
+                "amount": 12,
+                "attackScaleBps": 10000,
+                "element": "arcane",
+                "kind": "damage"
+              }
+            ],
+            "movementWhileCasting": "allow",
+            "name": "観測誘導弾",
+            "originalText": "観測誘導弾",
+            "rangeMm": 30000,
+            "recoverySteps": 35,
+            "target": "enemy",
+            "trigger": "action"
+          },
+          "id": "seeker",
+          "kind": "ability",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:74bdae414167ea17a3f92a0489148d03d5a60fd624ae3f97ca73eb0ca950485c",
+          "definition": {
+            "aimErrorMilliDegrees": 0,
+            "attack": {
+              "kind": "direct"
+            },
+            "castSteps": 0,
+            "condition": {
+              "kind": "always"
+            },
+            "cooldownSteps": 0,
+            "costs": {
+              "hp": 0,
+              "mp": 0,
+              "stamina": 5,
+              "uses": 1
+            },
+            "effects": [
+              {
+                "flightStaminaPerSecond": 5,
+                "kind": "apply-status",
+                "status": {
+                  "contentHash": "sha256:c49f480d72eda771c15552ae74cfda8f813be5c3a72b1974afacfa5ca5eea761",
+                  "id": "stamina-wings-v1",
+                  "revision": 1
+                }
+              }
+            ],
+            "movementWhileCasting": "allow",
+            "name": "省力飛行",
+            "originalText": "省力飛行",
+            "rangeMm": 0,
+            "recoverySteps": 20,
+            "target": "self",
+            "trigger": "battle-start"
+          },
+          "id": "stamina-takeoff-v1",
+          "kind": "ability",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+          "definition": {
+            "aimErrorMilliDegrees": 0,
+            "attack": {
+              "activeSteps": 2,
+              "kind": "melee",
+              "maxHitsPerTarget": 1,
+              "radiusMm": 200,
+              "reachMm": 1800
+            },
+            "castSteps": 5,
+            "condition": {
+              "kind": "always"
+            },
+            "cooldownSteps": 0,
+            "costs": {
+              "hp": 0,
+              "mp": 0,
+              "uses": 0
+            },
+            "effects": [
+              {
+                "amount": 10,
+                "attackScaleBps": 10000,
+                "element": "physical",
+                "kind": "damage"
+              }
+            ],
+            "movementWhileCasting": "allow",
+            "name": "剣",
+            "originalText": "正面の相手を剣で攻撃する",
+            "rangeMm": 2000,
+            "recoverySteps": 20,
+            "target": "enemy",
+            "trigger": "action"
+          },
+          "id": "sword",
+          "kind": "ability",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd",
+          "definition": {
+            "aimErrorMilliDegrees": 0,
+            "attack": {
+              "kind": "direct"
+            },
+            "castSteps": 0,
+            "condition": {
+              "kind": "always"
+            },
+            "cooldownSteps": 0,
+            "costs": {
+              "hp": 0,
+              "mp": 0,
+              "uses": 0
+            },
+            "effects": [
+              {
+                "kind": "apply-status",
+                "status": {
+                  "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944",
+                  "id": "flight",
+                  "revision": 1
+                }
+              }
+            ],
+            "movementWhileCasting": "allow",
+            "name": "開幕の飛行",
+            "originalText": "開幕の飛行",
+            "rangeMm": 0,
+            "recoverySteps": 20,
+            "target": "self",
+            "trigger": "battle-start"
+          },
+          "id": "takeoff",
+          "kind": "ability",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:fa88a64526f37c7367c701cdfbe768b6e677eacc56ceb5c5791949c1f1b015a1",
+          "definition": {
+            "abilities": [
+              {
+                "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+                "id": "sword",
+                "revision": 1
+              },
+              {
+                "contentHash": "sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769",
+                "id": "guard",
+                "revision": 1
+              }
+            ],
+            "body": {
+              "aimOffset": {
+                "x": 0,
+                "y": 200,
+                "z": 0
+              },
+              "eyeOffset": {
+                "x": 0,
+                "y": 650,
+                "z": 0
+              },
+              "heightMm": 1800,
+              "muzzleOffset": {
+                "x": 0,
+                "y": 400,
+                "z": 300
+              },
+              "radiusMm": 300
+            },
+            "equipment": [
+              {
+                "contentHash": "sha256:96bbdbd35cfb6b454b6a504779ee1a4530d8179c59fbc13c6d508042bdf3feaf",
+                "id": "plate",
+                "revision": 1
+              }
+            ],
+            "movement": {
+              "accelerationMmPerSecond2": 12000,
+              "flySpeedMmPerSecond": 5000,
+              "jumpMmPerSecond": 5000,
+              "maxSlopeMilliDegrees": 45000,
+              "speedMmPerSecond": 2500,
+              "stepHeightMm": 300,
+              "turnMilliDegreesPerSecond": 360000
+            },
+            "name": "重装騎士",
+            "originalText": "重装騎士。能力・装備・方針はすべて公開revisionで固定する。",
+            "perception": {
+              "fovMilliDegrees": 180000,
+              "memorySteps": 250,
+              "rangeMm": 50000,
+              "reactionSteps": 5
+            },
+            "policy": {
+              "contentHash": "sha256:24fe8f031decaf929218e92cd4cc444ac056cde4c34029ce258d1ec2f2d5bd64",
+              "id": "guardian-policy",
+              "revision": 1
+            },
+            "stats": {
+              "actionSpeedBps": 10000,
+              "attack": 20,
+              "defense": 5,
+              "hp": 160,
+              "mp": 100,
+              "resistances": {
+                "arcane": 0,
+                "fire": 0,
+                "ice": 0,
+                "lightning": 0,
+                "physical": 0
+              },
+              "shield": 0
+            }
+          },
+          "id": "guardian",
+          "kind": "character",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:e32e5814ad9e201efb2c684a3de4b2412222ed98f7200e3e1d2de32c0a6ce1e8",
+          "definition": {
+            "abilities": [
+              {
+                "contentHash": "sha256:240cd8cdc2bf780653c974508aba951ea9b4e538e029a787a1007e36eb4e9ab3",
+                "id": "seeker",
+                "revision": 1
+              },
+              {
+                "contentHash": "sha256:1973b6fd46c0073c268da4868b6c7cfe669017bb36a54cf25ff79d2b669d56bd",
+                "id": "takeoff",
+                "revision": 1
+              }
+            ],
+            "body": {
+              "aimOffset": {
+                "x": 0,
+                "y": 200,
+                "z": 0
+              },
+              "eyeOffset": {
+                "x": 0,
+                "y": 650,
+                "z": 0
+              },
+              "heightMm": 1800,
+              "muzzleOffset": {
+                "x": 0,
+                "y": 400,
+                "z": 300
+              },
+              "radiusMm": 300
+            },
+            "equipment": [],
+            "movement": {
+              "accelerationMmPerSecond2": 12000,
+              "flySpeedMmPerSecond": 5000,
+              "jumpMmPerSecond": 5000,
+              "maxSlopeMilliDegrees": 45000,
+              "speedMmPerSecond": 4000,
+              "stepHeightMm": 300,
+              "turnMilliDegreesPerSecond": 360000
+            },
+            "name": "飛行術師",
+            "originalText": "飛行術師。能力・装備・方針はすべて公開revisionで固定する。",
+            "perception": {
+              "fovMilliDegrees": 180000,
+              "memorySteps": 250,
+              "rangeMm": 50000,
+              "reactionSteps": 5
+            },
+            "policy": {
+              "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c",
+              "id": "sky-mage-policy",
+              "revision": 1
+            },
+            "stats": {
+              "actionSpeedBps": 10000,
+              "attack": 20,
+              "defense": 5,
+              "hp": 100,
+              "mp": 400,
+              "resistances": {
+                "arcane": 0,
+                "fire": 0,
+                "ice": 0,
+                "lightning": 0,
+                "physical": 0
+              },
+              "shield": 0
+            }
+          },
+          "id": "sky-mage",
+          "kind": "character",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:db4d57a8f991b003531254daf590fa8b462f2e6cf396daea93350f3bdfe9bd27",
+          "definition": {
+            "abilities": [
+              {
+                "contentHash": "sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81",
+                "id": "arrow",
+                "revision": 1
+              },
+              {
+                "contentHash": "sha256:74bdae414167ea17a3f92a0489148d03d5a60fd624ae3f97ca73eb0ca950485c",
+                "id": "stamina-takeoff-v1",
+                "revision": 1
+              }
+            ],
+            "body": {
+              "aimOffset": {
+                "x": 0,
+                "y": 200,
+                "z": 0
+              },
+              "eyeOffset": {
+                "x": 0,
+                "y": 650,
+                "z": 0
+              },
+              "heightMm": 1800,
+              "muzzleOffset": {
+                "x": 0,
+                "y": 400,
+                "z": 300
+              },
+              "radiusMm": 300
+            },
+            "equipment": [],
+            "movement": {
+              "accelerationMmPerSecond2": 12000,
+              "flySpeedMmPerSecond": 5000,
+              "jumpMmPerSecond": 5000,
+              "locomotion": {
+                "dodgeStamina": 8,
+                "exhaustedSpeedMmPerSecond": 500,
+                "jumpStamina": 12,
+                "run": {
+                  "speedMmPerSecond": 6000,
+                  "staminaPerMeter": 6
+                },
+                "stepStaminaPerMeter": 10,
+                "walk": {
+                  "speedMmPerSecond": 2000,
+                  "staminaPerMeter": 2
+                }
+              },
+              "maxSlopeMilliDegrees": 45000,
+              "speedMmPerSecond": 4000,
+              "stepHeightMm": 300,
+              "turnMilliDegreesPerSecond": 360000
+            },
+            "name": "滞空時間を選ぶ射手",
+            "originalText": "滞空時間を選ぶ射手。能力・装備・方針はすべて公開revisionで固定する。",
+            "perception": {
+              "fovMilliDegrees": 180000,
+              "memorySteps": 250,
+              "rangeMm": 50000,
+              "reactionSteps": 5
+            },
+            "policy": {
+              "contentHash": "sha256:99e9d3dbf8fa27c3fec7299dd4a9edb87ae5cb87cf66d2fea69c9a2d15b96afc",
+              "id": "stamina-glider-v1-policy",
+              "revision": 1
+            },
+            "stamina": {
+              "max": 100,
+              "recoveryPerSecond": 3,
+              "resumeAt": 20
+            },
+            "stats": {
+              "actionSpeedBps": 10000,
+              "attack": 20,
+              "defense": 5,
+              "hp": 100,
+              "mp": 100,
+              "resistances": {
+                "arcane": 0,
+                "fire": 0,
+                "ice": 0,
+                "lightning": 0,
+                "physical": 0
+              },
+              "shield": 0
+            }
+          },
+          "id": "stamina-glider-v1",
+          "kind": "character",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:1036263f9eaebc0000ca59e02ced2c32f08ac111ac521d20c531342138ea8b0e",
+          "definition": {
+            "abilities": [
+              {
+                "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef",
+                "id": "sword",
+                "revision": 1
+              }
+            ],
+            "body": {
+              "aimOffset": {
+                "x": 0,
+                "y": 200,
+                "z": 0
+              },
+              "eyeOffset": {
+                "x": 0,
+                "y": 650,
+                "z": 0
+              },
+              "heightMm": 1800,
+              "muzzleOffset": {
+                "x": 0,
+                "y": 400,
+                "z": 300
+              },
+              "radiusMm": 300
+            },
+            "equipment": [],
+            "movement": {
+              "accelerationMmPerSecond2": 12000,
+              "flySpeedMmPerSecond": 5000,
+              "jumpMmPerSecond": 5000,
+              "maxSlopeMilliDegrees": 45000,
+              "speedMmPerSecond": 4000,
+              "stepHeightMm": 300,
+              "turnMilliDegreesPerSecond": 360000
+            },
+            "name": "剣士",
+            "originalText": "剣士。能力・装備・方針はすべて公開revisionで固定する。",
+            "perception": {
+              "fovMilliDegrees": 180000,
+              "memorySteps": 250,
+              "rangeMm": 50000,
+              "reactionSteps": 5
+            },
+            "policy": {
+              "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda",
+              "id": "swordsman-policy",
+              "revision": 1
+            },
+            "stats": {
+              "actionSpeedBps": 10000,
+              "attack": 20,
+              "defense": 5,
+              "hp": 100,
+              "mp": 100,
+              "resistances": {
+                "arcane": 0,
+                "fire": 0,
+                "ice": 0,
+                "lightning": 0,
+                "physical": 0
+              },
+              "shield": 0
+            }
+          },
+          "id": "swordsman",
+          "kind": "character",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:96bbdbd35cfb6b454b6a504779ee1a4530d8179c59fbc13c6d508042bdf3feaf",
+          "definition": {
+            "abilities": [],
+            "attackBonus": 0,
+            "defenseBonus": 12,
+            "name": "重装鎧",
+            "originalText": "防御力を補う鎧"
+          },
+          "id": "plate",
+          "kind": "equipment",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:24fe8f031decaf929218e92cd4cc444ac056cde4c34029ce258d1ec2f2d5bd64",
+          "definition": {
+            "flightAltitudeMm": 6000,
+            "jumpWhenBlocked": true,
+            "movement": "approach",
+            "name": "重装騎士の方針",
+            "originalText": "条件を満たす優先行動と、観測に基づく移動",
+            "preferredDistanceMm": 1200,
+            "priorities": [
+              {
+                "abilityId": "sword",
+                "when": {
+                  "kind": "always"
+                }
+              }
+            ]
+          },
+          "id": "guardian-policy",
+          "kind": "policy",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:54819bc26248d86ac9244a8fd0d8ba405cf9cbbc30c1e6fe72f7500e77a9868c",
+          "definition": {
+            "flightAltitudeMm": 6000,
+            "jumpWhenBlocked": true,
+            "movement": "keep-distance",
+            "name": "飛行術師の方針",
+            "originalText": "条件を満たす優先行動と、観測に基づく移動",
+            "preferredDistanceMm": 6000,
+            "priorities": [
+              {
+                "abilityId": "seeker",
+                "when": {
+                  "kind": "always"
+                }
+              }
+            ]
+          },
+          "id": "sky-mage-policy",
+          "kind": "policy",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:99e9d3dbf8fa27c3fec7299dd4a9edb87ae5cb87cf66d2fea69c9a2d15b96afc",
+          "definition": {
+            "flightAltitudeMm": 6000,
+            "jumpWhenBlocked": true,
+            "movement": "keep-distance",
+            "name": "滞空時間を選ぶ射手の方針",
+            "originalText": "条件を満たす優先行動と、観測に基づく移動",
+            "preferredDistanceMm": 7000,
+            "priorities": [
+              {
+                "abilityId": "arrow",
+                "when": {
+                  "kind": "always"
+                }
+              }
+            ]
+          },
+          "id": "stamina-glider-v1-policy",
+          "kind": "policy",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:bb2ff36c86ca9aba8bf29768d19c5da0c1ee218c7866701a52ef288ca500bcda",
+          "definition": {
+            "flightAltitudeMm": 6000,
+            "jumpWhenBlocked": true,
+            "movement": "approach",
+            "name": "剣士の方針",
+            "originalText": "条件を満たす優先行動と、観測に基づく移動",
+            "preferredDistanceMm": 1200,
+            "priorities": [
+              {
+                "abilityId": "sword",
+                "when": {
+                  "kind": "always"
+                }
+              }
+            ]
+          },
+          "id": "swordsman-policy",
+          "kind": "policy",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:0ddc0ff66a1e5950a36d0b5ec1798b40fede3af99599f1438abcd3dd499a409c",
+          "definition": {
+            "ai": {
+              "actionWeight": 100,
+              "appearancePriors": {
+                "cues": [
+                  {
+                    "confidenceBps": 1000,
+                    "efficacy": [
+                      {
+                        "bps": 6500,
+                        "element": "fire"
+                      }
+                    ],
+                    "match": {
+                      "surface": "red"
+                    }
+                  },
+                  {
+                    "confidenceBps": 1000,
+                    "efficacy": [
+                      {
+                        "bps": 6500,
+                        "element": "ice"
+                      }
+                    ],
+                    "match": {
+                      "surface": "blue"
+                    }
+                  }
+                ],
+                "defaultEfficacyBps": 7500
+              },
+              "cover": "observed-threat-v1",
+              "damageQuantum": 10,
+              "dodgeWeight": 600,
+              "explorationWeight": 60,
+              "groundEvasion": "posture-jump-v1",
+              "healthPrior": 200,
+              "horizonSteps": 50,
+              "initialKnowledge": "empty-match-v1",
+              "killWeight": 2400,
+              "knowledgeTtlSteps": 500,
+              "memorySamples": 32,
+              "minimumCandidateWeightBps": 500,
+              "observation": "visible-coarse-v1",
+              "profile": "observed-utility-v1",
+              "random": "actor-purpose-rejection-v1",
+              "reapplication": "self-observed-v1",
+              "relativeImpactBps": [2500, 7500, 12500],
+              "riskWeight": 800,
+              "search": {
+                "cellsPerSide": 5,
+                "goalTimeoutSteps": 150,
+                "lowSightMm": 100,
+                "maxWaitSteps": 500,
+                "revisitSteps": 500
+              },
+              "slots": "simultaneous-v1"
+            },
+            "aoeOcclusion": "five-samples-equal-linear-v1",
+            "bodyContact": "symmetric-stop",
+            "curveErrorMm": 1,
+            "fallDamagePerMeterPerSecond": 5,
+            "fallSafeSpeedMmPerSecond": 8000,
+            "gravityMmPerSecond2": -9807,
+            "maxSteps": 6000,
+            "name": "観測・索敵・姿勢・脅威時の遮蔽",
+            "rulesVersion": "spatial-v1.20",
+            "simultaneousConflict": "unresolved",
+            "stepMs": 20
+          },
+          "id": "standard-tactics-v2",
+          "kind": "ruleset",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:44981b5451b18a587ce6fc0508c9086ff48177e50958955de91daf91e7b65fc5",
+          "definition": {
+            "bounds": {
+              "max": {
+                "x": 50000,
+                "y": 50000,
+                "z": 50000
+              },
+              "min": {
+                "x": -50000,
+                "y": -1000,
+                "z": -50000
+              }
+            },
+            "name": "高所の足場と細い橋・開けた空",
+            "navigation": {
+              "edges": [
+                {
+                  "bidirectional": true,
+                  "from": "bridge-0",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "bridge-1",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "bridge-1",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "bridge-2",
+                  "widthMm": 1800
+                }
+              ],
+              "nodes": [
+                {
+                  "id": "bridge-0",
+                  "mode": "ground",
+                  "position": {
+                    "x": -6000,
+                    "y": 8902,
+                    "z": 0
+                  }
+                },
+                {
+                  "id": "bridge-1",
+                  "mode": "ground",
+                  "position": {
+                    "x": 0,
+                    "y": 8902,
+                    "z": 0
+                  }
+                },
+                {
+                  "id": "bridge-2",
+                  "mode": "ground",
+                  "position": {
+                    "x": 6000,
+                    "y": 8902,
+                    "z": 0
+                  }
+                }
+              ],
+              "version": "support-graph-v1"
+            },
+            "obstacles": [
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": -500,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 50000,
+                  "y": 500,
+                  "z": 50000
+                },
+                "id": "floor",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": 7800,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 3000,
+                  "y": 200,
+                  "z": 900
+                },
+                "id": "bridge",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -6000,
+                  "y": 7800,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 3000,
+                  "y": 200,
+                  "z": 3000
+                },
+                "id": "platform--1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 6000,
+                  "y": 7800,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 3000,
+                  "y": 200,
+                  "z": 3000
+                },
+                "id": "platform-1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              }
+            ],
+            "terrainKnowledge": "surveyed"
+          },
+          "id": "aerial-surveyed-v1",
+          "kind": "scenario",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:b479631ccc1edc25878bfa47a75eb1b6483f96329b1783cce6627e4a37ce84c2",
+          "definition": {
+            "bounds": {
+              "max": {
+                "x": 50000,
+                "y": 50000,
+                "z": 50000
+              },
+              "min": {
+                "x": -50000,
+                "y": -1000,
+                "z": -50000
+              }
+            },
+            "name": "対称の高台・階段と斜面",
+            "navigation": {
+              "edges": [
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-0",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-1",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-1",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-2",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-2",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-3",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-3",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-4",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-4",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-5",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-5",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-6",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-6",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-7",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-7",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-8",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-8",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-9",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-9",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-10",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-10",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-11",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-11",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-12",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs--1-12",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs--1-13",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-0",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-1",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-1",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-2",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-2",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-3",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-3",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-4",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-4",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-5",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-5",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-6",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-6",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-7",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-7",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-8",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-8",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-9",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-9",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-10",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-10",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-11",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-11",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-12",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "stairs-1-12",
+                  "headroomMm": 12000,
+                  "mode": "walk",
+                  "to": "stairs-1-13",
+                  "widthMm": 1800
+                }
+              ],
+              "nodes": [
+                {
+                  "id": "stairs--1-0",
+                  "mode": "ground",
+                  "position": {
+                    "x": 8350,
+                    "y": 902,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-1",
+                  "mode": "ground",
+                  "position": {
+                    "x": 7660,
+                    "y": 1152,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-2",
+                  "mode": "ground",
+                  "position": {
+                    "x": 7340,
+                    "y": 1152,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-3",
+                  "mode": "ground",
+                  "position": {
+                    "x": 6660,
+                    "y": 1402,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-4",
+                  "mode": "ground",
+                  "position": {
+                    "x": 6340,
+                    "y": 1402,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-5",
+                  "mode": "ground",
+                  "position": {
+                    "x": 5660,
+                    "y": 1652,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-6",
+                  "mode": "ground",
+                  "position": {
+                    "x": 5340,
+                    "y": 1652,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-7",
+                  "mode": "ground",
+                  "position": {
+                    "x": 4660,
+                    "y": 1902,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-8",
+                  "mode": "ground",
+                  "position": {
+                    "x": 4340,
+                    "y": 1902,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-9",
+                  "mode": "ground",
+                  "position": {
+                    "x": 3660,
+                    "y": 2152,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-10",
+                  "mode": "ground",
+                  "position": {
+                    "x": 3340,
+                    "y": 2152,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-11",
+                  "mode": "ground",
+                  "position": {
+                    "x": 2660,
+                    "y": 2402,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-12",
+                  "mode": "ground",
+                  "position": {
+                    "x": 2340,
+                    "y": 2402,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs--1-13",
+                  "mode": "ground",
+                  "position": {
+                    "x": 0,
+                    "y": 2402,
+                    "z": -5500
+                  }
+                },
+                {
+                  "id": "stairs-1-0",
+                  "mode": "ground",
+                  "position": {
+                    "x": -8350,
+                    "y": 902,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-1",
+                  "mode": "ground",
+                  "position": {
+                    "x": -7660,
+                    "y": 1152,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-2",
+                  "mode": "ground",
+                  "position": {
+                    "x": -7340,
+                    "y": 1152,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-3",
+                  "mode": "ground",
+                  "position": {
+                    "x": -6660,
+                    "y": 1402,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-4",
+                  "mode": "ground",
+                  "position": {
+                    "x": -6340,
+                    "y": 1402,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-5",
+                  "mode": "ground",
+                  "position": {
+                    "x": -5660,
+                    "y": 1652,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-6",
+                  "mode": "ground",
+                  "position": {
+                    "x": -5340,
+                    "y": 1652,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-7",
+                  "mode": "ground",
+                  "position": {
+                    "x": -4660,
+                    "y": 1902,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-8",
+                  "mode": "ground",
+                  "position": {
+                    "x": -4340,
+                    "y": 1902,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-9",
+                  "mode": "ground",
+                  "position": {
+                    "x": -3660,
+                    "y": 2152,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-10",
+                  "mode": "ground",
+                  "position": {
+                    "x": -3340,
+                    "y": 2152,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-11",
+                  "mode": "ground",
+                  "position": {
+                    "x": -2660,
+                    "y": 2402,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-12",
+                  "mode": "ground",
+                  "position": {
+                    "x": -2340,
+                    "y": 2402,
+                    "z": 5500
+                  }
+                },
+                {
+                  "id": "stairs-1-13",
+                  "mode": "ground",
+                  "position": {
+                    "x": 0,
+                    "y": 2402,
+                    "z": 5500
+                  }
+                }
+              ],
+              "version": "support-graph-v1"
+            },
+            "obstacles": [
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": -500,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 50000,
+                  "y": 500,
+                  "z": 50000
+                },
+                "id": "floor",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": 750,
+                  "z": -5500
+                },
+                "halfExtents": {
+                  "x": 2000,
+                  "y": 750,
+                  "z": 2000
+                },
+                "id": "terrace--1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 7500,
+                  "y": 125,
+                  "z": -5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 125,
+                  "z": 1500
+                },
+                "id": "stair--1-0",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 6500,
+                  "y": 250,
+                  "z": -5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 250,
+                  "z": 1500
+                },
+                "id": "stair--1-1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 5500,
+                  "y": 375,
+                  "z": -5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 375,
+                  "z": 1500
+                },
+                "id": "stair--1-2",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 4500,
+                  "y": 500,
+                  "z": -5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 500,
+                  "z": 1500
+                },
+                "id": "stair--1-3",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 3500,
+                  "y": 625,
+                  "z": -5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 625,
+                  "z": 1500
+                },
+                "id": "stair--1-4",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 2500,
+                  "y": 750,
+                  "z": -5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 750,
+                  "z": 1500
+                },
+                "id": "stair--1-5",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -4900,
+                  "y": 650,
+                  "z": -5500
+                },
+                "halfExtents": {
+                  "x": 3000,
+                  "y": 100,
+                  "z": 1500
+                },
+                "id": "ramp--1",
+                "kind": "box",
+                "slopeMilliDegrees": 14000,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": 750,
+                  "z": 5500
+                },
+                "halfExtents": {
+                  "x": 2000,
+                  "y": 750,
+                  "z": 2000
+                },
+                "id": "terrace-1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -7500,
+                  "y": 125,
+                  "z": 5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 125,
+                  "z": 1500
+                },
+                "id": "stair-1-0",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -6500,
+                  "y": 250,
+                  "z": 5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 250,
+                  "z": 1500
+                },
+                "id": "stair-1-1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -5500,
+                  "y": 375,
+                  "z": 5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 375,
+                  "z": 1500
+                },
+                "id": "stair-1-2",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -4500,
+                  "y": 500,
+                  "z": 5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 500,
+                  "z": 1500
+                },
+                "id": "stair-1-3",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -3500,
+                  "y": 625,
+                  "z": 5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 625,
+                  "z": 1500
+                },
+                "id": "stair-1-4",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -2500,
+                  "y": 750,
+                  "z": 5500
+                },
+                "halfExtents": {
+                  "x": 500,
+                  "y": 750,
+                  "z": 1500
+                },
+                "id": "stair-1-5",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 4900,
+                  "y": 650,
+                  "z": 5500
+                },
+                "halfExtents": {
+                  "x": 3000,
+                  "y": 100,
+                  "z": 1500
+                },
+                "id": "ramp-1",
+                "kind": "box",
+                "slopeMilliDegrees": -14000,
+                "yawMilliDegrees": 0
+              }
+            ],
+            "terrainKnowledge": "surveyed"
+          },
+          "id": "elevation-surveyed-v1",
+          "kind": "scenario",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+          "definition": {
+            "bounds": {
+              "max": {
+                "x": 50000,
+                "y": 50000,
+                "z": 50000
+              },
+              "min": {
+                "x": -50000,
+                "y": -1000,
+                "z": -50000
+              }
+            },
+            "name": "平地",
+            "navigation": {
+              "edges": [],
+              "nodes": [],
+              "version": "support-graph-v1"
+            },
+            "obstacles": [
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": -500,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 50000,
+                  "y": 500,
+                  "z": 50000
+                },
+                "id": "floor",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              }
+            ],
+            "terrainKnowledge": "surveyed"
+          },
+          "id": "flat-surveyed-v1",
+          "kind": "scenario",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:5486b92d8e06acb712d53b3485c6eff1599d130d19e5537a77434a527e313383",
+          "definition": {
+            "bounds": {
+              "max": {
+                "x": 12000,
+                "y": 6000,
+                "z": 8000
+              },
+              "min": {
+                "x": -12000,
+                "y": -1000,
+                "z": -8000
+              }
+            },
+            "name": "天井のある回廊と四つの部屋",
+            "navigation": {
+              "edges": [
+                {
+                  "bidirectional": true,
+                  "from": "hall-0",
+                  "headroomMm": 4500,
+                  "mode": "walk",
+                  "to": "hall-1",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "hall-1",
+                  "headroomMm": 4500,
+                  "mode": "walk",
+                  "to": "hall-2",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "rooms--1-0",
+                  "headroomMm": 4500,
+                  "mode": "walk",
+                  "to": "rooms--1-1",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "rooms--1-1",
+                  "headroomMm": 4500,
+                  "mode": "walk",
+                  "to": "rooms--1-2",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "rooms--1-1",
+                  "headroomMm": 4500,
+                  "mode": "walk",
+                  "to": "rooms--1-3",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "rooms-1-0",
+                  "headroomMm": 4500,
+                  "mode": "walk",
+                  "to": "rooms-1-1",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "rooms-1-1",
+                  "headroomMm": 4500,
+                  "mode": "walk",
+                  "to": "rooms-1-2",
+                  "widthMm": 1800
+                },
+                {
+                  "bidirectional": true,
+                  "from": "rooms-1-1",
+                  "headroomMm": 4500,
+                  "mode": "walk",
+                  "to": "rooms-1-3",
+                  "widthMm": 1800
+                }
+              ],
+              "nodes": [
+                {
+                  "id": "hall-0",
+                  "mode": "ground",
+                  "position": {
+                    "x": -6000,
+                    "y": 902,
+                    "z": 0
+                  }
+                },
+                {
+                  "id": "hall-1",
+                  "mode": "ground",
+                  "position": {
+                    "x": 0,
+                    "y": 902,
+                    "z": 0
+                  }
+                },
+                {
+                  "id": "hall-2",
+                  "mode": "ground",
+                  "position": {
+                    "x": 6000,
+                    "y": 902,
+                    "z": 0
+                  }
+                },
+                {
+                  "id": "rooms--1-0",
+                  "mode": "ground",
+                  "position": {
+                    "x": -6000,
+                    "y": 902,
+                    "z": -5000
+                  }
+                },
+                {
+                  "id": "rooms--1-1",
+                  "mode": "ground",
+                  "position": {
+                    "x": 0,
+                    "y": 902,
+                    "z": -5000
+                  }
+                },
+                {
+                  "id": "rooms--1-2",
+                  "mode": "ground",
+                  "position": {
+                    "x": 0,
+                    "y": 902,
+                    "z": -1000
+                  }
+                },
+                {
+                  "id": "rooms--1-3",
+                  "mode": "ground",
+                  "position": {
+                    "x": 6000,
+                    "y": 902,
+                    "z": -5000
+                  }
+                },
+                {
+                  "id": "rooms-1-0",
+                  "mode": "ground",
+                  "position": {
+                    "x": -6000,
+                    "y": 902,
+                    "z": 5000
+                  }
+                },
+                {
+                  "id": "rooms-1-1",
+                  "mode": "ground",
+                  "position": {
+                    "x": 0,
+                    "y": 902,
+                    "z": 5000
+                  }
+                },
+                {
+                  "id": "rooms-1-2",
+                  "mode": "ground",
+                  "position": {
+                    "x": 0,
+                    "y": 902,
+                    "z": 1000
+                  }
+                },
+                {
+                  "id": "rooms-1-3",
+                  "mode": "ground",
+                  "position": {
+                    "x": 6000,
+                    "y": 902,
+                    "z": 5000
+                  }
+                }
+              ],
+              "version": "support-graph-v1"
+            },
+            "obstacles": [
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": -500,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 50000,
+                  "y": 500,
+                  "z": 50000
+                },
+                "id": "floor",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": 4700,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 12000,
+                  "y": 200,
+                  "z": 8000
+                },
+                "id": "ceiling",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -11800,
+                  "y": 2250,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 200,
+                  "y": 2250,
+                  "z": 8000
+                },
+                "id": "end-wall--1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": 2250,
+                  "z": -7800
+                },
+                "halfExtents": {
+                  "x": 12000,
+                  "y": 2250,
+                  "z": 200
+                },
+                "id": "side-wall--1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -7000,
+                  "y": 2250,
+                  "z": -2500
+                },
+                "halfExtents": {
+                  "x": 4500,
+                  "y": 2250,
+                  "z": 200
+                },
+                "id": "room--1--1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": -7000,
+                  "y": 2250,
+                  "z": 2500
+                },
+                "halfExtents": {
+                  "x": 4500,
+                  "y": 2250,
+                  "z": 200
+                },
+                "id": "room--1-1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 11800,
+                  "y": 2250,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 200,
+                  "y": 2250,
+                  "z": 8000
+                },
+                "id": "end-wall-1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": 2250,
+                  "z": 7800
+                },
+                "halfExtents": {
+                  "x": 12000,
+                  "y": 2250,
+                  "z": 200
+                },
+                "id": "side-wall-1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 7000,
+                  "y": 2250,
+                  "z": -2500
+                },
+                "halfExtents": {
+                  "x": 4500,
+                  "y": 2250,
+                  "z": 200
+                },
+                "id": "room-1--1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 7000,
+                  "y": 2250,
+                  "z": 2500
+                },
+                "halfExtents": {
+                  "x": 4500,
+                  "y": 2250,
+                  "z": 200
+                },
+                "id": "room-1-1",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              }
+            ],
+            "terrainKnowledge": "surveyed"
+          },
+          "id": "indoor-surveyed-v1",
+          "kind": "scenario",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6",
+          "definition": {
+            "bounds": {
+              "max": {
+                "x": 50000,
+                "y": 50000,
+                "z": 50000
+              },
+              "min": {
+                "x": -50000,
+                "y": -1000,
+                "z": -50000
+              }
+            },
+            "name": "柱のある広場",
+            "navigation": {
+              "edges": [
+                {
+                  "bidirectional": true,
+                  "from": "corner-ws",
+                  "headroomMm": 10000,
+                  "mode": "walk",
+                  "to": "corner-wn",
+                  "widthMm": 1500
+                },
+                {
+                  "bidirectional": true,
+                  "from": "corner-ws",
+                  "headroomMm": 10000,
+                  "mode": "walk",
+                  "to": "corner-es",
+                  "widthMm": 1500
+                },
+                {
+                  "bidirectional": true,
+                  "from": "corner-wn",
+                  "headroomMm": 10000,
+                  "mode": "walk",
+                  "to": "corner-en",
+                  "widthMm": 1500
+                },
+                {
+                  "bidirectional": true,
+                  "from": "corner-es",
+                  "headroomMm": 10000,
+                  "mode": "walk",
+                  "to": "corner-en",
+                  "widthMm": 1500
+                }
+              ],
+              "nodes": [
+                {
+                  "id": "corner-ws",
+                  "mode": "ground",
+                  "position": {
+                    "x": -2200,
+                    "y": 902,
+                    "z": -2200
+                  }
+                },
+                {
+                  "id": "corner-wn",
+                  "mode": "ground",
+                  "position": {
+                    "x": -2200,
+                    "y": 902,
+                    "z": 2200
+                  }
+                },
+                {
+                  "id": "corner-es",
+                  "mode": "ground",
+                  "position": {
+                    "x": 2200,
+                    "y": 902,
+                    "z": -2200
+                  }
+                },
+                {
+                  "id": "corner-en",
+                  "mode": "ground",
+                  "position": {
+                    "x": 2200,
+                    "y": 902,
+                    "z": 2200
+                  }
+                }
+              ],
+              "version": "support-graph-v1"
+            },
+            "obstacles": [
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": -500,
+                  "z": 0
+                },
+                "halfExtents": {
+                  "x": 50000,
+                  "y": 500,
+                  "z": 50000
+                },
+                "id": "floor",
+                "kind": "box",
+                "slopeMilliDegrees": 0,
+                "yawMilliDegrees": 0
+              },
+              {
+                "blocks": {
+                  "attack": true,
+                  "movement": true,
+                  "vision": true
+                },
+                "center": {
+                  "x": 0,
+                  "y": 1500,
+                  "z": 0
+                },
+                "halfHeightMm": 1500,
+                "id": "pillar",
+                "kind": "pillar",
+                "radiusMm": 1200
+              }
+            ],
+            "terrainKnowledge": "surveyed"
+          },
+          "id": "pillars-surveyed-v1",
+          "kind": "scenario",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944",
+          "definition": {
+            "durationSteps": 1000,
+            "maxStacks": 1,
+            "modifiers": {
+              "attack": 0,
+              "defense": 0,
+              "flight": true,
+              "rooted": false,
+              "speedBps": 10000
+            },
+            "name": "魔法飛行",
+            "originalText": "魔法飛行",
+            "periodic": [],
+            "stackKey": "flight",
+            "stacking": "refresh"
+          },
+          "id": "flight",
+          "kind": "status",
+          "revision": 1,
+          "schemaVersion": 1
+        },
+        {
+          "contentHash": "sha256:c49f480d72eda771c15552ae74cfda8f813be5c3a72b1974afacfa5ca5eea761",
+          "definition": {
+            "durationSteps": 1000,
+            "flightStaminaPerSecond": 8,
+            "maxStacks": 1,
+            "modifiers": {
+              "attack": 0,
+              "defense": 0,
+              "flight": true,
+              "rooted": false,
+              "speedBps": 10000
+            },
+            "name": "体力で維持する飛行",
+            "originalText": "体力で維持する飛行",
+            "periodic": [],
+            "stackKey": "wings",
+            "stacking": "refresh"
+          },
+          "id": "stamina-wings-v1",
+          "kind": "status",
+          "revision": 1,
+          "schemaVersion": 1
+        }
+      ],
+      "ruleset": {
+        "contentHash": "sha256:0ddc0ff66a1e5950a36d0b5ec1798b40fede3af99599f1438abcd3dd499a409c",
+        "id": "standard-tactics-v2",
+        "revision": 1
+      },
+      "schemaVersion": 1,
+      "scoringVersion": "league-score-v1",
+      "seedDerivation": "league-trial-v1",
+      "trials": 1
+    },
+    "engineVersion": "spatial-v1.20",
+    "implementationDigest": "sha256:387e407a8b481b3f036f09901b43a6a17ee9820e8bc0e6454eca09ceb4295374",
+    "inputHash": "sha256:ec4c7fd9b8a135904ac0fbde5ea15a30b2bdd5b081eff4f107cbb3922aab4955",
+    "leagueHash": "sha256:bda38a165de18fb065cf6d7239dd063ad71028d6ef96a7e1a665374e0edf697b",
+    "schemaVersion": 1,
+    "sourceSha": "6890ef7b481310c6377f838b9cefaf478ba8ff90"
+  },
+  "partitions": {
+    "matches": [32, 28],
+    "workersPerPartition": 2,
+    "sequentialComputeMs": [38626, 24756],
+    "combinedComputeMs": 63382
+  },
+  "publication": {
+    "catalogHash": "sha256:0ff74392d431bbda107a98d9984e16c6f12745175f7a052617fc795f0e00481c",
+    "addedFiles": 925,
+    "reusedFiles": 0,
+    "bytes": 6678394,
+    "snapshot": {
+      "hash": "sha256:1af072b1cb0a9c89684d247ed517db7f933a0629d724c0c8d4a6b98ad77cc8a6",
+      "bytes": 4723
+    },
+    "status": "formal",
+    "planned": 60,
+    "resolved": 60,
+    "missingPartitions": [],
+    "publicFiles": 926,
+    "publicBytes": 6678394,
+    "sourceSha": "6890ef7b481310c6377f838b9cefaf478ba8ff90",
+    "objects": 60
+  },
+  "objects": [
+    {
+      "objectHash": "sha256:02fe54a981bdc6ab84798a24fd930684c0cb2dab79033acf4b40f83b76237d4c",
+      "simulationHash": "sha256:127c224ad9f00b94b5f3e1b80f1c226c8d6be003c00723b8fff404c612f029a1",
+      "resultHash": "sha256:f05aeb544e84d93c0c40e1248c8b26af372c36b75fa29d1a088acb1b0c2effc3",
+      "steps": 191,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 38676
+    },
+    {
+      "objectHash": "sha256:090c1496ded05b1a34c9f5897b557f2d518cebd1e4284c7904162a9af359d4c9",
+      "simulationHash": "sha256:fc583db862d3ccf3233a5c04bc20213db30f3b2198f5c42290ba006661ed421c",
+      "resultHash": "sha256:32701c93e020ee81e57711de6c929bda9c21049abd2cf9317197ad24c31074a4",
+      "steps": 1237,
+      "outcome": "win",
+      "files": 34,
+      "bytes": 231625
+    },
+    {
+      "objectHash": "sha256:0d6fa4463344408d8c3a45a9d8dd3d9b9fdc6a389955fdc76a36308b4212c04d",
+      "simulationHash": "sha256:0bca3d65a77f61b9131d92d9e3274563da9274bc0c471f38a66585d5f1d4c967",
+      "resultHash": "sha256:ac9f15eab02e6e82b669f845d7eb41d8226b34c74397c424a9b378680570a296",
+      "steps": 321,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 67712
+    },
+    {
+      "objectHash": "sha256:0e58c3e34d8ba4919984c4fcc373ab15e543298b4694c69b9a13da58d5f319ec",
+      "simulationHash": "sha256:5ac5a9f676cacea3410065e77638d3f09bcefa647fb23f91440d7d31255ae77d",
+      "resultHash": "sha256:769eeeee225d20405dcde2e3cbf36eab0488d496841e21a6d1d915e9f8a35042",
+      "steps": 391,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 86267
+    },
+    {
+      "objectHash": "sha256:11896bea01d4c043528ae3f92d9fb2be621055a50629983593f0bce4fd5e2b24",
+      "simulationHash": "sha256:0c22255b1d56a8075d78fbaad21032fd6c932178e48f0583e73829e96eb70825",
+      "resultHash": "sha256:2e30950e787e0d4329cdf902f7be49f8ff01f330511a052a370b2c67d336b36b",
+      "steps": 191,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 38672
+    },
+    {
+      "objectHash": "sha256:149d3da3d364c832cf7bcfdf497c20a6800a0e04b8a57cd424eae1cf0e554361",
+      "simulationHash": "sha256:76446f2ca462d19433cbf3b6557c9c00fdcf1b9e25d1069fc14ec4ff796de651",
+      "resultHash": "sha256:b1a4568359c8edf0c1540f82ecf68aabe86b2dec86e02184321193941cbe1c68",
+      "steps": 381,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 83656
+    },
+    {
+      "objectHash": "sha256:1d51a92d86fb9f2dc21672f679db7070023bfede9d6674f66f54dc2d01974c55",
+      "simulationHash": "sha256:54ce29788d6a02288fe18e88102f3cec8e0c9a078c8fd36d35ad6a76c72316ba",
+      "resultHash": "sha256:85b26b1c54ba919f43fa4d18c44ecf983fa31402a8a83851d7851fbaf2b38cb9",
+      "steps": 184,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 55524
+    },
+    {
+      "objectHash": "sha256:1e456c5b7386576bc6829b0c1e7dac97415a57c2edd0743dba5b426a46e815e9",
+      "simulationHash": "sha256:797896044252b495c8c5c92fdf72882b9b7466d0fca4d167c6a3460aaa79d42c",
+      "resultHash": "sha256:55721666ba3e3dc12a1a2a6a784e96d84e8a0b4739a6d1600d727fbffe012a2a",
+      "steps": 730,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 197460
+    },
+    {
+      "objectHash": "sha256:254b349672f004b100c96d42541f201fece1724563369244bff6b64af5762ac7",
+      "simulationHash": "sha256:e4be30f13d42b91d3410df1f509a0babf92c82254f86dd8fc07a86f5131f3006",
+      "resultHash": "sha256:3395f5729a3bb60eb9dc7531176f0bddf0f77482fd368bb6d635147014badd30",
+      "steps": 1013,
+      "outcome": "win",
+      "files": 30,
+      "bytes": 206399
+    },
+    {
+      "objectHash": "sha256:2c15ba84f239aeac6c2457998e89309072a88bdef67584dacd9d465d87b86e34",
+      "simulationHash": "sha256:c7e6ecab4733b800c606af9dc183896f3ccbdd825e18733626d9d5e5c6cbf4ec",
+      "resultHash": "sha256:6d2150bcba3c2ea3aacb8f8fbe5d1580d0b4960a9a9d430744dddd493bc246b3",
+      "steps": 219,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 67732
+    },
+    {
+      "objectHash": "sha256:2dea5fd8308c7ca9209defdfb351579e00abbf54671ae2cd7db62e7c1c8a44bb",
+      "simulationHash": "sha256:4060133df5af463e3c995d2c666c008529b599c8ffcc8a6de67f063625b34d9f",
+      "resultHash": "sha256:64b478ea808ac527ba3ad91cd3ce907e7ec26f28718992a0890c2a1f2d503927",
+      "steps": 878,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 155180
+    },
+    {
+      "objectHash": "sha256:304fec68001c246cfbb9d4db5bb09b87174934885dda1364e52aa5b430cd54f6",
+      "simulationHash": "sha256:a25a6fab53c7002bde9460286efa7586bb9c093e9e43270931c49fdcecb07445",
+      "resultHash": "sha256:d187c57a2d845a55ec4247ff460e072918a6411a3edc3a7e3459d14f0ddb2558",
+      "steps": 1272,
+      "outcome": "win",
+      "files": 40,
+      "bytes": 311988
+    },
+    {
+      "objectHash": "sha256:33bac709105f66ace6879fca7455003ac7c91baf6257b5980786a915cc0ab20c",
+      "simulationHash": "sha256:56dde9edda915d9944747c1dd7552077a69cebbd85af4c2f92314274ac3d4ec9",
+      "resultHash": "sha256:cb52ee9f9c5f8c38c8a152ecc3812f15d2eb9c7c03aab2d2f3aad668a3ce5a7a",
+      "steps": 153,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 43686
+    },
+    {
+      "objectHash": "sha256:3feba34e3980092e53a103250d1215aa76be5fbb9d0d934790c9c6d5f0de2aaa",
+      "simulationHash": "sha256:9f69b18d868c6af3c3a3b3d1fcdcb4501f467ea062c6d0275348a27e35db398f",
+      "resultHash": "sha256:0a8dbe5d2f80c9f1fc15a2ff696a2b5f29fd50d89dd1fb2b148f86e89a7d3859",
+      "steps": 211,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 80914
+    },
+    {
+      "objectHash": "sha256:4075ab33ba55d55bde57087372f5a5af70b5c61424fb41e30555e89eea895d56",
+      "simulationHash": "sha256:0881548786ed504c887d04da5d368e30407af8ec75ff88303a8a94bc9b4218db",
+      "resultHash": "sha256:d72d7b2a9dfd4e6470c2b140619b698b12d0b4c21346149ecf49f2b3f48d4689",
+      "steps": 170,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 63348
+    },
+    {
+      "objectHash": "sha256:473d0d0a3397cd4ca0d2355e76c72ea4e5c3297b093975713a898261b3edb65e",
+      "simulationHash": "sha256:98c347c2e5e3bea4f6ce78310614327da54fe3fa5939d253990bd1c782c90609",
+      "resultHash": "sha256:96ffb521fd08497b9da1ad8825b4f47a62254a48125b64bd0e2645a648f53a06",
+      "steps": 191,
+      "outcome": "win",
+      "files": 6,
+      "bytes": 27728
+    },
+    {
+      "objectHash": "sha256:4fe72d0bad8c0cef816cf1d01634abb85708c874e5fb5dfc490200567af33d0f",
+      "simulationHash": "sha256:70458980205e366e26894f58884e145400dc385e15ea8d6f91a811756c077220",
+      "resultHash": "sha256:500cb0d9105965c90b02e4362a4d0fc379aaff02e083f07e57604d5f6eae6f27",
+      "steps": 237,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 114323
+    },
+    {
+      "objectHash": "sha256:51d67a4f529d6c2948b9bc5ef6be3a5462f06eb27ae673faef9a6db5acce3804",
+      "simulationHash": "sha256:dc689f43092a92482759fed00137348e586fba20ffb76068251e014516c0eda7",
+      "resultHash": "sha256:c8873a4d3b41c880d637dc7c3c25155683b2907ee833b160e036cd90fb49801f",
+      "steps": 361,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 65102
+    },
+    {
+      "objectHash": "sha256:55bfe63550fe198cb7ddb4a0fe51a78b138c195e829d6325b67adde4483894c0",
+      "simulationHash": "sha256:cbd584cdb4effc9651a8426b776ca466775ae66f31ac375cb6c62f38ce393c48",
+      "resultHash": "sha256:653cc7b0c548858cbe9e8e82fe0f082899e662edfb23837766c7f3250082b950",
+      "steps": 1237,
+      "outcome": "win",
+      "files": 36,
+      "bytes": 222835
+    },
+    {
+      "objectHash": "sha256:5e98c7030f0736ea1fcb13a2f431b282d2710b6e171ddccb94c8b4d3c6041ca2",
+      "simulationHash": "sha256:763bbc83b6f5111e6c04556a33d6d7d75c8f4f198cfa581c56acec86f7d5042d",
+      "resultHash": "sha256:e97ec2b46f49fb1d3d5c2bbd7e59d54ecd61ffedfbf1f77801f16c2b6b806588",
+      "steps": 784,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 214968
+    },
+    {
+      "objectHash": "sha256:60174a54efe49d54dad7cfe17fdbdf9f565cfd53c5afd47be9eca75750ab054d",
+      "simulationHash": "sha256:686e647316502c4d4b2dd223a4045948f9bf8861b183db6943e8e49171263b58",
+      "resultHash": "sha256:4ec0a707c39992875355052a5aed7953721e8d669da0cff435319d026f4ca985",
+      "steps": 730,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 205869
+    },
+    {
+      "objectHash": "sha256:657c8db4a2a83a114662d2e86b1874fcd177c7ac4f0290a0de9e03145af5d59a",
+      "simulationHash": "sha256:f7f4295ad2a3fa0f4be6ce61808164f38b4771756dfd23ab050e0f61d6e6a22a",
+      "resultHash": "sha256:9a41961bc3c1944054acae97b387027b371c75ac57da58462559583a82d0f66c",
+      "steps": 878,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 155241
+    },
+    {
+      "objectHash": "sha256:6c77bf01a98b1cce94756742a2dfe53eb47f96689fb8d50a3d5d0054f8f3e4dc",
+      "simulationHash": "sha256:212d4bf6d9f53647ddb86b87d49db1353d04cf627c8959aeb01d7c298569be52",
+      "resultHash": "sha256:d40b8bd841c3863f496c5da0966a78ea0d244016cc13bbcb6ac8fc28de1d3f81",
+      "steps": 184,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 63951
+    },
+    {
+      "objectHash": "sha256:78f37bffaa116b7da874b609f88abada45b66422b2518c14f1effba05cf5c1a1",
+      "simulationHash": "sha256:d9fa00722cc33196f699f39df01a502a429a95239880fe20bd44678ab5edf79f",
+      "resultHash": "sha256:0762d7c2a033fbe2a0f83d9a54f634ac77f2e907f9ed61f6f9ff5fbcc3a478cc",
+      "steps": 878,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 146839
+    },
+    {
+      "objectHash": "sha256:7b9fbb4385218a6f29de300268551f45c4837a41308433a9d5f870da4825c069",
+      "simulationHash": "sha256:c37307c31d168d41f5463307c472192186f6429e1f5d67db18dcad3517448175",
+      "resultHash": "sha256:6350419e21ead906d94b3cee4b2b442c8c9d2a4487347c265e969885c78c92c8",
+      "steps": 191,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 31615
+    },
+    {
+      "objectHash": "sha256:7e15388b5319d3889d3cacc231b53acef0ced878c9037442173f8d8c5c7742a6",
+      "simulationHash": "sha256:6d137c69de961168188e0f044fb6f4393dc39bbf10d13007daf8d914ebcf3d69",
+      "resultHash": "sha256:21613bf774171d16d7d43c8e87ed1cc166285f3abd2802ff0178715e10f27376",
+      "steps": 730,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 205896
+    },
+    {
+      "objectHash": "sha256:8899e849370c0e4e5fcd038d03d4146784a488a1fb9cff7e8c87e8c4a4033e0e",
+      "simulationHash": "sha256:5d1a9201f58a9c2080feb173ca466c445cbfe41d444dd448ab756bc88c79702c",
+      "resultHash": "sha256:6bb0a1d0fa4fe161907b3f7b4256f80964e57bf005aecf5cdf03e29a02e4d783",
+      "steps": 311,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 49725
+    },
+    {
+      "objectHash": "sha256:9739facd9cce7adbf9fee0b0d51f091b17b714d74902e25f149a66f8851f4b8a",
+      "simulationHash": "sha256:7886c4ba4950378d354e6c113fb5750dddb73c9fb5267defcb272967ac76b832",
+      "resultHash": "sha256:e81d1e85abb420d65f147589fb5a3dba424e9732703fa06527ac82db501dcee3",
+      "steps": 191,
+      "outcome": "win",
+      "files": 6,
+      "bytes": 27721
+    },
+    {
+      "objectHash": "sha256:98c760cfca99a3648d1150f7482063606dd27cb1778f7c1df813ce09eac2bd75",
+      "simulationHash": "sha256:2de2524fc5717ffa16d56f9052f41ada1e328be6c683c1bfb617c35635483d0c",
+      "resultHash": "sha256:b10b5547b5dec293d0c0a33e94f7e81464e1ff4980937942c6dc1f723fa8b1c5",
+      "steps": 191,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 33808
+    },
+    {
+      "objectHash": "sha256:99e3de314a5bb93755f544f073f93f1428102a7c004a0c45f148a8f14ae63479",
+      "simulationHash": "sha256:7b0d8b73dc3a3dbb59f04c7e442bb65943e49c8b0b7666b01011f41582e76670",
+      "resultHash": "sha256:b9fc3580c7becb7c8125f3e0f000dd72b70ccceb81029454aabf4fc885035dd8",
+      "steps": 191,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 30259
+    },
+    {
+      "objectHash": "sha256:9fb4d4e8903c98e1e1edbb1aa91d03500edcc6d7738942a09b379e5c997ea04c",
+      "simulationHash": "sha256:a8f4cab1376c11cef643eb20aa8456166730cd2cf0424fea407c95e6fa02b5d4",
+      "resultHash": "sha256:c15006fca2076f2433420d49a0a9f900f812157195bb975df806e25b807de89e",
+      "steps": 191,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 31583
+    },
+    {
+      "objectHash": "sha256:a0ee7834fc1892a15a7b023cc1b149bfb764032862cee5415dd8c316823e552c",
+      "simulationHash": "sha256:7d4d39ecb578e85f22cecc93e9c1432c0bb183138c2b3d92a8c8dc59095795ae",
+      "resultHash": "sha256:796e608d4edbdc8011b231ac50ad3f97d654c6eb9170ddab11d3ea479f735e9f",
+      "steps": 219,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 61997
+    },
+    {
+      "objectHash": "sha256:a5afd0685591f69e93080734b0ee07238ecd2082bef6cb6a6ac5ec2078cc3bf8",
+      "simulationHash": "sha256:78acca9478c7029c6904c0a4bdb13800a421de8c1c3a2b1ef4a1e7da486251ea",
+      "resultHash": "sha256:7510824ddc94a3d4ec16a54382e86bd541587a5aebb818844bd178951bf2c453",
+      "steps": 730,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 197469
+    },
+    {
+      "objectHash": "sha256:a80bbec981d332973530260604427b0dd1e1dd9a15ebf17e4e1c1d2a4ed6bc06",
+      "simulationHash": "sha256:ccdebc0e3ce4f7c538f0c1f12f360d5ad0c5414cb1120f5722d2db70dd43724a",
+      "resultHash": "sha256:813480c5408ec805a4a5295aa9c128216b07811ab326060e8c0f2012e3968ee5",
+      "steps": 731,
+      "outcome": "win",
+      "files": 22,
+      "bytes": 194069
+    },
+    {
+      "objectHash": "sha256:a9209d65c9abbafcb00309359c9a4ea8ea4acc0515a1bdddcf34b4d2b8326249",
+      "simulationHash": "sha256:ad4d90ae21c895cb6d5bfa85cc97f00362df9180bbf1b2fb44444792e04aa8b3",
+      "resultHash": "sha256:429b75b70810e69ea7464454f7aa6de3d460d1b57441a8e5aa98134775833688",
+      "steps": 218,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 60358
+    },
+    {
+      "objectHash": "sha256:abb4a4bbdcc8bc14000a432e9294b60eb492ace6e1399563a14dd6965619e964",
+      "simulationHash": "sha256:08fab82908549a7398f59b993475cb196191b740ef0e61fa17feea9fde64de46",
+      "resultHash": "sha256:d423397b0fe383eaa8b8706dd96454fccb02446ce101c6485fa94b14c3a2b7dc",
+      "steps": 1237,
+      "outcome": "win",
+      "files": 34,
+      "bytes": 223206
+    },
+    {
+      "objectHash": "sha256:ac34f1f3ec0265ccdbf6186008a4d6f5c0766244fbe7d05b6326e724641afcc3",
+      "simulationHash": "sha256:b6150a7b9849e5d1bd4111eb63e573399e2600f63e33c2014d97a7897e1488d3",
+      "resultHash": "sha256:24c8e9b37a6135e1a66d499dc0a7b26f2d904b73166fb1c3e9484dee509d4edb",
+      "steps": 183,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 60601
+    },
+    {
+      "objectHash": "sha256:b546095c6a89bac03773e7a4cd37aa24c2eb06c65d373116ac9075fd7b48e00b",
+      "simulationHash": "sha256:192603f93f231c3748d280b5f10a4215d3352e2b86c65c102b7de658d9a611a3",
+      "resultHash": "sha256:d05290160082b112bd652864fedee48c94a7f97aaf028e226d5b631b77b6b4d2",
+      "steps": 279,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 104224
+    },
+    {
+      "objectHash": "sha256:b66c6bfcd6949133d244c24f0ddc8cb27b05e2c65011400ad247cae0da61e645",
+      "simulationHash": "sha256:3382aba7948ed9b429281d5bbed086a3474d6003cadbc270b4d304bad94bf7f1",
+      "resultHash": "sha256:e38224de97cad068f6a0f7b16016c6d19ceb7d8f6822da8a0d68c0d11ef05b34",
+      "steps": 186,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 82993
+    },
+    {
+      "objectHash": "sha256:b671c358195ebc7cdd1711c3e644445e7dc21a03f79b78723c66c7cbc9809c9f",
+      "simulationHash": "sha256:809ff00a99dd693c6c931cae31f1306bb1057c673cc15201924df1dfca09ea88",
+      "resultHash": "sha256:d9a85fb8730cde3f0bdd21d952eba63c6f1e5ee02ee37e773f40acecef83ea7b",
+      "steps": 191,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 33802
+    },
+    {
+      "objectHash": "sha256:c38ab8b31753c9b1e04aaf5f147088afc3aace4e41bdcfb5f7664ea6e2a3e70b",
+      "simulationHash": "sha256:28fa4ead4ea3bfbf878f41f3bdf131f8f7ffa9939bb65c9622c40647cee94128",
+      "resultHash": "sha256:ad919180623e98cea0097e13953c1f935ee3307b6a8e98cbd0f71047c2f686d5",
+      "steps": 1272,
+      "outcome": "win",
+      "files": 40,
+      "bytes": 312213
+    },
+    {
+      "objectHash": "sha256:c6f5e4812600eddbd4721ef2a189c56a9e621062dce1216009c7fda83adec54d",
+      "simulationHash": "sha256:c631e87a36101e95139e9415b40b8f6fd640a296dd7278c91c7519bec4da5c34",
+      "resultHash": "sha256:897066292026289fb80c1b14ce57929166b7b7ff807c01a7d56eaac0c6cb2018",
+      "steps": 237,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 122746
+    },
+    {
+      "objectHash": "sha256:c815650c2ff421df9f5f07b529e129adba40a66c46ee362a96f913d363a01f71",
+      "simulationHash": "sha256:9f2b85c195119465a3fd3fd5abe1c4b77ab4673f933860e140b889f0d541e284",
+      "resultHash": "sha256:f5de0d23f1a87a00a356dc4fc4838f25ce96c85752ececaebcf9d827bbe6e3b3",
+      "steps": 191,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 30263
+    },
+    {
+      "objectHash": "sha256:d59538a6a35eabda1148939ff3ffbfdc04f57e19e05228b29634108785f980c9",
+      "simulationHash": "sha256:0aa8ba0873a2547478ba1d96054cba24e892aacd7babc961d11272927a8c0f36",
+      "resultHash": "sha256:a99fc8a98e8058d7739042739be0f08f52edd7ff547184f4a6356e61b5fe84b5",
+      "steps": 184,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 55534
+    },
+    {
+      "objectHash": "sha256:d606bcf0a29f1a653dab9604c686a83bf0833e751920fd23346f731a25bc33b3",
+      "simulationHash": "sha256:46b1beb5bc706a0116168be263cdcb2b4ea4d4239a62e0b2edd0a372687e186c",
+      "resultHash": "sha256:392d8b8457546828aa97a8606ef85a4f46b02acb3f6ac5116b4bcb0ec8f74003",
+      "steps": 152,
+      "outcome": "win",
+      "files": 6,
+      "bytes": 32250
+    },
+    {
+      "objectHash": "sha256:d665703eacf5bbe9c2f29bef1309b021f89059deb1c73b889cb4da60ce08902d",
+      "simulationHash": "sha256:0554c6e49a9a091fcb72fc7c56ecc302d87f85e7e2619f933ab086ce97c6df20",
+      "resultHash": "sha256:42dbe9bf5157b624d251a442582ae9a8bf5226d5781442061275c48763d9bd96",
+      "steps": 219,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 68500
+    },
+    {
+      "objectHash": "sha256:d6fac355820558eaa46d6ce46654affc44f0bbe8b94377e58db5282bfede451a",
+      "simulationHash": "sha256:803293b183eaf456bdb2096ded63e12ca8382b8df49f76b72e55195127af2fb5",
+      "resultHash": "sha256:98e40724f7648488549a1c0f888ac8471c5d9ae809ec3cbcfad4e9d17008e257",
+      "steps": 878,
+      "outcome": "win",
+      "files": 24,
+      "bytes": 146771
+    },
+    {
+      "objectHash": "sha256:da7a1626385c5130b83b8b21499be270e4f1e7f3f1295c48c50a1b48b368f37d",
+      "simulationHash": "sha256:81f671d0a6c63ecf12595700396ac08f8a7e3dfffad3553320ab06e0e889084b",
+      "resultHash": "sha256:f4cbf043c25b0a2acd591ca7b3345d7ce2d5e02da41b01b0757d1e09be59624d",
+      "steps": 237,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 122954
+    },
+    {
+      "objectHash": "sha256:dd522f0be1a70cf879497847e8f9af8553f4dd568130e9f190f5e50779018af8",
+      "simulationHash": "sha256:e9930e78d2d7d2353f0077aa59fb6b4c9b85d3e1cb746486aa15ad0fc287fe49",
+      "resultHash": "sha256:f28d6116bac90c77ab3296965a9392137153279bd54286e01c8a727eadcd4de6",
+      "steps": 361,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 65069
+    },
+    {
+      "objectHash": "sha256:ddfa4e29cd4f100a496ece80f759751da5fdeb59d4c32faecc7a9612251c7521",
+      "simulationHash": "sha256:991f61c07f61a521c3279efe0f378a4c5d4cde37edcd9d2ec3b419db3c1ad9df",
+      "resultHash": "sha256:5c63ef9ab71532719e41450c15a8923980f641322d4e95e3d1f8c8a8275f0de7",
+      "steps": 152,
+      "outcome": "win",
+      "files": 6,
+      "bytes": 32266
+    },
+    {
+      "objectHash": "sha256:de76248b751f61a5f20f32f9dd1959777d2ef4acfb2a88654d83d2ce41cd9b3a",
+      "simulationHash": "sha256:9409843dedd99b33c4cf687b88179190cbd1837e4f4be7c2fc15ddc702199918",
+      "resultHash": "sha256:dd5f4f93a68c9643c248ee276bfbeaa00f12a91c1af5f627c2e4d8a8f4dd710d",
+      "steps": 968,
+      "outcome": "win",
+      "files": 30,
+      "bytes": 231167
+    },
+    {
+      "objectHash": "sha256:e154e6347f9c139315838e870cb95ab473ede52528835feaa9c36dfe7b38cdfe",
+      "simulationHash": "sha256:4daee18a75693e3f01333a3e6bd2c47496987e44bbefdbcc4e12a81b90bc7eff",
+      "resultHash": "sha256:f50aab9414c00c345b7bf4e839f4ef9c57e3b887b7485311634483e976e50c85",
+      "steps": 1237,
+      "outcome": "win",
+      "files": 36,
+      "bytes": 231256
+    },
+    {
+      "objectHash": "sha256:e2fb16570e73de52a5a27947561ffc40e54ce104098953efd7507166ddda1e2f",
+      "simulationHash": "sha256:9176249fca51f8fc980fcf3ed1fd9449abf9177b30b45d695db3674eff7dd5eb",
+      "resultHash": "sha256:f21747a7459843232321d23c2dc2fed41728d68b16fe68abe597a85747c56122",
+      "steps": 311,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 49739
+    },
+    {
+      "objectHash": "sha256:e4af4f124160b13d59500651c47237f38e54aa63dd6686e226fca19a11a3420f",
+      "simulationHash": "sha256:4e41bebc63b0111acd4c3e38a5ba4e238ac2e09aa2fbd5c324600626b18b7158",
+      "resultHash": "sha256:190f57c92f295e5e9f8a1d7414b232f0e19a2733bd07431850aa9f55f0b9ca65",
+      "steps": 184,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 63948
+    },
+    {
+      "objectHash": "sha256:f1f6f30228d34d591b2dc09446a8fd1c53c7fc97608b4b416f91f906ce0c1c99",
+      "simulationHash": "sha256:18141f3454c8496eb998a3e3582cff010853a1138385e19b694ee0defa96718f",
+      "resultHash": "sha256:29109234faa7546bc7fca580f2fee2a1e2f57dc22d3b3beff77c715da0c30bb0",
+      "steps": 236,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 111862
+    },
+    {
+      "objectHash": "sha256:f49462ce4b05a30677176a55397374a46ba6dda6df53d73a6cf858a033105e00",
+      "simulationHash": "sha256:3418aac826ced7414e542c33deee4433e1ed16ac5455a017b15c6ce52d0f940b",
+      "resultHash": "sha256:4c18ee47c38a137bca102cdfc3c4664b9bfb6c47f9bf95130d88eea7d7178a1a",
+      "steps": 237,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 114538
+    },
+    {
+      "objectHash": "sha256:f74fadd3b479c04459c457354c4aa7e22982dcdfb7ae50d72885358693127b5a",
+      "simulationHash": "sha256:4fdf82f3c59eddec43ed128df4d901dbf2578179be274efd46d645129cb98dce",
+      "resultHash": "sha256:ae85ff1f469ecdf6bf9da02d3e0a9a65e72b3950ad93891899cf25aa0b882785",
+      "steps": 170,
+      "outcome": "win",
+      "files": 8,
+      "bytes": 63398
+    },
+    {
+      "objectHash": "sha256:fb3be26450f86c5ccb2c5de9255f190960917e91df2d0b0bb6a467292e1f33ef",
+      "simulationHash": "sha256:ecbca50f3a83211c2691639c0a9b397b07461cdb34b6a4f8e92519d9ee076f04",
+      "resultHash": "sha256:9ddd3c2831ab7941f9cb85013133c530b55b3d4fc1eeba2acb356062c4bb5765",
+      "steps": 210,
+      "outcome": "win",
+      "files": 10,
+      "bytes": 81786
+    },
+    {
+      "objectHash": "sha256:fd2c8547e604a81c95ced245dd96f8b1118c6fb9cd56156886eff837a3d4427b",
+      "simulationHash": "sha256:226b804af6b9f535702eddff4b139fbff901b56ca079ad3cdae957daa05fdb9a",
+      "resultHash": "sha256:1ce44362d18e5bb5998f51e630f31ad0404ddf5d89b379aa6a52e33286c27f8a",
+      "steps": 366,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 73888
+    },
+    {
+      "objectHash": "sha256:ff2760d9311260b6b8a6eb6594196d334d44c7e501125415e1ecae0165a5eacc",
+      "simulationHash": "sha256:52df09b1b7039a2ae4e95faeb6eb7209216ed6a902e36320d462516245633038",
+      "resultHash": "sha256:a2f5135d8f7af52ac528a08fbd624c4d1220c7dfdc1fee327f1c6885233ac603",
+      "steps": 331,
+      "outcome": "win",
+      "files": 12,
+      "bytes": 71042
+    }
+  ],
+  "notes": [
+    "Actual local execution, not Actions or production acceptance.",
+    "First output logger failed after partition 0 had durably completed; its verified result and original reservation were retained, not recomputed.",
+    "combinedComputeMs is the sum of the two measured partition durations, not the resumed invocation wall time.",
+    "Per-object public files include receipt and manifest; temporary SQLite/work files are excluded.",
+    "7600-match scaling is an estimate; all 60 pilot outcomes were win and do not bound long draws."
+  ]
+}

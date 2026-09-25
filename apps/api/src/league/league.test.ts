@@ -5,11 +5,17 @@ import { contentHash, canonicalJson } from '@fantasy/domain/spatial';
 import { leagueInput, leagueEstimate } from '../../test-support/leagues.ts';
 import { batchSource } from '../../test-support/batches.ts';
 import { withReplayDirectory } from '../../test-support/replays.ts';
-import { planLeague, validateLeaguePlan, validateLeaguePartition } from './league-plan.ts';
+import {
+  estimateLeague,
+  planLeague,
+  validateLeaguePlan,
+  validateLeaguePartition,
+} from './league-plan.ts';
 import { nextLeagueAttempt } from './league-progress.ts';
 import { reserveLeaguePartition, runLeaguePartition } from './league-runner.ts';
 import { BattleBundles } from '../batch/battle-bundle.ts';
 import { checkLeague } from './league-check.ts';
+import { leagueFixture } from '@fantasy/samples/testing';
 
 it('partitions more than 1000 fixed slots into bounded plans and authenticates each range', async () => {
   const result = await planLeague(await leagueInput(24), batchSource, leagueEstimate);
@@ -38,7 +44,7 @@ it('rejects dry-run estimates above storage, file, request and execution capacit
   const input = await leagueInput();
   for (const overrides of [
     { retainedBytes: 7999999999 },
-    { retainedFiles: 99999 },
+    { retainedFiles: 499999 },
     { maxReadRequests: 1 },
     { maxWriteRequests: 1 },
     { estimatedMsPerMatch: 1800000 },
@@ -46,6 +52,33 @@ it('rejects dry-run estimates above storage, file, request and execution capacit
     await expect(
       planLeague(input, batchSource, { ...leagueEstimate, ...overrides }),
     ).rejects.toThrow(/budget|bounded/);
+});
+
+it('admits the measured 7600-slot profile but still rejects retained-file and monthly ceilings', async () => {
+  const definition = await leagueFixture(20, 5);
+  definition.trials = 4;
+  const profile = {
+    ...leagueEstimate,
+    estimatedMsPerMatch: 4000,
+    estimatedBytesPerMatch: 600000,
+    estimatedFilesPerMatch: 44,
+    maxWriteRequests: 900000,
+    maxReadRequests: 9000000,
+  };
+  const counts = { reused: 0, retries: 0, exhausted: 0 };
+  expect(estimateLeague(definition, profile, counts)).toMatchObject({
+    planned: 7600,
+    partitions: 60,
+    matchesPerPlan: 128,
+    estimatedBytes: 6000000000,
+    estimatedFiles: 335183,
+  });
+  for (const extra of [
+    { retainedFiles: 164818 },
+    { usedWriteRequests: 564818 },
+    { usedReadRequests: 9000000 },
+  ])
+    expect(() => estimateLeague(definition, { ...profile, ...extra }, counts)).toThrow('budget');
 });
 
 it('persists at most one extra attempt across daily reservations, including killed jobs', async () => {

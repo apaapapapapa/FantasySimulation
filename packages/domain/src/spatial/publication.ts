@@ -13,6 +13,7 @@ import { BatchSlotResultSchema, BundleReceiptSchema, ExecutionSourceSchema } fro
 import { ResultSchema } from './records.ts';
 import { ReplayManifestSchema, type ReplayManifest } from './replay.ts';
 import { LeagueFileRefSchema, PublicLeagueCatalogRefSchema } from './league/publication.ts';
+export { PUBLICATION_MAX_BYTES, PUBLICATION_MAX_FILES } from './publication/index.ts';
 
 export const PUBLIC_PAGE_ROWS = 100;
 export const MAX_PUBLIC_JSON_BYTES = 4_000_000;

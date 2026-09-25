@@ -6,6 +6,8 @@ import {
   BundleReceiptSchema,
   MAX_PUBLIC_JSON_BYTES,
   PublicKeySchema,
+  PUBLICATION_MAX_BYTES,
+  PUBLICATION_MAX_FILES,
   canonicalJson,
   publicHashName,
 } from '@fantasy/domain/spatial';
@@ -17,8 +19,7 @@ import {
   writeDurableFile,
 } from '@fantasy/api/artifacts';
 
-export const PUBLICATION_MAX_BYTES = 8_000_000_000;
-export const PUBLICATION_MAX_FILES = 100_000;
+export { PUBLICATION_MAX_BYTES, PUBLICATION_MAX_FILES } from '@fantasy/domain/spatial';
 export type PublicationFile = {
   key: string;
   bytes: number;

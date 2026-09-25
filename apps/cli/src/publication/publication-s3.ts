@@ -16,25 +16,61 @@ export interface R2Config {
   accessKeyId: string;
   secretAccessKey: string;
 }
+export interface S3PublicationBudget {
+  maxRequests: number;
+  maxClassARequests: number;
+  maxClassBRequests: number;
+  deadlineMs: number;
+  maxAttempts: 1 | 3;
+}
 export class PublicationS3 implements PublicationStore {
   private readonly client: S3Client;
-  private readonly signal = AbortSignal.timeout(300_000);
+  private readonly signal: AbortSignal;
+  private readonly budget: S3PublicationBudget;
   private requests = 0;
+  private classARequests = 0;
+  private classBRequests = 0;
   private transferred = 0;
   private writes = 0;
   private uploaded = 0;
   remainingRequests() {
-    return 100_000 - this.requests;
+    return this.budget.maxRequests - this.requests;
   }
   metrics() {
     return {
       logicalRequests: this.requests,
+      classARequests: this.classARequests,
+      classBRequests: this.classBRequests,
+      maxAttempts: this.budget.maxAttempts,
       successfulWrites: this.writes,
       readBytes: this.transferred,
       uploadedBytes: this.uploaded,
     };
   }
-  constructor(private readonly config: R2Config) {
+  constructor(
+    private readonly config: R2Config,
+    budget: Partial<S3PublicationBudget> = {},
+  ) {
+    this.budget = {
+      maxRequests: 100_000,
+      maxClassARequests: 100_000,
+      maxClassBRequests: 100_000,
+      deadlineMs: 300_000,
+      maxAttempts: 3,
+      ...budget,
+    };
+    for (const [key, maximum] of [
+      ['maxRequests', 2_000_000],
+      ['maxClassARequests', 900_000],
+      ['maxClassBRequests', 2_000_000],
+      ['deadlineMs', 3_600_000],
+    ] as const) {
+      const value = this.budget[key];
+      if (!Number.isInteger(value) || value < 1 || value > maximum)
+        throw new Error('Invalid S3 publication budget');
+    }
+    if (![1, 3].includes(this.budget.maxAttempts)) throw new Error('Invalid S3 retry budget');
+    this.signal = AbortSignal.timeout(this.budget.deadlineMs);
     if (
       !/^[a-f0-9]{32}$/.test(config.accountId) ||
       !/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/.test(config.bucket) ||
@@ -46,7 +82,7 @@ export class PublicationS3 implements PublicationStore {
       region: 'auto',
       endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
-      maxAttempts: 3,
+      maxAttempts: this.budget.maxAttempts,
       retryMode: 'standard',
       requestChecksumCalculation: 'WHEN_REQUIRED',
       responseChecksumValidation: 'WHEN_REQUIRED',
@@ -55,10 +91,17 @@ export class PublicationS3 implements PublicationStore {
   close() {
     this.client.destroy();
   }
-  private options() {
+  private options(kind: 'A' | 'B') {
     if (this.remainingRequests() < 1) throw new Error('S3 request budget exceeded');
-    this.requests++;
+    if (
+      (kind === 'A' && this.classARequests >= this.budget.maxClassARequests) ||
+      (kind === 'B' && this.classBRequests >= this.budget.maxClassBRequests)
+    )
+      throw new Error('S3 request class budget exceeded');
     this.signal.throwIfAborted();
+    this.requests++;
+    if (kind === 'A') this.classARequests++;
+    else this.classBRequests++;
     return { abortSignal: this.signal };
   }
   private input(key: string) {
@@ -86,7 +129,7 @@ export class PublicationS3 implements PublicationStore {
             MaxKeys: 1000,
             ...(cursor ? { ContinuationToken: cursor } : {}),
           }),
-          this.options(),
+          this.options('A'),
         )
         .catch((e) => this.failure(e));
       for (const item of page.Contents ?? []) {
@@ -110,7 +153,10 @@ export class PublicationS3 implements PublicationStore {
   }
   async read(key: string, limit: number) {
     try {
-      const value = await this.client.send(new GetObjectCommand(this.input(key)), this.options());
+      const value = await this.client.send(
+        new GetObjectCommand(this.input(key)),
+        this.options('B'),
+      );
       if (!value.Body || !value.ETag) throw new Error('Incomplete S3 body');
       const reader = value.Body.transformToWebStream().getReader(),
         parts: Uint8Array[] = [];
@@ -139,7 +185,7 @@ export class PublicationS3 implements PublicationStore {
   async head(key: string) {
     try {
       return (
-        (await this.client.send(new HeadObjectCommand(this.input(key)), this.options()))
+        (await this.client.send(new HeadObjectCommand(this.input(key)), this.options('B')))
           .ContentLength ?? null
       );
     } catch (error) {
@@ -160,7 +206,7 @@ export class PublicationS3 implements PublicationStore {
               : 'public, max-age=31536000, immutable, no-transform',
           ...(previousEtag === null ? { IfNoneMatch: '*' } : { IfMatch: previousEtag }),
         }),
-        this.options(),
+        this.options('A'),
       )
       .catch((e) => this.failure(e));
     this.writes++;
@@ -169,7 +215,7 @@ export class PublicationS3 implements PublicationStore {
   async remove(key: string) {
     if (key === 'catalog/current.json') throw new Error('Cannot delete the publication pointer');
     await this.client
-      .send(new DeleteObjectCommand(this.input(key)), this.options())
+      .send(new DeleteObjectCommand(this.input(key)), this.options('A'))
       .catch((e) => this.failure(e));
   }
 }

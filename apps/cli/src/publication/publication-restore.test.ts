@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, stat, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, expect, it } from 'vite-plus/test';
-import { publicationFixture } from '../../test-support/publication.ts';
+import { publicationFixture, publicationIndex } from '../../test-support/publication.ts';
 import { exportPublication } from './publication-export.ts';
 import { localPublicationGraph } from './publication-graph.ts';
 import { restorePublication } from './publication-restore.ts';
@@ -34,28 +34,45 @@ async function snapshot() {
   return { parent, original, fixture, reader, requests, restored: join(parent, 'runner') };
 }
 
-it('recovers exact bytes on a fresh runner, reuses a set, and retains the prior generation', async () => {
-  const { parent, original, fixture, reader, restored, requests } = await snapshot();
-  const before = await localPublicationGraph(original);
-  const result = await restorePublication(restored, reader);
-  expect(result).toMatchObject({
-    status: 'restored',
-    catalogHash: before.current.catalogHash,
-    files: before.files.size,
-  });
-  for (const key of before.files.keys())
-    expect(await readFile(join(restored, key))).toEqual(await readFile(join(original, key)));
-  expect(requests.filter((key) => key === 'catalog/current.json')).toHaveLength(2);
-  expect(result.downloadBytes).toBeGreaterThan(before.totalBytes);
-  await exportPublication(fixture.plan, [fixture], restored);
-  expect((await localPublicationGraph(restored)).current).toEqual(before.current);
-  const next = await publicationFixture(join(parent, 'next'), 'complete', 321);
-  await exportPublication(next.plan, [next], restored);
-  const after = await localPublicationGraph(restored);
-  expect(after.catalog.previousCatalogHash).toBe(before.current.catalogHash);
-  expect(after.catalog.sets).toHaveLength(2);
-  for (const key of before.files.keys()) expect(after.files.has(key)).toBe(true);
-  expect((await localPublicationGraph(original)).current).toEqual(before.current);
+it.each([1, 4])(
+  'recovers with concurrency %s, reuses a set, and retains the prior generation',
+  async (concurrency) => {
+    const { parent, original, fixture, reader, restored, requests } = await snapshot();
+    const before = await localPublicationGraph(original);
+    const result = await restorePublication(restored, reader, undefined, concurrency);
+    expect(result).toMatchObject({
+      status: 'restored',
+      catalogHash: before.current.catalogHash,
+      files: before.files.size,
+    });
+    for (const key of before.files.keys())
+      expect(await readFile(join(restored, key))).toEqual(await readFile(join(original, key)));
+    expect(requests.filter((key) => key === 'catalog/current.json')).toHaveLength(2);
+    expect(result.downloadBytes).toBeGreaterThan(before.totalBytes);
+    await exportPublication(fixture.plan, [fixture], restored);
+    expect((await localPublicationGraph(restored)).current).toEqual(before.current);
+    const next = await publicationFixture(join(parent, 'next'), 'complete', 321);
+    await exportPublication(next.plan, [next], restored);
+    const after = await localPublicationGraph(restored);
+    expect(after.catalog.previousCatalogHash).toBe(before.current.catalogHash);
+    expect(after.catalog.sets).toHaveLength(2);
+    for (const key of before.files.keys()) expect(after.files.has(key)).toBe(true);
+    expect((await localPublicationGraph(original)).current).toEqual(before.current);
+  },
+);
+
+it('downloads each shared bundle only once across retained set generations', async () => {
+  const { original, restored, fixture, reader, requests } = await snapshot();
+  const index = await publicationIndex(
+    fixture.plan,
+    fixture.index.slots.map((slot) => ({ ...slot, reused: true })),
+  );
+  await exportPublication(fixture.plan, [{ index, bundles: fixture.bundles }], original);
+  const result = await restorePublication(restored, reader, 8000000000, 4);
+  const objectReads = requests.filter((key) => key.startsWith('objects/'));
+  expect(new Set(objectReads).size).toBe(objectReads.length);
+  expect((await localPublicationGraph(restored)).catalog.sets).toHaveLength(2);
+  expect(result.reads).toBe(result.files + 1);
 });
 
 it('creates an empty first-publication directory without requiring existing objects', async () => {
