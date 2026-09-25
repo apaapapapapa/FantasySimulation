@@ -143,6 +143,21 @@ test('battle-cancel-retry', async ({ page }) => {
   await expect(battle.getByRole('status', { name: '対戦の状態' })).toHaveText('完了');
   await battle.getByRole('button', { name: '結果のリプレイを見る' }).click();
   await expect(page.getByRole('table', { name: '記録された状態' }).getByRole('row')).toHaveCount(3);
+  await page.route('**/api/battle-jobs/*', async (route) => {
+    const response = await route.fetch();
+    const saved = await response.json();
+    Object.assign(saved.job, {
+      state: 'failed',
+      attempts: 1,
+      maxAttempts: 3,
+      resultId: null,
+      allowedOperations: { cancel: false, retry: false },
+    });
+    await route.fulfill({ json: saved });
+  });
+  await battle.getByRole('button', { name: '状態を再取得' }).click();
+  await expect(battle.getByRole('status', { name: '対戦の状態' })).toHaveText('失敗');
+  await expect(battle.getByRole('button', { name: '対戦を再試行', exact: true })).toBeDisabled();
 });
 
 test('battle-truncated-result', async ({ page }) => {

@@ -7,6 +7,7 @@ import {
   HashSchema,
   IdSchema,
   ManifestSchema,
+  ParticipantSchema,
   RefSchema,
   RevisionSchema,
 } from './contracts.ts';
@@ -69,10 +70,17 @@ export const SpecInputSchema = z.strictObject({
   scenario: ManifestSchema.shape.scenario,
 });
 export type SpecInput = z.infer<typeof SpecInputSchema>;
+// Additive HTTP input: persisted batch plans keep their explicitly seeded participants.
+const UnseededParticipantSchema = ParticipantSchema.omit({ rngSeed: true, rngStream: true });
+export const UnseededSpecInputSchema = SpecInputSchema.extend({
+  participants: z.tuple([UnseededParticipantSchema, UnseededParticipantSchema]),
+});
+export const BattleInputSchema = z.union([SpecInputSchema, UnseededSpecInputSchema]);
+export type BattleInput = z.infer<typeof BattleInputSchema>;
 export const SpecSchema = z.strictObject({ simulationHash: HashSchema, manifest: ManifestSchema });
 export type Spec = z.infer<typeof SpecSchema>;
 export const JobRequestSchema = z.strictObject({
-  spec: SpecInputSchema,
+  spec: BattleInputSchema,
   budget: BudgetSchema.default(DEFAULT_BUDGET),
 });
 export const MAX_STAGED_JOB_PAGE = 100;
