@@ -84,7 +84,7 @@ test('static-long-replay', async ({ page, context, browser }, info) => {
   // Overlapping seeks must not apply an older reply. Camera input remains usable while loading.
   await page.getByLabel('表示stepを入力').fill('5900');
   await page.getByLabel('表示stepを入力').fill('2500');
-  await page.getByLabel('カメラ', { exact: true }).selectOption('side');
+  await page.getByRole('combobox', { name: 'カメラ', exact: true }).selectOption('side');
   await expect(page.getByLabel('現在のstep')).toHaveText('2500');
   await page.getByLabel('再生速度').selectOption('4');
   await page.getByRole('button', { name: '再生', exact: true }).click();

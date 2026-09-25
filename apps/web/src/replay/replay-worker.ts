@@ -32,7 +32,9 @@ scope.onmessage = ({ data }) => {
       value = { manifest: replay.manifest, context: replay.context };
     } else {
       if (!player) throw new Error('Replay is not playable');
-      value = await player[data.action](data.index, signal);
+      if (data.action === 'frame') value = await player.frame(data.index, signal);
+      else if (data.action === 'events') value = await player.events(data.index, signal);
+      else throw new Error('Unsupported replay worker operation');
     }
     signal.throwIfAborted();
     scope.postMessage({ id: data.id, ok: true, value });
