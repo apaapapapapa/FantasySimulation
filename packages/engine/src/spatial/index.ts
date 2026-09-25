@@ -13,3 +13,10 @@ export {
   unsupportedExecutionReason,
 } from './execution-policy.ts';
 export type { EngineInputCode, ExecutionEligibility } from './execution-policy.ts';
+export {
+  createLeagueRevision,
+  validateLeagueRevision,
+  normalizeLeagueDefinition,
+  leagueTrialSeed,
+  leagueMatches,
+} from '../league/index.ts';
