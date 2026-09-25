@@ -19,34 +19,55 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: e14c483f639304e910f00697d5102ad62b44961d
+          ref: feb61f3e46e51dc79aeb613f9bc26ec99212f29b
           fetch-depth: 0
           persist-credentials: false
-      - name: Wait for final PR CI and the requested review to settle
+      - name: Wait for merged main CI and Pages
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         with:
           retries: 0
           script: |
-            const assert = require('node:assert/strict');
-            let settled = false;
-            for (let i=0;i<48;i++) {
-              const run=(await github.rest.actions.getWorkflowRun({owner:'apaapapapapa',repo:'FantasySimulation',run_id:36151834259})).data;
-              assert.equal(run.head_sha,'e14c483f639304e910f00697d5102ad62b44961d');
-              const review=(await github.rest.issues.getComment({owner:'apaapapapapa',repo:'FantasySimulation',comment_id:5834258524})).data;
-              if(run.status==='completed' && !review.body.includes('**Running**')) {
-                assert.equal(run.conclusion,'success');
-                settled=true; break;
+            const assert=require('node:assert/strict');
+            let ready=false;
+            for(let i=0;i<60;i++) {
+              const ci=(await github.rest.actions.listWorkflowRuns({owner:'apaapapapapa',repo:'FantasySimulation',workflow_id:'ci.yml',event:'push',branch:'main',head_sha:'feb61f3e46e51dc79aeb613f9bc26ec99212f29b',per_page:100})).data.workflow_runs.sort((a,b)=>b.id-a.id)[0];
+              const pages=(await github.rest.actions.listWorkflowRuns({owner:'apaapapapapa',repo:'FantasySimulation',workflow_id:'pages.yml',head_sha:'feb61f3e46e51dc79aeb613f9bc26ec99212f29b',per_page:100})).data.workflow_runs.sort((a,b)=>b.id-a.id)[0];
+              if(ci?.status==='completed') assert.equal(ci.conclusion,'success','Merged main CI failed');
+              if(ci?.conclusion==='success' && pages?.status==='completed') {
+                assert.equal(pages.conclusion,'success','Final Pages deployment failed');
+                console.log('MERGED_RUNS='+JSON.stringify({ci:ci.id,pages:pages.id,sha:ci.head_sha}));
+                ready=true;break;
               }
               await new Promise(resolve=>setTimeout(resolve,10000));
             }
-            assert.ok(settled,'CI or requested review did not settle within the observation budget');
-            const pr=(await github.rest.pulls.get({owner:'apaapapapapa',repo:'FantasySimulation',pull_number:136})).data;
-            assert.equal(pr.head.sha,'e14c483f639304e910f00697d5102ad62b44961d');
+            assert.ok(ready,'Main CI/Pages did not finish within observation budget');
       - uses: ./.github/actions/setup-project
       - name: Collect PR 136 exact-head evidence with the existing read-only harness
         env:
           GH_TOKEN: ${{ github.token }}
         run: vp run harness github-snapshot apaapapapapa/FantasySimulation 136 .generated/harness/pr81-final
+      - name: Verify served build and unchanged published catalog
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {writeFileSync} from 'node:fs';
+          let build;
+          for(let i=0;i<18;i++) {
+            const response=await fetch('https://apaapapapapa.github.io/FantasySimulation/build.json?acceptance='+process.env.GITHUB_RUN_ID,{signal:AbortSignal.timeout(15000)});
+            assert.equal(response.status,200);
+            build=await response.json();
+            if(build.sourceSha==='feb61f3e46e51dc79aeb613f9bc26ec99212f29b')break;
+            await new Promise(resolve=>setTimeout(resolve,5000));
+          }
+          assert.equal(build.sourceSha,'feb61f3e46e51dc79aeb613f9bc26ec99212f29b');
+          const response=await fetch('https://fantasysimulation-replay-reader.tokyojp.workers.dev/catalog/current.json',{signal:AbortSignal.timeout(15000)});
+          assert.equal(response.status,200);
+          const catalog=await response.json();
+          assert.equal(catalog.catalogHash,'sha256:4aeaf1d03e15f71e99fad1b22b14f8798fe051ea21f492e90d29b13e56fadf9d');
+          const result={verifiedAt:new Date().toISOString(),build,catalog,mutations:0};
+          writeFileSync('.generated/harness/pr81-final/production.json',JSON.stringify(result,null,2));
+          console.log('FINAL_PRODUCTION='+JSON.stringify(result));
+          NODE
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
