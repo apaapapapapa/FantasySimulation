@@ -2,6 +2,8 @@ import { PublicMatchPageSchema } from '@fantasy/domain/spatial';
 import { test, expect } from '../fixtures.ts';
 import { selectionFiles, selectionGenerations, selectionUrl } from '../selection-fixtures.ts';
 import { complete, files } from './fixtures.ts';
+import measurement from '../../docs/measurements/match-list.json' with { type: 'json' };
+import provenance from '../../apps/web/test-fixtures/publication/provenance.json' with { type: 'json' };
 
 for (const generation of selectionGenerations) {
   test(`static-selection-${generation.kind}`, async ({ page }) => {
@@ -64,10 +66,26 @@ test('static-list-cost-and-states', async ({ page }, info) => {
   const table = page.getByRole('table', { name: '公開試合一覧' });
   await expect(table.getByRole('row')).toHaveCount(101);
   const initial = await Promise.all(measurements);
-  expect(initial).toHaveLength(4);
+  expect(complete.setHash).toBe(measurement.setHash);
+  expect(provenance.archiveHash).toBe(measurement.archiveHash);
+  expect(initial).toHaveLength(measurement.requests);
   expect(initial.filter((entry) => entry.key.startsWith('objects/'))).toHaveLength(0);
   const bytes = initial.reduce((sum, entry) => sum + entry.bytes, 0);
-  expect(bytes).toBe(initial.reduce((sum, entry) => sum + files.get(entry.key)!.length, 0));
+  expect(bytes).toBe(measurement.decodedBodyBytes);
+  expect(
+    Object.fromEntries(
+      initial.map(({ key, bytes }) => [
+        key === 'catalog/current.json'
+          ? 'current'
+          : key.startsWith('catalog/')
+            ? 'catalog'
+            : key.endsWith('/set.json')
+              ? 'set'
+              : 'page',
+        bytes,
+      ]),
+    ),
+  ).toEqual(measurement.responses);
   await info.attach('1000-slot-initial-load', {
     body: Buffer.from(
       JSON.stringify(
