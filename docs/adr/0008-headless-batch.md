@@ -79,39 +79,18 @@ and recovery/republication evidence. Mocks alone do not establish production acc
 
 ### Production acceptance (2026-09-25)
 
-[Publish run 36057392026](https://github.com/apaapapapapa/FantasySimulation/actions/runs/36057392026)
-source `4618f3c`: attempt 1 verified 34 writes/170,759 bytes/26 reader requests;
-attempt 2 restored 34 files, reused 33 immutable files, wrote/transferred zero.
-Graph: two complete matches, 34 files/170,759 bytes; no deletion.
-S3 logical requests: restore+publish 2+73 initially, 35+75 on repeat (not billing counters).
-
-[Rollback/restore run 36113472940](https://github.com/apaapapapapa/FantasySimulation/actions/runs/36113472940)
-deployed `4618f3c`, restored `d0b32d0` through the successful-main-CI gate.
-Both: unchanged graph/links, Chromium/WebKit 390x844, 3D/playback/seek/direct-URL reload,
-zero API requests/page/HTTP errors. Manual 2D fallback advanced the recorded step.
-Separately, remote/restore/reader fixtures passed 88 tests for interrupted/lost-response recovery,
-stale generations, collisions and budgets.
-
-[Full playback 36113835189](https://github.com/apaapapapapa/FantasySimulation/actions/runs/36113835189):
-both browsers reached steps 121/747; list 4 + playback 8/24 = 12/28 cold reader requests;
-direct-URL reload/startup 8. Free 100k/day gives a conditional maximum of 3,571 longer views
-before retries/publishing/other account traffic, not billing/audience evidence.
-
-Cloudflare: Standard/private `fantasysimulation-replays`, no public custom domain/object expiry;
-`REPLAYS` binding, workers.dev enabled/previews disabled. Deployment
-`0c8ff026-eb60-4978-a319-9bdf3040c7ce`; code SHA-256
-`73651b0fb4fb254e3e63f096fd557098f89ecf3f7786c421030b012fe7a16554` (241,609 bytes;
-[deployment record](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5805398131)).
-Account R2 metrics: 253,096,620 payload bytes, 300,630 metadata bytes, 1,612 objects; IA zero.
-Two existing $10 billing alerts are enabled. They are notifications, not a spending cap.
+[Pinned production evidence](https://github.com/apaapapapapa/FantasySimulation/blob/3a81e83358b338daf40483407a0c5c574f95830f/docs/adr/0008-headless-batch.md)
+pins publish/republish, rollback, full playback (Chromium/WebKit 390x844), manual 2D step
+progression, deployment/account observations. Two complete matches: 34 files/170,759 bytes;
+repeat transfer zero. Cold playback 12/28 reads (not bills). R2 Standard/private, no object
+expiry; two $10 alerts, not caps. Preserve historical links/measurements for P5 sizing.
 
 [Owner evidence](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833944717)
 shows Workers Paid ending (date column 2026-10-12), R2 Paid active; no Free migration.
 Paid account invoices: Sep 12 $5.50, Sep 6 $1.07 (comment 5833872466); line items/project
 attribution are not shown. Billable Usage Sep 12–25, cycle Sep 12–Oct 11 (14/30 days):
-total/projected/daily-average $0.00, all usage included. This metered figure excludes
-fixed subscriptions: it does not make the paid invoices zero or guarantee future zero cost.
+total/projected/daily-average $0.00, all usage included. Metered $0 excludes fixed fees;
+paid invoices and future costs are not zero-cost claims.
 [Owner decision](https://github.com/apaapapapapa/FantasySimulation/issues/81#issuecomment-5833903078)
-accepts the existing account-wide R2 token instead of requiring bucket-only replacement.
-No new privileges or credentials were supplied. Environment/step isolation, private storage,
-bounds and cost monitoring remain required.
+accepts the existing account-wide R2 token; no replacement or new credentials/privileges.
+Environment/step isolation, private storage, bounds and cost monitoring remain required.

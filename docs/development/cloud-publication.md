@@ -13,7 +13,7 @@ Deployment branches and tagsをSelected branches and tagsにし、**Branchのmai
 - Secrets: `R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY`。
 - Variables: `R2_ACCOUNT_ID`。設定・料金確認後に`R2_PUBLICATION_ENABLED=true`。
 
-通常は`fantasysimulation-replays`限定のObject Read & Write。#81の所有者承認（2026-09-25）で現行キーのアカウント全体権限を許容し、差替えは不要。根拠はADR参照。
+#81は所有者承認（2026-09-25）で現行のアカウント全体権限を許容（ADR参照）。通常はbucket限定のObject Read & Write。
 Global API Keyは使わない。R2は非公開のまま既存Reader/Pagesを使う。
 Workers Free/Paid・全体のR2利用量・請求通知を確認する。無料枠は強制的な料金上限ではない。
 Required reviewersは任意だが、1人運用で自己承認禁止にしない。
