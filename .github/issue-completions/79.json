@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "issue": 79,
+  "issueBodySha256": "dfc8273ad42f354a422a688d0eedb03176ea7ddcedeafd7bf172c789ce6fb023",
+  "issueUpdatedAt": "2026-09-23T10:11:55Z",
+  "complete": true,
+  "summary": "API・静的配信からの保存ログ読込、再計算しない3D観戦、再生/seek/4種カメラ、時刻同期した判定・主観AIログ、5種の重ね表示、記録資源/状態/姿勢の表示を実装。Web Workerで展開・検証を分離し、取得数と保持チャンクを制限した。実保存の飛行・遮蔽・弾・状態期限と同時致死の表示fixtureを確認し、固定6,000stepのChromium/WebKit計測・依存ライセンス・bundleサイズを記録した。実機スマホ/OS休止/touchは未検証（#82）、未実装の瞬間移動は能力実装時にfixtureを追加する。",
+  "remainingWork": [],
+  "pullRequests": [84, 96, 100, 125, 128, 130, 131, 133],
+  "acceptance": [
+    {
+      "task": "API adapterと静的adapterの両方で、同じ保存リプレイを先頭から決着まで再生できる。静的adapterでは、APIを止めた状態で再生できる",
+      "evidence": "PR #84/#96/#128/#131: API/static adapters share openReplay, ReplayPlayer and domain seekReplayState. Fixed saved bytes reach the terminal through both adapter tests; static E2E owns no API/SQLite server. Local battle E2E reaches the recorded last step. Public builds use only the configured publication root; static network assertions confirm no /api requests or localhost API fallback."
+    },
+    {
+      "task": "連続再生と、任意のcheckpointからの前方・後方へのseekで、同じstepの主体・HP/MP・状態・表示イベントが一致する（domainの単体試験）",
+      "evidence": "packages/domain/src/spatial/replay.test.ts and apps/web/src/replay/open-replay.test.ts compare full sequential ReplayState application against checkpoint/forward/backward seeking, resources/statuses/records and per-event timestamps. Frames retain same-step interval/boundary/terminal records; validator applies atomically."
+    },
+    {
+      "task": "再生速度、カメラ、表示fps、タブの休止と復帰で、表示状態・保存結果・hashが変わらない",
+      "evidence": "playback-clock.test.ts covers 10/60/144fps and speed/resume arithmetic. static-replay-controls and static-long-replay compare recorded state and saved hash across playback, camera, speed, rapid forward/backward seek and visibilitychange pause/resume. Camera rendering never advances simulation."
+    },
+    {
+      "task": "地形による遮蔽、飛行、高速弾、同時致死、状態の期限、不連続な移動を含むfixtureで、表示を確認する。未実装の能力のfixtureは、その能力の実装時に追加し、対応済みと偽らない",
+      "evidence": "Fixed swordsman-sky-mage-240 recording covers terrain occlusion, flight and fast projectiles. The new publication-expiry input records actual flight:expired at step 5; static-status-expiry compares status at steps 4, 5 and reverse seek to 4. publication-long includes the domain mutual-hit display fixture; both HP meters become zero in the same step. Teleport/discontinuous abilities remain unimplemented and are explicitly deferred until implementation, as allowed by this acceptance item. Projection-only posture tests do not claim new combat capability."
+    },
+    {
+      "task": "欠落、破損、対応していない版、過大なファイル、順序の誤り、checksumの不一致、unresolved/truncated/failed/cancelledを区別して表示し、存在しない場面を作らない",
+      "evidence": "open-replay/public-source tests cover version, compressed/expanded bounds, strict UTF-8, row counts/order, checksums and partial/diagnostic manifests. replay-session tests preserve error kinds across Worker messaging. Static E2E covers missing/corrupt/oversize/HTTP gzip/429/network failures and unresolved/truncated boundaries. ReplayPanel renders failed/cancelled as diagnostics without creating/loading playback frames."
+    },
+    {
+      "task": "判定ログとAIの判断ログが再生時刻と同期し、ログから場面へ移動できる。主観のログと全知のログを区別して表示する",
+      "evidence": "PR #128/#130: CurrentEvents splits adjudication (omniscient) from actor cognition (subjective), retains the recorded decision/knowledge payload, rule/parent/causes/before-after values and damage breakdown. EventEntries moves to the event step; saved-fixture tests verify event.step independently of interval.toStep. ReplayEvents pages only the selected verified chunk."
+    },
+    {
+      "task": "視野・当たり判定・軌跡・命中点・射線の重ね表示を切り替えられる。記録にも定義にもない情報を描かない",
+      "evidence": "PR #130: five independent overlay controls, shared scene model and 3D/2D geometry. Recorded posture dimensions, nominal vision cone, stage/reaction shapes, paths and contact coordinates are used. Missing launch coordinates and unknown status-adjusted vision are not guessed. Actual saved interval hit/subtime regression verifies pairing without confusing projectile centre with contact point."
+    },
+    {
+      "task": "最長（6,000step）のfixtureで、初回表示までの時間、seekの時間、メモリ、取得bytesを、固定の端末と入力で測定して記録する。全チャンクを初回に取得しない",
+      "evidence": "PR #131; docs/measurements/replay-viewer.json and ADR 0006. Fixed 6000-step writer input is bound by archive/manifest/result hashes and provenance. CI 36123069493 (test merge 403404ccafe7bb91029b8392c82f9d0c68edc011, artifact 10858159919) measured the same AMD EPYC 7763 Linux runner: first 3D frame 1137.95/1602.72 ms (Chromium/WebKit), initial 39700 payload bytes and 1/53 chunks, seeks 74.15–181.27 ms. Raw seek bytes and sampled process RSS are preserved with method limitations; RSS is not a peak or JS-heap figure. Worker, concurrency 2, decoded cache 8 and validated cache 2 avoid initial full-prefix fetching."
+    },
+    {
+      "task": "#12の基盤で、ChromiumとWebKitのE2E（再生・seek・step送り・速度・カメラ・エラー表示）を実行する。実機で確認していない端末は未検証と明記する",
+      "evidence": "PR #96/#130/#131 use the #12 harness. CI https://github.com/apaapapapapa/FantasySimulation/actions/runs/36123069493 passed 30 Chromium/WebKit static cases (including the #80 selection cases), zero skipped/unexpected/flaky, covering controls/errors/logs/overlays/6000-step and status-expiry seeks. docs/measurements/replay-viewer.json records browser/CPU/viewport/input identities and states that physical iPhone/iPad/Android, OS suspension and touch are unverified. Visibilitychange is simulated, not a physical-device claim."
+    },
+    {
+      "task": "依存方向の検査、`vp run verify`、Linux CI、#5の証跡で確認する",
+      "evidence": "PR #128/#130/#131/#133: pinned Node 24.19.0, pnpm 11.27.1 and Vite+ 0.3.3; full vp run verify passed (1114 tests after #132 integration). Clean-source source-79-main-integration binds source-clean/source-verify PASS to 262b9a4f18f276ebd859384c876362b5d31c5f3d; PR CI 36123069493 and the canonical delivery assessment passed. Boundary/security/corpus/load gates are unchanged. docs/measurements/replay-viewer.json records exact React/Three/Fiber/Drei MIT versions and fresh public bundle measurements. Final main SHA, CI and Release success are required and linked by the completion workflow."
+    }
+  ]
+}

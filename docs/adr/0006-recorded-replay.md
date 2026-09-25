@@ -27,17 +27,16 @@ results. Corruption blocks cache/regeneration. Explicit deletion only; reject
 overcapacity; back up stopped DB+artifacts. Recovery deletes only unreferenced
 temp/orphans. Domain mutual-hit/API fixtures cover hashes/seeks/terrain/flight/
 bullets/statuses. Extensions need domain restoration, Worker/SQLite round trips.
-UI remains P4.
+API/static viewers share domain seek; Web Workers validate/decode.
+Bounds: 2 concurrent loads, 8 decoded files, 2 validated chunks; no full-prefix prefetch.
+Clock/camera never advance combat; discard stale replies. Geometry/event/AI overlays use
+records; missing launch coordinates and adjusted vision are not guessed.
+[Browser evidence, licenses and bundle sizes](../measurements/replay-viewer.json).
 
-D-2 (#106): retain full validation on writing, imports/publication and unknown/legacy DB receipts.
-For reuse/open of a trusted receipt, verify the DB-bound manifest and every compressed file's size
-and SHA-256, plus attempt/byte/result bindings, without inflate/apply. `validation_profile` is nullable
-additive DB metadata; existing files, results and columns are untouched. Only successful full
-validation issues a checksum-bound receipt; unknown profiles validate fully before adoption.
-Changing semantic acceptance requires a new profile. Checksums remain integrity, not authentication:
-the coordinator-owned DB is trusted, arbitrary imported metadata is not an attestation.
-
-Measured on Node 24.19/Linux/Xeon 8573C (three alternating pairs; full writer validation excluded):
-50 steps median 19.08→2.02 ms, 6000 steps 1637.78→30.30 ms. Raw source-bound evidence is
-`apps/api/fixtures/revalidation-baseline.json`; repeat via the API-owned revalidation benchmark.
-This sample justifies avoiding repeated semantic work; it is not a production throughput claim.
+D-2 (#106): writes/imports/publication and unknown/legacy profiles require full validation.
+Only successful full validation issues a checksum-bound receipt. Trusted coordinator DB reuse/open verifies the manifest,
+every compressed size/SHA-256 and attempt/byte/result bindings without inflate/apply.
+Nullable additive `validation_profile` preserves old files/results/columns; unknown profiles validate
+before adoption. New semantic acceptance needs a new profile. Imported metadata is not an attestation.
+API measurements/repeat: `apps/api/fixtures/revalidation-baseline.json`
+and `apps/api/tooling/revalidation-benchmark.ts` (not production throughput guarantees).
