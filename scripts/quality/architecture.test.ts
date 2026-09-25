@@ -140,6 +140,24 @@ it.each([
     'execution-contract-boundary',
   ],
   [
+    'packages/domain/src/spatial/execution.ts',
+    'packages/domain/src/spatial/replay-validation/common.ts',
+    './replay-validation/common.ts',
+    'execution-contract-boundary',
+  ],
+  [
+    'packages/domain/src/spatial/replay-validation/context.ts',
+    'packages/domain/src/spatial/replay.ts',
+    '../replay.ts',
+    null,
+  ],
+  [
+    'packages/domain/src/spatial/replay-validation/force.ts',
+    'packages/domain/src/spatial/combat-derivations.ts',
+    '../combat-derivations.ts',
+    null,
+  ],
+  [
     'packages/engine/src/spatial/run.ts',
     'packages/samples/src/index.ts',
     '../../../samples/src/index.ts',

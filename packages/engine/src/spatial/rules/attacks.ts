@@ -32,24 +32,7 @@ import { bodyCapsule } from '../world/terrain.ts';
 import { ResourceBudget } from './resources.ts';
 
 type Ability = DeepReadonly<Definition<'ability'>>;
-export type ActionClock = { launchAt: number; recoveryUntil: number; cooldownUntil: number };
-/** Action speed scales preparation/recovery/cooldown, not physics or an attack's active duration. */
-export function actionClock(ability: Ability, speedBps: number, step: number): ActionClock | null {
-  if (speedBps === 0) return null;
-  const delay = (value: number) => Math.ceil((value * 10000) / speedBps);
-  const launchAt = step + delay(ability.castSteps);
-  const last = ability.stages?.at(-1);
-  const active = last
-    ? last.offsetSteps + last.durationSteps
-    : ability.attack.kind === 'melee'
-      ? ability.attack.activeSteps
-      : 1;
-  return {
-    launchAt,
-    recoveryUntil: launchAt + active + Math.max(1, delay(ability.recoverySteps)),
-    cooldownUntil: launchAt + delay(ability.cooldownSteps),
-  };
-}
+export { actionClock, type ActionClock } from '@fantasy/domain/spatial/execution';
 /** Only stage zero is prepaid. Later costs never hold future resources. */
 export function declarationCost(ability: Ability) {
   const extra = ability.stages?.[0]?.cost;

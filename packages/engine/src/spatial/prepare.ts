@@ -2,6 +2,7 @@ import type { ResolvedActor, PreparedBattle } from './state.ts';
 export type { ResolvedActor, PreparedBattle } from './state.ts';
 import {
   abilityEffects,
+  DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND,
   canonicalJson,
   characterLoadout,
   validatePolicyAbilities,
@@ -108,7 +109,11 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     simulationHash: await contentHash(manifest),
     actors,
     scenario: { ...scenario, terrainKnowledge: scenario.terrainKnowledge ?? 'observed' },
-    rules: { ...rules, forcedSpeedCapMmPerSecond: rules.forcedSpeedCapMmPerSecond ?? 100000 },
+    rules: {
+      ...rules,
+      forcedSpeedCapMmPerSecond:
+        rules.forcedSpeedCapMmPerSecond ?? DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND,
+    },
     statuses: manifest.revisions.filter((r) => r.kind === 'status'),
   });
 }

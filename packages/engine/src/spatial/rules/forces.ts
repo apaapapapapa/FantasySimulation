@@ -1,6 +1,8 @@
 import type { ActorBodyState, ActorState } from '../state.ts';
 import {
   compareIds,
+  composeForce,
+  DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND,
   type Budget,
   type DeepReadonly,
   type Effect,
@@ -11,7 +13,6 @@ import { length, sub, unit, type Vec3 } from '../math.ts';
 import { SpatialBudgetError } from '../world/physics.ts';
 
 type Force = DeepReadonly<Extract<Effect, { kind: 'force' }>>;
-const axes = ['x', 'y', 'z'] as const;
 /** Contact-frozen integer mm/s; Math.round alone would round negative ties toward zero. */
 export function freezeForce(effect: Force, source: Vec3, target: Vec3): Vec3 {
   const direction = unit(sub(target, source));
@@ -60,22 +61,8 @@ export function forceSum(
   const contributors = forces
     .filter((f) => f.startAt <= step && step < f.endAt)
     .sort((a, b) => compareIds(a.id, b.id));
-  const totals = { x: 0n, y: 0n, z: 0n };
-  for (const force of contributors)
-    for (const axis of axes) totals[axis] += BigInt(force.velocityMmPerSecond[axis]);
-  const square = axes.reduce((n, axis) => n + totals[axis] ** 2n, 0n);
-  const capped = square > BigInt(capMmPerSecond) ** 2n;
-  const scale = capped ? capMmPerSecond / Math.sqrt(Number(square)) / 1000 : 0.001;
-  return {
-    contributors,
-    capMmPerSecond,
-    capped,
-    force: {
-      x: Number(totals.x) * scale,
-      y: Number(totals.y) * scale,
-      z: Number(totals.z) * scale,
-    },
-  };
+  const { capped, force } = composeForce(contributors, capMmPerSecond);
+  return { contributors, capMmPerSecond, capped, force };
 }
 
 /** Mode transitions happen before observation/selection on the provisional interval state. */
@@ -126,6 +113,10 @@ export function settleForcedInterval(
   };
 }
 
-export function hasForcedMotion(actor: Pick<ActorBodyState, 'forces'>, step: number, cap = 100000) {
+export function hasForcedMotion(
+  actor: Pick<ActorBodyState, 'forces'>,
+  step: number,
+  cap = DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND,
+) {
   return !!actor.forces?.length && length(forceSum(actor.forces, step, cap).force) > 0;
 }

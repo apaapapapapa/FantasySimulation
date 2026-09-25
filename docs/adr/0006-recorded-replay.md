@@ -8,7 +8,9 @@ is authoritative; formats/limits/guarantees unchanged.
 [ADR0012](0012-stages-and-reactions.md) adds stages/reactions.
 
 Records:20ms,Y-up,binary64,bent traces,replacement deltas. Causal IDs≠display sequence;
-reject invalid records atomically. Checkpoints cannot resume. Seek≠full-prefix
+reject invalid records atomically. Feature validators own action/stage/force/reaction/projectile/event
+checks; domain combat derivations supply shared clocks and capped force sums. Saved acceptance
+boundaries and tolerances stay unchanged. Checkpoints cannot resume. Seek≠full-prefix
 validation; checksums≠authenticity. Viewer never recomputes outcomes.
 
 Profile display-ndjson-gzip-v1: independent gzip NDJSON,target128KiB,≤250step/chunk,
