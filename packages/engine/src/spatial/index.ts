@@ -20,3 +20,4 @@ export {
   leagueTrialSeed,
   leagueMatches,
 } from '../league/index.ts';
+export { aggregateLeague, scoreLeagueCounts, compareLeagueFractions } from '../league/scoring.ts';

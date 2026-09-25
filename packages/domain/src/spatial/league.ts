@@ -15,8 +15,10 @@ export const LeagueWeightSchema = z.strictObject({
   denominator: z.string().regex(/^[1-9]\d{0,11}$/),
 });
 export const LeagueFractionSchema = z.strictObject({
-  numerator: z.string().regex(/^(0|[1-9]\d{0,95})$/),
-  denominator: z.string().regex(/^[1-9]\d{0,95}$/),
+  // <=315 cells with total T<=64000: product(T)<204^315<10^728.
+  // Five <=12-digit weights, 2*(N-1), and the 100-point scale need <793 digits.
+  numerator: z.string().regex(/^(0|[1-9]\d{0,799})$/),
+  denominator: z.string().regex(/^[1-9]\d{0,799}$/),
 });
 const SpawnSchema = ParticipantSchema.pick({ position: true, facing: true });
 export const LeagueBattlefieldSchema = z.strictObject({
