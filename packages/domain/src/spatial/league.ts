@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   BudgetSchema,
+  DEFAULT_BUDGET,
   HashSchema,
   IdSchema,
   ParticipantSchema,
@@ -56,9 +57,11 @@ export const LeagueDefinitionSchema = z
     }
     if (numerator !== denominator) reject('League weights must sum to exactly one');
     if (leagueSlotCount(value) > MAX_LEAGUE_SLOTS) reject('League exceeds planned slot limit');
-    for (const key of Object.keys(value.budget) as (keyof typeof value.budget)[]) {
-      const initial = value.budget[key];
-      if (initial !== undefined && (value.retryBudget[key] ?? 0) < initial)
+    const initialBudget = { ...DEFAULT_BUDGET, ...value.budget };
+    const retryBudget = { ...DEFAULT_BUDGET, ...value.retryBudget };
+    for (const key of Object.keys(initialBudget) as (keyof typeof initialBudget)[]) {
+      const initial = initialBudget[key];
+      if (initial !== undefined && (retryBudget[key] ?? 0) < initial)
         reject(`Retry budget must preserve or increase ${key}`);
     }
   });

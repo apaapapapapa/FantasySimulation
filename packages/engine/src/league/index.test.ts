@@ -2,7 +2,12 @@ import { expect, it } from 'vite-plus/test';
 import { actorSeed, leagueSlotCount, LeagueDefinitionSchema } from '@fantasy/domain/spatial';
 import { observedRules } from '@fantasy/samples';
 import { leagueFixture, leagueSource, plannedLeague } from '../../test-support/league.ts';
-import { createLeagueRevision, leagueTrialSeed, validateLeagueRevision } from './index.ts';
+import {
+  createLeagueRevision,
+  leagueTrialSeed,
+  normalizeLeagueDefinition,
+  validateLeagueRevision,
+} from './index.ts';
 
 it('normalizes participant, scenario, revision and JSON key order without changing slots or manifests', async () => {
   const input = await leagueFixture();
@@ -107,6 +112,20 @@ it('rejects unsupported rules, unpinned dependencies, modified content and alter
   await expect(validateLeagueRevision({ ...league, sourceSha: '2'.repeat(40) })).rejects.toThrow(
     /checksum/,
   );
+});
+
+it('compares effective retry budgets including omitted optional defaults', async () => {
+  const input = await leagueFixture();
+  delete input.budget.maxForces;
+  input.retryBudget.maxForces = 1;
+  expect(LeagueDefinitionSchema.safeParse(input).success).toBe(false);
+  await expect(normalizeLeagueDefinition(input)).rejects.toThrow(/maxForces/);
+  delete input.retryBudget.maxForces;
+  const normalized = await normalizeLeagueDefinition(input);
+  expect(normalized.budget.maxForces).toBe(64);
+  expect(normalized.retryBudget.maxForces).toBe(64);
+  input.budget.maxForces = 1;
+  expect(LeagueDefinitionSchema.safeParse(input).success).toBe(true);
 });
 
 it('separates unchanged-input detection from source-bound publication identity', async () => {
