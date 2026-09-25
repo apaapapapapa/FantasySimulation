@@ -155,6 +155,44 @@ describe('Drizzle Kit and spatial persistence integration', () => {
     }
   });
 
+  it('adds a typed determinism failure without changing previously saved rows or retry restrictions', () => {
+    const directory = temporary(),
+      old = join(directory, 'old');
+    cpSync(migrationsFolder, old, { recursive: true });
+    const journalPath = join(old, 'meta/_journal.json');
+    const journal = JSON.parse(readFileSync(journalPath, 'utf8'));
+    journal.entries = journal.entries.filter((entry: { idx: number }) => entry.idx < 3);
+    writeFileSync(journalPath, JSON.stringify(journal));
+    const sqlite = new Database(':memory:');
+    try {
+      const db = drizzle(sqlite);
+      migrate(db, { migrationsFolder: old });
+      sqlite.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run('saved', '{}', 'before');
+      const insert = sqlite.prepare(`INSERT INTO simulation_jobs
+        (id,simulation_hash,client_id,idempotency_key,request_hash,budget_json,state,attempts,max_attempts,error,created_at,updated_at)
+        VALUES(?, 'saved','client',?,'hash','{}','failed',1,3,?,100,101)`);
+      insert.run('conflict', 'one', 'Determinism violation');
+      insert.run('ordinary', 'two', 'Worker stopped');
+      const before = sqlite.prepare('SELECT * FROM simulation_jobs ORDER BY id').all();
+      const priorReceipts = receipts(sqlite);
+      migrate(db, { migrationsFolder });
+      const after = sqlite
+        .prepare<[], { failure_code: string | null } & Record<string, unknown>>(
+          'SELECT * FROM simulation_jobs ORDER BY id',
+        )
+        .all();
+      expect(after.map(({ failure_code: _, ...row }) => row)).toEqual(before);
+      expect(after.map((row) => row.failure_code)).toEqual(['determinism-violation', null]);
+      expect(receipts(sqlite).slice(0, priorReceipts.length)).toEqual(priorReceipts);
+      expect(receipts(sqlite)).toHaveLength(priorReceipts.length + 1);
+      migrate(db, { migrationsFolder });
+      expect(sqlite.prepare('SELECT * FROM simulation_jobs ORDER BY id').all()).toEqual(after);
+      expect(sqlite.pragma('integrity_check', { simple: true })).toBe('ok');
+    } finally {
+      sqlite.close();
+    }
+  });
+
   it('shares official history between Kit, startup and repeated execution', async () => {
     const filename = join(temporary(), 'fresh.sqlite');
     runKit(['migrate'], filename);

@@ -131,13 +131,25 @@ describe('persistent simulation job ownership', () => {
       ).toEqual({ accepted: true, conflict: true });
       expect(jobs.canonical(job.simulationHash)).toBeUndefined();
       expect(jobs.artifact(artifactFor(first).id)?.state).toBe('quarantined');
-      expect(jobs.get(second.job.id)?.state).toBe('failed');
+      expect(jobs.get(second.job.id)).toMatchObject({
+        state: 'failed',
+        failureCode: 'determinism-violation',
+      });
       expect(() =>
         store.db.prepare("UPDATE battle_results SET result_hash='edited'").run(),
       ).toThrow(/immutable/);
       expect(() => store.db.prepare('DELETE FROM battle_results').run()).toThrow(
         /cannot be deleted/,
       );
+    });
+  });
+  it('does not interpret diagnostic wording as a determinism failure code', async () => {
+    await withJobs(async ({ jobs, submit }) => {
+      const job = submit('diagnostic'),
+        claim = jobs.claim(100)!;
+      jobs.fail(claim, 'Determinism violation', 101);
+      expect(jobs.get(job.id)?.failureCode).toBeNull();
+      expect(jobs.retry(job.id, 1, DEFAULT_BUDGET, 102).state).toBe('queued');
     });
   });
   it('bounds recovered attempts, preserves diagnostics and excludes corrupt artifacts from cache', async () => {

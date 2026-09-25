@@ -48,6 +48,9 @@ linear memory bytesを別々に報告する。WASM/ArrayBufferはexternalと重�
 保存manifestを実行できる場合だけ受理する。再計算した結果hashが元の不変正本と
 完全一致した場合のみ新artifactをcacheに使う。不一致は関連artifactを全て隔離する。
 対応しない過去engineは409で保留し、旧engine registryや入力の自動変換を行わない。
+決定性違反の再試行禁止は`simulation_jobs.failure_code`で判定する。Drizzle 0003は
+既存の該当診断から列だけを補完し、保存済みの本文・結果・replayを変更しない。
+保存層はコード付きの未検出・競合・入力・容量・利用不能エラーを返し、HTTP変換は境界が行う。
 
 API/Worker/保存の統合回帰は`battle-runtime.test.ts`と`worker-pool.test.ts`。
 実プロセスの異常終了、再起動、二重送信、予算再試行、中止、timeout、破損、復旧、

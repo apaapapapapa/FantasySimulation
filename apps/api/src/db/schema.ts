@@ -94,6 +94,7 @@ export const simulationJobs = sqliteTable(
     currentAttemptId: text('current_attempt_id'),
     resultId: text('result_id'),
     error: text('error'),
+    failureCode: text('failure_code', { enum: ['determinism-violation'] }),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },

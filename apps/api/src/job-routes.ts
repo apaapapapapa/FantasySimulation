@@ -26,7 +26,7 @@ export function addJobRoutes(app: FastifyInstance, runtime: BattleRuntime) {
   app.get('/api/battle-jobs/:id', async (request) => {
     const { id } = idParams.parse(request.params),
       job = runtime.jobs.get(id);
-    if (!job) throw new StoreError(404, 'Job not found');
+    if (!job) throw new StoreError('not-found', 'Job not found');
     const attempts = runtime.jobs.attempts(id).map((attempt) => {
       const { token: _, budgetJson, ...publicAttempt } = attempt;
       const metrics = runtime.jobs.metrics(attempt.id);
@@ -51,7 +51,7 @@ export function addJobRoutes(app: FastifyInstance, runtime: BattleRuntime) {
   });
   app.get('/api/battle-results/:id', async (request) => {
     const row = runtime.jobs.result(idParams.parse(request.params).id);
-    if (!row) throw new StoreError(404, 'Result not found');
+    if (!row) throw new StoreError('not-found', 'Result not found');
     const replay = await runtime.artifacts.verified(row.replayId);
     if (
       replay.resultId !== row.id ||
@@ -59,7 +59,7 @@ export function addJobRoutes(app: FastifyInstance, runtime: BattleRuntime) {
       sha256(canonicalJson(replay.end.result)) !== row.resultHash ||
       canonicalJson(replay.end.result) !== row.resultJson
     )
-      throw new StoreError(503, 'Result/replay binding mismatch');
+      throw new StoreError('unavailable', 'Result/replay binding mismatch');
     return {
       id: row.id,
       result: parseJson(ResultSchema, jsonValue(row.resultJson)),

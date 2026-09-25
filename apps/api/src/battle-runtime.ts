@@ -83,14 +83,14 @@ export class BattleRuntime {
     inputBudget: Budget = DEFAULT_BUDGET,
   ) {
     if (this.stopped || this.failure)
-      throw new StoreError(503, this.failure?.message ?? 'Runtime closed');
+      throw new StoreError('unavailable', this.failure?.message ?? 'Runtime closed');
     const spec = parseJson(SpecInputSchema, input),
       budget = parseJson(BudgetSchema, inputBudget);
     const requestHash = sha256(canonicalJson({ spec, budget }));
     const previous = this.jobs.request(clientId, key);
     if (previous) {
       if (previous.requestHash !== requestHash)
-        throw new StoreError(409, 'Idempotency key belongs to another request');
+        throw new StoreError('conflict', 'Idempotency key belongs to another request');
       return previous;
     }
     const battle = await this.jobs.store.prepareSpec(spec);
@@ -113,17 +113,17 @@ export class BattleRuntime {
     return job;
   }
   async recoverReplay(resultId: string, clientId: string, key: string, inputBudget: Budget) {
-    if (this.stopped || this.failure) throw new StoreError(503, 'Runtime unavailable');
+    if (this.stopped || this.failure) throw new StoreError('unavailable', 'Runtime unavailable');
     const budget = parseJson(BudgetSchema, inputBudget),
       requestHash = sha256(canonicalJson({ recoverReplay: resultId, budget }));
     const prior = this.jobs.request(clientId, key);
     if (prior) {
       if (prior.requestHash !== requestHash)
-        throw new StoreError(409, 'Idempotency key belongs to another request');
+        throw new StoreError('conflict', 'Idempotency key belongs to another request');
       return prior;
     }
     const result = this.jobs.result(resultId);
-    if (!result) throw new StoreError(404, 'Result not found');
+    if (!result) throw new StoreError('not-found', 'Result not found');
     const authority = this.jobs.canonicalRecord(result.simulationHash),
       artifact = this.jobs.artifact(result.replayId);
     if (
@@ -133,12 +133,12 @@ export class BattleRuntime {
       !['missing', 'corrupt'].includes(artifact.state) ||
       this.jobs.artifact(authority.replayId)?.state === 'quarantined'
     )
-      throw new StoreError(409, 'Only a missing/corrupt definitive replay can be recovered');
+      throw new StoreError('conflict', 'Only a missing/corrupt definitive replay can be recovered');
     try {
       const spec = this.jobs.store.requireExecutableSpec(result.simulationHash);
       await prepareBattle(spec.manifest);
     } catch {
-      throw new StoreError(409, 'Saved engine identity is unsupported; replay remains held');
+      throw new StoreError('conflict', 'Saved engine identity is unsupported; replay remains held');
     }
     const job = this.jobs.submit({
       simulationHash: result.simulationHash,
@@ -285,11 +285,11 @@ export class BattleRuntime {
     return job;
   }
   async retry(id: string, expectedAttempts: number, budget: Budget) {
-    if (this.stopped || this.failure) throw new StoreError(503, 'Runtime unavailable');
+    if (this.stopped || this.failure) throw new StoreError('unavailable', 'Runtime unavailable');
     const previous = this.active.get(id);
     if (previous) {
       if (!previous.controller.signal.aborted)
-        throw new StoreError(409, 'Previous attempt is still running');
+        throw new StoreError('conflict', 'Previous attempt is still running');
       // Cancellation is visible before the Worker/writer have released their resources.
       // Accept a single user retry after cleanup, then revalidate the optimistic attempt
       // count in the store. Concurrent requests cannot enqueue two attempts.
@@ -299,7 +299,8 @@ export class BattleRuntime {
           previous.done,
           new Promise<never>((_, reject) => {
             timeout = setTimeout(
-              () => reject(new StoreError(409, 'Previous attempt is still releasing resources')),
+              () =>
+                reject(new StoreError('conflict', 'Previous attempt is still releasing resources')),
               5000,
             );
           }),
@@ -308,7 +309,7 @@ export class BattleRuntime {
         clearTimeout(timeout);
       }
     }
-    if (this.stopped || this.failure) throw new StoreError(503, 'Runtime unavailable');
+    if (this.stopped || this.failure) throw new StoreError('unavailable', 'Runtime unavailable');
     const job = this.jobs.retry(id, expectedAttempts, budget);
     this.tick();
     return job;
@@ -317,7 +318,7 @@ export class BattleRuntime {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
       const job = this.jobs.get(id);
-      if (!job) throw new StoreError(404, 'Job not found');
+      if (!job) throw new StoreError('not-found', 'Job not found');
       if (!['queued', 'running'].includes(job.state) && !this.active.has(id)) return job;
       if (this.failure) throw this.failure;
       if (Date.now() >= deadline) throw new Error('Job wait timeout');

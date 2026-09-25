@@ -36,7 +36,7 @@ export class ArtifactStore {
   async file(id: string, file: string) {
     const manifest = await this.bound(id, false);
     const ref = [...manifest.chunks, ...manifest.checkpoints].find((r) => r.file === file);
-    if (!ref) throw new StoreError(404, 'Replay file not found');
+    if (!ref) throw new StoreError('not-found', 'Replay file not found');
     return this.held(id, async () => {
       const bytes = await readBoundedFile(join(replayDirectory(this.root, id), file), ref.bytes);
       if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
@@ -46,9 +46,9 @@ export class ArtifactStore {
   }
   private async bound(id: string, full: boolean) {
     const artifact = this.jobs.artifact(id);
-    if (!artifact) throw new StoreError(404, 'Replay not found');
+    if (!artifact) throw new StoreError('not-found', 'Replay not found');
     if (artifact.state !== 'ready')
-      throw new StoreError(503, `Replay is ${artifact.state}; result held`);
+      throw new StoreError('unavailable', `Replay is ${artifact.state}; result held`);
     return this.held(id, async () => {
       const manifest = await readReplayManifest(this.root, id, artifact.manifestChecksum);
       if (full) await verifyReplayDirectory(replayDirectory(this.root, id), manifest);
@@ -67,7 +67,7 @@ export class ArtifactStore {
     } catch (error) {
       const state = (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'missing' : 'corrupt';
       this.jobs.markArtifact(id, state);
-      throw new StoreError(503, `Replay is ${state}; result held`);
+      throw new StoreError('unavailable', `Replay is ${state}; result held`);
     }
   }
   async discard(id: string) {

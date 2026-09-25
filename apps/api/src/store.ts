@@ -34,13 +34,8 @@ import {
 } from '@fantasy/engine/spatial';
 import { repositoryRoot } from './config.ts';
 
-export class StoreError extends Error {
-  readonly statusCode: number;
-  constructor(statusCode: number, message: string) {
-    super(message);
-    this.statusCode = statusCode;
-  }
-}
+import { StoreError } from './store-error.ts';
+export { StoreError } from './store-error.ts';
 export function jsonValue(value: unknown): unknown {
   if (typeof value !== 'string') throw new Error('Invalid JSON in database');
   return JSON.parse(value) as unknown;
@@ -97,7 +92,7 @@ export class Store {
   }
   listRevisions(kind: DefinitionKind, limit = 50, cursor = '') {
     if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
-      throw new StoreError(400, 'Page size must be 1..100');
+      throw new StoreError('invalid-input', 'Page size must be 1..100');
     const latest = alias(publishedRevisions, 'latest');
     const last = this.orm
       .select({ value: max(latest.revision) })
@@ -147,13 +142,13 @@ export class Store {
   }
   private async loadRevisions(input: unknown[], mode: 'missing-definition' | 'exact-revision') {
     if (input.length > (mode === 'exact-revision' ? 4096 : 256))
-      throw new StoreError(400, 'Revision import exceeds its limit');
+      throw new StoreError('invalid-input', 'Revision import exceeds its limit');
     const revisions = input.map((r) => parseJson(RevisionSchema, r));
     if (new Set(revisions.map(revisionKey)).size !== revisions.length)
-      throw new StoreError(400, 'Duplicate revision identity');
+      throw new StoreError('invalid-input', 'Duplicate revision identity');
     for (const r of revisions)
       if (r.contentHash !== (await revisionHash(r)))
-        throw new StoreError(400, 'Sample revision hash mismatch');
+        throw new StoreError('invalid-input', 'Sample revision hash mismatch');
     this.transaction(() => {
       const additions = revisions.filter((r) => {
         const existing = this.getRevision(
@@ -162,7 +157,10 @@ export class Store {
           mode === 'exact-revision' ? r.revision : undefined,
         );
         if (existing && mode === 'exact-revision' && canonicalJson(existing) !== canonicalJson(r))
-          throw new StoreError(409, 'Pinned revision conflicts with immutable stored content');
+          throw new StoreError(
+            'conflict',
+            'Pinned revision conflicts with immutable stored content',
+          );
         return !existing;
       });
       const available = new Map(additions.map((r) => [revisionKey(r), r]));
@@ -170,7 +168,7 @@ export class Store {
         const r =
           available.get(`${kind}:${ref.id}:${ref.revision}`) ?? this.requireRevision(kind, ref);
         if (r.contentHash !== ref.contentHash)
-          throw new StoreError(409, 'Sample conflicts with an existing revision');
+          throw new StoreError('conflict', 'Sample conflicts with an existing revision');
         return r;
       };
       new ManifestBuilder(get).closure(additions, mode === 'exact-revision' ? 4096 : 256);
@@ -205,7 +203,7 @@ export class Store {
     const latest = this.getRevision(draft.kind, draft.definitionId);
     if (canonicalJson(latest ? reference(latest) : null) !== canonicalJson(draft.base))
       throw new StoreError(
-        409,
+        'conflict',
         'Published revision changed; create a draft from the current revision',
       );
   }
@@ -244,16 +242,16 @@ export class Store {
       .run();
     if (!result.changes)
       throw new StoreError(
-        this.getDraft(id) ? 409 : 404,
+        this.getDraft(id) ? 'conflict' : 'not-found',
         'Draft missing or changed; reload before editing',
       );
     return this.getDraft(id)!;
   }
   private async candidate(id: string, expectedVersion?: number) {
     const draft = this.getDraft(id);
-    if (!draft) throw new StoreError(404, 'Draft not found');
+    if (!draft) throw new StoreError('not-found', 'Draft not found');
     if (expectedVersion !== undefined && draft.version !== expectedVersion)
-      throw new StoreError(409, 'Draft changed; reload before publishing');
+      throw new StoreError('conflict', 'Draft changed; reload before publishing');
     this.checkDraftBase(draft);
     const parsed = parseJson(RevisionSchema, {
       kind: draft.kind,
@@ -268,7 +266,7 @@ export class Store {
     return { draft, revision };
   }
   async validateDraft(id: string) {
-    if (!this.getDraft(id)) throw new StoreError(404, 'Draft not found');
+    if (!this.getDraft(id)) throw new StoreError('not-found', 'Draft not found');
     try {
       await this.candidate(id);
       return { valid: true, issues: [] };
@@ -283,12 +281,12 @@ export class Store {
     const { draft, revision } = await this.candidate(id, expectedVersion);
     return this.transaction(() => {
       if (this.getDraft(id)?.version !== draft.version)
-        throw new StoreError(409, 'Draft changed during validation');
+        throw new StoreError('conflict', 'Draft changed during validation');
       this.checkDraftBase(draft);
       const last = this.getRevision(draft.kind, draft.definitionId);
       revision.revision = (last?.revision ?? 0) + 1;
       RevisionSchema.parse(revision);
-      if (draft.version >= 2147483647) throw new StoreError(409, 'Draft version exhausted');
+      if (draft.version >= 2147483647) throw new StoreError('conflict', 'Draft version exhausted');
       const now = new Date().toISOString();
       this.insertRevision(revision, now);
       this.orm
@@ -345,9 +343,9 @@ export class Store {
   }
   requireExecutableSpec(simulationHash: string) {
     const spec = this.getSpec(simulationHash);
-    if (!spec) throw new StoreError(409, 'Saved specification is unavailable');
+    if (!spec) throw new StoreError('conflict', 'Saved specification is unavailable');
     const reason = unsupportedExecutionReason(spec.manifest);
-    if (reason) throw new StoreError(409, reason);
+    if (reason) throw new StoreError('conflict', reason);
     return { simulationHash, manifest: parseJson(ManifestSchema, spec.manifest) };
   }
 }
