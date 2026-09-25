@@ -1,103 +1,23 @@
-import {
-  characterLoadout,
-  revisionHash,
-  revisionIndex,
-  revisionDependencies,
-  resolveClosure,
-} from './revision-graph.ts';
-import {
-  canonicalJson,
-  compareIds,
-  contentHash,
-  deepFreeze,
-  type DeepReadonly,
-} from './canonical.ts';
-import { parseJson, type StageContact } from './contracts.ts';
-import { type Outcome, type ForceContribution } from './records.ts';
+import { compareIds } from './canonical.ts';
+import { parseJson } from './contracts.ts';
+import type { Outcome } from './records.ts';
 import { initialResources } from './resources.ts';
-import {
-  RecordedManifestSchema,
-  ReplayCheckpointSchema,
-  type RecordedManifest,
-  type ReplayCheckpoint,
-  type ReplayManifest,
-} from './replay.ts';
+import { ReplayCheckpointSchema, type ReplayCheckpoint, type ReplayManifest } from './replay.ts';
 import {
   StreamRecordSchema,
   type DisplayPath,
   type DisplayState,
-  type ProjectileDisplay,
   type StreamRecord,
 } from './stream.ts';
+import { fail, requireReplay, same } from './replay-validation/common.ts';
+import type { ReplayContext } from './replay-validation/context.ts';
+export { replayContext, type ReplayContext } from './replay-validation/context.ts';
+import { validateReactions } from './replay-validation/reaction.ts';
+import { validateForces } from './replay-validation/force.ts';
+import { validateAction } from './replay-validation/action.ts';
+import { validateProjectile } from './replay-validation/projectile.ts';
+import { validateEvents } from './replay-validation/event.ts';
 
-const fail = (message: string): never => {
-  throw new Error(`Invalid replay: ${message}`);
-};
-const requireReplay = (condition: boolean, message: string) => {
-  if (!condition) fail(message);
-};
-const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
-type RecordedRevision = RecordedManifest['revisions'][number];
-function recordedStage(
-  ability: DeepReadonly<Extract<RecordedRevision, { kind: 'ability' }>> | undefined,
-  contact: StageContact,
-) {
-  const stage = ability?.definition.stages?.[contact.stageIndex];
-  if (
-    !stage ||
-    stage.id !== contact.stageId ||
-    contact.emitterId !== 0 ||
-    contact.hitGroupId !== (stage.hit?.group ?? 'shared')
-  )
-    return fail('stage reference');
-  return stage;
-}
-export type ReplayContext = Awaited<ReturnType<typeof replayContext>>;
-/** Validate content identity and resolve display metadata without loading any engine/WASM. */
-export async function replayContext(input: unknown, simulationHash: string) {
-  const manifest = parseJson(RecordedManifestSchema, input);
-  let get: ReturnType<typeof revisionIndex>;
-  try {
-    get = revisionIndex(manifest.revisions);
-  } catch (error) {
-    return fail(error instanceof Error ? error.message : 'revision index');
-  }
-  for (const revision of manifest.revisions)
-    requireReplay(revision.contentHash === (await revisionHash(revision)), 'revision content hash');
-  // Replay v1 historically checks ability/status references but not status transformation closure.
-  // Preserve its acceptance boundary while sharing the graph traversal.
-  let actors;
-  try {
-    resolveClosure(manifest.revisions, get, 256, {
-      dependencies: (revision) =>
-        revision.kind === 'status' ? [] : revisionDependencies(revision),
-    });
-    actors = manifest.participants.map((participant) => {
-      const { character, abilities } = characterLoadout(participant.character, get);
-      return { participant, character, abilities };
-    });
-  } catch (error) {
-    return fail(error instanceof Error ? error.message : 'revision graph');
-  }
-  requireReplay(
-    actors[0]!.participant.actorId !== actors[1]!.participant.actorId,
-    'duplicate actor',
-  );
-  const rules = get('ruleset', manifest.ruleset).definition;
-  requireReplay(rules.rulesVersion === manifest.engineVersion, 'rules/engine version mismatch');
-  get('scenario', manifest.scenario);
-  requireReplay(
-    (await contentHash(manifest.physicsProfile)) === manifest.physicsProfileHash,
-    'physics profile hash',
-  );
-  requireReplay((await contentHash(manifest)) === simulationHash, 'simulation hash');
-  return deepFreeze({ manifest, simulationHash, actors, rules });
-}
-const phases = { boundary: 0, declaration: 1, launch: 2, contact: 3, resolution: 4, terminal: 5 };
-const emittedId = (id: string) => {
-  if (!/^e\.(0|[1-9][0-9]{0,6})$/.test(id)) return fail('event ID');
-  return Number(id.slice(2));
-};
 /** Atomic display restoration. This is not an engine resume snapshot or combat re-simulation. */
 export class ReplayState {
   readonly context: ReplayContext;
@@ -175,103 +95,8 @@ export class ReplayState {
     for (const actor of state.actors) {
       const definition = this.context.actors.find((a) => a.participant.actorId === actor.id);
       if (!definition) return fail('unknown actor');
-      const reactions = actor.reactions ?? [];
-      requireReplay(
-        new Set(reactions.map((r) => r.abilityId)).size === reactions.length &&
-          new Set(reactions.map((r) => r.context.activationId)).size === reactions.length &&
-          reactions.filter((r) => r.state === 'queued').length <= 64,
-        'reaction identity/queue',
-      );
-      for (const reaction of reactions) {
-        const ability = definition.abilities.find((a) => a.id === reaction.abilityId);
-        const response = ability?.definition.reaction?.response.kind;
-        requireReplay(
-          !!response &&
-            ability?.definition.trigger === reaction.context.point &&
-            reaction.activatedAt <= step &&
-            reaction.readyAt === reaction.activatedAt &&
-            reaction.recoveryUntil >= reaction.activatedAt + 2 &&
-            reaction.cooldownUntil >= reaction.activatedAt &&
-            this.context.actors.some((a) => a.participant.actorId === reaction.targetId) &&
-            (response === 'counter'
-              ? reaction.targetId !== actor.id && reaction.state !== 'applied'
-              : reaction.targetId === actor.id && reaction.state === 'applied') &&
-            (reaction.state !== 'queued' || (reaction.readyAt === step && actor.resources.hp > 0)),
-          'reaction reference/clocks',
-        );
-        requireReplay(
-          emittedId(reaction.context.activationId) < nextEvent,
-          'reaction activation cursor',
-        );
-        const geometry = reaction.geometry;
-        requireReplay((reaction.state === 'released') === !!geometry, 'reaction release geometry');
-        if (geometry) {
-          const shape = ability!.definition.attack;
-          requireReplay(
-            shape.kind === 'hitscan' &&
-              geometry.kind === 'ray' &&
-              geometry.radiusMm === shape.radiusMm &&
-              geometry.segments.length === 1,
-            'reaction geometry shape',
-          );
-          if (geometry.kind === 'ray') {
-            const segment = geometry.segments[0]!;
-            requireReplay(
-              segment.from === 0 &&
-                segment.to === 1 &&
-                Math.hypot(
-                  segment.end.x - segment.start.x,
-                  segment.end.y - segment.start.y,
-                  segment.end.z - segment.start.z,
-                ) <=
-                  ability!.definition.rangeMm / 1000 + 1e-5,
-              'reaction geometry reach',
-            );
-          }
-        }
-      }
-      if (actor.force) {
-        const force = actor.force;
-        requireReplay(
-          force.capMmPerSecond === (this.context.rules.forcedSpeedCapMmPerSecond ?? 100000) &&
-            force.fromStep === step - 1 &&
-            force.contributors.length > 0 &&
-            new Set(force.contributors.map((f) => f.id)).size === force.contributors.length,
-          'force interval/contributors',
-        );
-        for (const contribution of force.contributors) {
-          this.validateForce(contribution);
-          requireReplay(
-            contribution.startAt <= force.fromStep && force.fromStep < contribution.endAt,
-            'force active window',
-          );
-        }
-        const total = { x: 0, y: 0, z: 0 };
-        for (const f of force.contributors)
-          for (const axis of ['x', 'y', 'z'] as const) total[axis] += f.velocityMmPerSecond[axis];
-        const norm = Math.sqrt(total.x ** 2 + total.y ** 2 + total.z ** 2);
-        const scale = norm > force.capMmPerSecond ? force.capMmPerSecond / norm / 1000 : 0.001;
-        requireReplay(
-          force.active === norm > 0 &&
-            force.capped === norm > force.capMmPerSecond &&
-            (['x', 'y', 'z'] as const).every(
-              (axis) => Math.abs(force.applied[axis] - total[axis] * scale) < 1e-9,
-            ) &&
-            (force.active
-              ? !!force.gravityBefore &&
-                !!force.gravityAfter &&
-                !!force.incident &&
-                !!force.projectedForce
-              : !force.incident && !force.projectedForce && !force.projections.length),
-          'force applied sum',
-        );
-        requireReplay(
-          force.projections.every(
-            (p, i) => i === 0 || p.fraction >= force.projections[i - 1]!.fraction,
-          ),
-          'force projection order',
-        );
-      }
+      validateReactions(this.context, actor, definition, step, nextEvent);
+      validateForces(this.context, actor, step);
       requireReplay(
         actor.resources.hp <= definition.character.stats.hp &&
           actor.resources.mp <= definition.character.stats.mp &&
@@ -294,147 +119,14 @@ export class ReplayState {
           'status reference/time',
         );
       }
-      if (actor.action) {
-        const action = actor.action;
-        const ability = definition.abilities.find((a) => a.id === action.abilityId);
-        const activeSteps =
-          ability?.definition.attack.kind === 'melee' ? ability.definition.attack.activeSteps : 1;
-        const activeUntil = action.activeUntil ?? action.launchAt + activeSteps;
-        if (action.stage) {
-          const stage = recordedStage(ability, action.stage.contact),
-            last = ability!.definition.stages!.at(-1)!;
-          requireReplay(
-            action.stage.contact.actionId === action.id &&
-              action.stage.startAt === action.launchAt + stage.offsetSteps &&
-              action.stage.endAt === action.stage.startAt + stage.durationSteps &&
-              action.activeUntil === action.launchAt + last.offsetSteps + last.durationSteps &&
-              action.stage.shape === (stage.attack?.kind ?? 'hold'),
-            'stage display clocks/shape',
-          );
-          requireReplay(
-            action.stage.state !== 'active' ||
-              (step >= action.stage.startAt &&
-                step < action.stage.endAt &&
-                action.phase === 'active'),
-            'active stage window',
-          );
-          const state = action.stage.state;
-          requireReplay(
-            (action.phase !== 'active' || state === 'active') &&
-              (state !== 'preparing' ||
-                (step < action.launchAt && action.stage.contact.stageIndex === 0)) &&
-              (state !== 'complete' || (stage === last && step >= activeUntil)) &&
-              (state !== 'waiting' ||
-                step === action.launchAt ||
-                (step >= action.stage.endAt && step < activeUntil)),
-            'stage state window',
-          );
-          if (action.stage.geometry) {
-            const geometry = action.stage.geometry,
-              shape = stage.attack;
-            if (geometry.kind === 'blade') {
-              if (shape?.kind !== 'arc' && shape?.kind !== 'radial') return fail('blade shape');
-              requireReplay(
-                geometry.radiusMm === shape.bladeRadiusMm && geometry.poses[0]!.fraction === 0,
-                'blade radius/start',
-              );
-              for (const [i, pose] of geometry.poses.entries())
-                requireReplay(
-                  pose.root.y === pose.tip.y &&
-                    Math.abs(
-                      Math.sqrt((pose.tip.x - pose.root.x) ** 2 + (pose.tip.z - pose.root.z) ** 2) -
-                        shape.reachMm / 1000,
-                    ) < 1e-6 &&
-                    (i === 0 || pose.fraction > geometry.poses[i - 1]!.fraction),
-                  'blade length/time',
-                );
-            } else {
-              requireReplay(
-                !!shape &&
-                  (shape.kind === 'melee' || shape.kind === 'hitscan') &&
-                  geometry.kind === (shape.kind === 'melee' ? 'sphere' : 'ray') &&
-                  geometry.radiusMm === shape.radiusMm,
-                'stage geometry shape',
-              );
-              for (let i = 1; i < geometry.segments.length; i++) {
-                const previous = geometry.segments[i - 1]!,
-                  current = geometry.segments[i]!;
-                requireReplay(
-                  Math.abs(previous.to - current.from) <= 1e-12 &&
-                    same(previous.end, current.start),
-                  'stage geometry continuity',
-                );
-              }
-            }
-          }
-          if (action.stage.motion) {
-            const motion = action.stage.motion,
-              configured = stage.selfMotion;
-            requireReplay(
-              !!configured &&
-                motion.kind === configured.kind &&
-                motion.speedMmPerSecond === configured.speedMmPerSecond &&
-                motion.accelerationMmPerSecond2 === configured.accelerationMmPerSecond2 &&
-                motion.fromStep >= action.stage.startAt &&
-                motion.fromStep < action.stage.endAt &&
-                motion.fromStep < step &&
-                (!actor.force?.active ||
-                  motion.fromStep !== actor.force.fromStep ||
-                  !motion.applied),
-              'stage motion reference/time',
-            );
-          }
-        } else
-          requireReplay(
-            !ability?.definition.stages && action.activeUntil === undefined,
-            'missing stage display',
-          );
-        requireReplay(
-          !!ability &&
-            action.startedAt <= step &&
-            action.startedAt <= action.launchAt &&
-            action.launchAt < action.recoveryUntil &&
-            step < action.recoveryUntil &&
-            (step < action.launchAt
-              ? action.phase === 'cast'
-              : action.phase !== 'cast' && (action.phase !== 'active' || step < activeUntil)),
-          'action reference/time',
-        );
-      }
+      validateAction(actor, definition, step);
     }
     const ids = new Set(state.actors.map((a) => a.id));
     for (const p of state.projectiles) {
       requireReplay(!ids.has(p.id), 'duplicate entity');
       ids.add(p.id);
-      this.validateProjectile(p, step);
+      validateProjectile(this.context, p, step);
     }
-  }
-  private validateForce(force: ForceContribution) {
-    const ability = this.context.actors
-      .find((a) => a.participant.actorId === force.actorId)
-      ?.abilities.find((a) => a.id === force.abilityId);
-    const effects = force.stage
-      ? recordedStage(ability, force.stage).effects
-      : ability?.definition.effects;
-    requireReplay(
-      !!effects?.some((e) => e.kind === 'force' && e.durationSteps === force.endAt - force.startAt),
-      'force definition',
-    );
-  }
-  private validateProjectile(p: ProjectileDisplay, step: number) {
-    const owner = this.context.actors.find((a) => a.participant.actorId === p.ownerId);
-    const ability = owner?.abilities.find((a) => a.id === p.abilityId);
-    const attack = p.stage ? recordedStage(ability, p.stage).attack : ability?.definition.attack;
-    requireReplay(!!p.stage === !!ability?.definition.stages, 'projectile stage display');
-    requireReplay(
-      p.id.startsWith('projectile.') &&
-        attack?.kind === 'projectile' &&
-        p.radiusMm === attack.radiusMm &&
-        p.endStep === p.launchStep + attack.lifetimeSteps &&
-        p.launchStep <= step &&
-        p.endStep > step,
-      'projectile reference/time',
-    );
   }
   private validateOutcome(outcome: Outcome, state: DisplayState, step: number) {
     if (outcome.kind === 'win')
@@ -450,82 +142,6 @@ export class ReplayState {
           : step === this.context.rules.maxSteps && state.actors.every((a) => a.resources.hp > 0),
         'draw/final state',
       );
-  }
-  private validateEvents(
-    record: Exclude<StreamRecord, { kind: 'initial' }>,
-    entities: Set<string>,
-  ) {
-    const events = record.events,
-      seen = new Set<number>();
-    let previous = [-1, -1, -1];
-    for (const [offset, e] of events.entries()) {
-      const id = emittedId(e.id);
-      requireReplay(
-        e.sequence === this.value.nextEvent + offset &&
-          id >= this.value.nextEvent &&
-          id < this.value.nextEvent + events.length &&
-          !seen.has(id),
-        'event sequence/identity',
-      );
-      seen.add(id);
-      // IDs track emission/causality; sequence tracks the phase-sorted display order.
-      for (const cause of [...e.causes, ...(e.parentEventId ? [e.parentEventId] : [])])
-        requireReplay(emittedId(cause) < id, 'event causal reference');
-      const maxStep = record.kind === 'interval' ? record.toStep : record.step;
-      requireReplay(e.step >= this.value.step && e.step <= maxStep, 'event step');
-      if (record.kind === 'boundary')
-        requireReplay(e.phase === 'boundary' || e.phase === 'resolution', 'boundary event phase');
-      if (record.kind === 'terminal')
-        requireReplay(e.kind === 'terminal' && e.phase === 'terminal', 'terminal event');
-      else requireReplay(e.phase !== 'terminal' && e.kind !== 'terminal', 'early terminal');
-      const order = [e.step, phases[e.phase], e.subtimeMicros];
-      requireReplay(
-        order[0]! > previous[0]! ||
-          (order[0] === previous[0] &&
-            (order[1]! > previous[1]! || (order[1] === previous[1] && order[2]! >= previous[2]!))),
-        'event order',
-      );
-      previous = order;
-      for (const id of [e.actorId, e.targetId])
-        if (id !== null)
-          requireReplay(
-            this.context.actors.some((a) => a.participant.actorId === id),
-            'event actor reference',
-          );
-      if (e.entityId !== null) requireReplay(entities.has(e.entityId), 'event entity reference');
-      if (e.abilityId !== null)
-        requireReplay(
-          e.actorId === null
-            ? this.context.manifest.revisions.some(
-                (r) => r.kind === 'ability' && r.id === e.abilityId,
-              )
-            : this.context.actors
-                .find((a) => a.participant.actorId === e.actorId)!
-                .abilities.some((a) => a.id === e.abilityId),
-          'event ability reference',
-        );
-      if (e.stage) {
-        const ability = this.context.actors
-          .find((a) => a.participant.actorId === e.actorId)
-          ?.abilities.find((a) => a.id === e.abilityId);
-        recordedStage(ability, e.stage);
-      }
-      if (e.force) this.validateForce(e.force);
-      if (e.reaction) {
-        const ability = this.context.actors
-          .find((a) => a.participant.actorId === e.actorId)
-          ?.abilities.find((a) => a.id === e.abilityId);
-        requireReplay(
-          !!ability?.definition.reaction &&
-            ability.definition.trigger === e.reaction.point &&
-            (e.ruleId === 'reaction.activated'
-              ? e.reaction.activationId === e.id
-              : emittedId(e.reaction.activationId) < id),
-          'reaction event reference',
-        );
-      }
-    }
-    requireReplay(this.value.nextEvent + events.length <= 1_000_001, 'event limit');
   }
   private paths(
     paths: DisplayPath[],
@@ -633,7 +249,7 @@ export class ReplayState {
             [...prior.state.actors, ...prior.state.projectiles].map((e) => [e.id, e.position]),
           );
           for (const p of record.projectiles.spawn) {
-            this.validateProjectile(p, prior.step);
+            validateProjectile(this.context, p, prior.step);
             requireReplay(!entities.has(p.id) && p.launchStep === prior.step, 'projectile spawn');
             entities.add(p.id);
             before.set(p.id, p.position);
@@ -667,7 +283,7 @@ export class ReplayState {
           this.paths(record.paths, before, after, removed);
         }
       }
-      this.validateEvents(record, entities);
+      validateEvents(this.context, this.value, record, entities);
     }
     this.validateState(
       state,

@@ -70,10 +70,10 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
     'execution-contract-boundary',
     {
       path: '^packages/domain/src/spatial/',
-      pathNot: '/(?:index|api|batch|publication|replay|replay-state)[.]ts$',
+      pathNot: '/(?:(?:index|api|batch|publication|replay|replay-state)[.]ts$|replay-validation/)',
     },
     {
-      path: '^packages/domain/src/spatial/(?:index|api|batch|publication|replay|replay-state)[.]ts$',
+      path: '^packages/domain/src/spatial/(?:(?:index|api|batch|publication|replay|replay-state)[.]ts$|replay-validation/)',
     },
     'Execution contracts cannot pull transport, publication or replay validation into the digest.',
   ),

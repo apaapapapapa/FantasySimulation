@@ -9,3 +9,4 @@ export * from './status-references.ts';
 export * from './numeric.ts';
 export * from './record-hashes.ts';
 export * from './revision-graph.ts';
+export * from './combat-derivations.ts';

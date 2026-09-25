@@ -1,3 +1,4 @@
+import { stageWindow } from '@fantasy/domain/spatial/execution';
 import type {
   PreviousMovement,
   AbilityRevision,
@@ -33,7 +34,7 @@ export function attachedStageAlive(attack: MeleeState, actors: readonly ActorSta
     action?.id === attack.stage.actionId &&
     action.stages?.interruptedAt === undefined &&
     !!stage &&
-    at < action.launchAt + stage.offsetSteps + stage.durationSteps
+    at < stageWindow(action.launchAt, stage).endAt
   );
 }
 export const stageContact = (action: ActionState, index: number): StageContact => ({
@@ -52,8 +53,7 @@ export function stageDisplay(
   const plan = action.ability.definition.stages!,
     index = Math.max(0, runtime.index),
     stage = plan[index]!;
-  const startAt = action.launchAt + stage.offsetSteps,
-    endAt = startAt + stage.durationSteps;
+  const { startAt, endAt } = stageWindow(action.launchAt, stage);
   return {
     contact: stageContact(action, index),
     startAt,
@@ -128,12 +128,11 @@ export function checkStageInterruption(
   if (
     !runtime.active &&
     runtime.next === action.ability.definition.stages!.length &&
-    step >= action.launchAt + stage.offsetSteps + stage.durationSteps
+    step >= stageWindow(action.launchAt, stage).endAt
   )
     return;
   const current =
-    step < action.launchAt ||
-    (runtime.active && step < action.launchAt + stage.offsetSteps + stage.durationSteps);
+    step < action.launchAt || (runtime.active && step < stageWindow(action.launchAt, stage).endAt);
   const reason =
     actor.vitals.resources.hp === 0
       ? 'defeated'
@@ -177,7 +176,7 @@ export function finishStages(actors: readonly ActorState[], at: number, journal:
       runtime = action?.stages;
     if (!action || !runtime?.active) continue;
     const stage = action.ability.definition.stages![runtime.index]!;
-    if (action.launchAt + stage.offsetSteps + stage.durationSteps !== at) continue;
+    if (stageWindow(action.launchAt, stage).endAt !== at) continue;
     runtime.active = false;
     journal.emit({
       kind: 'stage-end',

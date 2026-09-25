@@ -1,3 +1,4 @@
+import { actionActiveUntil, attackActiveSteps } from '@fantasy/domain/spatial/execution';
 import type { ResolvedActor, ActorState } from '../state.ts';
 export type { AbilityRevision, ActionState, ActorState, MeleeState } from '../state.ts';
 import { type ActorDisplay } from '@fantasy/domain/spatial/execution';
@@ -82,10 +83,7 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
   const { action } = state.actions;
   const stage = action ? stageDisplay(action, step) : undefined;
   const last = action?.ability.definition.stages?.at(-1);
-  const active =
-    action?.ability.definition.attack.kind === 'melee'
-      ? action.ability.definition.attack.activeSteps
-      : 1;
+  const active = action ? attackActiveSteps(action.ability.definition.attack) : 1;
   return {
     id: motion.actor.participant.actorId,
     position: { ...motion.position },
@@ -129,7 +127,10 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
             launchAt: action.launchAt,
             recoveryUntil: action.recoveryUntil,
             ...(stage && last
-              ? { stage, activeUntil: action.launchAt + last.offsetSteps + last.durationSteps }
+              ? {
+                  stage,
+                  activeUntil: actionActiveUntil(action.launchAt, action.ability.definition),
+                }
               : {}),
             phase:
               step < action.launchAt
