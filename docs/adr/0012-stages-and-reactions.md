@@ -22,8 +22,9 @@ Replay validation does not execute the engine.
 
 Reaction limits remain 64/transaction, 1024/match, depth 8 with cross-interval
 ancestry and complete rollback; existing geometry/record limits remain.
-Emitter/beam/area/teleport/posture capabilities are rejected until their own
-acceptance work. Reflection/absorption/revival and P4/P5 remain separate.
+Future emitter/beam/area/teleport extensions remain rejected until their own
+acceptance work. Existing crouch/prone postures follow [tactical AI](../rules/tactical-ai.md).
+Reflection/absorption/revival and P4/P5 remain separate.
 
 ## P6 design hooks (not implemented here)
 

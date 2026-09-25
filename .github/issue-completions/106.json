@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "issue": 106,
+  "issueBodySha256": "ea2ad1f290637b9575cc394103b1416a81ae504e6e35df2a43cce14f1b8cde17",
+  "issueUpdatedAt": "2026-09-25T06:03:37Z",
+  "complete": true,
+  "summary": "R-01–R-10 and D-1–D-4 are implemented through the related PRs: execution-only identity, phased/typed engine, exhaustive variants/shared replay validation, common graph/builders, application services and bounded job admission, measured replay reuse, shared 3D/2D scene and incremental playback, server-owned Workbench operations/seeds, common limits, explicit duel scope and enforced tooling/document boundaries. Independent saved/corpus expectations and published data are preserved.",
+  "remainingWork": [],
+  "pullRequests": [
+    108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126,
+    127
+  ],
+  "acceptance": [
+    {
+      "task": "R-01: digestの入力がエンジン実行に到達するソースと実行時依存の版・integrityに限定され、Web・API・公開用の変更、engineが使わない依存の更新、ルートのscriptsの変更ではdigestが変わらないことを回帰テストで確認している",
+      "evidence": "PR #109/#110: scripts/identity/closure.ts, dependencies.ts and identity.ts derive source-closure-v2 from runtime imports, resolved versions/integrity, pinned Node and physics assets. identity.test.ts/dependencies.test.ts/files.test.ts cover relevant changes, irrelevant API/Web/publication/samples/dev/scripts changes, canonical ordering/CRLF, missing/unsafe/unresolved inputs and descriptor-bound capture."
+    },
+    {
+      "task": "R-01: engineは実行専用のdomainの入口だけをimportし、サンプルカタログはengineの実行ソースの外にある。配布済みのID/hashと`data/spatial`の内容は変わらない",
+      "evidence": "PR #109: packages/domain/src/spatial/execution.ts is the narrow runtime entry and @fantasy/samples owns catalogs/builders. Dependency-cruiser enforces the separation. Published-catalog history tests and the unchanged data/spatial tree preserve distributed IDs/hashes; API, Web and CLI refactors do not alter execution identity."
+    },
+    {
+      "task": "R-01: digestの算出方式の変更がADRで承認され、移行時のrestampがレビュー済みの版移行として記録されている",
+      "evidence": "ADR 0013 records the owner-approved D-1 decision, source-closure-v2 algorithm and immutable reviewed migration receipt. PR #109 records the one-time transition; later reachable-source refactors record their own reviewed restamps. PR #127/ADR 0014 records a35b7a00... to 17d58646... with unchanged dependencies, physics assets, rules/schema versions and independent corpus expectations."
+    },
+    {
+      "task": "R-02: 戦闘ループが#1の処理順に対応するフェーズの関数に分割され、`simulate()`はフェーズの呼出しと記録の確定だけを行う。golden digestと固定コーパスは変わらない",
+      "evidence": "PR #113: packages/engine/src/spatial/simulate.ts orchestrates boundary, decision, start, release, contact and resolution phases through sim/step-transaction.ts. One work meter and journal commit preserve accounting/order. Existing independent event/trajectory/TS/physics golden tests and all seven fixed corpus inputs remain unchanged."
+    },
+    {
+      "task": "R-02: `PreparedBattle`が正規化され、engineの実行コードに`rules.ai!`と既定値の分散がない。`DecisionView`の必須化と`ActorState`の分割で、engine内の型循環が解消されている",
+      "evidence": "PR #112/#114: prepare.ts normalizes AI, force limits, terrain defaults and ability ordering; state.ts owns normalized PreparedBattle and actor substate types; DecisionView is complete and decision views are reused. No rules.ai! remains in execution. Public/type dependency graphs reject engine cycles."
+    },
+    {
+      "task": "R-02: engine内部のレイヤの依存方向をdependency-cruiserが検査し、違反すると失敗する回帰テストがある。engineの公開APIが必要なものに絞られている",
+      "evidence": "PR #115/#116: world/rules/ai/sim dependencies point downward and dependency-cruiser checks runtime and type edges. scripts/quality/architecture.test.ts includes positive, reversed-layer, cycle, internal-API and unresolved-input controls. Public execution/building and separate tooling exports replace the internal barrel; behavioral tests live with their packages."
+    },
+    {
+      "task": "R-03: 攻撃・効果の種別ごとの処理が網羅的な登録で定義され、種別を追加して処理を登録しないと型検査が失敗する",
+      "evidence": "PR #118: packages/domain/src/spatial/variants.ts defines exhaustive mapped AttackHandlers/EffectHandlers. Release, contact, geometry, AI scoring, resolution and saved effect validation use typed registries. variants.test.ts includes missing-registration type failures; existing combat and replay regressions preserve outputs."
+    },
+    {
+      "task": "R-03: ReplayStateの検証が機能別に分割され、engineと共通の純粋関数（段の時計・外力の合成・既定値等）を使う。既存の保存replay・fixtureの受理/拒否は変わらない",
+      "evidence": "PR #117: packages/domain/src/spatial/replay-validation owns action/stage/force/reaction/projectile/event validation and combat-derivations.ts owns shared pure clocks/force composition/defaults. Existing saved replay/compatibility fixtures and invalid-record rejection tests remain authoritative; no expected-value regeneration."
+    },
+    {
+      "task": "R-04: 参照グラフの走査と閉包の解決がdomainの1つの実装に統一され、prepare・catalog・API・replay・test-supportがそれを使う",
+      "evidence": "PR #111: packages/domain/src/spatial/revision-graph.ts owns dependency enumeration, closure and loadout checks. prepare, @fantasy/samples, API persistence, replayContext and engine test-support reuse it. revision-graph.test.ts/manifest-builder.test.ts preserve ordering, hashes, relinking and previously accepted legacy replay references."
+    },
+    {
+      "task": "R-04: engineの`ManifestBuilder`、実行可否の判定、コード付きのエラーをAPI・Web・testsが使い、APIがengineのエラーをメッセージの文字列で判定しない",
+      "evidence": "PR #111/#124: engine ManifestBuilder and execution-policy.ts provide construction, sealing, relinking, seed derivation and coded EngineInputError. API persistence uses codes rather than message matching and reports rules eligibility; the Web catalog consumes that response. Builder and API compatibility tests exercise valid/invalid references and unsupported execution."
+    },
+    {
+      "task": "R-05: HTTPのルートとbatch runnerが共通のアプリケーションサービスだけを呼び、ランタイムとJobStoreの内部へ直接アクセスしない。永続層はHTTPステータスを持たない",
+      "evidence": "PR #120/#121/#126: HTTP job-routes use BattleService; batch-runner delegates to batch-service.ts executeBatch, which uses the same BattleService. Services own result/replay binding and runtime access; StoreError contains domain codes and http-errors.ts maps HTTP status only at the boundary. Architecture controls reject adapter imports of JobStore/runtime internals; HTTP/persistence/batch tests retain their contracts."
+    },
+    {
+      "task": "R-05: 決定性違反などの状態が文字列ではなく状態・列で表され、既存のDBのデータを読めたまま移行できる",
+      "evidence": "PR #120: job-transitions.ts and nullable failure_code replace error-string state decisions. Official Drizzle 0003_job_failure_code.sql preserves prior rows/constraints. Real migration, restart, legacy DB and determinism-failure tests verify readable data and denied unsafe retries."
+    },
+    {
+      "task": "R-05: 一括・段階投入の入口と、ポーリングに依存しない完了待ちがアプリケーション層にあり、batchとHTTPが共有している",
+      "evidence": "PR #122: jobs/staged-work.ts and BattleService share bounded staged admission, capacity notifications and completion waiters across HTTP and batch. staged-work.test.ts covers 297,000 entries without unbounded pending work; staged-jobs.test.ts covers retry-on-capacity, abort, failure and shared admission. No polling-based completion wait was introduced."
+    },
+    {
+      "task": "R-05: `apps/api/src`が責務別に整理され、公開用CLIとS3依存がAPIサーバーから分離されている",
+      "evidence": "PR #126: API source is grouped into http/db/jobs/replay/batch with explicit local/tooling/artifacts/testing/worker exports. apps/cli owns batch/publication commands and the S3 dependency. Public import guards, migrated publication/CLI tests, built CLI sample-plan-run (two saved matches), startup and isolated-workspace dependency/output coverage validate the separation."
+    },
+    {
+      "task": "R-05: 再利用時の再検証の方針（D-2）が計測結果とともに決定・記録され、決定どおりに実装されている",
+      "evidence": "PR #123/ADR 0006 D-2: checksum-bound validation receipts retain full semantic validation for writes/imports/legacy or unknown profiles; trusted reuse checks every compressed file and manifest/attempt/result bindings. Official nullable validation_profile migration and replay-attestation tests cover tampering/missing files/profile/copy/mutation. apps/api/fixtures/revalidation-baseline.json retains paired 50/6000-step measurements: full versus checksum medians 19.08/2.02 ms and 1637.78/30.30 ms."
+    },
+    {
+      "task": "R-06: 描画に依存しないシーンモデルがあり、Three.jsと2Dのレンダラが同じモデルを使う。モデルはWebGLなしでテストされている",
+      "evidence": "PR #125: apps/web/src/replay/scene-model.ts builds renderer-independent metre geometry from replay context/checkpoint. Scene.tsx and Scene2D.tsx consume the same model, with WebGL-error fallback. Headless geometry/SVG assertions and Linux browser static-webgl-fallback acceptance verify the shared projection."
+    },
+    {
+      "task": "R-06: 前進再生が差分の適用になり、記録ごとの全検証を再生のたびに繰り返さない。破損・改ざんの拒否は現行と同じ",
+      "evidence": "PR #125: ReplayPlayer validates each loaded chunk once using ReplayState, then applies only forward deltas with a two-chunk cache. All 241 fixture steps match an independent sequential oracle; backward/cache-eviction/aborted/concurrent seeks and reordered checkpoint actors/projectiles are covered. Chunk bounds, semantic corruption, checksums, continuity and prior malformed fixtures still reject."
+    },
+    {
+      "task": "R-07: 対戦・編集画面の取得とポーリングがhookに分離され、再試行などの許可操作をサーバーの応答から表示する",
+      "evidence": "PR #124: useBattleJob/useDefinitionEditor and revision catalog own acquisition/polling; Workbench components consume hook state. Job allowedOperations is derived on the server and drives cancel/retry controls. The browser test verifies a server-denied retry stays hidden rather than recomputing eligibility."
+    },
+    {
+      "task": "R-07: seedをサーバー側で導出する入力形式が追加され、既存の入力形式も受理される",
+      "evidence": "PR #124: BattleInputSchema accepts seedless participant inputs as well as saved SpecInputSchema; ManifestBuilder.participants derives actor seeds/streams on the server. API tests verify identical specifications/idempotency for equivalent forms, retain explicit seed compatibility and reject mixed shapes."
+    },
+    {
+      "task": "R-08: 20 MiBの予約・記録の上限・定義種別の一覧・最大試行数と最大stepが、名前付きの定数または導出で1箇所に定義され、DBのCHECKはmigrationで整合している",
+      "evidence": "PR #119: domain contracts/API centralize recording/reservation/step/attempt limits and derive definition kinds from RevisionSchema. Worker, replay, batch and DB schema consume those values. limits.test.ts and real Drizzle generation/constraint tests verify boundary values and unchanged CHECK semantics; existing migrations remain append-only."
+    },
+    {
+      "task": "R-09: 多人数の要否（D-3）が決定・記録され、決定に応じた抽象化または1対1の明示が完了している",
+      "evidence": "PR #127/ADR 0014 decides the current product/P6 is a one-versus-one duel. PreparedBattle uses named DuelPair and all five implicit other-actor searches delegate to sim/duel.ts opponentInDuel. Tests cover order independence and missing/extra/duplicate/unknown identities. Saved tuples/streams/replay schemas retain meaning; multiplayer requires a separate versioned design."
+    },
+    {
+      "task": "R-10: scriptsがengine・APIの内部ファイルを直接importせず、harnessの失敗時に原因が出力される",
+      "evidence": "PR #108/#116/#126: behavioral probes moved into owning packages and scripts/e2e/CLI use explicit engine/API exports. Dependency-cruiser covers tools and fails on internal imports/unknown dynamic expressions. scripts/harness/diagnostics.ts and diagnostics.test.ts preserve command/type/message/code with redaction and unchanged fail-closed exit 2."
+    },
+    {
+      "task": "R-10: 文書予算の方針（D-4）が決定され、R-01・P5の設計記録を置ける状態になっている",
+      "evidence": "PR #108/#123/#127 and ADR 0013 D-4 retain 170,000 total bytes and every document/entry limit. Completed adoption/performance history is linked at immutable commits, while current contracts/reproduction commands remain. context.test.ts covers exact total boundary and overflow; final documentation is about 166.9 KB, leaving over 3 KB for P5 without exclusions or relaxed gates."
+    },
+    {
+      "task": "全PRが§4の共通の完了条件を満たし、`vp run verify`・clean-sourceのハーネス・現行のLinux CI・固定コーパスで検証されている",
+      "evidence": "PRs #108-#127 are the complete related set (PR #107 belongs to #81). Earlier delivery/main-CI evidence is retained in this Issue discussion and the PRs; each implementation uses full verify, clean committed source receipts, fixed corpus/load, latest Linux CI and reviewed changes. The final PR carries this exact 24-item declaration; the dedicated Issue completion workflow verifies every merged PR ancestor and the actual final main CI/source/Release before updating the checklist and closing the Issue."
+    }
+  ]
+}
