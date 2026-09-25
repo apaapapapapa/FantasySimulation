@@ -6,16 +6,7 @@
   "complete": true,
   "summary": "バッチ試合一覧からの選択に加え、P5の不変league revision・正式/暫定結果表・相性表から所属試合一覧を経由し、固定されたreceipt/result/attempt/objectのリプレイを開ける。PR #145ではキャンセルの状態/理由と、録画のない失敗・キャンセルpartitionのexportを補完した。前回未完だったリーグ連携を含む全7項目を確認。日次7,600試合の運用・測定は#134、実機スマホ操作は#82の範囲であり、この完了はそれらの検証済み宣言ではない。",
   "remainingWork": [],
-  "pullRequests": [
-    90,
-    132,
-    135,
-    137,
-    140,
-    141,
-    142,
-    145
-  ],
+  "pullRequests": [90, 132, 135, 137, 140, 141, 142, 145],
   "acceptance": [
     {
       "task": "バッチ結果の一覧から選んだ試合で、行と一致するmanifest・result・attempt・bundleが開く。seedの違い・配置の交換・再試行・cacheの再利用を含むfixtureで確認する",
