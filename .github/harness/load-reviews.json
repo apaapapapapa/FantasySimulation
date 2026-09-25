@@ -2,6 +2,24 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "445ba503c254ba32a84cafdf7dab5af3de758ceb",
+      "beforeDigest": "da38951681f9fc25390e86158c888669365afd0365c0700fb001943a3e17db8b",
+      "afterDigest": "613ae49c35c57da5b29c2ef50fe6cd45288a9d3f7c8bd4db5a73d201518817fe",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Claude Code self-review, added with owner authorization on 2026-09-25; not independent approval",
+      "reason": "Issue #1 P2 (PR #139, owner-approved version bump after Codex P1 review) introduces spatial-v1.20 under ADR0010: standard-evaluation-v1 and standard-tactics-v1 are frozen at their published v1.19 hashes, standard-engagement-v1 is the new current base rules and standard-tactics-v2 adds the optional cover: observed-threat-v1 rule. Reviewed actual CI 36160105086 attempt1 (exact main 0c4f00a versus candidate aa71829): the before digest equals the previously reviewed spatial-v1.19 after digest; all three shards contain five alternating trials for each of the seven cases; recomputing the gate's own readPairedShards/costDigest on the downloaded shards gives these digests, and every case's outcome and deterministic cost vector (steps, casts, candidates, path nodes, events, log and trajectory bytes) is identical within and across revisions. Main then advanced to 445ba50 (league CLI/API only), which changes no corpus, load profile, engine execution source, lockfile or runtime pin, so this entry binds the same digests to that exact baseline; CI must reproduce them at its own SHA and attempt or the gate stays unresolved. The seven fixed recipes, seeds, scenarios and participants are unchanged and none enables the new cover option. Different fixed input identities require this independent-transition review and support no same-input elapsed-time or RSS claim. This entry does not waive failed data, modify budgets, rewrite expected outputs or relax any gate.",
+      "evidence": [
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36160105086/artifacts/10874134464",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36160105086/artifacts/10875143130",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36160105086/artifacts/10874509122",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36160105086/artifacts/10875193383",
+        "packages/engine/fixtures/spatial/corpus.json",
+        "packages/engine/src/spatial/posture.test.ts",
+        "docs/rules/tactical-ai.md"
+      ]
+    },
+    {
       "baselineSha": "e3e0bd956d8dc32d655f21fc215aadae6107415c",
       "beforeDigest": "db6c3d3f53fd6c3ac1502653f3903964b2e88d0e9333fab9dce0f35092db94e1",
       "afterDigest": "da38951681f9fc25390e86158c888669365afd0365c0700fb001943a3e17db8b",

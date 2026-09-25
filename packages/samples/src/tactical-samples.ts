@@ -1,5 +1,6 @@
 import { AI_RULES, type Definition, type Revision } from '@fantasy/domain/spatial';
 import { sealRevision, reference, rulesExecutionEligibility } from '@fantasy/engine/spatial';
+import { evaluationRules } from './published-rules.ts';
 
 /** Issue #45 numerical proposal. Review its fixtures before authorizing distribution. */
 export const TACTICAL_AI: NonNullable<Definition<'ruleset'>['ai']> = {
@@ -38,10 +39,22 @@ export async function addTacticalSamples(revisions: Revision[]) {
   )!;
   if (rules.kind !== 'ruleset') throw new Error('Missing current rules');
   revisions.push(
-    await sealRevision('ruleset', 'standard-tactics-v1', 1, {
+    {
+      kind: 'ruleset',
+      id: 'standard-tactics-v1',
+      revision: 1,
+      schemaVersion: 1,
+      contentHash: 'sha256:b4b4af6be2ef0f4c1ad69d21013b6e0fd5f631b7a9ef61b168050e643bd79f99',
+      definition: {
+        ...evaluationRules.definition,
+        name: '観測・索敵・姿勢',
+        ai: { ...evaluationRules.definition.ai, ...TACTICAL_AI },
+      },
+    } satisfies Revision,
+    await sealRevision('ruleset', 'standard-tactics-v2', 1, {
       ...rules.definition,
-      name: '観測・索敵・姿勢',
-      ai: { ...rules.definition.ai!, ...TACTICAL_AI },
+      name: '観測・索敵・姿勢・脅威時の遮蔽',
+      ai: { ...rules.definition.ai!, ...TACTICAL_AI, cover: 'observed-threat-v1' },
     }),
   );
   for (const [base, id] of [

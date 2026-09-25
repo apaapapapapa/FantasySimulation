@@ -22,6 +22,7 @@ import {
   stagedRules,
   motionRules,
   reactionsRules,
+  evaluationRules,
 } from './published-rules.ts';
 
 type Ability = Extract<Revision, { kind: 'ability' }>;
@@ -44,6 +45,7 @@ export async function sampleCatalog(): Promise<Revision[]> {
     structuredClone(stagedRules),
     structuredClone(motionRules),
     structuredClone(reactionsRules),
+    structuredClone(evaluationRules),
   ];
   async function add<K extends DefinitionKind>(kind: K, id: string, definition: Definition<K>) {
     const revision = await sealRevision(kind, id, 1, definition);
