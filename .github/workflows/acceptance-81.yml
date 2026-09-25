@@ -1,0 +1,76 @@
+name: Issue 81 rollback acceptance
+on:
+  push:
+    branches: [ops/81-acceptance-20260925]
+    paths: [.github/workflows/acceptance-81.yml, .github/ops/81-*.mjs, .github/ops/81-*.cjs]
+permissions:
+  contents: read
+concurrency:
+  group: issue-81-rollback-acceptance
+  cancel-in-progress: false
+jobs:
+  rollback:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: write
+    env:
+      ACCEPTANCE_PHASE: rollback
+      EXPECTED_VIEWER_SHA: 4618f3cc78942b354e1b8271f845f288cd4582c6
+      CI_RUN_ID: '36024584299'
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          retries: 0
+          script: await require('./.github/ops/81-pages.cjs')({github,context,core});
+      - uses: ./.github/actions/setup-project
+      - uses: ./.github/actions/setup-playwright
+      - name: Verify real retained data with the rolled back viewer
+        run: cd apps/cli && node --import tsx ../../.github/ops/81-browser.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: issue81-rollback-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/activation-browser/
+          retention-days: 30
+          if-no-files-found: error
+  restore:
+    needs: rollback
+    if: always() && needs.rollback.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: write
+    env:
+      ACCEPTANCE_PHASE: restore
+      EXPECTED_VIEWER_SHA: d0b32d0cccc74d6f5ccf0c26fcb1fa32a13671f5
+      CI_RUN_ID: '36103203740'
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          retries: 0
+          script: await require('./.github/ops/81-pages.cjs')({github,context,core});
+      - uses: ./.github/actions/setup-project
+      - uses: ./.github/actions/setup-playwright
+      - name: Verify the latest viewer is restored and still reads the same links
+        run: cd apps/cli && node --import tsx ../../.github/ops/81-browser.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: issue81-restored-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/activation-browser/
+          retention-days: 30
+          if-no-files-found: error
