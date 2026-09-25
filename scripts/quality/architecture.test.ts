@@ -1,4 +1,5 @@
 import { rmSync } from 'node:fs';
+import { posix } from 'node:path';
 import { afterEach, expect, it } from 'vite-plus/test';
 import { architecture } from './architecture.ts';
 import { withSources, importEdges } from './ast.ts';
@@ -12,6 +13,51 @@ function fixture(files: Record<string, string>) {
 }
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+it.each([
+  ['scripts/probe.ts', 'apps/api/src/tooling.ts', null],
+  ['e2e/server.ts', 'apps/api/src/local.ts', null],
+  ['apps/cli/src/run.ts', 'apps/api/src/artifacts.ts', null],
+  ['scripts/probe.ts', 'apps/api/src/jobs/job-store.ts', 'tools-use-public-api'],
+  ['apps/cli/src/run.ts', 'apps/api/src/db/store.ts', 'tools-use-public-api'],
+  ['e2e/server.ts', 'packages/engine/src/tooling.ts', null],
+  ['scripts/probe.ts', 'packages/engine/src/spatial/prepare.ts', 'tools-use-public-engine'],
+  ['apps/api/src/http/app.ts', 'apps/cli/src/export.ts', 'api-excludes-publication'],
+] as const)('checks tool entry boundaries: %s → %s', async (source, target, violation) => {
+  const relative = posix.relative(posix.dirname(source), target);
+  const f = fixture({
+    [source]: `export {Value} from '${relative.startsWith('.') ? relative : './' + relative}';`,
+    [target]: 'export class Value {}',
+  });
+  const violations = (await architecture(f.root, f.paths)).publicGraph.summary.violations.map(
+    (v) => v.rule.name,
+  );
+  if (violation) expect(violations).toContain(violation);
+  else expect(violations).toEqual([]);
+});
+it('limits dynamic checkout loading to the reviewed source and public exports', async () => {
+  const make = (path: string, entry: string) =>
+    fixture({
+      [path]: `export const load = () => import(targetEntry(root, '${entry}'));`,
+      'packages/engine/package.json': JSON.stringify({
+        name: '@fantasy/engine',
+        exports: { './spatial': './src/spatial/index.ts' },
+      }),
+      'packages/engine/src/spatial/index.ts': 'export const value = 1;',
+    });
+  const allowed = make('scripts/harness/load-capture.ts', '@fantasy/engine/spatial');
+  expect((await architecture(allowed.root, allowed.paths)).publicGraph.summary.violations).toEqual(
+    [],
+  );
+  for (const [path, entry] of [
+    ['scripts/harness/load-capture.ts', '@fantasy/engine/internal'],
+    ['scripts/other.ts', '@fantasy/engine/spatial'],
+  ]) {
+    const denied = make(path!, entry!);
+    await expect(architecture(denied.root, denied.paths)).rejects.toThrow(
+      'Dynamic module expression',
+    );
+  }
 });
 it.each([
   ['index.ts', true],
@@ -85,17 +131,22 @@ it.each([
     './math.ts',
     null,
   ],
-  ['apps/api/src/job-routes.ts', 'apps/api/src/battle-service.ts', './battle-service.ts', null],
   [
-    'apps/api/src/job-routes.ts',
-    'apps/api/src/job-store.ts',
-    './job-store.ts',
+    'apps/api/src/http/job-routes.ts',
+    'apps/api/src/jobs/battle-service.ts',
+    '../jobs/battle-service.ts',
+    null,
+  ],
+  [
+    'apps/api/src/http/job-routes.ts',
+    'apps/api/src/jobs/job-store.ts',
+    '../jobs/job-store.ts',
     'job-http-application-boundary',
   ],
   [
-    'apps/api/src/job-routes.ts',
-    'apps/api/src/artifact-store.ts',
-    './artifact-store.ts',
+    'apps/api/src/http/job-routes.ts',
+    'apps/api/src/replay/artifact-store.ts',
+    '../replay/artifact-store.ts',
     'job-http-application-boundary',
   ],
   [
@@ -265,8 +316,8 @@ it('detects aliases, type-only boundary leaks and unresolved source', async () =
       exports: { '.': './src/a.ts' },
     }),
     'packages/domain/src/a.ts':
-      "import type {S} from '../../../apps/api/src/store.ts';export type A=S;",
-    'apps/api/src/store.ts': 'export interface S {id:string}',
+      "import type {S} from '../../../apps/api/src/db/store.ts';export type A=S;",
+    'apps/api/src/db/store.ts': 'export interface S {id:string}',
     'apps/web/src/a.ts':
       "import {x} from './missing.ts';import type {A} from '@fantasy/domain';export {};",
   });
@@ -309,11 +360,11 @@ it('resolves TypeScript paths using the library resolver and still detects bound
         target: 'ESNext',
         module: 'ESNext',
         moduleResolution: 'Bundler',
-        paths: { '@server/*': ['./apps/api/src/*'] },
+        paths: { '@server/*': ['./apps/api/src/db/*'] },
       },
       include: ['apps/**/*.ts', 'packages/**/*.ts'],
     }),
-    'apps/api/src/store.ts': 'export interface S {id:string}',
+    'apps/api/src/db/store.ts': 'export interface S {id:string}',
     'packages/domain/src/a.ts': "import type {S} from '@server/store'; export type A=S;",
   });
   const result = await architecture(f.root, f.paths);
@@ -395,9 +446,9 @@ it('admits only the reviewed renderer/table browser packages while server SDKs r
 it('checks ambient declarations and the approved Vite reference without allowing extra boundary leaks', async () => {
   const f = fixture({
     'apps/web/src/vite-env.d.ts':
-      '/// <reference types="vite-plus/client" />\nimport type {S} from "../../api/src/store.ts"; export type Leaked=S;',
+      '/// <reference types="vite-plus/client" />\nimport type {S} from "../../api/src/db/store.ts"; export type Leaked=S;',
     'apps/web/src/a.ts': 'export const value=1;',
-    'apps/api/src/store.ts': 'export interface S {id:string}',
+    'apps/api/src/db/store.ts': 'export interface S {id:string}',
   });
   const result = await architecture(f.root, f.paths);
   expect(result.publicGraph.summary.violations.map((v) => v.rule.name)).toContain('web-is-client');
@@ -427,12 +478,12 @@ it('permits the dedicated pure hashing adapter without allowing all node builtin
 
 it.each([
   ['batch-service.ts', true],
-  ['job-store.ts', false],
-  ['store.ts', false],
+  ['../jobs/job-store.ts', false],
+  ['../db/store.ts', false],
 ] as const)('keeps batch adapters on their application entry: %s', async (target, allowed) => {
   const f = fixture({
-    'apps/api/src/batch-runner.ts': `export {Value} from './${target}';`,
-    [`apps/api/src/${target}`]: 'export class Value {}',
+    'apps/api/src/batch/batch-runner.ts': `export {Value} from './${target}';`,
+    [posix.normalize(`apps/api/src/batch/${target}`)]: 'export class Value {}',
   });
   const result = await architecture(f.root, f.paths);
   expect(

@@ -1,5 +1,5 @@
 import { readConfig } from './config.ts';
-import { openStore, readSampleRevisions } from './store.ts';
+import { openStore, readSampleRevisions } from './db/store.ts';
 
 if (process.argv.length !== 2) throw new Error('Usage: db:seed');
 const config = readConfig();

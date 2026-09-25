@@ -1,0 +1,26 @@
+{
+  "name": "@fantasy/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./export": "./src/export.ts",
+    "./testing": "./test-support/publication.ts"
+  },
+  "scripts": {
+    "build": "vp pack",
+    "batch": "node --import tsx src/batch.ts",
+    "publication": "node --env-file-if-exists=../../.env --import tsx src/publication.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1138.0",
+    "@fantasy/api": "workspace:*",
+    "@fantasy/domain": "workspace:*",
+    "@fantasy/samples": "workspace:*",
+    "better-sqlite3": "13.0.3",
+    "piscina": "5.3.2"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}

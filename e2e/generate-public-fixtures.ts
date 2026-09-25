@@ -12,14 +12,14 @@ import {
   contentHash,
   hashBytes,
 } from '@fantasy/domain/spatial';
-import { BattleBundles } from '../apps/api/src/battle-bundle.ts';
-import { exportPublication } from '../apps/api/src/publication-export.ts';
+import { BattleBundles } from '@fantasy/api/artifacts';
+import { exportPublication } from '@fantasy/cli/export';
 import {
   expandPublicationPlan,
   publicationFixture,
   publicationIndex,
   readPublication,
-} from '../apps/api/test-support/publication.ts';
+} from '@fantasy/cli/testing';
 
 const root = await mkdtemp(join(tmpdir(), 'fantasy-public-fixture-'));
 try {

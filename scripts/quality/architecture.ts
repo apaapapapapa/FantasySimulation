@@ -23,15 +23,39 @@ const rule = (
 ): IRegularForbiddenRuleType => ({ name, from, to, comment, severity: 'error' });
 export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
+    'tools-use-public-api',
+    { path: '^(scripts|e2e|apps/cli)/' },
+    {
+      path: '^apps/api/',
+      pathNot: '^apps/api/src/(?:local|tooling|artifacts|testing|worker)[.]ts$',
+    },
+    'Tools and CLI consume explicit API exports, not persistence/Worker internals.',
+  ),
+  rule(
+    'api-excludes-publication',
+    { path: '^apps/api/' },
+    { path: '^(?:apps/cli/|.*node_modules/@aws-sdk/)' },
+    'Publication commands and S3 dependencies belong to the separate CLI workspace.',
+  ),
+  rule(
+    'tools-use-public-engine',
+    { path: '^(scripts|e2e)/' },
+    {
+      path: '^packages/engine/',
+      pathNot: '^packages/engine/src/(?:index|tooling|spatial/(?:index|execution))[.]ts$',
+    },
+    'Engine probes use explicit tooling or execution exports.',
+  ),
+  rule(
     'batch-application-boundary',
-    { path: '^apps/api/src/batch-runner[.]ts$' },
-    { path: '^apps/api/src/', pathNot: '^apps/api/src/batch-service[.]ts$' },
+    { path: '^apps/api/src/batch/batch-runner[.]ts$' },
+    { path: '^apps/api/src/', pathNot: '^apps/api/src/batch/batch-service[.]ts$' },
     'The batch adapter delegates to its application service, never persistence or runtime internals.',
   ),
   rule(
     'job-http-application-boundary',
-    { path: '^apps/api/src/job-routes[.]ts$' },
-    { path: '^apps/api/src/', pathNot: '^apps/api/src/battle-service[.]ts$' },
+    { path: '^apps/api/src/http/job-routes[.]ts$' },
+    { path: '^apps/api/src/', pathNot: '^apps/api/src/jobs/battle-service[.]ts$' },
     'Job HTTP routes depend on the application service, never persistence or replay internals.',
   ),
   rule(
@@ -151,13 +175,13 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
     'web-is-client',
     { path: '^apps/web/' },
-    { path: '^(apps/api/|packages/engine/|scripts/|node:)' },
+    { path: '^(apps/(?:api|cli)/|packages/engine/|scripts/|node:)' },
     'Use shared domain contracts, not server or engine execution.',
   ),
   rule(
     'reader-is-read-only-transport',
     { path: '^apps/replay-reader/' },
-    { path: '^(apps/(?:api|web)/|packages/engine/|scripts/|node:)' },
+    { path: '^(apps/(?:api|cli|web)/|packages/engine/|scripts/|node:)' },
     'The edge reader may use only shared contracts and its read-only R2 binding.',
   ),
   rule(
@@ -214,18 +238,41 @@ export interface ArchitectureResult {
   publicGraph: ICruiseResult;
   runtimeGraph: ICruiseResult;
 }
+// These existing resolvers select another checkout/package, but only named public exports.
+// Exact expressions are pinned; a new dynamic expression still fails closed.
+const dynamicEntries: Record<string, Record<string, string>> = {
+  'scripts/harness/regression-probe.ts': {
+    "pathToFileURL(join(root, 'scripts/harness/corpus.ts')).href": './corpus.ts',
+  },
+  'scripts/harness/load-capture.ts': Object.fromEntries(
+    ['@fantasy/engine/spatial', '@fantasy/domain/spatial', '@fantasy/samples'].flatMap((entry) =>
+      ["'", '"'].map((quote) => [`targetEntry(root, ${quote}${entry}${quote})`, entry]),
+    ),
+  ),
+  'e2e/web-server.ts': {
+    "webRequire.resolve('@vitejs/plugin-react')":
+      '../apps/web/node_modules/@vitejs/plugin-react/dist/index.js',
+  },
+};
 /** TS7 owns parsing; dependency-cruiser owns resolution, graph construction and all rules. */
 export async function architecture(root: string, paths: string[]): Promise<ArchitectureResult> {
   const sources = paths.filter(
     (path) =>
-      /^(apps|packages)\/[^/]+\/src\/.*\.(ts|tsx)$/.test(path) && !/\.test\.tsx?$/.test(path),
+      (/^(apps|packages)\/[^/]+\/src\/.*\.(ts|tsx)$/.test(path) ||
+        /^(scripts|e2e)\/.*\.tsx?$/.test(path) ||
+        /^apps\/(api|cli)\/test-support\/.*\.ts$/.test(path)) &&
+      !/\.(test|spec)\.tsx?$/.test(path),
   );
   if (!sources.length) throw Error('Architecture source coverage is empty');
   const parsed = withSources(root, sources, (files, options) => ({
     edges: new Map(
       [...files].map(([path, file]) => [
         path,
-        importEdges(file, path === 'apps/web/src/vite-env.d.ts' ? 'vite-plus/client' : undefined),
+        importEdges(
+          file,
+          path === 'apps/web/src/vite-env.d.ts' ? 'vite-plus/client' : undefined,
+          dynamicEntries[path],
+        ),
       ]),
     ),
     options,
@@ -253,7 +300,9 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         );
       }
       // JSON resources are data, not executed. Resolve workspace exports through the installed resolver.
-      for (const path of paths.filter((path) => /^(apps|packages)\/.*\.(json|css)$/.test(path))) {
+      for (const path of paths.filter((path) =>
+        /^(apps|packages|scripts|e2e|data)\/.*\.(json|css)$/.test(path),
+      )) {
         const file = join(projection, path);
         mkdirSync(dirname(file), { recursive: true });
         writeFileSync(file, readFileSync(join(root, path)));
@@ -282,8 +331,11 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         }
       }
       const aliases: Record<string, string> = {};
-      for (const path of paths.filter((path) => /^packages\/[^/]+\/package\.json$/.test(path))) {
+      for (const path of paths.filter((path) =>
+        /^(apps|packages)\/[^/]+\/package\.json$/.test(path),
+      )) {
         const pkg = record(JSON.parse(readFileSync(join(root, path), 'utf8')) as unknown);
+        if (pkg.exports === undefined) continue;
         const exports =
           typeof pkg.exports === 'string' ? { '.': pkg.exports } : record(pkg.exports);
         for (const [sub, target] of Object.entries(exports)) {
@@ -362,9 +414,8 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
       );
       if (typeof result.output === 'string') throw Error('Architecture graph missing');
       if (
-        result.output.modules.filter(
-          (m) => m.source.startsWith('apps/') || m.source.startsWith('packages/'),
-        ).length < sources.length
+        result.output.modules.filter((m) => /^(apps|packages|scripts|e2e)\//.test(m.source))
+          .length < sources.length
       )
         throw Error('Architecture source coverage incomplete');
       results.push(result.output);

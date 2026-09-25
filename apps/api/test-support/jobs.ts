@@ -1,9 +1,9 @@
 import { DEFAULT_BUDGET, canonicalJson, type Budget } from '@fantasy/domain/spatial';
 import { prepareBattle, runPreparedBattle } from '@fantasy/engine/spatial';
 import { catalogManifest } from '@fantasy/samples';
-import { JobStore, type Claim } from '../src/job-store.ts';
-import { openStore } from '../src/store.ts';
-import { sha256 } from '../src/replay-files.ts';
+import { JobStore, type Claim } from '../src/jobs/job-store.ts';
+import { openStore } from '../src/db/store.ts';
+import { sha256 } from '../src/replay/replay-files.ts';
 
 export async function withJobs(
   work: (fixture: Awaited<ReturnType<typeof jobFixture>>) => Promise<void>,

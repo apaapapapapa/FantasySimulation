@@ -1,9 +1,9 @@
 import { join } from 'node:path';
 import { startWeb } from './web-server.ts';
-import { createApp } from '../apps/api/src/app.ts';
-import { openStore, readSampleRevisions } from '../apps/api/src/store.ts';
-import { BattleService } from '../apps/api/src/battle-service.ts';
-import { readConfig } from '../apps/api/src/config.ts';
+import { createApp } from '@fantasy/api/local';
+import { openStore, readSampleRevisions } from '@fantasy/api/local';
+import { BattleService } from '@fantasy/api/local';
+import { readConfig } from '@fantasy/api/local';
 import { RevisionSchema } from '@fantasy/domain/spatial';
 
 /** Ports are assigned by bind(0), never probed/released or reused from another server. */

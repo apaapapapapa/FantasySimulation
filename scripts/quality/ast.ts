@@ -80,13 +80,23 @@ export function withSources<T>(
     api.close();
   }
 }
-export function importEdges(file: SourceFile, allowedTypeReference?: string): ImportEdge[] {
-  return moduleReferences(file, allowedTypeReference).map(({ specifier, typeOnly }) => ({
-    specifier,
-    typeOnly,
-  }));
+export function importEdges(
+  file: SourceFile,
+  allowedTypeReference?: string,
+  dynamicExpressions: Readonly<Record<string, string>> = {},
+): ImportEdge[] {
+  return moduleReferences(file, allowedTypeReference, dynamicExpressions).map(
+    ({ specifier, typeOnly }) => ({
+      specifier,
+      typeOnly,
+    }),
+  );
 }
-export function moduleReferences(file: SourceFile, allowedTypeReference?: string) {
+export function moduleReferences(
+  file: SourceFile,
+  allowedTypeReference?: string,
+  dynamicExpressions: Readonly<Record<string, string>> = {},
+) {
   const edges: (ImportEdge & { node: Node })[] = [];
   walk(file, (node) => {
     if (isImportDeclaration(node)) {
@@ -120,9 +130,13 @@ export function moduleReferences(file: SourceFile, allowedTypeReference?: string
         (isIdentifier(node.expression) && node.expression.text === 'require'))
     ) {
       const argument = node.arguments[0];
-      if (!argument || !isStringLiteral(argument))
-        throw Error('Dynamic module expression needs an explicit boundary');
-      edges.push({ specifier: argument.text, typeOnly: false, node: argument });
+      const specifier =
+        argument &&
+        (isStringLiteral(argument)
+          ? argument.text
+          : dynamicExpressions[file.text.slice(argument.pos, argument.end).trim()]);
+      if (!specifier) throw Error('Dynamic module expression needs an explicit boundary');
+      edges.push({ specifier, typeOnly: false, node: argument! });
     } else if (node.kind === SyntaxKind.ImportEqualsDeclaration)
       throw Error('Import-equals is not part of the ESM workspace contract');
   });

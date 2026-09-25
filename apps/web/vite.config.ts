@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite-plus';
-import { publicBuild } from './public-build.ts';
+import { publicBuild } from '../../scripts/public-build.ts';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 

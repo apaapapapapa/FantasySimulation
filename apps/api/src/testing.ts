@@ -1,0 +1,2 @@
+export { withReplayDirectory } from '../test-support/replays.ts';
+export { ReplayWriter } from './replay/replay-writer.ts';

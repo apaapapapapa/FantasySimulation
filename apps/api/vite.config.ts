@@ -2,7 +2,7 @@ import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
   pack: {
-    entry: ['src/index.ts', 'src/battle-worker.ts', 'src/batch.ts', 'src/publication.ts'],
+    entry: { index: 'src/index.ts', 'battle-worker': 'src/jobs/battle-worker.ts' },
     platform: 'node',
     target: 'node24',
     format: 'esm',

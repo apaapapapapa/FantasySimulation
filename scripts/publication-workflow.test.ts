@@ -29,10 +29,10 @@ it('isolates production credentials from calculation and artifacts', () => {
   expect(beforeCredentials).not.toContain('secrets.');
   expect(credentials).toContain('secrets.R2_ACCESS_KEY_ID');
   expect(credentials).toContain('secrets.R2_SECRET_ACCESS_KEY');
-  expect(prepare).toContain('apps/api/.generated/cloud/output/objects/');
+  expect(prepare).toContain('apps/cli/.generated/cloud/output/objects/');
   expect(prepare).not.toContain('.work');
   expect(prepare).not.toContain('.env');
-  expect(prepare).not.toMatch(/^\s*path: apps\/api\/\.generated\/cloud\s*$/m);
+  expect(prepare).not.toMatch(/^\s*path: apps\/cli\/\.generated\/cloud\s*$/m);
   expect(publish).toContain('artifact-ids: ${{ needs.prepare.outputs.artifact-id }}');
   expect(publish).not.toContain('run-id: ${{ inputs.artifact');
   expect(workflow).not.toMatch(/run:.*\$\{\{\s*inputs\./);

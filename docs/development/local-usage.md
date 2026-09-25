@@ -41,7 +41,7 @@ adds missing IDs only. [ADR 0010](../adr/0010-battle-version-compatibility.md) g
 ## Batch
 
 Use the same clean commit/toolchain, no HTTP. Inputs carry published revisions, <=1,000 slots
-and calculation/output/work budgets. Paths below resolve in apps/api:
+and calculation/output/work budgets. Paths below resolve in apps/cli:
 
 ```sh
 vp run batch sample .generated/input.json
@@ -55,7 +55,7 @@ vp run batch export .generated/plan.json .generated/public path/to/index.json .g
 --retry-failed explicitly retries failed/cancelled slots. --deadline is milliseconds <=1,800,000.
 Run prints immutable indexes; check/export accept more index/root pairs. Missing slots stay
 pending. Exits 0/2/1 mean complete/incomplete/invalid. Keep .work private; disk needs output
-and work budgets plus 256 MiB. Built CLI: node apps/api/dist/batch.mjs, paths relative to cwd.
+and work budgets plus 256 MiB. Built CLI: node apps/cli/dist/batch.mjs, paths relative to cwd.
 
 ## Publication
 

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { prepareBattle, runPreparedBattle } from '@fantasy/engine/spatial';
 import { catalogManifest } from '@fantasy/samples';
-import { ReplayWriter } from '../src/replay-writer.ts';
+import { ReplayWriter } from '../src/replay/replay-writer.ts';
 import type { ReplayManifest } from '@fantasy/domain/spatial';
 
 export async function withReplayDirectory(work: (root: string) => Promise<void>) {

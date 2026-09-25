@@ -5,13 +5,13 @@ import { execFileSync } from 'node:child_process';
 import { prepareBattle, runPreparedBattle, implementation } from '@fantasy/engine/spatial';
 import { catalogManifest } from '@fantasy/samples';
 import { canonicalJson } from '@fantasy/domain/spatial';
-import { ReplayWriter } from '../src/replay-writer.ts';
+import { ReplayWriter } from '../src/replay/replay-writer.ts';
 import {
   readReplayManifest,
   verifyReplayDirectory,
   verifyReplayChecksums,
-} from '../src/replay-reader.ts';
-import { sha256 } from '../src/replay-files.ts';
+} from '../src/replay/replay-reader.ts';
+import { sha256 } from '../src/replay/replay-files.ts';
 
 // Run from the repository root with the API's tsx loader and a fresh output directory.
 const root = resolve(process.argv[2] ?? '.generated/revalidation-benchmark');
