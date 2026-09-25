@@ -1,0 +1,48 @@
+name: Issue 81 complete replay measurement
+on:
+  push:
+    branches: [ops/81-acceptance-20260925]
+    paths: [.github/workflows/measure81.yml, .github/ops/measurement.mjs]
+permissions:
+  contents: read
+jobs:
+  measure:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.actor == 'apaapapapapa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      ACCEPTANCE_PHASE: full-playback
+      EXPECTED_VIEWER_SHA: d0b32d0cccc74d6f5ccf0c26fcb1fa32a13671f5
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          retries: 0
+          script: |
+            const assert = require('node:assert/strict');
+            let run;
+            for (let i = 0; i < 48; i++) {
+              run = (await github.rest.actions.getWorkflowRun({owner:'apaapapapapa',repo:'FantasySimulation',run_id:36113472940})).data;
+              assert.equal(run.head_sha,'58ed4f84f5f9813538fb27f5a2ef8166a5fcb934');
+              if (run.status === 'completed') break;
+              await new Promise(resolve => setTimeout(resolve,15000));
+            }
+            assert.equal(run.conclusion,'success','Rollback and restore must finish first');
+      - uses: ./.github/actions/setup-project
+      - uses: ./.github/actions/setup-playwright
+      - name: Play both production matches to the final recorded step and measure requests
+        run: cd apps/cli && node --import tsx ../../.github/ops/measurement.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: issue81-complete-replay-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/activation-browser/
+          retention-days: 30
+          if-no-files-found: error
