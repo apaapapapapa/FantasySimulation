@@ -1,7 +1,8 @@
 import type { SceneModel } from './scene-model.ts';
+import type { Overlays } from './overlays.ts';
 
 /** Top view of the same geometry consumed by the Three renderer; no WebGL required. */
-export function Scene2D({ model, overlays }: { model: SceneModel; overlays: boolean }) {
+export function Scene2D({ model, overlays }: { model: SceneModel; overlays: Overlays }) {
   const { min, max } = model;
   return (
     <svg
@@ -31,7 +32,7 @@ export function Scene2D({ model, overlays }: { model: SceneModel; overlays: bool
           <circle cx={a.position[0]} cy={a.position[2]} r={a.radius} fill={a.colour}>
             <title>{a.id}</title>
           </circle>
-          {overlays && (
+          {overlays.collision && (
             <line
               x1={a.position[0]}
               y1={a.position[2]}
@@ -46,7 +47,7 @@ export function Scene2D({ model, overlays }: { model: SceneModel; overlays: bool
       {model.projectiles.map((p) => (
         <circle key={p.id} cx={p.position[0]} cy={p.position[2]} r={p.radius} fill="#f0bd67" />
       ))}
-      {overlays &&
+      {overlays.paths &&
         model.paths.map((p) => (
           <line
             key={p.id}
@@ -58,7 +59,7 @@ export function Scene2D({ model, overlays }: { model: SceneModel; overlays: bool
             strokeWidth={0.05}
           />
         ))}
-      {overlays &&
+      {overlays.hits &&
         model.events.map((e) => (
           <circle key={e.id} cx={e.position[0]} cy={e.position[2]} r={0.09} fill="#f680b0" />
         ))}

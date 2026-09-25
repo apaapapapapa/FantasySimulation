@@ -8,6 +8,8 @@ import { SceneBoundary } from './SceneBoundary.tsx';
 import { playbackStep } from './playback-clock.ts';
 import type { CameraMode } from './Scene.tsx';
 import { ReplayEvents, CurrentEvents } from './ReplayEvents.tsx';
+import { NO_OVERLAYS, OVERLAY_LABELS } from './overlays.ts';
+import { ReplayResources } from './ReplayResources.tsx';
 
 const Scene = lazy(() => import('./Scene.tsx'));
 
@@ -21,14 +23,17 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [cameraMode, setCameraMode] = useState<CameraMode>('overview');
-  const [overlays, setOverlays] = useState(false);
+  const [overlays, setOverlays] = useState(NO_OVERLAYS);
   const player = useMemo(
     () => (replay?.manifest.end.kind === 'result' ? new ReplayPlayer(replay) : null),
     [replay],
   );
   const model = useMemo(
-    () => (replay && state ? buildSceneModel(replay.context, state) : null),
-    [replay, state],
+    () =>
+      replay && frame
+        ? buildSceneModel(replay.context, frame.checkpoint, frame.records, frame.events)
+        : null,
+    [replay, frame],
   );
   const panel = useRef<HTMLElement | null>(null);
   const cursor = useRef({ target, loading });
@@ -189,14 +194,18 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
                     <option value="free">自由</option>
                   </select>
                 </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={overlays}
-                    onChange={(e) => setOverlays(e.target.checked)}
-                  />
-                  記録された軌跡・命中点と形状を表示
-                </label>
+                {(Object.keys(OVERLAY_LABELS) as (keyof typeof OVERLAY_LABELS)[]).map((key) => (
+                  <label key={key}>
+                    <input
+                      type="checkbox"
+                      checked={overlays[key]}
+                      onChange={(e) =>
+                        setOverlays((previous) => ({ ...previous, [key]: e.target.checked }))
+                      }
+                    />
+                    {OVERLAY_LABELS[key]}
+                  </label>
+                ))}
               </div>
               <label>
                 表示step
@@ -232,36 +241,15 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
               <p>
                 表示中のstep: <output aria-label="現在のstep">{state?.step ?? '—'}</output>
               </p>
-              <table aria-label="記録された状態">
-                <thead>
-                  <tr>
-                    <th>参加者</th>
-                    <th>位置</th>
-                    <th>HP</th>
-                    <th>MP</th>
-                    <th>Shield</th>
-                    <th>Stamina</th>
-                    <th>状態</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {state?.state?.actors.map((actor) => (
-                    <tr key={actor.id}>
-                      <th>{actor.id}</th>
-                      <td>{JSON.stringify(actor.position)}</td>
-                      <td>{actor.resources.hp}</td>
-                      <td>{actor.resources.mp}</td>
-                      <td>{actor.resources.shield}</td>
-                      <td>{actor.resources.stamina ?? '記録なし'}</td>
-                      <td>
-                        {actor.statuses
-                          .map((s) => `${s.revision.id} r${s.revision.revision}`)
-                          .join(', ') || 'なし'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <p>
+                色付きの身体・効果の印と、白線の判定形状を分けて表示します。視野は遮蔽判定前の定義上の範囲です。
+              </p>
+              {overlays.vision && model?.actors.some((actor) => !actor.vision) && (
+                <p>
+                  視野補正を持つ状態の主体は、補正後の視野が記録されていないため視野を描画しません。
+                </p>
+              )}
+              {state && <ReplayResources context={replay.context} checkpoint={state} />}
               {frame && (
                 <CurrentEvents
                   key={state?.step}

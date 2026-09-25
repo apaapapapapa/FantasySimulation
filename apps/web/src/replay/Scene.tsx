@@ -3,9 +3,11 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls } from '@react-three/drei';
 import type { Point, SceneModel } from './scene-model.ts';
 import { Scene2D } from './Scene2D.tsx';
+import type { Overlays } from './overlays.ts';
+import { SceneOverlays } from './SceneOverlays.tsx';
 
 export type CameraMode = 'overview' | 'side' | 'follow' | 'free';
-type Props = { model: SceneModel; cameraMode: CameraMode; overlays: boolean };
+type Props = { model: SceneModel; cameraMode: CameraMode; overlays: Overlays };
 
 function Camera({
   mode,
@@ -90,11 +92,17 @@ export default function Scene({ model, cameraMode, overlays }: Props) {
               <capsuleGeometry args={[a.radius, a.length, 6, 16]} />
               <meshStandardMaterial color={a.colour} />
             </mesh>
-            {overlays && (
+            {a.casting && (
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[a.radius * 1.5, 0.04, 6, 24]} />
+                <meshBasicMaterial color="#b695ff" />
+              </mesh>
+            )}
+            {overlays.collision && (
               <>
-                <mesh scale={1.03}>
+                <mesh>
                   <capsuleGeometry args={[a.radius, a.length, 6, 16]} />
-                  <meshBasicMaterial color="#e5f3ff" wireframe />
+                  <meshBasicMaterial color="#e5f3ff" wireframe depthTest={false} />
                 </mesh>
                 <Line points={[[0, 0, 0], a.facing]} color="#faf5d6" lineWidth={2} />
               </>
@@ -104,20 +112,16 @@ export default function Scene({ model, cameraMode, overlays }: Props) {
         {model.projectiles.map((p) => (
           <mesh key={p.id} position={p.position}>
             <sphereGeometry args={[p.radius, 12, 8]} />
-            <meshBasicMaterial color="#f0bd67" wireframe={overlays} />
+            <meshBasicMaterial color="#f0bd67" wireframe={overlays.collision} />
           </mesh>
         ))}
-        {overlays &&
-          model.paths.map((p) => (
-            <Line key={p.id} points={p.points} color="#8addc0" lineWidth={2} />
-          ))}
-        {overlays &&
-          model.events.map((e) => (
-            <mesh key={e.id} position={e.position}>
-              <sphereGeometry args={[0.09, 12, 8]} />
-              <meshBasicMaterial color="#f680b0" />
-            </mesh>
-          ))}
+        {model.effects.map((e) => (
+          <mesh key={e.id} position={e.position}>
+            <sphereGeometry args={[0.18, 8, 6]} />
+            <meshBasicMaterial color={e.kind === 'hit' ? '#ff849e' : '#f7d77f'} wireframe />
+          </mesh>
+        ))}
+        <SceneOverlays model={model} overlays={overlays} />
       </Canvas>
     </div>
   );

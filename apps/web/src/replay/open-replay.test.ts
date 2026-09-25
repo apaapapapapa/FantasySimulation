@@ -17,6 +17,8 @@ import { seekStep } from './seek-step.ts';
 import { ReplayPlayer } from './replay-player.ts';
 import { buildSceneModel } from './scene-model.ts';
 import { Scene2D } from './Scene2D.tsx';
+import { NO_OVERLAYS } from './overlays.ts';
+import { ReplayResources } from './ReplayResources.tsx';
 
 // Fixed bytes from the real ReplayWriter; see test-fixtures/replays/provenance.json.
 const ID = 'swordsman-sky-mage-240';
@@ -99,6 +101,33 @@ const abortOnChunk = (controller: AbortController, file: string) => (url: string
 };
 
 describe('saved replay loading through the local API adapter', () => {
+  it('draws recorded posture dimensions and all same-step paths without guessing missing hit coordinates', async () => {
+    const opened = await open(await savedReplay()).opening;
+    const frame = await new ReplayPlayer(opened).frame(240);
+    const actor = frame.checkpoint.state!.actors[0]!;
+    // Projection-only input: no new combat or capability is claimed by this fixture.
+    actor.posture = {
+      current: 'crouching',
+      body: { ...opened.context.actors[0]!.character.body, radiusMm: 150, heightMm: 600 },
+    };
+    const snapshot = structuredClone(frame);
+    const model = buildSceneModel(opened.context, frame.checkpoint, frame.records, frame.events);
+    expect(model.actors[0]).toMatchObject({ radius: 0.15, length: 0.3 });
+    expect(model.paths.length).toBeGreaterThan(0); // terminal must not hide this step's interval
+    expect(model.events).toEqual(
+      frame.events
+        .filter((e) => e.kind === 'hit' && e.point)
+        .map((e) => ({ id: e.id, position: [e.point!.x, e.point!.y, e.point!.z] })),
+    );
+    expect(model.rays).toEqual([]); // no recorded origin/hit pairing in this frame
+    const html = renderToStaticMarkup(
+      createElement(ReplayResources, { context: opened.context, checkpoint: frame.checkpoint }),
+    );
+    expect(html).toContain('aria-label="' + actor.id + ' hp"');
+    expect(html).toContain('<meter');
+    expect(html).toContain('crouching');
+    expect(frame).toEqual(snapshot);
+  });
   it('skips intermediate chunks on a distant seek and retains every event at the displayed step', async () => {
     const saved = await savedReplay(),
       { api, opening } = open(saved);
@@ -164,7 +193,9 @@ describe('saved replay loading through the local API adapter', () => {
     expect(model.follow).toEqual(model.actors[0]!.position);
     expect(model.span).toBeGreaterThan(0);
     expect(model.paths.length).toBeGreaterThan(0);
-    const svg = renderToStaticMarkup(createElement(Scene2D, { model, overlays: true }));
+    const svg = renderToStaticMarkup(
+      createElement(Scene2D, { model, overlays: { ...NO_OVERLAYS, paths: true } }),
+    );
     expect(svg).toContain('保存ログの2D表示');
     expect(svg).toContain('<line');
     expect(checkpoint).toEqual(before);
