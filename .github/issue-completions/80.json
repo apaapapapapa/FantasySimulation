@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "issue": 80,
+  "issueBodySha256": "c98c52a58828e0bc4cb07359f2273c098312150d81b866bf812234ee0f3617de",
+  "issueUpdatedAt": "2026-09-25T10:19:52Z",
+  "complete": true,
+  "summary": "バッチ試合一覧からの選択に加え、P5の不変league revision・正式/暫定結果表・相性表から所属試合一覧を経由し、固定されたreceipt/result/attempt/objectのリプレイを開ける。PR #145ではキャンセルの状態/理由と、録画のない失敗・キャンセルpartitionのexportを補完した。前回未完だったリーグ連携を含む全7項目を確認。日次7,600試合の運用・測定は#134、実機スマホ操作は#82の範囲であり、この完了はそれらの検証済み宣言ではない。",
+  "remainingWork": [],
+  "pullRequests": [
+    90,
+    132,
+    135,
+    137,
+    140,
+    141,
+    142,
+    145
+  ],
+  "acceptance": [
+    {
+      "task": "バッチ結果の一覧から選んだ試合で、行と一致するmanifest・result・attempt・bundleが開く。seedの違い・配置の交換・再試行・cacheの再利用を含むfixtureで確認する",
+      "evidence": "PR #90/#132: buildPublication and PublicMatchRow retain the planned slot/simulation identity and verified receipt. apps/web/src/replay/public-source.test.ts and fixed selection generations cover seed 1/2, swapped placement/facing, reused results and another attempt/object. assertPublicReplayBinding rejects mismatched manifest/result/attempt before playback. Existing stored fixtures remain unchanged."
+    },
+    {
+      "task": "並べ替え・絞込み・ページ移動の後も、正しい試合を開く",
+      "evidence": "PR #132/#142: TanStack tables use immutable slot IDs. e2e/static/selection.spec.ts exercises keyboard selection, page changes, sorting and filtering; e2e/static/league.spec.ts selects the sorted pair row. SelectedMatch opens that row's saved receipt, and returning to the list preserves its page."
+    },
+    {
+      "task": "一覧の表示で、全試合のログを取得しない。1,000枠の計画で、初回に取得するbytesとリクエスト数を測定して記録する",
+      "evidence": "docs/measurements/match-list.json and the static initial-load E2E bind the 1,000-slot fixture to 4 requests / 122,890 decoded body bytes (100 of 1,000 rows; app assets/HTTP/TLS excluded). No objects are fetched before selection. The 24-slot league overview separately uses 3 requests and <6,000 bytes; pair pages and recordings are lazy."
+    },
+    {
+      "task": "直接リンクを、静的ホスト（`/FantasySimulation/`の下）で再読込しても開ける",
+      "evidence": "match-route.ts and league-route.ts pin set/snapshot, page, participants and slot in hash URLs. Chromium/WebKit selection and static-league-pair-replay reload under /FantasySimulation/ and assert the same replay/result/object. Malformed URLs are rejected; old provisional snapshot links remain readable. Local publication URLs are labelled local."
+    },
+    {
+      "task": "リーグの結果表の個別の行と集約セルから、正しい試合のリプレイを開ける（#1のP5の実装後）",
+      "evidence": "PR #135/#137/#140/#141/#142 supply the P5 revision, bounded plans, exact standings, immutable league snapshot/detail/pair pages and LeagueViewer/LeaguePair. static-league-pair-replay navigates an aggregate matchup cell to its 8 member matches, sorts, selects and reloads the exact saved replay. league-source tests verify manifest/result/attempt and reject foreign or duplicate slots. static-league-overview/provisional retain formal vs provisional status, score intervals and planned-slot completion denominators."
+    },
+    {
+      "task": "未確定の枠と再生できない枠の状態・理由を表示し、集約値を1試合として再生しない",
+      "evidence": "LeaguePair reuses PublicMatchRow and SelectedMatch. Pending/missing, failed and recorded unresolved/truncated rows retain reasons and bounded playback. This PR preserves explicit cancelled history as optional immutable pair metadata and renders cancellation separately without a replay; absent historical metadata is not inferred. Export regressions cover all-failed/all-cancelled exhausted partitions with no bundle directory (as after Actions transfer), 0 resolved / 4 planned and no invented object; recorded rows cannot be marked cancelled. Aggregate cells only link to member lists."
+    },
+    {
+      "task": "ChromiumとWebKitのE2E、`vp run verify`、Linux CIで確認する",
+      "evidence": "PR #142 main CI 36167388405 passed Linux verification, Chromium/WebKit and Release; source fd77fcdeb00b859bb1e452234c45aab2f5586ad9. This final PR requires canonical vp run verify, a clean-source report on its final head, current-head review, Linux CI and both browser suites before merge. The completion workflow adds the successful final main SHA/CI link. vp run dev confirmed API/web/proxy HTTP 200. Physical iPhone/iPad/Android and desktop Safari remain unverified."
+    }
+  ]
+}
