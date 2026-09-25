@@ -66,12 +66,9 @@ with explicit review of the single restamp. Identical decisions need no rules/en
 version bump; any decision change requires a separate versioned change under ADR 0010.
 The identity algorithm has its own v2 tag.
 
-R-01 transition baseline: `7cb877489c90f07d30b14cd494c2b110fdb46b41`.
-Reviewed old digest: `sha256:d82d3b1af1340d070ada82910585ab755a908d0468a1664cce7e20928d813800`.
-New digest: `sha256:af7bef471e2ddfc19ae0bd107de479d579640806146fa30424ce3766770b078e`.
-There are 69 source/Node inputs and two resolved packages (Rapier 0.20.0, Zod 4.6.5).
-WASM/binding/table hashes and distributed data/fixtures are unchanged. The PR records
-the tested candidate SHA; `node scripts/engine-identity.ts --inputs` prints the canonical payload.
+The [reviewed transition receipt](https://github.com/apaapapapapa/FantasySimulation/blob/4d27971ce4ff43cf4b3c33af03af31b6d6ea124a/docs/adr/0013-execution-identity.md#one-time-transition-and-acceptance)
+retains the baseline, old/new digests, input/package counts and unchanged physics/data evidence.
+`node scripts/engine-identity.ts --inputs` prints the current canonical payload.
 
 That one restamp changes new simulationHash values. Existing immutable specs/results
 are not rewritten: saved results/replays stay readable, and old-identity retry/recovery
@@ -87,10 +84,9 @@ must fail rather than stamp a partial graph. Verify built Worker and direct-engi
 results against independent existing fixtures and fixed corpus inputs/event/trajectory/
 TS/physics digests. No expected-value regeneration to make tests pass.
 
-Run verify, clean-source harness, latest Linux PR/main CI and review. Preserve existing
-DB/replay compatibility and sample checks. This is R-01 only: R-02–R-09 and R-10's test
-ownership boundaries remain separate PRs. D-2 needs measured replay costs; until then
-full read-time validation remains. D-3 will decide multiplayer scope separately.
+Delivery follows [fantasy-delivery](../../.agents/skills/fantasy-delivery/SKILL.md), including
+clean-source and Linux PR/main CI. R-05 D-2 is specified in [ADR 0006](0006-recorded-replay.md).
+Other #106 structural work is tracked in the Issue's acceptance checklist.
 
 ## Document budget (D-4)
 

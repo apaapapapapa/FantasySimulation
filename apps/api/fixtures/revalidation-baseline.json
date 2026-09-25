@@ -1,0 +1,44 @@
+{
+  "source": "004da1a15b92d1e2eac7533be5b184b9d64f216d",
+  "tree": "8372c2d9810f2c862dfdb440ab32eb3cbdf7fe2c",
+  "implementation": {
+    "digest": "sha256:a35b7a00ecee8f93bfaca51462d040f56b86fd83a0e4c1c6f94b24c576bc6c16",
+    "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+    "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+    "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+  },
+  "node": "v24.19.0",
+  "platform": "linux",
+  "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+  "cores": 8,
+  "storage": "record the physical device separately; this command cannot identify it",
+  "seed": 20260923,
+  "startedAt": "2026-09-25T04:50:41.221Z",
+  "cases": [
+    {
+      "left": "archer",
+      "right": "guardian",
+      "scenario": "flat",
+      "maxSteps": 50,
+      "steps": 50,
+      "records": 53,
+      "bytes": 18145,
+      "rawBytes": 89549,
+      "fullMs": [20.140500000000088, 18.790086000000088, 18.991819000000078],
+      "checksumMs": [2.28765199999998, 1.6255579999999554, 2.1929669999999533]
+    },
+    {
+      "left": "guardian",
+      "right": "guardian",
+      "scenario": "pillars",
+      "maxSteps": 6000,
+      "steps": 6000,
+      "records": 6003,
+      "bytes": 230450,
+      "rawBytes": 7152960,
+      "fullMs": [913.4567939999997, 931.618778, 890.7024039999997],
+      "checksumMs": [9.619717000000492, 13.07010900000023, 13.592263000000457]
+    }
+  ],
+  "finishedAt": "2026-09-25T04:50:50.264Z"
+}

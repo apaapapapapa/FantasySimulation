@@ -1,0 +1,1 @@
+ALTER TABLE `replay_artifacts` ADD `validation_profile` text;

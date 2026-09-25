@@ -28,3 +28,16 @@ overcapacity; back up stopped DB+artifacts. Recovery deletes only unreferenced
 temp/orphans. Domain mutual-hit/API fixtures cover hashes/seeks/terrain/flight/
 bullets/statuses. Extensions need domain restoration, Worker/SQLite round trips.
 UI remains P4.
+
+D-2 (#106): retain full validation on writing, imports/publication and unknown/legacy DB receipts.
+For reuse/open of a trusted receipt, verify the DB-bound manifest and every compressed file's size
+and SHA-256, plus attempt/byte/result bindings, without inflate/apply. `validation_profile` is nullable
+additive DB metadata; existing files, results and columns are untouched. Only successful full
+validation issues a checksum-bound receipt; unknown profiles validate fully before adoption.
+Changing semantic acceptance requires a new profile. Checksums remain integrity, not authentication:
+the coordinator-owned DB is trusted, arbitrary imported metadata is not an attestation.
+
+Measured on Node 24.19/Linux/Xeon 8573C (three alternating pairs; full writer validation excluded):
+50 steps median 18.99→2.19 ms, 6000 steps 913.46→13.07 ms. Raw source-bound evidence is
+`apps/api/fixtures/revalidation-baseline.json`; repeat via the API-owned revalidation benchmark.
+This sample justifies avoiding repeated semantic work; it is not a production throughput claim.
