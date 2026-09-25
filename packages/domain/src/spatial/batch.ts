@@ -6,7 +6,7 @@ import {
   RevisionSchema,
   StoredManifestSchema,
 } from './contracts.ts';
-import { SpecInputSchema } from './api.ts';
+import { SpecInputSchema, ARTIFACT_RESERVATION_BYTES } from './api.ts';
 import { ResultSchema } from './records.ts';
 
 export const ExecutionSourceSchema = z.strictObject({
@@ -23,11 +23,7 @@ export const BatchInputSchema = z.strictObject({
     .min(1)
     .max(1000),
   budget: BudgetSchema,
-  estimatedBytesPerMatch: z
-    .number()
-    .int()
-    .min(1)
-    .max(20 * 1024 ** 2),
+  estimatedBytesPerMatch: z.number().int().min(1).max(ARTIFACT_RESERVATION_BYTES),
   maxOutputBytes: z
     .number()
     .int()
@@ -36,7 +32,7 @@ export const BatchInputSchema = z.strictObject({
   maxWorkBytes: z
     .number()
     .int()
-    .min(40 * 1024 ** 2)
+    .min(2 * ARTIFACT_RESERVATION_BYTES)
     .max(16 * 1024 ** 3),
 });
 export const PlannedMatchSchema = z.strictObject({
@@ -69,11 +65,7 @@ export const BundleReceiptBodySchema = z.strictObject({
   replayId: IdSchema,
   resultHash: HashSchema,
   manifestChecksum: HashSchema,
-  bytes: z
-    .number()
-    .int()
-    .positive()
-    .max(20 * 1024 ** 2),
+  bytes: z.number().int().positive().max(ARTIFACT_RESERVATION_BYTES),
   result: ResultSchema,
 });
 export const BundleReceiptSchema = BundleReceiptBodySchema.extend({ objectHash: HashSchema });

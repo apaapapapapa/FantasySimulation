@@ -1,3 +1,4 @@
+import { MAX_BATTLE_STEPS, MAX_FRAME_BYTES } from './contracts.ts';
 import { z } from 'zod';
 import { HashSchema, IdSchema, StoredManifestSchema } from './contracts.ts';
 import { ResultSchema } from './records.ts';
@@ -8,7 +9,8 @@ import { DisplayStateSchema, StreamRecordSchema } from './stream.ts';
 export const RecordedManifestSchema = StoredManifestSchema;
 export type RecordedManifest = z.infer<typeof RecordedManifestSchema>;
 export { eventHashLine, trajectoryHashLine } from './record-hashes.ts';
-const step = z.number().int().min(0).max(6000);
+export const MAX_RECORD_BYTES = MAX_FRAME_BYTES + 1;
+const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
 const recordIndex = z.number().int().min(0).max(12002);
 export const ReplayCheckpointSchema = z.strictObject({
   schemaVersion: z.literal(1),
@@ -28,7 +30,7 @@ export const ArtifactRefSchema = z.strictObject({
     .int()
     .min(1)
     .max(16 * 1024 * 1024),
-  rawBytes: z.number().int().min(1).max(4_000_001),
+  rawBytes: z.number().int().min(1).max(MAX_RECORD_BYTES),
   checksum: HashSchema,
 });
 export type ArtifactRef = z.infer<typeof ArtifactRefSchema>;

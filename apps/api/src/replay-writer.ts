@@ -1,3 +1,4 @@
+import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, rename, rm } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -66,7 +67,7 @@ export class ReplayWriter {
       // Validate before changing hashes or pending bytes. ReplayState is atomic on failure.
       const parsed = parseJson(StreamRecordSchema, input),
         line = `${canonicalJson(parsed)}\n`;
-      if (this.rawBytes + Buffer.byteLength(line) > 4_000_001) await this.flush();
+      if (this.rawBytes + Buffer.byteLength(line) > MAX_RECORD_BYTES) await this.flush();
       const record = this.replay.apply(parsed);
       this.lines.push(line);
       this.rawBytes += Buffer.byteLength(line);

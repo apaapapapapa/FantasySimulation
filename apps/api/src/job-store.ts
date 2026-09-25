@@ -1,3 +1,4 @@
+import { ARTIFACT_RESERVATION_BYTES, MAX_JOB_ATTEMPTS } from '@fantasy/domain/spatial';
 import { randomUUID } from 'node:crypto';
 import { and, asc, eq, gt, lte, inArray, notInArray, count, sum } from 'drizzle-orm';
 import {
@@ -25,7 +26,7 @@ export type StoredResult = typeof battleResults.$inferSelect;
 export type StoredArtifact = typeof replayArtifacts.$inferInsert;
 export const JOB_LIMITS = Object.freeze({
   queued: 128,
-  maxAttempts: 3,
+  maxAttempts: MAX_JOB_ATTEMPTS,
   leaseMs: 10_000,
   timeoutMs: 30_000,
   storageBytes: 16 * 1024 ** 3,
@@ -139,7 +140,7 @@ export class JobStore {
     );
     // Reserve one maximum-size artifact for each admitted outstanding job.
     if (pending >= this.limits.queued) throw new StoreError(429, 'Job queue capacity exceeded');
-    if (bytes + (pending + 1) * 20 * 1024 * 1024 > this.limits.storageBytes)
+    if (bytes + (pending + 1) * ARTIFACT_RESERVATION_BYTES > this.limits.storageBytes)
       throw new StoreError(507, 'Replay storage capacity exceeded');
   }
   private insertArtifact(artifact: StoredArtifact, consumedReservations = 0) {
@@ -150,7 +151,9 @@ export class JobStore {
         .get()?.value ?? 0,
     );
     if (
-      bytes + artifact.bytes + Math.max(0, this.pending() - consumedReservations) * 20 * 1024 ** 2 >
+      bytes +
+        artifact.bytes +
+        Math.max(0, this.pending() - consumedReservations) * ARTIFACT_RESERVATION_BYTES >
       this.limits.storageBytes
     )
       throw new StoreError(507, 'Replay storage capacity exceeded');
