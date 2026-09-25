@@ -19,10 +19,27 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: a26b32d104d410a1b355672f3cfb432fe45bbcd5
+          ref: 7b52751fde0403e80307184ba852c968e84b7b48
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
+      - name: Wait for the actual merged main CI
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          retries: 0
+          script: |
+            const assert = require('node:assert/strict');
+            let run;
+            for (let i = 0; i < 40; i++) {
+              const rows = (await github.rest.actions.listWorkflowRuns({owner:'apaapapapapa',repo:'FantasySimulation',workflow_id:'ci.yml',event:'push',branch:'main',head_sha:'7b52751fde0403e80307184ba852c968e84b7b48',per_page:100})).data.workflow_runs;
+              rows.sort((a,b)=>b.id-a.id || b.run_attempt-a.run_attempt);
+              run=rows[0];
+              if (run?.status==='completed') break;
+              await new Promise(resolve=>setTimeout(resolve,15000));
+            }
+            assert.equal(run?.head_sha,'7b52751fde0403e80307184ba852c968e84b7b48');
+            assert.equal(run?.conclusion,'success');
+            console.log('MAIN_CI_VERIFIED='+JSON.stringify({id:run.id,sha:run.head_sha,attempt:run.run_attempt}));
       - name: Collect existing PR delivery evidence without production keys
         env:
           GH_TOKEN: ${{ github.token }}
@@ -38,7 +55,7 @@ jobs:
           assert.equal(conversationDigest(s),receipt.conversationDigest,'Reviewed conversation changed');
           writeFileSync('.generated/harness/pr81/review.json',JSON.stringify(receipt,null,2));
           NODE
-          vp run harness delivery .generated/harness/pr81/github-snapshot.json pr .generated/harness/pr81/review.json > .generated/harness/pr81/delivery-assessment.json
+          vp run harness delivery .generated/harness/pr81/github-snapshot.json merge .generated/harness/pr81/review.json > .generated/harness/pr81/delivery-assessment.json
           cat .generated/harness/pr81/delivery-assessment.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
