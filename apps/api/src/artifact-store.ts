@@ -3,7 +3,13 @@ import { join } from 'node:path';
 import { canonicalJson, type ReplayManifest } from '@fantasy/domain/spatial';
 import { JobStore, type StoredArtifact } from './job-store.ts';
 import { readBoundedFile, replayDirectory, sha256 } from './replay-files.ts';
-import { readReplayManifest, verifyReplayDirectory } from './replay-reader.ts';
+import {
+  readReplayManifest,
+  verifyReplayDirectory,
+  verifyReplayChecksums,
+  replayValidationProfile,
+  REPLAY_VALIDATION_PROFILE,
+} from './replay-reader.ts';
 import { StoreError } from './store.ts';
 
 export class ArtifactStore {
@@ -19,12 +25,13 @@ export class ArtifactStore {
       state: 'ready',
       createdAt: Date.now(),
       manifestChecksum: sha256(text),
+      validationProfile: replayValidationProfile(manifest),
       bytes:
         Buffer.byteLength(text) +
         [...manifest.chunks, ...manifest.checkpoints].reduce((n, r) => n + r.bytes, 0),
     };
   }
-  /** Every file is re-verified before a replay is opened or its result is adopted. */
+  /** Every compressed byte is checked; semantic verification needs a bound trusted receipt. */
   verified(id: string) {
     return this.bound(id, true);
   }
@@ -51,12 +58,22 @@ export class ArtifactStore {
       throw new StoreError('unavailable', `Replay is ${artifact.state}; result held`);
     return this.held(id, async () => {
       const manifest = await readReplayManifest(this.root, id, artifact.manifestChecksum);
-      if (full) await verifyReplayDirectory(replayDirectory(this.root, id), manifest);
+      if (full) {
+        if (artifact.validationProfile === REPLAY_VALIDATION_PROFILE)
+          await verifyReplayChecksums(replayDirectory(this.root, id), manifest);
+        else await verifyReplayDirectory(replayDirectory(this.root, id), manifest);
+      }
       if (
         manifest.attemptId !== artifact.attemptId ||
         this.metadata(manifest).bytes !== artifact.bytes
       )
         throw new Error('Replay reference binding mismatch');
+      if (
+        full &&
+        artifact.validationProfile !== REPLAY_VALIDATION_PROFILE &&
+        !this.jobs.markArtifactValidated(id, artifact.manifestChecksum, REPLAY_VALIDATION_PROFILE)
+      )
+        throw new Error('Replay reference changed during verification');
       return manifest;
     });
   }

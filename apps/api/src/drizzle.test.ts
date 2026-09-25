@@ -24,6 +24,15 @@ function temporary() {
   directories.push(directory);
   return directory;
 }
+function historyBefore(exclusiveIndex: number) {
+  const old = join(temporary(), 'history');
+  cpSync(migrationsFolder, old, { recursive: true });
+  const journalPath = join(old, 'meta/_journal.json');
+  const journal = JSON.parse(readFileSync(journalPath, 'utf8'));
+  journal.entries = journal.entries.filter((entry: { idx: number }) => entry.idx < exclusiveIndex);
+  writeFileSync(journalPath, JSON.stringify(journal));
+  return old;
+}
 function runKit(args: string[], filename: string, cwd = repositoryRoot) {
   const result = spawnSync(process.execPath, [kit, ...args], {
     cwd,
@@ -156,13 +165,8 @@ describe('Drizzle Kit and spatial persistence integration', () => {
   });
 
   it('adds a typed determinism failure without changing previously saved rows or retry restrictions', () => {
-    const directory = temporary(),
-      old = join(directory, 'old');
-    cpSync(migrationsFolder, old, { recursive: true });
-    const journalPath = join(old, 'meta/_journal.json');
-    const journal = JSON.parse(readFileSync(journalPath, 'utf8'));
-    journal.entries = journal.entries.filter((entry: { idx: number }) => entry.idx < 3);
-    writeFileSync(journalPath, JSON.stringify(journal));
+    const old = historyBefore(3),
+      upgraded = historyBefore(4);
     const sqlite = new Database(':memory:');
     try {
       const db = drizzle(sqlite);
@@ -175,7 +179,7 @@ describe('Drizzle Kit and spatial persistence integration', () => {
       insert.run('ordinary', 'two', 'Worker stopped');
       const before = sqlite.prepare('SELECT * FROM simulation_jobs ORDER BY id').all();
       const priorReceipts = receipts(sqlite);
-      migrate(db, { migrationsFolder });
+      migrate(db, { migrationsFolder: upgraded });
       const after = sqlite
         .prepare<[], { failure_code: string | null } & Record<string, unknown>>(
           'SELECT * FROM simulation_jobs ORDER BY id',
@@ -185,8 +189,65 @@ describe('Drizzle Kit and spatial persistence integration', () => {
       expect(after.map((row) => row.failure_code)).toEqual(['determinism-violation', null]);
       expect(receipts(sqlite).slice(0, priorReceipts.length)).toEqual(priorReceipts);
       expect(receipts(sqlite)).toHaveLength(priorReceipts.length + 1);
-      migrate(db, { migrationsFolder });
+      migrate(db, { migrationsFolder: upgraded });
       expect(sqlite.prepare('SELECT * FROM simulation_jobs ORDER BY id').all()).toEqual(after);
+      expect(sqlite.pragma('integrity_check', { simple: true })).toBe('ok');
+    } finally {
+      sqlite.close();
+    }
+  });
+
+  it('adds nullable replay validation metadata without rewriting old artifacts or results', () => {
+    const sqlite = new Database(':memory:');
+    try {
+      const db = drizzle(sqlite),
+        upgraded = historyBefore(5);
+      migrate(db, { migrationsFolder: historyBefore(4) });
+      sqlite.prepare('INSERT INTO battle_specs VALUES(?,?,?)').run('saved', '{}', 'before');
+      sqlite
+        .prepare(`INSERT INTO simulation_jobs
+        (id,simulation_hash,client_id,idempotency_key,request_hash,budget_json,state,attempts,max_attempts,created_at,updated_at)
+        VALUES('job','saved','client','key','hash','{}','completed',1,3,100,101)`)
+        .run();
+      sqlite
+        .prepare(`INSERT INTO simulation_attempts
+        (id,job_id,number,token,state,budget_json,lease_until,started_at)
+        VALUES('attempt','job',1,'token','completed','{}',100,99)`)
+        .run();
+      sqlite
+        .prepare(
+          `INSERT INTO replay_artifacts VALUES('replay','attempt','checksum',123,'ready',100)`,
+        )
+        .run();
+      sqlite
+        .prepare(
+          `INSERT INTO battle_results VALUES('result','saved','saved','attempt','hash','{}','replay',100)`,
+        )
+        .run();
+      const artifact = sqlite.prepare('SELECT * FROM replay_artifacts').get();
+      const result = sqlite.prepare('SELECT * FROM battle_results').get();
+      const oldReceipts = receipts(sqlite);
+      const triggers = sqlite
+        .prepare("SELECT name,sql FROM sqlite_schema WHERE type='trigger' ORDER BY name")
+        .all();
+      migrate(db, { migrationsFolder: upgraded });
+      expect(sqlite.prepare('SELECT * FROM replay_artifacts').get()).toEqual({
+        ...artifact!,
+        validation_profile: null,
+      });
+      expect(sqlite.prepare('SELECT * FROM battle_results').get()).toEqual(result);
+      expect(receipts(sqlite).slice(0, oldReceipts.length)).toEqual(oldReceipts);
+      expect(receipts(sqlite)).toHaveLength(oldReceipts.length + 1);
+      expect(
+        sqlite
+          .prepare("SELECT name,sql FROM sqlite_schema WHERE type='trigger' ORDER BY name")
+          .all(),
+      ).toEqual(triggers);
+      expect(
+        sqlite.prepare("SELECT strict FROM pragma_table_list WHERE name='replay_artifacts'").get(),
+      ).toEqual({ strict: 1 });
+      migrate(db, { migrationsFolder: upgraded });
+      expect(receipts(sqlite)).toHaveLength(oldReceipts.length + 1);
       expect(sqlite.pragma('integrity_check', { simple: true })).toBe('ok');
     } finally {
       sqlite.close();
