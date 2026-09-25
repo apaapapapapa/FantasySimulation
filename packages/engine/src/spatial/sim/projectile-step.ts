@@ -5,7 +5,7 @@ import type { Journal } from '../rules/journal.ts';
 import type { MovedActor } from '../world/movement.ts';
 import { at, clipTrace, type SpatialWorld } from '../world/physics.ts';
 import { copyDamageSnapshot } from '../rules/status-damage.ts';
-import { traceAttack } from '../rules/attacks.ts';
+import { contactAttack } from '../rules/attack-contact.ts';
 import type { HitLedger } from '../rules/hit-ledger.ts';
 import { explosionCoverage, projectileCurve, type ProjectileState } from '../rules/projectiles.ts';
 import { sub, unit } from '../math.ts';
@@ -37,13 +37,21 @@ export function stepProjectiles(
     const enemy = moved.find((a) => a.state.actor.participant.actorId !== projectile.ownerId)!;
     const curve = projectileCurve(projectile, owner.mind.memory, battle.rules, budget);
     candidate();
-    const contact = traceAttack(
+    const { contact } = contactAttack(shape, {
       world,
-      curve.trace,
-      shape.radiusMm / 1000,
-      enemy.state,
-      enemy.trace,
-    );
+      source: owner.body.motion,
+      target: enemy.state,
+      trace: curve.trace,
+      targetTrace: enemy.trace,
+      direction: projectile.velocity,
+      offset: { x: 0, y: 0, z: 0 },
+      rangeMm: projectile.ability.definition.rangeMm,
+      elapsedSteps: step - projectile.launchStep,
+      stageDuration: undefined,
+      staged: !!projectile.stage,
+      rules: battle.rules,
+      budget,
+    });
     paths.push({
       entityId: projectile.id,
       segments: contact ? clipTrace(curve.trace, contact.time) : curve.trace,

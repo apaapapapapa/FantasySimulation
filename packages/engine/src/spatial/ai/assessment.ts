@@ -1,6 +1,8 @@
 import type { AbilityRevision, DecisionView } from '../state.ts';
 import {
   canonicalJson,
+  matchEffect,
+  type EffectHandlers,
   type CandidateAssessment,
   type DeepReadonly,
   type Definition,
@@ -144,9 +146,9 @@ function assessSingle(
       10000;
   }
   if (stateValue.reason) reasons.push(stateValue.reason);
-  for (const effect of d.effects) {
-    if (stateValue.handled.has(effect)) continue;
-    if (effect.kind === 'damage' && d.target === 'enemy') {
+  const effectAssessments: EffectHandlers<undefined, void> = {
+    damage: (effect) => {
+      if (d.target !== 'enemy') return;
       const power = Number(
         damagePower(effect, {
           attack: view.attack,
@@ -167,12 +169,16 @@ function assessSingle(
       totalExpected += expected;
       confidencePower += base * known.confidence;
       evidence.push(...known.evidence);
-    } else if (effect.kind === 'water' && d.target === 'self' && view.waterExtinguishable) {
+    },
+    water: (_effect) => {
+      if (d.target !== 'self' || !view.waterExtinguishable) return;
       utility +=
         ((rules.actionWeight + rules.riskWeight * (0.65 + 2 * burnRisk)) * weights.survivalBps) /
         10000;
       reasons.push('known burning; reduce continuing self damage');
-    } else if (effect.kind === 'heal' && d.target === 'self') {
+    },
+    heal: (effect) => {
+      if (d.target !== 'self') return;
       utility +=
         (((rules.riskWeight *
           Math.min(
@@ -190,13 +196,16 @@ function assessSingle(
           weights.survivalBps) /
         10000;
       reasons.push('self-perceived wounds');
-    } else if (effect.kind === 'shield' && d.target === 'self') {
+    },
+    shield: (effect) => {
+      if (d.target !== 'self') return;
       utility +=
         rules.actionWeight *
         Math.min(2, effect.amount / Math.max(1, view.resources.shield + 10)) *
         (view.memory.observation?.projectiles.length ? 2 : 1);
       reasons.push('self protection');
-    } else if (effect.kind === 'force') {
+    },
+    force: (effect) => {
       const displacement = (effect.speedMmPerSecond / 1000) * effect.durationSteps * 0.02;
       utility += rules.actionWeight * Math.min(1, displacement / 4) * (target ? 0.5 : 0.1);
       confidence = Math.min(confidence, 1000);
@@ -204,7 +213,8 @@ function assessSingle(
       reasons.push(
         `own ${effect.direction} force ${effect.durationSteps} steps; capped displacement, collisions unknown`,
       );
-    } else if (effect.kind === 'reveal') {
+    },
+    reveal: (effect) => {
       const known = efficacy(view, effect.element, 1);
       utility +=
         (rules.explorationWeight *
@@ -214,7 +224,12 @@ function assessSingle(
           weights.explorationBps) /
         10000;
       reasons.push('bounded information acquisition');
-    }
+    },
+    'apply-status': () => {}, // Already assessed together by the status transaction above.
+    dispel: () => {},
+  };
+  for (const effect of d.effects) {
+    if (!stateValue.handled.has(effect)) matchEffect(effect, effectAssessments, undefined);
   }
   if (totalPower > 0) {
     const expected = totalExpected;

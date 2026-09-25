@@ -1,14 +1,12 @@
 import type { MeleeState } from '../state.ts';
-import { meleeTrace, traceAttack, type AttackContact } from '../rules/attacks.ts';
+import { contactAttack, isAttachedAttack } from '../rules/attack-contact.ts';
 import { contactObservation } from './combat-effects.ts';
 import { moveActors } from '../world/movement.ts';
 import { reserveMotion } from '../rules/motion-resources.ts';
-import { clipTrace } from '../world/physics.ts';
 import { isDodgeDecision } from '../ai/policy.ts';
 import { stepProjectiles } from './projectile-step.ts';
 import { copyDamageSnapshot } from '../rules/status-damage.ts';
 import { settleForcedInterval } from '../rules/forces.ts';
-import { sweepBlade } from '../rules/blades.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 export function contactPhase(tx: StepTransaction) {
   const { battle, budget, world, work } = tx.context;
@@ -59,64 +57,31 @@ export function contactPhase(tx: StepTransaction) {
     )
       continue;
     const shape = attack.ability.definition.attack;
-    if (shape.kind !== 'melee' && shape.kind !== 'arc' && shape.kind !== 'radial')
-      throw new Error('Invalid attached attack');
+    if (!isAttachedAttack(shape)) throw new Error('Invalid attached attack');
     const owner = moved.find((a) => a.state.actor.participant.actorId === attack.actorId)!;
     const enemy = moved.find((a) => a.state.actor.participant.actorId !== attack.actorId)!;
-    const activeSteps =
-      shape.kind === 'melee'
-        ? shape.activeSteps
-        : ownerActor.actions.action!.ability.definition.stages![attack.stage!.stageIndex]!
-            .durationSteps;
     work.candidate();
-    const blade =
-      shape.kind !== 'melee'
-        ? sweepBlade(
-            world,
-            owner.trace,
-            attack.offset,
-            attack.direction,
-            shape,
-            step - attack.launchStep,
-            activeSteps,
-            enemy.state,
-            enemy.trace,
-            battle.rules,
-            budget,
-          )
-        : null;
-    const trace =
-      shape.kind === 'melee'
-        ? meleeTrace(
-            owner.trace,
-            attack.offset,
-            attack.direction,
-            Math.min(shape.reachMm, attack.ability.definition.rangeMm) / 1000,
-            step - attack.launchStep,
-            shape.activeSteps,
-          )
-        : [];
-    const blocking: { wall: AttackContact | null } = { wall: blade?.wall ?? null };
-    const contact =
-      shape.kind === 'melee'
-        ? traceAttack(
-            world,
-            trace,
-            shape.radiusMm / 1000,
-            enemy.state,
-            enemy.trace,
-            attack.stage ? blocking : undefined,
-          )
-        : blade!.contact;
-    if (attack.stage)
-      ownerActor.actions.action!.stages!.geometry =
-        shape.kind === 'melee'
-          ? {
-              kind: 'sphere',
-              radiusMm: shape.radiusMm,
-              segments: blocking.wall ? clipTrace(trace, blocking.wall.time) : trace,
-            }
-          : blade!.geometry;
+    const result = contactAttack(shape, {
+      world,
+      source: owner.state,
+      target: enemy.state,
+      trace: owner.trace,
+      targetTrace: enemy.trace,
+      direction: attack.direction,
+      offset: attack.offset,
+      rangeMm: attack.ability.definition.rangeMm,
+      elapsedSteps: step - attack.launchStep,
+      stageDuration:
+        ownerActor.actions.action?.ability.definition.stages?.[attack.stage?.stageIndex ?? -1]
+          ?.durationSteps,
+      staged: !!attack.stage,
+      rules: battle.rules,
+      budget,
+    });
+    const { contact, activeSteps } = result,
+      blocking = { wall: result.blocking };
+    if (attack.stage && result.geometry)
+      ownerActor.actions.action!.stages!.geometry = result.geometry;
     if (contact) {
       const admission =
         contact.kind === 'body' && attack.stage
@@ -183,7 +148,7 @@ export function contactPhase(tx: StepTransaction) {
     if (
       contact?.kind !== 'wall' &&
       !blocking.wall &&
-      (attack.stage || (shape.kind === 'melee' && attack.hits < shape.maxHitsPerTarget)) &&
+      (attack.stage || attack.hits < result.maxHits) &&
       step + 1 < attack.launchStep + activeSteps
     )
       surviving.push(attack);

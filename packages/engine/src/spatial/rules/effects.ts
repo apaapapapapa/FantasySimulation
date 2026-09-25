@@ -1,6 +1,8 @@
 import type { DamageSnapshot, ResolvedActor, StatusCohort, StatusRevision } from '../state.ts';
 import {
   DEFAULT_BUDGET,
+  matchEffect,
+  type EffectHandlers,
   compareIds,
   type DeepReadonly,
   type Effect,
@@ -63,6 +65,79 @@ export function damageAmounts(
     coverage,
   );
 }
+type DamageEntry = ReturnType<typeof calculateDamage> & {
+  applicationId: string;
+  effect: DamageEffect;
+  statusModified: boolean;
+};
+type ResolutionContext = {
+  target: EffectTarget;
+  application: EffectApplication;
+  stats: ReturnType<typeof effectiveStats>;
+  step: number;
+  scale: bigint;
+  damages: DamageEntry[];
+  healing: { applicationId: string; amount: number }[];
+  totals: { heal: bigint; shield: bigint };
+};
+// Status changes share one status transaction; observation/force commit at their existing boundary.
+const deferredEffect = () => {};
+const effectHandlers: EffectHandlers<ResolutionContext, void> = {
+  damage: (effect, { target, application, stats, step, scale, damages }) => {
+    const dealtBps = application.dealtByElement?.[effect.element] ?? application.dealtBps ?? 10000;
+    const resistance = statusResistance(
+      target.actor.character.stats.resistances,
+      target.statuses,
+      step,
+      effect.element,
+    );
+    const receivedBps = damageStatusBps(
+      'damageTaken',
+      target.statuses,
+      step,
+      { element: effect.element },
+      reactionDamageBps(target.statuses, step, effect.element),
+    );
+    const amounts = calculateDamage(
+      effect,
+      application,
+      {
+        ...stats,
+        resistance,
+      },
+      Number(scale),
+      { dealtBps, receivedBps },
+    );
+    damages.push({
+      applicationId: application.id,
+      effect,
+      ...amounts,
+      ...(application.damageCancelled ? { afterModifiers: 0n } : {}),
+      statusModified:
+        !!application.damageCancelled ||
+        dealtBps !== 10000 ||
+        receivedBps !== 10000 ||
+        resistance !== (target.actor.character.stats.resistances[effect.element] ?? 0),
+    });
+  },
+  heal: (effect, { target, application, step, scale, healing, totals }) => {
+    const amount =
+      (BigInt(effect.amount) *
+        scale *
+        BigInt(Math.min(30000, adjustedStatusValue(10000, 'hpRecovery', target.statuses, step)))) /
+      100000000n;
+    totals.heal += amount;
+    healing.push({ applicationId: application.id, amount: checked(amount) });
+  },
+  shield: (effect, { scale, totals }) => {
+    totals.shield += (BigInt(effect.amount) * scale) / 10000n;
+  },
+  dispel: deferredEffect,
+  water: deferredEffect,
+  'apply-status': deferredEffect,
+  reveal: deferredEffect,
+  force: deferredEffect,
+};
 /** Simultaneous defense/resistance/shield resolution with exact attribution and one HP clamp. */
 export function resolveEffects(
   targets: readonly EffectTarget[],
@@ -88,90 +163,25 @@ export function resolveEffects(
       const reactions = deferStatuses
         ? null
         : planStatusEffects(target.statuses, incoming, statuses, step);
-      const damages: (ReturnType<typeof calculateDamage> & {
-        applicationId: string;
-        effect: DamageEffect;
-        statusModified: boolean;
-      })[] = [];
-      let heal = 0n,
-        shield = BigInt(target.resources.shield);
+      const damages: DamageEntry[] = [];
+      const totals = { heal: 0n, shield: BigInt(target.resources.shield) };
       const healing: { applicationId: string; amount: number }[] = [];
       for (const application of incoming) {
         const effect = application.effect,
           scale = BigInt(application.scaleBps ?? 10000);
         if (scale < 0n || scale > 10000n) throw new Error('Invalid effect coverage');
-        switch (effect.kind) {
-          case 'damage': {
-            const dealtBps =
-              application.dealtByElement?.[effect.element] ?? application.dealtBps ?? 10000;
-            const resistance = statusResistance(
-              target.actor.character.stats.resistances,
-              target.statuses,
-              step,
-              effect.element,
-            );
-            const receivedBps = damageStatusBps(
-              'damageTaken',
-              target.statuses,
-              step,
-              { element: effect.element },
-              reactionDamageBps(target.statuses, step, effect.element),
-            );
-            const amounts = calculateDamage(
-              effect,
-              application,
-              {
-                ...stats,
-                resistance,
-              },
-              Number(scale),
-              { dealtBps, receivedBps },
-            );
-            damages.push({
-              applicationId: application.id,
-              effect,
-              ...amounts,
-              ...(application.damageCancelled ? { afterModifiers: 0n } : {}),
-              statusModified:
-                !!application.damageCancelled ||
-                dealtBps !== 10000 ||
-                receivedBps !== 10000 ||
-                resistance !== (target.actor.character.stats.resistances[effect.element] ?? 0),
-            });
-            break;
-          }
-          case 'heal': {
-            const amount =
-              (BigInt(effect.amount) *
-                scale *
-                BigInt(
-                  Math.min(30000, adjustedStatusValue(10000, 'hpRecovery', target.statuses, step)),
-                )) /
-              100000000n;
-            heal += amount;
-            healing.push({ applicationId: application.id, amount: checked(amount) });
-            break;
-          }
-          case 'shield':
-            shield += (BigInt(effect.amount) * scale) / 10000n;
-            break;
-          case 'dispel':
-          case 'water':
-          case 'apply-status':
-            // Collected together in the shared status transaction above.
-            break;
-          case 'reveal':
-            // Information is extracted only by the observation boundary, after actual contact.
-            break;
-          case 'force':
-            // Contact geometry freezes the next-interval motion in the coordinator adapter.
-            break;
-          default: {
-            const impossible: never = effect;
-            throw new Error(`Unknown effect: ${String(impossible)}`);
-          }
-        }
+        matchEffect(effect, effectHandlers, {
+          target,
+          application,
+          stats,
+          step,
+          scale,
+          damages,
+          healing,
+          totals,
+        });
       }
+      const { heal, shield } = totals;
       const total = damages.reduce((n, d) => n + d.afterModifiers, 0n),
         absorbed = total < shield ? total : shield;
       const hpDamage = total - absorbed,
