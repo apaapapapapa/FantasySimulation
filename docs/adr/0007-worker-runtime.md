@@ -60,3 +60,9 @@ linear memory bytesを別々に報告する。WASM/ArrayBufferはexternalと重�
 API/Worker/保存の統合回帰は`battle-runtime.test.ts`と`worker-pool.test.ts`。
 実プロセスの異常終了、再起動、二重送信、予算再試行、中止、timeout、破損、復旧、
 Worker数/再利用のhash一致を検証する。1,000試合の統合性能は別の計測記録で判定する。
+
+HTTP `POST /api/battle-jobs/staged` accepts up to 100 keyed requests and streams ordered NDJSON
+outcomes. BattleService.runMany accepts lazy iterables of any total length: only Worker-count
+items are admitted ahead of the consumer. Queue capacity wakes by state notification; storage
+exhaustion fails visibly. Disconnect/early return cancels and drains owned work. Batch application
+owns plan/shard/index orchestration and uses this same path; saved 1,000-slot plans remain unchanged.

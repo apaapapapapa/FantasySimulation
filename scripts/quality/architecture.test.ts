@@ -424,3 +424,18 @@ it('permits the dedicated pure hashing adapter without allowing all node builtin
   });
   expect((await architecture(f.root, f.paths)).publicGraph.summary.violations).toEqual([]);
 });
+
+it.each([
+  ['batch-service.ts', true],
+  ['job-store.ts', false],
+  ['store.ts', false],
+] as const)('keeps batch adapters on their application entry: %s', async (target, allowed) => {
+  const f = fixture({
+    'apps/api/src/batch-runner.ts': `export {Value} from './${target}';`,
+    [`apps/api/src/${target}`]: 'export class Value {}',
+  });
+  const result = await architecture(f.root, f.paths);
+  expect(
+    result.publicGraph.summary.violations.some((v) => v.rule.name === 'batch-application-boundary'),
+  ).toBe(!allowed);
+});

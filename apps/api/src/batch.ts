@@ -57,7 +57,7 @@ async function main() {
     );
     console.log(resolve(input));
   } else if (command === 'plan' && input && output && !rest.length) {
-    const { createBatchPlan, executionSource } = await import('./batch-plan.ts');
+    const { createBatchPlan, executionSource } = await import('./batch-service.ts');
     const plan = await createBatchPlan(await readJson(input), executionSource());
     await mkdir(dirname(resolve(output)), { recursive: true });
     await publishImmutableFile(resolve(output), canonicalJson(plan));
@@ -66,7 +66,7 @@ async function main() {
     );
   } else if (command === 'run' && input && output && !rest.length) {
     const { runBatch } = await import('./batch-runner.ts');
-    const { executionSource } = await import('./batch-plan.ts');
+    const { executionSource } = await import('./batch-service.ts');
     const shard = (values.shard ?? '0/1').split('/').map(Number);
     if (shard.length !== 2) throw new Error('Shard must be index/count, with a zero-based index');
     const controller = new AbortController(),
