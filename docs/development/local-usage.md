@@ -1,9 +1,9 @@
 # Optional developer commands
 
-The owner uses [smartphone-only publication](cloud-publication.md), not a PC or `.env`.
-[README](../../README.md) covers startup; [package.json](../../package.json) pins tools.
-Optional overrides use .env.example. Paths are repo-relative; Vite proxies /api.
-Restart after API_PORT changes; the unauthenticated API binds loopback only.
+[Smartphone publication](cloud-publication.md) needs no PC/`.env`.
+[Startup](../../README.md), [tool pins](../../package.json), optional overrides: .env.example.
+Paths are repo-relative; Vite proxies /api. API_PORT changes require restart;
+the unauthenticated API binds loopback only.
 
 ## API (all paths prefixed /api)
 
@@ -70,7 +70,10 @@ Actions uses --require-complete-input.
 
 Public build: VITE_PUBLICATION_ROOT and --mode public; VITE_PUBLIC_BASE defaults to
 /FantasySimulation/. Hash links pin set/page/slot; reload preserves the selected attempt.
-The 100-row list sorts/filters within its page, not league standings. See [load bytes](../measurements/match-list.json).
+The 100-row replay list sorts/filters within its page. See [load bytes](../measurements/match-list.json).
 Loopback URLs are local. build.json carries source/formats; CSP permits self/data only.
 No API/DB/keys enter the build. Deploy/rollback requires successful main CI and ancestry;
-reader deployment uses separate cloud authorization. P5 league integration remains pending.
+reader deployment uses separate cloud authorization.
+League overview loads summary only; battlefield/matchup tables load on selection. Hash links
+pin snapshot/participants/page/slot through recorded replay. Sorting changes display only;
+provisional scores retain every scheduled slot. Actions/measurement: #134.

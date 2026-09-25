@@ -14,6 +14,9 @@ export const UI_CASES = [
 export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
 export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics', 'ui:static-replay'] as const;
 export const UI_STATIC_CASES = [
+  'static-league-overview',
+  'static-league-pair-replay',
+  'static-league-provisional',
   'static-selection',
   'static-selection-original',
   'static-selection-reused',
