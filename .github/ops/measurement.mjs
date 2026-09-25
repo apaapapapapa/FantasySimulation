@@ -62,7 +62,7 @@ try {
     });
     try {
       await page.goto(viewer,{waitUntil:'domcontentloaded'});
-      await expect(page.getByRole('heading',{name:'公開リプレイ',exact:true})).toBeVisible();
+      await expect(page.getByRole('heading',{name:'保存リプレイ一覧',exact:true})).toBeVisible();
       await expect(page.getByRole('table',{name:'公開試合一覧'}).getByRole('row')).toHaveCount(3,{timeout:20000});
       await expect(page.getByRole('region',{name:'試合の選択'})).toContainText('全2件');
       const links=page.getByRole('link',{name:/^リプレイを開く /});
