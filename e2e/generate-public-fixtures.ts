@@ -1,8 +1,7 @@
 // Explicit fixture preparation only. Static E2E never imports this module or starts an API/DB.
-import { mkdtemp, mkdir, readFile, readdir, writeFile, cp, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, cp, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { gzipSync } from 'node:zlib';
 import {
   BatchPlanSchema,
   BundleReceiptSchema,
@@ -20,6 +19,8 @@ import {
   publicationIndex,
   readPublication,
 } from '@fantasy/cli/testing';
+
+import { savePublicFixtures } from './publication-fixtures.ts';
 
 const root = await mkdtemp(join(tmpdir(), 'fantasy-public-fixture-'));
 try {
@@ -120,37 +121,13 @@ try {
         })),
     ),
   }));
-  const files: Record<string, string> = {};
-  async function collect(relative = '') {
-    for (const entry of await readdir(join(published, relative), { withFileTypes: true })) {
-      const path = relative ? `${relative}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) await collect(path);
-      else files[path] = (await readFile(join(published, path))).toString('base64');
-    }
-  }
-  await collect();
-  const output = 'apps/web/test-fixtures/publication';
-  await mkdir(output, { recursive: true });
-  const archive = gzipSync(JSON.stringify(files), { level: 9 });
-  await writeFile(join(output, 'files.json.gz'), archive);
-  await writeFile(
-    join(output, 'provenance.json'),
-    JSON.stringify(
-      {
-        source,
-        archiveHash: await hashBytes(archive),
-        generator: 'e2e/generate-public-fixtures.ts via exportPublication',
-        policy:
-          'Saved 240-step replay bytes are unchanged. Partial endings and unexecuted rows are synthetic display fixtures, not engine correctness evidence. Regeneration requires review.',
-        fixtures,
-      },
-      null,
-      2,
-    ) + '\n',
-  );
-  console.log(
-    `Saved ${Object.keys(files).length} public files (${archive.length} compressed bytes)`,
-  );
+  await savePublicFixtures(published, 'apps/web/test-fixtures/publication', {
+    source,
+    generator: 'e2e/generate-public-fixtures.ts via exportPublication',
+    policy:
+      'Saved 240-step replay bytes are unchanged. Partial endings and unexecuted rows are synthetic display fixtures, not engine correctness evidence. Regeneration requires review.',
+    fixtures,
+  });
 } finally {
   await rm(root, { recursive: true, force: true });
 }

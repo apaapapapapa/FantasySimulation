@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { gunzipSync } from 'node:zlib';
+import { gunzipSync, gzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import {
   PublicKeySchema,
@@ -13,8 +14,8 @@ import {
 } from '@fantasy/domain/spatial';
 
 /** Fixed exported bytes, independent of the API/SQLite/engine and browser adapter. */
-export function publicFixtures(root: string) {
-  const directory = join(root, 'apps/web/test-fixtures/publication');
+export function publicFixtures(root: string, fixture: 'publication' | 'selection' = 'publication') {
+  const directory = join(root, 'apps/web/test-fixtures', fixture);
   const archive = readFileSync(join(directory, 'files.json.gz'));
   const provenance: unknown = JSON.parse(readFileSync(join(directory, 'provenance.json'), 'utf8'));
   if (
@@ -50,4 +51,38 @@ export function publicFixtures(root: string) {
     files.set(key, bytes);
   }
   return files;
+}
+
+/** Explicit generators only; browser tests consume the fixed archive and never regenerate it. */
+export async function savePublicFixtures(
+  published: string,
+  output: string,
+  provenance: Record<string, unknown>,
+) {
+  const files: Record<string, string> = {};
+  async function collect(relative = '') {
+    for (const entry of await readdir(join(published, relative), { withFileTypes: true })) {
+      const path = relative ? `${relative}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) await collect(path);
+      else files[path] = (await readFile(join(published, path))).toString('base64');
+    }
+  }
+  await collect();
+  await mkdir(output, { recursive: true });
+  const archive = gzipSync(JSON.stringify(files), { level: 9 });
+  await writeFile(join(output, 'files.json.gz'), archive);
+  await writeFile(
+    join(output, 'provenance.json'),
+    JSON.stringify(
+      {
+        ...provenance,
+        archiveHash: `sha256:${createHash('sha256').update(archive).digest('hex')}`,
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+  console.log(
+    `Saved ${Object.keys(files).length} public files (${archive.length} compressed bytes)`,
+  );
 }

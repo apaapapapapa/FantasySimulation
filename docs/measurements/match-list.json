@@ -1,0 +1,21 @@
+{
+  "fixture": "apps/web/test-fixtures/publication",
+  "archiveHash": "sha256:6a47f3b722f30a71218cf25265c232652d779a6a6769f9fd637587fe8c4bc094",
+  "setHash": "sha256:71eea377f98a8600756ebafdb13cb3cc4fa2df88bdf9ee9b79e5018a4fbfa60a",
+  "plannedSlots": 1000,
+  "page": 0,
+  "displayedRows": 100,
+  "requests": 4,
+  "decodedBodyBytes": 122890,
+  "responses": {
+    "current": 119,
+    "catalog": 419,
+    "set": 1938,
+    "page": 120414
+  },
+  "objectRequestsBeforeSelection": 0,
+  "test": "e2e/static/selection.spec.ts: static-list-cost-and-states",
+  "browserEvidence": "1000-slot-initial-load attachment per Chromium/WebKit; test asserts the recorded count and bytes",
+  "excluded": ["web application assets", "HTTP headers", "TLS overhead"],
+  "remainingDependency": "Issue #1 P5 league snapshots, standings and aggregate-cell navigation are unimplemented; Issue #80 must remain open."
+}
