@@ -26,7 +26,7 @@ import {
   requireExecutableRules,
 } from './execution-policy.ts';
 export { revisionHash, revisionReference as reference } from '@fantasy/domain/spatial/execution';
-import { statusKnowledge } from './status.ts';
+import { statusKnowledge } from './rules/status.ts';
 
 export { implementation, profile };
 

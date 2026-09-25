@@ -3,9 +3,10 @@ import { StreamRecordSchema } from '@fantasy/domain/spatial';
 import { combatManifest, battleEvents } from '../../test-support/fixtures.ts';
 import { aiFixture } from '../../test-support/ai.ts';
 import { runBattle } from './run.ts';
-import { choosePolicy } from './policy.ts';
-import { conditionMatches, emptyMemory, perceive } from './perception.ts';
-import { initializePhysics } from './physics.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { emptyMemory, perceive } from './ai/perception.ts';
+import { conditionMatches } from './rules/conditions.ts';
+import { initializePhysics } from './world/physics.ts';
 
 beforeAll(initializePhysics);
 

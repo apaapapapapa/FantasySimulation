@@ -8,11 +8,12 @@ import {
 } from '@fantasy/domain/spatial';
 import { aiFixture, initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
-import { initializePhysics } from './physics.ts';
-import { conditionMatches, emptyMemory, perceive } from './perception.ts';
-import { choosePolicy } from './policy.ts';
-import { efficacy } from './assessment.ts';
-import { appearancePrior } from './appearance.ts';
+import { initializePhysics } from './world/physics.ts';
+import { emptyMemory, perceive } from './ai/perception.ts';
+import { conditionMatches } from './rules/conditions.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { efficacy } from './ai/assessment.ts';
+import { appearancePrior } from './ai/appearance.ts';
 import { runBattle } from './run.ts';
 
 beforeAll(initializePhysics);

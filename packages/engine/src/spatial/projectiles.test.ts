@@ -6,11 +6,11 @@ import {
   type Definition,
   type Manifest,
 } from '@fantasy/domain/spatial';
-import { projectileCurve, explosionCoverage, type ProjectileState } from './projectiles.ts';
-import { at, initializePhysics, SpatialWorld, straight } from './physics.ts';
-import { traceAttack } from './attacks.ts';
-import { emptyMemory, perceive } from './perception.ts';
-import { initialMotion } from './movement.ts';
+import { projectileCurve, explosionCoverage, type ProjectileState } from './rules/projectiles.ts';
+import { at, initializePhysics, SpatialWorld, straight } from './world/physics.ts';
+import { traceAttack } from './rules/attacks.ts';
+import { emptyMemory, perceive } from './ai/perception.ts';
+import { initialMotion } from './world/movement.ts';
 import { cosDegrees, dot, unit } from './math.ts';
 import { prepareBattle, reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';

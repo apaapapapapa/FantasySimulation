@@ -1,6 +1,6 @@
 import type { Budget } from '@fantasy/domain/spatial/execution';
-import type { NavigationResult } from '../navigation.ts';
-import { SpatialBudgetError } from '../physics.ts';
+import type { NavigationResult } from '../world/navigation.ts';
+import { SpatialBudgetError } from '../world/physics.ts';
 
 /** Attempted work survives an aborted transaction; limits and statistics have one owner. */
 export class WorkMeter {

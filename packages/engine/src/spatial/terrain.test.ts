@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
-import { at, ballShape, capsuleShape, initializePhysics } from './physics.ts';
+import { at, ballShape, capsuleShape, initializePhysics } from './world/physics.ts';
 import { terrainBattle as withTerrain, boxObstacle as box } from '../../test-support/fixtures.ts';
-import { bodyCapsule, createBattleWorld, metres } from './terrain.ts';
+import { bodyCapsule, createBattleWorld, metres } from './world/terrain.ts';
 
 beforeAll(initializePhysics);
 const blocks = { movement: true, vision: true, attack: true };

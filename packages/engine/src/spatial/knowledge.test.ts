@@ -1,18 +1,18 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { AI_RULES, ExperienceSchema } from '@fantasy/domain/spatial';
-import { initializePhysics, SpatialWorld, straight } from './physics.ts';
+import { initializePhysics, SpatialWorld, straight } from './world/physics.ts';
 import {
   emptyMemory,
   observeImpact,
   observeReveal,
   perceive,
   rememberExperience,
-} from './perception.ts';
-import { choosePolicy } from './policy.ts';
+} from './ai/perception.ts';
+import { choosePolicy } from './ai/policy.ts';
 import { aiFixture, impactEvidence } from '../../test-support/ai.ts';
-import { knownTerrainWorld } from './known-terrain.ts';
-import { Navigator } from './navigation.ts';
-import { contactObservation } from './combat-effects.ts';
+import { knownTerrainWorld } from './world/known-terrain.ts';
+import { Navigator } from './world/navigation.ts';
+import { contactObservation } from './sim/combat-effects.ts';
 import { TACTICAL_AI } from '@fantasy/samples';
 
 beforeAll(initializePhysics);

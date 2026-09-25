@@ -2,11 +2,11 @@ import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { CharacterSchema, StreamRecordSchema } from '@fantasy/domain/spatial';
 import { catalogManifest } from '@fantasy/samples';
 import { runBattle } from './run.ts';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';
 import { locomotionFixture } from '../../test-support/locomotion.ts';
-import { choosePolicy } from './policy.ts';
-import { selfView } from './self-view.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { selfView } from './ai/self-view.ts';
 
 beforeAll(initializePhysics);
 describe('resource-aware decisions and full matches', () => {

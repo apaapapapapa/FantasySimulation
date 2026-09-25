@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeAll } from 'vite-plus/test';
 import { actorSeed, StreamRecordSchema } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { runBattle } from './run.ts';
 import { aiFixture, flyingBody, initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { battleEvents, editScenario, glassWall } from '../../test-support/fixtures.ts';

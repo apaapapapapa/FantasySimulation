@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { ReplayState, replayContext, type Definition } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { runBattle } from './run.ts';
 import { prepareBattle, reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
-import { assessAbility } from './assessment.ts';
-import { choosePolicy } from './policy.ts';
-import { emptyMemory, perceive } from './perception.ts';
+import { assessAbility } from './ai/assessment.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { emptyMemory, perceive } from './ai/perception.ts';
 import { comboStages, stagedManifest, movingSweepStages } from '../../test-support/stages.ts';
 import { battleEvents, editScenario, glassWall } from '../../test-support/fixtures.ts';
 import { aiFixture, initialStatus, withInitialStatus } from '../../test-support/ai.ts';

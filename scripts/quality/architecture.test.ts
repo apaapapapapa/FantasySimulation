@@ -14,6 +14,51 @@ afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 it.each([
+  ['world', 'world', true],
+  ['rules', 'world', true],
+  ['rules', 'rules', true],
+  ['ai', 'rules', true],
+  ['ai', 'world', true],
+  ['ai', 'ai', true],
+  ['sim', 'ai', true],
+  ['sim', 'rules', true],
+  ['world', 'rules', false],
+  ['world', 'ai', false],
+  ['rules', 'ai', false],
+  ['rules', 'sim', false],
+  ['ai', 'sim', false],
+] as const)('enforces engine direction %s → %s', async (from, to, allowed) => {
+  for (const typeOnly of [true, false]) {
+    const f = fixture({
+      [`packages/engine/src/spatial/${from}/source.ts`]: `export ${typeOnly ? 'type' : ''} {Value} from '../${to}/target.ts';`,
+      [`packages/engine/src/spatial/${to}/target.ts`]: 'export class Value {}',
+    });
+    const result = await architecture(f.root, f.paths);
+    const violations = result.publicGraph.summary.violations.map((v) => v.rule.name);
+    if (allowed) expect(violations).toEqual([]);
+    else expect(violations).toContain(`engine-${from}-direction`);
+  }
+});
+it('fails closed for unresolved lower layers and rejects entry-point back doors', async () => {
+  const missing = fixture({
+    'packages/engine/src/spatial/ai/source.ts': "export {Value} from '../rules/missing.ts';",
+  });
+  expect(
+    (await architecture(missing.root, missing.paths)).publicGraph.summary.violations.map(
+      (v) => v.rule.name,
+    ),
+  ).toContain('unresolved');
+  const reverse = fixture({
+    'packages/engine/src/spatial/world/source.ts': "export {Value} from '../execution.ts';",
+    'packages/engine/src/spatial/execution.ts': 'export const Value = 1;',
+  });
+  expect(
+    (await architecture(reverse.root, reverse.paths)).publicGraph.summary.violations.map(
+      (v) => v.rule.name,
+    ),
+  ).toContain('engine-world-direction');
+});
+it.each([
   [
     'packages/engine/src/spatial/state.ts',
     'packages/engine/src/spatial/math.ts',

@@ -1,10 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { canonicalJson } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
-import { choosePolicy } from './policy.ts';
-import { assessAbility, efficacy } from './assessment.ts';
+import { initializePhysics } from './world/physics.ts';
+import { choosePolicy } from './ai/policy.ts';
+import { assessAbility, efficacy } from './ai/assessment.ts';
 import { withAbilities, aiFixture, impactEvidence } from '../../test-support/ai.ts';
-import { initialDecisionRandom } from './decision-random.ts';
+import { initialDecisionRandom } from './ai/decision-random.ts';
 
 beforeAll(initializePhysics);
 describe('observed utility distributions', () => {

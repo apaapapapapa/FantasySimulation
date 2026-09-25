@@ -1,7 +1,7 @@
 import { beforeAll, expect, it } from 'vite-plus/test';
 import { aiFixture, incomingArrow } from '../../test-support/ai.ts';
-import { initializePhysics, SpatialWorld } from './physics.ts';
-import { advancePosture, postureAllows, postureSpeed } from './posture.ts';
+import { initializePhysics, SpatialWorld } from './world/physics.ts';
+import { advancePosture, postureAllows, postureSpeed } from './rules/posture.ts';
 import {
   TACTICAL_AI,
   tacticalPostures,
@@ -9,17 +9,17 @@ import {
   catalogManifest,
   sampleCatalog,
 } from '@fantasy/samples';
-import { hitscan } from './attacks.ts';
-import { perceive, emptyMemory } from './perception.ts';
-import { dodgeOptions } from './dodge.ts';
-import { coverOptions } from './cover.ts';
-import { Navigator } from './navigation.ts';
+import { hitscan } from './rules/attacks.ts';
+import { perceive, emptyMemory } from './ai/perception.ts';
+import { dodgeOptions } from './ai/dodge.ts';
+import { coverOptions } from './ai/cover.ts';
+import { Navigator } from './world/navigation.ts';
 import { advanceLocomotion, locomotionFixture, locomotion } from '../../test-support/locomotion.ts';
 import { runBattle } from './run.ts';
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';
 import { withTacticalRules } from '../../test-support/tactics.ts';
-import { chooseGait } from './locomotion.ts';
-import { selfView } from './self-view.ts';
+import { chooseGait } from './ai/choose-gait.ts';
+import { selfView } from './ai/self-view.ts';
 
 beforeAll(initializePhysics);
 it('performs a seeded ground jump against a real projectile without granting flight', async () => {

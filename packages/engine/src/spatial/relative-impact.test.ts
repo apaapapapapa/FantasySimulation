@@ -1,9 +1,9 @@
 import { beforeAll, expect, it } from 'vite-plus/test';
 import { AI_RULES, ExperienceSchema } from '@fantasy/domain/spatial';
 import { aiFixture } from '../../test-support/ai.ts';
-import { initializePhysics } from './physics.ts';
-import { observeImpact, rememberExperience, perceive } from './perception.ts';
-import { efficacy } from './assessment.ts';
+import { initializePhysics } from './world/physics.ts';
+import { observeImpact, rememberExperience, perceive } from './ai/perception.ts';
+import { efficacy } from './ai/assessment.ts';
 
 beforeAll(initializePhysics);
 it('delivers four relative bands with exact boundaries and no finer damage interval', async () => {

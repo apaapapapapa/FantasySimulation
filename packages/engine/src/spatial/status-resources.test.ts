@@ -2,10 +2,10 @@ import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { StreamRecordSchema, type Definition } from '@fantasy/domain/spatial';
 import { aiFixture, initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { battleEvents, combatManifest } from '../../test-support/fixtures.ts';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { prepareBattle, reference } from './prepare.ts';
 import { runBattle } from './run.ts';
-import { assessStatusEffect } from './status-assessment.ts';
+import { assessStatusEffect } from './ai/status-assessment.ts';
 
 beforeAll(initializePhysics);
 async function resourceCombat(

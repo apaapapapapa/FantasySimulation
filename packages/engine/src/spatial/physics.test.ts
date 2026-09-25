@@ -21,7 +21,7 @@ import {
   SpatialWorld,
   stopAt,
   straight,
-} from './physics.ts';
+} from './world/physics.ts';
 
 beforeAll(initializePhysics);
 const body = { radius: 0.3, halfHeight: 0.6 };

@@ -1,8 +1,8 @@
-import { recoverActorResources } from '../resource-step.ts';
-import { statusRecoveryAdjustment } from '../status-resources.ts';
-import { selfView } from '../self-view.ts';
-import { checkStageInterruption, finishStages, interruptDamagedStages } from '../stages.ts';
-import { commitReactiveEffects } from '../reactions.ts';
+import { recoverActorResources } from '../rules/resource-step.ts';
+import { statusRecoveryAdjustment } from '../rules/status-resources.ts';
+import { selfView } from '../ai/self-view.ts';
+import { checkStageInterruption, finishStages, interruptDamagedStages } from '../rules/stages.ts';
+import { commitReactiveEffects } from './reactions.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 export function resolutionPhase(tx: StepTransaction) {
   const { battle, budget, world, work } = tx.context;

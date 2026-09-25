@@ -2,16 +2,16 @@ import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { DEFAULT_BUDGET } from '@fantasy/domain/spatial';
 import { advanceLocomotion, locomotionFixture } from '../../test-support/locomotion.ts';
 import { initialStatus } from '../../test-support/ai.ts';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
-import { flightRate } from './locomotion.ts';
-import { reserveMotion } from './motion-resources.ts';
-import { ResourceBudget } from './resources.ts';
-import { moveActors } from './movement.ts';
-import { Journal } from './journal.ts';
-import { applyStatuses } from './status.ts';
-import { resolveEffects } from './effects.ts';
+import { flightRate } from './rules/locomotion.ts';
+import { reserveMotion } from './rules/motion-resources.ts';
+import { ResourceBudget } from './rules/resources.ts';
+import { moveActors } from './world/movement.ts';
+import { Journal } from './rules/journal.ts';
+import { applyStatuses } from './rules/status.ts';
+import { resolveEffects } from './rules/effects.ts';
 
 beforeAll(initializePhysics);
 describe('flight grants and their shared stamina budget', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { DEFAULT_BUDGET } from '@fantasy/domain/spatial';
-import { SpatialBudgetError } from '../physics.ts';
+import { SpatialBudgetError } from '../world/physics.ts';
 import { WorkMeter } from './work-meter.ts';
 
 describe('work retained across aborted step transactions', () => {

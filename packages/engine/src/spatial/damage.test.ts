@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { CharacterSchema, EffectSchema } from '@fantasy/domain/spatial';
 import fixtures from '../../fixtures/spatial/damage-formulas.json';
-import { calculateDamage } from './damage.ts';
+import { calculateDamage } from './rules/damage.ts';
 import { prepareBattle } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { sampleManifest } from '@fantasy/samples';
-import { applyStatuses, effectiveStats } from './status.ts';
-import { resolveEffects, type EffectApplication } from './effects.ts';
+import { applyStatuses, effectiveStats } from './rules/status.ts';
+import { resolveEffects, type EffectApplication } from './rules/effects.ts';
 import { initialStatus } from '../../test-support/ai.ts';
 
 describe('damage formula contract (G-02)', () => {

@@ -4,8 +4,13 @@ import { initialStatus } from '../../test-support/ai.ts';
 import { prepareBattle, reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { sampleManifest } from '@fantasy/samples';
-import { resolveEffects, type EffectApplication, type EffectTarget } from './effects.ts';
-import { applyStatuses, effectiveStats, statusBoundary, UnresolvedRuleError } from './status.ts';
+import { resolveEffects, type EffectApplication, type EffectTarget } from './rules/effects.ts';
+import {
+  applyStatuses,
+  effectiveStats,
+  statusBoundary,
+  UnresolvedRuleError,
+} from './rules/status.ts';
 
 async function generalizedState(edits: Partial<Definition<'status'>>[] = [{}]) {
   const battle = await prepareBattle(await sampleManifest());

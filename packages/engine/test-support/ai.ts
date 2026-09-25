@@ -3,9 +3,9 @@ import { AI_RULES, type Definition, type Experience } from '@fantasy/domain/spat
 import { sampleManifest } from '@fantasy/samples';
 import { prepareBattle, reference, decisionAbilityOrder } from '../src/spatial/prepare.ts';
 import { sealRevision } from '../src/spatial/manifest-builder.ts';
-import { initialMotion } from '../src/spatial/movement.ts';
-import { SpatialWorld } from '../src/spatial/physics.ts';
-import { emptyMemory } from '../src/spatial/perception.ts';
+import { initialMotion } from '../src/spatial/world/movement.ts';
+import { SpatialWorld } from '../src/spatial/world/physics.ts';
+import { emptyMemory } from '../src/spatial/ai/perception.ts';
 
 /** Keep manually edited test actors consistent with prepared canonical decision order. */
 export const withAbilities = (

@@ -1,12 +1,12 @@
-import { commitEffects } from '../combat-effects.ts';
-import { ResourceBudget } from '../resources.ts';
-import { applyStatusResourcePulses } from '../status-resources.ts';
-import { selfView } from '../self-view.ts';
-import { conditionMatches } from '../perception.ts';
-import { statusBoundary } from '../status.ts';
-import { checkStageInterruption, interruptDamagedStages } from '../stages.ts';
-import { commitReactiveEffects } from '../reactions.ts';
-import { advancePosture } from '../posture.ts';
+import { commitEffects } from './combat-effects.ts';
+import { ResourceBudget } from '../rules/resources.ts';
+import { applyStatusResourcePulses } from '../rules/status-resources.ts';
+import { selfView } from '../ai/self-view.ts';
+import { conditionMatches } from '../rules/conditions.ts';
+import { statusBoundary } from '../rules/status.ts';
+import { checkStageInterruption, interruptDamagedStages } from '../rules/stages.ts';
+import { commitReactiveEffects } from './reactions.ts';
+import { advancePosture } from '../rules/posture.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 import { effectsOf } from './step-effects.ts';
 export function boundaryPhase(tx: StepTransaction) {

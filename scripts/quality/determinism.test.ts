@@ -18,6 +18,24 @@ function cases(codes: string[]) {
   }
 }
 
+it.each([
+  ['packages/engine/src/spatial/world/physics.ts', true],
+  ['packages/engine/src/spatial/physics.ts', false],
+  ['packages/engine/src/spatial/world/other.ts', false],
+] as const)('keeps Rapier isolated at the relocated adapter: %s', (path, allowed) => {
+  const project = createTestProject({
+    [path]: "import RAPIER from '@dimforge/rapier3d-compat'; export const adapter = RAPIER;",
+  });
+  try {
+    const findings = withSources(project.root, [path], (files, _options, checker) =>
+      determinism(path, files.get(path)!, checker),
+    );
+    expect(findings.some((finding) => finding.rule === 'engine-dependency-policy')).toBe(!allowed);
+  } finally {
+    project.dispose();
+  }
+});
+
 it.each(
   cases([
     'Math.random();',

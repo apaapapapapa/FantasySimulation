@@ -1,12 +1,12 @@
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { DEFAULT_BUDGET } from '@fantasy/domain/spatial';
-import { initializePhysics } from './physics.ts';
+import { initializePhysics } from './world/physics.ts';
 import { sealRevision } from './manifest-builder.ts';
-import { actionClock } from './attacks.ts';
-import { releaseStage } from './stages.ts';
-import { selfView } from './self-view.ts';
-import { Journal } from './journal.ts';
-import { ResourceBudget } from './resources.ts';
+import { actionClock } from './rules/attacks.ts';
+import { releaseStage } from './rules/stages.ts';
+import { selfView } from './ai/self-view.ts';
+import { Journal } from './rules/journal.ts';
+import { ResourceBudget } from './rules/resources.ts';
 import { locomotionFixture, advanceLocomotion } from '../../test-support/locomotion.ts';
 import { initialStatus } from '../../test-support/ai.ts';
 import { comboStages, stagedManifest } from '../../test-support/stages.ts';

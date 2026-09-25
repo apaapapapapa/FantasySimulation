@@ -13,8 +13,8 @@ import {
   beginForcedInterval,
   queueForce,
   settleForcedInterval,
-} from './forces.ts';
-import { initializePhysics } from './physics.ts';
+} from './rules/forces.ts';
+import { initializePhysics } from './world/physics.ts';
 import { ZERO } from './math.ts';
 import { runBattle } from './run.ts';
 import { prepareBattle } from './prepare.ts';
@@ -22,10 +22,10 @@ import { simulate } from './simulate.ts';
 import { locomotionFixture } from '../../test-support/locomotion.ts';
 import { stagedManifest } from '../../test-support/stages.ts';
 import { battleEvents } from '../../test-support/fixtures.ts';
-import { visibleStageCue } from './stages.ts';
-import { initialActor } from './combat-state.ts';
-import { emptyMemory, perceive } from './perception.ts';
-import { moveActors } from './movement.ts';
+import { visibleStageCue } from './rules/stages.ts';
+import { initialActor } from './sim/combat-state.ts';
+import { emptyMemory, perceive } from './ai/perception.ts';
+import { moveActors } from './world/movement.ts';
 
 beforeAll(initializePhysics);
 const force = (direction: 'away' | 'toward' = 'away'): Extract<Effect, { kind: 'force' }> => ({

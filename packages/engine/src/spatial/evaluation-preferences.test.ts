@@ -1,7 +1,7 @@
 import { beforeAll, expect, it } from 'vite-plus/test';
 import { aiFixture, withEvaluation } from '../../test-support/ai.ts';
-import { initializePhysics } from './physics.ts';
-import { choosePolicy } from './policy.ts';
+import { initializePhysics } from './world/physics.ts';
+import { choosePolicy } from './ai/policy.ts';
 import { TACTICAL_AI } from '@fantasy/samples';
 
 beforeAll(initializePhysics);
