@@ -236,6 +236,7 @@ export async function validatePublicLeagueWork(
     }
   }
   const partitions = new Set<string>();
+  const reservations: typeof records = new Map();
   for (const reservationRef of work.reservations) {
     const reservation = await json(reservationRef, LeagueReservationSchema),
       { id, ...body } = reservation;
@@ -251,17 +252,24 @@ export async function validatePublicLeagueWork(
       throw new Error('Retained league reservation mismatch');
     partitions.add(reservation.partitionId);
     for (const record of reservation.progress.records) {
+      if (reservations.has(record.simulationHash))
+        throw new Error('Duplicate simulation in league reservations');
+      reservations.set(record.simulationHash, record);
       const retained = records.get(record.simulationHash);
       if (!retained || (!work.previousWork && !same(retained, record)))
         throw new Error('Journal omits its reserved attempts');
     }
   }
-  return { work, records };
+  return { work, records, reservations };
 }
 
 type WorkState = Awaited<ReturnType<typeof validatePublicLeagueWork>>;
 export function assertLeagueWorkTransition(previous: WorkState, current: WorkState) {
   const sameExecution = previous.work.executionId === current.work.executionId;
+  if (!sameExecution)
+    for (const [hash, record] of current.reservations)
+      if (!same(current.records.get(hash), record))
+        throw new Error('New execution journal omits its reserved attempts');
   if (
     sameExecution &&
     (!same(previous.work.reservations, current.work.reservations) ||

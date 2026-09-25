@@ -103,8 +103,18 @@ export async function publicationGraph(source: PublicationRead) {
     add({ key, bytes: bytes.length, checksum: hash });
     catalog ??= generation;
     catalogs.push(generation);
-    for (const ref of generation.leagues ?? []) leagues.set(ref.hash, ref);
-    if (generation.leagueWork) leagueWork.set(generation.leagueWork.hash, generation.leagueWork);
+    for (const ref of generation.leagues ?? []) {
+      const prior = leagues.get(ref.hash);
+      if (prior && canonicalJson(prior) !== canonicalJson(ref))
+        throw new Error('Conflicting league catalog reference');
+      leagues.set(ref.hash, ref);
+    }
+    if (generation.leagueWork) {
+      const ref = generation.leagueWork;
+      if (leagueWork.has(ref.hash) && leagueWork.get(ref.hash)!.bytes !== ref.bytes)
+        throw new Error('Conflicting league work size');
+      leagueWork.set(ref.hash, ref);
+    }
     for (const ref of generation.sets) {
       const prefix = `sets/${publicHashName(ref.setHash)}/`;
       if (sets.has(ref.setHash)) {
