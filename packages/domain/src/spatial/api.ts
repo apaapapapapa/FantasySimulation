@@ -75,6 +75,13 @@ export const JobRequestSchema = z.strictObject({
   spec: SpecInputSchema,
   budget: BudgetSchema.default(DEFAULT_BUDGET),
 });
+export const MAX_STAGED_JOB_PAGE = 100;
+export const StagedJobRequestSchema = z.strictObject({
+  jobs: z
+    .array(JobRequestSchema.extend({ key: IdSchema }))
+    .min(1)
+    .max(MAX_STAGED_JOB_PAGE),
+});
 export const RetryJobSchema = z.strictObject({
   expectedAttempts: z.number().int().min(0).max(MAX_JOB_ATTEMPTS),
   budget: BudgetSchema,

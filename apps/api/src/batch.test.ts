@@ -157,6 +157,10 @@ describe('immutable headless plans and portable result bundles', () => {
       await expect(reconcileBatch(plan, [...indexes, nonempty])).rejects.toThrow(/duplicate/);
       const resumed = await runBatch(plan, singleRoot, batchSource, { reverse: true });
       expect(resumed.index.slots.every((s) => s.reused)).toBe(true);
+      const aborted = await runBatch(plan, singleRoot, batchSource, {
+        signal: AbortSignal.abort(),
+      });
+      expect(aborted.index.slots).toEqual(resumed.index.slots);
       expect(resumed.index.slots.map((s) => s.receipt)).toEqual(
         single.index.slots.map((s) => s.receipt),
       );

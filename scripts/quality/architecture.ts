@@ -23,6 +23,12 @@ const rule = (
 ): IRegularForbiddenRuleType => ({ name, from, to, comment, severity: 'error' });
 export const boundaryRules: IRegularForbiddenRuleType[] = [
   rule(
+    'batch-application-boundary',
+    { path: '^apps/api/src/batch-runner[.]ts$' },
+    { path: '^apps/api/src/', pathNot: '^apps/api/src/batch-service[.]ts$' },
+    'The batch adapter delegates to its application service, never persistence or runtime internals.',
+  ),
+  rule(
     'job-http-application-boundary',
     { path: '^apps/api/src/job-routes[.]ts$' },
     { path: '^apps/api/src/', pathNot: '^apps/api/src/battle-service[.]ts$' },

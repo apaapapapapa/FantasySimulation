@@ -1,3 +1,4 @@
+import { stagedWork } from './staged-work.ts';
 import { canCancelJob } from './job-transitions.ts';
 import { ARTIFACT_RESERVATION_BYTES } from '@fantasy/domain/spatial';
 import { randomUUID } from 'node:crypto';
@@ -22,6 +23,12 @@ import { BattlePool } from './worker-pool.ts';
 import { ownRuntime } from './runtime-owner.ts';
 import { ArtifactStore } from './artifact-store.ts';
 
+export type BattleSubmission = {
+  key: string;
+  spec: SpecInput;
+  budget?: Budget;
+  simulationHash?: string;
+};
 export type RuntimeOptions = {
   workers?: number;
   timeoutMs?: number;
@@ -34,6 +41,7 @@ export class BattleService {
   private readonly active = new Map<string, { controller: AbortController; done: Promise<void> }>();
   private readonly timer: ReturnType<typeof setInterval>;
   private readonly waiters = new Set<() => void>();
+  private generation = 0;
   private stopped = false;
   private failure: Error | null = null;
   private constructor(
@@ -83,6 +91,7 @@ export class BattleService {
     clientId: string,
     key: string,
     inputBudget: Budget = DEFAULT_BUDGET,
+    expectedSimulationHash?: string,
   ) {
     if (this.stopped || this.failure)
       throw new StoreError('unavailable', this.failure?.message ?? 'Runtime closed');
@@ -93,9 +102,13 @@ export class BattleService {
     if (previous) {
       if (previous.requestHash !== requestHash)
         throw new StoreError('conflict', 'Idempotency key belongs to another request');
+      if (expectedSimulationHash && previous.simulationHash !== expectedSimulationHash)
+        throw new StoreError('invalid-input', 'Runtime changed the planned simulation');
       return this.view(previous);
     }
     const battle = await this.store.prepareSpec(spec);
+    if (expectedSimulationHash && battle.simulationHash !== expectedSimulationHash)
+      throw new StoreError('invalid-input', 'Runtime changed the planned simulation');
     const canonical =
       this.jobs.canonical(battle.simulationHash) ??
       this.jobs.canonicalRecord(battle.simulationHash);
@@ -113,6 +126,81 @@ export class BattleService {
     });
     this.tick();
     return this.view(job);
+  }
+  // A page or an unbounded lazy league source uses the same bounded admission path.
+  runMany(
+    inputs: AsyncIterable<BattleSubmission> | Iterable<BattleSubmission>,
+    clientId: string,
+    options: { retryFailed?: boolean; signal?: AbortSignal } = {},
+  ) {
+    return stagedWork(
+      inputs,
+      this.pool.workers,
+      async (input, signal) => {
+        try {
+          let job;
+          for (;;) {
+            signal.throwIfAborted();
+            const generation = this.generation;
+            try {
+              job = await this.submit(
+                input.spec,
+                clientId,
+                input.key,
+                input.budget,
+                input.simulationHash,
+              );
+              if (
+                options.retryFailed &&
+                ['failed', 'cancelled'].includes(job.state) &&
+                job.allowedOperations.retry
+              )
+                job = await this.retry(job.id, job.attempts, input.budget ?? DEFAULT_BUDGET);
+              break;
+            } catch (error) {
+              if (!(error instanceof StoreError) || error.code !== 'queue-capacity') throw error;
+              await this.capacityChanged(generation, signal);
+            }
+          }
+          const cancel = () => {
+            this.cancel(job.id);
+          };
+          signal.addEventListener('abort', cancel, { once: true });
+          if (signal.aborted) cancel();
+          try {
+            return { key: input.key, job: this.view(await this.wait(job.id)), error: null };
+          } catch (error) {
+            this.cancel(job.id);
+            await this.wait(job.id, this.completionReserveMs);
+            throw error;
+          } finally {
+            signal.removeEventListener('abort', cancel);
+          }
+        } catch (error) {
+          return { key: input.key, job: null, error };
+        }
+      },
+      options.signal,
+    );
+  }
+  private capacityChanged(generation: number, signal: AbortSignal) {
+    return new Promise<void>((resolve, reject) => {
+      const finish = (error?: unknown) => {
+        this.waiters.delete(check);
+        signal.removeEventListener('abort', check);
+        if (error) reject(error);
+        else resolve();
+      };
+      const check = () => {
+        if (signal.aborted) finish(signal.reason ?? new Error('Cancelled'));
+        else if (this.stopped || this.failure)
+          finish(new StoreError('unavailable', 'Runtime unavailable'));
+        else if (generation !== this.generation) finish();
+      };
+      this.waiters.add(check);
+      signal.addEventListener('abort', check, { once: true });
+      check();
+    });
   }
   async recoverReplay(resultId: string, clientId: string, key: string, inputBudget: Budget) {
     if (this.stopped || this.failure) throw new StoreError('unavailable', 'Runtime unavailable');
@@ -153,6 +241,7 @@ export class BattleService {
     return this.view(job);
   }
   private changed() {
+    this.generation++;
     for (const listener of [...this.waiters]) listener();
   }
   private tick() {
