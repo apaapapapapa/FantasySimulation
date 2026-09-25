@@ -5,11 +5,17 @@ import {
   type ReplayCheckpoint,
   type StreamRecord,
   type DisplayState,
+  type BattleEvent,
 } from '@fantasy/domain/spatial';
 import type { OpenedReplay } from './open-replay.ts';
 import { toLoadError } from './artifacts.ts';
 
 type ValidatedChunk = { before: ReplayCheckpoint; records: readonly StreamRecord[] };
+export type ReplayFrame = {
+  checkpoint: ReplayCheckpoint;
+  records: readonly StreamRecord[];
+  events: readonly BattleEvent[];
+};
 const recordStep = (r: StreamRecord) => (r.kind === 'interval' ? r.toStep : r.step);
 const orderedState = (state: DisplayState): DisplayState => ({
   actors: [...state.actors].sort((a, b) => compareIds(a.id, b.id)),
@@ -58,7 +64,7 @@ function advance(before: ReplayCheckpoint, record: StreamRecord): ReplayCheckpoi
 /** Validate each loaded chunk once, retain at most two, then advance only new deltas. */
 export class ReplayPlayer {
   private readonly chunks = new Map<number, ValidatedChunk>();
-  private cursor: ReplayCheckpoint | undefined;
+  private cursor: ReplayFrame | undefined;
   private request = 0;
   constructor(private readonly replay: OpenedReplay) {}
 
@@ -90,19 +96,36 @@ export class ReplayPlayer {
   }
 
   async seek(step: number, signal?: AbortSignal): Promise<ReplayCheckpoint> {
+    return (await this.frame(step, signal)).checkpoint;
+  }
+
+  async events(index: number, signal?: AbortSignal) {
+    const chunk = await this.chunk(index, signal);
+    signal?.throwIfAborted();
+    return structuredClone(chunk.records.flatMap((r) => ('events' in r ? r.events : [])));
+  }
+
+  async frame(step: number, signal?: AbortSignal): Promise<ReplayFrame> {
     const { manifest } = this.replay;
     if (!Number.isSafeInteger(step) || step < 0 || step > (manifest.lastVerifiedStep ?? 0))
       throw new RangeError('Step outside recorded range');
     const request = ++this.request;
     try {
       signal?.throwIfAborted();
-      let cursor = this.cursor && this.cursor.step <= step ? this.cursor : undefined;
-      let index = Math.max(
+      // Start before the requested step so interval/boundary/terminal records at a
+      // chunk edge all remain visible. A distant seek never walks the entire prefix.
+      const start = Math.max(
         0,
-        manifest.chunks.findLastIndex((chunk) =>
-          cursor ? chunk.firstRecord <= cursor.nextRecord : chunk.fromStep <= step,
-        ),
+        manifest.chunks.findLastIndex((c) => c.fromStep < step),
       );
+      const previous = this.cursor?.checkpoint;
+      const previousIndex = manifest.chunks.findLastIndex(
+        (c) => previous && c.firstRecord <= previous.nextRecord,
+      );
+      let cursor =
+        previous && previous.step <= step && start <= previousIndex + 1 ? previous : undefined;
+      const records: StreamRecord[] = cursor?.step === step ? [...this.cursor!.records] : [];
+      let index = Math.max(0, cursor ? previousIndex : start);
       while (index < manifest.chunks.length) {
         const chunk = await this.chunk(index, signal),
           ref = manifest.chunks[index]!;
@@ -113,13 +136,15 @@ export class ReplayPlayer {
         )
           throw new Error('Replay checkpoint continuity');
         for (const record of chunk.records.slice(cursor.nextRecord - ref.firstRecord)) {
-          if (recordStep(record) > step) return this.finish(cursor, request, signal);
+          if (recordStep(record) > step)
+            return this.finish({ checkpoint: cursor, records }, request, signal, record);
           cursor = advance(cursor, record);
+          if (recordStep(record) === step) records.push(record);
         }
         index++;
       }
       return this.finish(
-        cursor ?? (await this.replay.seek(0, signal)).checkpoint(),
+        { checkpoint: cursor ?? (await this.replay.seek(0, signal)).checkpoint(), records },
         request,
         signal,
       );
@@ -128,10 +153,21 @@ export class ReplayPlayer {
     }
   }
 
-  private finish(cursor: ReplayCheckpoint, request: number, signal?: AbortSignal) {
+  private finish(
+    cursor: Omit<ReplayFrame, 'events'>,
+    request: number,
+    signal?: AbortSignal,
+    next?: StreamRecord,
+  ) {
     signal?.throwIfAborted();
-    if (request === this.request) this.cursor = cursor;
+    // Interval events keep their own timestamp (some belong to fromStep). Inspect
+    // the next verified record without applying its future state or trajectories.
+    const events = [...cursor.records, ...(next ? [next] : [])]
+      .flatMap((r) => ('events' in r ? r.events : []))
+      .filter((event) => event.step === cursor.checkpoint.step);
+    const frame = { ...cursor, events };
+    if (request === this.request) this.cursor = frame;
     // UI callers own the returned snapshot; mutations cannot poison the verified cache/cursor.
-    return structuredClone(cursor);
+    return structuredClone(frame);
   }
 }

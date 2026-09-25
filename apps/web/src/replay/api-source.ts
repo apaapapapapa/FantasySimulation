@@ -22,7 +22,7 @@ export function apiReplaySource(
         await response.body?.cancel();
         const held = response.status === 404 || response.status === 503;
         throw new ReplayLoadError(
-          held ? 'damaged' : 'unavailable',
+          held ? 'damaged' : response.status === 429 ? 'limit' : 'unavailable',
           `Replay API responded ${response.status}`,
         );
       }
