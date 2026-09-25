@@ -16,6 +16,7 @@ import {
   type LeagueRevision,
   type LeagueSlot,
   type Manifest,
+  MAX_LEAGUE_SLOTS,
 } from '@fantasy/domain/spatial';
 import { ManifestBuilder } from '../spatial/manifest-builder.ts';
 import { implementation } from '../spatial/prepare.ts';
@@ -101,11 +102,24 @@ export async function validateLeagueRevision(input: unknown): Promise<LeagueRevi
 }
 
 /** Bounded iteration avoids retaining every expanded manifest in memory. */
-export async function* leagueMatches(input: LeagueRevision): AsyncGenerator<{
+export async function* leagueMatches(
+  input: LeagueRevision,
+  range: { offset: number; limit: number } = { offset: 0, limit: MAX_LEAGUE_SLOTS },
+): AsyncGenerator<{
   slot: LeagueSlot;
   manifest: Manifest;
 }> {
   const { definition } = await validateLeagueRevision(input);
+  if (
+    !Number.isInteger(range.offset) ||
+    range.offset < 0 ||
+    range.offset > MAX_LEAGUE_SLOTS ||
+    !Number.isInteger(range.limit) ||
+    range.limit < 1 ||
+    range.limit > MAX_LEAGUE_SLOTS
+  )
+    throw new Error('Invalid league match range');
+  let ordinal = 0;
   const builder = ManifestBuilder.from(definition.revisions);
   const seeds = await Promise.all(
     Array.from({ length: definition.trials }, (_, trial) =>
@@ -123,6 +137,8 @@ export async function* leagueMatches(input: LeagueRevision): AsyncGenerator<{
         if (field.weight.numerator === '0') continue;
         for (const placement of definition.placements) {
           for (let trial = 0; trial < seeds.length; trial++) {
+            if (ordinal++ < range.offset) continue;
+            if (ordinal > range.offset + range.limit) return;
             const seed = seeds[trial]!;
             const participants = ManifestBuilder.participants(seed, [
               {
