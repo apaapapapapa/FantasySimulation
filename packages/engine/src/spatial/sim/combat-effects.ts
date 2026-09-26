@@ -194,7 +194,9 @@ export function commitEffects(
           ? 'coincident-zero-force'
           : 'contact-frozen-linear-force';
       }
-      const ability = observer?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
+      const ability =
+        app.sourceAbility ??
+        observer?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
       if (observer && ability && observer !== actor) {
         const geometry = app.observation ?? {
           self: observer.body.motion,
@@ -225,17 +227,23 @@ export function commitEffects(
                     ability: ref,
                     eventId: app.id,
                     element: app.effect.element,
-                    basePower: Number(
-                      (damagePower(app.effect, app) *
-                        BigInt(app.dealtByElement?.[app.effect.element] ?? 10000)) /
-                        10000n,
-                    ),
+                    // A returned enemy payload is not self-known launch power.
+                    basePower: app.sourceActorId
+                      ? 0
+                      : Number(
+                          (damagePower(app.effect, app) *
+                            BigInt(app.dealtByElement?.[app.effect.element] ?? 10000)) /
+                            10000n,
+                        ),
                     ...(app.effect.defense !== undefined && { defense: app.effect.defense }),
                     impact: detail.calculation?.afterModifiers ?? detail.afterResistance,
                     ...(detail.absorption && { absorbed: detail.absorption.converted }),
                     shield: BigInt(detail.absorbed.numerator) > 0n,
                     // A defended contact cannot establish permanent elemental efficacy.
-                    partial: !!app.damageCancelled || (app.scaleBps ?? 10000) !== 10000,
+                    partial:
+                      !!app.sourceActorId ||
+                      !!app.damageCancelled ||
+                      (app.scaleBps ?? 10000) !== 10000,
                     statuses: actor.statuses,
                     statusStep: step,
                   },

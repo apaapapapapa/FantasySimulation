@@ -33,7 +33,8 @@ export function stepProjectiles(
     effects: PendingEffect[] = [];
   const changes: ProjectileChanges = { spawn: [], update: [], remove: [] };
   const impactContext = {
-    actors,
+    // Resolution replaces actor motion; retain contact-time vision and facing.
+    motions: actors.map((actor) => actor.body.motion),
     moved,
     world,
     battle,
@@ -95,7 +96,7 @@ export function stepProjectiles(
         ruleId: 'projectile.first-contact',
         reason: contact.kind,
       });
-      const input = { projectile, contact, curve, impact, owner, enemy };
+      const input = { projectile, contact, curve, impact, enemy };
       if (contacts && contact.kind === 'body') contacts.add(input);
       else {
         effects.push(...impactEffects(input, impactContext, true, !!projectile.deflection));

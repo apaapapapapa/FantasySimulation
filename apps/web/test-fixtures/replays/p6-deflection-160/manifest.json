@@ -3,7 +3,7 @@
   "checkpoints": [
     {
       "bytes": 177,
-      "checksum": "sha256:4afb6474f89a8f46beb365a49ae2858462b8053adbdddfe64ad5c72c715f7e21",
+      "checksum": "sha256:4dd9347629a1a317fd44c14aa9815518a1641752bb5fae417c4a75caeb34917a",
       "file": "checkpoint-00000.json.gz",
       "index": 0,
       "nextRecord": 0,
@@ -11,71 +11,71 @@
       "step": 0
     },
     {
-      "bytes": 1331,
-      "checksum": "sha256:7d1730f09f6507e900552a66496100f0ea3e348728c6bfc130e9b6dce5d7b8d5",
+      "bytes": 616,
+      "checksum": "sha256:0c3b4e2e53e696597ce6a3ec7fd1f3e2da43637cf942cb5f97ae44d142ab6805",
       "file": "checkpoint-00001.json.gz",
       "index": 1,
-      "nextRecord": 92,
-      "rawBytes": 4588,
-      "step": 91
+      "nextRecord": 91,
+      "rawBytes": 1725,
+      "step": 90
     }
   ],
   "chunks": [
     {
-      "bytes": 5487,
+      "bytes": 5563,
       "checkpoint": 0,
-      "checksum": "sha256:8bf408a778151fe357f2366c7c5319106ff48906f724c96936ff12e9000d615a",
+      "checksum": "sha256:e50458bf964e45e01ce5279a058730fd10491c45dfaac924e97fbb4d3f33b55d",
       "file": "chunk-00000.ndjson.gz",
       "firstRecord": 0,
       "fromStep": 0,
       "index": 0,
-      "rawBytes": 134329,
-      "records": 92,
-      "toStep": 91
+      "rawBytes": 131495,
+      "records": 91,
+      "toStep": 90
     },
     {
-      "bytes": 2660,
+      "bytes": 2733,
       "checkpoint": 1,
-      "checksum": "sha256:952ab46c97dbf6808536e3e34cd0100ed22c81d62a2684601b4ecdbfa39f0b9c",
+      "checksum": "sha256:cd21756200394df092aa4b051d082297edad2cba8472f0a55112b8907c82b2a9",
       "file": "chunk-00001.ndjson.gz",
-      "firstRecord": 92,
-      "fromStep": 91,
+      "firstRecord": 91,
+      "fromStep": 90,
       "index": 1,
-      "rawBytes": 87911,
-      "records": 70,
+      "rawBytes": 91499,
+      "records": 71,
       "toStep": 160
     }
   ],
   "end": {
     "kind": "result",
     "result": {
-      "eventHash": "sha256:056d05913f2ed9d6f11c28d88f0acb5d5be866dec2fdcfc92ce3a0e4dc2f8b86",
+      "eventHash": "sha256:a95e3a504d455eafc3e78366f238aa7a1dc9c5009e43b160ac6fd6675c2eb73e",
       "outcome": { "kind": "draw", "reason": "time-limit" },
       "physicsStateHash": "sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976",
       "schemaVersion": 1,
-      "simulationHash": "sha256:bf4161abe3c08c0c9d4c7119189081b2abb7f1ad1cf79596ab346dd87491092b",
+      "simulationHash": "sha256:908ee18ef0bee410888b0ab976836bc76fc70f0e119e4f1e916f9a4c0787dab5",
       "stats": {
         "candidates": 12,
-        "casts": 1051,
-        "events": 79,
-        "logBytes": 222240,
+        "casts": 1052,
+        "events": 80,
+        "logBytes": 222994,
         "pathNodes": 0,
         "peakProjectiles": 1,
         "reactionAttempts": 1
       },
       "steps": 160,
       "trajectoryHash": "sha256:0a2a6b104d47b7cf3733655883bbd19c7e65f9989766fa5fdc81bf9a82c202b9",
-      "tsStateHash": "sha256:7278f0e6dba121bd3d57d07dd53a90a288b11483840f151ebadb19509481e57f"
+      "tsStateHash": "sha256:754b635d61af8b48e7d26c0a0f3c55cd1c94e5b55cab1fb3b02f5382c51b717a"
     }
   },
-  "eventHash": "sha256:056d05913f2ed9d6f11c28d88f0acb5d5be866dec2fdcfc92ce3a0e4dc2f8b86",
+  "eventHash": "sha256:a95e3a504d455eafc3e78366f238aa7a1dc9c5009e43b160ac6fd6675c2eb73e",
   "id": "p6-deflection-160",
   "input": {
     "aiProfile": "observed-utility-v1",
     "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
     "engineVersion": "spatial-v1.21",
     "eventSchemaVersion": 1,
-    "implementationDigest": "sha256:74326f8287ab4f92581dd164b1fdfd8caa2e80f05a96c3abefccb3442b2e1c75",
+    "implementationDigest": "sha256:f57c23160950fe32400feb92d24416851068642648c1f3896da956193a95ecfc",
     "participants": [
       {
         "actorId": "left",
@@ -443,6 +443,6 @@
   "records": 162,
   "resultId": "p6-deflection-result",
   "schemaVersion": 1,
-  "simulationHash": "sha256:bf4161abe3c08c0c9d4c7119189081b2abb7f1ad1cf79596ab346dd87491092b",
+  "simulationHash": "sha256:908ee18ef0bee410888b0ab976836bc76fc70f0e119e4f1e916f9a4c0787dab5",
   "trajectoryHash": "sha256:0a2a6b104d47b7cf3733655883bbd19c7e65f9989766fa5fdc81bf9a82c202b9"
 }

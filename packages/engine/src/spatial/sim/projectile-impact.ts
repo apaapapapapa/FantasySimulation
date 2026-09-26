@@ -1,4 +1,4 @@
-import type { ActorState, PreparedBattle } from '../state.ts';
+import type { MotionState, PreparedBattle } from '../state.ts';
 import type { Budget, ProjectileChanges } from '@fantasy/domain/spatial/execution';
 import { contactObservation, type PendingEffect } from './combat-effects.ts';
 import type { Journal } from '../rules/journal.ts';
@@ -21,11 +21,10 @@ export type ProjectileImpact = {
   curve: ReturnType<typeof projectileCurve>;
   impact: { id: string };
   bodyAdmission?: ReturnType<HitLedger['contact']> | null;
-  owner: ActorState;
   enemy: MovedActor;
 };
 export type ProjectileImpactContext = {
-  actors: readonly ActorState[];
+  motions: readonly MotionState[];
   moved: readonly MovedActor[];
   world: SpatialWorld;
   battle: PreparedBattle;
@@ -43,8 +42,8 @@ export function impactEffects(
   emit = true,
   tracked = false,
 ) {
-  const { projectile, contact, curve, impact, owner, enemy } = input;
-  const { actors, moved, world, journal, step, candidate } = context;
+  const { projectile, contact, curve, impact, enemy } = input;
+  const { motions, moved, world, journal, step, candidate } = context;
   const ledger = emit ? context.ledger : context.ledger.clone();
   const shape = projectile.ability.definition.attack;
   if (shape.kind !== 'projectile') throw new Error('Invalid projectile impact');
@@ -134,8 +133,8 @@ export function impactEffects(
         ),
         observation: contactObservation(
           moved,
-          owner.body.motion,
-          actors.find((a) => a.body.motion.actor.participant.actorId === targetId)!.body.motion,
+          motions.find((m) => m.actor.participant.actorId === projectile.ownerId)!,
+          motions.find((m) => m.actor.participant.actorId === targetId)!,
           contact.time,
         ),
       });

@@ -176,13 +176,18 @@ it('validates saved ownership transitions and rejects a second deflection or for
 });
 
 it('binds saved deflection activations to actual reaction events and their causal context', async () => {
-  const input = await deflectionManifest();
+  const input = await deflectionManifest({
+    reactions: [
+      { reaction: { response: { kind: 'deflect', powerBps: 5000 } } },
+      { reaction: { response: { kind: 'deflect', powerBps: 20000 } } },
+    ],
+  });
   const output = await runBattle(input);
   const { context, checkpoints } = await recordedCheckpoints(input, output);
   const index = output.records.findIndex(
     (r) => r.kind === 'interval' && r.events.some((e) => e.kind === 'projectile-deflect'),
   );
-  for (const kind of ['missing', 'depth', 'wave', 'kind', 'cause'] as const) {
+  for (const kind of ['missing', 'depth', 'wave', 'kind', 'cause', 'omitted'] as const) {
     const record = structuredClone(output.records[index]!);
     if (record.kind !== 'interval') throw new Error('Expected deflection interval');
     const event = record.events.find((e) => e.kind === 'projectile-deflect')!;
@@ -194,6 +199,10 @@ it('binds saved deflection activations to actual reaction events and their causa
     if (kind === 'wave') activation.wave += 1;
     if (kind === 'kind') reaction.kind = 'diagnostic';
     if (kind === 'cause') event.causes = [];
+    if (kind === 'omitted') {
+      event.projectileDeflection!.activations.pop();
+      event.projectileDeflection!.powerBps = 5000;
+    }
     record.projectiles.update.find((p) => p.deflection)!.deflection = structuredClone(
       event.projectileDeflection!,
     );
