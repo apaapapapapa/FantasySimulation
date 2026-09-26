@@ -1,4 +1,6 @@
 import type { ReplayCheckpoint, ReplayContext } from '@fantasy/domain/spatial';
+import { motionSummary } from './motion-labels.ts';
+import { stageCount } from './scene-model.ts';
 
 export function ReplayResources({
   context,
@@ -62,6 +64,14 @@ export function ReplayResources({
                 );
               })}
               <td>
+                <ul aria-label={`${actor.id} 動作`}>
+                  {motionSummary(
+                    actor,
+                    actor.action ? stageCount(context, definition, actor.action.abilityId) : null,
+                  ).map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
                 {actor.statuses.length ? (
                   <ul>
                     {actor.statuses.map((status, i) => {

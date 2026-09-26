@@ -5,7 +5,12 @@ import type { ReplayPlayer } from './replay-player.ts';
 
 export type ReplayLocation =
   | { mode: 'api'; id: string; base: string }
-  | { mode: 'public'; root: string; row: PublicMatchRow };
+  | { mode: 'public'; root: string; row: PublicMatchRow }
+  | {
+      mode: 'local';
+      manifest: Uint8Array<ArrayBuffer>;
+      files: Readonly<Record<string, Uint8Array<ArrayBuffer>>>;
+    };
 export type ReplayInfo = Pick<OpenedReplay, 'manifest' | 'context'>;
 export type ReplayControls = Pick<ReplayPlayer, 'frame' | 'events'>;
 export type WorkerRequest =

@@ -9,11 +9,16 @@ export function SelectedMatch({
   row,
   back,
   cancelled = false,
+  step = null,
+  stepLink,
 }: {
   library: PublicLibrary;
   row: PublicMatchRow;
   back: string;
   cancelled?: boolean;
+  /** Step pinned by the page URL; the replay opens there. */
+  step?: number | null;
+  stepLink?: (step: number) => string;
 }) {
   const source = useMemo(() => (row.replay ? library.source(row) : null), [library, row]);
   return (
@@ -48,7 +53,14 @@ export function SelectedMatch({
           </details>
         )}
       </section>
-      {source && <ReplayPanel key={`${row.slotId}:${row.replay!.objectHash}`} source={source} />}
+      {source && (
+        <ReplayPanel
+          key={`${row.slotId}:${row.replay!.objectHash}:${step ?? 0}`}
+          source={source}
+          initialStep={step ?? 0}
+          {...(stepLink ? { stepLink } : {})}
+        />
+      )}
     </>
   );
 }

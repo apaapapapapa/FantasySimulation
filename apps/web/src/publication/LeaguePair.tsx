@@ -94,6 +94,17 @@ export function LeaguePair({
             row={selected.row}
             cancelled={selected.planned.cancelled ?? false}
             back={leagueLink(route.snapshot, route.character, route.opponent, route.page)}
+            step={route.step}
+            stepLink={(step) =>
+              leagueLink(
+                route.snapshot,
+                route.character,
+                route.opponent,
+                route.page,
+                selected.planned.slot.id,
+                step,
+              )
+            }
           />
         </>
       )}

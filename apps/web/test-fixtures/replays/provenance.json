@@ -12,5 +12,20 @@
     "contents": "243 records in 4 chunks/checkpoints: one boundary record, flight, projectiles, a hit, a status and AI decisions; time-limit draw at step 240",
     "bytes": "Chunk/checkpoint .gz files are the writer's bytes; manifest.json is the same JSON value formatted by vp fmt.",
     "policy": "Fixed saved data for replay readers. Never regenerate to make a reader pass; regeneration needs separate review."
+  },
+  "stage-vanguard-staged-duelist-300": {
+    "sourceSha": "59ed6962d7c390be0d4724f325d3be8767fca15d",
+    "node": "24.19.0",
+    "writer": "apps/api/src/replay-writer.ts ReplayWriter (display-ndjson-gzip-v1)",
+    "generator": "e2e/generate-stage-fixture.ts",
+    "battle": "catalogManifest('stage-vanguard-v1', 'staged-duelist-v1', 'flat-surveyed-v1', 300, 42) -> prepareBattle -> runPreparedBattle",
+    "ids": {
+      "replay": "stage-vanguard-staged-duelist-300",
+      "attempt": "stages-attempt",
+      "result": "stages-result"
+    },
+    "contents": "302 records in 6 chunks/checkpoints: #61 stamina, walk/run locomotion, two-stage return cut, dash stage motion, radial blade sweeps and active forced motion; left win at step 300",
+    "bytes": "Chunk/checkpoint .gz files are the writer's bytes; manifest.json is the same JSON value formatted by vp fmt.",
+    "policy": "Fixed #82 display input for local-file loading and #61 rendering. Never regenerate to make a reader pass; regeneration needs separate review."
   }
 }
