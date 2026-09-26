@@ -127,21 +127,23 @@ actual fork-PR testing are outside the current acceptance scope. Fork-specific
 permissions, execution approval and SARIF publication remain untested; retain
 `pull_request`, minimal permissions and no project secrets for PR validation.
 
+Hosted Renovate activity was verified on 2026-09-26 through bot-created
+[Dashboard #168](https://github.com/apaapapapapa/FantasySimulation/issues/168).
+App authorization and this activity check are complete; do not request them again.
+This does not establish actual update-PR acceptance. See [dependency updates](dependency-updates.md).
+
 Remaining operational acceptance for Issue #8:
 
-1. Verify actual hosted Renovate activity. The owner already completed App
-   authorization; do not ask for it again. A valid `renovate.json` or authorization
-   confirmation does not prove bot execution. See [dependency updates](dependency-updates.md).
-2. Approve one suitable update from the bot's Dependency Dashboard. Confirm the real
-   bot PR has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
+1. Review a suitable update PR automatically created by Renovate. Confirm it
+   has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
    correct lockfile. Preserve manual review, including vulnerability updates.
    Run Linux verification and all security evidence; do not manufacture a
    bot-authored PR to claim acceptance. See the official
    [Renovate configuration reference](https://docs.renovatebot.com/configuration-options/).
-3. On an actual Rapier/WASM update, review physics version, WASM hash, engine
+2. On an actual Rapier/WASM update, review physics version, WASM hash, engine
    digest and deterministic fixtures. Existing engine tests passing without a
    dependency update do not prove this upgrade path.
-4. Verify the first successful GitHub `schedule` event for both Security and
+3. Verify the first successful GitHub `schedule` event for both Security and
    Dependency policy, including each run/attempt and sanitized receipt. The weekly
    UTC crons are Monday 19:45 and 20:15 (Tuesday 04:45 and 05:15 JST). Manual
    `workflow_dispatch` success verifies the non-PR checks, not the scheduler.
