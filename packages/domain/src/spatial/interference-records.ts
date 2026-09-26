@@ -85,6 +85,7 @@ export const TruncationDetailsSchema = z
     observed: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
     limit: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
     cause: z.string().min(1).max(500),
+    context: InterferencesSchema.optional(),
   })
   .refine((v) => v.observed > v.limit, 'Truncation must exceed its limit');
 export type TruncationDetails = z.infer<typeof TruncationDetailsSchema>;

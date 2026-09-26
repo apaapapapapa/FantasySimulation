@@ -25,7 +25,11 @@ export function boundaryPhase(tx: StepTransaction) {
         (b) =>
           b.definition.relocation ||
           b.definition.barrier ||
-          ['area', 'beam'].includes(b.definition.attack.kind),
+          ['area', 'beam'].includes(b.definition.attack.kind) ||
+          b.definition.stages?.some(
+            (s) =>
+              s.relocation || s.barrier || (s.attack && ['area', 'beam'].includes(s.attack.kind)),
+          ),
       ),
     );
   const posture = () => {

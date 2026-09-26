@@ -6,10 +6,14 @@ import type { SpatialWorld } from './physics.ts';
 export function combinedPhase(contributions: readonly PhaseContribution[]): {
   materials: SpatialMaterial[];
   floor: boolean;
+  floorMaterials: SpatialMaterial[];
 } {
   return {
     materials: [...new Set(contributions.flatMap((c) => c.materials))].sort(),
-    floor: contributions.some((c) => c.floor),
+    floor: false,
+    floorMaterials: [
+      ...new Set(contributions.filter((c) => c.floor).flatMap((c) => c.materials)),
+    ].sort(),
   };
 }
 export function bodyWorld(world: SpatialWorld, motion: MotionState): SpatialWorld {

@@ -134,6 +134,10 @@ function assessSingle(
   const beforeHitRisk = Math.min(1, (burnRisk * Math.max(1, cast)) / rules.horizonSteps);
   const observedThreat =
     (view.memory.observation?.projectiles.length ?? 0) * 0.15 +
+    (view.memory.observation?.spatial?.filter(
+      (o) => o.ownerId !== view.self.actor.participant.actorId && o.kind !== 'barrier',
+    ).length ?? 0) *
+      0.2 +
     (target?.action === 'cast' ? 0.25 : target?.action === 'active' ? 0.4 : 0);
   const exposure = Math.min(1, (observedThreat * duration * riskAversion) / rules.horizonSteps);
   const costBps = clampBps(
@@ -306,6 +310,8 @@ function assessSingle(
   for (const effect of effects) {
     if (!stateValue.handled.has(effect)) matchEffect(effect, effectAssessments, undefined);
   }
+  if (d.attack.kind === 'projectile' && shapeEstimate(view, d.attack) < 1)
+    reasons.push('delayed observed projectile deflection; remaining uses and conditions unknown');
   if (totalPower > 0) {
     const expected = totalExpected;
     efficiency = Math.round((totalExpected / totalPower) * 10000);

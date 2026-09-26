@@ -36,12 +36,25 @@ export type RecoveryInterferenceMechanic =
   | 'attribute-absorption'
   | 'drain';
 export type SpatialInterferenceMechanic =
-  | RecoveryInterferenceMechanic
+  | InterferenceMechanic
   | 'teleport'
   | 'barrier'
   | 'area'
   | 'beam'
   | 'phasing';
+export type InterferenceMechanic = RecoveryInterferenceMechanic | 'projectile-deflection';
+const pairProjectile: Definition<'ability'>['attack'] = {
+  kind: 'projectile',
+  speedMmPerSecond: 100000,
+  radiusMm: 20,
+  lifetimeSteps: 10,
+  gravityScaleBps: 0,
+  homingTurnMilliDegreesPerSecond: 0,
+  observation: 'launch-only',
+  explosionRadiusMm: 0,
+  maxHitsPerTarget: 1,
+};
+
 const damage = (amount: number): Effect => ({
   kind: 'damage',
   amount,
@@ -200,18 +213,20 @@ export async function interferencePairManifest(
           maxHitsPerTarget: 1,
         };
         break;
+      case 'projectile-deflection':
       case 'projectile':
         action.attack = {
-          kind: 'projectile',
-          speedMmPerSecond: 100000,
-          radiusMm: 20,
-          lifetimeSteps: 10,
-          gravityScaleBps: 0,
-          homingTurnMilliDegreesPerSecond: 0,
-          observation: 'launch-only',
-          explosionRadiusMm: 0,
-          maxHitsPerTarget: 1,
+          ...structuredClone(pairProjectile),
+          ...('phasing' in action.attack && action.attack.phasing
+            ? { phasing: action.attack.phasing }
+            : {}),
         };
+        if (mechanic === 'projectile-deflection')
+          reaction = {
+            trigger: 'before-hit',
+            effects: [],
+            reaction: { response: { kind: 'deflect' } },
+          };
         break;
       case 'motion':
       case 'stages':
@@ -300,6 +315,17 @@ export async function interferencePairManifest(
         throw new Error(`Unclassified fixture ${exhaustive}`);
       }
     }
+    if (
+      [left, right].includes('projectile-deflection') &&
+      !['contact', 'reveal', 'teleport', 'barrier'].includes(mechanic) &&
+      !action.stages
+    )
+      action.attack = {
+        ...structuredClone(pairProjectile),
+        ...('phasing' in action.attack && action.attack.phasing
+          ? { phasing: action.attack.phasing }
+          : {}),
+      };
     const primary = await sealRevision('ability', `pair-action-${index}`, 1, action);
     const abilities = [primary];
     if (reaction)

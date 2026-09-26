@@ -8,7 +8,11 @@ import {
 } from '../geometry-types.ts';
 export type { Segment, Trace, Capsule, Obstacle, Layer } from '../geometry-types.ts';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { canonicalJson, type MotionProjection } from '@fantasy/domain/spatial/execution';
+import {
+  canonicalJson,
+  type TruncationDetails,
+  type MotionProjection,
+} from '@fantasy/domain/spatial/execution';
 export type { MotionProjection } from '@fantasy/domain/spatial/execution';
 import {
   capsuleOverlapsObstacle,
@@ -35,7 +39,7 @@ export function firstImpact(wall: number | undefined, body: number | undefined) 
 }
 export class SpatialBudgetError extends Error {
   readonly resource: string;
-  readonly details?: { observed: number; limit: number; cause: string };
+  readonly details?: TruncationDetails;
   constructor(resource: string, detail?: string, details?: SpatialBudgetError['details']) {
     super(`Spatial budget exceeded: ${resource}${detail ? `; ${detail}` : ''}`);
     this.resource = resource;
@@ -53,6 +57,12 @@ export function at(trace: Trace, time: number): Vec3 {
         segment.end,
         Math.max(0, Math.min(1, (time - segment.from) / (segment.to - segment.from))),
       );
+}
+/** All moving-shape adapters partition at both physical trace bends. */
+export function traceBoundaries(...traces: readonly Trace[]) {
+  return [
+    ...new Set([0, 1, ...traces.flatMap((trace) => trace.flatMap((s) => [s.from, s.to]))]),
+  ].sort((a, b) => a - b);
 }
 export const straight = (start: Vec3, end: Vec3): Trace => [{ start, end, from: 0, to: 1 }];
 /** Keep only the emitted path up to contact, without a synthetic stationary tail. */

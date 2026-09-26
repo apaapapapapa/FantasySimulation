@@ -39,6 +39,16 @@ export function EventEntries({
                 {event.teleport.to.z}) m。境界で移動し、経路は補間しません。
               </p>
             )}
+            {event.projectileDeflection && (
+              <p>
+                跳ね返し: {event.projectileDeflection.originalOwnerId} →{' '}
+                {event.projectileDeflection.ownerId} /{' '}
+                {event.projectileDeflection.basis === 'observed-position'
+                  ? '観測した攻撃者の位置へ'
+                  : '入射の逆方向へ'}{' '}
+                / 威力 {event.projectileDeflection.powerBps / 100}%
+              </p>
+            )}
             {event.damage && (
               <p>
                 威力 {event.damage.calculation?.basePower ?? '記録なし'} → 防御後{' '}

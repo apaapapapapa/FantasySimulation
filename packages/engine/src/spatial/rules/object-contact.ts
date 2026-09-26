@@ -4,6 +4,7 @@ import type { MotionState } from '../state.ts';
 import { add, dot, IDENTITY, mul, sub, unit, ZERO, type Vec3 } from '../math.ts';
 import {
   at,
+  traceBoundaries,
   capsuleShape,
   CONTACT_TOLERANCE,
   SpatialBudgetError,
@@ -12,7 +13,6 @@ import {
   type PhysicsShape,
 } from '../world/physics.ts';
 import { bodyCapsule } from '../world/terrain.ts';
-import { capsuleObstacleContact } from '../world/geometry.ts';
 import { obstacleShape } from '../world/object-geometry.ts';
 import { traceAttack, type AttackContact } from './attacks.ts';
 
@@ -26,8 +26,16 @@ export function areaContact(
     shape = capsuleShape(body);
   for (const piece of trace) {
     world.countCast();
-    if (capsuleObstacleContact(piece.start, body, object).distance <= CONTACT_TOLERANCE)
-      return { time: piece.from, point: piece.start };
+    const overlap = shape.contactShape(
+      piece.start,
+      IDENTITY,
+      obstacleShape(object),
+      object.position,
+      object.rotation ?? IDENTITY,
+      CONTACT_TOLERANCE,
+    );
+    if (overlap && overlap.distance <= CONTACT_TOLERANCE)
+      return { time: piece.from, point: { ...overlap.point1 } };
     const hit = shape.castShape(
       piece.start,
       IDENTITY,
@@ -42,7 +50,7 @@ export function areaContact(
     );
     if (hit) {
       const time = piece.from + (piece.to - piece.from) * hit.time_of_impact;
-      return { time, point: at(trace, time) };
+      return { time, point: add(at(trace, time), hit.witness1) };
     }
   }
   return null;
@@ -104,14 +112,7 @@ export function beamContact(
   targetTrace: Trace,
   limit: number,
 ): { contact: AttackContact | null; geometry: AttackGeometry; walls: AttackContact[] } {
-  const boundaries = [
-    ...new Set([
-      0,
-      1,
-      ...owner.flatMap((s) => [s.from, s.to]),
-      ...targetTrace.flatMap((s) => [s.from, s.to]),
-    ]),
-  ].sort((a, b) => a - b);
+  const boundaries = traceBoundaries(owner, targetTrace);
   const half = mul(direction, range / 2),
     beam = capsuleShape({ halfHeight: range / 2, radius }),
     rotation = beamRotation(direction),
@@ -179,7 +180,12 @@ export function beamContact(
           targetAt,
           straight(targetAt.position, targetAt.position),
         );
-    segments.push({ start: origin, end: hit?.center ?? end, from: time, to: time });
+    segments.push({
+      start: muzzle ? { ...muzzle.point } : origin,
+      end: hit?.center ?? end,
+      from: time,
+      to: time,
+    });
     if (hit?.kind === 'body' && !contact) contact = { ...hit, time };
     if (hit?.kind === 'wall') walls.push({ ...hit, time });
   }

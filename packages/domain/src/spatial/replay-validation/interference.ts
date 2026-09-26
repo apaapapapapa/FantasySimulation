@@ -20,14 +20,23 @@ export function validateInterferences(
         ].includes(outcome.resource),
       'truncation diagnostics permission',
     );
-  if (outcome.kind !== 'unresolved' || !outcome.interferences) return;
-  requireReplay(
-    context.rules.interferenceDiagnostics === 'v1',
-    'interference diagnostics permission',
-  );
-  for (const entry of outcome.interferences) {
+  const entries =
+    outcome.kind === 'unresolved'
+      ? outcome.interferences
+      : outcome.kind === 'truncated'
+        ? outcome.details?.context
+        : undefined;
+  if (!entries) return;
+  if (outcome.kind === 'unresolved')
     requireReplay(
-      entry.step === step && step < context.rules.maxSteps && entry.ruleId === outcome.ruleId,
+      context.rules.interferenceDiagnostics === 'v1',
+      'interference diagnostics permission',
+    );
+  for (const entry of entries) {
+    requireReplay(
+      entry.step === step &&
+        step < context.rules.maxSteps &&
+        (outcome.kind !== 'unresolved' || entry.ruleId === outcome.ruleId),
       'interference boundary/rule',
     );
     for (const actor of entry.actors)
@@ -46,12 +55,13 @@ export function validateInterferences(
         ),
         'interference revision',
       );
-    requireReplay(
-      outcome.revisions.every((id) =>
-        entry.revisions.some((r) => r.kind === 'status' && r.id === id),
-      ),
-      'interference status identity',
-    );
+    if (outcome.kind === 'unresolved')
+      requireReplay(
+        outcome.revisions.every((id) =>
+          entry.revisions.some((r) => r.kind === 'status' && r.id === id),
+        ),
+        'interference status identity',
+      );
     for (const cause of entry.causes) {
       if (cause.kind === 'event') {
         requireReplay(emittedId(cause.eventId) < nextEvent, 'interference committed cause');

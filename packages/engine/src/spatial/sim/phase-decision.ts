@@ -72,6 +72,7 @@ export function decisionPhase(tx: StepTransaction) {
       battle.scenario.terrainKnowledge,
       battle.rules.ai,
       battle.scenario.bounds,
+      tx.next.objects ?? [],
     );
     if (actor.actions.action && actor.actions.action.recoveryUntil <= step)
       actor.actions.action = null;
@@ -91,11 +92,17 @@ export function decisionPhase(tx: StepTransaction) {
         )
         .map((a) => a.id),
     );
+    const learnedDeflection = actor.mind.memory.deflections?.some((d) => d.availableAt === step);
     const seen = actor.mind.memory.observation?.enemy;
     const newStatuses = seen?.statuses;
     const changedStatuses =
       newStatuses !== undefined && JSON.stringify(newStatuses) !== JSON.stringify(previousStatuses);
-    if (actor.mind.memory.learned.length || actor.mind.memory.expired.length || changedStatuses)
+    if (
+      actor.mind.memory.learned.length ||
+      actor.mind.memory.expired.length ||
+      changedStatuses ||
+      learnedDeflection
+    )
       journal.emit({
         kind: 'knowledge',
         step,
@@ -114,6 +121,9 @@ export function decisionPhase(tx: StepTransaction) {
             }),
           })),
           expired: [...actor.mind.memory.expired],
+          ...(learnedDeflection
+            ? { deflections: actor.mind.memory.deflections!.map((d) => ({ ...d })) }
+            : {}),
           ...(changedStatuses &&
             seen && {
               statusObservation: {
@@ -136,9 +146,7 @@ export function decisionPhase(tx: StepTransaction) {
       );
     if (aiBoundary || actor.body.intent.flight !== flight) {
       const knownWorld =
-        battle.scenario.terrainKnowledge === 'surveyed' &&
-        !tx.next.objects?.length &&
-        !actor.mind.memory.terrain.length
+        battle.scenario.terrainKnowledge === 'surveyed' && !actor.mind.memory.terrain.length
           ? null
           : knownTerrainWorld(
               actor.mind.memory.terrain,
@@ -162,7 +170,7 @@ export function decisionPhase(tx: StepTransaction) {
             )
           : actor.body.motion.posture || actor.body.motion.phasing
             ? new Navigator(
-                bodyWorld(world, actor.body.motion),
+                bodyWorld(world.forQuery({ ignoreDynamic: true }), actor.body.motion),
                 actor.body.motion.actor,
                 battle.scenario,
                 battle.rules,
@@ -177,8 +185,11 @@ export function decisionPhase(tx: StepTransaction) {
           battle.rules.ai.search
             ? {
                 bounds: battle.scenario.bounds,
-                obstacles: (knownWorld ?? world).obstacles('vision'),
-                blocked: (from, to, layer) => (knownWorld ?? world).occluded(from, to, layer),
+                obstacles: (knownWorld ?? world.forQuery({ ignoreDynamic: true })).obstacles(
+                  'vision',
+                ),
+                blocked: (from, to, layer) =>
+                  (knownWorld ?? world.forQuery({ ignoreDynamic: true })).occluded(from, to, layer),
               }
             : undefined,
         );

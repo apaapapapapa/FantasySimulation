@@ -14,6 +14,7 @@ type BarrierSource = DamageSnapshot & {
   ownerId: string;
   ability: AbilityRevision;
   cause: string;
+  powerBps?: number;
   stage?: StageContact;
   hit?: Stage['hit'];
 };
@@ -49,6 +50,7 @@ function request(tx: StepTransaction, source: BarrierSource, targetId: string, s
       calculateDamage(effect, source, { defense: 0, resistance: 0 }, scaleBps, {
         dealtBps: source.dealtByElement?.[effect.element] ?? 10000,
         receivedBps: 10000,
+        ...(source.powerBps === undefined ? {} : { powerBps: source.powerBps }),
       }).afterModifiers,
     );
   }

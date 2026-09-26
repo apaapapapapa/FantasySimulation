@@ -44,19 +44,24 @@ export function assessReactions(view: DecisionView) {
                   : 'automatic-trigger; estimate only';
     const eligible = reason === 'automatic-trigger; estimate only';
     const assessment = assessAbility(view, ability);
-    if (reaction.response.kind === 'parry') {
-      assessment.weight = threat
+    const relevantThreat =
+      reaction.response.kind === 'deflect'
+        ? !!observed?.projectiles.some(
+            (p) => !reaction.elements || !p.element || reaction.elements.includes(p.element),
+          )
+        : threat;
+    if (reaction.response.kind === 'parry' || reaction.response.kind === 'deflect') {
+      assessment.weight = relevantThreat
         ? boundedWeight(view.rules.actionWeight / (1 + assessment.costBps / 5000))
         : 0;
-      assessment.successBps = threat ? 5000 : 0;
+      assessment.successBps = relevantThreat ? 5000 : 0;
       assessment.confidenceBps = 1000;
-      assessment.reason =
-        'own parry/filter/cost; delayed visible threat; contact and eligibility uncertain';
+      assessment.reason = `own ${reaction.response.kind}/filter/cost; delayed visible threat; contact and eligibility uncertain`;
     } else {
       assessment.confidenceBps = Math.min(1000, assessment.confidenceBps);
       assessment.reason = `automatic ${d.trigger}; ${assessment.reason}`.slice(0, 300);
     }
-    if (eligible && threat && assessment.weight > 0)
+    if (eligible && relevantThreat && assessment.weight > 0)
       for (const key of ['hp', 'mp', 'stamina'] as const)
         reserve[key] = Math.min(view.resources[key] ?? 0, reserve[key] + (d.costs[key] ?? 0));
     estimates.push({
@@ -74,9 +79,17 @@ export function assessReactions(view: DecisionView) {
 }
 /** Public cue of an actual activation only. Never expose costs, IDs, clocks or a pending queue. */
 export function visibleReactionCue(actor: ActorState, step: number): ObservedReaction | undefined {
+  const responseOf = (id: string) =>
+    actor.body.motion.actor.abilities.find((a) => a.id === id)!.definition.reaction!.response.kind;
   const active = (actor.actions.reactions ?? [])
     .filter((r) => r.activatedAt <= step && step < r.recoveryUntil && r.state !== 'cancelled')
-    .sort((a, b) => b.activatedAt - a.activatedAt || compareIds(a.abilityId, b.abilityId))[0];
+    .sort(
+      (a, b) =>
+        Number(responseOf(b.abilityId) === 'deflect') -
+          Number(responseOf(a.abilityId) === 'deflect') ||
+        b.activatedAt - a.activatedAt ||
+        compareIds(a.abilityId, b.abilityId),
+    )[0];
   if (!active) return undefined;
   const ability = actor.body.motion.actor.abilities.find((a) => a.id === active.abilityId)!;
   return { point: active.context.point, response: ability.definition.reaction!.response.kind };

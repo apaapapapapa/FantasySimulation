@@ -599,6 +599,60 @@
     },
     {
       "kind": "ability",
+      "id": "deflection-probe-bolt-v1",
+      "revision": 1,
+      "contentHash": "sha256:2a171a210f4c2e80fb6bc3139dd6796693b07adb6bf89f6b936c6fdff3471307"
+    },
+    {
+      "kind": "ability",
+      "id": "projectile-deflection-v1",
+      "revision": 1,
+      "contentHash": "sha256:05e56186c80adbbd59ff592ea1fbab6ad5fa35115e2f3f770aabb0c05227151f"
+    },
+    {
+      "kind": "character",
+      "id": "mirror-guard-v1",
+      "revision": 1,
+      "contentHash": "sha256:fb7acf2383db932ab553e2c8a587844d861e4d14f7ddd33ae141d3afd9796101"
+    },
+    {
+      "kind": "character",
+      "id": "mirror-shooter-v1",
+      "revision": 1,
+      "contentHash": "sha256:a7fda55fe6c68d919e42352fbc582cbf032e934ea6882de6a95d1afd42b7eed0"
+    },
+    {
+      "kind": "policy",
+      "id": "mirror-guard-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:d48bfc6217eede89c168a8cca3db8a354e424cdc5182e3a23e6c16675a7c0484"
+    },
+    {
+      "kind": "policy",
+      "id": "mirror-shooter-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:57fb7b67c72f3d1e93bd55b1135deffb4fa84f588cdd75454089ea9245b7892d"
+    },
+    {
+      "kind": "ruleset",
+      "id": "experimental-deflection-v1",
+      "revision": 1,
+      "contentHash": "sha256:2cb0c02416d687d1b04f7b9708e1a2a7ec90b29c5ece56d23a0807e653f3c904"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-deflection-v1",
+      "revision": 1,
+      "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-tactics-deflection-v1",
+      "revision": 1,
+      "contentHash": "sha256:a46b5750769277dbf6f65a285cc2ac6e43d464111be60f61f600fedfe070e5db"
+    },
+    {
+      "kind": "ability",
       "id": "drain-ember-v1",
       "revision": 1,
       "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
@@ -722,6 +776,72 @@
       "id": "spatial-beam-v1-policy",
       "revision": 1,
       "contentHash": "sha256:cdb5dab23b4f032b675540f0343d791f414df81caeb88c8ff65e652feee5abd3"
+    },
+    {
+      "kind": "ability",
+      "id": "phase-bolt-v1",
+      "revision": 1,
+      "contentHash": "sha256:e1027f2fa379fa5ff0debe945a9f59fc37a684c3cf2562f067c1948833092317"
+    },
+    {
+      "kind": "ability",
+      "id": "phase-grant-v1",
+      "revision": 1,
+      "contentHash": "sha256:b5a20bfde8315e140e137976a2c9461777cf6150f79b4fe3f268dc485e933e01"
+    },
+    {
+      "kind": "character",
+      "id": "phase-archer-v1",
+      "revision": 1,
+      "contentHash": "sha256:6c17348c39d8ccf3af6dc34c53a7a8e0cccf5c98f611d955448d00febdabe151"
+    },
+    {
+      "kind": "character",
+      "id": "phase-traveller-v1",
+      "revision": 1,
+      "contentHash": "sha256:117c2c1c972b61fce2da5c896097f13bd3cc429b7eb8dd666963a73d6e273356"
+    },
+    {
+      "kind": "policy",
+      "id": "phase-archer-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:12cb99d17715409605d3b2e50862e74c98c278d1fccb287ce04ba23dd1947780"
+    },
+    {
+      "kind": "policy",
+      "id": "phase-traveller-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:2bf3dc4a7d7f63e58cc01ec0cd3b9a1052bf31460c4f58d2b6d3d44af665963a"
+    },
+    {
+      "kind": "ruleset",
+      "id": "experimental-spatial-v1",
+      "revision": 1,
+      "contentHash": "sha256:6494574c03787aff4f867a4a0592acdad4d35c6fc6b77eeb565591ac035e2082"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-spatial-v1",
+      "revision": 1,
+      "contentHash": "sha256:ac84981f6df8c1cbbb66554627dfe5ac3c6741ba9ed5d44495831792447d511d"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-tactics-spatial-v1",
+      "revision": 1,
+      "contentHash": "sha256:35233231ef63cb4fe680cc6d4f88ca37cbe216d47fd227eb56e4ca415bfcf8c9"
+    },
+    {
+      "kind": "scenario",
+      "id": "phase-stone-corridor-v1",
+      "revision": 1,
+      "contentHash": "sha256:93e57860d7d9dbc23f2d93a8eca17211905a46430621c69556a89c290a03dc67"
+    },
+    {
+      "kind": "status",
+      "id": "phase-stone-energy-v1",
+      "revision": 1,
+      "contentHash": "sha256:fca7072653676f9b2910100219b8387fbe380799a6768456d07a0d793947b0fc"
     }
   ]
 }

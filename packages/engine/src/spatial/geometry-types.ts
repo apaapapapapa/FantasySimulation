@@ -7,9 +7,11 @@ export type Capsule = { radius: number; halfHeight: number };
 export type PhaseQuery = DeepReadonly<Phasing> & {
   layer: 'movement' | 'attack';
   minGroundY: number;
+  floorMaterials?: readonly SpatialMaterial[];
 };
 export type SpatialQuery = {
   ownerId?: string;
+  ignoreDynamic?: boolean;
   ignoreObjectId?: string;
   departingObjectIds?: readonly string[];
   phase?: PhaseQuery;
@@ -37,13 +39,21 @@ export function blocksQuery(
   normal?: Vec3,
   overlap = false,
 ): boolean {
-  if (obstacle.id === query.ignoreObjectId || !obstacle.blocks[layer]) return false;
+  if (
+    (query.ignoreDynamic && obstacle.ownerId) ||
+    obstacle.id === query.ignoreObjectId ||
+    !obstacle.blocks[layer]
+  )
+    return false;
   const phase = query.phase;
   if (
     phase?.layer === layer &&
     !obstacle.id.startsWith('boundary.') &&
     phase.materials.includes(obstacle.material ?? 'generic') &&
-    (overlap || phase.floor || (normal && normal.y < phase.minGroundY))
+    (overlap ||
+      phase.floor ||
+      phase.floorMaterials?.includes(obstacle.material ?? 'generic') ||
+      (normal && normal.y < phase.minGroundY))
   )
     return false;
   const selector = obstacle.selectors?.[layer];

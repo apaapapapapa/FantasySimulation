@@ -29,6 +29,7 @@ export const responseMechanics = {
   parry: 'parry',
   effects: 'reaction-effects',
   counter: 'counter',
+  deflect: 'projectile-deflection',
 } satisfies Record<NonNullable<Definition<'ability'>['reaction']>['response']['kind'], MechanicId>;
 export const periodicMechanics = {
   damage: 'damage',

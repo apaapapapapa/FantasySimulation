@@ -1,27 +1,13 @@
 import { expect, it } from 'vite-plus/test';
-import { closureMechanics } from '@fantasy/domain/spatial';
 import pairs from '../../fixtures/spatial/spatial-object-pairs.json' with { type: 'json' };
-import {
-  interferencePairManifest,
-  type SpatialInterferenceMechanic,
-} from '../../test-support/interference.ts';
+import { runInterferencePair } from '../../test-support/interference-run.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
-import { runBattle } from './run.ts';
 
 it('executes all 159 object ordered pairs with recorded activation windows and contacts', async () => {
   expect(pairs.cases).toHaveLength(159);
   for (const fixture of pairs.cases) {
-    const input = await interferencePairManifest(
-      fixture.left as SpatialInterferenceMechanic,
-      fixture.right as SpatialInterferenceMechanic,
-    );
-    const mechanics = new Set(closureMechanics(input.revisions).map((m) => m.mechanic));
-    expect(
-      mechanics.has(fixture.left as SpatialInterferenceMechanic) &&
-        mechanics.has(fixture.right as SpatialInterferenceMechanic),
-      fixture.id,
-    ).toBe(true);
-    const run = await runBattle(input);
+    const { input, run, mechanics } = await runInterferencePair(fixture);
+    expect(mechanics, fixture.id).toEqual(expect.arrayContaining([fixture.left, fixture.right]));
     expect(run.result.outcome, fixture.id).toEqual({ kind: 'draw', reason: 'time-limit' });
     const spawned = run.records.flatMap((r) =>
       r.kind === 'boundary' || r.kind === 'interval' ? (r.objects?.spawn ?? []) : [],

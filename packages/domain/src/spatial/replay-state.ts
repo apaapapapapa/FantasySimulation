@@ -17,7 +17,7 @@ export { replayContext, type ReplayContext } from './replay-validation/context.t
 import { validateReactions } from './replay-validation/reaction.ts';
 import { validateForces } from './replay-validation/force.ts';
 import { validateAction } from './replay-validation/action.ts';
-import { validateProjectile } from './replay-validation/projectile.ts';
+import { validateProjectile, validateProjectileUpdate } from './replay-validation/projectile.ts';
 import { validateEvents } from './replay-validation/event.ts';
 import { validateInterferences } from './replay-validation/interference.ts';
 
@@ -130,12 +130,17 @@ export class ReplayState {
     for (const object of state.objects ?? []) {
       requireReplay(!ids.has(object.id), 'duplicate entity');
       ids.add(object.id);
-      validateSpatialObject(this.context, object, step);
+      validateSpatialObject(this.context, object, step, nextEvent);
+      if (object.kind === 'beam')
+        requireReplay(
+          same(object.position, state.actors.find((a) => a.id === object.ownerId)?.position),
+          'beam owner pose',
+        );
     }
     for (const p of state.projectiles) {
       requireReplay(!ids.has(p.id), 'duplicate entity');
       ids.add(p.id);
-      validateProjectile(this.context, p, step);
+      validateProjectile(this.context, p, step, nextEvent);
     }
   }
   private validateOutcome(
@@ -285,8 +290,11 @@ export class ReplayState {
             [...prior.state.actors, ...prior.state.projectiles].map((e) => [e.id, e.position]),
           );
           for (const p of record.projectiles.spawn) {
-            validateProjectile(this.context, p, prior.step);
-            requireReplay(!entities.has(p.id) && p.launchStep === prior.step, 'projectile spawn');
+            validateProjectile(this.context, p, prior.step, prior.nextEvent);
+            requireReplay(
+              !entities.has(p.id) && p.launchStep === prior.step && !p.deflection,
+              'projectile spawn',
+            );
             entities.add(p.id);
             before.set(p.id, p.position);
             state.projectiles.push(p);
@@ -302,8 +310,13 @@ export class ReplayState {
               index >= 0 && !removed.has(p.id) && !updated.has(p.id),
               'projectile update',
             );
+            validateProjectileUpdate(state.projectiles[index]!, p, record);
             updated.add(p.id);
-            state.projectiles[index] = { ...state.projectiles[index]!, ...p };
+            state.projectiles[index] = {
+              ...state.projectiles[index]!,
+              ...p,
+              ownerId: p.ownerId ?? state.projectiles[index]!.ownerId,
+            };
           }
           for (const id of removed.keys())
             requireReplay(

@@ -11,6 +11,7 @@ import {
   ForceContributionSchema,
   MotionProjectionSchema,
   ReactionContextSchema,
+  ProjectileDeflectionSchema,
 } from './records.ts';
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
@@ -150,6 +151,7 @@ export const ProjectileDisplaySchema = z.strictObject({
   radiusMm: z.number().int().min(1).max(5000),
   launchStep: step,
   endStep: z.number().int().min(1).max(12000),
+  deflection: ProjectileDeflectionSchema.optional(),
   stage: StageContactSchema.optional(),
 });
 export type ProjectileDisplay = z.infer<typeof ProjectileDisplaySchema>;
@@ -157,7 +159,7 @@ export const ProjectileDeltaSchema = ProjectileDisplaySchema.pick({
   id: true,
   position: true,
   velocity: true,
-});
+}).extend({ ownerId: IdSchema.optional(), deflection: ProjectileDeflectionSchema.optional() });
 export const ProjectileChangesSchema = z.strictObject({
   spawn: z.array(ProjectileDisplaySchema).max(2),
   update: z.array(ProjectileDeltaSchema).max(256),

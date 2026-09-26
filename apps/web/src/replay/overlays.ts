@@ -4,7 +4,7 @@ export const OVERLAY_LABELS = {
   paths: '軌跡（記録された折れ線）',
   hits: '命中点（記録座標）',
   rays: '射線（記録された区間）',
-  motion: '押し出し・技の移動（記録された速度の0.1秒分）',
+  motion: '押し出し・技の移動・跳ね返し（記録された速度の0.1秒分）',
 } as const;
 export type Overlays = Record<keyof typeof OVERLAY_LABELS, boolean>;
 export const NO_OVERLAYS: Overlays = {
@@ -15,4 +15,8 @@ export const NO_OVERLAYS: Overlays = {
   rays: false,
   motion: false,
 };
-export const ARROW_COLOURS = { force: '#ff9f5a', 'stage-motion': '#c9a6ff' } as const;
+export const ARROW_COLOURS = {
+  force: '#ff9f5a',
+  'stage-motion': '#c9a6ff',
+  deflection: '#72e0c1',
+} as const;

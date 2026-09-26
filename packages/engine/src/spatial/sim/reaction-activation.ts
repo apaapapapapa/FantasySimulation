@@ -65,9 +65,16 @@ export function matchesReaction(
 ) {
   if (!app.actorId || app.actorId === app.targetId) return false;
   const reaction = ability.definition.reaction!;
-  const source = actors
-    .find((a) => idOf(a) === app.actorId)
-    ?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
+  if (
+    reaction.response.kind === 'deflect' &&
+    (!app.projectileContact?.direct || app.projectileContact.reflected)
+  )
+    return false;
+  const source =
+    app.sourceAbility ??
+    actors
+      .find((a) => idOf(a) === app.actorId)
+      ?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
   if (
     reaction.categories &&
     (!source || !reaction.categories.some((c) => abilityCategories(source.definition).includes(c)))
@@ -81,6 +88,85 @@ export function matchesReaction(
         : app.effect.kind === 'water' && element === 'water',
     )
   );
+}
+
+/** Pure eligibility shared by cost planning and activation. A deflection owns its
+ * contact; competing parries retain only their other matches before reservation. */
+export function reactionCandidates(
+  actor: ActorState,
+  actors: ActorState[],
+  incoming: PendingEffect[],
+  point: ReactionContext['point'],
+  context: EffectContext,
+) {
+  const { battle, step, activationStep } = context;
+  const view = selfView(actor, step, battle.rules.ai, battle.statuses);
+  let eligible = actor.body.motion.actor.abilities
+    .filter((a) => {
+      const d = a.definition;
+      return (
+        d.reaction &&
+        d.trigger === point &&
+        !view.incapacitated &&
+        postureAllows(actor.body.motion, d) &&
+        !(view.silenced && blockedBySilence(d)) &&
+        (actor.actions.cooldowns[a.id] ?? 0) <= activationStep &&
+        (!d.costs.uses || (actor.actions.used[a.id] ?? 0) < d.costs.uses) &&
+        conditionMatches(d.condition, view)
+      );
+    })
+    .map((ability) => ({
+      ability,
+      matches: incoming.filter(
+        (app) => app.targetId === idOf(actor) && matchesReaction(ability, app, actors),
+      ),
+      clock: actionClock(
+        ability.definition,
+        actor.body.motion.actor.character.stats.actionSpeedBps,
+        activationStep,
+      ),
+    }))
+    .filter((a) => a.clock && (point === 'before-defeat' || a.matches.length))
+    .sort((a, b) => compareIds(a.ability.id, b.ability.id));
+
+  if (point === 'before-hit') {
+    const deflecting = new Set(
+      eligible
+        .filter((e) => e.ability.definition.reaction!.response.kind === 'deflect')
+        .flatMap((e) => e.matches.map((app) => app.projectileContact!.id)),
+    );
+    eligible = eligible
+      .map((e) =>
+        e.ability.definition.reaction!.response.kind === 'parry'
+          ? {
+              ...e,
+              matches: e.matches.filter(
+                (app) => !app.projectileContact || !deflecting.has(app.projectileContact.id),
+              ),
+            }
+          : e,
+      )
+      .filter((e) => e.matches.length);
+  }
+  return eligible;
+}
+export function reactionAffordable(
+  actor: ActorState,
+  eligible: ReturnType<typeof reactionCandidates>,
+  context: EffectContext,
+) {
+  const view = selfView(actor, context.step, context.battle.rules.ai, context.battle.statuses);
+  return new ResourceBudget(
+    actor.vitals.resources,
+    actor.actions.used,
+    resourceReady(view),
+  ).reserve(
+    'reaction',
+    eligible.map(({ ability }) => ({
+      ...ability.definition.costs,
+      uses: { id: ability.id, limit: ability.definition.costs.uses },
+    })),
+  ).ok;
 }
 
 /** Admission is shared by every phase. Owners reserve all eligible costs or none;
@@ -99,35 +185,9 @@ export function activateReactions(
   for (const actor of [...actors].sort((a, b) => compareIds(idOf(a), idOf(b)))) {
     if (!alive.has(idOf(actor)) || (point === 'before-defeat' && actor.vitals.resources.hp > 0))
       continue;
-    const view = selfView(actor, step, battle.rules.ai, battle.statuses);
-    const eligible = actor.body.motion.actor.abilities
-      .filter((a) => {
-        const d = a.definition;
-        return (
-          d.reaction &&
-          d.trigger === point &&
-          !view.incapacitated &&
-          postureAllows(actor.body.motion, d) &&
-          !(view.silenced && blockedBySilence(d)) &&
-          (actor.actions.cooldowns[a.id] ?? 0) <= activationStep &&
-          (!d.costs.uses || (actor.actions.used[a.id] ?? 0) < d.costs.uses) &&
-          conditionMatches(d.condition, view)
-        );
-      })
-      .map((ability) => ({
-        ability,
-        matches: incoming.filter(
-          (app) => app.targetId === idOf(actor) && matchesReaction(ability, app, actors),
-        ),
-        clock: actionClock(
-          ability.definition,
-          actor.body.motion.actor.character.stats.actionSpeedBps,
-          activationStep,
-        ),
-      }))
-      .filter((a) => a.clock && (point === 'before-defeat' || a.matches.length))
-      .sort((a, b) => compareIds(a.ability.id, b.ability.id));
+    const eligible = reactionCandidates(actor, actors, incoming, point, state.context);
     if (!eligible.length) continue;
+    const view = selfView(actor, step, battle.rules.ai, battle.statuses);
     const resources = new ResourceBudget(
       actor.vitals.resources,
       actor.actions.used,
@@ -156,7 +216,8 @@ export function activateReactions(
         point === 'before-defeat'
           ? incoming.filter((app) => app.targetId === idOf(actor))
           : entry.matches;
-      const depth = 1 + Math.max(0, ...basis.map((app) => app.reaction?.depth ?? 0));
+      const depth =
+        1 + Math.max(0, ...basis.map((app) => app.reaction?.depth ?? app.ancestry?.depth ?? 0));
       const causes = [
         ...new Set(
           basis

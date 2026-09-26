@@ -14,6 +14,7 @@ import type {
   ObservedStage,
   ObservedStatus,
   ObservedSurface,
+  ObservedSpatial,
   Posture,
   ReactionDisplay,
   ResourceState,
@@ -113,6 +114,7 @@ export type Observation = DeepReadonly<{
   enemy: ObservedActor | null;
   projectiles: ObservableProjectile[];
   terrain?: ObservedSurface[];
+  spatial?: ObservedSpatial[];
 }>;
 
 export type PerceptionMemory = DeepReadonly<{
@@ -126,6 +128,7 @@ export type PerceptionMemory = DeepReadonly<{
   expired: string[];
   terrain: ObservedSurface[];
   statusChangedAt?: number;
+  deflections?: { targetId: string; sampledAt: number; availableAt: number; expiresAt: number }[];
   threatHistory?: ThreatExperience[];
   search?: SearchMemory;
 }>;

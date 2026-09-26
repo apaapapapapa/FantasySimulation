@@ -251,10 +251,28 @@ export function buildSceneModel(
       id: p.id,
       position: point(p.position),
       radius: p.radiusMm / 1000,
+      ownerId: p.ownerId,
+      colour: p.deflection ? '#72e0c1' : '#f0bd67',
     })),
     paths,
     shapes,
-    arrows,
+    arrows: [
+      ...arrows,
+      ...events.flatMap((event) =>
+        event.projectileDeflection
+          ? [
+              {
+                id: `${event.id}:deflection`,
+                kind: 'deflection' as const,
+                points: ahead(
+                  point(event.projectileDeflection.position),
+                  point(event.projectileDeflection.velocity),
+                ),
+              },
+            ]
+          : [],
+      ),
+    ],
     events: hits,
     rays: [
       ...shapes.filter((shape) => shape.kind === 'ray'),
@@ -285,7 +303,7 @@ export function buildSceneModel(
       ),
     ],
     effects: events.flatMap((event) => {
-      if (!['launch', 'hit'].includes(event.kind)) return [];
+      if (!['launch', 'hit', 'projectile-deflect'].includes(event.kind)) return [];
       const position = event.point ? point(event.point) : undefined;
       return position ? [{ id: event.id, kind: event.kind, position }] : [];
     }),

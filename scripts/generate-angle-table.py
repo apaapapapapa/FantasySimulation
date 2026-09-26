@@ -14,7 +14,7 @@ with localcontext() as ctx:
             term *= -x * x / (2 * n * (2 * n + 1))
             total += term
         values.append(int((total * 1_000_000_000).to_integral_value(rounding=ROUND_HALF_EVEN)))
-    output = Path(__file__).resolve().parents[1] / 'packages/engine/src/spatial/sine-table.json'
+    output = Path(__file__).resolve().parents[1] / 'packages/domain/src/spatial/sine-table.json'
     output.parent.mkdir(parents=True, exist_ok=True)
     # Match the pinned formatter's 100-column numeric-array representation, including LF on Windows.
     lines = ['[']

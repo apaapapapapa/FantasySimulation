@@ -25,3 +25,4 @@ export * from './mechanic-uses.ts';
 export * from './interference-records.ts';
 export * from './spatial-operations.ts';
 export * from './phasing-display.ts';
+export * from './angles.ts';

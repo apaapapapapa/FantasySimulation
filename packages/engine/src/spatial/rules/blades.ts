@@ -10,6 +10,7 @@ import { bladeBodyContact, bladeObstacleContact } from '../world/geometry.ts';
 import { add, cosDegrees, length, mul, sinDegrees, sub, unit, type Vec3 } from '../math.ts';
 import {
   at,
+  traceBoundaries,
   CONTACT_TOLERANCE,
   firstImpact,
   SpatialBudgetError,
@@ -82,14 +83,7 @@ export function sweepBlade(
     const p = pose(time);
     return bladeBodyContact(p.root, p.tip, radius, at(targetTrace, time), capsule);
   };
-  const boundaries = [
-    ...new Set([
-      0,
-      1,
-      ...owner.flatMap((s) => [s.from, s.to]),
-      ...targetTrace.flatMap((s) => [s.from, s.to]),
-    ]),
-  ].sort((a, b) => a - b);
+  const boundaries = traceBoundaries(owner, targetTrace);
   let wall: number | undefined, wallPoint: Vec3 | undefined, body: number | undefined;
   let obstacleIds: string[] = [];
   for (let i = 1; i < boundaries.length; i++) {

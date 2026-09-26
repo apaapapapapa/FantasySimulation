@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SpatialMaterialSchema } from './spatial-operations.ts';
 import {
   AppearanceSchema,
   DamageDefenseSchema,
@@ -50,10 +51,19 @@ const ObservedStatusesSchema = z.array(ObservedStatusSchema).max(64);
 export const ObservedSurfaceSchema = z.strictObject({
   pointMm: Vec3Schema,
   normalBps: Vec3Schema,
+  material: SpatialMaterialSchema.optional(),
   sampledAt: tick,
   availableAt: tick,
 });
 export type ObservedSurface = z.infer<typeof ObservedSurfaceSchema>;
+export const ObservedSpatialSchema = z.strictObject({
+  id: IdSchema,
+  ownerId: IdSchema,
+  kind: z.enum(['barrier', 'area', 'beam']),
+  pointsMm: z.array(Vec3Schema).min(1).max(9),
+});
+export type ObservedSpatial = z.infer<typeof ObservedSpatialSchema>;
+
 export const EstimateRangeSchema = z
   .strictObject({ low: quantity, high: quantity })
   .refine((v) => v.low <= v.high);
@@ -123,7 +133,7 @@ export type CandidateAssessment = z.infer<typeof CandidateAssessmentSchema>;
 export const ReactionEstimateSchema = z.strictObject({
   abilityId: IdSchema,
   point: ReactionPointSchema,
-  response: z.enum(['parry', 'effects', 'counter']),
+  response: z.enum(['parry', 'effects', 'counter', 'deflect']),
   readyAt: quantity,
   remainingUses: quantity.nullable(),
   eligible: z.boolean(),
@@ -149,6 +159,12 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
     perspective: z.literal('subjective'),
     learned: z.array(ExperienceSchema).max(32),
     expired: z.array(IdSchema).max(32),
+    deflections: z
+      .array(
+        z.strictObject({ targetId: IdSchema, sampledAt: tick, availableAt: tick, expiresAt: tick }),
+      )
+      .max(2)
+      .optional(),
     statusObservation: z
       .strictObject({
         targetId: IdSchema,
@@ -232,6 +248,7 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
       .optional(),
     targetPositionMm: Vec3Schema.nullable(),
     observedProjectiles: z.array(IdSchema).max(32),
+    observedSpatial: z.array(ObservedSpatialSchema).max(32).optional(),
     terrain: z.array(ObservedSurfaceSchema).max(64),
     candidates: z.array(CandidateAssessmentSchema).max(35),
     excluded: z

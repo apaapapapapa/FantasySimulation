@@ -12,7 +12,7 @@ const events = (records: StreamRecord[]) => records.flatMap((r) => ('events' in 
 describe('data-composed 3D sample catalog', () => {
   it('keeps published character examples and their transitive references reproducible', async () => {
     const catalog = await sampleCatalog();
-    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(27);
+    expect(catalog.filter((r) => r.kind === 'character')).toHaveLength(31);
     expect(
       catalog.filter((r) => r.kind === 'character' && r.definition.postures).map((r) => r.id),
     ).toEqual(['posture-archer-v1', 'posture-duelist-v1']);

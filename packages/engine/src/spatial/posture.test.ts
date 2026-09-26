@@ -99,10 +99,12 @@ it('lets visible melee actors engage around pillars instead of both sheltering u
   const sheltered = await runBattle(await withTacticalRules(await input()));
   expect(sheltered.result.outcome).toEqual({ kind: 'draw', reason: 'time-limit' });
   expect(casts(sheltered)).toBe(0);
-  const engaged = await runBattle(await input('standard-tactics-v2'));
+  const engaged = await runBattle(await input('standard-tactics-spatial-v1'));
   expect(casts(engaged)).toBeGreaterThan(0);
   expect(engaged.result.outcome.kind).toBe('win');
-  expect((await runBattle(await input('standard-tactics-v2'))).result).toEqual(engaged.result);
+  expect((await runBattle(await input('standard-tactics-spatial-v1'))).result).toEqual(
+    engaged.result,
+  );
 }, 60000);
 it('never turns an arena floor into cover beyond the public bounds', async () => {
   const run = await runBattle(

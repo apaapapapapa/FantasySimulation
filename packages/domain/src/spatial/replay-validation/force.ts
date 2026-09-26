@@ -7,7 +7,7 @@ import { recordedStage } from './stage.ts';
 import { requireReplay } from './common.ts';
 export function validateForce(context: ReplayContext, force: ForceContribution) {
   const ability = context.actors
-    .find((a) => a.participant.actorId === force.actorId)
+    .find((a) => a.participant.actorId === (force.sourceActorId ?? force.actorId))
     ?.abilities.find((a) => a.id === force.abilityId);
   const effects = force.stage
     ? recordedStage(ability, force.stage).effects

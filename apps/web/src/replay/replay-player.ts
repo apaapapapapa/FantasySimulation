@@ -47,7 +47,11 @@ function advance(before: ReplayCheckpoint, record: StreamRecord): ReplayCheckpoi
       const removed = new Set(record.projectiles.remove.map((delta) => delta.id));
       projectiles = [...projectiles, ...record.projectiles.spawn]
         .filter((p) => !removed.has(p.id))
-        .map((p) => ({ ...p, ...updates.get(p.id) }));
+        .map((p) => ({
+          ...p,
+          ...updates.get(p.id),
+          ownerId: updates.get(p.id)?.ownerId ?? p.ownerId,
+        }));
     }
     let objects = state!.objects;
     if (record.objects) {

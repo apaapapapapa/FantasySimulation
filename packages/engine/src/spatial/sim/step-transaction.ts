@@ -16,6 +16,7 @@ import type { SpatialWorld } from '../world/physics.ts';
 import type { ProjectileState } from '../rules/projectiles.ts';
 import type { ResourceBudget } from '../rules/resources.ts';
 import { attachedStageAlive } from '../rules/stages.ts';
+import type { ProjectileContacts } from './projectile-deflection.ts';
 import type { WorkMeter } from './work-meter.ts';
 import type { Obstacle } from '../geometry-types.ts';
 import type { PendingRelocation } from '../state.ts';
@@ -52,6 +53,7 @@ export class StepTransaction {
   readonly effects: PendingEffect[] = [];
   readonly barrierDamage = new Map<string, number>();
   readonly objectRemovals = new Map<string, SpatialObjectChanges['remove'][number]['reason']>();
+  projectileContacts: ProjectileContacts | undefined;
   readonly spawns: ProjectileDisplay[] = [];
   forcePlans = new Map<string, ReturnType<typeof beginForcedInterval>>();
   previousMovement = new Map<string, PreviousMovement>();

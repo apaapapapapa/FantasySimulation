@@ -55,7 +55,11 @@ export function contactPhase(tx: StepTransaction) {
       if (shape.kind !== 'projectile') throw new Error('Invalid projectile');
       damageBarrierContact(
         tx,
-        { ...projectile, cause },
+        {
+          ...projectile,
+          cause,
+          ...(projectile.deflection ? { powerBps: projectile.deflection.powerBps } : {}),
+        },
         contact,
         shape.radiusMm / 1000,
         shape.explosionRadiusMm / 1000,
@@ -63,6 +67,7 @@ export function contactPhase(tx: StepTransaction) {
     },
   );
   effects.push(...projectileStep.effects);
+  tx.projectileContacts = projectileStep.contacts;
   for (const attack of attacks) {
     const ownerActor = next.find((a) => actorId(a) === attack.actorId)!;
     if (

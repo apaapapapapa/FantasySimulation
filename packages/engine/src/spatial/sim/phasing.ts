@@ -1,3 +1,4 @@
+import { boundedInterferences } from './interference.ts';
 import { canonicalJson, type PhaseContribution } from '@fantasy/domain/spatial/execution';
 import { activePhaseContributions, combinedPhase } from '../rules/phasing.ts';
 import { capsuleOverlapsObstacle } from '../world/geometry.ts';
@@ -35,7 +36,8 @@ export function updateBodyPhasing(tx: StepTransaction) {
           occupied.some(
             (o) => !o.id.startsWith('boundary.') && (o.material ?? 'generic') === material,
           ) &&
-          (!current.materials.includes(material) || (contribution.floor && !current.floor)),
+          (!current.materials.includes(material) ||
+            (contribution.floor && !current.floorMaterials.includes(material))),
       );
       if (!materials.length) continue;
       const next = { ...contribution, materials };
@@ -59,6 +61,27 @@ export function updateBodyPhasing(tx: StepTransaction) {
         observed: extendedIntervals + 1,
         limit: 50,
         cause,
+        context: boundedInterferences([
+          {
+            step: tx.step,
+            point: 'boundary',
+            wave: null,
+            actors: [actorId(actor)],
+            ruleId: 'phasing.exit-limit',
+            causes: [...new Set(allPrior.flatMap((c) => c.causes))].map((eventId) => ({
+              kind: 'event' as const,
+              eventId,
+            })),
+            revisions: [
+              ...new Map(
+                allPrior.map((c) => [
+                  canonicalJson(c.revision),
+                  { ...c.revision, kind: 'status' as const },
+                ]),
+              ).values(),
+            ],
+          },
+        ]),
       });
     actor.body.motion.phasing =
       active.length || retained.length || exitPending

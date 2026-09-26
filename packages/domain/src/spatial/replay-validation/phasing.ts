@@ -30,6 +30,11 @@ export function validatePhasing(context: ReplayContext, actor: ActorDisplay, nex
         contribution.causes.every((id) => /^e\.\d+$/.test(id) && Number(id.slice(2)) < nextEvent),
       'phasing causes',
     );
+    if (phase.active.includes(contribution))
+      requireReplay(
+        !!spec && same(contribution.materials, spec.materials) && contribution.floor === spec.floor,
+        'active phasing mask',
+      );
     const key = JSON.stringify(contribution);
     requireReplay(!seen.has(key), 'duplicate phasing contribution');
     seen.add(key);

@@ -92,7 +92,12 @@ export function* simulate(
     const navigators = new Map(
       actors.map((a) => [
         actorId(a),
-        new Navigator(world, a.body.motion.actor, battle.scenario, battle.rules),
+        new Navigator(
+          world.forQuery({ ignoreDynamic: true }),
+          a.body.motion.actor,
+          battle.scenario,
+          battle.rules,
+        ),
       ]),
     );
     world.casts = 0;
@@ -142,7 +147,12 @@ export function* simulate(
           for (const actor of actors)
             navigators.set(
               actorId(actor),
-              new Navigator(world, actor.body.motion.actor, battle.scenario, battle.rules),
+              new Navigator(
+                world.forQuery({ ignoreDynamic: true }),
+                actor.body.motion.actor,
+                battle.scenario,
+                battle.rules,
+              ),
             );
         }
         if (publish) yield structuredClone(record);

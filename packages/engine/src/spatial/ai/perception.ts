@@ -1,3 +1,5 @@
+import { observeSpatial } from './spatial-observation.ts';
+import type { SpatialObject } from '../rules/spatial-objects.ts';
 import { bodyPoint, canSee } from '../world/visibility.ts';
 import type {
   MotionState,
@@ -80,6 +82,9 @@ function observeTerrain(world: SpatialWorld, self: MotionState, step: number): O
       surfaces.push({
         pointMm: roundedVector(hit.point, 1000),
         normalBps: roundedVector(unit(hit.normal), 10000),
+        ...(world.allObstacles().find((o) => o.id === hit.obstacleId)?.material
+          ? { material: world.allObstacles().find((o) => o.id === hit.obstacleId)!.material! }
+          : {}),
         sampledAt: step,
         availableAt: step + self.actor.character.perception.reactionSteps,
       });
@@ -220,6 +225,7 @@ export function perceive(
   terrainMode: 'surveyed' | 'observed' = 'surveyed',
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
   bounds?: DeepReadonly<Definition<'scenario'>['bounds']>,
+  objects: readonly SpatialObject[] = [],
 ): PerceptionMemory {
   const interval = self.actor.character.perception.reactionSteps;
   let pending = [...previous.pending],
@@ -227,6 +233,9 @@ export function perceive(
     lastSeen = previous.lastSeen,
     terrain = [...previous.terrain];
   let statusChangedAt = previous.statusChangedAt;
+  let deflections = previous.deflections
+    ? [...previous.deflections.filter((d) => d.expiresAt > step)]
+    : undefined;
   let threatHistory = previous.threatHistory ? [...previous.threatHistory] : undefined;
   for (const sample of pending)
     if (sample.availableAt <= step) {
@@ -238,6 +247,17 @@ export function perceive(
       const previouslyVisible = observation?.projectiles ?? [];
       observation = sample;
       if (sample.enemy) lastSeen = sample.enemy;
+      if (sample.enemy?.reaction?.response === 'deflect') {
+        deflections = [
+          ...(deflections ?? []).filter((d) => d.targetId !== sample.enemy!.id),
+          {
+            targetId: sample.enemy.id,
+            sampledAt: sample.sampledAt,
+            availableAt: sample.availableAt,
+            expiresAt: sample.sampledAt + rules.knowledgeTtlSteps,
+          },
+        ].slice(-2);
+      }
       terrain.push(...(sample.terrain ?? []));
       if (rules.reapplication)
         for (const p of sample.projectiles) {
@@ -271,6 +291,7 @@ export function perceive(
       observedStatuses.length > 0 ||
       lastSeen?.statuses !== undefined ||
       previous.pending.some((s) => s.enemy?.statuses !== undefined);
+    const spatial = observeSpatial(world, self, objects);
     pending.push({
       sampledAt: step,
       availableAt: step + interval,
@@ -315,6 +336,9 @@ export function perceive(
             },
           }
         : null,
+      ...(spatial.length || previous.observation?.spatial || previous.pending.some((s) => s.spatial)
+        ? { spatial }
+        : {}),
       projectiles: projectiles
         .filter(
           (p) => p.ownerId !== self.actor.participant.actorId && canSee(world, self, p.position),
@@ -342,7 +366,9 @@ export function perceive(
           ...(p.attackCueId ? { attackCueId: p.attackCueId } : {}),
         })),
       terrain:
-        terrainMode === 'observed' || world.allObstacles().some((o) => o.ownerId)
+        terrainMode === 'observed' ||
+        spatial.some((o) => o.kind === 'barrier') ||
+        observation?.spatial?.some((o) => o.kind === 'barrier')
           ? observeTerrain(world, self, step)
           : [],
     });
@@ -411,6 +437,7 @@ export function perceive(
           ),
         }
       : {}),
+    ...(deflections ? { deflections } : {}),
     ...(statusChangedAt !== undefined && { statusChangedAt }),
     ...(threatHistory ? { threatHistory: threatHistory.filter((e) => e.expiresAt > step) } : {}),
     pendingExperience: previous.pendingExperience.filter(

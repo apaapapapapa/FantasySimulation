@@ -23,7 +23,7 @@ const spec: Relocation = {
   maxDistanceMm: 5000,
 };
 
-it.each(['headroom', 'range', 'arena', 'support-touch'] as const)(
+it.each(['headroom', 'phasing-headroom', 'range', 'arena', 'support-touch'] as const)(
   'checks the whole destination capsule: %s',
   async (mode) => {
     const f = await spatialTransaction();
@@ -39,10 +39,25 @@ it.each(['headroom', 'range', 'arena', 'support-touch'] as const)(
         z: 0,
       };
       if (mode === 'arena') destination.x = f.battle.scenario.bounds.max.x / 1000;
-      if (mode === 'headroom')
+      if (mode === 'phasing-headroom')
+        motion.phasing = {
+          active: [
+            {
+              materials: ['stone'],
+              floor: true,
+              revision: actor.actions.action!.ability,
+              causes: ['e.0'],
+            },
+          ],
+          retained: [],
+          exitPending: false,
+          extendedIntervals: 0,
+        };
+      if (mode === 'headroom' || mode === 'phasing-headroom')
         f.tx.replaceGeometry([
           {
             id: 'low-ceiling',
+            material: 'stone',
             position: { x: -1, y: 1.75, z: 0 },
             halfExtents: { x: 0.1, y: 0.1, z: 1 },
             blocks: { movement: true, vision: true, attack: true },
@@ -61,7 +76,7 @@ it.each(['headroom', 'range', 'arena', 'support-touch'] as const)(
       ];
       activateRelocations(f.tx);
       expect(f.tx.journal.events[0]?.reason).toBe(
-        mode === 'headroom' ? 'obstacle' : mode === 'support-touch' ? 'relocated' : mode,
+        mode.includes('headroom') ? 'obstacle' : mode === 'support-touch' ? 'relocated' : mode,
       );
       expect(actor.actions.used[actor.actions.action!.ability.id]).toBe(1);
       expect(actor.vitals.resources.mp).toBe(f.previous.actors[0]!.vitals.resources.mp);

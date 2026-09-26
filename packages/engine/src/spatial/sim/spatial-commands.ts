@@ -90,7 +90,7 @@ export function queueSpatialObject(
   const common = {
     id: `object.${stage ? `${actionId}.${stage.stageIndex}` : actionId}`,
     ownerId: actorId(actor),
-    ownerSlot: tx.context.battle.actors.findIndex((a) => a.participant.actorId === actorId(actor)),
+    ownerSlot: actor.body.motion.actor.participant.rngStream,
     ordinal: tx.next.serial++,
     ability,
     actionId,

@@ -25,6 +25,7 @@ export function knownTerrainWorld(
     }
     return {
       id: `observed.${index}`,
+      ...(sample.material ? { material: sample.material } : {}),
       position: sub(metres(sample.pointMm), mul(normal, 0.003)),
       halfExtents: { x: 0.35, y: 0.003, z: 0.35 },
       rotation: { ...xyz, w },

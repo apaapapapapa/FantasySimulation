@@ -133,6 +133,32 @@ describe('regression corpus definition', () => {
     for (const category of corpus.categories)
       assert.equal(category.state === 'planned', category.owner !== null);
   });
+  it('retains every required test above 256 and fails closed beyond the reviewed 512 registry capacity', () => {
+    const source = definition();
+    const extra = Array.from({ length: 510 }, (_, i) => `capacity-${i}`);
+    for (const id of extra)
+      source.tests[id] = { file: 'packages/engine/src/spatial/capacity.test.ts', name: id };
+    for (let offset = 0; offset < extra.length; offset += 64)
+      source.categories.push({
+        id: `capacity-${offset}`,
+        title: 'bounded registry',
+        state: 'implemented',
+        owner: null,
+        tests: extra.slice(offset, offset + 64),
+      });
+    const parsed = parseCorpus(source);
+    assert.equal(parsed.tests.size, 512);
+    assert.deepEqual([...parsed.tests.keys()], Object.keys(source.tests));
+    const unreferenced = structuredClone(source);
+    unreferenced.categories.at(-1)!.tests.pop();
+    assert.throws(() => parseCorpus(unreferenced), /unreferenced/);
+    source.tests.overflow = {
+      file: 'packages/engine/src/spatial/capacity.test.ts',
+      name: 'overflow',
+    };
+    source.categories.at(-1)!.tests.push('overflow');
+    assert.throws(() => parseCorpus(source), /1\.\.512/);
+  });
   it.each([
     ['unknown fields', (c: Draft) => (c.extra = true), /expected exactly/],
     ['dangling tests', (c: Draft) => c.categories[0]!.tests.push('gone'), /unknown test/],

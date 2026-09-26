@@ -1,4 +1,5 @@
-import sine from './sine-table.json' with { type: 'json' };
+import { sinDegrees, cosDegrees } from '@fantasy/domain/spatial/execution';
+export { sinDegrees, cosDegrees } from '@fantasy/domain/spatial/execution';
 
 export type Vec3 = { x: number; y: number; z: number };
 export const ZERO: Readonly<Vec3> = Object.freeze({ x: 0, y: 0, z: 0 });
@@ -15,19 +16,6 @@ export const cross = (a: Vec3, b: Vec3): Vec3 => ({
   z: a.x * b.y - a.y * b.x,
 });
 export const lerp = (a: Vec3, b: Vec3, t: number) => add(a, mul(sub(b, a), t));
-
-/** Versioned 1-degree table, linear interpolation. No runtime transcendental functions. */
-export function sinDegrees(degrees: number): number {
-  const angle = ((degrees % 360) + 360) % 360;
-  const sign = angle > 180 ? -1 : 1;
-  const half = angle > 180 ? angle - 180 : angle;
-  const quarter = half > 90 ? 180 - half : half;
-  const lower = Math.floor(quarter);
-  const a = sine[lower]!;
-  const b = sine[Math.min(90, lower + 1)]!;
-  return (sign * (a + (b - a) * (quarter - lower))) / 1_000_000_000;
-}
-export const cosDegrees = (degrees: number) => sinDegrees(90 + degrees);
 
 export function turnToward(facing: Vec3, desired: Vec3, degrees: number): Vec3 {
   const from = unit(facing);

@@ -1,4 +1,3 @@
-import { bodyWorld } from '../rules/phasing.ts';
 import { spatialBudgets } from './spatial-commands.ts';
 import type { Relocation, StageContact } from '@fantasy/domain/spatial/execution';
 import type { AbilityRevision, ActorState } from '../state.ts';
@@ -114,7 +113,7 @@ export function activateRelocations(tx: StepTransaction) {
               p.z - body.radius < min.z ||
               p.z + body.radius > max.z
             ? 'arena'
-            : bodyWorld(world, motion).overlaps(p, capsuleShape(body))
+            : world.forQuery({ ownerId: actorId(actor) }).overlaps(p, capsuleShape(body))
               ? 'obstacle'
               : actors.some(
                     (other) =>
@@ -158,6 +157,11 @@ export function activateRelocations(tx: StepTransaction) {
     if (reason) continue;
     actor.body.motion.position = { ...command.destination };
     actor.body.motion.grounded = false;
+    for (const object of tx.next.objects ?? [])
+      if (object.kind === 'beam' && object.ownerId === command.ownerId) {
+        object.position = { ...command.destination };
+        delete object.geometry;
+      }
     tx.context.navigators.get(command.ownerId)?.invalidate();
     if (actor.body.motionClock) delete actor.body.motionClock.dodgeUntilStep;
     if (actor.body.locomotion) actor.body.locomotion.dodging = false;

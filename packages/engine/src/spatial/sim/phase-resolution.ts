@@ -28,6 +28,7 @@ export function resolutionPhase(tx: StepTransaction) {
       aliveAtStart: new Set(actors.filter((a) => a.vitals.resources.hp > 0).map(actorId)),
     },
     work.reactions,
+    tx.projectileContacts,
   );
   interruptDamagedStages(next, step + 1, journal, 'resolution');
   for (const actor of next)

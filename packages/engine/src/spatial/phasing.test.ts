@@ -1,3 +1,6 @@
+import { tacticalPostures, STANDARD_BODY } from '@fantasy/samples';
+import { aiFixture } from '../../test-support/ai.ts';
+import { advancePosture, postureDuration } from './rules/posture.ts';
 import { beforeAll, expect, it } from 'vite-plus/test';
 import {
   BodyPhasingSchema,
@@ -76,14 +79,14 @@ it('truncates at the retry after 50 executed embedded intervals and restores the
     resource: 'phase-exit-steps',
     details: { observed: 51, limit: 50 },
   });
-  expect(run.result.steps).toBe(52);
+  expect(run.result.steps).toBe(58);
   const saved = await recordedCheckpoints(input, run),
     last = saved.checkpoints.at(-1)!;
   expect(
     last.state!.actors.every((a) => a.phasing?.exitPending && a.phasing.extendedIntervals === 50),
   ).toBe(true);
-  expect(last.state!.actors.map((a) => a.position.x)).toEqual([-4, 4]);
-  expect(last.state!.actors.every((a) => a.statuses.every((s) => s.endStep > 52))).toBe(true);
+  expect(last.state!.actors.map((a) => a.position.x)).toEqual([-3, 3]);
+  expect(last.state!.actors.every((a) => a.statuses.every((s) => s.endStep > 58))).toBe(true);
   const active = saved.checkpoints.findIndex(
     (c) => c.lastRecord?.kind === 'boundary' && c.state!.actors.some((a) => a.phasing?.exitPending),
   );
@@ -97,7 +100,7 @@ it('truncates at the retry after 50 executed embedded intervals and restores the
   expect(replay.checkpoint()).toEqual(before);
 });
 it('does not add an exit retry after the match has already ended', async () => {
-  const input = await phasingManifest(52),
+  const input = await phasingManifest(58),
     run = await runBattle(input);
   expect(run.result.outcome).toEqual({ kind: 'draw', reason: 'time-limit' });
   await recordedCheckpoints(input, run);
@@ -277,4 +280,55 @@ it('rejects unknown materials duplicate masks implicit floor and oversized exit 
       extendedIntervals: 51,
     }).success,
   ).toBe(false);
+});
+
+it('unions floor permissions per material and never applies wood permission to stone support', async () => {
+  const f = await aiFixture(),
+    world = new SpatialWorld([
+      stone(),
+      { ...stone(), id: 'wood', material: 'wood', position: { x: 3, y: 1, z: 0 } },
+    ]);
+  f.self.phasing = {
+    active: [
+      { materials: ['stone'], floor: false, revision: f.self.actor.abilities[0]!, causes: ['e.0'] },
+      { materials: ['wood'], floor: true, revision: f.self.actor.abilities[0]!, causes: ['e.1'] },
+    ],
+    retained: [],
+    exitPending: false,
+    extendedIntervals: 0,
+  };
+  try {
+    const query = bodyWorld(world, f.self);
+    expect(query.raycast({ x: 0, y: 4, z: 0 }, { x: 0, y: 0, z: 0 }, 'movement')?.obstacleId).toBe(
+      'stone',
+    );
+    expect(query.raycast({ x: 3, y: 4, z: 0 }, { x: 3, y: 0, z: 0 }, 'movement')).toBeUndefined();
+  } finally {
+    world.free();
+    f.world.free();
+  }
+});
+it('permits a contained posture shrink during exit but rejects growth into newly solid material', async () => {
+  const f = await aiFixture({ character: { postures: tacticalPostures(STANDARD_BODY) } }),
+    world = new SpatialWorld([stone()]);
+  try {
+    f.self.position = { x: 0, y: 0.902, z: 0 };
+    f.self.grounded = true;
+    const crouch = advancePosture(f.self, 'crouching', 0, world, []);
+    const smaller = advancePosture(
+      crouch,
+      undefined,
+      postureDuration(crouch, 'crouching'),
+      world,
+      [],
+    );
+    expect(smaller.posture?.current).toBe('crouching');
+    const request = advancePosture(smaller, 'standing', 20, world, []);
+    const blocked = advancePosture(request, undefined, 40, world, []);
+    expect(blocked.posture?.current).toBe('crouching');
+    expect(blocked.position).toEqual(smaller.position);
+  } finally {
+    world.free();
+    f.world.free();
+  }
 });
