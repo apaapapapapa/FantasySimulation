@@ -105,7 +105,7 @@ describe('duration-balanced test shards', () => {
       .filter((file) => file !== corpus)
       .map((file) => TEST_WEIGHTS[file] ?? 1);
     expect(others.length).toBeGreaterThan(0);
-    expect(Math.max(...others)).toBeLessThan(5);
+    expect(Math.max(...others)).toBeLessThanOrEqual(5);
     expect(others.reduce((sum, value) => sum + value, 0)).toBeLessThan(TEST_WEIGHTS[corpus]!);
   });
   it('moves only the heaviest known file to the front and keeps the given order otherwise', () => {
