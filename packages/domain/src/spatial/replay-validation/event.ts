@@ -3,6 +3,7 @@ import type { ReplayCheckpoint } from '../replay.ts';
 import type { ReplayContext } from './context.ts';
 import { recordedStage } from './stage.ts';
 import { validateForce } from './force.ts';
+import { validateRecovery } from './recovery.ts';
 import { requireReplay, emittedId, phases } from './common.ts';
 export function validateEvents(
   context: ReplayContext,
@@ -64,6 +65,7 @@ export function validateEvents(
       recordedStage(ability, e.stage);
     }
     if (e.force) validateForce(context, e.force);
+    validateRecovery(context, e, events);
     if (e.reaction) {
       const ability = context.actors
         .find((a) => a.participant.actorId === e.actorId)

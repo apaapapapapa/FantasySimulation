@@ -14,7 +14,7 @@ interruption; finer timing needs versioning. Caps 64/transaction, 1024/match, de
 cross-interval ancestry; overflow rolls back fully. Existing geometry/record caps remain.
 Replay validates saved display without engine. Future shapes/P6 require their own acceptance.
 
-## P6 hooks (unimplemented)
+## P6 contracts
 
 [Issue #155](https://github.com/apaapapapapa/FantasySimulation/issues/155), owner decision
 2026-09-26, withdraws numeric damage reflection and its example. Reflection means before-hit
@@ -22,8 +22,8 @@ projectile deflection only: aim at the delayed observed attacker if visible; oth
 reverse the incoming direction;
 transfer ownership, preserve launch power/speed/gravity/lifetime, no homing, resume next
 interval. No explosion there/re-deflection; exclude melee/hitscan/explosions/periodic damage.
-Absorption converts post-modifier/pre-shield damage to same-wave healing, total <=100%.
-Drain uses actual HP lost; explicit revival follows healing/all waves, finite <=4/actor/match.
+[P6-02 recovery](../rules/spatial-v1.md) implements absorption/drain. Revival remains a future
+bounded reaction after healing/all waves, <=4/actor/match.
 Reaction caps/rollback apply. [ADR0016](0016-p6-foundation.md) defines the approved foundation.
 Implementation follows #155 §2-C and the delivery skill; original
 design approval is not implementation approval. Preserve coordinator/domain/log ownership.

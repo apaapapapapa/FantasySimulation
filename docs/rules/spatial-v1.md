@@ -156,18 +156,26 @@ dispel matches ID/category subject to permanence. Further tactics are linked bel
 
 ## 効果と状態の同時解決（3D-06a / G-02 / G-03）
 
-Optional magicPower/magicDefense (0..1000000): omitted inherits adjusted attack/defense; explicit 0 is independent.
-Power = amount + floor(attack*attackScaleBps/10000) + sum(floor(stat*ratioBps/10000)).
-Scaling adds 1..2 unique attack/magicPower terms (ratios 0..100000). Each effect is one component.
-Defense physical(default)/magic/none is independent of element/category; none bypasses defense only.
-Order: max(0,power-defense) → coverage → resistance → dealt → received → shared shield → HP.
-BigInt intermediates; each multiply floors; safe outputs. Coverage/resistance clamp 0..10000;
-dealt/received default 10000, clamp 0..30000. Shield includes concurrent grants; exact proportional
-fractions attribute shield/HP without ID remainders. HP+healing-unshielded damage clamps once.
-damage.ts owns power/calculation; G-03 supplies adjusted stats/factors. Launch freezes source,
-including melee/projectiles; resolution reads old target states. New formula/adjustment emits
-damage.calculation; amount/impact include factors. AI compares own power and matching defense;
-reveal ignores defense. Fixtures: damage-formulas.json and status tests.
+Optional magicPower/magicDefense (0..1000000): omission inherits adjusted physical stats; 0 is independent.
+Power = amount + floor(attack*attackScaleBps/10000) + sum(floor(stat*ratioBps/10000));
+1..2 unique attack/magicPower scaling terms, ratios 0..100000. Defense physical(default)/magic/none
+is independent of element/category. Order: defense → coverage → resistance → dealt → taken →
+absorption → shared shield → HP. BigInt, floor per multiplier; coverage/resistance 0..10000,
+dealt/taken 0..30000 (default10000). Shield includes concurrent grants, exact proportional shares.
+Launch freezes source; resolution reads old target states. damage.calculation records components.
+
+P6-02 (#155): adjustment absorption requires element, operation:add, amount0..10000 Bps.
+Sum stacks/rates, cap10000. floor(post-taken*rate/10000) becomes same-wave healing, leaving shield
+intact; hpRecovery applies. Element contact/reactions remain even at zero damage, including periodic.
+Optional damage.drainBps0..10000: cap post-shield HP loss at starting HP + ordinary/converted healing;
+apportion by exact damage fractions. Multiply each share by drainBps and source hpRecovery, floor once.
+Freeze all bases before any drain credit (no recursive funding by reciprocal drain). Add credits,
+then clamp HP once to [0,max] before defeat. No drain for self, periodic, costs, fall, or redirected
+projectiles (drainDisabled snapshot); cancellation/zero HP damage credits zero. Uses shared waves.
+Visible conversion teaches only a delayed weak/strong band, no rates/unused traits; own drain uses
+estimated HP loss. Optional damage.absorption/drain and causal heal events restore/display without
+engine. Omission preserves old hashes/decisions; additive implementation restamp, no old revision edits.
+Fixtures: damage-formulas.json, recovery-pairs.json and recovery tests; old expectations stay fixed.
 
 Statuses use [start,end): expire before per-stack pulses. Grants activate next boundary;
 dispel targets old states. Same revision/key/start shares a cohort; sum caps maxStacks;
@@ -203,17 +211,14 @@ updateResources once per boundary; retains carry/exhaustion, leaves absent stami
 Resource pulses precede HP/declarations. recoverActorResources settles interval-start
 staminaRecovery at step+1; later removal/grants cannot alter elapsed recovery. No duplicate arithmetic.
 
-Visible states yield ≤64 delayed summaries: ID/categories, benefit/adjustment/reaction direction,
-removability; no hashes, quantities, stacks or deadlines. Self knows held/ability transform closures.
-All status grants/removals compare the shared transaction at launch+1: magnitude, duration,
-category/element, target, displaced cohorts, stacks and expiry. Absent resources and unmatched
-outgoing skill qualifiers give no benefit. Harmful-only self grants have zero candidate weight.
-Own risk replays combat expiry/pulses/reactions/shields; cleanse competes by risk reduction,
-cost and exposure (standard attack81/cleanse659). Permanent effects use the evaluation horizon.
-Enemy estimates use public summaries only. Weakness alters priors, never duplicates measured damage.
-Impacts carry their visible status context; mismatches cannot train baseline resistance. Public
-changes retire prior/same-boundary impacts after delay; baseline reveals persist.
-Reasons, weight/total, seed draws and context persist in cognition.
+Visible states yield <=64 delayed ID/category/benefit/direction/removability summaries,
+never hashes, amounts, stacks or deadlines. Self knows held/ability transform closures.
+AI compares the shared launch+1 transaction: duration/magnitude, qualifiers, displaced cohorts,
+stacks/expiry and risk. Absent resources/unmatched outgoing qualifiers give no benefit;
+harmful-only self grants get zero weight. Own risk uses combat expiry/pulses/reactions/shields;
+cleanse weighs risk/cost/exposure. Permanent effects use the horizon. Enemy priors use public
+summaries; impacts with mismatched status context cannot train baseline resistance. Public
+changes retire impacts after delay; reveals persist. Cognition stores reasons/weights/draws.
 
 ## 同時選択（#45、spatial-v1.15）
 
