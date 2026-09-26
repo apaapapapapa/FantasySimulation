@@ -62,6 +62,8 @@ it('requires a unique active named test with a kind reference and an assertion i
   for (const source of [
     "it('unrelated', () => { expect('example').toBe('example'); });",
     "it('handles example', () => { expect(1).toBe(1); });",
+    "it('handles example', () => { const example = null; expect(true).toBe(true); });",
+    "const example = () => 1; const other = () => true; it('handles example', () => { expect(other()).toBe(true); });",
     "expect('example').toBe('example'); it('handles example', () => {});",
     "it.skip('handles example', () => { expect('example').toBe('example'); });",
     "describe.skip('group', () => { it('handles example', () => { expect('example').toBe('example'); }); });",
@@ -74,6 +76,14 @@ it('requires a unique active named test with a kind reference and an assertion i
       ),
     ).toBe(true);
   }
+});
+
+it('follows capability results through helper calls and local aliases into an assertion', () => {
+  const source =
+    "function example() { return 1; } it('handles example', () => { const value = example(); const result = { value }; expect(result).toEqual({ value: 1 }); });";
+  expect(
+    inspect('const work = (n: number) => n + 1;', coverage(), ['effect:example'], source),
+  ).toEqual([]);
 });
 
 it.each([
@@ -120,6 +130,11 @@ it.each([
   '() => { for (let i = 0; false; i++) performWork(); }',
   '() => { { return; } performWork(); }',
   '() => { false; NaN; }',
+  '() => false && performWork()',
+  '() => true || performWork()',
+  '() => { const enabled = false; return enabled && performWork(); }',
+  '() => false ? performWork() : undefined',
+  '() => true ? undefined : performWork()',
 ])('rejects a claimed implemented handler %s', (body) => {
   expect(inspect(`const work = ${body};`)).toHaveLength(CAPABILITY_ROLES.length);
 });
@@ -152,6 +167,10 @@ it('resolves aliases instead of treating an empty function name as implementatio
     '() => { do { performWork(); } while (false); }',
     '() => { for (performWork(); false;) {} }',
     '() => { if ({ value: performWork() }) {} }',
+    '() => true && performWork()',
+    '() => false || performWork()',
+    '() => true ? performWork() : undefined',
+    '() => false ? undefined : performWork()',
   ])
     expect(inspect(`const work = ${body};`)).toEqual([]);
 });

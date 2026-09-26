@@ -115,36 +115,50 @@ function builtInConstant(node: Node, locals: ReadonlyMap<string, boolean>): bool
 function constant(
   node: Node | undefined,
   locals: ReadonlyMap<string, boolean> = new Map(),
+  facts: ReadonlyMap<string, boolean | undefined> = new Map(),
 ): boolean {
   if (!node) return true;
   if (builtInConstant(node, locals)) return true;
   if (isParenthesizedExpression(node) || isAsExpression(node) || isSatisfiesExpression(node))
-    return constant(node.expression, locals);
-  if (isPrefixUnaryExpression(node)) return constant(node.operand, locals);
-  if (isVoidExpression(node)) return constant(node.expression, locals);
-  if (isBinaryExpression(node)) return constant(node.left, locals) && constant(node.right, locals);
-  if (isConditionalExpression(node))
-    return (
-      constant(node.condition, locals) &&
-      constant(node.whenTrue, locals) &&
-      constant(node.whenFalse, locals)
-    );
+    return constant(node.expression, locals, facts);
+  if (isPrefixUnaryExpression(node)) return constant(node.operand, locals, facts);
+  if (isVoidExpression(node)) return constant(node.expression, locals, facts);
+  if (isBinaryExpression(node)) {
+    if (!constant(node.left, locals, facts)) return false;
+    const selected = truth(node.left, { constants: locals, truth: facts });
+    if (
+      (node.operatorToken.kind === SyntaxKind.AmpersandAmpersandToken && selected === false) ||
+      (node.operatorToken.kind === SyntaxKind.BarBarToken && selected === true)
+    )
+      return true;
+    return constant(node.right, locals, facts);
+  }
+  if (isConditionalExpression(node)) {
+    if (!constant(node.condition, locals, facts)) return false;
+    const selected = truth(node.condition, { constants: locals, truth: facts });
+    return selected === undefined
+      ? constant(node.whenTrue, locals, facts) && constant(node.whenFalse, locals, facts)
+      : constant(selected ? node.whenTrue : node.whenFalse, locals, facts);
+  }
   if (isTemplateExpression(node))
-    return node.templateSpans.every((span) => constant(span.expression, locals));
-  if (isSpreadElement(node) || isSpreadAssignment(node)) return constant(node.expression, locals);
+    return node.templateSpans.every((span) => constant(span.expression, locals, facts));
+  if (isSpreadElement(node) || isSpreadAssignment(node))
+    return constant(node.expression, locals, facts);
   if (isArrayLiteralExpression(node))
-    return node.elements.every((entry) => constant(entry, locals));
+    return node.elements.every((entry) => constant(entry, locals, facts));
   if (isObjectLiteralExpression(node))
     return node.properties.every((property) => {
-      if (isSpreadAssignment(property)) return constant(property.expression, locals);
+      if (isSpreadAssignment(property)) return constant(property.expression, locals, facts);
       if (isShorthandPropertyAssignment(property))
         return (
-          constant(property.name, locals) && constant(property.objectAssignmentInitializer, locals)
+          constant(property.name, locals, facts) &&
+          constant(property.objectAssignmentInitializer, locals, facts)
         );
       return (
         isPropertyAssignment(property) &&
-        (!isComputedPropertyName(property.name) || constant(property.name.expression, locals)) &&
-        constant(property.initializer, locals)
+        (!isComputedPropertyName(property.name) ||
+          constant(property.name.expression, locals, facts)) &&
+        constant(property.initializer, locals, facts)
       );
     });
   return (
@@ -161,7 +175,13 @@ function constant(
   );
 }
 type Bindings = { constants: Map<string, boolean>; truth: Map<string, boolean | undefined> };
-function truth(node: Node | undefined, bindings: Bindings): boolean | undefined {
+function truth(
+  node: Node | undefined,
+  bindings: {
+    constants: ReadonlyMap<string, boolean>;
+    truth: ReadonlyMap<string, boolean | undefined>;
+  },
+): boolean | undefined {
   if (!node) return undefined;
   if (isParenthesizedExpression(node) || isAsExpression(node) || isSatisfiesExpression(node))
     return truth(node.expression, bindings);
@@ -179,7 +199,8 @@ function truth(node: Node | undefined, bindings: Bindings): boolean | undefined 
     const value = truth(node.operand, bindings);
     return value === undefined ? undefined : !value;
   }
-  if (isVoidExpression(node) && constant(node.expression, bindings.constants)) return false;
+  if (isVoidExpression(node) && constant(node.expression, bindings.constants, bindings.truth))
+    return false;
   if (builtInConstant(node, bindings.constants))
     return !/(?:^|[.\"'])(?:NaN|undefined)(?:[\"']\])?$/.test(node.getText());
   return undefined;
@@ -208,7 +229,7 @@ function statementWork(statement: Node, bindings: Bindings): Work {
       ? statement.declarationList.declarations
       : statement.declarations;
     for (const declaration of declarations) {
-      const inert = constant(declaration.initializer, constants);
+      const inert = constant(declaration.initializer, constants, truths);
       const value = truth(declaration.initializer, bindings);
       if (isIdentifier(declaration.name)) {
         constants.set(declaration.name.text, inert);
@@ -218,12 +239,14 @@ function statementWork(statement: Node, bindings: Bindings): Work {
     }
     return result(work);
   }
-  if (isReturnStatement(statement)) return result(!constant(statement.expression, constants), true);
+  if (isReturnStatement(statement))
+    return result(!constant(statement.expression, constants, truths), true);
   if (statement.kind === SyntaxKind.ThrowStatement) return result(false, true);
-  if (isExpressionStatement(statement)) return result(!constant(statement.expression, constants));
+  if (isExpressionStatement(statement))
+    return result(!constant(statement.expression, constants, truths));
   if (isIfStatement(statement)) {
     const selected = truth(statement.expression, bindings);
-    const conditionWork = !constant(statement.expression, constants);
+    const conditionWork = !constant(statement.expression, constants, truths);
     if (selected !== undefined) {
       const chosen = branch(selected ? statement.thenStatement : statement.elseStatement);
       return result(conditionWork || chosen.work, chosen.stops);
@@ -235,18 +258,22 @@ function statementWork(statement: Node, bindings: Bindings): Work {
   if (isWhileStatement(statement) || isForStatement(statement)) {
     const condition = isWhileStatement(statement) ? statement.expression : statement.condition;
     // A loop with a proven false condition never reaches its body or incrementor.
-    if (condition && constant(condition, constants) && truth(condition, bindings) !== true) {
+    if (
+      condition &&
+      constant(condition, constants, truths) &&
+      truth(condition, bindings) !== true
+    ) {
       const initializer = isForStatement(statement) ? statement.initializer : undefined;
       return result(
         initializer !== undefined &&
           (isVariableDeclarationList(initializer)
             ? statementWork(initializer, bindings).work
-            : !constant(initializer, constants)),
+            : !constant(initializer, constants, truths)),
       );
     }
     return result(
       branch(statement.statement).work ||
-        (condition !== undefined && !constant(condition, constants)),
+        (condition !== undefined && !constant(condition, constants, truths)),
     );
   }
   if (isDoStatement(statement)) return branch(statement.statement);
@@ -256,7 +283,7 @@ function statementWork(statement: Node, bindings: Bindings): Work {
   statement.forEachChild((child) => {
     work ||= statementWork(child, bindings).work;
   });
-  return result(work || (isCallExpression(statement) && !constant(statement, constants)));
+  return result(work || (isCallExpression(statement) && !constant(statement, constants, truths)));
 }
 function hasImplementation(node: Node | undefined): boolean {
   if (
