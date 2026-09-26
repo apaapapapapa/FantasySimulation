@@ -22,7 +22,9 @@ it('loads only the overview, then authenticates selected slots and the exact sav
   const { library, requests } = libraryFixture();
   const catalog = await library.catalog();
   const snapshot = await leagueSnapshot(library, leagueGenerations[1]!.hash);
-  expect(requests).toHaveLength(3);
+  // The pinned definition authenticates standard/experimental classification before display.
+  expect(requests).toHaveLength(4);
+  expect(requests.at(-1)).toBe(`leagues/${snapshot.definition.hash.slice(7)}.json`);
   expect(snapshot.standings).toMatchObject({ planned: 24, resolved: 24, status: 'formal' });
   expect(snapshot.standings.rows.map((r) => r.rank)).toEqual([1, 1, 1]);
   const detail = await leagueDetail(library, snapshot, 'character-0');

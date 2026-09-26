@@ -28,6 +28,7 @@ import {
 export { revisionHash, revisionReference as reference } from '@fantasy/domain/spatial/execution';
 import { statusKnowledge } from './rules/status.ts';
 import { prepareAbility, abilityPlan } from './rules/ability-plan.ts';
+import { requireMechanics } from './mechanic-policy.ts';
 
 export { implementation, profile };
 
@@ -91,6 +92,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
   const scenario = get('scenario', manifest.scenario).definition;
   const rules = get('ruleset', manifest.ruleset).definition;
   requireExecutableRules(rules);
+  requireMechanics(get('ruleset', manifest.ruleset), manifest.revisions);
   for (const { participant, character } of actors) {
     for (const axis of ['x', 'y', 'z'] as const) {
       const extent = axis === 'y' ? character.body.heightMm / 2 : character.body.radiusMm;

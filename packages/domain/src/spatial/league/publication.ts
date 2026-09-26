@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { HashSchema, IdSchema, RefSchema } from '../contracts.ts';
 import { LeagueRevisionSchema, LeagueSlotSchema, LeagueWeightSchema } from '../league.ts';
 import { LeagueStandingSchema, LeagueStandingsSchema } from '../league-results.ts';
+import { LeagueClassSchema } from '../mechanics.ts';
 
 export const LeagueFileRefSchema = z.strictObject({
   hash: HashSchema,
@@ -50,6 +51,7 @@ export const PublicLeagueSnapshotSchema = z.strictObject({
   leagueHash: HashSchema,
   inputHash: HashSchema,
   id: IdSchema,
+  leagueClass: LeagueClassSchema.optional(),
   name: z.string().min(1).max(120),
   sourceSha: LeagueRevisionSchema.shape.sourceSha,
   engineVersion: IdSchema,
@@ -76,6 +78,7 @@ export const PublicLeagueSnapshotSchema = z.strictObject({
 export type PublicLeagueSnapshot = z.infer<typeof PublicLeagueSnapshotSchema>;
 export const PublicLeagueCatalogRefSchema = LeagueFileRefSchema.extend({
   id: IdSchema,
+  leagueClass: LeagueClassSchema.optional(),
   leagueHash: HashSchema,
   inputHash: HashSchema,
 });

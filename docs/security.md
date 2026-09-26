@@ -120,9 +120,10 @@ reports `protected: true`; legacy branch-protection fields alone do not describe
 Ruleset enforcement. Recheck the live rules before delivery.
 
 The owner chose zero required approving reviews for solo development.
-Current-head self-review, resolving findings and SHA-bound CI remain required;
-self-review is not independent human approval. The separate independent-human
-approval rule for secret exceptions above is unchanged. Windows validation and
+Implementation and manual-update PRs require current-head self-review; it is not
+independent human approval. Eligible Renovate minors use the CI automerge policy;
+SHA-bound CI and resolving findings remain mandatory. Independent approval for
+secret exceptions is unchanged. Windows validation and
 actual fork-PR testing are outside the current acceptance scope. Fork-specific
 permissions, execution approval and SARIF publication remain untested; retain
 `pull_request`, minimal permissions and no project secrets for PR validation.
@@ -134,9 +135,10 @@ This does not establish actual update-PR acceptance. See [dependency updates](de
 
 Remaining operational acceptance for Issue #8:
 
-1. Review a suitable update PR automatically created by Renovate. Confirm it
-   has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
-   correct lockfile. Preserve manual review, including vulnerability updates.
+1. Review actual bot update PRs under the [minor-automerge policy](dependency-updates.md).
+   Verify eligible minor PRs merge only after CI, while excluded updates remain manual.
+   Coupled Vite+/alias/peer/Vitest pins and lockfiles still need manual review,
+   as do vulnerability-alert, Node/pnpm and physics updates.
    Run Linux verification and all security evidence; do not manufacture a
    bot-authored PR to claim acceptance. See the official
    [Renovate configuration reference](https://docs.renovatebot.com/configuration-options/).

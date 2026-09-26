@@ -13,6 +13,7 @@ export {
   unsupportedExecutionReason,
 } from './execution-policy.ts';
 export type { EngineInputCode, ExecutionEligibility } from './execution-policy.ts';
+export { requireMechanics } from './mechanic-policy.ts';
 export {
   createLeagueRevision,
   validateLeagueRevision,

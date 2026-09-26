@@ -9,6 +9,7 @@ import { recordedCheckpoints } from '../../test-support/replay.ts';
 import { reference } from './prepare.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { recordBytes } from './rules/journal.ts';
+import { reactionConflictManifest } from '../../test-support/interference-diagnostics.ts';
 
 beforeAll(initializePhysics);
 const stats = {
@@ -176,38 +177,7 @@ describe('reaction interference and old-cohort settlement', () => {
     ).toHaveLength(1);
   });
   it('defers conflicting transformations across waves to unresolved and preserves the startup boundary', async () => {
-    const input = await reactionManifest({
-      reactions: [
-        {
-          trigger: 'after-damage',
-          reaction: { response: { kind: 'effects' } },
-          effects: [{ kind: 'water', extinguish: true }],
-        },
-      ],
-    });
-    const fire = await sealRevision(
-      'status',
-      'fire-form',
-      1,
-      initialStatus({ stackKey: 'fire-form' }),
-    );
-    const water = await sealRevision(
-      'status',
-      'water-form',
-      1,
-      initialStatus({ stackKey: 'water-form' }),
-    );
-    input.revisions.push(fire, water);
-    await withInitialStatus(
-      input,
-      1,
-      initialStatus({
-        reactions: [
-          { element: 'fire', response: { kind: 'transform', status: reference(fire) } },
-          { element: 'water', response: { kind: 'transform', status: reference(water) } },
-        ],
-      }),
-    );
+    const input = await reactionConflictManifest();
     const full = await runBattle(input),
       events = battleEvents(full.records);
     expect(full.result.outcome.kind).toBe('unresolved');

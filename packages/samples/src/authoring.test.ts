@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { revisionReference, type Revision } from '@fantasy/domain/spatial';
 import published from '../../../data/spatial/catalog.json' with { type: 'json' };
-import sources from '../../../data/content/builtin-v1.json' with { type: 'json' };
+import builtin from '../../../data/content/builtin-v1.json' with { type: 'json' };
+import experimental from '../../../data/content/experimental-p6-foundation-v1.json' with { type: 'json' };
 import { compileCatalog } from './authoring.ts';
+
+const sources = [...builtin, experimental];
 
 const copy = (revision: Revision, id: string) => {
   const { contentHash: _hash, ...document } = structuredClone(revision);

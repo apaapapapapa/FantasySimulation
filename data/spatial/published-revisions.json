@@ -590,6 +590,12 @@
       "id": "standard-tactics-v2",
       "revision": 1,
       "contentHash": "sha256:0ddc0ff66a1e5950a36d0b5ec1798b40fede3af99599f1438abcd3dd499a409c"
+    },
+    {
+      "kind": "ruleset",
+      "id": "experimental-p6-foundation-v1",
+      "revision": 1,
+      "contentHash": "sha256:4b644629aa0d1b662cb32c4f6be7ce7d0e3abffc7a455cedeca2a6395fc4029d"
     }
   ]
 }

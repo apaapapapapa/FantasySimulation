@@ -26,9 +26,11 @@ export function firstImpact(wall: number | undefined, body: number | undefined) 
 }
 export class SpatialBudgetError extends Error {
   readonly resource: string;
-  constructor(resource: string, detail?: string) {
+  readonly details?: { observed: number; limit: number; cause: string };
+  constructor(resource: string, detail?: string, details?: SpatialBudgetError['details']) {
     super(`Spatial budget exceeded: ${resource}${detail ? `; ${detail}` : ''}`);
     this.resource = resource;
+    if (details) this.details = details;
   }
 }
 

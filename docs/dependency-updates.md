@@ -1,69 +1,52 @@
 # Dependency updates (H4 / Issue #8)
 
-## Configuration and hosted activation
+## Hosted activity
 
-`renovate.json` is strict JSON. CI validates the actual file and rejects duplicate
-bots, automatic merging and PR-creation approval overrides. The owner confirmed
-[App authorization](https://github.com/apaapapapapa/FantasySimulation/issues/8#issuecomment-5782312771);
-do not request it again. Validator success or maintainer PRs do not establish bot activity.
+[Dashboard #168](https://github.com/apaapapapapa/FantasySimulation/issues/168) verifies
+bot activity, not updates/automerge. Do not repeat activation or add another bot.
 
-The owner's 2026-09-26 screenshot showed completed jobs in Silent mode, which
-suppresses automatic Issues/PRs. Subsequently, the API confirmed `renovate[bot]`
-created [Dashboard #168](https://github.com/apaapapapapa/FantasySimulation/issues/168)
-at 11:28:43 UTC that day. Bot activity is verified; actual update-PR acceptance is
-separate. Do not ask the owner to repeat activation. [Hosted mode](https://docs.renovatebot.com/mend-hosted/hosted-apps-config/)
-is independent of this file; investigate portal jobs if activity stops again.
-Do not add another bot or fabricate activation evidence.
+## Owner-approved minor exception
 
-## Automatic proposals, reviewed merges
+The owner's 2026-09-26 request permits hosted Renovate's unattended **minor-only**
+merges (`1.2.0 -> 1.3.0`) without agent review receipts, superseding #8's blanket
+prohibition. H4's checked configuration and main Ruleset govern this exception.
+Agent/manual merges, even of bot PRs, still require review and `harness delivery`.
+Never fabricate review evidence.
 
-Per the owner's 2026-09-26 request and #8's no-automerge requirement, normal updates
-may be proposed at any time, without Dependency Dashboard approval. The Dashboard
-remains an overview, not a prerequisite to creating PRs. This includes Vite+, Node,
-pnpm and Rapier groups. Keep the existing two-PR/hour and three-concurrent-PR limits
-and `config:best-practices`; removing the weekly window does not bypass release-age
-safety checks or control when the hosted service actually runs.
+The final rule permits stable 1.x-or-later minors, including full-SHA-pinned Actions.
+Major, patch, pin/digest, standalone lockfile, vulnerability-alert and 0.x updates
+remain manual. Vite+/bundled Vitest, Node/pnpm/types and Rapier/WASM also stay manual
+for compatibility/determinism review. Minor/patch proposals are separated.
 
-Standalone lockfile maintenance retains Renovate's weekly window, now explicit as
-Monday 00:00-04:00 Asia/Tokyo, without pre-approval. This does not restrict lockfile
-changes accompanying normal version-update PRs. Vulnerability proposals retain
-their unrestricted schedule and no pre-approval.
+Renovate squash-merges PRs on a later run after CI succeeds and the branch is current: `platformAutomerge: false`, `automergeType: pr`,
+`automergeStrategy: squash`, `rebaseWhen: behind-base-branch`. GitHub's native
+auto-merge toggle is unnecessary. `ignoreTests` and `internalChecksAsSuccess` stay
+false. Never bypass status checks, unresolved threads, PRs or the main Ruleset.
+H4 rejects broader permissions and nested safety overrides.
+See [Renovate automerge](https://docs.renovatebot.com/key-concepts/automerge/).
 
-All merges still require reviewed diffs and passing CI. Root, platform, vulnerability,
-lockfile and package-rule automerge remain false, including nested overrides.
-The main Ruleset and security/verification gates are unchanged. Creating a PR is
-not approval to merge it, even for minor, patch or vulnerability updates.
+Proposals need no weekly window or Dashboard approval; limits remain two PRs/hour
+and three concurrently. Keep `config:best-practices` and release-age safeguards.
+Hosted execution, not green CI, determines merge timing. Standalone lockfile
+maintenance is Monday 00:00-04:00 Asia/Tokyo; version-update lockfiles are unrestricted.
+Vulnerability proposals retain no pre-approval/time window, but manual merges.
 
-CI runs official validator `44.106.0` and Linux toolchain policy without write tokens
-or App secrets. It is not the update bot; its workflow schedule is independent.
-With the pinned Node, run:
+[Dependency policy](../.github/workflows/dependency-policy.yml) runs the pinned official
+validator and H4 tests without write tokens or App secrets; it is not the update bot.
 
-```sh
-vp run security:test
-node scripts/security/toolchain.ts
-pnpm --package=renovate@44.106.0 dlx renovate-config-validator --strict renovate.json
-```
+## Manual toolchain review and acceptance
 
-## Coupled toolchain and physics updates
+Review Vite+, alias, peer override, bundled Vitest, lockfile and compatibility record
+together; never advance reviewed records automatically. Vite+ 0.3.3 pins Vitest and
+`@vitest/*` to 4.1.11. Node/pnpm/types retain exact pins and a matching engine range.
+Refresh pnpm shims with `vp install --force --frozen-lockfile` after a pin change.
+Even Rapier patches need physics version, exact WASM hash, engine identity and
+fixed-seed replay evidence. Run `engine:check`; do not regenerate fixtures to pass.
+All updates require [Linux CI](development/ci.md).
 
-Review Vite+, Vite alias, peer override, bundled Vitest, lockfile and compatibility
-record together. The existing group/custom manager remains; never automatically
-advance the reviewed compatibility record. Vite+ 0.3.3 pins Vitest and `@vitest/*`
-to 4.1.11. Node, pnpm and Node types remain a separate group with exact pins and
-a matching root engine range. After a pnpm pin change, refresh existing shims with
-`vp install --force --frozen-lockfile`.
-
-Even Rapier patches require physics version, exact WASM/build hash, engine identity
-and fixed-seed determinism/replay evidence before merging. Run `engine:check`;
-never regenerate identities or expected fixtures merely to pass. All update PRs
-need Linux frozen install, type checks, tests, build, security and applicable engine
-checks under the [CI contract](development/ci.md). Windows is not required.
-
-## Remaining acceptance
-
-[Issue #8](https://github.com/apaapapapapa/FantasySimulation/issues/8) retains actual
-bot/toolchain updates, an actual Rapier/WASM update and first GitHub `schedule` runs.
-Do not downgrade or use prereleases merely to create evidence; manual runs are not
-scheduled runs. Use the [completion protocol](issue-completion.md) only after all
-remaining acceptance passes. Main protection and H4 report/gate integration are
-already recorded in [security checks](security.md).
+[#8](https://github.com/apaapapapapa/FantasySimulation/issues/8) retains actual
+bot/toolchain and Rapier upgrades, eligible minor automerge and first GitHub
+`schedule` runs. Audit bot merger identity and exact successful CI; configuration
+validation is not a real merge. No downgrade/prerelease may manufacture evidence.
+Manual runs are not scheduled runs. Follow the [completion protocol](issue-completion.md)
+only after all items pass. See [security checks](security.md) for H4 and protection.

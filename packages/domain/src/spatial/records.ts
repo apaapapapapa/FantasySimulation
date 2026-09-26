@@ -9,6 +9,7 @@ import {
   ReactionPointSchema,
 } from './contracts.ts';
 import { CognitionSchema } from './cognition.ts';
+import { InterferencesSchema, TruncationDetailsSchema } from './interference-records.ts';
 
 const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
@@ -182,8 +183,14 @@ export const OutcomeSchema = z.discriminatedUnion('kind', [
     ruleId: IdSchema,
     revisions: z.array(IdSchema).max(256),
     reason: z.string().max(500),
+    interferences: InterferencesSchema.optional(),
   }),
-  z.strictObject({ kind: z.literal('truncated'), resource: IdSchema, reason: z.string().max(500) }),
+  z.strictObject({
+    kind: z.literal('truncated'),
+    resource: IdSchema,
+    reason: z.string().max(500),
+    details: TruncationDetailsSchema.optional(),
+  }),
 ]);
 export type Outcome = z.infer<typeof OutcomeSchema>;
 export const ResultSchema = z.strictObject({
