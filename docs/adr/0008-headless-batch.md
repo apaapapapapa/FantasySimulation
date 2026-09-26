@@ -67,8 +67,9 @@ Optional catalog.leagues (latest snapshot/ID)/leagueWork preserve old catalog by
 Documents: revision/summary/character detail/<=100-slot pair pages/progress/journals.
 Overview loads details/slots on demand. A slot binds
 leagueHash/slot ID to setHash/pageHash/rowId and immutable replay. Empty sets require a journal.
-Graph/checksum/exact-score validation executes no battle/DB. `league export` validates current
-plans and commits all partitions once; saved-batch export never executes battles.
+Saved-league export verifies every plan/partition hash, source, slot/spec/definition and
+recorded input. Preserve engine/digest; never prepare battles or load old engines.
+Execution requires current identity ([ADR 0010](0010-battle-version-compatibility.md)).
 Keep partial receipts; reject conflicting definitive win/draw results. Reused receipts may
 predate new set source: simulation/engine/digest must match and both sources belong to viewer
 ancestry. Restore/readback cover retained leagues. `publication upload` accepts a verified
@@ -81,12 +82,12 @@ manual dry-run is read-only. Current main CI gates start; finish rechecks CI/anc
 Shared r2-publication concurrency; caps: 64 partitions, 4 jobs, 2 Workers/job,
 25-minute computation. Missing results retain denominators. Never rerun only failed jobs.
 IDs/hashes bind allowlisted artifacts to original run/attempt.
-[Recovery](../../.github/workflows/league-recovery.yml): failed main publications only;
+[Recovery](../../.github/workflows/league-recovery.yml): failed main publications, or cancelled/
+timed-out publication after successful finalization (verified ordered steps);
 require successful workers, original CI/ancestry and artifact/catalog equality.
 Keep original source/execution, tested main, fresh leases and generation checks.
-No simulation/new reservation/refund. Run 36219874846 hit 60m; recovery 90m/job 180m.
-Other artifact subprocesses/S3 stay 60m. Fetch missing viewer SHAs from origin;
-Check merge-base; keep HEAD fixed.
+No simulation/new reservation/refund. Recovery 90m/job 180m; other artifact processes/S3 60m.
+Fetch missing viewer SHAs for merge-base without moving HEAD.
 
 Private control/league-usage.json is excluded from Reader/prune and counts toward 8GB/500k.
 Conditional, readback-verified leases precede transfers; never refund failures. Monthly caps:

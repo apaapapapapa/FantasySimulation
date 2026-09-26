@@ -6,11 +6,17 @@ import {
   LeaguePartitionResultSchema,
   type LeagueAttempt,
   type LeaguePartitionResult,
+  type LeaguePlan,
 } from '@fantasy/domain/spatial';
-import { aggregateLeague, leagueMatches } from '@fantasy/engine/spatial';
+import { aggregateLeague, aggregateStoredLeague, leagueMatches } from '@fantasy/engine/spatial';
 import { checkedBatch } from '../batch/batch-check.ts';
 import type { BattleBundles } from '../batch/battle-bundle.ts';
 import { validateLeaguePlan, validateLeaguePartition } from './league-plan.ts';
+import {
+  storedLeagueInputs,
+  storedResultPartition,
+  storedLeagueBundleBinding,
+} from './league-stored.ts';
 import {
   validateProgressPage,
   validateLeagueReservation,
@@ -26,13 +32,37 @@ export type LeagueCheckInput = {
 };
 export async function checkLeague(input: unknown, completed: readonly LeagueCheckInput[]) {
   const plan = await validateLeaguePlan(input);
+  return checkLeagueData(plan, completed);
+}
+
+/** Read saved plans/results without admitting them for execution on the installed engine. */
+export async function checkStoredLeague(
+  input: unknown,
+  partitions: readonly { partition: unknown; batch: unknown }[],
+  completed: readonly LeagueCheckInput[],
+) {
+  const stored = await storedLeagueInputs(input, partitions);
+  return {
+    ...(await checkLeagueData(stored.plan, completed, stored)),
+    partitions: stored.partitions,
+  };
+}
+
+async function checkLeagueData(
+  plan: LeaguePlan,
+  completed: readonly LeagueCheckInput[],
+  stored?: Awaited<ReturnType<typeof storedLeagueInputs>>,
+) {
   if (completed.length > plan.partitions.length)
     throw new OperationError('DATA_INVALID', 'Excessive league results');
   const seen = new Set<number>(),
     attempts: LeagueAttempt[] = [],
     results: LeaguePartitionResult[] = [];
   for (const entry of completed) {
-    const { partition, batch } = await validateLeaguePartition(plan, entry.partition, entry.batch);
+    const { partition, batch } = stored
+      ? storedResultPartition(stored, entry)
+      : await validateLeaguePartition(plan, entry.partition, entry.batch);
+    const bind = stored ? storedLeagueBundleBinding(batch, entry.bundles) : undefined;
     if (seen.has(partition.index))
       throw new OperationError('DATA_INVALID', 'Duplicate league partition result');
     seen.add(partition.index);
@@ -83,6 +113,7 @@ export async function checkLeague(input: unknown, completed: readonly LeagueChec
         throw new OperationError('DATA_INVALID', 'Result rewrites reserved attempt history');
       for (const attempt of history.attempts) {
         const receipt = attempt.objectHash ? await entry.bundles.verify(attempt.objectHash) : null;
+        if (receipt && bind) await bind(batchSlot, receipt);
         let outcome: LeagueAttempt['outcome'];
         if (receipt?.result.outcome.kind === 'win') {
           const winner = receipt.result.outcome.winner;
@@ -114,14 +145,18 @@ export async function checkLeague(input: unknown, completed: readonly LeagueChec
     }
     results.push(result);
   }
-  const slots = [];
-  for await (const { slot } of leagueMatches(plan.revision)) slots.push(slot);
+  const slots = stored?.slots ?? [];
+  if (!stored) for await (const { slot } of leagueMatches(plan.revision)) slots.push(slot);
   return {
     plan,
     slots,
     attempts,
     results,
-    standings: await aggregateLeague(plan.revision, slots, attempts),
+    standings: await (stored ? aggregateStoredLeague : aggregateLeague)(
+      plan.revision,
+      slots,
+      attempts,
+    ),
     missingPartitions: plan.partitions.flatMap((_, i) => (seen.has(i) ? [] : [i])),
   };
 }

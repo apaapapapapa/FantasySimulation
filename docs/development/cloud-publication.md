@@ -22,7 +22,7 @@ mode=dry-runで見積もり、publishで公開（既定20キャラ）。
 予算・試行を先に保存し、失敗も分母に含む暫定順位を公開。
 各試合の再試行1回、上限自動拡張・削除なし。
 再開は新規runかRe-run all jobs。失敗ジョブだけ再実行しない。
-全compute成功後の公開失敗はRecover league publicationで元run/attemptを指定。
+全compute成功後の公開失敗・集計成功後の公開中断はRecover league publicationで元run/attemptを指定。
 元の結果だけ検証・公開し、再計算せず新しい通信leaseを消費する。artifactは7日。
 
 失敗はexit 1、Summaryと`reports/failure-<command>.json`に分類・段階・対処を残す。
