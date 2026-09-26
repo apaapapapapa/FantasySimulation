@@ -1,5 +1,35 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
-import { publicHttp } from './publication-http.ts';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+import { withReplayDirectory } from '@fantasy/api/testing';
+import { publicHttp, ancestorOf } from './publication-http.ts';
+
+it('fetches a Pages commit published after checkout without moving HEAD or trusting unrelated history', async () => {
+  await withReplayDirectory(async (root) => {
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync('git', args, { cwd, stdio: 'pipe', encoding: 'utf8' }).trim();
+    const remote = join(root, 'remote'),
+      checkout = join(root, 'checkout');
+    git(root, 'init', remote);
+    git(remote, 'config', 'user.name', 'Publication fixture');
+    git(remote, 'config', 'user.email', 'publication@example.invalid');
+    git(remote, 'commit', '--allow-empty', '-m', 'source');
+    const source = git(remote, 'rev-parse', 'HEAD');
+    git(root, 'clone', '--no-local', remote, checkout);
+    git(remote, 'commit', '--allow-empty', '-m', 'new viewer');
+    const viewer = git(remote, 'rev-parse', 'HEAD');
+    expect(() => git(checkout, 'cat-file', '-e', `${viewer}^{commit}`)).toThrow();
+    expect(ancestorOf(source, viewer, checkout)).toBe(true);
+    expect(git(checkout, 'rev-parse', 'HEAD')).toBe(source);
+    git(remote, 'checkout', '--orphan', 'unrelated');
+    git(remote, 'commit', '--allow-empty', '-m', 'foreign viewer');
+    expect(ancestorOf(source, git(remote, 'rev-parse', 'HEAD'), checkout)).toBe(false);
+    git(checkout, 'remote', 'remove', 'origin');
+    expect(ancestorOf(source, 'f'.repeat(40), checkout)).toBe(false);
+    expect(ancestorOf(source, viewer, checkout)).toBe(true);
+    expect(() => ancestorOf(source, viewer + '\n', checkout)).toThrow('Invalid source SHA');
+  });
+});
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -35,7 +65,27 @@ it('cancels oversized read-back and preserves exact compressed bytes', async () 
   fetch.mockResolvedValueOnce(
     new Response(bytes, { headers: { 'content-type': 'application/gzip' } }),
   );
-  await expect(read('chunk.gz', 3)).rejects.toThrow('byte budget');
+  await expect(read('chunk.gz', 3)).rejects.toMatchObject({ code: 'DATA_INVALID' });
+});
+it('keeps the aggregate transfer cap distinct from an individual object size mismatch', async () => {
+  const chunk = new Uint8Array(1_000_000);
+  let chunks = 0;
+  // Reuse one buffer in the stream; no large fixture or network transfer is needed.
+  const stream = new ReadableStream({
+    pull(controller) {
+      controller.enqueue(chunk);
+      if (++chunks === 257) controller.close();
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValue(new Response(stream, { headers: { 'content-type': 'application/json' } })),
+  );
+  await expect(
+    publicHttp('https://reader.example/')('catalog/current.json', 300_000_000),
+  ).rejects.toMatchObject({ code: 'BUDGET_EXCEEDED' });
 });
 it('keeps league verification alive after a long upload while bounding each request and the whole phase', async () => {
   vi.useFakeTimers();
@@ -58,14 +108,14 @@ it('keeps league verification alive after a long upload while bounding each requ
   const league = publicHttp('https://viewer.example/', 7200000);
   await league('build.json', 4096);
   await vi.advanceTimersByTimeAsync(1800000); // Upload and HEAD verification take thirty minutes.
-  await expect(manual('build.json', 4096)).rejects.toThrow('fixture timeout');
+  await expect(manual('build.json', 4096)).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE' });
   await expect(league('build.json', 4096)).resolves.toEqual(Buffer.from('{}'));
   const last = signals.at(-1)!;
   expect(last.aborted).toBe(false);
   await vi.advanceTimersByTimeAsync(300000);
   expect(last.aborted).toBe(true); // The individual request still has a five-minute bound.
   await vi.advanceTimersByTimeAsync(5400000);
-  await expect(league('build.json', 4096)).rejects.toThrow('fixture timeout');
+  await expect(league('build.json', 4096)).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE' });
   for (const invalid of [0, 7200001, 1.5, NaN])
     expect(() => publicHttp('https://viewer.example/', invalid)).toThrow('deadline');
 });

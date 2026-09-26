@@ -1,4 +1,4 @@
-import { expect, it } from 'vite-plus/test';
+import { expect, it, vi } from 'vite-plus/test';
 import { PublicKeySchema, type LeagueUsageLease } from '@fantasy/domain/spatial';
 import { reserveLeagueUsage, admitLeagueUsage } from './league-budget.ts';
 import { PUBLICATION_CONTROL_KEY } from '../publication/publication-files.ts';
@@ -61,6 +61,16 @@ function storage() {
     },
   };
 }
+it.each(['{', '{}'])('rejects malformed saved usage data before any write (%s)', async (data) => {
+  const putControl = vi.fn();
+  await expect(
+    admitLeagueUsage(
+      { readControl: async () => ({ data: Buffer.from(data), etag: 'old' }), putControl },
+      lease('next-run'),
+    ),
+  ).rejects.toMatchObject({ code: 'DATA_INVALID' });
+  expect(putControl).not.toHaveBeenCalled();
+});
 it('verifies a durable lease after a lost response, and never refunds a crashed execution', async () => {
   const store = storage(),
     put = store.putControl;

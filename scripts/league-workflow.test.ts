@@ -39,3 +39,34 @@ it('admits workers only after durable publication and isolates secrets from simu
   }
   expect(workflow).not.toMatch(/run:.*\$\{\{\s*(?:inputs|matrix)\./);
 });
+
+it('retains safe failure reports from every job without uploading raw diagnostics', () => {
+  for (const job of ['probe', 'prepare', 'compute']) {
+    const steps = workflow.split(`\n  ${job}:`)[1]!.split(/\n  [a-z]+:/)[0]!;
+    expect(steps).toContain('if: failure()');
+    expect(steps).toContain('path: apps/cli/.generated/league/reports/failure-*.json');
+    expect(steps).not.toMatch(/path:.*(?:\.log|\*\*)/);
+  }
+  expect(workflow.split('\n  publish:')[1]).toContain('apps/cli/.generated/league/reports/*.json');
+});
+
+it('recovers saved results on tested main with fresh leases and no simulation or admission', () => {
+  const recovery = readFileSync(
+    new URL('../.github/workflows/league-recovery.yml', import.meta.url),
+    'utf8',
+  );
+  expect(recovery).toContain("github.ref == 'refs/heads/main'");
+  expect(recovery).toContain('group: r2-publication\n  cancel-in-progress: false');
+  expect(recovery).toContain('environment: r2-publication');
+  expect(recovery).toContain('league-phase: start');
+  expect(recovery).toContain('league-phase: finish');
+  expect(recovery).toContain('operation: recover');
+  expect(recovery).not.toMatch(
+    /league-cloud\.ts (?:prepare|run|admit)|schedule:|persist-credentials: true/,
+  );
+  const secretSteps = recovery.split(/\n      - /).filter((step) => step.includes('secrets.'));
+  expect(secretSteps).toHaveLength(1);
+  expect(secretSteps[0]).toContain('run: node --import tsx src/league-cloud.ts publish');
+  expect(secretSteps[0]).not.toContain('uses:');
+  expect(recovery).not.toMatch(/(?:^|\n)\s+run:.*\$\{\{\s*inputs\./);
+});

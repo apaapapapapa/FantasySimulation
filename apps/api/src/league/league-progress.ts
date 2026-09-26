@@ -1,3 +1,4 @@
+import { OperationError, operationInput } from '../operation-error.ts';
 import {
   compareIds,
   contentHash,
@@ -14,11 +15,12 @@ import {
 import type { BattleBundles } from '../batch/battle-bundle.ts';
 
 export function leagueProgressMap(input: readonly LeagueProgress[]) {
-  if (input.length > 64000) throw new Error('League progress limit');
+  if (input.length > 64000) throw new OperationError('BUDGET_EXCEEDED', 'League progress limit');
   const records = new Map<string, LeagueProgress>();
   for (const value of input) {
     const record = LeagueProgressSchema.parse(value);
-    if (records.has(record.simulationHash)) throw new Error('Duplicate league progress');
+    if (records.has(record.simulationHash))
+      throw new OperationError('DATA_INVALID', 'Duplicate league progress');
     records.set(record.simulationHash, record);
   }
   return records;
@@ -42,13 +44,14 @@ export async function verifyLeagueProgress(
   for (const record of records.values())
     for (const attempt of record.attempts) {
       if (!attempt.objectHash) continue;
-      if (!bundles) throw new Error('Retained progress requires verified bundles');
+      if (!bundles)
+        throw new OperationError('DATA_INVALID', 'Retained progress requires verified bundles');
       const receipt = await bundles.verify(attempt.objectHash);
       if (
         receipt.simulationHash !== record.simulationHash ||
         receipt.result.outcome.kind !== attempt.state
       )
-        throw new Error('Progress and verified result disagree');
+        throw new OperationError('DATA_INVALID', 'Progress and verified result disagree');
     }
   return records;
 }
@@ -66,9 +69,10 @@ export async function progressPage(
 }
 
 export async function validateProgressPage(input: unknown) {
-  const page = parseJson(LeagueProgressPageSchema, input),
+  const page = operationInput(() => parseJson(LeagueProgressPageSchema, input), 'DATA_INVALID'),
     { id, ...body } = page;
-  if (id !== (await contentHash(body))) throw new Error('Progress page checksum mismatch');
+  if (id !== (await contentHash(body)))
+    throw new OperationError('DATA_INVALID', 'Progress page checksum mismatch');
   leagueProgressMap(page.records);
   return page;
 }
@@ -85,13 +89,13 @@ export async function validateLeagueReservation(
     reservation.planId !== plan.id ||
     reservation.partitionId !== partition.id
   )
-    throw new Error('League reservation identity mismatch');
+    throw new OperationError('DATA_INVALID', 'League reservation identity mismatch');
   await validateProgressPage(reservation.progress);
   const records = leagueProgressMap(reservation.progress.records);
   if (
     records.size !== partition.slots.length ||
     partition.slots.some((slot) => !records.has(slot.simulationHash))
   )
-    throw new Error('Reservation does not cover the partition');
+    throw new OperationError('DATA_INVALID', 'Reservation does not cover the partition');
   return reservation;
 }

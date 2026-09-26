@@ -1,4 +1,5 @@
 export { BattleBundles } from './batch/battle-bundle.ts';
+export { OperationError, operationInput } from './operation-error.ts';
 export {
   checkedBatch,
   reconcileBatch,

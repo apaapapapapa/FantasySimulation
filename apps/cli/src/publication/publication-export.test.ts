@@ -9,6 +9,7 @@ import {
   PublicMatchRowSchema,
   assertPublicReplayBinding,
   assertPublicPageBinding,
+  ReplayValidationError,
   type BatchIndex,
 } from '@fantasy/domain/spatial';
 import { withReplayDirectory } from '@fantasy/api/testing';
@@ -57,6 +58,16 @@ describe('public saved-batch export', () => {
         assertPublicReplayBinding(set.rows[0]!, fixture.receipt, fixture.manifest),
       ).not.toThrow();
       expect(() => assertPublicPageBinding(set.set, set.pages[0]!)).not.toThrow();
+      expect(() => assertPublicPageBinding(set.set, { ...set.pages[0]!, rows: [] })).toThrow(
+        ReplayValidationError,
+      );
+      expect(() =>
+        assertPublicReplayBinding(
+          { ...set.rows[0]!, simulationHash: 'sha256:' + 'f'.repeat(64) },
+          fixture.receipt,
+          fixture.manifest,
+        ),
+      ).toThrow(ReplayValidationError);
       const paths = await readdir(target, { recursive: true, withFileTypes: true });
       for (const entry of paths.filter((e) => e.isFile())) {
         const path = join(entry.parentPath, entry.name),
@@ -202,7 +213,9 @@ describe('public saved-batch export', () => {
     await withReplayDirectory(async (root) => {
       const f = await publicationFixture(join(root, 'batch')),
         target = join(root, 'public');
-      await expect(exportPublication(f.plan, [f], target, 1)).rejects.toThrow(/capacity/);
+      await expect(exportPublication(f.plan, [f], target, 1)).rejects.toMatchObject({
+        code: 'BUDGET_EXCEEDED',
+      });
       expect(await readdir(target)).toEqual([]);
       await exportPublication(f.plan, [f], target);
       const pointer = await readFile(join(target, 'catalog/current.json'));
@@ -210,7 +223,9 @@ describe('public saved-batch export', () => {
         join(target, 'objects', f.receipt.objectHash.slice(7), 'manifest.json'),
         '{}',
       );
-      await expect(exportPublication(f.plan, [f], target)).rejects.toThrow(/collision/);
+      await expect(exportPublication(f.plan, [f], target)).rejects.toMatchObject({
+        code: 'PUBLICATION_CONFLICT',
+      });
       expect(await readFile(join(target, 'catalog/current.json'))).toEqual(pointer);
     });
   });

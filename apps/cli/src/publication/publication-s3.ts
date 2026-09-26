@@ -1,3 +1,4 @@
+import { OperationError, operationCode } from '@fantasy/api/tooling';
 import {
   S3Client,
   GetObjectCommand,
@@ -72,9 +73,10 @@ export class PublicationS3 implements PublicationStore {
     ] as const) {
       const value = this.budget[key];
       if (!Number.isInteger(value) || value < 1 || value > maximum)
-        throw new Error('Invalid S3 publication budget');
+        throw new OperationError('INPUT_INVALID', 'Invalid S3 publication budget');
     }
-    if (![1, 3].includes(this.budget.maxAttempts)) throw new Error('Invalid S3 retry budget');
+    if (![1, 3].includes(this.budget.maxAttempts))
+      throw new OperationError('INPUT_INVALID', 'Invalid S3 retry budget');
     this.signal = AbortSignal.timeout(this.budget.deadlineMs);
     if (
       !/^[a-f0-9]{32}$/.test(config.accountId) ||
@@ -82,7 +84,10 @@ export class PublicationS3 implements PublicationStore {
       !config.accessKeyId ||
       !config.secretAccessKey
     )
-      throw new Error('R2 bucket-scoped credentials/configuration are required');
+      throw new OperationError(
+        'INPUT_INVALID',
+        'R2 bucket-scoped credentials/configuration are required',
+      );
     this.client = new S3Client({
       region: 'auto',
       endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
@@ -97,12 +102,13 @@ export class PublicationS3 implements PublicationStore {
     this.client.destroy();
   }
   private options(kind: 'A' | 'B') {
-    if (this.remainingRequests() < 1) throw new Error('S3 request budget exceeded');
+    if (this.remainingRequests() < 1)
+      throw new OperationError('BUDGET_EXCEEDED', 'S3 request budget exceeded');
     if (
       (kind === 'A' && this.classARequests >= this.budget.maxClassARequests) ||
       (kind === 'B' && this.classBRequests >= this.budget.maxClassBRequests)
     )
-      throw new Error('S3 request class budget exceeded');
+      throw new OperationError('BUDGET_EXCEEDED', 'S3 request class budget exceeded');
     this.signal.throwIfAborted();
     this.requests++;
     if (kind === 'A') this.classARequests++;
@@ -116,13 +122,26 @@ export class PublicationS3 implements PublicationStore {
     };
   }
   private status(error: unknown) {
-    return error && typeof error === 'object'
-      ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+    const status =
+      error && typeof error === 'object'
+        ? (error as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+        : undefined;
+    return typeof status === 'number' && Number.isInteger(status) && status >= 100 && status <= 599
+      ? status
       : undefined;
   }
   private failure(error: unknown): never {
-    throw new Error(
-      `S3 operation failed (HTTP ${this.status(error) ?? 'unknown'}); no credentials logged`,
+    const status = this.status(error),
+      code = operationCode(error);
+    throw new OperationError(
+      code !== 'UNKNOWN'
+        ? code
+        : status === 401 || status === 403
+          ? 'REMOTE_AUTH'
+          : status === 409 || status === 412
+            ? 'PUBLICATION_CONFLICT'
+            : 'REMOTE_UNAVAILABLE',
+      `S3 operation failed (HTTP ${status ?? 'unknown'}); no credentials logged`,
     );
   }
   async inventory() {
@@ -145,19 +164,22 @@ export class PublicationS3 implements PublicationStore {
             item.Key === PUBLICATION_CONTROL_KEY ? item.Key : PublicKeySchema.parse(item.Key),
           size = item.Size;
         if (size === undefined || !Number.isSafeInteger(size) || size < 0 || result.has(key))
-          throw new Error('Invalid S3 inventory');
+          throw new OperationError('DATA_INVALID', 'Invalid S3 inventory');
         if (key === PUBLICATION_CONTROL_KEY && size > PUBLICATION_CONTROL_BYTES)
-          throw new Error('Invalid league usage ledger size');
+          throw new OperationError('DATA_INVALID', 'Invalid league usage ledger size');
         result.set(key, size);
         bytes += size;
         if (result.size > PUBLICATION_MAX_FILES || bytes > PUBLICATION_MAX_BYTES)
-          throw new Error('Existing S3 capacity exceeds publication budget');
+          throw new OperationError(
+            'BUDGET_EXCEEDED',
+            'Existing S3 capacity exceeds publication budget',
+          );
       }
       if (
         page.IsTruncated &&
         (!page.NextContinuationToken || page.NextContinuationToken === cursor)
       )
-        throw new Error('Incomplete S3 inventory');
+        throw new OperationError('DATA_INVALID', 'Incomplete S3 inventory');
       cursor = page.IsTruncated ? page.NextContinuationToken : undefined;
     } while (cursor);
     return result;
@@ -169,7 +191,8 @@ export class PublicationS3 implements PublicationStore {
     return this.readObject(PUBLICATION_CONTROL_KEY, PUBLICATION_CONTROL_BYTES, true);
   }
   async putControl(data: Buffer, previousEtag: string | null) {
-    if (data.length > PUBLICATION_CONTROL_BYTES) throw new Error('League usage ledger size limit');
+    if (data.length > PUBLICATION_CONTROL_BYTES)
+      throw new OperationError('BUDGET_EXCEEDED', 'League usage ledger size limit');
     LeagueUsageSchema.parse(JSON.parse(data.toString('utf8')));
     await this.putObject(PUBLICATION_CONTROL_KEY, data, previousEtag, true);
   }
@@ -179,7 +202,8 @@ export class PublicationS3 implements PublicationStore {
         new GetObjectCommand(this.input(key, control)),
         this.options('B'),
       );
-      if (!value.Body || !value.ETag) throw new Error('Incomplete S3 body');
+      if (!value.Body || !value.ETag)
+        throw new OperationError('DATA_INVALID', 'Incomplete S3 body');
       const reader = value.Body.transformToWebStream().getReader(),
         parts: Uint8Array[] = [];
       let bytes = 0;
@@ -188,8 +212,8 @@ export class PublicationS3 implements PublicationStore {
           bytes += part.value.byteLength;
           this.transferred += part.value.byteLength;
           if (this.transferred > PUBLICATION_MAX_BYTES)
-            throw new Error('S3 total read byte budget');
-          if (bytes > limit) throw new Error('S3 object byte limit');
+            throw new OperationError('BUDGET_EXCEEDED', 'S3 total read byte budget');
+          if (bytes > limit) throw new OperationError('DATA_INVALID', 'S3 object byte limit');
           parts.push(part.value);
         }
       } catch (error) {

@@ -7,6 +7,8 @@ import { PublicationS3 } from '../publication/publication-s3.ts';
 import { prepareCloudLeague } from './league-cloud.ts';
 import { transferCloudLeague } from './league-transfer.ts';
 import { publicationLeagueSource } from '../../test-support/leagues.ts';
+import { sha256 } from '@fantasy/api/artifacts';
+import { leagueFailure, leagueFailureSummary } from './league-diagnostics.ts';
 
 afterEach(() => vi.restoreAllMocks());
 const config = {
@@ -16,6 +18,41 @@ const config = {
   secretAccessKey: 'fixture',
 };
 const identity = { id: 'fixture-restore', sourceSha: 'b'.repeat(40), day: '2026-09-25' };
+it.each(['pointer-json', 'pointer-utf8', 'catalog-json', 'catalog-utf8'])(
+  'classifies malformed remote %s before consuming a lease',
+  async (kind) => {
+    const secret = 'REMOTE_JSON_PRIVATE_SENTINEL';
+    const damaged = kind.endsWith('utf8') ? Buffer.from([0xff]) : Buffer.from(`{${secret}`);
+    const pointer = kind.startsWith('pointer')
+      ? damaged
+      : Buffer.from(
+          JSON.stringify({
+            schemaVersion: 1,
+            catalogHash: sha256(damaged),
+            bytes: damaged.length,
+          }),
+        );
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(PublicationS3.prototype, 'readControl').mockResolvedValue(null);
+    vi.spyOn(PublicationS3.prototype, 'read').mockImplementation(async (key) => ({
+      data: key === 'catalog/current.json' ? pointer : damaged,
+      etag: 'fixture',
+    }));
+    const write = vi.spyOn(PublicationS3.prototype, 'putControl');
+    await withReplayDirectory(async (root) => {
+      const error = await transferCloudLeague(
+        config,
+        join(root, 'public'),
+        join(root, 'reports'),
+        identity,
+      ).catch((error: unknown) => error);
+      const report = leagueFailure(error, { command: 'restore' });
+      expect(report).toMatchObject({ code: 'DATA_INVALID', phase: 'restoration', retry: 'no' });
+      expect(JSON.stringify(report) + leagueFailureSummary(report)).not.toContain(secret);
+      expect(write).not.toHaveBeenCalled();
+    });
+  },
+);
 it('requires durable inventory/data leases before restore and never reuses the same failed lease', async () => {
   let current: Awaited<ReturnType<PublicationS3['readControl']>> = null;
   vi.spyOn(console, 'log').mockImplementation(() => {});

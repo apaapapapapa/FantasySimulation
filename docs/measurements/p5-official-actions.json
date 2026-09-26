@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "official-league-actions",
-  "status": "running",
+  "status": "publication-recovery-running",
   "definition": "data/leagues/official-20-v1.json",
   "sourceSha": "ffa49bc8bc0f6fb603834ee72cfc4f015757f273",
   "mainCiRunId": 36211783934,
@@ -82,8 +82,93 @@
           "readBytes": 173846,
           "uploadedBytes": 2988143
         }
+      },
+      {
+        "phase": "league-36212301947-1-publish",
+        "control": {
+          "logicalRequests": 8,
+          "classARequests": 3,
+          "classBRequests": 5,
+          "maxAttempts": 1,
+          "successfulWrites": 2,
+          "readBytes": 3991,
+          "uploadedBytes": 1817
+        },
+        "transport": {
+          "logicalRequests": 0,
+          "classARequests": 0,
+          "classBRequests": 0,
+          "maxAttempts": 1,
+          "successfulWrites": 0,
+          "readBytes": 0,
+          "uploadedBytes": 0
+        }
       }
-    ]
+    ],
+    "compute": {
+      "observedAt": "2026-09-26T03:20:01.627Z",
+      "computeWallMs": 2106000,
+      "totalJobMs": 8094000,
+      "maxConcurrentReportedJobs": 4,
+      "partitions": 60,
+      "successfulJobs": 60,
+      "note": "Job success is not a definitive battle outcome; resolved slots are counted from the validated snapshot.",
+      "resultArtifacts": {
+        "count": 60,
+        "archiveBytes": 593664465,
+        "note": "GitHub artifact ZIP sizes, not R2 stored bytes."
+      },
+      "partitionExecutionElapsedMs": {
+        "sum": 6037519,
+        "min": 15526,
+        "max": 382177,
+        "median": 74854.5,
+        "note": "Sum of recorded partition durations; not wall time or billed CPU time."
+      }
+    },
+    "validation": {
+      "startedAt": "2026-09-26T03:20:48Z",
+      "completedAt": "2026-09-26T04:09:11Z",
+      "elapsedMs": 2903000,
+      "conclusion": "success",
+      "note": "Local aggregation and artifact validation; R2 publication/readback is a later step."
+    },
+    "conclusion": "failure",
+    "completedAt": "2026-09-26T04:24:24Z",
+    "measurementsArtifact": {
+      "id": 10898270291,
+      "archiveDigest": "sha256:7fd336af3cc348fdfb2f866ccd0e2d6db146565387cea335ee2c0b83f3098c0c"
+    },
+    "completion": {
+      "addedFiles": 88055,
+      "bytes": 580388079,
+      "catalogHash": "sha256:f155cccd70a1aaf8affee161e2f8007940e73f55f4beffd61c62842dbcdd0532",
+      "elapsedMs": [
+        79613, 245741, 66960, 92382, 75562, 53986, 213072, 130400, 54267, 61532, 67432, 67485,
+        382177, 94872, 97669, 134485, 49036, 297090, 119471, 128374, 146447, 97571, 111630, 49048,
+        52649, 49837, 137927, 267250, 105565, 139892, 193955, 157444, 182481, 133913, 95733, 59346,
+        63400, 56995, 54375, 51244, 98714, 51804, 66732, 69421, 83017, 46389, 73619, 69103, 64576,
+        63427, 66181, 74147, 54749, 50296, 112114, 59266, 79489, 78785, 41856, 15526
+      ],
+      "missingPartitions": [],
+      "planned": 7600,
+      "receivedPartitions": 60,
+      "resolved": 7600,
+      "reusedFiles": 60,
+      "snapshot": {
+        "bytes": 16460,
+        "hash": "sha256:a3abcc329008555c1d477c4d33a7c401c7c2d38ec6ee0527fd8652cd656b69ed"
+      },
+      "status": "formal"
+    },
+    "failureAnalysis": {
+      "classification": "inferred stale local Git ancestry while Pages advanced",
+      "checkoutAt": "2026-09-26T03:18:11Z",
+      "failureAt": "2026-09-26T04:24:19Z",
+      "evidence": "All 7600 resolved formally; zero result transport requests. Pages advanced after checkout; ancestorOf rejected unknown deployed commits. Regression reproduced with a remote commit created after clone. The old catch omitted the specific exception, so attribution is inferred.",
+      "localExportBytesAreNotR2Usage": true
+    },
+    "elapsedMs": 6381000
   },
   "cloudBefore": {
     "schemaVersion": 1,
@@ -196,8 +281,256 @@
     "Production viewer navigation, initial load and pricing estimate"
   ],
   "notes": [
-    "This running record is not an Issue completion declaration.",
+    "The initial publication failed after successful result validation; this is not an Issue completion declaration.",
     "The 6GB estimate includes a conservative workload profile; actual publication is measured separately.",
     "Production credentials remain in the protected Actions Environment."
-  ]
+  ],
+  "fixtureUi": {
+    "sourceSha": "ffa49bc8bc0f6fb603834ee72cfc4f015757f273",
+    "mainCiRunId": 36211783934,
+    "artifactId": 10895737228,
+    "archiveDigest": "sha256:fd6c73e961f0c343a9b501b78ffcb6417d5bbd3d18988f3cddf1288775cc9b0e",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "leagueCasesPassed": 6,
+    "fixtureCharacters": 3,
+    "note": "Deterministic fixture coverage; production payload is measured separately.",
+    "browsers": {
+      "chromium": {
+        "requests": 3,
+        "bytes": 4088,
+        "files": [
+          {
+            "key": "catalog/current.json",
+            "bytes": 119
+          },
+          {
+            "key": "catalog/036e1ba7d702623902b3a35eb8ce652f77c901123278ba0554a42d2367d242dc.json",
+            "bytes": 718
+          },
+          {
+            "key": "leagues/55ef1a441537a3795e1084d56453abc8a8f827039bb672adcc209428afdd0514.json",
+            "bytes": 3251
+          }
+        ]
+      },
+      "webkit": {
+        "requests": 3,
+        "bytes": 4088,
+        "files": [
+          {
+            "key": "catalog/current.json",
+            "bytes": 119
+          },
+          {
+            "key": "catalog/036e1ba7d702623902b3a35eb8ce652f77c901123278ba0554a42d2367d242dc.json",
+            "bytes": 718
+          },
+          {
+            "key": "leagues/55ef1a441537a3795e1084d56453abc8a8f827039bb672adcc209428afdd0514.json",
+            "bytes": 3251
+          }
+        ]
+      }
+    },
+    "latestVerification": {
+      "sourceSha": "a7b86698f3aad83778243acffe34c92b6cbaf999",
+      "mainCiRunId": 36219535434,
+      "artifactId": 10899350360,
+      "archiveDigest": "sha256:71651e7f502ce5e81398fa693d944eb89abf0f540bcf3d27e54f9123b7951b12",
+      "leagueCasesPassed": 6,
+      "staticCasesPassed": 46,
+      "flaky": 0,
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "browsers": {
+        "chromium": {
+          "requests": 3,
+          "bytes": 4088,
+          "files": [
+            {
+              "key": "catalog/current.json",
+              "bytes": 119
+            },
+            {
+              "key": "catalog/036e1ba7d702623902b3a35eb8ce652f77c901123278ba0554a42d2367d242dc.json",
+              "bytes": 718
+            },
+            {
+              "key": "leagues/55ef1a441537a3795e1084d56453abc8a8f827039bb672adcc209428afdd0514.json",
+              "bytes": 3251
+            }
+          ]
+        },
+        "webkit": {
+          "requests": 3,
+          "bytes": 4088,
+          "files": [
+            {
+              "key": "catalog/current.json",
+              "bytes": 119
+            },
+            {
+              "key": "catalog/036e1ba7d702623902b3a35eb8ce652f77c901123278ba0554a42d2367d242dc.json",
+              "bytes": 718
+            },
+            {
+              "key": "leagues/55ef1a441537a3795e1084d56453abc8a8f827039bb672adcc209428afdd0514.json",
+              "bytes": 3251
+            }
+          ]
+        }
+      }
+    }
+  },
+  "pricingBasis": {
+    "checkedAt": "2026-09-26",
+    "currency": "USD",
+    "sources": [
+      "https://developers.cloudflare.com/r2/pricing/",
+      "https://developers.cloudflare.com/workers/platform/pricing/"
+    ],
+    "r2Standard": {
+      "storagePerGbMonth": 0.015,
+      "classAPerMillion": 4.5,
+      "classBPerMillion": 0.36,
+      "freeGbMonth": 10,
+      "freeClassAMonthly": 1000000,
+      "freeClassBMonthly": 10000000,
+      "egressPerGb": 0,
+      "billing": "Usage rounds up to the next billing unit; storage uses average daily peak across 30 days."
+    },
+    "workersFreeRequestsDaily": 100000,
+    "note": "After-publication measurements are still pending. Account base subscriptions, future traffic and other projects are not zeroed or waived by this estimate.",
+    "bucket": {
+      "name": "fantasysimulation-replays",
+      "storageClass": "Standard",
+      "observedAt": "2026-09-26T04:03:01.537Z",
+      "method": "Cloudflare Get Bucket API; publisher does not override StorageClass."
+    }
+  },
+  "cloudBeforeRecovery": {
+    "schemaVersion": 1,
+    "observedAt": "2026-09-26T04:57:56.332Z",
+    "kind": "cloudflare-post-league-analytics",
+    "notice": "Adaptive analytics may lag and is not a billing invoice. Account totals include other workloads; deltas are not solely attributable to this run.",
+    "r2AccountOperationsMonthToDate": [
+      {
+        "dimensions": {
+          "actionType": "ListBuckets"
+        },
+        "sum": {
+          "requests": 47
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutObject"
+        },
+        "sum": {
+          "requests": 1831
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutBucket"
+        },
+        "sum": {
+          "requests": 2
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutBucketLifecycleConfiguration"
+        },
+        "sum": {
+          "requests": 541
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "ListMultipartUploads"
+        },
+        "sum": {
+          "requests": 10
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "GetObject"
+        },
+        "sum": {
+          "requests": 9662
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "HeadObject"
+        },
+        "sum": {
+          "requests": 300
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "GetBucketLifecycleConfiguration"
+        },
+        "sum": {
+          "requests": 1107
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "HeadBucket"
+        },
+        "sum": {
+          "requests": 988
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "ListObjects"
+        },
+        "sum": {
+          "requests": 45
+        }
+      }
+    ],
+    "r2ClassAMonthToDate": 2476,
+    "r2ClassBMonthToDate": 12057,
+    "unclassifiedOperations": [],
+    "r2AccountStorageDayMaxima": {
+      "payloadBytes": 256106933,
+      "metadataBytes": 307350
+    },
+    "r2TargetStorage": {
+      "metadataSize": 10031,
+      "objectCount": 105,
+      "payloadSize": 3159770
+    },
+    "workersAccountDay": {
+      "requests": 161,
+      "errors": 0
+    },
+    "workersReaderDay": {
+      "errors": 0,
+      "requests": 53
+    }
+  },
+  "recovery": {
+    "runId": 36219874846,
+    "attempt": 1,
+    "sourceSha": "a7b86698f3aad83778243acffe34c92b6cbaf999",
+    "mainCiRunId": 36219535434,
+    "originalRunId": 36212301947,
+    "originalAttempt": 1,
+    "pullRequest": 161,
+    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36219874846",
+    "status": "running",
+    "note": "Original simulation source, reservations and artifact checksums are preserved. Recovery runs no battle and uses new durable transport leases."
+  }
 }
