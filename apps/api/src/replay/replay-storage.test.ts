@@ -20,23 +20,50 @@ import { readBoundedFile, readCompressed, sha256 } from './replay-files.ts';
 import { withReplayDirectory, recordedBattle, artifactBytes } from '../../test-support/replays.ts';
 
 describe('bounded independent replay artifacts', () => {
-  it.each(['record-schema', 'record-json', 'checkpoint-json'])(
+  it.each([
+    'record-schema',
+    'record-json',
+    'checkpoint-json',
+    'record-gzip',
+    'checkpoint-gzip',
+    'record-truncated',
+    'checkpoint-truncated',
+    'record-utf8',
+    'checkpoint-utf8',
+    'record-size',
+    'checkpoint-size',
+    'record-overflow',
+    'checkpoint-overflow',
+  ])(
     'classifies saved %s corruption even when compressed checksums are consistent',
     async (kind) => {
       await withReplayDirectory(async (root) => {
         const { manifest } = await recordedBattle(root, 20);
         const directory = join(root, manifest.id);
-        const ref = kind === 'checkpoint-json' ? manifest.checkpoints[0]! : manifest.chunks[0]!;
+        const ref = kind.startsWith('checkpoint') ? manifest.checkpoints[0]! : manifest.chunks[0]!;
         const original = await readCompressed(directory, ref);
         const raw =
           kind === 'checkpoint-json'
             ? '{'
-            : [kind === 'record-schema' ? '{}' : '{', ...original.split('\n').slice(1)].join('\n');
-        const bytes = gzipSync(raw);
+            : kind.endsWith('utf8')
+              ? Buffer.from([0xff])
+              : kind === 'record-schema' || kind === 'record-json'
+                ? [kind === 'record-schema' ? '{}' : '{', ...original.split('\n').slice(1)].join(
+                    '\n',
+                  )
+                : original;
+        const compressed = gzipSync(raw);
+        const bytes = kind.endsWith('gzip')
+          ? Buffer.from('invalid gzip')
+          : kind.endsWith('truncated')
+            ? compressed.subarray(0, -1)
+            : compressed;
         await writeFile(join(directory, ref.file), bytes);
         Object.assign(ref, {
           bytes: bytes.length,
-          rawBytes: Buffer.byteLength(raw),
+          rawBytes:
+            Buffer.byteLength(raw) +
+            (kind.endsWith('size') ? 1 : kind.endsWith('overflow') ? -1 : 0),
           checksum: sha256(bytes),
         });
         await expect(verifyReplayDirectory(directory, manifest)).rejects.toMatchObject({
