@@ -115,8 +115,7 @@ export async function compileCatalog(inputs: readonly unknown[]): Promise<Revisi
   }
   // Preserve the published kind/ID ordering, including IDs that prefix another ID.
   const revisions = [...compiled.values()].sort(
-    (a, b) =>
-      compareIds(`${a.kind}:${a.id}`, `${b.kind}:${b.id}`) || a.revision - b.revision,
+    (a, b) => compareIds(`${a.kind}:${a.id}`, `${b.kind}:${b.id}`) || a.revision - b.revision,
   );
   const resolved = revisionIndex(revisions);
   resolveClosure(revisions, resolved, CATALOG_AUTHORING_LIMIT);

@@ -10,9 +10,7 @@ it('shows structural changes safely and keeps invalid editor input editable', ()
   expect(markup).toContain('/hp');
   expect(markup).toContain('変更前: 10');
   expect(markup).toContain('変更後: 20');
-  const invalid = renderToStaticMarkup(
-    createElement(DefinitionDiff, { before: {}, text: '{' }),
-  );
+  const invalid = renderToStaticMarkup(createElement(DefinitionDiff, { before: {}, text: '{' }));
   expect(invalid).toContain('JSONを修正');
   const escaped = renderToStaticMarkup(
     createElement(DefinitionDiff, { before: {}, text: '{"name":"<script>"}' }),
