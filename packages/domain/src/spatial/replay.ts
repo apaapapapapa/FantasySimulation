@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { HashSchema, IdSchema, StoredManifestSchema } from './contracts.ts';
 import { ResultSchema } from './records.ts';
 import { DisplayStateSchema, StreamRecordSchema } from './stream.ts';
+import { fail } from './replay-validation/common.ts';
+export { ReplayValidationError } from './replay-validation/common.ts';
 
 // Display schema support is independent of the installed engine/rules version.
 // Old engines are never loaded. A structural format change requires a replay schema bump.
@@ -38,9 +40,9 @@ export type ArtifactRef = z.infer<typeof ArtifactRefSchema>;
 export const MAX_REPLAY_MANIFEST_BYTES = 4_000_000;
 /** Split one verified, expanded NDJSON chunk; validation happens when ReplayState applies it. */
 export function replayChunkRecords(text: string, chunk: { records: number }): unknown[] {
-  if (!text.endsWith('\n')) throw new Error('Invalid replay: incomplete NDJSON chunk');
+  if (!text.endsWith('\n')) fail('incomplete NDJSON chunk');
   const lines = text.slice(0, -1).split('\n');
-  if (lines.length !== chunk.records) throw new Error('Invalid replay: chunk record count');
+  if (lines.length !== chunk.records) fail('chunk record count');
   return lines.map((line): unknown => JSON.parse(line));
 }
 export const ReplayChunkSchema = z.strictObject({

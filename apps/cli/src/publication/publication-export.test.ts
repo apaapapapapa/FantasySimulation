@@ -9,6 +9,7 @@ import {
   PublicMatchRowSchema,
   assertPublicReplayBinding,
   assertPublicPageBinding,
+  ReplayValidationError,
   type BatchIndex,
 } from '@fantasy/domain/spatial';
 import { withReplayDirectory } from '@fantasy/api/testing';
@@ -57,6 +58,16 @@ describe('public saved-batch export', () => {
         assertPublicReplayBinding(set.rows[0]!, fixture.receipt, fixture.manifest),
       ).not.toThrow();
       expect(() => assertPublicPageBinding(set.set, set.pages[0]!)).not.toThrow();
+      expect(() => assertPublicPageBinding(set.set, { ...set.pages[0]!, rows: [] })).toThrow(
+        ReplayValidationError,
+      );
+      expect(() =>
+        assertPublicReplayBinding(
+          { ...set.rows[0]!, simulationHash: 'sha256:' + 'f'.repeat(64) },
+          fixture.receipt,
+          fixture.manifest,
+        ),
+      ).toThrow(ReplayValidationError);
       const paths = await readdir(target, { recursive: true, withFileTypes: true });
       for (const entry of paths.filter((e) => e.isFile())) {
         const path = join(entry.parentPath, entry.name),

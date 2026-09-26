@@ -1,5 +1,5 @@
 import { ZodError } from 'zod';
-import { RevisionGraphError } from '@fantasy/domain/spatial';
+import { RevisionGraphError, ReplayValidationError } from '@fantasy/domain/spatial';
 import { EngineInputError } from '@fantasy/engine/spatial';
 import { StoreError } from './db/store-error.ts';
 import { OperationError, type OperationCode } from './operation-error.ts';
@@ -10,6 +10,7 @@ export function operationCode(
   schemaCode: 'INPUT_INVALID' | 'DATA_INVALID' = 'INPUT_INVALID',
 ): OperationCode | 'UNKNOWN' {
   if (error instanceof OperationError) return error.code;
+  if (error instanceof ReplayValidationError) return 'DATA_INVALID';
   if (error instanceof ZodError) return schemaCode;
   if (error instanceof RevisionGraphError) return 'INPUT_INVALID';
   if (error instanceof EngineInputError)

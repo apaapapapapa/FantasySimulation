@@ -1,4 +1,5 @@
 import { ZodError } from 'zod';
+import { ReplayValidationError } from '@fantasy/domain/spatial';
 
 export type OperationCode =
   | 'INPUT_INVALID'
@@ -27,6 +28,8 @@ export function operationInput<T>(parse: () => T, code: 'INPUT_INVALID' | 'DATA_
   try {
     return parse();
   } catch (error) {
+    if (error instanceof ReplayValidationError)
+      throw new OperationError('DATA_INVALID', 'Invalid replay data');
     if (
       error instanceof ZodError ||
       error instanceof SyntaxError ||

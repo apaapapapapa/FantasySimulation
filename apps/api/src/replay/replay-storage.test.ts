@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { readFile, writeFile, readdir, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -36,6 +36,9 @@ describe('bounded independent replay artifacts', () => {
     'checkpoint-overflow',
     'record-file-length',
     'checkpoint-file-length',
+    'record-newline',
+    'record-count',
+    'record-semantic',
   ])(
     'classifies saved %s corruption even when compressed checksums are consistent',
     async (kind) => {
@@ -44,6 +47,7 @@ describe('bounded independent replay artifacts', () => {
         const directory = join(root, manifest.id);
         const ref = kind.startsWith('checkpoint') ? manifest.checkpoints[0]! : manifest.chunks[0]!;
         const original = await readCompressed(directory, ref);
+        if (kind === 'record-count') manifest.chunks[0]!.records++;
         if (kind.endsWith('file-length')) {
           const file = join(directory, ref.file);
           await writeFile(
@@ -55,7 +59,7 @@ describe('bounded independent replay artifacts', () => {
           });
           return;
         }
-        const raw =
+        let raw =
           kind === 'checkpoint-json'
             ? '{'
             : kind.endsWith('utf8')
@@ -65,6 +69,12 @@ describe('bounded independent replay artifacts', () => {
                     '\n',
                   )
                 : original;
+        if (kind === 'record-newline') raw = original.slice(0, -1);
+        if (kind === 'record-semantic') {
+          const lines = original.split('\n');
+          lines[1] = lines[0]!; // Valid initial record in an invalid position, with unchanged count.
+          raw = lines.join('\n');
+        }
         const compressed = gzipSync(raw);
         const bytes = kind.endsWith('gzip')
           ? Buffer.from('invalid gzip')
@@ -85,6 +95,20 @@ describe('bounded independent replay artifacts', () => {
       });
     },
   );
+  it('preserves unexpected validator exceptions instead of relabeling them as saved-data failures', async () => {
+    await withReplayDirectory(async (root) => {
+      const { manifest } = await recordedBattle(root, 20);
+      const error = new Error('PRIVATE_UNEXPECTED_VALIDATOR');
+      const apply = vi.spyOn(ReplayState.prototype, 'apply').mockImplementation(() => {
+        throw error;
+      });
+      try {
+        await expect(verifyReplayDirectory(join(root, manifest.id), manifest)).rejects.toBe(error);
+      } finally {
+        apply.mockRestore();
+      }
+    });
+  });
   it('rejects symlinks before reading their target through the opened handle', async () => {
     await withReplayDirectory(async (root) => {
       const target = join(root, 'target'),

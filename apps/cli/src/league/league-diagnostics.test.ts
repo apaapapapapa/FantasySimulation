@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { OperationError } from '@fantasy/api/tooling';
-import { LeagueCloudInputSchema } from '@fantasy/domain/spatial';
+import { LeagueCloudInputSchema, ReplayValidationError } from '@fantasy/domain/spatial';
 import { PublicationFailure } from '../publication/publication-remote.ts';
 import { leagueFailure, leagueFailureSummary, reportLeagueFailure } from './league-diagnostics.ts';
 import { reserveLeagueUsage } from './league-budget.ts';
@@ -83,6 +83,9 @@ it.each([
 });
 
 it('uses only the known publication wrapper and never walks arbitrary causes or trusts name/code duck typing', () => {
+  const replay = leagueFailure(new ReplayValidationError(secret), { command: 'prepare' });
+  expect(replay.code).toBe('DATA_INVALID');
+  expect(JSON.stringify(replay) + leagueFailureSummary(replay)).not.toContain(secret);
   const known = new OperationError('BUDGET_EXCEEDED', secret);
   expect(
     leagueFailure(new PublicationFailure('not-committed', known), { command: 'admit' }).code,
@@ -92,6 +95,7 @@ it('uses only the known publication wrapper and never walks arbitrary causes or 
     secret,
     null,
     { name: 'OperationError', code: 'DATA_INVALID', cause: known },
+    { name: 'ReplayValidationError', message: secret },
     new Error(secret, { cause: known }),
   ]) {
     const report = leagueFailure(error, { command: secret });

@@ -78,7 +78,9 @@ export function publicHttp(root: string, deadlineMs = 300000) {
       for (let part = await reader.read(); !part.done; part = await reader.read()) {
         size += part.value.length;
         total += part.value.length;
-        if (size > limit || total > 256_000_000)
+        if (size > limit)
+          throw new OperationError('DATA_INVALID', 'Public read-back object exceeds declared size');
+        if (total > 256_000_000)
           throw new OperationError('BUDGET_EXCEEDED', 'Public read-back byte budget');
         parts.push(part.value);
       }

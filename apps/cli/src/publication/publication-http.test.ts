@@ -35,7 +35,27 @@ it('cancels oversized read-back and preserves exact compressed bytes', async () 
   fetch.mockResolvedValueOnce(
     new Response(bytes, { headers: { 'content-type': 'application/gzip' } }),
   );
-  await expect(read('chunk.gz', 3)).rejects.toThrow('byte budget');
+  await expect(read('chunk.gz', 3)).rejects.toMatchObject({ code: 'DATA_INVALID' });
+});
+it('keeps the aggregate transfer cap distinct from an individual object size mismatch', async () => {
+  const chunk = new Uint8Array(1_000_000);
+  let chunks = 0;
+  // Reuse one buffer in the stream; no large fixture or network transfer is needed.
+  const stream = new ReadableStream({
+    pull(controller) {
+      controller.enqueue(chunk);
+      if (++chunks === 257) controller.close();
+    },
+  });
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockResolvedValue(new Response(stream, { headers: { 'content-type': 'application/json' } })),
+  );
+  await expect(
+    publicHttp('https://reader.example/')('catalog/current.json', 300_000_000),
+  ).rejects.toMatchObject({ code: 'BUDGET_EXCEEDED' });
 });
 it('keeps league verification alive after a long upload while bounding each request and the whole phase', async () => {
   vi.useFakeTimers();
