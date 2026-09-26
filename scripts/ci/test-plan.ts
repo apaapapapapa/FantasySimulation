@@ -20,11 +20,13 @@ export function testFiles(root: string): string[] {
  * 36233600930). Durations include contention from the other workers in a shard, so these are
  * scheduling hints only: every inventory file still runs exactly once, and a stale or missing
  * weight only unbalances the shards. Files under two seconds are unlisted and weigh one second;
- * the league plan/runner split is estimated from its measured per-test durations.
+ * the league plan/runner split is estimated from its measured per-test durations. The real-Worker
+ * corpus counts its CPU instead: about 20 s with up to three busy Worker threads. Sharing a shard
+ * with other heavy files slowed it to 31 s (main run 36239802179), so it gets a shard of light files.
  */
 export const TEST_WEIGHTS: Readonly<Record<string, number>> = {
   'apps/cli/src/league/league-export.test.ts': 22,
-  'apps/api/src/jobs/worker-corpus.test.ts': 20,
+  'apps/api/src/jobs/worker-corpus.test.ts': 60,
   'apps/api/src/batch/batch.test.ts': 19,
   'apps/api/src/jobs/battle-runtime.test.ts': 16,
   'apps/api/src/jobs/ai-delivery.test.ts': 16,
@@ -75,17 +77,24 @@ export function shardFiles(files: readonly string[], shards: number): string[][]
   return assigned;
 }
 /**
- * Known heavy files first, everything else in the given order. CI never caches test results, and
- * without them Vitest starts files largest first, so a short but slow file (the real-Worker corpus)
- * could start last and alone set its shard's wall time.
+ * The heaviest known file first, everything else in the given order. CI never caches test results,
+ * and without them Vitest starts files largest first, so a short but slow file could start last and
+ * alone set its shard's wall time. Only one file moves: starting every heavy file at once made the
+ * CPU-bound ones slow each other, and two 4-vCPU shards took 5-7 s longer (runs 36239695205 and
+ * 36239802179 against 36238386739).
  */
 export function heaviestFirst<T>(
   items: readonly T[],
   file: (item: T) => string,
   weights = TEST_WEIGHTS,
 ): T[] {
-  return items
-    .map((item, index) => ({ item, index, weight: weight(file(item), weights) }))
-    .sort((a, b) => b.weight - a.weight || a.index - b.index)
-    .map(({ item }) => item);
+  let heaviest = -1;
+  let most = 1;
+  items.forEach((item, index) => {
+    const value = weight(file(item), weights);
+    if (value > most) [heaviest, most] = [index, value];
+  });
+  return heaviest < 0
+    ? [...items]
+    : [items[heaviest]!, ...items.filter((_, index) => index !== heaviest)];
 }

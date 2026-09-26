@@ -96,24 +96,49 @@ describe('duration-balanced test shards', () => {
     const files = new Set(testFiles(process.cwd()));
     for (const file of Object.keys(TEST_WEIGHTS)) expect(files.has(file)).toBe(true);
   });
-  it('orders known heavy files first and keeps the given order for ties', () => {
-    const weights = { 'b.test.ts': 5, 'd.test.ts': 9, 'e.test.ts': 5 };
+  it('keeps other heavy files out of the real-Worker corpus shard', () => {
+    const corpus = 'apps/api/src/jobs/worker-corpus.test.ts';
+    const shard = shardFiles(testFiles(process.cwd()), TEST_SHARDS).find((files) =>
+      files.includes(corpus),
+    );
+    const others = (shard ?? [])
+      .filter((file) => file !== corpus)
+      .map((file) => TEST_WEIGHTS[file] ?? 1);
+    expect(others.length).toBeGreaterThan(0);
+    expect(Math.max(...others)).toBeLessThan(5);
+    expect(others.reduce((sum, value) => sum + value, 0)).toBeLessThan(TEST_WEIGHTS[corpus]!);
+  });
+  it('moves only the heaviest known file to the front and keeps the given order otherwise', () => {
     const files = ['a.test.ts', 'b.test.ts', 'c.test.ts', 'd.test.ts', 'e.test.ts'];
-    expect(heaviestFirst(files, (file) => file, weights)).toEqual([
+    const order = (weights: Record<string, number>) =>
+      heaviestFirst(files, (file) => file, weights);
+    expect(order({ 'b.test.ts': 5, 'd.test.ts': 9, 'e.test.ts': 5 })).toEqual([
       'd.test.ts',
+      'a.test.ts',
       'b.test.ts',
+      'c.test.ts',
       'e.test.ts',
+    ]);
+    expect(order({ 'b.test.ts': 5, 'e.test.ts': 5 })).toEqual([
+      'b.test.ts',
       'a.test.ts',
       'c.test.ts',
+      'd.test.ts',
+      'e.test.ts',
     ]);
+    expect(order({ 'c.test.ts': 1 })).toEqual(files);
+    expect(order({})).toEqual(files);
   });
-  it('starts a small but known heavy file before larger ones without a results cache', async () => {
+  it('starts the small but heaviest file first and leaves the rest in Vitest order', async () => {
     const root = process.cwd();
-    const heavy = Object.entries(TEST_WEIGHTS).sort(([, a], [, b]) => b - a)[0]![0];
+    const [heavy, next] = Object.entries(TEST_WEIGHTS)
+      .sort(([, a], [, b]) => b - a)
+      .map(([file]) => file);
     const sizes = new Map([
       ['large.test.ts', 3000],
       ['medium.test.ts', 2000],
-      [heavy, 1],
+      [heavy!, 1],
+      [next!, 1],
     ]);
     const project = { name: '', config: { isolate: true, sequence: { groupOrder: 0 } } };
     const sequencer = new WeightedSequencer({
@@ -129,6 +154,7 @@ describe('duration-balanced test shards', () => {
       heavy,
       'large.test.ts',
       'medium.test.ts',
+      next,
     ]);
     const { default: config } = await import('../../vite.config.ts');
     expect(config.test?.sequence?.sequencer).toBe(WeightedSequencer);
