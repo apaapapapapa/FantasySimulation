@@ -35,10 +35,10 @@
     },
     {
       "id": "attribute-absorption",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield.",
       "generation": "p6"
     },
     {
@@ -99,10 +99,10 @@
     },
     {
       "id": "drain",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself.",
       "generation": "p6"
     },
     {
@@ -404,7 +404,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, attribute-absorption; permission never implements a mechanic."
+          "reason": "absolute-evasion is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -492,7 +492,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, drain; permission never implements a mechanic."
+          "reason": "absolute-evasion is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -877,7 +877,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, attribute-absorption; permission never implements a mechanic."
+          "reason": "absolute-hit is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -965,7 +965,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, drain; permission never implements a mechanic."
+          "reason": "absolute-hit is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -1362,8 +1362,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Grants become effective next boundary; this wave uses old absorption/recovery cohorts. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -1454,8 +1455,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Grants become effective next boundary; this wave uses old absorption/recovery cohorts. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -1876,7 +1878,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, attribute-absorption; permission never implements a mechanic."
+          "reason": "area is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -1964,7 +1966,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, drain; permission never implements a mechanic."
+          "reason": "area is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2305,7 +2307,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, absolute-evasion; permission never implements a mechanic."
+          "reason": "absolute-evasion is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2316,7 +2318,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, absolute-hit; permission never implements a mechanic."
+          "reason": "absolute-hit is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2326,8 +2328,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Grants become effective next boundary; this wave uses old absorption/recovery cohorts."
         }
       ]
     },
@@ -2338,7 +2341,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, area; permission never implements a mechanic."
+          "reason": "area is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2348,8 +2351,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -2360,7 +2364,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, barrier; permission never implements a mechanic."
+          "reason": "barrier is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2371,7 +2375,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, beam; permission never implements a mechanic."
+          "reason": "beam is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2382,7 +2386,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, causality; permission never implements a mechanic."
+          "reason": "causality is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2392,8 +2396,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Only accepted contact effects enter the simultaneous wave."
         }
       ]
     },
@@ -2403,8 +2408,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Deferred counter damage uses the same absorption/drain wave after reservation."
         }
       ]
     },
@@ -2414,8 +2420,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Defense, coverage, resistance and dealt/taken modifiers precede conversion and shared shield."
         }
       ]
     },
@@ -2425,8 +2432,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Dispel changes statuses at commit, after current-wave conversion."
         }
       ]
     },
@@ -2436,8 +2444,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -2447,8 +2456,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Positive coverage remains elemental contact even when all damage is converted."
         }
       ]
     },
@@ -2459,7 +2469,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, existence-erasure; permission never implements a mechanic."
+          "reason": "existence-erasure is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2469,8 +2479,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Flight uses its existing movement/expiry; periodic elemental damage can be converted."
         }
       ]
     },
@@ -2480,8 +2491,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Force still queues on an absorbed contact; recovery does not remove contact effects."
         }
       ]
     },
@@ -2492,7 +2504,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, foresight; permission never implements a mechanic."
+          "reason": "foresight is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2502,8 +2514,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Ordinary and converted healing count in available HP; clamp only after drain credits."
         }
       ]
     },
@@ -2514,7 +2527,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, immortality; permission never implements a mechanic."
+          "reason": "immortality is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2525,7 +2538,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, instant-death; permission never implements a mechanic."
+          "reason": "instant-death is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2536,7 +2549,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, mind-read; permission never implements a mechanic."
+          "reason": "mind-read is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2546,8 +2559,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Scheduled movement and hit ledger remain unchanged."
         }
       ]
     },
@@ -2557,8 +2571,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. All-scope parry cancels contact; damage-only parry yields zero conversion and zero drain."
         }
       ]
     },
@@ -2568,8 +2583,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Periodic elemental damage can be absorbed; periodic effects never drain."
         }
       ]
     },
@@ -2579,8 +2595,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Permanent absorption uses ordinary additive stacking and cannot be ordinarily dispelled."
         }
       ]
     },
@@ -2591,7 +2608,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, phasing; permission never implements a mechanic."
+          "reason": "phasing is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2602,7 +2619,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, piercing; permission never implements a mechanic."
+          "reason": "piercing is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2612,8 +2629,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Launch power persists; owner receives drain unless redirected, which disables it."
         }
       ]
     },
@@ -2623,8 +2641,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "attribute-absorption is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Deflection cancels the original body payload. The returned projectile keeps launch power and payload, changes owner once and resumes next interval. On its next contact, target absorption converts damage after modifiers and before shield; the cancelled contact never heals."
         }
       ]
     },
@@ -2634,8 +2653,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Before-hit healing joins its existing wave; recovery does not activate a new reaction."
         }
       ]
     },
@@ -2645,8 +2665,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Costs, stamina, MP and fall damage never generate drain."
         }
       ]
     },
@@ -2656,8 +2677,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Resistance reveal discloses no absorption rate; converted contacts teach a delayed coarse band."
         }
       ]
     },
@@ -2668,7 +2690,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, revival; permission never implements a mechanic."
+          "reason": "revival is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2679,7 +2701,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, seal; permission never implements a mechanic."
+          "reason": "seal is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2689,8 +2711,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Converted damage leaves shield intact; remaining shared shield reduces the drain base."
         }
       ]
     },
@@ -2700,8 +2723,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Silence gates existing magic activations; absorption statuses continue."
         }
       ]
     },
@@ -2711,8 +2735,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Each accepted stage effect enters the existing hit-ledger/wave once."
         }
       ]
     },
@@ -2722,8 +2747,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Sum elemental absorption into 0..10000; hpRecovery affects converted and drained healing."
         }
       ]
     },
@@ -2734,7 +2760,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, teleport; permission never implements a mechanic."
+          "reason": "teleport is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2745,7 +2771,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, time-stop; permission never implements a mechanic."
+          "reason": "time-stop is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2756,7 +2782,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for attribute-absorption, universal-victory; permission never implements a mechanic."
+          "reason": "universal-victory is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2766,8 +2792,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum matching rates capped at 100%; convert after taken multipliers and before shield. Only visible impacts yield delayed coarse absorption evidence; hidden rates stay private."
         }
       ]
     },
@@ -2822,7 +2849,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, attribute-absorption; permission never implements a mechanic."
+          "reason": "barrier is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -2910,7 +2937,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, drain; permission never implements a mechanic."
+          "reason": "barrier is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -3295,7 +3322,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, attribute-absorption; permission never implements a mechanic."
+          "reason": "beam is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -3383,7 +3410,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, drain; permission never implements a mechanic."
+          "reason": "beam is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -3768,7 +3795,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, attribute-absorption; permission never implements a mechanic."
+          "reason": "causality is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -3856,7 +3883,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, drain; permission never implements a mechanic."
+          "reason": "causality is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -4241,8 +4268,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Only accepted contact effects enter the simultaneous wave. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -4333,8 +4361,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Only accepted contact effects enter the simultaneous wave. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -4737,8 +4766,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Deferred counter damage uses the same absorption/drain wave after reservation. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -4829,8 +4859,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Deferred counter damage uses the same absorption/drain wave after reservation. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -5233,8 +5264,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Defense, coverage, resistance and dealt/taken modifiers precede conversion and shared shield. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -5325,8 +5357,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Defense, coverage, resistance and dealt/taken modifiers precede conversion and shared shield. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -5729,8 +5762,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Dispel changes statuses at commit, after current-wave conversion. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -5821,8 +5855,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Dispel changes statuses at commit, after current-wave conversion. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -6181,7 +6216,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, absolute-evasion; permission never implements a mechanic."
+          "reason": "absolute-evasion is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6192,7 +6227,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, absolute-hit; permission never implements a mechanic."
+          "reason": "absolute-hit is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6202,8 +6237,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Grants become effective next boundary; this wave uses old absorption/recovery cohorts."
         }
       ]
     },
@@ -6214,7 +6250,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, area; permission never implements a mechanic."
+          "reason": "area is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6224,8 +6260,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain, attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -6236,7 +6273,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, barrier; permission never implements a mechanic."
+          "reason": "barrier is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6247,7 +6284,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, beam; permission never implements a mechanic."
+          "reason": "beam is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6258,7 +6295,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, causality; permission never implements a mechanic."
+          "reason": "causality is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6268,8 +6305,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Only accepted contact effects enter the simultaneous wave."
         }
       ]
     },
@@ -6279,8 +6317,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Deferred counter damage uses the same absorption/drain wave after reservation."
         }
       ]
     },
@@ -6290,8 +6329,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Defense, coverage, resistance and dealt/taken modifiers precede conversion and shared shield."
         }
       ]
     },
@@ -6301,8 +6341,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Dispel changes statuses at commit, after current-wave conversion."
         }
       ]
     },
@@ -6312,8 +6353,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -6323,8 +6365,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Positive coverage remains elemental contact even when all damage is converted."
         }
       ]
     },
@@ -6335,7 +6378,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, existence-erasure; permission never implements a mechanic."
+          "reason": "existence-erasure is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6345,8 +6388,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Flight uses its existing movement/expiry; periodic elemental damage can be converted."
         }
       ]
     },
@@ -6356,8 +6400,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Force still queues on an absorbed contact; recovery does not remove contact effects."
         }
       ]
     },
@@ -6368,7 +6413,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, foresight; permission never implements a mechanic."
+          "reason": "foresight is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6378,8 +6423,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Ordinary and converted healing count in available HP; clamp only after drain credits."
         }
       ]
     },
@@ -6390,7 +6436,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, immortality; permission never implements a mechanic."
+          "reason": "immortality is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6401,7 +6447,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, instant-death; permission never implements a mechanic."
+          "reason": "instant-death is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6412,7 +6458,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, mind-read; permission never implements a mechanic."
+          "reason": "mind-read is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6422,8 +6468,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Scheduled movement and hit ledger remain unchanged."
         }
       ]
     },
@@ -6433,8 +6480,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. All-scope parry cancels contact; damage-only parry yields zero conversion and zero drain."
         }
       ]
     },
@@ -6444,8 +6492,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Periodic elemental damage can be absorbed; periodic effects never drain."
         }
       ]
     },
@@ -6455,8 +6504,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Permanent absorption uses ordinary additive stacking and cannot be ordinarily dispelled."
         }
       ]
     },
@@ -6467,7 +6517,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, phasing; permission never implements a mechanic."
+          "reason": "phasing is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6478,7 +6528,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, piercing; permission never implements a mechanic."
+          "reason": "piercing is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6488,8 +6538,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Launch power persists; owner receives drain unless redirected, which disables it."
         }
       ]
     },
@@ -6499,8 +6550,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "drain is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Deflection cancels the original body payload. The returned projectile keeps launch power and damage, changes owner once and resumes next interval. Its drain is disabled for both owners; only later unreflected damage can generate drain."
         }
       ]
     },
@@ -6510,8 +6562,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Before-hit healing joins its existing wave; recovery does not activate a new reaction."
         }
       ]
     },
@@ -6521,8 +6574,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Costs, stamina, MP and fall damage never generate drain."
         }
       ]
     },
@@ -6532,8 +6586,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Resistance reveal discloses no absorption rate; converted contacts teach a delayed coarse band."
         }
       ]
     },
@@ -6544,7 +6599,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, revival; permission never implements a mechanic."
+          "reason": "revival is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6555,7 +6610,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, seal; permission never implements a mechanic."
+          "reason": "seal is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6565,8 +6620,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Converted damage leaves shield intact; remaining shared shield reduces the drain base."
         }
       ]
     },
@@ -6576,8 +6632,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Silence gates existing magic activations; absorption statuses continue."
         }
       ]
     },
@@ -6587,8 +6644,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Each accepted stage effect enters the existing hit-ledger/wave once."
         }
       ]
     },
@@ -6598,8 +6656,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Sum elemental absorption into 0..10000; hpRecovery affects converted and drained healing."
         }
       ]
     },
@@ -6610,7 +6669,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, teleport; permission never implements a mechanic."
+          "reason": "teleport is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6621,7 +6680,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, time-stop; permission never implements a mechanic."
+          "reason": "time-stop is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6632,7 +6691,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for drain, universal-victory; permission never implements a mechanic."
+          "reason": "universal-victory is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -6642,8 +6701,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself. Only visible impacts yield delayed coarse absorption evidence; hidden rates stay private."
         }
       ]
     },
@@ -6710,8 +6770,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Positive coverage remains elemental contact even when all damage is converted. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -6802,8 +6863,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Positive coverage remains elemental contact even when all damage is converted. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -7230,7 +7292,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, attribute-absorption; permission never implements a mechanic."
+          "reason": "existence-erasure is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -7318,7 +7380,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, drain; permission never implements a mechanic."
+          "reason": "existence-erasure is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -7703,8 +7765,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Flight uses its existing movement/expiry; periodic elemental damage can be converted. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -7795,8 +7858,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Flight uses its existing movement/expiry; periodic elemental damage can be converted. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -8199,8 +8263,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Force still queues on an absorbed contact; recovery does not remove contact effects. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -8291,8 +8356,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Force still queues on an absorbed contact; recovery does not remove contact effects. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -8695,7 +8761,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, attribute-absorption; permission never implements a mechanic."
+          "reason": "foresight is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -8783,7 +8849,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, drain; permission never implements a mechanic."
+          "reason": "foresight is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -9168,8 +9234,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Ordinary and converted healing count in available HP; clamp only after drain credits. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -9260,8 +9327,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Ordinary and converted healing count in available HP; clamp only after drain credits. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -9664,7 +9732,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, attribute-absorption; permission never implements a mechanic."
+          "reason": "immortality is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -9752,7 +9820,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, drain; permission never implements a mechanic."
+          "reason": "immortality is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -10137,7 +10205,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, attribute-absorption; permission never implements a mechanic."
+          "reason": "instant-death is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -10225,7 +10293,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, drain; permission never implements a mechanic."
+          "reason": "instant-death is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -10610,7 +10678,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, attribute-absorption; permission never implements a mechanic."
+          "reason": "mind-read is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -10698,7 +10766,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, drain; permission never implements a mechanic."
+          "reason": "mind-read is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -11083,8 +11151,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Scheduled movement and hit ledger remain unchanged. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -11175,8 +11244,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Scheduled movement and hit ledger remain unchanged. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -11579,8 +11649,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "All-scope parry cancels contact; damage-only parry yields zero conversion and zero drain. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -11671,8 +11742,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "All-scope parry cancels contact; damage-only parry yields zero conversion and zero drain. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -12075,8 +12147,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Periodic elemental damage can be absorbed; periodic effects never drain. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -12167,8 +12240,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Periodic elemental damage can be absorbed; periodic effects never drain. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -12577,8 +12651,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Permanent absorption uses ordinary additive stacking and cannot be ordinarily dispelled. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -12669,8 +12744,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Permanent absorption uses ordinary additive stacking and cannot be ordinarily dispelled. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -13079,7 +13155,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, attribute-absorption; permission never implements a mechanic."
+          "reason": "phasing is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -13167,7 +13243,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, drain; permission never implements a mechanic."
+          "reason": "phasing is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -13552,7 +13628,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, attribute-absorption; permission never implements a mechanic."
+          "reason": "piercing is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -13640,7 +13716,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, drain; permission never implements a mechanic."
+          "reason": "piercing is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -14025,8 +14101,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Launch power persists; owner receives drain unless redirected, which disables it. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -14117,8 +14194,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Launch power persists; owner receives drain unless redirected, which disables it. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -14521,8 +14599,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "attribute-absorption is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Deflection cancels the original body payload. The returned projectile keeps launch power and payload, changes owner once and resumes next interval. On its next contact, target absorption converts damage after modifiers and before shield; the cancelled contact never heals."
         }
       ]
     },
@@ -14613,8 +14692,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "drain is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Deflection cancels the original body payload. The returned projectile keeps launch power and damage, changes owner once and resumes next interval. Its drain is disabled for both owners; only later unreflected damage can generate drain."
         }
       ]
     },
@@ -15017,8 +15097,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Before-hit healing joins its existing wave; recovery does not activate a new reaction. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -15109,8 +15190,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Before-hit healing joins its existing wave; recovery does not activate a new reaction. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -15513,8 +15595,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Costs, stamina, MP and fall damage never generate drain. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -15605,8 +15688,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Costs, stamina, MP and fall damage never generate drain. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -16009,8 +16093,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Resistance reveal discloses no absorption rate; converted contacts teach a delayed coarse band. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -16101,8 +16186,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Resistance reveal discloses no absorption rate; converted contacts teach a delayed coarse band. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -16505,7 +16591,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, attribute-absorption; permission never implements a mechanic."
+          "reason": "revival is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -16593,7 +16679,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, drain; permission never implements a mechanic."
+          "reason": "revival is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -16978,7 +17064,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, attribute-absorption; permission never implements a mechanic."
+          "reason": "seal is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -17066,7 +17152,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, drain; permission never implements a mechanic."
+          "reason": "seal is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -17451,8 +17537,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Converted damage leaves shield intact; remaining shared shield reduces the drain base. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -17543,8 +17630,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Converted damage leaves shield intact; remaining shared shield reduces the drain base. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -17947,8 +18035,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Silence gates existing magic activations; absorption statuses continue. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -18039,8 +18128,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Silence gates existing magic activations; absorption statuses continue. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -18443,8 +18533,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Each accepted stage effect enters the existing hit-ledger/wave once. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -18535,8 +18626,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Each accepted stage effect enters the existing hit-ledger/wave once. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -18939,8 +19031,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum elemental absorption into 0..10000; hpRecovery affects converted and drained healing. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -19031,8 +19124,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Sum elemental absorption into 0..10000; hpRecovery affects converted and drained healing. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },
@@ -19435,7 +19529,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for teleport, attribute-absorption; permission never implements a mechanic."
+          "reason": "teleport is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -19523,7 +19617,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for teleport, drain; permission never implements a mechanic."
+          "reason": "teleport is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -19908,7 +20002,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, attribute-absorption; permission never implements a mechanic."
+          "reason": "time-stop is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -19996,7 +20090,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, drain; permission never implements a mechanic."
+          "reason": "time-stop is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -20381,7 +20475,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, attribute-absorption; permission never implements a mechanic."
+          "reason": "universal-victory is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -20469,7 +20563,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, drain; permission never implements a mechanic."
+          "reason": "universal-victory is not implemented; permissions do not admit its payload."
         }
       ]
     },
@@ -20854,8 +20948,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for attribute-absorption; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Only visible impacts yield delayed coarse absorption evidence; hidden rates stay private. Sum matching rates capped at 100%; convert after taken multipliers and before shield."
         }
       ]
     },
@@ -20946,8 +21041,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for drain; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "recovery.same-wave-v1",
+          "summary": "Only visible impacts yield delayed coarse absorption evidence; hidden rates stay private. Apportion HP loss capped by HP plus ordinary/conversion healing using exact fractions; floor once per drain. Freeze every base before crediting any drain, so mutual drain never recursively funds itself."
         }
       ]
     },

@@ -273,6 +273,8 @@ export type MeleeState = DamageSnapshot & {
 };
 
 export type DamageSnapshot = DamageSource & {
+  /** A redirected projectile cannot generate drain for either owner. */
+  drainDisabled?: true;
   dealtByElement?: Readonly<
     Partial<Record<(typeof ElementSchema.enum)[keyof typeof ElementSchema.enum], number>>
   >;

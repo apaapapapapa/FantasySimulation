@@ -73,7 +73,14 @@ export function projectileCurve(
   if (pieces > budget.maxCurveSegments) throw new SpatialBudgetError('curve-segments');
   const seconds = dt / pieces,
     trace: Trace = [];
-  const velocities: { from: number; to: number; start: Vec3; end: Vec3 }[] = [];
+  const velocities: {
+    from: number;
+    to: number;
+    start: Vec3;
+    desired: Vec3;
+    turnDegrees: number;
+    gravityY: number;
+  }[] = [];
   let position = { ...p.position },
     velocity = { ...p.velocity };
   for (let i = 0; i < pieces; i++) {
@@ -92,7 +99,14 @@ export function projectileCurve(
     trace.push({ start: position, end, from: i / pieces, to: (i + 1) / pieces });
     position = end;
     const nextVelocity = add(turned, { x: 0, y: gravity * seconds, z: 0 });
-    velocities.push({ from: i / pieces, to: (i + 1) / pieces, start: velocity, end: nextVelocity });
+    velocities.push({
+      from: i / pieces,
+      to: (i + 1) / pieces,
+      start: velocity,
+      desired,
+      turnDegrees: angle,
+      gravityY: gravity * seconds,
+    });
     velocity = nextVelocity;
   }
   return {
@@ -138,10 +152,15 @@ export function explosionCoverage(
 
 export function projectileVelocityAt(curve: ReturnType<typeof projectileCurve>, time: number) {
   const sample = curve.velocities.find((v) => time <= v.to)!;
-  return add(
-    sample.start,
-    mul(sub(sample.end, sample.start), (time - sample.from) / (sample.to - sample.from)),
-  );
+  const fraction = (time - sample.from) / (sample.to - sample.from);
+  const turned =
+    sample.turnDegrees > 0
+      ? mul(
+          turnToward(sample.start, sample.desired, sample.turnDegrees * fraction),
+          length(sample.start),
+        )
+      : sample.start;
+  return add(turned, { x: 0, y: sample.gravityY * fraction, z: 0 });
 }
 
 export function projectileEventSource(p: ProjectileState) {

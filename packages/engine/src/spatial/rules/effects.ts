@@ -10,7 +10,12 @@ import {
   type BattleEvent,
 } from '@fantasy/domain/spatial/execution';
 import { calculateDamage, damageDefense, hasDamageFormula, type DamageEffect } from './damage.ts';
-import { adjustedStatusValue, damageStatusBps, statusResistance } from './status-modifiers.ts';
+import {
+  absorptionBps,
+  hpRecoveryBps,
+  damageStatusBps,
+  statusResistance,
+} from './status-modifiers.ts';
 import { planStatusEffects, reactionDamageBps } from './status-reactions.ts';
 import { applyStatuses, effectiveStats, UnresolvedRuleError, type StatusLimits } from './status.ts';
 export type Fraction = { numerator: string; denominator: string };
@@ -70,6 +75,8 @@ type DamageEntry = ReturnType<typeof calculateDamage> & {
   applicationId: string;
   effect: DamageEffect;
   statusModified: boolean;
+  afterAbsorption: bigint;
+  absorption?: NonNullable<BattleEvent['damage']>['absorption'];
 };
 type ResolutionContext = {
   target: EffectTarget;
@@ -84,7 +91,7 @@ type ResolutionContext = {
 // Status changes share one status transaction; observation/force commit at their existing boundary.
 const deferredEffect = () => {};
 const effectHandlers: EffectHandlers<ResolutionContext, void> = {
-  damage: (effect, { target, application, stats, step, scale, damages }) => {
+  damage: (effect, { target, application, stats, step, scale, damages, totals }) => {
     const dealtBps = application.dealtByElement?.[effect.element] ?? application.dealtBps ?? 10000;
     const resistance = statusResistance(
       target.actor.character.stats.resistances,
@@ -109,11 +116,24 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       Number(scale),
       { dealtBps, receivedBps, powerBps: application.powerBps ?? 10000 },
     );
+    if (application.damageCancelled) amounts.afterModifiers = 0n;
+    const converted =
+      (amounts.afterModifiers * BigInt(absorptionBps(target.statuses, step, effect.element))) /
+      10000n;
+    const healing = converted ? (converted * hpRecoveryBps(target.statuses, step)) / 10000n : 0n;
+    totals.heal += healing;
     damages.push({
       applicationId: application.id,
       effect,
       ...amounts,
-      ...(application.damageCancelled ? { afterModifiers: 0n } : {}),
+      afterAbsorption: amounts.afterModifiers - converted,
+      ...(converted > 0n && {
+        absorption: {
+          element: effect.element,
+          converted: checked(converted),
+          healing: checked(healing),
+        },
+      }),
       statusModified:
         !!application.damageCancelled ||
         (application.powerBps ?? 10000) !== 10000 ||
@@ -124,10 +144,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
   },
   heal: (effect, { target, application, step, scale, healing, totals }) => {
     const amount =
-      (BigInt(effect.amount) *
-        scale *
-        BigInt(Math.min(30000, adjustedStatusValue(10000, 'hpRecovery', target.statuses, step)))) /
-      100000000n;
+      (BigInt(effect.amount) * scale * hpRecoveryBps(target.statuses, step)) / 100000000n;
     totals.heal += amount;
     healing.push({ applicationId: application.id, amount: checked(amount) });
   },
@@ -157,7 +174,7 @@ export function resolveEffects(
     applications.some((a) => !ids.has(a.targetId))
   )
     throw new Error('Invalid effect instance/target identity');
-  return [...targets]
+  const results = [...targets]
     .sort((a, b) => compareIds(a.actor.participant.actorId, b.actor.participant.actorId))
     .map((target) => {
       try {
@@ -187,7 +204,7 @@ export function resolveEffects(
           });
         }
         const { heal, shield } = totals;
-        const total = damages.reduce((n, d) => n + d.afterModifiers, 0n),
+        const total = damages.reduce((n, d) => n + d.afterAbsorption, 0n),
           absorbed = total < shield ? total : shield;
         const hpDamage = total - absorbed,
           unclamped = BigInt(target.resources.hp) + heal - hpDamage,
@@ -205,7 +222,11 @@ export function resolveEffects(
             defenseApplied: damage.defenseApplied,
             afterDefense: checked(damage.afterDefense),
             afterResistance: checked(damage.afterResistance),
-            ...((hasDamageFormula(damage.effect) || damage.statusModified) && {
+            ...(damage.absorption && { absorption: damage.absorption }),
+            ...((hasDamageFormula(damage.effect) ||
+              damage.statusModified ||
+              damage.absorption ||
+              damage.effect.drainBps !== undefined) && {
               calculation: {
                 element: damage.effect.element,
                 component:
@@ -217,8 +238,8 @@ export function resolveEffects(
                 afterModifiers: checked(damage.afterModifiers),
               },
             }),
-            absorbed: total ? fraction(absorbed * damage.afterModifiers, total) : fraction(0n, 1n),
-            toHp: total ? fraction(hpDamage * damage.afterModifiers, total) : fraction(0n, 1n),
+            absorbed: total ? fraction(absorbed * damage.afterAbsorption, total) : fraction(0n, 1n),
+            toHp: total ? fraction(hpDamage * damage.afterAbsorption, total) : fraction(0n, 1n),
           }));
         const result = reactions
           ? applyStatuses(
@@ -230,6 +251,9 @@ export function resolveEffects(
             )
           : { statuses: target.statuses, changes: [] };
         return {
+          unclamped,
+          maxHp,
+          availableHp: BigInt(target.resources.hp) + heal,
           actorId: target.actor.participant.actorId,
           resources,
           statuses: result.statuses,
@@ -246,4 +270,54 @@ export function resolveEffects(
         throw error;
       }
     });
+  // All bases are frozen before crediting drains. Drain healing never feeds another drain;
+  // this bounds mutual drain without iteration or actor/registration-order precedence.
+  const draining = new Map(
+    applications
+      .filter(
+        (app) =>
+          app.effect.kind === 'damage' &&
+          !!app.effect.drainBps &&
+          !app.drainDisabled &&
+          !!app.actorId &&
+          !!app.abilityId &&
+          app.actorId !== app.targetId,
+      )
+      .map((app) => [app.id, app]),
+  );
+  for (const result of draining.size ? results : []) {
+    const actual =
+      result.availableHp < BigInt(result.hpDamage) ? result.availableHp : BigInt(result.hpDamage);
+    for (const detail of result.damage) {
+      const app = draining.get(detail.applicationId);
+      if (
+        !app ||
+        app.effect.kind !== 'damage' ||
+        !app.effect.drainBps ||
+        app.drainDisabled ||
+        !app.actorId ||
+        !app.abilityId ||
+        app.actorId === app.targetId
+      )
+        continue;
+      const source = results.find((r) => r.actorId === app.actorId);
+      const sourceTarget = targets.find((t) => t.actor.participant.actorId === app.actorId);
+      if (!source || !sourceTarget) continue;
+      const n = actual * BigInt(detail.toHp.numerator);
+      const d = BigInt(detail.toHp.denominator) * BigInt(result.hpDamage || 1);
+      const healing =
+        (n * BigInt(app.effect.drainBps) * hpRecoveryBps(sourceTarget.statuses, step)) /
+        (d * 100000000n);
+      detail.drain = { basis: fraction(n, d), healing: checked(healing) };
+      source.unclamped += healing;
+      source.healed += checked(healing);
+    }
+  }
+  return results.map(({ unclamped, maxHp, availableHp: _, ...result }) => ({
+    ...result,
+    resources: {
+      ...result.resources,
+      hp: checked(unclamped < 0n ? 0n : unclamped > maxHp ? maxHp : unclamped),
+    },
+  }));
 }

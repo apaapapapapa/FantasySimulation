@@ -87,6 +87,8 @@ Returned bullets use ordinary observed projectile threat/evasion paths.
 
 ActorDisplay.reactions stores actual activation/clocks/queue/ray; old omissions work.
 Source tests cover cost/filter/shape boundaries, power/force/status/explosion, ancestry
-rollback, all45 new ordered interference pairs,484 immutable legacy pairs, delayed
+rollback, all49 new ordered interference pairs,484 immutable legacy pairs, delayed
 knowledge, Worker/SQLite and replay seeks. New samples are mirror-guard-v1 and
 mirror-shooter-v1. Official league updates wait for the full first-group milestone.
+P6-02 absorption/drain share these waves: cancelled contacts cannot heal; returned
+damage uses target absorption and never drains for either owner (#155 §4).

@@ -1,5 +1,5 @@
 import type { ProjectileDisplay, StreamRecord } from '../stream.ts';
-import type { ProjectileDeflection } from '../records.ts';
+import type { BattleEvent, ProjectileDeflection } from '../records.ts';
 import { canonicalJson } from '../canonical.ts';
 import type { ReplayContext } from './context.ts';
 import { recordedStage } from './stage.ts';
@@ -61,6 +61,25 @@ export function validateDeflection(context: ReplayContext, d: ProjectileDeflecti
   }
   product /= 10000n ** BigInt(d.activations.length);
   requireReplay(d.powerBps === Number(product > 30000n ? 30000n : product), 'deflection power');
+}
+export function validateDeflectionActivations(
+  d: ProjectileDeflection,
+  events: readonly BattleEvent[],
+  causes: readonly string[],
+) {
+  for (const activation of d.activations) {
+    const event = events.find((e) => e.id === activation.context.activationId);
+    requireReplay(
+      event?.kind === 'reaction' &&
+        event.ruleId === 'reaction.activated' &&
+        event.actorId === d.ownerId &&
+        event.abilityId === activation.abilityId &&
+        event.step === d.step &&
+        canonicalJson(event.reaction) === canonicalJson(activation.context) &&
+        causes.includes(event.id),
+      'deflection activation event',
+    );
+  }
 }
 export function validateProjectile(
   context: ReplayContext,

@@ -2,8 +2,8 @@
   "attemptId": "p6-fixture",
   "checkpoints": [
     {
-      "bytes": 176,
-      "checksum": "sha256:f3b36338d2d682de1801efc181660f916487786f0a92ba56658b3a78b9cf1064",
+      "bytes": 177,
+      "checksum": "sha256:4afb6474f89a8f46beb365a49ae2858462b8053adbdddfe64ad5c72c715f7e21",
       "file": "checkpoint-00000.json.gz",
       "index": 0,
       "nextRecord": 0,
@@ -12,7 +12,7 @@
     },
     {
       "bytes": 1331,
-      "checksum": "sha256:11aa27ae597c69ad5f32941484537bd6e096180260cfcffe14a92c403a70552e",
+      "checksum": "sha256:7d1730f09f6507e900552a66496100f0ea3e348728c6bfc130e9b6dce5d7b8d5",
       "file": "checkpoint-00001.json.gz",
       "index": 1,
       "nextRecord": 92,
@@ -53,7 +53,7 @@
       "outcome": { "kind": "draw", "reason": "time-limit" },
       "physicsStateHash": "sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976",
       "schemaVersion": 1,
-      "simulationHash": "sha256:c2ddb7698eaf9e4deb7af3f8bd098bc23d7c200b37ccd43fc02e08116c2f173c",
+      "simulationHash": "sha256:bf4161abe3c08c0c9d4c7119189081b2abb7f1ad1cf79596ab346dd87491092b",
       "stats": {
         "candidates": 12,
         "casts": 1051,
@@ -75,7 +75,7 @@
     "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
     "engineVersion": "spatial-v1.21",
     "eventSchemaVersion": 1,
-    "implementationDigest": "sha256:310da36619bd46268b3631df6ab7edede20b90900f3606f0e0dd247723ac66a6",
+    "implementationDigest": "sha256:74326f8287ab4f92581dd164b1fdfd8caa2e80f05a96c3abefccb3442b2e1c75",
     "participants": [
       {
         "actorId": "left",
@@ -443,6 +443,6 @@
   "records": 162,
   "resultId": "p6-deflection-result",
   "schemaVersion": 1,
-  "simulationHash": "sha256:c2ddb7698eaf9e4deb7af3f8bd098bc23d7c200b37ccd43fc02e08116c2f173c",
+  "simulationHash": "sha256:bf4161abe3c08c0c9d4c7119189081b2abb7f1ad1cf79596ab346dd87491092b",
   "trajectoryHash": "sha256:0a2a6b104d47b7cf3733655883bbd19c7e65f9989766fa5fdc81bf9a82c202b9"
 }

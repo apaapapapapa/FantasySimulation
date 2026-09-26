@@ -1008,6 +1008,34 @@
     "p6-deflection-09": {
       "file": "packages/engine/src/spatial/projectile-deflection-boundaries.test.ts",
       "name": "retains gravity and expiry while disabling homing after the contact hold"
+    },
+    "p6-recovery-02": {
+      "file": "packages/engine/src/spatial/recovery.test.ts",
+      "name": "converts after taken multipliers before shared shield and keeps the single wave clamp"
+    },
+    "p6-recovery-04": {
+      "file": "packages/engine/src/spatial/recovery.test.ts",
+      "name": "caps drain by HP plus ordinary same-wave healing and floors each exact proportional share once"
+    },
+    "p6-recovery-09": {
+      "file": "packages/engine/src/spatial/recovery-integration.test.ts",
+      "name": "records simultaneous conversion and drain, delayed coarse knowledge, and deterministic replay"
+    },
+    "p6-recovery-13": {
+      "file": "packages/engine/src/spatial/recovery-integration.test.ts",
+      "name": "executes the new sample characters and preserves recovery under mirrored actors positions and RNG slots"
+    },
+    "p6-recovery-14": {
+      "file": "packages/engine/src/spatial/recovery-interference.test.ts",
+      "name": "executes all 92 absorption and drain ordered pairs against authored numeric expectations"
+    },
+    "p6-recovery-15": {
+      "file": "apps/api/src/jobs/recovery-persistence.test.ts",
+      "name": "round-trips absorbed and drained recovery through a real Worker SQLite and replay seek"
+    },
+    "p6-recovery-16": {
+      "file": "apps/web/src/replay/recovery-display.test.ts",
+      "name": "renders conversion and causal drain for their recorded recipients without inferring HP loss"
     }
   },
   "entries": [
@@ -1784,6 +1812,21 @@
         "p6-deflection-07",
         "p6-deflection-08",
         "p6-deflection-09"
+      ]
+    },
+    {
+      "id": "p6-recovery",
+      "title": "P6-02吸収・ドレイン: 同時解決、有理数配分、92干渉、観測、鏡映サンプル、Worker/SQLite/Replay表示",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "p6-recovery-02",
+        "p6-recovery-04",
+        "p6-recovery-09",
+        "p6-recovery-13",
+        "p6-recovery-14",
+        "p6-recovery-15",
+        "p6-recovery-16"
       ]
     }
   ]

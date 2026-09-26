@@ -204,6 +204,7 @@ export class ProjectileContacts {
     } else {
       this.alive.push({
         ...projectile,
+        drainDisabled: true,
         ownerId,
         position: { ...contact.center },
         velocity,

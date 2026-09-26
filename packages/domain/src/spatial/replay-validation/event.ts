@@ -1,9 +1,10 @@
 import type { StreamRecord } from '../stream.ts';
 import type { ReplayCheckpoint } from '../replay.ts';
 import type { ReplayContext } from './context.ts';
-import { validateDeflection } from './projectile.ts';
+import { validateDeflection, validateDeflectionActivations } from './projectile.ts';
 import { recordedStage } from './stage.ts';
 import { validateForce } from './force.ts';
+import { validateRecovery } from './recovery.ts';
 import { requireReplay, emittedId, phases } from './common.ts';
 export function validateEvents(
   context: ReplayContext,
@@ -73,6 +74,7 @@ export function validateEvents(
           ? record.projectiles.spawn.find((p) => p.id === e.entityId)
           : undefined);
       validateDeflection(context, d, maxStep);
+      validateDeflectionActivations(d, events, e.causes);
       requireReplay(
         e.kind === 'projectile-deflect' &&
           d.eventId === e.id &&
@@ -114,6 +116,7 @@ export function validateEvents(
       recordedStage(ability, e.stage);
     }
     if (e.force) validateForce(context, e.force);
+    validateRecovery(context, e, events);
     if (e.reaction) {
       const ability = context.actors
         .find((a) => a.participant.actorId === (e.sourceActorId ?? e.actorId))

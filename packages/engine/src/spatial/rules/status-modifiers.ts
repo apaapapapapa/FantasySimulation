@@ -70,3 +70,12 @@ export const damageStatusBps = (
   selector: ModifierSelector,
   reactionBps = 10000,
 ) => Math.min(30000, adjustedStatusValue(10000, target, statuses, step, selector, reactionBps));
+
+export const absorptionBps = (
+  statuses: readonly StatusCohort[],
+  step: number,
+  element: NonNullable<ModifierSelector['element']>,
+) => Math.min(10000, adjustedStatusValue(0, 'absorption', statuses, step, { element }));
+
+export const hpRecoveryBps = (statuses: readonly StatusCohort[], step: number) =>
+  BigInt(Math.min(30000, adjustedStatusValue(10000, 'hpRecovery', statuses, step)));

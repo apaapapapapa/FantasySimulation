@@ -1,8 +1,7 @@
 # ADR 0016: P6 foundation
 
 **Accepted by owner in ChatGPT, 2026-09-26.** Refs #155, #1.
-P6-00 adds infrastructure only; later mechanics and production publication remain separate.
-#158 owns P5 publication evidence.
+P6-00 is infrastructure; mechanics/publication are separate (#155/#158).
 
 ## Admission and leagues (00c)
 
@@ -12,11 +11,10 @@ reserved. Known future permissions never enable unimplemented payloads; unknowns
 Instant-death/time-stop/immortality/absolute-hit/absolute-evasion/mind-read are experimental
 (Q-1). Standard mechanics work in both classes; incomplete P6 interference requires opt-in.
 
-Exhaustive visitors inspect resolved abilities/stages/reactions/equipment/starting statuses,
-periodic/transform/grant closure, including dormant branches. One pure policy serves
-prepareBattle, job admission/retry and league creation before reservations/Workers.
-Reject with code, mechanic, owning ability/status kind/id/revision/hash; retain current
-version/identity checks. Unsupported inputs never become unresolved/draws.
+One exhaustive closure visitor covers abilities/stages/reactions/equipment/statuses and
+dormant periodic/transform/grant branches. Shared prepare/job/retry/league admission runs
+before reservations/Workers. Keep version/identity gates; reject unsupported inputs with
+code/mechanic/owner kind/id/revision/hash, never an unresolved/draw result.
 
 Derive league class from pinned ruleset. Separate IDs/ranks/scores; never replace a
 standard ID with experimental content. New public catalog/snapshot optional class must
@@ -27,11 +25,9 @@ Saved validation/replay remains engine-free.
 
 ## Interference (00b)
 
-Canonical `packages/domain/src/spatial/interference.json`: versioned registry and every
-ordered pair including self-pairs. Cover every existing/P6 mechanic in #155 §2-B,
-including barrier/area/beam/phasing.
-Exhaustive visitors/tests bind accepted schema variants to registry. No wildcard/default
-independence/implicit symmetry; conditional cases need explicit predicates.
+Canonical `packages/domain/src/spatial/interference.json`: versioned #155 §2-B registry,
+every ordered/self pair and exhaustive schema bindings. Explicit conditional predicates;
+no wildcard independence or implicit symmetry.
 
 | Cell        | Required evidence                             |
 | ----------- | --------------------------------------------- |
@@ -96,21 +92,18 @@ Bounded receipt/Actions summary records reason/definition/identities; no product
 R2 writes/reservations on holds. Manual dry-run reports comparison/estimate if executable;
 manual publish rejects unchanged-definition identity-only changes and unsupported rules.
 
-Groups 1/2 completion add a new official definition ID/revision and standard ruleset,
-same 20 participants (Q-13). Dry-run/publish bind tested source/definition/catalog;
-drift requires new estimate. Record planned/reused/new/retry slots, requests/files/bytes/
-retention/time and actual writes/storage/cost. Retain cumulative budgets, main CI, viewer
-compatibility, journal/leases, protected environment, serialization/conditional pointers.
-Keep old public bytes/ranks; list new revision separately. No milestone publication in P6-00.
+Groups 1/2 add official definition/rules IDs with the same 20 participants (Q-13).
+Bind dry-run/publish to tested source/definition/catalog; re-estimate drift. Record
+planned/reused/new/retry slots, requests/files/bytes/retention/time and actual writes/storage/cost.
+Keep budgets, main CI, viewer, journal/leases, protected environment, serialization/conditional pointers.
+Keep public bytes/ranks and list revisions separately; no milestone in P6-00.
 
 ## Acceptance and compatibility
 
-00b: matrix controls, actual status conflicts, point/wave/rollback causes, exact/overflow
-caps, old/new records, Worker/SQLite/replay and participant/position/RNG/order symmetry.
-00c: deep closure/all admission paths, experimental isolation/labels, old publications,
-every probe branch/zero-work holds/corruption/manual races, unchanged scoring/seeds.
+00b: matrix, conflict diagnostics, rollback/caps, Worker/SQLite/replay and order/RNG symmetry.
+00c: closure/admission, league isolation/labels, old publications, zero-work holds,
+corruption/manual races, fixed scoring/seeds. See #155 §2-C for each mechanic's gates.
 [Compatibility](0010-battle-version-compatibility.md)/[identity](0013-execution-identity.md):
-00b/c use an explicitly reviewed additive restamp at spatial-v1.20; legacy decisions and
-event/trajectory/TS/physics expectations stay fixed. New diagnostic terminal hashes differ.
-`experimental-p6-foundation-v1` adds a new rules ID; no published revision changes.
-Delivery gates and Markdown <=170,000 bytes remain. #155 stays open.
+00b/c are additive at spatial-v1.20 with reviewed restamp; legacy decisions and hashes stay
+fixed except new diagnostic terminals. New ID experimental-p6-foundation-v1; published
+revisions remain immutable. Delivery gates, Markdown <=170,000 bytes and #155 open remain.

@@ -65,6 +65,7 @@ export function closureMechanics(revisions: readonly Revision[]): MechanicUse[] 
         const mechanic = effectMechanics[effect.kind];
         if (!mechanic) throw new Error('Unclassified effect variant');
         add(mechanic);
+        if (effect.kind === 'damage' && effect.drainBps !== undefined) add('drain');
         if (effect.kind === 'apply-status' && effect.flightStaminaPerSecond !== undefined)
           add('flight');
       }
@@ -84,6 +85,7 @@ export function closureMechanics(revisions: readonly Revision[]): MechanicUse[] 
       }
     } else if (owner.kind === 'status') {
       const status = owner.definition;
+      if (status.adjustments?.some((a) => a.target === 'absorption')) add('attribute-absorption');
       if (status.categories?.includes('permanent')) add('permanent');
       if (status.modifiers.flight || status.flightStaminaPerSecond !== undefined) add('flight');
       if (status.modifiers.silenced) add('silence');

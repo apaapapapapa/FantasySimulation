@@ -650,6 +650,42 @@
       "id": "standard-tactics-deflection-v1",
       "revision": 1,
       "contentHash": "sha256:a46b5750769277dbf6f65a285cc2ac6e43d464111be60f61f600fedfe070e5db"
+    },
+    {
+      "kind": "ability",
+      "id": "drain-ember-v1",
+      "revision": 1,
+      "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
+    },
+    {
+      "kind": "ability",
+      "id": "fire-absorption-trait-v1",
+      "revision": 1,
+      "contentHash": "sha256:f2c2fd1282229ea23860d3aa3b36d531e22c59d01f7ae3a645f075f65548ea57"
+    },
+    {
+      "kind": "character",
+      "id": "ember-absorber-v1",
+      "revision": 1,
+      "contentHash": "sha256:5f3b4c152aefa20a28b2434f6bfbd9b9bd87ab60e4aa22fdf081003932a5baf7"
+    },
+    {
+      "kind": "character",
+      "id": "ember-drainer-v1",
+      "revision": 1,
+      "contentHash": "sha256:d1891ab5818d35d9f4c1fd2d47a7aabec4ee5fff866f03d3b0c3c894bacf1349"
+    },
+    {
+      "kind": "policy",
+      "id": "drain-ember-policy-v1",
+      "revision": 1,
+      "contentHash": "sha256:d6045d670497a55f19f41ba35eac5dfb4a3269c340d0a3661f856713a6bb25f2"
+    },
+    {
+      "kind": "status",
+      "id": "fire-absorption-v1",
+      "revision": 1,
+      "contentHash": "sha256:094bd0795795ae523fc5fa66500211fe06344dbe6d79cc128bf76df259686b89"
     }
   ]
 }

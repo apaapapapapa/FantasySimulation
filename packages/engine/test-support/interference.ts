@@ -30,7 +30,11 @@ export const LEGACY_INTERFERENCE_MECHANICS = [
   'visibility',
 ] as const;
 export type LegacyInterferenceMechanic = (typeof LEGACY_INTERFERENCE_MECHANICS)[number];
-export type InterferenceMechanic = LegacyInterferenceMechanic | 'projectile-deflection';
+export type RecoveryInterferenceMechanic =
+  | LegacyInterferenceMechanic
+  | 'attribute-absorption'
+  | 'drain';
+export type InterferenceMechanic = RecoveryInterferenceMechanic | 'projectile-deflection';
 const pairProjectile: Definition<'ability'>['attack'] = {
   kind: 'projectile',
   speedMmPerSecond: 100000,
@@ -92,6 +96,23 @@ export async function interferencePairManifest(
     const status = initialStatus({ categories: ['debuff'], durationSteps: 20 });
     let reaction: Partial<Definition<'ability'>> | undefined;
     switch (mechanic) {
+      case 'attribute-absorption':
+        status.adjustments = [
+          { target: 'absorption', operation: 'add', element: 'fire', amount: 10000 },
+        ];
+        break;
+      case 'drain':
+        action.effects = [
+          {
+            kind: 'damage',
+            amount: 4,
+            attackScaleBps: 0,
+            element: 'fire',
+            defense: 'none',
+            drainBps: 10000,
+          },
+        ];
+        break;
       case 'damage':
         action.effects = [damage(7)];
         break;

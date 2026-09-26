@@ -175,6 +175,34 @@ it('validates saved ownership transitions and rejects a second deflection or for
   );
 });
 
+it('binds saved deflection activations to actual reaction events and their causal context', async () => {
+  const input = await deflectionManifest();
+  const output = await runBattle(input);
+  const { context, checkpoints } = await recordedCheckpoints(input, output);
+  const index = output.records.findIndex(
+    (r) => r.kind === 'interval' && r.events.some((e) => e.kind === 'projectile-deflect'),
+  );
+  for (const kind of ['missing', 'depth', 'wave', 'kind', 'cause'] as const) {
+    const record = structuredClone(output.records[index]!);
+    if (record.kind !== 'interval') throw new Error('Expected deflection interval');
+    const event = record.events.find((e) => e.kind === 'projectile-deflect')!;
+    event.projectileDeflection = structuredClone(event.projectileDeflection!);
+    const activation = event.projectileDeflection!.activations[0]!.context;
+    const reaction = record.events.find((e) => e.id === activation.activationId)!;
+    if (kind === 'missing') activation.activationId = 'e.0';
+    if (kind === 'depth') activation.depth += 1;
+    if (kind === 'wave') activation.wave += 1;
+    if (kind === 'kind') reaction.kind = 'diagnostic';
+    if (kind === 'cause') event.causes = [];
+    record.projectiles.update.find((p) => p.deflection)!.deflection = structuredClone(
+      event.projectileDeflection!,
+    );
+    expect(() => new ReplayState(context, checkpoints[index - 1]!).apply(record)).toThrow(
+      'deflection activation event',
+    );
+  }
+});
+
 it('retains gravity and expiry while disabling homing after the contact hold', async () => {
   const input = await deflectionManifest({
     attack: {

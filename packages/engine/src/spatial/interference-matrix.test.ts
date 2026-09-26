@@ -11,11 +11,13 @@ import {
 import baseline from '../../fixtures/spatial/interference-baseline.json' with { type: 'json' };
 import coverage from '../../fixtures/spatial/interference-coverage.json' with { type: 'json' };
 import corpus from '../../fixtures/spatial/corpus.json' with { type: 'json' };
+import recovery from '../../fixtures/spatial/recovery-pairs.json' with { type: 'json' };
 import {
   LEGACY_INTERFERENCE_MECHANICS,
   interferencePairManifest,
 } from '../../test-support/interference.ts';
 import { STATUS_CONFLICT_RULES } from '../../test-support/interference-diagnostics.ts';
+import { recordedCheckpoints } from '../../test-support/replay.ts';
 import { mechanicEligibility } from './mechanic-policy.ts';
 import { reference } from './prepare.ts';
 import { runBattle } from './run.ts';
@@ -27,7 +29,10 @@ function validateCoverage(input: typeof coverage) {
   )) {
     if (
       typeof id !== 'string' ||
-      tests[id]?.file !== 'packages/engine/src/spatial/interference-matrix.test.ts'
+      tests[id]?.file !==
+        (kind === 'recovery'
+          ? 'packages/engine/src/spatial/recovery-interference.test.ts'
+          : 'packages/engine/src/spatial/interference-matrix.test.ts')
     )
       throw new Error(`Missing executed ${kind} corpus binding`);
   }
@@ -42,6 +47,7 @@ function validateCoverage(input: typeof coverage) {
   const fixtures = new Set([
     ...baseline.cases.map((c) => c.id),
     ...deflectionPairs.map(([left, right]) => `${left}/${right}`),
+    ...recovery.cases.map((c) => c.id),
     ...STATUS_CONFLICT_RULES,
     ...interferenceTable.mechanics.filter((m) => !m.implemented).map((m) => `reject.${m.id}`),
   ]);
@@ -160,7 +166,7 @@ it('rejects every unimplemented or reserved matrix mechanic even with experiment
 });
 
 const deflectionPairs = [
-  ...LEGACY_INTERFERENCE_MECHANICS.flatMap(
+  ...([...LEGACY_INTERFERENCE_MECHANICS, 'attribute-absorption', 'drain'] as const).flatMap(
     (other) =>
       [
         [other, 'projectile-deflection'],
@@ -201,5 +207,24 @@ it('executes every standard ordered deflection pair with explicit contact and ow
       ).toHaveLength(1);
     }
     expect(result.result.outcome.kind, `${left}/${right}`).toBe('draw');
+    if (other === 'attribute-absorption' || other === 'drain') {
+      const { replay } = await recordedCheckpoints(input, result);
+      const owner = left === 'projectile-deflection' ? 'left' : 'right';
+      const actors = replay.checkpoint().state!.actors;
+      expect(actors.find((a) => a.id === owner)!.resources).toMatchObject({ hp: 40, shield: 1 });
+      expect(actors.find((a) => a.id !== owner)!.resources).toMatchObject({
+        hp: other === 'attribute-absorption' ? 40 : 33,
+        shield: other === 'attribute-absorption' ? 1 : 0,
+      });
+      const damage = events.filter((e) => e.kind === 'damage');
+      expect(damage).toHaveLength(2);
+      expect(damage.every((e) => e.targetId !== owner)).toBe(true);
+      expect(events.some((e) => e.ruleId === 'damage.drain' || e.damage?.drain)).toBe(false);
+      if (other === 'attribute-absorption')
+        expect(damage.map((e) => e.damage?.absorption)).toEqual([
+          { element: 'fire', converted: 4, healing: 4 },
+          { element: 'fire', converted: 4, healing: 4 },
+        ]);
+    }
   }
 });
