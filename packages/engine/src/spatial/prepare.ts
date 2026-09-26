@@ -1,7 +1,6 @@
 import type { ResolvedActor, PreparedBattle } from './state.ts';
 export type { ResolvedActor, PreparedBattle } from './state.ts';
 import {
-  abilityEffects,
   DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND,
   canonicalJson,
   characterLoadout,
@@ -28,6 +27,7 @@ import {
 } from './execution-policy.ts';
 export { revisionHash, revisionReference as reference } from '@fantasy/domain/spatial/execution';
 import { statusKnowledge } from './rules/status.ts';
+import { prepareAbility, abilityPlan } from './rules/ability-plan.ts';
 
 export { implementation, profile };
 
@@ -64,10 +64,11 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
       throw new EngineInputError('actor-seed', 'Actor seed derivation mismatch');
     const loadout = characterLoadout(participant.character, get);
     validatePolicyAbilities(loadout);
-    const { character, equipment, abilities, policy } = loadout;
+    const { character, equipment, policy } = loadout;
+    const abilities = loadout.abilities.map(prepareAbility);
     const knownStatuses = statusKnowledge(
       abilities.flatMap((a) =>
-        abilityEffects(a.definition).flatMap((e) =>
+        abilityPlan(a).effects.flatMap((e) =>
           e.kind === 'apply-status' ? [get('status', e.status)] : [],
         ),
       ),

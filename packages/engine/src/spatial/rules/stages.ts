@@ -23,13 +23,15 @@ import type { Journal } from './journal.ts';
 import { admitMotionCost, rejectPair } from './pair-admission.ts';
 import { mul, unit } from '../math.ts';
 import { hasForcedMotion } from './forces.ts';
+import { abilityPlan, authoredStages } from './ability-plan.ts';
 
 /** Attached volumes disappear with their owner window; detached projectiles use their snapshots. */
 export function attachedStageAlive(attack: MeleeState, actors: readonly ActorState[], at: number) {
   if (!attack.stage) return true;
   const action = actors.find((a) => a.body.motion.actor.participant.actorId === attack.actorId)
     ?.actions.action;
-  const stage = action?.ability.definition.stages?.[attack.stage.stageIndex];
+  const plan = action ? abilityPlan(action.ability) : null;
+  const stage = plan?.kind === 'staged' ? plan.stages[attack.stage.stageIndex] : undefined;
   return (
     action?.id === attack.stage.actionId &&
     action.stages?.interruptedAt === undefined &&
@@ -39,10 +41,10 @@ export function attachedStageAlive(attack: MeleeState, actors: readonly ActorSta
 }
 export const stageContact = (action: ActionState, index: number): StageContact => ({
   actionId: action.id,
-  stageId: action.ability.definition.stages![index]!.id,
+  stageId: authoredStages(action.ability)[index]!.id,
   stageIndex: index,
   emitterId: 0,
-  hitGroupId: action.ability.definition.stages![index]!.hit?.group ?? 'shared',
+  hitGroupId: authoredStages(action.ability)[index]!.hit?.group ?? 'shared',
 });
 export function stageDisplay(
   action: ActionState,
@@ -50,7 +52,7 @@ export function stageDisplay(
 ): NonNullable<ActorDisplay['action']>['stage'] {
   const runtime = action.stages;
   if (!runtime) return undefined;
-  const plan = action.ability.definition.stages!,
+  const plan = authoredStages(action.ability),
     index = Math.max(0, runtime.index),
     stage = plan[index]!;
   const { startAt, endAt } = stageWindow(action.launchAt, stage);
@@ -124,10 +126,11 @@ export function checkStageInterruption(
   const action = actor.actions.action,
     runtime = action?.stages;
   if (!action || !runtime || runtime.interruptedAt !== undefined) return;
-  const stage = action.ability.definition.stages![Math.max(0, runtime.index)]!;
+  const plan = authoredStages(action.ability);
+  const stage = plan[Math.max(0, runtime.index)]!;
   if (
     !runtime.active &&
-    runtime.next === action.ability.definition.stages!.length &&
+    runtime.next === plan.length &&
     step >= stageWindow(action.launchAt, stage).endAt
   )
     return;
@@ -156,7 +159,7 @@ export function interruptDamagedStages(
     const action = actor.actions.action,
       runtime = action?.stages;
     if (!action || !runtime || (!runtime.active && at > action.launchAt)) continue;
-    const stage = action.ability.definition.stages![Math.max(0, runtime.index)]!;
+    const stage = authoredStages(action.ability)[Math.max(0, runtime.index)]!;
     if (!stage.interruptOnDamage) continue;
     const causes = journal.events
       .filter(
@@ -175,7 +178,7 @@ export function finishStages(actors: readonly ActorState[], at: number, journal:
     const action = actor.actions.action,
       runtime = action?.stages;
     if (!action || !runtime?.active) continue;
-    const stage = action.ability.definition.stages![runtime.index]!;
+    const stage = authoredStages(action.ability)[runtime.index]!;
     if (stageWindow(action.launchAt, stage).endAt !== at) continue;
     runtime.active = false;
     journal.emit({
@@ -201,7 +204,7 @@ export function releaseStage(
 ) {
   const action = actor.actions.action!,
     runtime = action.stages!,
-    plan = action.ability.definition.stages!;
+    plan = authoredStages(action.ability);
   const index = runtime.next,
     stage = plan[index];
   if (runtime.interruptedAt !== undefined || !stage || action.launchAt + stage.offsetSteps !== step)

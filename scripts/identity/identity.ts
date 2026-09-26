@@ -41,6 +41,7 @@ export function verifyIdentity(
   const expected = `${JSON.stringify(implementation, null, 2)}\n`;
   if (sourceText(root, OUTPUT) !== expected)
     throw Error(
-      'Stale engine identity; review the input diff and version policy before explicitly stamping.',
+      'Stale engine identity; review the input diff and version policy before explicitly stamping. ' +
+        `Computed descriptor (hashes only): ${JSON.stringify(implementation)}`,
     );
 }

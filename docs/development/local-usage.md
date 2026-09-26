@@ -1,47 +1,56 @@
-# Optional developer commands
+# Developer commands
 
 [Smartphone publication](cloud-publication.md) needs no PC/`.env`.
-[Startup](../../README.md), [tool pins](../../package.json), optional overrides: .env.example.
-Paths are repo-relative; Vite proxies /api. API_PORT changes require restart;
-the unauthenticated API binds loopback only.
+[Startup](../../README.md), [tool pins](../../package.json), overrides: .env.example.
+Paths are repo-relative. Vite proxies /api; API_PORT changes need restart.
+The unauthenticated API binds loopback only.
 
-## API (all paths prefixed /api)
+## API (prefix /api)
 
 ```text
-GET /health                            startup/Drizzle health
-GET /characters                        latest; limit <=100, cursor
-GET /characters/{id}?revision=1         revision; default latest
-GET /rulesets, /scenarios               definitions
-GET /revisions/{kind}/{id}/{revision}   immutable revision
-POST /drafts                           {kind,definitionId,base,definition}
-GET /drafts/{id}                        draft
-PATCH /drafts/{id}                      {expectedVersion,definition}
-POST /drafts/{id}/validate or /publish  {expectedVersion}
-POST /battle-jobs                       {spec,budget?}; 202 or cached 200
-GET /battle-jobs/:id                    state/attempt/progress/diagnostics/metrics
-POST /battle-jobs/:id/cancel            commit cancellation before stopping worker
-POST /battle-jobs/:id/retry             {expectedAttempts,budget}
-GET /battle-results/:id                verified; missing/corrupt/quarantined: 503
-POST /battle-results/:id/replay-recovery {budget}
-GET /replays/:id                        manifest
-GET /replays/:id/files/:file            allowlisted gzip; no Content-Encoding
+GET /health: Drizzle health
+GET /characters: latest; limit <=100, cursor
+GET /characters/{id}?revision=1: default latest
+GET /rulesets, /scenarios
+GET /revisions/{kind}/{id}/{revision}: immutable
+POST /drafts: {kind,definitionId,base,definition}
+GET /drafts/{id}
+PATCH /drafts/{id}: {expectedVersion,definition}
+POST /drafts/{id}/validate or /publish: {expectedVersion}
+POST /battle-jobs: {spec,budget?}; 202 or cached 200
+GET /battle-jobs/:id: state/attempt/progress/diagnostics/metrics
+POST /battle-jobs/:id/cancel: commit cancellation before stopping worker
+POST /battle-jobs/:id/retry: {expectedAttempts,budget}
+GET /battle-results/:id: verified; missing/corrupt/quarantined: 503
+POST /battle-results/:id/replay-recovery: {budget}
+GET /replays/:id: manifest
+GET /replays/:id/files/:file: allowlisted gzip; no Content-Encoding
 ```
 
-Draft base is {id,revision,contentHash}, or null for new IDs. Stale edits/duplicate publication/
-changed bases return 409. Drafts may be incomplete; publication validates types/references
-and returns an immutable revision plus draft. Published revisions cannot change/delete.
-Job creation/replay recovery require X-Client-Id and Idempotency-Key.
-[ADR 0007](../adr/0007-worker-runtime.md) owns runtime contracts;
-[ADR 0006](../adr/0006-recorded-replay.md) owns saved replay without engine execution.
-Defaults: ARTIFACT_PATH=./data/replays, BATTLE_WORKERS=1, BATTLE_TIMEOUT_MS=30000,
-BATTLE_QUEUE_LIMIT=128, BATTLE_STORAGE_BYTES=17179869184, BATTLE_RSS_BYTES=1610612736.
-Use demo:spatial/catalog:spatial scripts for samples; review catalog --write. Startup/db:seed
-adds missing IDs only. [ADR 0010](../adr/0010-battle-version-compatibility.md) governs IDs.
+Draft base: {id,revision,contentHash}, or null for new IDs. Stale edits, duplicate
+publication and changed bases return 409. Incomplete drafts are allowed; publication
+validates types/references and returns immutable revision plus draft. Published
+revisions cannot change/delete. Job creation/replay recovery need X-Client-Id and
+Idempotency-Key. [ADR 0007](../adr/0007-worker-runtime.md) owns runtime contracts;
+[ADR 0006](../adr/0006-recorded-replay.md) owns recorded replay without engine execution.
+Defaults/limits: [configuration](../../apps/api/src/config.ts).
+Startup/db:seed adds missing IDs only; demo:spatial runs samples.
+[ADR 0010](../adr/0010-battle-version-compatibility.md) governs published identities.
+
+## Content authoring
+
+Sources: `data/content/**/*.json`; output: `data/spatial/catalog.json`.
+JSON holds a revision or array: kind, id, revision, definition; schemaVersion defaults to 1.
+Omit contentHash to generate it; supplied hashes must match.
+`{"$ref":"status:soaked-v1:1"}` resolves refs; pinned refs never rebind.
+Preserve builtin-v1.json and published revisions. Duplicate IDs, missing refs and cycles fail.
+Run `node scripts/spatial-catalog.ts --write`; review field diffs, affected IDs and hashes.
+Append new IDs/hashes to `data/spatial/published-revisions.json` before `vp run verify`.
 
 ## Batch
 
-Use the same clean commit/toolchain, no HTTP. Inputs carry published revisions, <=1,000 slots
-and calculation/output/work budgets. Paths below resolve in apps/cli:
+Use a clean commit/toolchain, no HTTP. Inputs: published revisions, <=1,000 slots,
+calculation/output/work budgets. Command paths resolve in apps/cli:
 
 ```sh
 vp run batch sample .generated/input.json
@@ -52,29 +61,27 @@ vp run batch export .generated/plan.json .generated/public path/to/index.json .g
 ```
 
 --shard 0/4 through 3/4 needs separate outputs. Repeated inputs reuse verified results;
---retry-failed explicitly retries failed/cancelled slots. --deadline is milliseconds <=1,800,000.
-Run prints immutable indexes; check/export accept more index/root pairs. Missing slots stay
-pending. Exits 0/2/1 mean complete/incomplete/invalid. Keep .work private; disk needs output
-and work budgets plus 256 MiB. Built CLI: node apps/cli/dist/batch.mjs, paths relative to cwd.
+--retry-failed retries failed/cancelled slots. --deadline is milliseconds <=1,800,000.
+Run prints immutable indexes; check/export accept more index/root pairs. Missing slots
+stay pending. Exits 0/2/1: complete/incomplete/invalid. Keep .work private; disk needs
+output and work budgets plus 256 MiB. Built CLI: node apps/cli/dist/batch.mjs (cwd paths).
 
 ## Publication
 
-[Workflow](../../.github/workflows/publication.yml) owns cloud commands/environment variables;
-[ADR 0008](../adr/0008-headless-batch.md) owns contracts. Restore requires a new directory.
-Cleanup is explicit: `vp run publication prune public-dir`, review orphan keys/bytes, then
-add --confirm. Never remove .remote-lock while its process runs. commit-unknown and
-committed-unverified require identical-input retry/read-back. PUBLICATION_MAX_BYTES caps at
-8GB; MAX_WRITES=10000, MAX_TRANSFER_BYTES=256MB, MAX_WORKER_REQUESTS=200,
-MAX_RESTORE_BYTES=256MB (all PUBLICATION_ prefixed). CLI exit 2 remains the default;
-Actions uses --require-complete-input.
+[Workflow](../../.github/workflows/publication.yml): cloud commands/environment;
+[ADR 0008](../adr/0008-headless-batch.md): contracts. Restore needs a new directory.
+Cleanup: `vp run publication prune public-dir`, review orphan keys/bytes, then --confirm.
+Never remove .remote-lock while running. commit-unknown/committed-unverified need
+identical-input retry/read-back. PUBLICATION_MAX_BYTES caps at 8GB; MAX_WRITES=10000,
+MAX_TRANSFER_BYTES=256MB, MAX_WORKER_REQUESTS=200, MAX_RESTORE_BYTES=256MB
+(all PUBLICATION_ prefixed). Default CLI exit: 2; Actions uses --require-complete-input.
 
-Public build: VITE_PUBLICATION_ROOT and --mode public; VITE_PUBLIC_BASE defaults to
-/FantasySimulation/. Hash links pin set/page/slot; reload preserves the selected attempt.
-The 100-row replay list sorts/filters within its page. See [load bytes](../measurements/match-list.json).
+Public build: VITE_PUBLICATION_ROOT, --mode public; default VITE_PUBLIC_BASE:
+/FantasySimulation/. Hash links pin set/page/slot and preserve the attempt on reload.
+The 100-row list sorts/filters per page ([load bytes](../measurements/match-list.json)).
 Loopback URLs are local. build.json carries source/formats; CSP permits self/data only.
-No API/DB/keys enter the build. Deploy/rollback requires successful main CI and ancestry;
-reader deployment uses separate cloud authorization.
+No API/DB/keys enter the build. Deploy/rollback needs successful main CI and ancestry;
+reader deployment needs separate cloud authorization.
 League overview loads summary; tables load on selection. Hash links pin snapshot/
 participants/page/slot/`/steps/N`. `#/local` plays replay files in-browser.
-Sorting changes display only;
-provisional scores retain every scheduled slot. Actions/measurement: #134.
+Sorting is display-only; provisional scores keep every scheduled slot. Actions: #134.

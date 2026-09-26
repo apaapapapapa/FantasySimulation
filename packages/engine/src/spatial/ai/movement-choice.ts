@@ -6,6 +6,7 @@ import { canMaintainFlight, resourceReady } from '../rules/locomotion.ts';
 import { dodgeOptions } from './dodge.ts';
 import type { KnownClearance } from './assessment.ts';
 import { postureAllows } from '../rules/posture.ts';
+import { abilityPlan } from '../rules/ability-plan.ts';
 
 export function dodgeAssessment(view: DecisionView): CandidateAssessment {
   const cost = view.self.actor.character.movement.locomotion?.dodgeStamina ?? 0;
@@ -68,7 +69,7 @@ export function chooseMovementSlot(
   const blocks =
     view.stageOwnsMotion ||
     (!!ability &&
-      ((ability.definition.castSteps === 0 && !!ability.definition.stages?.[0]?.selfMotion) ||
+      ((ability.definition.castSteps === 0 && !!abilityPlan(ability).stages[0]?.selfMotion) ||
         (ability.definition.castSteps > 0 && ability.definition.movementWhileCasting === 'stop')));
   const rate = flight ? view.flightStaminaPerSecond : 0;
   const maintained = canMaintainFlight(resources, rate, resourceReady(view));
