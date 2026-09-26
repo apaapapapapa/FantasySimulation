@@ -25,5 +25,6 @@ interval. No explosion there/re-deflection; exclude melee/hitscan/explosions/per
 [P6-02 recovery](../rules/spatial-v1.md) implements absorption/drain. Revival remains a future
 bounded reaction after healing/all waves, <=4/actor/match.
 Reaction caps/rollback apply. [ADR0016](0016-p6-foundation.md) defines the approved foundation.
+[ADR0017](0017-p6-spatial-mechanics.md) defines the accepted Group2 spatial contracts.
 Implementation follows #155 §2-C and the delivery skill; original
 design approval is not implementation approval. Preserve coordinator/domain/log ownership.
