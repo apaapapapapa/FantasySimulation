@@ -1,7 +1,11 @@
 import type { StreamRecord } from '../stream.ts';
 import type { ReplayCheckpoint } from '../replay.ts';
 import type { ReplayContext } from './context.ts';
-import { validateDeflection, validateDeflectionActivations } from './projectile.ts';
+import {
+  validateDeflection,
+  validateDeflectionActivations,
+  validateDeflectionContact,
+} from './projectile.ts';
 import { recordedStage } from './stage.ts';
 import { validateForce } from './force.ts';
 import { validateRecovery } from './recovery.ts';
@@ -75,6 +79,7 @@ export function validateEvents(
           : undefined);
       validateDeflection(context, d, maxStep);
       validateDeflectionActivations(d, events, e.causes);
+      validateDeflectionContact(d, e, events);
       requireReplay(
         e.kind === 'projectile-deflect' &&
           d.eventId === e.id &&

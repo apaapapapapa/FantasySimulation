@@ -82,6 +82,28 @@ export function validateDeflectionActivations(
     );
   }
 }
+export function validateDeflectionContact(
+  d: ProjectileDeflection,
+  event: BattleEvent,
+  events: readonly BattleEvent[],
+) {
+  const contact = events.find((e) => e.id === event.parentEventId);
+  requireReplay(
+    event.phase === 'resolution' &&
+      event.subtimeMicros === 0 &&
+      canonicalJson(event.point) === canonicalJson(d.point) &&
+      contact?.kind === 'diagnostic' &&
+      contact.ruleId === 'projectile.first-contact' &&
+      contact.reason === 'body' &&
+      contact.phase === 'contact' &&
+      contact.step + 1 === d.step &&
+      contact.actorId === d.originalOwnerId &&
+      contact.entityId === event.entityId &&
+      contact.subtimeMicros === d.subtimeMicros &&
+      canonicalJson(contact.point) === canonicalJson(d.point),
+    'deflection contact',
+  );
+}
 export function validateProjectile(
   context: ReplayContext,
   p: ProjectileDisplay,

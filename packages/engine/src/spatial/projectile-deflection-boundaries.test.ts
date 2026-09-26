@@ -138,7 +138,17 @@ it('validates saved ownership transitions and rejects a second deflection or for
   const index = output.records.findIndex(
     (r) => r.kind === 'interval' && r.projectiles.update.some((p) => p.deflection),
   );
-  for (const kind of ['owner', 'speed', 'event'] as const) {
+  for (const kind of [
+    'owner',
+    'speed',
+    'event',
+    'missing-point',
+    'shifted-point',
+    'boundary-time',
+    'contact-time',
+    'coherent-point',
+    'missing-contact',
+  ] as const) {
     const replay = new ReplayState(context, checkpoints[index - 1]!);
     const record = structuredClone(output.records[index]!);
     if (record.kind !== 'interval') throw new Error('Expected deflection interval');
@@ -146,7 +156,23 @@ it('validates saved ownership transitions and rejects a second deflection or for
     if (kind === 'owner') update.ownerId = 'left';
     if (kind === 'speed') update.deflection!.velocity.x += 1;
     if (kind === 'event') update.deflection!.eventId = 'e.999999';
-    expect(() => replay.apply(record)).toThrow();
+    const event = record.events.find((e) => e.projectileDeflection)!;
+    if (kind === 'missing-point') event.point = null;
+    if (kind === 'shifted-point' || kind === 'coherent-point')
+      event.point = { ...event.point!, x: event.point!.x + 1 };
+    if (kind === 'boundary-time') event.subtimeMicros = 1;
+    if (kind === 'missing-contact') event.parentEventId = null;
+    if (kind === 'contact-time' || kind === 'coherent-point') {
+      event.projectileDeflection = structuredClone(event.projectileDeflection!);
+      if (kind === 'contact-time')
+        event.projectileDeflection.subtimeMicros =
+          (event.projectileDeflection.subtimeMicros + 1) % 1000001;
+      else event.projectileDeflection.point = { ...event.point! };
+      update.deflection = structuredClone(event.projectileDeflection);
+    }
+    expect(() => replay.apply(record)).toThrow(
+      ['owner', 'speed', 'event'].includes(kind) ? undefined : 'deflection contact',
+    );
   }
   const after = checkpoints[index]!;
   const next = structuredClone(output.records[index + 1]!);
