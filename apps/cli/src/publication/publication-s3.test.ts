@@ -145,6 +145,22 @@ it('requires explicit league limits and charges failed requests before the next 
 });
 
 it.each([
+  [403, 'REMOTE_AUTH'],
+  [412, 'PUBLICATION_CONFLICT'],
+  [503, 'REMOTE_UNAVAILABLE'],
+  ['PRIVATE_STATUS_SENTINEL', 'REMOTE_UNAVAILABLE'],
+])('classifies transport status %s without exposing vendor data', async (status, code) => {
+  const { store, send } = fixture();
+  send.mockRejectedValue({
+    $metadata: { httpStatusCode: status },
+    message: 'PRIVATE_STATUS_SENTINEL',
+    cause: new Error('PRIVATE_STATUS_SENTINEL'),
+  });
+  await expect(store.head('catalog/current.json')).rejects.toMatchObject({ code });
+  await expect(store.head('catalog/current.json')).rejects.not.toThrow('PRIVATE_STATUS_SENTINEL');
+});
+
+it.each([
   { maxRequests: 2000001 },
   { maxClassARequests: 900001 },
   { deadlineMs: 3600001 },

@@ -11,7 +11,7 @@ import {
 import { SpecInputSchema } from './api.ts';
 import { BatchSlotResultSchema, BundleReceiptSchema, ExecutionSourceSchema } from './batch.ts';
 import { ResultSchema } from './records.ts';
-import { ReplayManifestSchema, type ReplayManifest } from './replay.ts';
+import { ReplayManifestSchema, ReplayValidationError, type ReplayManifest } from './replay.ts';
 import { LeagueFileRefSchema, PublicLeagueCatalogRefSchema } from './league/publication.ts';
 export { PUBLICATION_MAX_BYTES, PUBLICATION_MAX_FILES } from './publication/index.ts';
 
@@ -250,11 +250,11 @@ export function assertPublicReplayBinding(
         ruleset: manifest.input.ruleset,
       })
   )
-    throw new Error('Public row/receipt/manifest reference mismatch');
+    throw new ReplayValidationError('Public row/receipt/manifest reference mismatch');
 }
 
 export function assertPublicPageBinding(set: PublicReplaySet, page: PublicMatchPage) {
   const ref = set.pages[page.index];
   if (!ref || page.planId !== set.planId || page.rows.length !== ref.rows)
-    throw new Error('Public set/page reference mismatch');
+    throw new ReplayValidationError('Public set/page reference mismatch');
 }

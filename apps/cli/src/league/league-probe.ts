@@ -11,6 +11,8 @@ import { createLeagueRevision, leagueMatches } from '@fantasy/engine/spatial';
 import { validateProgressPage, estimateLeague } from '@fantasy/api/tooling';
 import { sha256 } from '@fantasy/api/artifacts';
 import type { PublicationRead } from '../publication/publication-graph.ts';
+import { OperationError, operationInput } from '@fantasy/api/tooling';
+import { PublicReadFailure } from '../publication/publication-http.ts';
 
 export const LEAGUE_PROFILE = {
   matchesPerPlan: 128,
@@ -30,43 +32,47 @@ export async function probeLeague(input: unknown, sourceSha: string, read: Publi
   let requests = 0,
     bytes = 0;
   const json = async (key: string, ref?: LeagueFileRef): Promise<unknown> => {
-    if (++requests > 96) throw new Error('League probe request budget');
+    if (++requests > 96) throw new OperationError('BUDGET_EXCEEDED', 'League probe request budget');
     const data = await read(key, ref?.bytes ?? 4000000);
     bytes += data.length;
+    if (bytes > 64000000) throw new OperationError('BUDGET_EXCEEDED', 'League probe byte budget');
     if (
-      bytes > 64000000 ||
       data.length > (ref?.bytes ?? 4000000) ||
       (ref && (data.length !== ref.bytes || sha256(data) !== ref.hash))
     )
-      throw new Error('League probe checksum/size budget');
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data));
+      throw new OperationError('DATA_INVALID', 'League probe checksum/size budget');
+    return operationInput(
+      () => JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data)),
+      'DATA_INVALID',
+    );
   };
   const leagueJson = (ref: LeagueFileRef) => json(`leagues/${ref.hash.slice(7)}.json`, ref);
+  const saved = <T>(schema: { parse(value: unknown): T }, value: unknown) =>
+    operationInput(() => schema.parse(value), 'DATA_INVALID');
   let catalog: PublicCatalog | undefined;
   try {
-    const pointer = PublicCatalogCurrentSchema.parse(await json('catalog/current.json'));
-    catalog = PublicCatalogSchema.parse(
+    const pointer = saved(PublicCatalogCurrentSchema, await json('catalog/current.json'));
+    catalog = saved(
+      PublicCatalogSchema,
       await json(`catalog/${pointer.catalogHash.slice(7)}.json`, {
         hash: pointer.catalogHash,
         bytes: pointer.bytes,
       }),
     );
   } catch (error) {
-    if (
-      requests !== 1 ||
-      !(error instanceof Error) ||
-      error.message !== 'Public read-back failed (HTTP 404)'
-    )
+    if (requests !== 1 || !(error instanceof PublicReadFailure) || error.status !== 404)
       throw error;
   }
   const records = new Map<string, LeagueProgress>();
   if (catalog?.leagueWork) {
-    const work = PublicLeagueWorkSchema.parse(await leagueJson(catalog.leagueWork));
+    const work = saved(PublicLeagueWorkSchema, await leagueJson(catalog.leagueWork));
     for (const ref of work.progress) {
       const page = await validateProgressPage(await leagueJson(ref));
-      if (page.records.length !== ref.records) throw new Error('League probe progress count');
+      if (page.records.length !== ref.records)
+        throw new OperationError('DATA_INVALID', 'League probe progress count');
       for (const record of page.records) {
-        if (records.has(record.simulationHash)) throw new Error('Duplicate league probe history');
+        if (records.has(record.simulationHash))
+          throw new OperationError('DATA_INVALID', 'Duplicate league probe history');
         records.set(record.simulationHash, record);
       }
     }
@@ -82,9 +88,9 @@ export async function probeLeague(input: unknown, sourceSha: string, read: Publi
     else if (attempts.length) retries++;
   }
   const ref = catalog?.leagues?.find((entry) => entry.id === revision.definition.id);
-  const snapshot = ref ? PublicLeagueSnapshotSchema.parse(await leagueJson(ref)) : undefined;
+  const snapshot = ref ? saved(PublicLeagueSnapshotSchema, await leagueJson(ref)) : undefined;
   if (ref && (snapshot?.leagueHash !== ref.leagueHash || snapshot.inputHash !== ref.inputHash))
-    throw new Error('League probe catalog identity');
+    throw new OperationError('DATA_INVALID', 'League probe catalog identity');
   const estimate = estimateLeague(revision.definition, LEAGUE_PROFILE, {
     reused,
     retries,

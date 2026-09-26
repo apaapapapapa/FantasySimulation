@@ -1,3 +1,4 @@
+import { OperationError } from '@fantasy/api/tooling';
 import { mkdir, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { MAX_PUBLIC_JSON_BYTES, PublicKeySchema } from '@fantasy/domain/spatial';
@@ -20,7 +21,7 @@ export async function restorePublication(
     maxDownloadBytes < 1 ||
     maxDownloadBytes > PUBLICATION_MAX_BYTES
   )
-    throw new Error('Invalid publication restore budget');
+    throw new OperationError('INPUT_INVALID', 'Invalid publication restore budget');
   const root = resolve(directory);
   await publicationDirectory(dirname(root), true);
   await mkdir(root); // Exclusive ownership: an existing directory/file/symlink is never removed.
@@ -30,14 +31,16 @@ export async function restorePublication(
       reads = 0;
     const remote = async (key: string, limit: number) => {
       const remaining = maxDownloadBytes - downloadBytes - reservedBytes;
-      if (remaining < 1) throw new Error('Publication restore byte limit');
+      if (remaining < 1)
+        throw new OperationError('BUDGET_EXCEEDED', 'Publication restore byte limit');
       const allowed = Math.min(limit, remaining);
       reservedBytes += allowed;
       reads++;
       try {
         const value = await store.read(key, allowed);
         if (value) {
-          if (value.data.length > allowed) throw new Error('Publication restore byte limit');
+          if (value.data.length > allowed)
+            throw new OperationError('BUDGET_EXCEEDED', 'Publication restore byte limit');
           downloadBytes += value.data.length;
         }
         return value;
@@ -49,7 +52,10 @@ export async function restorePublication(
     const before = await remote(pointer, MAX_PUBLIC_JSON_BYTES);
     if (!before) {
       if (await remote(pointer, MAX_PUBLIC_JSON_BYTES))
-        throw new Error('Publication generation changed during restore');
+        throw new OperationError(
+          'PUBLICATION_CONFLICT',
+          'Publication generation changed during restore',
+        );
       return { status: 'empty' as const, files: 0, downloadBytes, reads };
     }
     const downloaded = new Set<string>();
@@ -58,7 +64,7 @@ export async function restorePublication(
       if (downloaded.has(key)) return readBoundedFile(path, limit);
       const value = key === pointer ? before : await remote(key, limit);
       if (!value || value.data.length > limit)
-        throw new Error('Retained publication is missing or oversized');
+        throw new OperationError('DATA_INVALID', 'Retained publication is missing or oversized');
       await publicationDirectory(dirname(path), true);
       await writeDurableFile(path, value.data);
       downloaded.add(key);
@@ -68,7 +74,10 @@ export async function restorePublication(
     await localPublicationGraph(root);
     const after = await remote(pointer, MAX_PUBLIC_JSON_BYTES);
     if (!after || after.etag !== before.etag || !after.data.equals(before.data))
-      throw new Error('Publication generation changed during restore');
+      throw new OperationError(
+        'PUBLICATION_CONFLICT',
+        'Publication generation changed during restore',
+      );
     return {
       status: 'restored' as const,
       catalogHash: graph.current.catalogHash,

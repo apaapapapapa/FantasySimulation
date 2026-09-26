@@ -16,3 +16,5 @@ export {
   verifyLeagueProgress,
 } from './league/league-progress.ts';
 export { checkLeague, type LeagueCheckInput } from './league/league-check.ts';
+export { OperationError, operationInput, type OperationCode } from './operation-error.ts';
+export { operationCode } from './operation-code.ts';

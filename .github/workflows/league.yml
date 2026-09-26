@@ -65,6 +65,15 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 7
+      - name: Preserve structured league failures
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: league-errors-probe-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/cli/.generated/league/reports/failure-*.json
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 7
   prepare:
     needs: probe
     if: needs.probe.outputs.needed == 'true' && (github.event_name == 'schedule' || inputs.mode == 'publish')
@@ -112,6 +121,15 @@ jobs:
         id: bundle
         with:
           operation: prepare
+      - name: Preserve structured league failures
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: league-errors-prepare-${{ github.run_id }}-${{ github.run_attempt }}
+          path: apps/cli/.generated/league/reports/failure-*.json
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 7
   compute:
     needs: prepare
     strategy:
@@ -140,6 +158,15 @@ jobs:
         with:
           operation: result
           partition: ${{ matrix.index }}
+      - name: Preserve structured league failures
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: league-errors-compute-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.index }}
+          path: apps/cli/.generated/league/reports/failure-*.json
+          if-no-files-found: ignore
+          include-hidden-files: true
+          retention-days: 7
   publish:
     needs: [probe, prepare, compute]
     if: always() && !cancelled() && needs.prepare.result == 'success'

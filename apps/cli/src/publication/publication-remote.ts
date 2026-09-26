@@ -1,3 +1,4 @@
+import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { ViewerBuildSchema } from '@fantasy/domain';
 import {
   PublicCatalogCurrentSchema,
@@ -54,7 +55,8 @@ export interface PublishReport {
 }
 function limit(value: number | undefined, fallback: number, upper: number) {
   const n = value ?? fallback;
-  if (!Number.isSafeInteger(n) || n < 1 || n > upper) throw new Error('Invalid publication budget');
+  if (!Number.isSafeInteger(n) || n < 1 || n > upper)
+    throw new OperationError('INPUT_INVALID', 'Invalid publication budget');
   return n;
 }
 const rank = (key: string) =>
@@ -70,7 +72,7 @@ const rank = (key: string) =>
 async function exact(store: PublicationStore, file: PublicationFile) {
   const value = await store.read(file.key, file.bytes);
   if (!value || value.data.length !== file.bytes || sha256(value.data) !== file.checksum)
-    throw new Error('Immutable publication collision');
+    throw new OperationError('DATA_INVALID', 'Immutable publication collision');
   return value;
 }
 export type PublicationPhase = 'not-committed' | 'commit-unknown' | 'committed-unverified';
@@ -103,18 +105,27 @@ export async function publishPublication(
       const viewer = ViewerBuildSchema.parse(await options.viewer());
       for (const source of graph.sources)
         if (!options.ancestor(source, viewer.sourceSha))
-          throw new Error('Data source is not an ancestor of the published viewer');
+          throw new OperationError(
+            'IDENTITY_MISMATCH',
+            'Data source is not an ancestor of the published viewer',
+          );
     };
     await compatible();
     const pointer = graph.files.get('catalog/current.json')!;
     const previous = await store.read(pointer.key, 4_000_000);
     const remoteCurrent = previous
-      ? PublicCatalogCurrentSchema.parse(JSON.parse(previous.data.toString('utf8')))
+      ? operationInput(
+          () =>
+            PublicCatalogCurrentSchema.parse(
+              JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(previous.data)),
+            ),
+          'DATA_INVALID',
+        )
       : null;
     const unchanged = previous !== null && sha256(previous.data) === pointer.checksum;
     if (unchanged) phase = 'committed-unverified';
     if (!unchanged && graph.catalog.previousCatalogHash !== (remoteCurrent?.catalogHash ?? null))
-      throw new Error('Publication generation changed');
+      throw new OperationError('PUBLICATION_CONFLICT', 'Publication generation changed');
     let priorSets = new Set<string>();
     if (remoteCurrent) {
       const old = await exact(store, {
@@ -123,7 +134,13 @@ export async function publishPublication(
         checksum: remoteCurrent.catalogHash,
       });
       priorSets = new Set(
-        PublicCatalogSchema.parse(JSON.parse(old.data.toString('utf8'))).sets.map((s) => s.setHash),
+        operationInput(
+          () =>
+            PublicCatalogSchema.parse(
+              JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(old.data)),
+            ),
+          'DATA_INVALID',
+        ).sets.map((s) => s.setHash),
       );
     }
     const inventory = await store.inventory();
@@ -131,7 +148,7 @@ export async function publishPublication(
     await publicationPool([...inventory.keys()], concurrency, async (key) => {
       if (key.endsWith('/receipt.json')) {
         const value = await store.read(key, 65536);
-        if (!value) throw new Error('Remote receipt disappeared');
+        if (!value) throw new OperationError('DATA_INVALID', 'Remote receipt disappeared');
         receiptIdentity(key, value.data, resultHashes);
       }
     });
@@ -187,7 +204,10 @@ export async function publishPublication(
       inventory.size + additions.length + (previous ? 0 : 1) > PUBLICATION_MAX_FILES ||
       selected.size > maxWorker
     )
-      throw new Error('Publication capacity/request budget exceeded before writing');
+      throw new OperationError(
+        'BUDGET_EXCEEDED',
+        'Publication capacity/request budget exceeded before writing',
+      );
     if (options.dryRun) return { status: 'planned' as const, ...report };
     const sameGeneration = async () => {
       const now = await store.read(pointer.key, 4_000_000);
@@ -195,7 +215,7 @@ export async function publishPublication(
         (previous === null) !== (now === null) ||
         (previous && (!now || now.etag !== previous.etag || !now.data.equals(previous.data)))
       )
-        throw new Error('Publication generation changed');
+        throw new OperationError('PUBLICATION_CONFLICT', 'Publication generation changed');
     };
     await sameGeneration();
     additions.sort((a, b) => a.key.localeCompare(b.key));
@@ -220,7 +240,7 @@ export async function publishPublication(
     // All referenced immutable objects must be present before committing current.json.
     await publicationPool([...graph.files.values()], concurrency, async (file) => {
       if (file.key !== pointer.key && (await store.head(file.key)) !== file.bytes)
-        throw new Error('S3 size verification failed');
+        throw new OperationError('DATA_INVALID', 'S3 size verification failed');
     });
     await compatible();
     await sameGeneration();
@@ -239,12 +259,12 @@ export async function publishPublication(
     phase = 'committed-unverified';
     await exact(store, pointer);
     if ((await store.head(pointer.key)) !== pointer.bytes)
-      throw new Error('S3 pointer verification failed');
+      throw new OperationError('DATA_INVALID', 'S3 pointer verification failed');
     await publicationPool([...selected], concurrency, async (key) => {
       const file = graph.files.get(key)!,
         data = await options.worker(key, file.bytes);
       if (data.length !== file.bytes || sha256(data) !== file.checksum)
-        throw new Error('Worker read-back checksum mismatch');
+        throw new OperationError('DATA_INVALID', 'Worker read-back checksum mismatch');
     });
     return { status: 'verified' as const, ...report };
   } catch (error) {

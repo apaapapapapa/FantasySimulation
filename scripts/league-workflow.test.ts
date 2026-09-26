@@ -39,3 +39,13 @@ it('admits workers only after durable publication and isolates secrets from simu
   }
   expect(workflow).not.toMatch(/run:.*\$\{\{\s*(?:inputs|matrix)\./);
 });
+
+it('retains safe failure reports from every job without uploading raw diagnostics', () => {
+  for (const job of ['probe', 'prepare', 'compute']) {
+    const steps = workflow.split(`\n  ${job}:`)[1]!.split(/\n  [a-z]+:/)[0]!;
+    expect(steps).toContain('if: failure()');
+    expect(steps).toContain('path: apps/cli/.generated/league/reports/failure-*.json');
+    expect(steps).not.toMatch(/path:.*(?:\.log|\*\*)/);
+  }
+  expect(workflow.split('\n  publish:')[1]).toContain('apps/cli/.generated/league/reports/*.json');
+});

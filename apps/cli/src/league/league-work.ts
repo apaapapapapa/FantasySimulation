@@ -1,3 +1,4 @@
+import { OperationError } from '@fantasy/api/artifacts';
 import {
   PublicLeagueWorkSchema,
   canonicalJson,
@@ -31,14 +32,19 @@ export async function buildLeagueWork(
   retained?: BattleBundles,
 ) {
   await validateLeaguePlan(plan);
-  if (completed.length) throw new Error('Results require an already published reservation journal');
+  if (completed.length)
+    throw new OperationError(
+      'DATA_INVALID',
+      'Results require an already published reservation journal',
+    );
   if (partitions.length !== plan.partitions.length || reservations.length !== partitions.length)
-    throw new Error('Work journal must cover every league partition');
+    throw new OperationError('DATA_INVALID', 'Work journal must cover every league partition');
   const records = await verifyLeagueProgress(prior.records, retained);
   const seen = new Set<string>();
   for (const entry of partitions) {
     const { partition } = await validateLeaguePartition(plan, entry.partition, entry.batch);
-    if (seen.has(partition.id)) throw new Error('Duplicate work partition');
+    if (seen.has(partition.id))
+      throw new OperationError('DATA_INVALID', 'Duplicate work partition');
     seen.add(partition.id);
     const reservation = reservations.find((r) => r.partitionId === partition.id);
     const expected = await reserveLeaguePartition(
@@ -51,7 +57,10 @@ export async function buildLeagueWork(
       retained,
     );
     if (!reservation || canonicalJson(reservation) !== canonicalJson(expected))
-      throw new Error('Journal reservation does not extend retained attempts');
+      throw new OperationError(
+        'DATA_INVALID',
+        'Journal reservation does not extend retained attempts',
+      );
     for (const record of reservation.progress.records) records.set(record.simulationHash, record);
   }
   return packLeagueWork(plan, reservations, [...records.values()], prior.ref, executionId);
@@ -69,7 +78,10 @@ export async function finishLeagueWork(
     reserved.work.sourceSha !== plan.source.sha ||
     reserved.work.reservations.length !== reservations.length
   )
-    throw new Error('Completion does not match the published reservation journal');
+    throw new OperationError(
+      'DATA_INVALID',
+      'Completion does not match the published reservation journal',
+    );
   for (const reservation of reservations) {
     const ref = leagueFile(reservation).ref;
     if (
@@ -78,13 +90,13 @@ export async function finishLeagueWork(
           r.partitionId === reservation.partitionId && r.hash === ref.hash && r.bytes === ref.bytes,
       )
     )
-      throw new Error('Completion reservation was not published');
+      throw new OperationError('DATA_INVALID', 'Completion reservation was not published');
   }
   const verified = await checkLeague(plan, completed);
   const records = await verifyLeagueProgress(reserved.records, retained);
   for (const result of verified.results) {
     if (!reservations.some((r) => r.id === result.reservationId))
-      throw new Error('Unexpected completed reservation');
+      throw new OperationError('DATA_INVALID', 'Unexpected completed reservation');
     for (const record of result.progress.records) records.set(record.simulationHash, record);
   }
   return packLeagueWork(

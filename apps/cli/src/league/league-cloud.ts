@@ -1,3 +1,4 @@
+import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { join } from 'node:path';
 import {
   LeagueCloudInputSchema,
@@ -42,7 +43,10 @@ export async function prepareCloudLeague(
   preparedRoot: string,
   inventoryInput: unknown,
 ) {
-  const inventory = LeagueCloudInventorySchema.parse(inventoryInput);
+  const inventory = operationInput(
+    () => LeagueCloudInventorySchema.parse(inventoryInput),
+    'DATA_INVALID',
+  );
   const graph = (await optionalPublicationFile(join(publicRoot, 'catalog/current.json'), 4000000))
     ? await localPublicationGraph(publicRoot)
     : null;
@@ -62,7 +66,10 @@ export async function prepareCloudLeague(
     retained,
   );
   if (planned.partitions.length > 64)
-    throw new Error('Actions league matrix limit; choose smaller definition');
+    throw new OperationError(
+      'BUDGET_EXCEEDED',
+      'Actions league matrix limit; choose smaller definition',
+    );
   const historyMap = new Map(history.map((record) => [record.simulationHash, record]));
   const reservations = [];
   for (const { partition } of planned.partitions) {
@@ -128,7 +135,11 @@ function assertCloudSource(input: LeagueCloudInput, source: ExecutionSource, exe
     input.reservation.executionId !== executionId ||
     canonicalJson(input.plan.source) !== canonicalJson(source)
   )
-    throw new Error('Cloud source/execution mismatch; start a new complete workflow run');
+    throw new OperationError(
+      'IDENTITY_MISMATCH',
+      'Cloud source/execution mismatch; start a new complete workflow run',
+      input.partition.id,
+    );
 }
 export async function runCloudLeague(
   inputRoot: string,
@@ -171,10 +182,10 @@ export async function finishCloudLeague(
     prepared.executionId !== executionId ||
     canonicalJson(prepared.plan.source) !== canonicalJson(source)
   )
-    throw new Error('Cloud finalizer identity mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'Cloud finalizer identity mismatch');
   const graph = await localPublicationGraph(publicRoot);
   if (!graph.latestWork || graph.catalog.leagueWork?.hash !== prepared.work.hash)
-    throw new Error('Cloud reservation journal mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'Cloud reservation journal mismatch');
   const inputs = [],
     completed: LeagueCheckInput[] = [];
   for (let index = 0; index < prepared.inputs.length; index++) {

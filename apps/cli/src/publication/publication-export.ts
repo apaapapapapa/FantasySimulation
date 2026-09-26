@@ -1,3 +1,4 @@
+import { OperationError, operationInput } from '@fantasy/api/artifacts';
 import { join, resolve, sep } from 'node:path';
 import {
   PublicMatchPageSchema,
@@ -36,7 +37,8 @@ function namedRevision(plan: BatchPlan, kind: 'character' | 'scenario', ref: Rev
       r.revision === ref.revision &&
       r.contentHash === ref.contentHash,
   );
-  if (!revision) throw new Error('Public row references a missing revision');
+  if (!revision)
+    throw new OperationError('DATA_INVALID', 'Public row references a missing revision');
   return { ...ref, name: revision.definition.name };
 }
 const overlaps = (a: string, b: string) =>
@@ -51,7 +53,7 @@ export async function buildPublication(
   const root = resolve(directory);
   for (const value of indexes) {
     if (overlaps(root, resolve(value.bundles.root)))
-      throw new Error('Publication and bundle roots must be separate');
+      throw new OperationError('INPUT_INVALID', 'Publication and bundle roots must be separate');
     // Empty artifact directories are absent after Actions transfers; no recording is read.
     if (!parseJson(BatchIndexSchema, value.index).slots.some((slot) => slot.receipt)) continue;
     await publicationDirectory(value.bundles.root);
@@ -99,23 +101,34 @@ export async function buildPublication(
         source = join(checked.sources.get(slot.id)!.root, prefix);
       await publicationDirectory(source);
       const receiptBytes = await readBoundedFile(join(source, 'receipt.json'), 65536);
-      if (canonicalJson(JSON.parse(receiptBytes.toString('utf8'))) !== canonicalJson(receipt))
-        throw new Error('Receipt changed after verification');
+      if (
+        canonicalJson(
+          operationInput(
+            () => JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(receiptBytes)),
+            'DATA_INVALID',
+          ),
+        ) !== canonicalJson(receipt)
+      )
+        throw new OperationError('DATA_INVALID', 'Receipt changed after verification');
       const manifestBytes = await readBoundedFile(
         join(source, 'manifest.json'),
         MAX_REPLAY_MANIFEST_BYTES,
       );
       if (sha256(manifestBytes) !== receipt.manifestChecksum)
-        throw new Error('Manifest changed after verification');
-      const manifest = parseJson(
-        ReplayManifestSchema,
-        JSON.parse(manifestBytes.toString('utf8')) as unknown,
+        throw new OperationError('DATA_INVALID', 'Manifest changed after verification');
+      const manifest = operationInput(
+        () =>
+          parseJson(
+            ReplayManifestSchema,
+            JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes)) as unknown,
+          ),
+        'DATA_INVALID',
       );
       if (
         manifest.input.engineVersion !== plan.engineVersion ||
         manifest.input.implementationDigest !== plan.implementationDigest
       )
-        throw new Error('Plan/replay source identity mismatch');
+        throw new OperationError('IDENTITY_MISMATCH', 'Plan/replay source identity mismatch');
       row.replay = {
         objectHash: receipt.objectHash,
         simulationHash: receipt.simulationHash,
@@ -155,7 +168,8 @@ export async function buildPublication(
           await inspectPublicArtifact(file, ref.rawBytes);
           files.push(file);
         }
-        if (files.length > PUBLICATION_MAX_FILES) throw new Error('Publication file count limit');
+        if (files.length > PUBLICATION_MAX_FILES)
+          throw new OperationError('BUDGET_EXCEEDED', 'Publication file count limit');
       }
     }
     rows.push(parseJson(PublicMatchRowSchema, row));

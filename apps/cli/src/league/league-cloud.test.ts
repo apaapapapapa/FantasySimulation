@@ -7,6 +7,7 @@ import { leagueSlotCount, LeagueDefinitionSchema } from '@fantasy/domain/spatial
 import { publicationLeagueSource as source } from '../../test-support/leagues.ts';
 import { prepareCloudLeague, runCloudLeague, finishCloudLeague } from './league-cloud.ts';
 import { preparedLeague, cloudInput, writeCloudJson } from './league-cloud-files.ts';
+import { PublicReadFailure } from '../publication/publication-http.ts';
 import { probeLeague } from './league-probe.ts';
 import { leagueArtifactFiles } from './league-artifact-files.ts';
 
@@ -99,12 +100,12 @@ it('fails closed on corrupt metadata and artifact symlinks, while empty storage 
   const definition = await leagueFixture(2, 1);
   expect(
     await probeLeague(definition, source.sha, async () => {
-      throw new Error('Public read-back failed (HTTP 404)');
+      throw new PublicReadFailure(404);
     }),
   ).toMatchObject({ needed: true, requests: 1 });
   await expect(
     probeLeague(definition, source.sha, async () => {
-      throw new Error('Public read-back failed (HTTP 500)');
+      throw new PublicReadFailure(500);
     }),
   ).rejects.toThrow('500');
   await withReplayDirectory(async (root) => {

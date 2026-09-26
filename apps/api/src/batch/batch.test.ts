@@ -154,7 +154,22 @@ describe('immutable headless plans and portable result bundles', () => {
         indexes[0]!.index.slots.length === plan.slots.length,
       );
       const nonempty = indexes.find((r) => r.index.slots.length > 0)!;
-      await expect(reconcileBatch(plan, [...indexes, nonempty])).rejects.toThrow(/duplicate/);
+      await expect(reconcileBatch(plan, [...indexes, nonempty])).rejects.toMatchObject({
+        code: 'DATA_INVALID',
+        message: 'Mixed or duplicate shard declarations',
+      });
+      const { id: _, ...inconsistent } = { ...nonempty.index, complete: false };
+      await expect(
+        reconcileBatch(plan, [
+          {
+            bundles,
+            index: { ...inconsistent, id: await contentHash(inconsistent) },
+          },
+        ]),
+      ).rejects.toMatchObject({
+        code: 'DATA_INVALID',
+        message: 'Incomplete or inconsistent shard declaration',
+      });
       const resumed = await runBatch(plan, singleRoot, batchSource, { reverse: true });
       expect(resumed.index.slots.every((s) => s.reused)).toBe(true);
       const aborted = await runBatch(plan, singleRoot, batchSource, {
@@ -188,7 +203,10 @@ describe('immutable headless plans and portable result bundles', () => {
       expect(held.index.slots[0]!.reason).toMatch(/size|checksum/);
       await expect(
         reconcileBatch(plan, [{ index: initial.index, bundles: new BattleBundles(root) }]),
-      ).rejects.toThrow(/size|checksum/);
+      ).rejects.toMatchObject({
+        code: 'DATA_INVALID',
+        message: expect.stringMatching(/size|checksum/),
+      });
       const small = await createBatchPlan(
         { ...input, budget: { ...input.budget, maxBytes: 1 } },
         batchSource,
@@ -198,6 +216,28 @@ describe('immutable headless plans and portable result bundles', () => {
       expect(truncated.index.slots[0]!.state).toBe('truncated');
       expect(truncated.index.complete).toBe(false);
       expect(await new BattleBundles(other).cached(small.slots[0]!.simulationHash)).toBeNull();
+    });
+  });
+  it('classifies malformed saved bundle documents without hiding missing files', async () => {
+    await withReplayDirectory(async (root) => {
+      const plan = await createBatchPlan(await batchInput(1), batchSource);
+      const initial = await runBatch(plan, root, batchSource);
+      const receipt = initial.index.slots[0]!.receipt!;
+      const path = join(root, 'objects', receipt.objectHash.slice(7), 'receipt.json');
+      const original = await readFile(path);
+      const bundles = new BattleBundles(root);
+      for (const bytes of [Buffer.from('{'), Buffer.from('{}'), Buffer.from([0xff])]) {
+        await writeFile(path, bytes);
+        await expect(bundles.verify(receipt.objectHash)).rejects.toMatchObject({
+          code: 'DATA_INVALID',
+        });
+      }
+      await writeFile(path, original);
+      await expect(
+        bundles.publishJson('indexes', initial.index.id, { ...initial.index, complete: false }),
+      ).rejects.toMatchObject({ code: 'DATA_INVALID' });
+      await rm(path);
+      await expect(bundles.verify(receipt.objectHash)).rejects.toMatchObject({ code: 'ENOENT' });
     });
   });
   it('recovers a missing publication pointer and generated staging while preserving immutable files', async () => {
@@ -217,7 +257,10 @@ describe('immutable headless plans and portable result bundles', () => {
       });
       expect(JSON.parse(await readFile(initial.path, 'utf8')).id).toBe(initial.index.id);
       const tight = new BattleBundles(root, 1);
-      await expect(tight.storedBytes()).rejects.toThrow(/storage limit/);
+      await expect(tight.storedBytes()).rejects.toMatchObject({
+        code: 'BUDGET_EXCEEDED',
+        message: expect.stringMatching(/storage limit/),
+      });
     });
   });
 });
