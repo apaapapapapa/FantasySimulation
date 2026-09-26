@@ -1,68 +1,57 @@
-# ADR 0007: 永続ジョブと有界Worker実行
+# ADR 0007: Persistent jobs and bounded Workers
 
-P3 / Issue #1・#10の単一ホスト実行。計算はPiscina 5.3.2の再利用Worker、
-保存とSQLite更新はAPIプロセスが所有する。WorkerはDB・保存先を受け取らない。
-既定1 Worker、最大4かつCPUを最低1個残す。各Workerのold/young heap設定は
-合計128 MiB。これはWASM・外部バッファやプロセスRSSの強制隔離ではない。
+P3 / #1, #10: single host; reusable Piscina 5.3.2 Workers compute, API owns SQLite
+and artifacts. Workers receive no DB/root. Default 1/max 4 Workers leave >=1 CPU;
+old+young JS heap 128MiB/Worker does not isolate WASM, external buffers or RSS.
 
-## 保存と実行
+## Persistence and execution
 
-1. 公開revisionからmanifestとsimulationHashを固定し、予算を別に保存する。
-2. 同じ利用者/エンドポイントの冪等キーと入力を照合する。別入力は409。
-3. 正本hashに一致するready artifactを全件検証し、確定win/drawのみ再利用する。
-4. 調整側が短いimmediate transactionでtokenと10秒leaseを取得する。
-5. Workerは同じ`simulate`をpullし、128 KiB目標のNDJSONを一つだけ転送する。
-   1 recordの最大4,000,001 bytesを例外上限とし、保存側のACKまで次を送らない。
-6. 保存側は各recordを検証・圧縮し、全件のhashとcheckpointを再検証して確定配置する。
-7. token・有効lease・中止状態を再確認し、結果/参照を一つのDB transactionで確定する。
+Freeze published manifest/simulationHash; store budgets separately. Match idempotency
+key per client/endpoint/input (conflict 409). Fully verify ready artifacts against
+canonical hashes; reuse only definitive win/draw. Short immediate transactions claim
+token/10s lease, renewed ~3.3s. Reclaim changes token, at most 3 times; reject stale
+completion. Persist cancellation before stopping the Worker. Default 30s timeout fails
+and stops it; await I/O release. Explicit failed/cancelled/truncated retries bind
+budget/expectedAttempts. Close records running failures; queued jobs resume on restart.
 
-HTTPとbatchは`BattleService`の投入・状態・検証済み結果・replay操作を使う。
-JobStore/Worker/所有rootはサービス内部に置く。完了待ちは状態変更と資源解放の
-通知で解決し、読取ポーリングを行わない。期限・停止も待機を解除する。
-状態遷移の純粋な判定を保存と許可操作の応答で共有し、未対応の保存入力には再試行を許可しない。
+Worker pulls `simulate`, sends one target 128KiB NDJSON chunk (single-record exception
+<=4,000,001 bytes), waits for ACK. API validates/compresses every record, rechecks
+hashes/checkpoints and installs artifacts. Recheck token/live lease/cancellation before
+one result/reference transaction. `BattleService` owns HTTP/batch admission, state,
+verified results/replay; hide JobStore/Workers/roots. Completion/capacity notifications,
+not read polling, wake waits; deadlines/shutdown unblock them. Share pure transition
+validation with persistence/allowed operations; unsupported saved input cannot retry.
 
-leaseは約3.3秒ごとに更新する。失効したattemptを再取得するとtokenが変わり、
-古い完了は拒否される。再取得は最大3回。中止のDB確定をWorker停止より先に行う。
-timeoutは既定30秒でfailedを記録し、Workerを停止する。終了後もI/Oの解放を待つ。
-失敗・中止・truncatedは予算とexpectedAttemptsを指定して明示再試行できる。
-正常終了時のcloseも実行中attemptを失敗診断として保持し、待機jobは再起動で再開する。
+SQLite PID/hostname/token excludes concurrent coordinators. Bind root to persistent
+store ID; reject foreign/nonempty unowned roots. Reclaim only after same-host old PID
+exits; PID reuse or moved host/root fails conservatively without deletion. Only the
+sole coordinator collects generated unreferenced UUID/staging directories. Keep DB
+references; missing/corrupt records remain held for explicit recovery.
 
-調整側のPID・hostname・tokenをSQLiteに記録し、同一DBへの同時起動を拒否する。
-保存rootは永続store IDに結び付け、別DBのrootや未所有の非空rootを採用しない。
-同じホストで旧PIDが終了済みの場合だけ所有権を再取得する。PIDが再利用された場合や
-ホスト/rootを移動した場合は保守的に起動を拒否し、既存データを消さない。
-唯一の調整側になってから生成済みの未参照UUIDディレクトリとstagingを回収する。
-DB参照がある記録は削除せず、読取時の欠落/破損をmissing/corruptとして保留する。
+## Budgets and diagnostics
 
-## 予算と診断
+Defaults: 128 queued/running jobs, 16GiB storage. Reserve 20MiB/job (16MiB compressed
+records + manifest 4MB); later failure diagnostics cannot consume those reservations.
+Also reserve 20MiB/Worker for pending writes. API may lower caps; raising needs measured
+ADR review. Sample RSS every 250ms; >1.5GiB stops admission/cancels execution, not an OS
+hard cap. Report heap/external/ArrayBuffer/WASM linear-memory exports separately;
+overlapping memory and process RSS must not be summed across Workers.
 
-待機/実行中は合計128件、保存は16 GiBを既定上限とする。受付時に各jobへ20 MiB
-（圧縮記録16 MiB＋manifest最大4 MB）を予約し、後着の失敗診断にも予約を侵食させない。
-さらにWorker数×20 MiBを実ファイルの未確定書込用に確保する。
-API設定で各上限を小さくできる。上限拡大は本ADRの計測・レビュー後に行う。
+Measure initialization/computation/ACK wait/bytes/max chunk/cold-warm/full persistence;
+TS/Rapier/boundary computation remains unseparated. Metrics never enter result hashes.
+Corrupt results cannot silently recompute. Explicit replay recovery requires current
+execution support and exact canonical resultHash; mismatch quarantines related
+artifacts. Old engines return 409: no registry/conversion. `failure_code` forbids
+nondeterministic retries; Drizzle 0003 only backfills that column from old diagnostics,
+preserving saved bodies/results/replays. Typed missing/conflict/input/capacity/unavailable
+storage errors are mapped to HTTP at the boundary.
 
-RSSを250ms間隔で監視し、1.5 GiBを超えれば受付を停止して実行を中止する。
-これはサンプリングであり、瞬間最大値やOSによるハード制限ではない。
-WorkerはJS heap、external、ArrayBufferと、初期化時に捕捉したWASM exportの
-linear memory bytesを別々に報告する。WASM/ArrayBufferはexternalと重複し得るため
-足し合わせない。RSSもWorkerごとの値として合算しない。
-計算・初期化・ACK待ち・転送bytes・最大片サイズ・cold/warm・全保存時間を記録する。
-計算時間内のTSルール/Rapier/境界往復は未分離。計測値は結果hashへ混ぜない。
+`battle-runtime.test.ts`/`worker-pool.test.ts` cover process death/restart/duplicate
+delivery/budgets/retries/cancel/timeout/corruption/recovery and Worker reuse/count hash
+equality. Integrated 1,000-battle performance requires separate measurements.
 
-破損結果を通常受付で黙って再計算しない。明示的なreplay-recoveryは現行engineで
-保存manifestを実行できる場合だけ受理する。再計算した結果hashが元の不変正本と
-完全一致した場合のみ新artifactをcacheに使う。不一致は関連artifactを全て隔離する。
-対応しない過去engineは409で保留し、旧engine registryや入力の自動変換を行わない。
-決定性違反の再試行禁止は`simulation_jobs.failure_code`で判定する。Drizzle 0003は
-既存の該当診断から列だけを補完し、保存済みの本文・結果・replayを変更しない。
-保存層はコード付きの未検出・競合・入力・容量・利用不能エラーを返し、HTTP変換は境界が行う。
-
-API/Worker/保存の統合回帰は`battle-runtime.test.ts`と`worker-pool.test.ts`。
-実プロセスの異常終了、再起動、二重送信、予算再試行、中止、timeout、破損、復旧、
-Worker数/再利用のhash一致を検証する。1,000試合の統合性能は別の計測記録で判定する。
-
-HTTP `POST /api/battle-jobs/staged` accepts up to 100 keyed requests and streams ordered NDJSON
-outcomes. BattleService.runMany accepts lazy iterables of any total length: only Worker-count
-items are admitted ahead of the consumer. Queue capacity wakes by state notification; storage
-exhaustion fails visibly. Disconnect/early return cancels and drains owned work. Batch application
-owns plan/shard/index orchestration and uses this same path; saved 1,000-slot plans remain unchanged.
+`POST /api/battle-jobs/staged`: <=100 keyed requests, ordered NDJSON results.
+`BattleService.runMany`: lazy unbounded total, only Worker-count inputs ahead of consumer;
+capacity notifications, visible storage failure. Disconnect/early return cancels/drains
+owned work. Batch owns plan/shard/index orchestration on this path; saved 1,000-slot plans
+remain unchanged.
