@@ -9,7 +9,7 @@ vp run harness ui .generated/harness/ui-unique
 Linux/Chromium tests fresh SQLite samples, draft save/resume/validate/publish,
 async cancellation/retry/results and API errors. Separate Chromium/WebKit tests use
 `/FantasySimulation/` and a read-only localhost data origin without API/DB/engine.
-They cover 1000-row paging, direct URLs, reload, 3D play/pause/speed/seek/cameras,
+Coverage: 1000-row paging, direct URLs, reload, 3D play/pause/repeat/speed/seek/cameras,
 partial endings, damaged/missing/oversize/double-gzip logs, late cancellation and
 WebGL log fallback. State/hash and reducer tests verify display; #9 owns combat.
 League/pair replay. #82: no-WebGL 2D, emulated touch (no real phone), local files, step links.
