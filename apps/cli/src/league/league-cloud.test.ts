@@ -1,7 +1,8 @@
-import { expect, it } from 'vite-plus/test';
+import { expect, it, vi } from 'vite-plus/test';
 import { join } from 'node:path';
 import { mkdir, readFile, writeFile, symlink } from 'node:fs/promises';
 import { withReplayDirectory } from '@fantasy/api/testing';
+import { BattleBundles } from '@fantasy/api/artifacts';
 import { leagueFixture } from '@fantasy/samples/testing';
 import { leagueSlotCount, LeagueDefinitionSchema } from '@fantasy/domain/spatial';
 import { publicationLeagueSource as source } from '../../test-support/leagues.ts';
@@ -63,9 +64,22 @@ it('resumes a missing worker once, verifies results, skips unchanged input and r
       await expect(
         finishCloudLeague(second, join(root, 'results'), publicRoot, candidate, execution),
       ).rejects.toThrow('finalizer identity');
-    expect(
-      await finishCloudLeague(second, join(root, 'results'), publicRoot, source, 'second'),
-    ).toMatchObject({ status: 'formal', planned: 4, resolved: 4 });
+    const verification = vi.spyOn(BattleBundles.prototype, 'verify');
+    try {
+      expect(
+        await finishCloudLeague(second, join(root, 'results'), publicRoot, source, 'second'),
+      ).toMatchObject({ status: 'formal', planned: 4, resolved: 4 });
+      // Each result has three binding checks, then one independent export check.
+      // Journal packing must not run the complete result check a second time.
+      expect(
+        verification.mock.calls.filter((_, index) => {
+          const context = verification.mock.contexts[index];
+          return context instanceof BattleBundles && context.root === join(output, 'bundles');
+        }),
+      ).toHaveLength(16);
+    } finally {
+      verification.mockRestore();
+    }
     expect(await probeLeague(definition, 'b'.repeat(40), reader(publicRoot))).toMatchObject({
       needed: false,
       estimate: { reused: 4, compute: 0 },

@@ -16,6 +16,11 @@ import { buildPublication } from '../publication/publication-export.ts';
 import { commitPublication } from '../publication/publication-catalog.ts';
 import { publicationJson, type PublicationFile } from '../publication/publication-files.ts';
 
+type LeagueWorkPublication = {
+  ref: NonNullable<PublicCatalog['leagueWork']>;
+  files: PublicationFile[];
+};
+
 export function leagueFile(value: unknown) {
   const file = publicationJson(`leagues/${'0'.repeat(64)}.json`, value);
   file.key = `leagues/${file.checksum.slice(7)}.json`;
@@ -28,10 +33,13 @@ export async function exportLeague(
   partitions: readonly { partition: unknown; batch: unknown }[],
   completed: readonly LeagueCheckInput[],
   directory: string,
-  work?: { ref: NonNullable<PublicCatalog['leagueWork']>; files: PublicationFile[] },
+  work?:
+    | LeagueWorkPublication
+    | ((checked: Awaited<ReturnType<typeof checkLeague>>) => Promise<LeagueWorkPublication>),
 ) {
   const checked = await checkLeague(input, completed),
     { plan, standings } = checked;
+  const journal = typeof work === 'function' ? await work(checked) : work;
   const latestOutcomes = new Map(
     checked.attempts.map((attempt) => [attempt.slotId, attempt.outcome.kind] as const),
   );
@@ -129,7 +137,7 @@ export async function exportLeague(
     standings: { ...standings, rows },
   });
   const ref = addJson(snapshot);
-  work?.files.forEach(add);
+  journal?.files.forEach(add);
   const written = await commitPublication(directory, [...files.values()], sets, {
     league: {
       ...ref,
@@ -137,7 +145,7 @@ export async function exportLeague(
       leagueHash: snapshot.leagueHash,
       inputHash: snapshot.inputHash,
     },
-    ...(work ? { leagueWork: work.ref } : {}),
+    ...(journal ? { leagueWork: journal.ref } : {}),
   });
   return {
     ...written,
