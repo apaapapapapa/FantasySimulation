@@ -58,8 +58,10 @@ Display-path overflow truncates rather than dropping segments. Events store cont
 owner, incident/outgoing velocity, observed/reverse basis, power and activations.
 Replacement projectile deltas/checkpoints preserve these fields. ReplayState validates
 references, single ownership transition, causal IDs, speed/direction and power without
-engine imports. The event commits at boundary subtime0; its parent contact binds the
-recorded point/subtime. Both viewers show returned bullets in green, a recorded turn marker,
+engine imports. Every activation must name the same parent body contact among its causes.
+The event commits at boundary subtime0; its parent contact binds the recorded point/subtime.
+An expiring turn requires removal at interval subtime1000000, after the contact hold.
+Both viewers show returned bullets in green, a recorded turn marker,
 velocity arrow and the saved polyline. No trajectory is inferred.
 
 ## Atomic settlement and observation

@@ -78,8 +78,8 @@ export function validateEvents(
           ? record.projectiles.spawn.find((p) => p.id === e.entityId)
           : undefined);
       validateDeflection(context, d, maxStep);
-      validateDeflectionActivations(d, events, e.causes);
       validateDeflectionContact(d, e, events);
+      validateDeflectionActivations(d, events, e);
       requireReplay(
         e.kind === 'projectile-deflect' &&
           d.eventId === e.id &&
@@ -100,7 +100,7 @@ export function validateEvents(
           ) ||
             (before!.endStep === record.toStep &&
               record.projectiles.remove.some(
-                (p) => p.id === e.entityId && p.reason === 'expired',
+                (p) => p.id === e.entityId && p.reason === 'expired' && p.subtimeMicros === 1000000,
               ))),
         'deflection event transition',
       );

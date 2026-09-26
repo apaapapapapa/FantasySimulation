@@ -65,8 +65,9 @@ export function validateDeflection(context: ReplayContext, d: ProjectileDeflecti
 export function validateDeflectionActivations(
   d: ProjectileDeflection,
   events: readonly BattleEvent[],
-  causes: readonly string[],
+  deflectionEvent: BattleEvent,
 ) {
+  const { causes, parentEventId } = deflectionEvent;
   requireReplay(causes.length === d.activations.length, 'deflection activation event');
   for (const activation of d.activations) {
     const event = events.find((e) => e.id === activation.context.activationId);
@@ -77,7 +78,9 @@ export function validateDeflectionActivations(
         event.abilityId === activation.abilityId &&
         event.step === d.step &&
         canonicalJson(event.reaction) === canonicalJson(activation.context) &&
-        causes.includes(event.id),
+        causes.includes(event.id) &&
+        parentEventId !== null &&
+        event.causes.includes(parentEventId),
       'deflection activation event',
     );
   }

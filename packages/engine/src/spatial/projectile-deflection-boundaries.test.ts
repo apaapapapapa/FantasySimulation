@@ -213,7 +213,16 @@ it('binds saved deflection activations to actual reaction events and their causa
   const index = output.records.findIndex(
     (r) => r.kind === 'interval' && r.events.some((e) => e.kind === 'projectile-deflect'),
   );
-  for (const kind of ['missing', 'depth', 'wave', 'kind', 'cause', 'omitted'] as const) {
+  for (const kind of [
+    'missing',
+    'depth',
+    'wave',
+    'kind',
+    'cause',
+    'omitted',
+    'reaction-cause-cleared',
+    'reaction-cause-redirected',
+  ] as const) {
     const record = structuredClone(output.records[index]!);
     if (record.kind !== 'interval') throw new Error('Expected deflection interval');
     const event = record.events.find((e) => e.kind === 'projectile-deflect')!;
@@ -225,6 +234,11 @@ it('binds saved deflection activations to actual reaction events and their causa
     if (kind === 'wave') activation.wave += 1;
     if (kind === 'kind') reaction.kind = 'diagnostic';
     if (kind === 'cause') event.causes = [];
+    if (kind === 'reaction-cause-cleared') reaction.causes = [];
+    if (kind === 'reaction-cause-redirected') {
+      expect(event.parentEventId).not.toBe('e.0');
+      reaction.causes = ['e.0'];
+    }
     if (kind === 'omitted') {
       event.projectileDeflection!.activations.pop();
       event.projectileDeflection!.powerBps = 5000;
@@ -293,7 +307,17 @@ it('retains gravity and expiry while disabling homing after the contact hold', a
   ]);
   expect(battleEvents(last.records).filter((e) => e.kind === 'damage')).toHaveLength(0);
   await recordedCheckpoints(input, output);
-  await recordedCheckpoints(expires, last);
+  const { context, checkpoints } = await recordedCheckpoints(expires, last);
+  const earlyRemoval = structuredClone(finalContact);
+  const turn = earlyRemoval.events.find((e) => e.kind === 'projectile-deflect')!;
+  expect(turn.projectileDeflection!.subtimeMicros).toBeLessThan(1000000);
+  earlyRemoval.projectiles.remove[0]!.subtimeMicros = turn.projectileDeflection!.subtimeMicros;
+  earlyRemoval.paths.find((p) => p.entityId === turn.entityId)!.segments.pop();
+  expect(() =>
+    new ReplayState(context, checkpoints[last.records.indexOf(finalContact) - 1]!).apply(
+      earlyRemoval,
+    ),
+  ).toThrow('deflection event transition');
 });
 
 it('keeps the staged projectile hit ledger and participant enumeration deterministic', async () => {
