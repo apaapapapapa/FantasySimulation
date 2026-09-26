@@ -61,7 +61,7 @@ await test('Renovate config has no automatic merge path', () => {
   }
 });
 
-await test('normal proposals need no dashboard approval or weekly window and remain bounded', () => {
+await test('automatic proposals stay bounded without pre-approval or weekly scheduling', () => {
   const config = renovateConfig();
   assert.equal(renovateOutcome(config).status, 'pass');
   assert.equal(config.dependencyDashboard, true);
@@ -95,11 +95,17 @@ await test('package and nested overrides cannot restore PR creation approval', (
     { ...config, minor: { dependencyDashboardApproval: true } },
     {
       ...config,
-      lockFileMaintenance: { ...object(config.lockFileMaintenance), dependencyDashboardApproval: true },
+      lockFileMaintenance: {
+        ...object(config.lockFileMaintenance),
+        dependencyDashboardApproval: true,
+      },
     },
     {
       ...config,
-      vulnerabilityAlerts: { ...object(config.vulnerabilityAlerts), dependencyDashboardApproval: true },
+      vulnerabilityAlerts: {
+        ...object(config.vulnerabilityAlerts),
+        dependencyDashboardApproval: true,
+      },
     },
     {
       ...config,
