@@ -127,7 +127,15 @@ it('rejects forged revival HP, uses, activation and display counts during engine
   const input = await revivalManifest();
   const run = await runBattle(input);
   const { context } = await recordedCheckpoints(input, run);
-  for (const corrupt of ['hp', 'use', 'cause', 'count'] as const) {
+  for (const corrupt of [
+    'hp',
+    'use',
+    'cause',
+    'count',
+    'display',
+    'duplicate',
+    'missing',
+  ] as const) {
     const records = structuredClone(run.records);
     const record = records.find((r) => 'events' in r && r.events.some((e) => e.revival))!;
     if (!('events' in record)) throw Error('Missing revival');
@@ -137,8 +145,31 @@ it('rejects forged revival HP, uses, activation and display counts during engine
     if (corrupt === 'cause') event.parentEventId = event.causes[0] ?? null;
     if (corrupt === 'count' && record.kind === 'interval')
       record.changes.find((a) => a.revivals)!.revivals = 3;
+    if (record.kind === 'interval') {
+      const actor = record.changes.find((a) => a.id === event.actorId)!;
+      if (corrupt === 'display') actor.resources!.hp = 1;
+      if (corrupt === 'duplicate') {
+        const duplicate = structuredClone(event);
+        duplicate.id = `e.${Math.max(...record.events.map((e) => Number(e.id.slice(2)))) + 1}`;
+        duplicate.revival!.use = 2;
+        record.events.splice(record.events.indexOf(event) + 1, 0, duplicate);
+        const firstSequence = record.events[0]!.sequence;
+        record.events.forEach((e, i) => (e.sequence = firstSequence + i));
+        actor.revivals = 2;
+      }
+      if (corrupt === 'missing') {
+        event.kind = 'reaction';
+        delete event.revival;
+        actor.revivals = 0;
+      }
+    }
     const replay = new ReplayState(context);
-    expect(() => records.forEach((r) => replay.apply(r)), corrupt).toThrow();
+    expect
+      .soft(
+        () => records.slice(0, records.indexOf(record) + 1).forEach((r) => replay.apply(r)),
+        corrupt,
+      )
+      .toThrow(/revival/);
   }
 });
 it('preserves deterministic result events trajectory and state under reversed enumeration', async () => {

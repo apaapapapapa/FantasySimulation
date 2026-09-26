@@ -9,10 +9,16 @@ export function validateRevival(
   event: BattleEvent,
   events: readonly BattleEvent[],
 ) {
-  if (!event.revival) return;
+  if (!event.revival && event.ruleId !== 'reaction.activated') return;
   const owner = context.actors.find((a) => a.participant.actorId === event.actorId);
   const ability = owner?.abilities.find((a) => a.id === event.abilityId);
   const response = ability?.definition.reaction?.response;
+  if (event.ruleId === 'reaction.activated' && response?.kind === 'revive')
+    requireReplay(
+      events.filter((e) => e.revival && e.parentEventId === event.id).length === 1,
+      'revival activation count',
+    );
+  if (!event.revival) return;
   const activation = events.find((e) => e.id === event.parentEventId);
   const hp =
     response?.kind === 'revive' && owner ? revivalHp(response.health, owner.character.stats.hp) : 0;
@@ -47,5 +53,7 @@ export function validateRevivalCounts(
         events.every((e, i) => e.revival!.use === (old ?? 0) + i + 1),
       'revival cumulative count',
     );
+    if (events.length)
+      requireReplay(actor.resources.hp === events.at(-1)!.after!.hp, 'revival displayed HP');
   }
 }
