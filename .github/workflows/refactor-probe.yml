@@ -1,4 +1,4 @@
-name: Refactor pinned runtime
+name: Refactor pinned package manager
 on:
   push:
     branches: [refactor/verification-probe]
@@ -13,26 +13,23 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Export actual Node binary without environment or credentials
+      - name: Export package payload only
         run: |
+          mkdir -p .generated/pinned-pnpm
+          npm pack pnpm@11.27.1 --pack-destination .generated/pinned-pnpm --ignore-scripts
           node --input-type=module <<'NODE'
-          import {copyFileSync,chmodSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
+          import {readFileSync,writeFileSync} from 'node:fs';
           import {createHash} from 'node:crypto';
-          if(process.versions.node!=='24.19.0') throw Error('Unexpected pinned Node');
-          mkdirSync('.generated/pinned-node',{recursive:true});
-          copyFileSync(process.execPath,'.generated/pinned-node/node');
-          chmodSync('.generated/pinned-node/node',0o755);
-          writeFileSync('.generated/pinned-node/provenance.json',JSON.stringify({
-            version:process.version,probeSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,
-            sha256:createHash('sha256').update(readFileSync(process.execPath)).digest('hex'),
-            purpose:'Pinned runtime transport only; no verification approval'
+          writeFileSync('.generated/pinned-pnpm/provenance.json',JSON.stringify({
+            version:'11.27.1',probeSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,
+            sha256:createHash('sha256').update(readFileSync('.generated/pinned-pnpm/pnpm-11.27.1.tgz')).digest('hex'),
+            purpose:'Public pinned package transport only; no configuration, credentials or verification approval'
           },null,2));
           NODE
-          tar -czf .generated/refactor-node.tgz -C .generated/pinned-node .
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: refactor-pinned-node
-          path: .generated/refactor-node.tgz
+          name: refactor-pinned-pnpm
+          path: .generated/pinned-pnpm/
           if-no-files-found: error
           compression-level: 0
           retention-days: 1
