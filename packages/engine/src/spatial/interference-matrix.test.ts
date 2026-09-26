@@ -1,3 +1,4 @@
+import phasing from '../../fixtures/spatial/phasing-pairs.json' with { type: 'json' };
 import { expect, it } from 'vite-plus/test';
 import {
   interferenceTable,
@@ -12,6 +13,8 @@ import baseline from '../../fixtures/spatial/interference-baseline.json' with { 
 import coverage from '../../fixtures/spatial/interference-coverage.json' with { type: 'json' };
 import corpus from '../../fixtures/spatial/corpus.json' with { type: 'json' };
 import recovery from '../../fixtures/spatial/recovery-pairs.json' with { type: 'json' };
+import objects from '../../fixtures/spatial/spatial-object-pairs.json' with { type: 'json' };
+import teleport from '../../fixtures/spatial/teleport-pairs.json' with { type: 'json' };
 import {
   LEGACY_INTERFERENCE_MECHANICS,
   interferencePairManifest,
@@ -30,9 +33,15 @@ function validateCoverage(input: typeof coverage) {
     if (
       typeof id !== 'string' ||
       tests[id]?.file !==
-        (kind === 'recovery'
-          ? 'packages/engine/src/spatial/recovery-interference.test.ts'
-          : 'packages/engine/src/spatial/interference-matrix.test.ts')
+        (kind === 'phasing'
+          ? 'packages/engine/src/spatial/phasing-interference.test.ts'
+          : kind === 'objects'
+            ? 'packages/engine/src/spatial/spatial-object-interference.test.ts'
+            : kind === 'teleport'
+              ? 'packages/engine/src/spatial/teleport-interference.test.ts'
+              : kind === 'recovery'
+                ? 'packages/engine/src/spatial/recovery-interference.test.ts'
+                : 'packages/engine/src/spatial/interference-matrix.test.ts')
     )
       throw new Error(`Missing executed ${kind} corpus binding`);
   }
@@ -48,6 +57,9 @@ function validateCoverage(input: typeof coverage) {
     ...baseline.cases.map((c) => c.id),
     ...deflectionPairs.map(([left, right]) => `${left}/${right}`),
     ...recovery.cases.map((c) => c.id),
+    ...teleport.cases.map((c) => c.id),
+    ...objects.cases.map((c) => c.id),
+    ...phasing.cases.map((c) => c.id),
     ...STATUS_CONFLICT_RULES,
     ...interferenceTable.mechanics.filter((m) => !m.implemented).map((m) => `reject.${m.id}`),
   ]);
@@ -117,7 +129,7 @@ it('preserves all 484 pre-P6 ordered-pair outcomes and event trajectory state ph
       expect(fixture, `${left}/${right}`).toBeDefined();
       const manifest = await interferencePairManifest(left, right);
       // Compare the immutable pre-P6 input under its original rules label without
-      // executing that old ruleset. Only the rules label/name/version differs in v1.21.
+      // executing that old ruleset. Only the rules label/name/version differs in v1.22.
       const old = manifest.revisions.find((r) => r.kind === 'ruleset')!;
       if (old.kind !== 'ruleset') throw new Error('Missing fixture rules');
       const historical = {
@@ -166,7 +178,18 @@ it('rejects every unimplemented or reserved matrix mechanic even with experiment
 });
 
 const deflectionPairs = [
-  ...([...LEGACY_INTERFERENCE_MECHANICS, 'attribute-absorption', 'drain'] as const).flatMap(
+  ...(
+    [
+      ...LEGACY_INTERFERENCE_MECHANICS,
+      'attribute-absorption',
+      'drain',
+      'teleport',
+      'barrier',
+      'area',
+      'beam',
+      'phasing',
+    ] as const
+  ).flatMap(
     (other) =>
       [
         [other, 'projectile-deflection'],
@@ -184,7 +207,17 @@ it('executes every standard ordered deflection pair with explicit contact and ow
     const events = result.records.flatMap((r) => ('events' in r ? r.events : []));
     const deflections = events.filter((e) => e.kind === 'projectile-deflect');
     const other = left === 'projectile-deflection' ? right : left;
-    const expected = ['contact', 'motion', 'stages', 'silence', 'reveal'].includes(other)
+    const expected = [
+      'contact',
+      'motion',
+      'stages',
+      'silence',
+      'reveal',
+      'teleport',
+      'barrier',
+      'area',
+      'beam',
+    ].includes(other)
       ? 0
       : other === 'projectile-deflection'
         ? 2

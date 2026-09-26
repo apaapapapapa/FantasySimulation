@@ -27,5 +27,45 @@
     "contents": "302 records in 6 chunks/checkpoints: #61 stamina, walk/run locomotion, two-stage return cut, dash stage motion, radial blade sweeps and active forced motion; left win at step 300",
     "bytes": "Chunk/checkpoint .gz files are the writer's bytes; manifest.json is the same JSON value formatted by vp fmt.",
     "policy": "Fixed #82 display input for local-file loading and #61 rendering. Never regenerate to make a reader pass; regeneration needs separate review."
+  },
+  "p6-spatial-teleport": {
+    "implementationDigest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+    "node": "24.19.0",
+    "writer": "apps/api/src/replay/replay-writer.ts ReplayWriter (display-ndjson-gzip-v1)",
+    "battle": "teleport test-support manifest -> prepareBattle -> runPreparedBattle -> append all records -> finish",
+    "contents": "P6 spatial display fixture; 20 steps",
+    "policy": "New fixed saved input for reverse/loop player tests. Existing fixtures preserved. Never regenerate to make a reader pass."
+  },
+  "p6-spatial-barrier": {
+    "implementationDigest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+    "node": "24.19.0",
+    "writer": "apps/api/src/replay/replay-writer.ts ReplayWriter (display-ndjson-gzip-v1)",
+    "battle": "barrier test-support manifest -> prepareBattle -> runPreparedBattle -> append all records -> finish",
+    "contents": "P6 spatial display fixture; 20 steps",
+    "policy": "New fixed saved input for reverse/loop player tests. Existing fixtures preserved. Never regenerate to make a reader pass."
+  },
+  "p6-spatial-area": {
+    "implementationDigest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+    "node": "24.19.0",
+    "writer": "apps/api/src/replay/replay-writer.ts ReplayWriter (display-ndjson-gzip-v1)",
+    "battle": "area test-support manifest -> prepareBattle -> runPreparedBattle -> append all records -> finish",
+    "contents": "P6 spatial display fixture; 20 steps",
+    "policy": "New fixed saved input for reverse/loop player tests. Existing fixtures preserved. Never regenerate to make a reader pass."
+  },
+  "p6-spatial-beam": {
+    "implementationDigest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+    "node": "24.19.0",
+    "writer": "apps/api/src/replay/replay-writer.ts ReplayWriter (display-ndjson-gzip-v1)",
+    "battle": "beam test-support manifest -> prepareBattle -> runPreparedBattle -> append all records -> finish",
+    "contents": "P6 spatial display fixture; 20 steps",
+    "policy": "New fixed saved input for reverse/loop player tests. Existing fixtures preserved. Never regenerate to make a reader pass."
+  },
+  "p6-spatial-phasing": {
+    "implementationDigest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+    "node": "24.19.0",
+    "writer": "apps/api/src/replay/replay-writer.ts ReplayWriter (display-ndjson-gzip-v1)",
+    "battle": "phasing test-support manifest -> prepareBattle -> runPreparedBattle -> append all records -> finish",
+    "contents": "Body phase expiration at 8; exit limit truncation at 58 with 50 committed extended intervals",
+    "policy": "New fixed saved input for reverse/loop player tests. Existing fixtures preserved. Never regenerate to make a reader pass."
   }
 }

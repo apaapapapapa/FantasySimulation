@@ -13,7 +13,7 @@ export const bodyCapsule = (body: Definition<'character'>['body']): Capsule => (
   radius: body.radiusMm / 1000,
   halfHeight: (body.heightMm / 2 - body.radiusMm) / 1000,
 });
-function rotation(yaw: number, slope: number) {
+export function rotation(yaw: number, slope: number) {
   const sy = sinDegrees(yaw / 2000),
     cy = cosDegrees(yaw / 2000),
     sz = sinDegrees(slope / 2000),
@@ -27,6 +27,7 @@ export function terrainObstacles(scenario: DeepReadonly<Definition<'scenario'>>)
     obstacle.kind === 'pillar'
       ? {
           id: obstacle.id,
+          ...(obstacle.material ? { material: obstacle.material } : {}),
           kind: 'pillar',
           position: metres(obstacle.center),
           halfExtents: {
@@ -38,6 +39,7 @@ export function terrainObstacles(scenario: DeepReadonly<Definition<'scenario'>>)
         }
       : {
           id: obstacle.id,
+          ...(obstacle.material ? { material: obstacle.material } : {}),
           position: metres(obstacle.center),
           halfExtents: metres(obstacle.halfExtents),
           rotation: rotation(obstacle.yawMilliDegrees, obstacle.slopeMilliDegrees),
@@ -57,6 +59,7 @@ export function terrainObstacles(scenario: DeepReadonly<Definition<'scenario'>>)
     for (const sign of [-1, 1])
       obstacles.push({
         id: `boundary.${axis}.${sign === -1 ? 'min' : 'max'}`,
+        arenaBoundary: true,
         position: { ...center, [axis]: (sign === -1 ? min[axis] : max[axis]) + sign },
         halfExtents: { ...extents, [axis]: 1 },
         blocks: { movement: true, vision: true, attack: true },

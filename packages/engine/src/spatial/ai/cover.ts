@@ -37,7 +37,7 @@ export function coverOptions(
   if (view.rules.cover === 'observed-threat-v1' && pressure === 1) return [];
   const candidates = [];
   const obstacles = terrain.obstacles
-    .filter((o) => !o.id.startsWith('boundary.'))
+    .filter((o) => !o.arenaBoundary)
     .sort(
       (a, b) =>
         length(sub(a.position, view.self.position)) - length(sub(b.position, view.self.position)) ||

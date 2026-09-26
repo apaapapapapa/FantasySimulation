@@ -1,0 +1,534 @@
+[
+  {
+    "kind": "ability",
+    "id": "spatial-barrier-v1",
+    "revision": 1,
+    "definition": {
+      "name": "境界の結界術師",
+      "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 6,
+        "uses": 2
+      },
+      "castSteps": 2,
+      "recoverySteps": 12,
+      "cooldownSteps": 150,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [],
+      "barrier": {
+        "placement": {
+          "anchor": "self",
+          "direction": "front",
+          "distanceMm": 1200,
+          "maxDistanceMm": 12000
+        },
+        "shape": {
+          "kind": "sphere",
+          "radiusMm": 700
+        },
+        "durationSteps": 150,
+        "attachment": "fixed",
+        "durability": 45,
+        "blocks": {
+          "movement": "enemy",
+          "vision": "none",
+          "attack": "enemy"
+        }
+      },
+      "stages": [
+        {
+          "id": "emit",
+          "offsetSteps": 0,
+          "durationSteps": 1,
+          "attack": {
+            "kind": "direct"
+          },
+          "effects": [],
+          "hit": {
+            "group": "shared",
+            "maxHits": 4,
+            "minIntervalSteps": 1,
+            "requireSeparation": false
+          },
+          "barrier": {
+            "placement": {
+              "anchor": "self",
+              "direction": "front",
+              "distanceMm": 1200,
+              "maxDistanceMm": 12000
+            },
+            "shape": {
+              "kind": "sphere",
+              "radiusMm": 700
+            },
+            "durationSteps": 150,
+            "attachment": "fixed",
+            "durability": 45,
+            "blocks": {
+              "movement": "enemy",
+              "vision": "none",
+              "attack": "enemy"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-barrier-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "境界の結界術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-barrier-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "character",
+    "id": "barrier-mage-v1",
+    "revision": 1,
+    "definition": {
+      "name": "境界の結界術師",
+      "originalText": "P6-07用の新規定義。既存の配布IDと内容は保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:spatial-barrier-v1:1"
+        },
+        {
+          "$ref": "ability:drain-ember-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:spatial-barrier-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spatial-area-v1",
+    "revision": 1,
+    "definition": {
+      "name": "残響の陣術師",
+      "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 6,
+        "uses": 2
+      },
+      "castSteps": 2,
+      "recoverySteps": 12,
+      "cooldownSteps": 150,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "area",
+        "placement": {
+          "anchor": "observed-enemy",
+          "direction": "front",
+          "distanceMm": 0,
+          "maxDistanceMm": 12000
+        },
+        "shape": {
+          "kind": "sphere",
+          "radiusMm": 1800
+        },
+        "durationSteps": 150,
+        "armDelaySteps": 5,
+        "periodSteps": 25
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 0,
+          "element": "arcane",
+          "defense": "magic"
+        }
+      ],
+      "stages": [
+        {
+          "id": "emit",
+          "offsetSteps": 0,
+          "durationSteps": 1,
+          "attack": {
+            "kind": "area",
+            "placement": {
+              "anchor": "observed-enemy",
+              "direction": "front",
+              "distanceMm": 0,
+              "maxDistanceMm": 12000
+            },
+            "shape": {
+              "kind": "sphere",
+              "radiusMm": 1800
+            },
+            "durationSteps": 150,
+            "armDelaySteps": 5,
+            "periodSteps": 25
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 12,
+              "attackScaleBps": 0,
+              "element": "arcane",
+              "defense": "magic"
+            }
+          ],
+          "hit": {
+            "group": "shared",
+            "maxHits": 4,
+            "minIntervalSteps": 1,
+            "requireSeparation": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-area-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "残響の陣術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-area-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "character",
+    "id": "area-mage-v1",
+    "revision": 1,
+    "definition": {
+      "name": "残響の陣術師",
+      "originalText": "P6-07用の新規定義。既存の配布IDと内容は保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:spatial-area-v1:1"
+        },
+        {
+          "$ref": "ability:drain-ember-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:spatial-area-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spatial-beam-v1",
+    "revision": 1,
+    "definition": {
+      "name": "光条の照射術師",
+      "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 6,
+        "uses": 2
+      },
+      "castSteps": 2,
+      "recoverySteps": 12,
+      "cooldownSteps": 150,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "beam",
+        "radiusMm": 80
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 0,
+          "element": "arcane",
+          "defense": "magic"
+        }
+      ],
+      "stages": [
+        {
+          "id": "emit",
+          "offsetSteps": 0,
+          "durationSteps": 25,
+          "attack": {
+            "kind": "beam",
+            "radiusMm": 80
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 12,
+              "attackScaleBps": 0,
+              "element": "arcane",
+              "defense": "magic"
+            }
+          ],
+          "hit": {
+            "group": "shared",
+            "maxHits": 4,
+            "minIntervalSteps": 6,
+            "requireSeparation": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-beam-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "光条の照射術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-beam-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "character",
+    "id": "beam-mage-v1",
+    "revision": 1,
+    "definition": {
+      "name": "光条の照射術師",
+      "originalText": "P6-07用の新規定義。既存の配布IDと内容は保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:spatial-beam-v1:1"
+        },
+        {
+          "$ref": "ability:drain-ember-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:spatial-beam-v1-policy:1"
+      }
+    }
+  }
+]

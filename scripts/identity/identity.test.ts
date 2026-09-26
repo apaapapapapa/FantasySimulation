@@ -21,12 +21,12 @@ it('follows nested runtime exports, side effects, JSON, literal dynamic imports 
   expect(identity.payload.sources.map(([path]) => path)).toEqual([
     '.node-version',
     `${DOMAIN}/src/spatial/execution.ts`,
+    `${DOMAIN}/src/spatial/sine-table.json`,
     `${SPATIAL}/boot.ts`,
     ENTRY,
     `${SPATIAL}/lazy.ts`,
     `${SPATIAL}/nested.ts`,
     `${SPATIAL}/profile.json`,
-    `${SPATIAL}/sine-table.json`,
   ]);
   expect(identity.payload.dependencies.packages.map((pkg) => pkg.id)).toEqual([
     '@dimforge/rapier3d-compat@0.20.0',
@@ -36,7 +36,7 @@ it('follows nested runtime exports, side effects, JSON, literal dynamic imports 
 it.each([
   [`${SPATIAL}/boot.ts`, 'const boot = 2;\n'],
   [`${SPATIAL}/profile.json`, '{"step":30}\n'],
-  [`${SPATIAL}/sine-table.json`, '[0,2,0,-2]\n'],
+  [`${DOMAIN}/src/spatial/sine-table.json`, '[0,2,0,-2]\n'],
   [`${RAPIER}/dist/rapier_wasm3d_bg.wasm`, 'different wasm'],
   [`${RAPIER}/dist/rapier.mjs`, 'export const binding = 2;\n'],
 ])('changes identity when execution input %s changes', (path, content) => {

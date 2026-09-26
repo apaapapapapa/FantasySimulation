@@ -237,7 +237,7 @@ export function releaseStage(
     interruptStage(actor, step, journal, 'launch', 'leap-requires-supported-voluntary-motion');
     return null;
   }
-  if (stage.selfMotion && movement.dodge && actor.body.intent.canMove) {
+  if ((stage.selfMotion || stage.relocation) && movement.dodge && actor.body.intent.canMove) {
     rejectPair(actor, movement.previous);
     movement = { ...movement, dodge: false };
     journal.emit({
@@ -314,7 +314,13 @@ export function releaseStage(
   const ability: AbilityRevision | null = stage.attack
     ? {
         ...action.ability,
-        definition: { ...definition, attack: stage.attack, effects: stage.effects },
+        definition: {
+          ...definition,
+          attack: stage.attack,
+          effects: stage.effects,
+          relocation: stage.relocation,
+          barrier: stage.barrier,
+        },
       }
     : null;
   return {

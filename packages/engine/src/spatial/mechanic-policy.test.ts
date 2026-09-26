@@ -146,6 +146,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
     [
       'aimErrorMilliDegrees',
       'attack',
+      'barrier',
       'castSteps',
       'categories',
       'condition',
@@ -157,6 +158,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
       'rangeMm',
       'reaction',
       'recoverySteps',
+      'relocation',
       'stages',
       'target',
       'trigger',
@@ -175,6 +177,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
       'name',
       'originalText',
       'periodic',
+      'phasing',
       'reactions',
       'stackKey',
       'stacking',
@@ -184,11 +187,13 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
   expect(Object.keys(StageSchema.shape).sort()).toEqual(
     [
       'attack',
+      'barrier',
       'durationSteps',
       'effects',
       'hit',
       'id',
       'selfMotion',
+      'relocation',
       'offsetSteps',
       'cost',
       'startCondition',

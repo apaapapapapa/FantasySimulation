@@ -23,7 +23,7 @@ describe('observed AI delivery through persisted Workers', () => {
           'cover-surveyed-v1',
           700,
           42,
-          'standard-tactics-deflection-v1',
+          'standard-tactics-spatial-v1',
         );
         await store.loadPinnedRevisions(input.revisions);
         const app = createApp(store, false, runtime);

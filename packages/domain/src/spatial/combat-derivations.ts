@@ -7,6 +7,8 @@ export const DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND = 100_000;
 
 type Ability = DeepReadonly<Definition<'ability'>>;
 const activeSteps: AttackHandlers<undefined, number> = {
+  area: () => 1,
+  beam: () => 1,
   direct: () => 1,
   arc: () => 1,
   radial: () => 1,

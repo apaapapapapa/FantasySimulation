@@ -19,6 +19,7 @@ export type ReplayFrame = {
 };
 const recordStep = (r: StreamRecord) => (r.kind === 'interval' ? r.toStep : r.step);
 const orderedState = (state: DisplayState): DisplayState => ({
+  ...(state.objects ? { objects: [...state.objects].sort((a, b) => compareIds(a.id, b.id)) } : {}),
   actors: [...state.actors].sort((a, b) => compareIds(a.id, b.id)),
   projectiles: [...state.projectiles].sort((a, b) => compareIds(a.id, b.id)),
 });
@@ -52,7 +53,15 @@ function advance(before: ReplayCheckpoint, record: StreamRecord): ReplayCheckpoi
           ownerId: updates.get(p.id)?.ownerId ?? p.ownerId,
         }));
     }
-    state = { actors, projectiles };
+    let objects = state!.objects;
+    if (record.objects) {
+      const updates = new Map(record.objects.update.map((o) => [o.id, o])),
+        removed = new Set(record.objects.remove.map((o) => o.id));
+      objects = [...(objects ?? []), ...record.objects.spawn]
+        .filter((o) => !removed.has(o.id))
+        .map((o) => updates.get(o.id) ?? o);
+    }
+    state = { actors, projectiles, ...(objects ? { objects } : {}) };
   }
   return {
     ...before,

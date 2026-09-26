@@ -1,3 +1,4 @@
+import { objectAbility } from './object-manifest.ts';
 import type { Definition, Effect, Manifest } from '@fantasy/domain/spatial';
 import { combatManifest } from './fixtures.ts';
 import { initialStatus, withInitialStatus } from './ai.ts';
@@ -34,6 +35,13 @@ export type RecoveryInterferenceMechanic =
   | LegacyInterferenceMechanic
   | 'attribute-absorption'
   | 'drain';
+export type SpatialInterferenceMechanic =
+  | InterferenceMechanic
+  | 'teleport'
+  | 'barrier'
+  | 'area'
+  | 'beam'
+  | 'phasing';
 export type InterferenceMechanic = RecoveryInterferenceMechanic | 'projectile-deflection';
 const pairProjectile: Definition<'ability'>['attack'] = {
   kind: 'projectile',
@@ -57,8 +65,8 @@ const damage = (amount: number): Effect => ({
 
 /** Real two-sided contacts plus startup cohorts; no expected values or table lookup. */
 export async function interferencePairManifest(
-  left: InterferenceMechanic,
-  right: InterferenceMechanic,
+  left: SpatialInterferenceMechanic,
+  right: SpatialInterferenceMechanic,
 ): Promise<Manifest> {
   const input = await combatManifest(10, {
     ability: {
@@ -96,6 +104,42 @@ export async function interferencePairManifest(
     const status = initialStatus({ categories: ['debuff'], durationSteps: 20 });
     let reaction: Partial<Definition<'ability'>> | undefined;
     switch (mechanic) {
+      case 'phasing':
+        status.phasing = { materials: ['generic', 'stone', 'energy'], floor: false };
+        action.attack = {
+          kind: 'hitscan',
+          radiusMm: 0,
+          phasing: { materials: ['generic', 'stone', 'energy'], floor: false },
+        };
+        break;
+      case 'barrier':
+      case 'area':
+      case 'beam': {
+        Object.assign(action, objectAbility(mechanic));
+        action.categories = ['magic'];
+        action.costs = { hp: 0, mp: 0, uses: 1 };
+        if (action.barrier) {
+          action.barrier.placement.direction = 'right';
+          action.stages![0]!.barrier = structuredClone(action.barrier);
+        }
+        if (action.attack.kind === 'area') {
+          action.attack.placement.distanceMm = 1500;
+          action.attack.armDelaySteps = 0;
+          action.stages![0]!.attack = structuredClone(action.attack);
+        }
+        break;
+      }
+      case 'teleport':
+        action.target = 'self';
+        action.attack = { kind: 'direct' };
+        action.effects = [];
+        action.relocation = {
+          anchor: 'self',
+          direction: 'right',
+          distanceMm: 1000,
+          maxDistanceMm: 1000,
+        };
+        break;
       case 'attribute-absorption':
         status.adjustments = [
           { target: 'absorption', operation: 'add', element: 'fire', amount: 10000 },
@@ -171,7 +215,12 @@ export async function interferencePairManifest(
         break;
       case 'projectile-deflection':
       case 'projectile':
-        action.attack = structuredClone(pairProjectile);
+        action.attack = {
+          ...structuredClone(pairProjectile),
+          ...('phasing' in action.attack && action.attack.phasing
+            ? { phasing: action.attack.phasing }
+            : {}),
+        };
         if (mechanic === 'projectile-deflection')
           reaction = {
             trigger: 'before-hit',
@@ -268,10 +317,15 @@ export async function interferencePairManifest(
     }
     if (
       [left, right].includes('projectile-deflection') &&
-      !['contact', 'reveal'].includes(mechanic) &&
+      !['contact', 'reveal', 'teleport', 'barrier'].includes(mechanic) &&
       !action.stages
     )
-      action.attack = structuredClone(pairProjectile);
+      action.attack = {
+        ...structuredClone(pairProjectile),
+        ...('phasing' in action.attack && action.attack.phasing
+          ? { phasing: action.attack.phasing }
+          : {}),
+      };
     const primary = await sealRevision('ability', `pair-action-${index}`, 1, action);
     const abilities = [primary];
     if (reaction)

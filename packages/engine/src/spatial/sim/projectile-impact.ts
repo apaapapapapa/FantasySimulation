@@ -1,3 +1,4 @@
+import { attackWorld } from '../rules/phasing.ts';
 import type { MotionState, PreparedBattle } from '../state.ts';
 import type { Budget, ProjectileChanges } from '@fantasy/domain/spatial/execution';
 import { contactObservation, type PendingEffect } from './combat-effects.ts';
@@ -34,6 +35,11 @@ export type ProjectileImpactContext = {
   candidate: () => void;
   ledger: HitLedger;
   changes: ProjectileChanges;
+  objectContact?: (
+    projectile: ProjectileState,
+    contact: ProjectileImpact['contact'],
+    cause: string,
+  ) => void;
 };
 /** Preview and commitment share geometry and payloads; only commitment writes ledger/events. */
 export function impactEffects(
@@ -49,17 +55,19 @@ export function impactEffects(
   if (shape.kind !== 'projectile') throw new Error('Invalid projectile impact');
   const subtimeMicros = Math.round(contact.time * 1_000_000);
   const effects: PendingEffect[] = [];
+  if (emit) context.objectContact?.(projectile, contact, impact.id);
   for (const target of moved) {
     const targetId = target.state.actor.participant.actorId;
     let scaleBps = 0;
     if (shape.explosionRadiusMm > 0) {
       candidate();
       scaleBps = explosionCoverage(
-        world,
+        attackWorld(world, projectile),
         contact.center,
         shape.explosionRadiusMm / 1000,
         target.state,
         at(target.trace, contact.time),
+        contact.obstacleIds,
       );
     } else if (contact.kind === 'body' && targetId === enemy.state.actor.participant.actorId)
       scaleBps = 10000;

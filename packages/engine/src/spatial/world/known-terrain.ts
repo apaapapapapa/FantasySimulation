@@ -5,7 +5,10 @@ import { SpatialWorld } from './physics.ts';
 import { metres } from './terrain.ts';
 
 /** A small sensed surface patch is a fallible local map, never a copy of an unseen collider. */
-export function knownTerrainWorld(surfaces: readonly DeepReadonly<ObservedSurface>[]) {
+export function knownTerrainWorld(
+  surfaces: readonly DeepReadonly<ObservedSurface>[],
+  surveyed: readonly Obstacle[] = [],
+) {
   const obstacles: Obstacle[] = surfaces.map((sample, index) => {
     const normal = unit(sample.normalBps),
       upDot = normal.y;
@@ -22,11 +25,12 @@ export function knownTerrainWorld(surfaces: readonly DeepReadonly<ObservedSurfac
     }
     return {
       id: `observed.${index}`,
+      ...(sample.material ? { material: sample.material } : {}),
       position: sub(metres(sample.pointMm), mul(normal, 0.003)),
       halfExtents: { x: 0.35, y: 0.003, z: 0.35 },
       rotation: { ...xyz, w },
       blocks: { movement: true, vision: true, attack: true },
     };
   });
-  return new SpatialWorld(obstacles);
+  return new SpatialWorld([...surveyed, ...obstacles]);
 }

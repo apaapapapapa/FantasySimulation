@@ -27,10 +27,10 @@
     },
     {
       "id": "area",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Boundary-owned objects share geometry, source snapshots and the contact ledger under ADR 0017.",
       "generation": "p6"
     },
     {
@@ -43,18 +43,18 @@
     },
     {
       "id": "barrier",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Boundary-owned objects share geometry, source snapshots and the contact ledger under ADR 0017.",
       "generation": "p6"
     },
     {
       "id": "beam",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Boundary-owned objects share geometry, source snapshots and the contact ledger under ADR 0017.",
       "generation": "p6"
     },
     {
@@ -211,10 +211,10 @@
     },
     {
       "id": "phasing",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Explicit material/floor masks; body and frozen attack queries stay separate, with a bounded solid-clearance exit.",
       "generation": "p6"
     },
     {
@@ -315,10 +315,10 @@
     },
     {
       "id": "teleport",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Boundary relocation from a release-frozen delivered anchor; full capsule clearance and simultaneous endpoint rejection (ADR 0017).",
       "generation": "p6"
     },
     {
@@ -393,7 +393,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, area; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -415,7 +415,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -426,7 +426,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, beam; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -646,7 +646,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -866,7 +866,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, area; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -888,7 +888,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -899,7 +899,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, beam; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -1119,7 +1119,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -1350,9 +1350,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1373,9 +1374,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1384,9 +1386,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1635,9 +1638,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -1788,8 +1792,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -1834,7 +1839,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -1845,7 +1850,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -1854,9 +1859,10 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1865,9 +1871,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1876,9 +1883,10 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1887,9 +1895,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area, barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1898,9 +1907,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area, beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1911,7 +1921,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -1920,9 +1930,10 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1931,9 +1942,10 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1942,9 +1954,10 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1953,9 +1966,10 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1964,9 +1978,10 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1975,9 +1990,10 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1988,7 +2004,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -1997,9 +2013,10 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2008,9 +2025,10 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2021,7 +2039,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -2030,9 +2048,10 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2043,7 +2062,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -2054,7 +2073,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -2065,7 +2084,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -2074,9 +2093,10 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2085,9 +2105,10 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2096,9 +2117,10 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2107,9 +2129,10 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2118,9 +2141,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area, phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -2131,7 +2155,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -2140,9 +2164,10 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2152,8 +2177,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -2162,9 +2188,10 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2173,9 +2200,10 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2184,9 +2212,10 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2197,7 +2226,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, revival; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -2208,7 +2237,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, seal; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -2217,9 +2246,10 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2228,9 +2258,10 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2239,9 +2270,10 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2250,9 +2282,10 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2261,9 +2294,10 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area, teleport; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2274,7 +2308,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -2285,7 +2319,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -2294,9 +2328,10 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2339,9 +2374,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2362,9 +2398,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2373,9 +2410,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2606,9 +2644,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -2759,8 +2798,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -2805,7 +2845,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -2816,7 +2856,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -2825,9 +2865,10 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2836,9 +2877,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier, area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2847,9 +2889,10 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2858,9 +2901,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2869,9 +2913,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier, beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2882,7 +2927,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -2891,9 +2936,10 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2902,9 +2948,10 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2913,9 +2960,10 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2924,9 +2972,10 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2935,9 +2984,10 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2946,9 +2996,10 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2959,7 +3010,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -2968,9 +3019,10 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2979,9 +3031,10 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2992,7 +3045,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -3001,9 +3054,10 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3014,7 +3068,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -3025,7 +3079,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -3036,7 +3090,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -3045,9 +3099,10 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3056,9 +3111,10 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3067,9 +3123,10 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3078,9 +3135,10 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3089,9 +3147,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier, phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -3102,7 +3161,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -3111,9 +3170,10 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3123,8 +3183,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -3133,9 +3194,10 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3144,9 +3206,10 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3155,9 +3218,10 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3168,7 +3232,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, revival; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -3179,7 +3243,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, seal; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -3188,9 +3252,10 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3199,9 +3264,10 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3210,9 +3276,10 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3221,9 +3288,10 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3232,9 +3300,10 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier, teleport; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3245,7 +3314,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -3256,7 +3325,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -3265,9 +3334,10 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3278,7 +3348,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -3289,7 +3359,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -3298,9 +3368,10 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3309,9 +3380,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam, area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3320,9 +3392,10 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3331,9 +3404,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam, barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3342,9 +3416,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3355,7 +3430,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -3364,9 +3439,10 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3375,9 +3451,10 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3386,9 +3463,10 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3397,9 +3475,10 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3408,9 +3487,10 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3419,9 +3499,10 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3432,7 +3513,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -3441,9 +3522,10 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3452,9 +3534,10 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3465,7 +3548,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -3474,9 +3557,10 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3487,7 +3571,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -3498,7 +3582,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -3509,7 +3593,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -3518,9 +3602,10 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3529,9 +3614,10 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3540,9 +3626,10 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3551,9 +3638,10 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3562,9 +3650,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam, phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -3575,7 +3664,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -3584,9 +3673,10 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3596,8 +3686,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -3606,9 +3697,10 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3617,9 +3709,10 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3628,9 +3721,10 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3641,7 +3735,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, revival; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -3652,7 +3746,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, seal; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -3661,9 +3755,10 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3672,9 +3767,10 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3683,9 +3779,10 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3694,9 +3791,10 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3705,9 +3803,10 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam, teleport; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3718,7 +3817,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -3729,7 +3828,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -3738,9 +3837,10 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3784,7 +3884,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, area; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -3806,7 +3906,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -3817,7 +3917,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, beam; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -4037,7 +4137,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -4256,9 +4356,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4279,9 +4380,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4290,9 +4392,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4523,9 +4626,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -4676,8 +4780,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -4754,9 +4859,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4777,9 +4883,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4788,9 +4895,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5021,9 +5129,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -5174,8 +5283,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -5252,9 +5362,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5275,9 +5386,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5286,9 +5398,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5519,9 +5632,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -5672,8 +5786,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -5750,9 +5865,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5773,9 +5889,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5784,9 +5901,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6017,9 +6135,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -6170,8 +6289,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -6248,9 +6368,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6271,9 +6392,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6282,9 +6404,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6515,9 +6638,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -6668,8 +6792,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -6758,9 +6883,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6781,9 +6907,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6792,9 +6919,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -7049,9 +7177,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -7202,8 +7331,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -7281,7 +7411,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, area; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -7303,7 +7433,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -7314,7 +7444,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, beam; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -7534,7 +7664,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -7753,9 +7883,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -7776,9 +7907,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -7787,9 +7919,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -8020,9 +8153,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -8173,8 +8307,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -8251,9 +8386,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -8274,9 +8410,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -8285,9 +8422,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -8518,9 +8656,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -8671,8 +8810,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -8750,7 +8890,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, area; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -8772,7 +8912,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -8783,7 +8923,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, beam; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -9003,7 +9143,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -9222,9 +9362,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -9245,9 +9386,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -9256,9 +9398,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -9489,9 +9632,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -9642,8 +9786,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -9721,7 +9866,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, area; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -9743,7 +9888,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -9754,7 +9899,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, beam; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -9974,7 +10119,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -10194,7 +10339,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, area; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -10216,7 +10361,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -10227,7 +10372,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, beam; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -10447,7 +10592,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -10667,7 +10812,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, area; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -10689,7 +10834,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -10700,7 +10845,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, beam; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -10920,7 +11065,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -11139,9 +11284,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11162,9 +11308,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11173,9 +11320,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11406,9 +11554,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -11559,8 +11708,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -11637,9 +11787,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11660,9 +11811,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11671,9 +11823,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11904,9 +12057,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -12057,8 +12211,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -12135,9 +12290,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12158,9 +12314,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12169,9 +12326,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12402,9 +12560,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -12555,8 +12714,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -12639,9 +12799,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12662,9 +12823,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12673,9 +12835,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12912,9 +13075,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13065,8 +13229,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -13111,7 +13276,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -13122,7 +13287,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -13131,9 +13296,10 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13142,9 +13308,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing, area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13153,9 +13320,10 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13164,9 +13332,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing, barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13175,9 +13344,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing, beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13188,7 +13358,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -13197,9 +13367,10 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13208,9 +13379,10 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13219,9 +13391,10 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13230,9 +13403,10 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13241,9 +13415,10 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13252,9 +13427,10 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13265,7 +13441,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -13274,9 +13450,10 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13285,9 +13462,10 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13298,7 +13476,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -13307,9 +13485,10 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13320,7 +13499,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -13331,7 +13510,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -13342,7 +13521,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -13351,9 +13530,10 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13362,9 +13542,10 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13373,9 +13554,10 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13384,9 +13566,10 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13395,9 +13578,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13408,7 +13592,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -13417,9 +13601,10 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13429,8 +13614,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -13439,9 +13625,10 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13450,9 +13637,10 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13461,9 +13649,10 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13474,7 +13663,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, revival; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -13485,7 +13674,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, seal; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -13494,9 +13683,10 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13505,9 +13695,10 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13516,9 +13707,10 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13527,9 +13719,10 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13538,9 +13731,10 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing, teleport; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13551,7 +13745,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -13562,7 +13756,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -13571,9 +13765,10 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13617,7 +13812,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, area; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -13639,7 +13834,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -13650,7 +13845,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, beam; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -13870,7 +14065,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -14089,9 +14284,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -14112,9 +14308,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -14123,9 +14320,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -14356,9 +14554,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -14509,8 +14708,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -14588,8 +14788,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -14611,8 +14812,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -14622,8 +14824,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -14855,8 +15058,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -15007,8 +15211,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -15085,9 +15290,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15108,9 +15314,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15119,9 +15326,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15352,9 +15560,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -15505,8 +15714,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -15583,9 +15793,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15606,9 +15817,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15617,9 +15829,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15850,9 +16063,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -16003,8 +16217,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -16081,9 +16296,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -16104,9 +16320,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -16115,9 +16332,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -16348,9 +16566,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -16501,8 +16720,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -16580,7 +16800,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, area; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -16602,7 +16822,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -16613,7 +16833,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, beam; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -16833,7 +17053,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -17053,7 +17273,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, area; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -17075,7 +17295,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -17086,7 +17306,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, beam; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -17306,7 +17526,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -17525,9 +17745,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -17548,9 +17769,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -17559,9 +17781,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -17792,9 +18015,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -17945,8 +18169,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -18023,9 +18248,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18046,9 +18272,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18057,9 +18284,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18290,9 +18518,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -18443,8 +18672,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -18521,9 +18751,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18544,9 +18775,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18555,9 +18787,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18788,9 +19021,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -18941,8 +19175,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19019,9 +19254,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19042,9 +19278,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19053,9 +19290,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19286,9 +19524,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -19439,8 +19678,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19506,8 +19746,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19516,9 +19757,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19528,8 +19770,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19538,9 +19781,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19549,9 +19793,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19572,8 +19817,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19583,8 +19829,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19594,8 +19841,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19605,8 +19853,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19616,8 +19865,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19627,8 +19877,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19649,8 +19900,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19660,8 +19912,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19682,8 +19935,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19726,8 +19980,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19737,8 +19992,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19748,8 +20004,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19759,8 +20016,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19769,9 +20027,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -19792,8 +20051,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19803,8 +20063,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "spatial.deflected-owner",
+          "summary": "Teleport preserves already aimed shots; barriers use current attack ownership before body reactions; areas/beams cannot deflect; explicit launch phasing is retained after deflection."
         }
       ]
     },
@@ -19814,8 +20075,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19825,8 +20087,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19836,8 +20099,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19869,8 +20133,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19880,8 +20145,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19891,8 +20157,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19902,8 +20169,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19913,8 +20181,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19946,8 +20215,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19991,7 +20261,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, area; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20013,7 +20283,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20024,7 +20294,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, beam; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20244,7 +20514,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20464,7 +20734,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, area; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -20486,7 +20756,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -20497,7 +20767,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, beam; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -20717,7 +20987,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -20936,9 +21206,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -20959,9 +21230,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -20970,9 +21242,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -21203,9 +21476,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -21356,8 +21630,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },

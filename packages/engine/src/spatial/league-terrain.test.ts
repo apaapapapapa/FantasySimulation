@@ -28,7 +28,7 @@ it.each(fields.flatMap((scenario) => pairs.map(([left, right]) => ({ scenario, l
       scenario,
       1200,
       42,
-      'standard-tactics-deflection-v1',
+      'standard-tactics-spatial-v1',
     );
     for (const [i, start] of leagueStarts(scenario).entries())
       Object.assign(manifest.participants[i]!, structuredClone(start));

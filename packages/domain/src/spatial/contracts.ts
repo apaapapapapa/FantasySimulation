@@ -1,12 +1,19 @@
 import { z } from 'zod';
 import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
 import { ExperimentalRulesSchema } from './mechanics.ts';
+import {
+  BarrierSchema,
+  AreaAttackSchema,
+  BeamAttackSchema,
+  PhasingSchema,
+  TerrainMaterialSchema,
+} from './spatial-operations.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 export const MAX_BATTLE_STEPS = 6_000;
 export const MAX_FRAME_BYTES = 4_000_000;
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.21' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.22' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -162,7 +169,17 @@ export const ObservedReactionSchema = z.strictObject({
 });
 export type ObservedReaction = z.infer<typeof ObservedReactionSchema>;
 export const ObservedStageSchema = z.strictObject({
-  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'arc', 'radial', 'hold']),
+  shape: z.enum([
+    'direct',
+    'melee',
+    'hitscan',
+    'projectile',
+    'arc',
+    'radial',
+    'area',
+    'beam',
+    'hold',
+  ]),
   state: z.enum(['active', 'waiting', 'interrupted']),
   motion: z.enum(['dash', 'retreat', 'leap', 'forced']).optional(),
 });
@@ -388,6 +405,7 @@ export const StatusReactionSchema = z.strictObject({
 });
 export type StatusReaction = z.infer<typeof StatusReactionSchema>;
 export const StatusSchema = z.strictObject({
+  phasing: PhasingSchema.optional(),
   name: z.string().min(1).max(100),
   originalText: z.string().max(20_000),
   stackKey: IdSchema,
@@ -435,8 +453,11 @@ export const StatusSchema = z.strictObject({
     .max(8),
 });
 export const AttackSchema = z.discriminatedUnion('kind', [
+  AreaAttackSchema,
+  BeamAttackSchema,
   z.strictObject({ kind: z.literal('direct') }),
   z.strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('arc'),
     reachMm: positive(20000),
     bladeRadiusMm: positive(5000),
@@ -449,20 +470,27 @@ export const AttackSchema = z.discriminatedUnion('kind', [
       .refine((n) => n !== 0, 'Nonzero arc sweep'),
   }),
   z.strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('radial'),
     reachMm: positive(20000),
     bladeRadiusMm: positive(5000),
     startAngleMilliDegrees: z.number().int().min(-180000).max(180000),
   }),
   z.strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('melee'),
     reachMm: positive(20_000),
     radiusMm: positive(5_000),
     activeSteps: positive(100),
     maxHitsPerTarget: positive(16),
   }),
-  z.strictObject({ kind: z.literal('hitscan'), radiusMm: uint(1_000) }),
   z.strictObject({
+    kind: z.literal('hitscan'),
+    radiusMm: uint(1_000),
+    phasing: PhasingSchema.optional(),
+  }),
+  z.strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('projectile'),
     speedMmPerSecond: positive(1_000_000),
     radiusMm: positive(5_000),
@@ -480,6 +508,15 @@ export const StageHitSchema = z.strictObject({
   minIntervalSteps: positive(MAX_BATTLE_STEPS),
   requireSeparation: z.boolean(),
 });
+export const RelocationSchema = z
+  .strictObject({
+    anchor: z.enum(['self', 'observed-enemy']),
+    direction: z.enum(['front', 'back', 'left', 'right']),
+    distanceMm: positive(200000),
+    maxDistanceMm: positive(200000),
+  })
+  .refine((r) => r.distanceMm <= r.maxDistanceMm, 'Relocation distance exceeds maximum');
+export type Relocation = z.infer<typeof RelocationSchema>;
 export const StageSchema = z.strictObject({
   id: IdSchema,
   offsetSteps: uint(MAX_BATTLE_STEPS),
@@ -497,6 +534,8 @@ export const StageSchema = z.strictObject({
   interruptWhen: ConditionSchema.optional(),
   interruptOnDamage: z.boolean().optional(),
   hit: StageHitSchema.optional(),
+  relocation: RelocationSchema.optional(),
+  barrier: BarrierSchema.optional(),
   selfMotion: z
     .strictObject({
       kind: z.enum(['dash', 'retreat', 'leap']),
@@ -557,6 +596,8 @@ export const AbilitySchema = z
     attack: AttackSchema,
     effects: z.array(EffectSchema).max(16),
     stages: z.array(StageSchema).min(1).max(16).optional(),
+    relocation: RelocationSchema.optional(),
+    barrier: BarrierSchema.optional(),
   })
   .superRefine((ability, ctx) => {
     const reaction = ability.reaction;
@@ -564,8 +605,17 @@ export const AbilitySchema = z
     const response = reaction?.response;
     if (reactive !== !!reaction)
       ctx.addIssue({ code: 'custom', message: 'Reaction triggers require an explicit response' });
-    if (!ability.effects.length && response?.kind !== 'parry' && response?.kind !== 'deflect')
-      ctx.addIssue({ code: 'custom', message: 'Only parry/deflect may omit payload effects' });
+    if (
+      !ability.effects.length &&
+      response?.kind !== 'parry' &&
+      response?.kind !== 'deflect' &&
+      !ability.relocation &&
+      !ability.barrier
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Only parry, deflect and spatial operations may omit payload effects',
+      });
     if (reaction) {
       if (ability.castSteps !== 0 || ability.stages)
         ctx.addIssue({
@@ -611,6 +661,58 @@ export const AbilitySchema = z
         ctx.addIssue({ code: 'custom', message: 'Before-defeat has no contact filter' });
     }
     const plans = ability.stages ?? [{ attack: ability.attack, effects: ability.effects }];
+    const relocations = ability.stages ?? [ability];
+    for (const plan of relocations) {
+      if (
+        plan.barrier &&
+        (ability.trigger !== 'action' ||
+          ability.target !== 'self' ||
+          plan.attack?.kind !== 'direct' ||
+          plan.effects.length ||
+          plan.relocation)
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Barrier requires an action-only direct self stage without another payload',
+        });
+      if (
+        plan.barrier?.attachment === 'follow' &&
+        (!('durationSteps' in plan) ||
+          plan.durationSteps < 2 ||
+          plan.barrier.durationSteps > plan.durationSteps - 1)
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Following barrier must fit the remaining authored stage window',
+        });
+      if (
+        (plan.attack?.kind === 'area' || plan.attack?.kind === 'beam') &&
+        (!ability.stages || ability.trigger !== 'action' || ability.target !== 'enemy')
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Area and beam require an enemy action with authored stages',
+        });
+      if (plan.barrier && plan.barrier.placement.maxDistanceMm > ability.rangeMm)
+        ctx.addIssue({ code: 'custom', message: 'Barrier placement exceeds ability range' });
+      if (plan.attack?.kind === 'area' && plan.attack.placement.maxDistanceMm > ability.rangeMm)
+        ctx.addIssue({ code: 'custom', message: 'Area placement exceeds ability range' });
+    }
+    if (relocations.some((p) => p.relocation)) {
+      if (
+        ability.trigger !== 'action' ||
+        ability.target !== 'self' ||
+        relocations.filter((p) => p.relocation).length > 1 ||
+        relocations.some(
+          (p) => p.relocation && (p.attack?.kind !== 'direct' || p.effects.length),
+        ) ||
+        ability.stages?.some((s) => s.selfMotion)
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'One direct self relocation, without payload or authored motion, is action-only',
+        });
+    }
     if (!ability.stages && (ability.attack.kind === 'arc' || ability.attack.kind === 'radial'))
       ctx.addIssue({
         code: 'custom',
@@ -634,6 +736,8 @@ export const AbilitySchema = z
         ability.trigger !== 'action' ||
         first.offsetSteps !== 0 ||
         canonicalJson(first.attack) !== canonicalJson(ability.attack) ||
+        canonicalJson(first.relocation ?? null) !== canonicalJson(ability.relocation ?? null) ||
+        canonicalJson(first.barrier ?? null) !== canonicalJson(ability.barrier ?? null) ||
         canonicalJson(first.effects) !== canonicalJson(ability.effects)
       )
         ctx.addIssue({
@@ -653,7 +757,9 @@ export const AbilitySchema = z
             message: 'Stage windows must be ordered, disjoint and end within 6000 steps',
           });
         if (
-          (stage.attack === null) !== (stage.effects.length === 0) ||
+          (!stage.relocation &&
+            !stage.barrier &&
+            (stage.attack === null) !== (stage.effects.length === 0)) ||
           (stage.attack?.kind === 'melee' && stage.attack.activeSteps !== stage.durationSteps)
         )
           ctx.addIssue({
@@ -774,6 +880,7 @@ const BlocksSchema = z.strictObject({
 });
 export const TerrainSchema = z.discriminatedUnion('kind', [
   z.strictObject({
+    material: TerrainMaterialSchema.optional(),
     id: IdSchema,
     kind: z.literal('box'),
     center: Vec3Schema,
@@ -787,6 +894,7 @@ export const TerrainSchema = z.discriminatedUnion('kind', [
     blocks: BlocksSchema,
   }),
   z.strictObject({
+    material: TerrainMaterialSchema.optional(),
     id: IdSchema,
     kind: z.literal('pillar'),
     center: Vec3Schema,
@@ -986,6 +1094,8 @@ export const BudgetSchema = z.strictObject({
   maxStatusTypes: positive(256),
   maxStatusCauses: positive(65_536),
   maxForces: positive(256).optional(),
+  maxSpatialCommands: positive(256).optional(),
+  maxSpatialObjects: positive(256).optional(),
   maxReactionsPerTransaction: positive(64).optional(),
   maxReactionsPerMatch: positive(1024).optional(),
   maxReactionDepth: positive(8).optional(),

@@ -43,6 +43,39 @@ export function Scene2D({
           />
         ),
       )}
+      {model.objects.map((o) => (
+        <g key={o.id} fill={o.colour} fillOpacity={0.25} stroke={o.colour} strokeWidth={0.04}>
+          <title>
+            {o.kind === 'barrier'
+              ? `結界 耐久 ${o.durability}`
+              : o.kind === 'area'
+                ? '持続範囲'
+                : '照射'}
+          </title>
+          {o.shape?.kind === 'box' ? (
+            <rect
+              x={-o.shape.sizeMm.x / 2000}
+              y={-o.shape.sizeMm.z / 2000}
+              width={o.shape.sizeMm.x / 1000}
+              height={o.shape.sizeMm.z / 1000}
+              transform={`translate(${o.position[0]} ${o.position[2]}) rotate(${-o.shape.yawMilliDegrees / 1000})`}
+            />
+          ) : o.shape ? (
+            <circle cx={o.position[0]} cy={o.position[2]} r={o.shape.radiusMm / 1000} />
+          ) : null}
+          {o.beams.map((b) => (
+            <line
+              key={b.id}
+              x1={b.points[0][0]}
+              y1={b.points[0][2]}
+              x2={b.points[1][0]}
+              y2={b.points[1][2]}
+              strokeWidth={Math.max(0.03, b.radius * 2)}
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+      ))}
       {model.actors.map((a) => (
         <g key={a.id}>
           <circle
@@ -50,10 +83,12 @@ export function Scene2D({
             cy={a.position[2]}
             r={a.radius}
             fill={a.colour}
+            fillOpacity={a.phasing ? 0.4 : 1}
+            strokeDasharray={a.phasing?.pending ? '0.1 0.05' : undefined}
             stroke={overlays.collision ? '#e5f3ff' : 'none'}
             strokeWidth={0.05}
           >
-            <title>{a.id}</title>
+            <title>{`${a.id}${a.phasing ? (a.phasing.pending ? ` 透過解除待ち ${a.phasing.intervals}/50` : ' 透過中') : ''}`}</title>
           </circle>
           {overlays.collision && (
             <line

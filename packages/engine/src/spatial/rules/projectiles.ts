@@ -122,9 +122,16 @@ export function explosionCoverage(
   radius: number,
   target: MotionState,
   position: Vec3,
+  departingObjectIds?: readonly string[],
 ): number {
   if (radius <= 0) return 0;
-  if (world.overlaps(origin, ballShape(0), 'attack')) return 0;
+  if (
+    departingObjectIds
+      ? world.strictlyInside(origin, 'attack')
+      : world.overlaps(origin, ballShape(0), 'attack')
+  )
+    return 0;
+  const query = departingObjectIds ? world.forQuery({ departingObjectIds }) : world;
   const body = bodyCapsule(target.actor.character.body);
   const axis = {
     ...position,
@@ -145,7 +152,7 @@ export function explosionCoverage(
   let coverage = 0;
   for (const point of samples) {
     const amount = Math.max(0, 1 - length(sub(point, origin)) / radius);
-    if (amount > 0 && !world.occluded(origin, point, 'attack')) coverage += amount;
+    if (amount > 0 && !query.occluded(origin, point, 'attack')) coverage += amount;
   }
   return Math.max(0, Math.min(10000, Math.floor(coverage * 2000)));
 }

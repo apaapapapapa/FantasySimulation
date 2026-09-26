@@ -2,12 +2,15 @@ import type { ActionState, ActorState } from '../state.ts';
 
 /** Only current owner state; never ask for an opponent's authored plan. */
 export function ownsStageMotion(action: ActionState | null, step: number): boolean {
+  if (action?.ability.definition.relocation && step === action.launchAt && !action.released)
+    return true;
   return (
     !!action?.stages &&
     action.stages.interruptedAt === undefined &&
     !!action.ability.definition.stages?.some(
       (stage) =>
-        !!stage.selfMotion &&
+        (!!stage.selfMotion ||
+          (!!stage.relocation && step === action.launchAt + stage.offsetSteps)) &&
         action.launchAt + stage.offsetSteps <= step &&
         step < action.launchAt + stage.offsetSteps + stage.durationSteps,
     )

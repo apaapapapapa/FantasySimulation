@@ -1,3 +1,5 @@
+import { bodyWorld } from '../rules/phasing.ts';
+import { terrainObstacles } from '../world/terrain.ts';
 import { opponentInDuel } from './duel.ts';
 import { displayActor } from './combat-state.ts';
 import { canMaintainFlight, resourceReady } from '../rules/locomotion.ts';
@@ -70,6 +72,7 @@ export function decisionPhase(tx: StepTransaction) {
       battle.scenario.terrainKnowledge,
       battle.rules.ai,
       battle.scenario.bounds,
+      tx.next.objects ?? [],
     );
     if (actor.actions.action && actor.actions.action.recoveryUntil <= step)
       actor.actions.action = null;
@@ -143,14 +146,19 @@ export function decisionPhase(tx: StepTransaction) {
       );
     if (aiBoundary || actor.body.intent.flight !== flight) {
       const knownWorld =
-        battle.scenario.terrainKnowledge === 'surveyed'
+        battle.scenario.terrainKnowledge === 'surveyed' && !actor.mind.memory.terrain.length
           ? null
-          : knownTerrainWorld(actor.mind.memory.terrain);
+          : knownTerrainWorld(
+              actor.mind.memory.terrain,
+              battle.scenario.terrainKnowledge === 'surveyed'
+                ? terrainObstacles(battle.scenario)
+                : [],
+            );
       if (knownWorld) knownWorld.castLimit = Math.max(0, world.castLimit - world.casts);
       try {
         const navigator = knownWorld
           ? new Navigator(
-              knownWorld,
+              bodyWorld(knownWorld, actor.body.motion),
               actor.body.motion.actor,
               {
                 ...battle.scenario,
@@ -160,8 +168,13 @@ export function decisionPhase(tx: StepTransaction) {
               battle.rules,
               true,
             )
-          : actor.body.motion.posture
-            ? new Navigator(world, actor.body.motion.actor, battle.scenario, battle.rules)
+          : actor.body.motion.posture || actor.body.motion.phasing
+            ? new Navigator(
+                bodyWorld(world.forQuery({ ignoreDynamic: true }), actor.body.motion),
+                actor.body.motion.actor,
+                battle.scenario,
+                battle.rules,
+              )
             : navigators.get(actorId(actor))!;
         actor.mind.decision = choosePolicy(
           view,
@@ -172,8 +185,11 @@ export function decisionPhase(tx: StepTransaction) {
           battle.rules.ai.search
             ? {
                 bounds: battle.scenario.bounds,
-                obstacles: (knownWorld ?? world).obstacles('vision'),
-                blocked: (from, to, layer) => (knownWorld ?? world).occluded(from, to, layer),
+                obstacles: (knownWorld ?? world.forQuery({ ignoreDynamic: true })).obstacles(
+                  'vision',
+                ),
+                blocked: (from, to, layer) =>
+                  (knownWorld ?? world.forQuery({ ignoreDynamic: true })).occluded(from, to, layer),
               }
             : undefined,
         );

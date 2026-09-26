@@ -686,6 +686,162 @@
       "id": "fire-absorption-v1",
       "revision": 1,
       "contentHash": "sha256:094bd0795795ae523fc5fa66500211fe06344dbe6d79cc128bf76df259686b89"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-blink-flank-v1",
+      "revision": 1,
+      "contentHash": "sha256:3e72e38247bf86e9d388d8015b59c877b14352ee0a9fc2f3d61a95240d51f173"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-blink-retreat-v1",
+      "revision": 1,
+      "contentHash": "sha256:f2b61f9ac4b6c6c87bba2f510f52f39a814c2c33e8390b53cebace67371f221b"
+    },
+    {
+      "kind": "character",
+      "id": "blink-flank-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:06957cd97669c8b963152e7bb3696eebbd5664cf93b6a0933fb27d1f9fef618f"
+    },
+    {
+      "kind": "character",
+      "id": "blink-retreat-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:6486539be7f38602e046cb890a80f5bffe62235b50f6680080a18e0e5042ec46"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-blink-flank-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:b836a4905912071cd33651ee229d0fb4566d0aaf99f968f2547126ac39d8d37a"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-blink-retreat-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:686b3b28cf806bbc077e956c0dadc6b9af2da41ff018adca71e36e3ad95dbd67"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-area-v1",
+      "revision": 1,
+      "contentHash": "sha256:2bc11d09b79ad01f39eb7bb2a5e781c743d727bbaf8229c22e8a48cbb6305edd"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-barrier-v1",
+      "revision": 1,
+      "contentHash": "sha256:84e6bf7208e50d53ed18b1a2460ea2f7c7b420eadbaaa671ac91fc86788ed753"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-beam-v1",
+      "revision": 1,
+      "contentHash": "sha256:341fe27a18970c970300ea60d1031fc3b2df2ed8bfb4dd405545939557aad492"
+    },
+    {
+      "kind": "character",
+      "id": "area-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:1f4eb1e94eba729e8ff5d10e15d2f3087e596c3a77fdda42134ab3ca10a8511c"
+    },
+    {
+      "kind": "character",
+      "id": "barrier-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:08e5be48d431d79edf7a69dba8809f40810bf997bfb737722d5fdb2fa4d6304f"
+    },
+    {
+      "kind": "character",
+      "id": "beam-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:304c721d324fe0324e9f8c53e1becffc4d97241a84dce6d5444599de4ab9a66f"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-area-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:126fa60e313b858a4ccaafaa4dc5b68954f5b56b2f12fba5de7040c972392724"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-barrier-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:13f6c0145bb829f4010c99a3ce61f1056029adfe02a4f19fdaee1a488ebce5b6"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-beam-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:cdb5dab23b4f032b675540f0343d791f414df81caeb88c8ff65e652feee5abd3"
+    },
+    {
+      "kind": "ability",
+      "id": "phase-bolt-v1",
+      "revision": 1,
+      "contentHash": "sha256:e1027f2fa379fa5ff0debe945a9f59fc37a684c3cf2562f067c1948833092317"
+    },
+    {
+      "kind": "ability",
+      "id": "phase-grant-v1",
+      "revision": 1,
+      "contentHash": "sha256:456e8b0a5d7c851e3ff0cdd2d696182c04a39ea22c92c0724db17901c4bf5377"
+    },
+    {
+      "kind": "character",
+      "id": "phase-archer-v1",
+      "revision": 1,
+      "contentHash": "sha256:6c17348c39d8ccf3af6dc34c53a7a8e0cccf5c98f611d955448d00febdabe151"
+    },
+    {
+      "kind": "character",
+      "id": "phase-traveller-v1",
+      "revision": 1,
+      "contentHash": "sha256:3171a185f2d61013c8114fbb80b33086077584579507af3091c4d074851cafae"
+    },
+    {
+      "kind": "policy",
+      "id": "phase-archer-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:12cb99d17715409605d3b2e50862e74c98c278d1fccb287ce04ba23dd1947780"
+    },
+    {
+      "kind": "policy",
+      "id": "phase-traveller-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:2bf3dc4a7d7f63e58cc01ec0cd3b9a1052bf31460c4f58d2b6d3d44af665963a"
+    },
+    {
+      "kind": "ruleset",
+      "id": "experimental-spatial-v1",
+      "revision": 1,
+      "contentHash": "sha256:6494574c03787aff4f867a4a0592acdad4d35c6fc6b77eeb565591ac035e2082"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-spatial-v1",
+      "revision": 1,
+      "contentHash": "sha256:ac84981f6df8c1cbbb66554627dfe5ac3c6741ba9ed5d44495831792447d511d"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-tactics-spatial-v1",
+      "revision": 1,
+      "contentHash": "sha256:35233231ef63cb4fe680cc6d4f88ca37cbe216d47fd227eb56e4ca415bfcf8c9"
+    },
+    {
+      "kind": "scenario",
+      "id": "phase-stone-corridor-v1",
+      "revision": 1,
+      "contentHash": "sha256:93e57860d7d9dbc23f2d93a8eca17211905a46430621c69556a89c290a03dc67"
+    },
+    {
+      "kind": "status",
+      "id": "phase-stone-energy-v1",
+      "revision": 1,
+      "contentHash": "sha256:22bee84dff47845c2bee96aaa77168a857695dd70b951448186eba941cfb482a"
     }
   ]
 }

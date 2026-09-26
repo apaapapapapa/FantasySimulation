@@ -34,6 +34,9 @@ export class Navigator {
   private readonly scenario: DeepReadonly<Definition<'scenario'>>;
   private readonly rules: DeepReadonly<Definition<'ruleset'>>;
   private readonly exploring: boolean;
+  invalidate() {
+    this.cache.clear();
+  }
   constructor(
     world: SpatialWorld,
     actor: ResolvedActor,
@@ -41,7 +44,7 @@ export class Navigator {
     rules: DeepReadonly<Definition<'ruleset'>>,
     exploring = false,
   ) {
-    this.world = world;
+    this.world = world.forQuery({ ownerId: actor.participant.actorId });
     this.actor = actor;
     this.scenario = scenario;
     this.rules = rules;

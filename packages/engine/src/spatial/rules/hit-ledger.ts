@@ -43,6 +43,11 @@ export class HitLedger {
     this.entries.set(key, entry);
     return { accepted, hits: entry.hits, reason };
   }
+  occupy(contact: StageContact, targetId: string, step: number) {
+    const key = JSON.stringify([contact.actionId, contact.stageId, contact.hitGroupId, targetId]);
+    const prior = this.entries.get(key);
+    if (prior) this.entries.set(key, { ...prior, lastContact: step });
+  }
   prune(actions: ReadonlySet<string>) {
     for (const [key, entry] of this.entries)
       if (!actions.has(entry.contact.actionId)) this.entries.delete(key);

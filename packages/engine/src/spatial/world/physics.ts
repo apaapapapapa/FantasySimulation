@@ -1,10 +1,24 @@
-import type { Trace, Capsule, Obstacle, Layer } from '../geometry-types.ts';
+import {
+  blocksQuery,
+  type Trace,
+  type Capsule,
+  type Obstacle,
+  type Layer,
+  type SpatialQuery,
+} from '../geometry-types.ts';
 export type { Segment, Trace, Capsule, Obstacle, Layer } from '../geometry-types.ts';
 import RAPIER from '@dimforge/rapier3d-compat';
-import type { MotionProjection } from '@fantasy/domain/spatial/execution';
+import { walkableContact } from './walkable-geometry.ts';
+import {
+  canonicalJson,
+  type TruncationDetails,
+  type MotionProjection,
+} from '@fantasy/domain/spatial/execution';
 export type { MotionProjection } from '@fantasy/domain/spatial/execution';
 import {
   capsuleOverlapsObstacle,
+  pointInsideObstacle,
+  outwardSurfaceRay,
   capsuleObstacleContact,
   faceNormal,
   planarContactTime,
@@ -26,7 +40,7 @@ export function firstImpact(wall: number | undefined, body: number | undefined) 
 }
 export class SpatialBudgetError extends Error {
   readonly resource: string;
-  readonly details?: { observed: number; limit: number; cause: string };
+  readonly details?: TruncationDetails;
   constructor(resource: string, detail?: string, details?: SpatialBudgetError['details']) {
     super(`Spatial budget exceeded: ${resource}${detail ? `; ${detail}` : ''}`);
     this.resource = resource;
@@ -34,6 +48,28 @@ export class SpatialBudgetError extends Error {
   }
 }
 
+/** Lipschitz advancement cannot step across first contact; non-convergence is explicit truncation. */
+export function advanceContact(
+  world: SpatialWorld,
+  from: number,
+  to: number,
+  speed: number,
+  separation: (time: number) => number,
+  resource = 'blade-sweep',
+) {
+  let time = from;
+  for (let iteration = 0; iteration < 256; iteration++) {
+    world.countCast();
+    const distance = separation(time);
+    if (distance <= CONTACT_TOLERANCE) return time;
+    if (time === to || speed < 1e-12 || distance > speed * (to - time) + CONTACT_TOLERANCE)
+      return undefined;
+    const next = Math.min(to, time + (0.9 * distance) / speed);
+    if (next <= time) throw new SpatialBudgetError(resource, 'no progress');
+    time = next;
+  }
+  throw new SpatialBudgetError(resource, '256 conservative advances');
+}
 export function at(trace: Trace, time: number): Vec3 {
   const segment = trace.find((piece) => piece.to >= time) ?? trace.at(-1);
   if (!segment) throw new Error('Empty movement trace');
@@ -44,6 +80,12 @@ export function at(trace: Trace, time: number): Vec3 {
         segment.end,
         Math.max(0, Math.min(1, (time - segment.from) / (segment.to - segment.from))),
       );
+}
+/** All moving-shape adapters partition at both physical trace bends. */
+export function traceBoundaries(...traces: readonly Trace[]) {
+  return [
+    ...new Set([0, 1, ...traces.flatMap((trace) => trace.flatMap((s) => [s.from, s.to]))]),
+  ].sort((a, b) => a - b);
 }
 export const straight = (start: Vec3, end: Vec3): Trace => [{ start, end, from: 0, to: 1 }];
 /** Keep only the emitted path up to contact, without a synthetic stationary tail. */
@@ -207,68 +249,219 @@ export function firstContact(
   return undefined;
 }
 export const capsuleShape = (body: Capsule) => new RAPIER.Capsule(body.halfHeight, body.radius);
+export type PhysicsShape = RAPIER.Shape;
+export function obstacleShape(obstacle: Obstacle): PhysicsShape {
+  const h = obstacle.halfExtents;
+  return obstacle.kind === 'sphere'
+    ? new RAPIER.Ball(h.x)
+    : obstacle.kind === 'pillar'
+      ? new RAPIER.Cylinder(h.y, h.x)
+      : new RAPIER.Cuboid(h.x, h.y, h.z);
+}
 export const ballShape = (radius: number) => new RAPIER.Ball(radius);
 
 export class SpatialWorld {
   readonly world: RAPIER.World;
-  private readonly materials = new Map<number, Obstacle>();
-  private readonly bounds = new Map<Layer, { center: Vec3; radius: Vec3 }>();
-  casts = 0;
+  private readonly materials: Map<number, Obstacle>;
+  private readonly bounds: Map<Layer, { center: Vec3; radius: Vec3 }>;
+  private readonly meter: { casts: number; limit: number };
+  private readonly query: SpatialQuery;
+  private readonly ownsWorld: boolean;
+  private readonly geometryKey: string;
+  get casts() {
+    return this.meter.casts;
+  }
+  set casts(value: number) {
+    this.meter.casts = value;
+  }
+  get castLimit() {
+    return this.meter.limit;
+  }
+  set castLimit(value: number) {
+    this.meter.limit = value;
+  }
   /** Stable authored obstacle order; adapters share the world's layer and work budget. */
   obstacles(layer: Layer): readonly Obstacle[] {
-    return [...this.materials.values()].filter((obstacle) => obstacle.blocks[layer]);
+    return [...this.materials.values()].filter((obstacle) =>
+      blocksQuery(obstacle, layer, this.query),
+    );
+  }
+  allObstacles(): readonly Obstacle[] {
+    return [...this.materials.values()];
+  }
+  queryBlocks(obstacle: Obstacle, layer: Layer, normal?: Vec3, overlap = false): boolean {
+    return blocksQuery(obstacle, layer, this.query, normal, overlap);
+  }
+  private acceptsCast(handle: number, layer: Layer, ignored: ReadonlySet<number>) {
+    const obstacle = this.materials.get(handle)!;
+    return (
+      !ignored.has(handle) &&
+      this.floorSlope(obstacle, layer) === undefined &&
+      blocksQuery(obstacle, layer, this.query)
+    );
+  }
+  private floorSlope(obstacle: Obstacle, layer: Layer) {
+    const p = this.query.phase;
+    return p?.layer === layer &&
+      !obstacle.arenaBoundary &&
+      p.materials.includes(obstacle.material ?? 'generic') &&
+      !p.floor &&
+      !p.floorMaterials?.includes(obstacle.material ?? 'generic') &&
+      blocksQuery(obstacle, layer, this.query)
+      ? p.minGroundY
+      : undefined;
+  }
+  floorContact(obstacle: Obstacle, layer: Layer, start: Vec3, end: Vec3, radius: number) {
+    const slope = this.floorSlope(obstacle, layer);
+    return slope === undefined ? undefined : walkableContact(start, end, radius, obstacle, slope);
+  }
+  private floorSweep(
+    start: Vec3,
+    velocity: Vec3,
+    body: Capsule,
+    layer: Layer,
+    maxTime: number,
+    skin: number,
+    movement: boolean,
+  ) {
+    if (this.query.phase?.layer !== layer || this.query.phase.floor) return null;
+    let best: SweepHit | null = null;
+    for (const o of this.materials.values()) {
+      if (
+        this.floorSlope(o, layer) === undefined ||
+        (this.query.departingObjectIds?.includes(o.id) && outwardSurfaceRay(start, velocity, o))
+      )
+        continue;
+      const contact = (t: number) => {
+        const p = add(start, mul(velocity, t));
+        return this.floorContact(
+          o,
+          layer,
+          { ...p, y: p.y - body.halfHeight },
+          { ...p, y: p.y + body.halfHeight },
+          body.radius,
+        )!;
+      };
+      const initial = contact(0);
+      if (
+        movement &&
+        initial.distance <= skin + CONTACT_TOLERANCE &&
+        dot(velocity, initial.normal) >= -1e-10
+      )
+        continue;
+      const time = advanceContact(
+        this,
+        0,
+        best?.time_of_impact ?? maxTime,
+        length(velocity),
+        (t) => contact(t).distance - skin,
+        'floor-sweep',
+      );
+      if (time !== undefined && (!movement || dot(velocity, contact(time).normal) < -1e-10))
+        best = { time_of_impact: time, normal1: contact(time).normal, obstacleId: o.id };
+    }
+    return best;
   }
   countCast() {
     if (++this.casts > this.castLimit) throw new SpatialBudgetError('casts');
   }
-  castLimit: number;
-  constructor(obstacles: Obstacle[], castLimit = 1_000_000) {
-    this.castLimit = castLimit;
+  constructor(
+    obstacles: Obstacle[],
+    castLimit = 1_000_000,
+    shared?: { source: SpatialWorld; query?: SpatialQuery; rebuild?: boolean },
+  ) {
+    this.meter = shared?.source.meter ?? { casts: 0, limit: castLimit };
+    this.query = shared?.query ?? {};
+    this.ownsWorld = !shared || !!shared.rebuild;
+    this.geometryKey =
+      shared && !shared.rebuild
+        ? shared.source.geometryKey
+        : canonicalJson(
+            [...obstacles].sort(
+              (a, b) =>
+                (a.order ?? -1) - (b.order ?? -1) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+            ),
+          );
+    if (shared && !shared.rebuild) {
+      this.world = shared.source.world;
+      this.materials = shared.source.materials;
+      this.bounds = shared.source.bounds;
+      return;
+    }
+    this.materials = new Map();
+    this.bounds = new Map();
     this.world = new RAPIER.World(ZERO);
     this.world.timestep = 0.02;
-    for (const obstacle of [...obstacles].sort((a, b) =>
-      a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
-    )) {
-      const desc = (
-        obstacle.kind === 'pillar'
-          ? RAPIER.ColliderDesc.cylinder(obstacle.halfExtents.y, obstacle.halfExtents.x)
-          : RAPIER.ColliderDesc.cuboid(
-              obstacle.halfExtents.x,
-              obstacle.halfExtents.y,
-              obstacle.halfExtents.z,
-            )
-      ).setTranslation(obstacle.position.x, obstacle.position.y, obstacle.position.z);
-      if (obstacle.rotation) desc.setRotation(obstacle.rotation);
-      const collider = this.world.createCollider(desc);
-      this.materials.set(collider.handle, obstacle);
-    }
-    this.world.step(); // Populate the query acceleration structure once for static terrain.
-    for (const layer of ['movement', 'vision', 'attack'] as const) {
-      const relevant = obstacles.filter((o) => o.blocks[layer]);
-      if (!relevant.length) continue;
-      const lower = { x: Infinity, y: Infinity, z: Infinity },
-        upper = { x: -Infinity, y: -Infinity, z: -Infinity };
-      for (const obstacle of relevant) {
-        const radius = obstacle.rotation
-          ? {
-              x: length(obstacle.halfExtents),
-              y: length(obstacle.halfExtents),
-              z: length(obstacle.halfExtents),
-            }
-          : obstacle.halfExtents;
-        for (const axis of ['x', 'y', 'z'] as const) {
-          lower[axis] = Math.min(lower[axis], obstacle.position[axis] - radius[axis]);
-          upper[axis] = Math.max(upper[axis], obstacle.position[axis] + radius[axis]);
-        }
+    try {
+      for (const obstacle of [...obstacles].sort(
+        (a, b) => (a.order ?? -1) - (b.order ?? -1) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+      )) {
+        if (shared) this.countCast();
+        const desc = (
+          obstacle.kind === 'sphere'
+            ? RAPIER.ColliderDesc.ball(obstacle.halfExtents.x)
+            : obstacle.kind === 'pillar'
+              ? RAPIER.ColliderDesc.cylinder(obstacle.halfExtents.y, obstacle.halfExtents.x)
+              : RAPIER.ColliderDesc.cuboid(
+                  obstacle.halfExtents.x,
+                  obstacle.halfExtents.y,
+                  obstacle.halfExtents.z,
+                )
+        ).setTranslation(obstacle.position.x, obstacle.position.y, obstacle.position.z);
+        if (obstacle.rotation) desc.setRotation(obstacle.rotation);
+        const collider = this.world.createCollider(desc);
+        this.materials.set(collider.handle, obstacle);
       }
-      this.bounds.set(layer, {
-        center: mul(add(lower, upper), 0.5),
-        radius: mul(sub(upper, lower), 0.5),
-      });
+      this.world.step(); // Populate the query acceleration structure once for static terrain.
+      for (const layer of ['movement', 'vision', 'attack'] as const) {
+        const relevant = obstacles.filter((o) => o.blocks[layer]);
+        if (!relevant.length) continue;
+        const lower = { x: Infinity, y: Infinity, z: Infinity },
+          upper = { x: -Infinity, y: -Infinity, z: -Infinity };
+        for (const obstacle of relevant) {
+          const radius = obstacle.rotation
+            ? {
+                x: length(obstacle.halfExtents),
+                y: length(obstacle.halfExtents),
+                z: length(obstacle.halfExtents),
+              }
+            : obstacle.halfExtents;
+          for (const axis of ['x', 'y', 'z'] as const) {
+            lower[axis] = Math.min(lower[axis], obstacle.position[axis] - radius[axis]);
+            upper[axis] = Math.max(upper[axis], obstacle.position[axis] + radius[axis]);
+          }
+        }
+        this.bounds.set(layer, {
+          center: mul(add(lower, upper), 0.5),
+          radius: mul(sub(upper, lower), 0.5),
+        });
+      }
+    } catch (error) {
+      this.world.free();
+      throw error;
     }
   }
+  /** Immutable query views share geometry and the attempted-work meter, never filter state. */
+  forQuery(query: SpatialQuery): SpatialWorld {
+    return new SpatialWorld([], this.castLimit, {
+      source: this,
+      query: { ...this.query, ...query },
+    });
+  }
+  /** A caller owns the candidate until its entire transaction commits. */
+  rebuild(obstacles: Obstacle[]): SpatialWorld {
+    if (
+      canonicalJson(
+        [...obstacles].sort(
+          (a, b) => (a.order ?? -1) - (b.order ?? -1) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+        ),
+      ) === this.geometryKey
+    )
+      return this;
+    return new SpatialWorld(obstacles, this.castLimit, { source: this, rebuild: true });
+  }
   free() {
-    this.world.free();
+    if (this.ownsWorld) this.world.free();
   }
   private count() {
     this.countCast();
@@ -289,11 +482,13 @@ export class SpatialWorld {
     )
       return null;
     const ignored = new Set<number>();
-    let best: SweepHit | null = null;
     const body = capsuleDimensions(shape);
+    let best = body
+      ? this.floorSweep(start, velocity, body, layer, maxTime, skin, layer === 'movement')
+      : null;
     if (layer === 'movement' && body && shapeExtent) {
       for (const obstacle of this.materials.values()) {
-        if (!obstacle.blocks[layer] || obstacle.kind === 'pillar') continue;
+        if (!blocksQuery(obstacle, layer, this.query) || obstacle.kind !== undefined) continue;
         const radius = obstacle.rotation ? length(obstacle.halfExtents) : 0;
         const half = radius ? { x: radius, y: radius, z: radius } : obstacle.halfExtents;
         if (
@@ -309,6 +504,7 @@ export class SpatialWorld {
           for (const sign of [-1, 1]) {
             const local = { x: 0, y: 0, z: 0, [axis]: sign };
             const normal = obstacle.rotation ? rotate(local, obstacle.rotation) : local;
+            if (!blocksQuery(obstacle, layer, this.query, normal)) continue;
             const time = planarContactTime(obstacle, normal, start, velocity, body, skin);
             if (time !== undefined && time <= maxTime && (!best || time < best.time_of_impact))
               best = { time_of_impact: time, normal1: normal, obstacleId: obstacle.id };
@@ -329,9 +525,7 @@ export class SpatialWorld {
         undefined,
         undefined,
         undefined,
-        (collider) =>
-          !ignored.has(collider.handle) &&
-          this.materials.get(collider.handle)?.blocks[layer] === true,
+        (collider) => this.acceptsCast(collider.handle, layer, ignored),
       );
       if (!hit) return best;
       const obstacle = this.materials.get(hit.collider.handle)!;
@@ -343,6 +537,10 @@ export class SpatialWorld {
           obstacle,
         );
         if (contact.normal) hit.normal1 = contact.normal;
+      }
+      if (!blocksQuery(obstacle, layer, this.query, hit.normal1)) {
+        ignored.add(hit.collider.handle);
+        continue;
       }
       if (layer !== 'movement')
         return {
@@ -367,26 +565,57 @@ export class SpatialWorld {
     return best;
   }
 
-  raycast(start: Vec3, end: Vec3, layer: Layer) {
+  strictlyInside(position: Vec3, layer: Layer): boolean {
     this.count();
-    const hit = this.world.castRayAndGetNormal(
-      new RAPIER.Ray(start, sub(end, start)),
-      1,
-      true,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      (collider) => this.materials.get(collider.handle)?.blocks[layer] === true,
+    return [...this.materials.values()].some(
+      (o) => blocksQuery(o, layer, this.query, undefined, true) && pointInsideObstacle(position, o),
     );
-    return hit
+  }
+  raycast(start: Vec3, end: Vec3, layer: Layer) {
+    const floor = this.floorSweep(
+      start,
+      sub(end, start),
+      { radius: 0, halfHeight: 0 },
+      layer,
+      1,
+      0,
+      false,
+    );
+    const floorHit = floor
       ? {
-          time: hit.timeOfImpact,
-          point: lerp(start, end, hit.timeOfImpact),
-          normal: hit.normal,
-          obstacleId: this.materials.get(hit.collider.handle)!.id,
+          time: floor.time_of_impact,
+          point: lerp(start, end, floor.time_of_impact),
+          normal: floor.normal1,
+          obstacleId: floor.obstacleId,
         }
       : undefined;
+    const ignored = new Set<number>();
+    for (let pass = 0; pass <= this.materials.size; pass++) {
+      this.count();
+      const hit = this.world.castRayAndGetNormal(
+        new RAPIER.Ray(start, sub(end, start)),
+        1,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        (collider) => this.acceptsCast(collider.handle, layer, ignored),
+      );
+      if (!hit) return floorHit;
+      if (floorHit && floorHit.time < hit.timeOfImpact) return floorHit;
+      const obstacle = this.materials.get(hit.collider.handle)!,
+        point = lerp(start, end, hit.timeOfImpact),
+        normal = faceNormal(obstacle, point, hit.normal);
+      const departing =
+        layer === 'attack' &&
+        this.query.departingObjectIds?.includes(obstacle.id) &&
+        outwardSurfaceRay(start, sub(end, start), obstacle);
+      if (!departing && blocksQuery(obstacle, layer, this.query, normal))
+        return { time: hit.timeOfImpact, point, normal, obstacleId: obstacle.id };
+      ignored.add(hit.collider.handle);
+    }
+    return floorHit;
   }
   occluded(start: Vec3, end: Vec3, layer: Layer): boolean {
     return this.raycast(start, end, layer) !== undefined;
@@ -397,14 +626,14 @@ export class SpatialWorld {
     if (body)
       return [...this.materials.values()].some(
         (obstacle) =>
-          obstacle.blocks[layer] &&
+          blocksQuery(obstacle, layer, this.query, undefined, true) &&
           (layer === 'attack'
             ? capsuleObstacleContact(position, body, obstacle).distance <= CONTACT_TOLERANCE
             : capsuleOverlapsObstacle(position, body, obstacle)),
       );
     let blocked = false;
     this.world.intersectionsWithShape(position, IDENTITY, shape, (collider) => {
-      if (this.materials.get(collider.handle)?.blocks[layer]) {
+      if (blocksQuery(this.materials.get(collider.handle)!, layer, this.query, undefined, true)) {
         const contact = shape.contactShape(
           position,
           IDENTITY,

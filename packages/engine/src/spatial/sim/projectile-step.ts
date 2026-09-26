@@ -1,3 +1,5 @@
+import { attackWorld } from '../rules/phasing.ts';
+import type { AttackContact } from '../rules/attacks.ts';
 import { opponentInDuel } from './duel.ts';
 import type { ActorState, PreparedBattle } from '../state.ts';
 import type { Budget, DisplayPath, ProjectileChanges } from '@fantasy/domain/spatial/execution';
@@ -27,6 +29,7 @@ export function stepProjectiles(
   step: number,
   candidate: () => void,
   ledger: HitLedger,
+  objectContact?: (projectile: ProjectileState, contact: AttackContact, cause: string) => void,
 ) {
   const alive: ProjectileState[] = [],
     paths: DisplayPath[] = [],
@@ -44,6 +47,7 @@ export function stepProjectiles(
     candidate,
     ledger,
     changes,
+    ...(objectContact ? { objectContact } : {}),
   };
   const contacts = actors.some((a) =>
     a.body.motion.actor.abilities.some((b) => b.definition.reaction?.response.kind === 'deflect'),
@@ -65,7 +69,7 @@ export function stepProjectiles(
     const curve = projectileCurve(projectile, owner.mind.memory, battle.rules, budget);
     candidate();
     const { contact } = contactAttack(shape, {
-      world,
+      world: attackWorld(world, projectile),
       source: owner.body.motion,
       target: enemy.state,
       trace: curve.trace,

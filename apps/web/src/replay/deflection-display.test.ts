@@ -1,8 +1,7 @@
-import { readFile } from 'node:fs/promises';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it } from 'vite-plus/test';
-import { openReplay } from './open-replay.ts';
+import { savedReplay } from '../../test-support/saved-replay.ts';
 import { ReplayPlayer } from './replay-player.ts';
 import { buildSceneModel } from './scene-model.ts';
 import { Scene2D } from './Scene2D.tsx';
@@ -10,11 +9,7 @@ import { NO_OVERLAYS } from './overlays.ts';
 import { renderCapabilityEvents } from '../../test-support/capability-render.ts';
 
 it('renders the saved deflection turn owner velocity and polyline while seeking both ways', async () => {
-  const fixture = new URL('../../test-fixtures/replays/p6-deflection-160/', import.meta.url);
-  const opened = await openReplay({
-    manifest: async () => JSON.parse(await readFile(new URL('manifest.json', fixture), 'utf8')),
-    file: async (ref) => new Uint8Array(await readFile(new URL(ref.file, fixture))),
-  });
+  const opened = await savedReplay('p6-deflection-160');
   const player = new ReplayPlayer(opened);
   for (const step of [11, 10, 11, 12]) {
     const frame = await player.frame(step);

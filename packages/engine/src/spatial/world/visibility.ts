@@ -26,6 +26,6 @@ export function canSee(world: SpatialWorld, self: MotionState, point: Vec3): boo
     (distance < 1e-12 ||
       dot(unit(self.facing), unit(delta)) >=
         cosDegrees(perception.fovMilliDegrees / 2000) - 1e-12) &&
-    !world.occluded(eye, point, 'vision')
+    !world.forQuery({ ownerId: self.actor.participant.actorId }).occluded(eye, point, 'vision')
   );
 }

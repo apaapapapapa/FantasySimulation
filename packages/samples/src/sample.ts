@@ -89,8 +89,8 @@ export async function sampleManifest(maxSteps = 6000): Promise<Manifest> {
     ],
     navigation: { version: 'support-graph-v1', nodes: [], edges: [] },
   });
-  const ruleset = await sealRevision('ruleset', 'standard-deflection-v1', 1, {
-    name: '標準3D・飛翔体の跳ね返し',
+  const ruleset = await sealRevision('ruleset', 'standard-spatial-v1', 1, {
+    name: '標準3D・空間操作・透過',
     rulesVersion: CURRENT_ENGINE_VERSION,
     ai: {
       ...AI_RULES,

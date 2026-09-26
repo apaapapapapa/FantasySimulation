@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.21",
-    "rulesVersion": "spatial-v1.21",
+    "engineVersion": "spatial-v1.22",
+    "rulesVersion": "spatial-v1.22",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -1036,6 +1036,122 @@
     "p6-recovery-16": {
       "file": "apps/web/src/replay/recovery-display.test.ts",
       "name": "renders conversion and causal drain for their recorded recipients without inferring HP loss"
+    },
+    "p6-teleport-pairs": {
+      "file": "packages/engine/src/spatial/teleport-interference.test.ts",
+      "name": "executes all 49 teleport ordered pairs with a one metre boundary displacement"
+    },
+    "p6-teleport-wall": {
+      "file": "packages/engine/src/spatial/teleport.test.ts",
+      "name": "crosses an opaque wall path using full recorded jumps and restores both seek directions"
+    },
+    "p6-teleport-budget": {
+      "file": "packages/engine/src/spatial/teleport.test.ts",
+      "name": "rolls back simultaneous pending commands at the exact cap and never activates a final-boundary command"
+    },
+    "p6-world-rollback": {
+      "file": "packages/engine/src/spatial/spatial-world.test.ts",
+      "name": "rolls back candidate geometry, actors, RNG and IDs on a journal failure while retaining work"
+    },
+    "p6-teleport-worker": {
+      "file": "apps/api/src/jobs/teleport-persistence.test.ts",
+      "name": "preserves discrete teleport boundaries through Worker SQLite and reverse replay seek"
+    },
+    "p6-teleport-view": {
+      "file": "apps/web/src/replay/teleport-display.test.ts",
+      "name": "renders recorded teleport endpoints without a swept bridge in both seek directions"
+    },
+    "p6.spatial-object-pairs": {
+      "file": "packages/engine/src/spatial/spatial-object-interference.test.ts",
+      "name": "executes all 159 object ordered pairs with recorded activation windows and contacts"
+    },
+    "p6.spatial-object-area": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "sweeps an area crossing and retains detached ledger occupancy between pulses"
+    },
+    "p6.spatial-object-beam": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "clips a moving beam at blockers and uses one shared hit ledger"
+    },
+    "p6.phasing-pairs": {
+      "file": "packages/engine/src/spatial/phasing-interference.test.ts",
+      "name": "executes all 57 phasing ordered pairs with independent masks and saved provenance"
+    },
+    "p6-spatial-privacy": {
+      "file": "packages/engine/src/spatial/spatial-review.test.ts",
+      "name": "delivers visible spatial samples late while keeping hidden geometry and object state private"
+    },
+    "p6-spatial-enumeration": {
+      "file": "packages/engine/src/spatial/spatial-review.test.ts",
+      "name": "preserves all result digests under participant and revision input enumeration for every new spatial operation"
+    },
+    "p6-phasing-samples": {
+      "file": "packages/engine/src/spatial/spatial-review.test.ts",
+      "name": "executes the new phasing samples and material arena with preserved recorded provenance"
+    },
+    "p6-phase-exit": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "truncates at the retry after 50 executed embedded intervals and restores the last committed display"
+    },
+    "p6-phase-support-box": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "retains the later box support surface after a skipped side contact"
+    },
+    "p6-phase-support-sphere": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "retains the later sphere support surface after a skipped side contact"
+    },
+    "p6-phase-support-pillar": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "retains the later pillar support surface after a skipped side contact"
+    },
+    "p6-cap-commands": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "rolls back maxSpatialCommands plus one with replay-valid attempted causes"
+    },
+    "p6-cap-objects": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "rolls back maxSpatialObjects plus one with replay-valid attempted causes"
+    },
+    "p6-beam-depth": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "finds the first visible beam contact while a body crosses from behind an attack-only wall"
+    },
+    "p6-barrier-ties": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "allows follower support tangency and damages all tied barriers unless terrain shields the tie"
+    },
+    "p6-player-teleport": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved teleport through forward reverse and loop playback"
+    },
+    "p6-player-barrier": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved barrier through forward reverse and loop playback"
+    },
+    "p6-player-area": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved area through forward reverse and loop playback"
+    },
+    "p6-player-beam": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved beam through forward reverse and loop playback"
+    },
+    "p6-player-phasing": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved phasing through forward reverse and loop playback"
+    },
+    "p6-prefixed-terrain": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "phases authored boundary-prefixed terrain while retaining generated arena walls and exit protection"
+    },
+    "p6-barrier-range-false": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "bounds barrier placement by ability range with authored stages false"
+    },
+    "p6-barrier-range-true": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "bounds barrier placement by ability range with authored stages true"
     }
   },
   "entries": [
@@ -1048,7 +1164,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:133c1c8ca36fa260f7b4eab19a19f5ac9cbda642a95f6c770d026f86d13e314a",
+        "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1056,9 +1172,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-deflection-v1",
+          "id": "standard-spatial-v1",
           "revision": 1,
-          "contentHash": "sha256:8f9c4e4d45c23ed08efe2ea8d08e9d1982ae21c581c4afd454a9c573ee438a78"
+          "contentHash": "sha256:edc8ef38afada214627bf4ba589dc4b2e44675ec1936e5dd36fcb6b175d4d37c"
         },
         "participants": [
           {
@@ -1093,7 +1209,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:10f27a8f2361bbb0afe394e6a86b15ce40321fcef3167cd1eb9ba7f87ad0966e",
+        "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -1101,9 +1217,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-deflection-v1",
+          "id": "standard-spatial-v1",
           "revision": 1,
-          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
+          "contentHash": "sha256:ac84981f6df8c1cbbb66554627dfe5ac3c6741ba9ed5d44495831792447d511d"
         },
         "participants": [
           {
@@ -1138,7 +1254,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:36f4760fb0440043a28d74d39da01f7cf73b262aa5f541678f4b3910c5f107da",
+        "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1146,9 +1262,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-deflection-v1",
+          "id": "standard-spatial-v1",
           "revision": 1,
-          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
+          "contentHash": "sha256:ac84981f6df8c1cbbb66554627dfe5ac3c6741ba9ed5d44495831792447d511d"
         },
         "participants": [
           {
@@ -1183,7 +1299,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:93fdea58ca80d376bfb97ea5538952e7a690346e7f5c00939776fd03671724ab",
+        "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1191,9 +1307,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-deflection-v1",
+          "id": "standard-spatial-v1",
           "revision": 1,
-          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
+          "contentHash": "sha256:ac84981f6df8c1cbbb66554627dfe5ac3c6741ba9ed5d44495831792447d511d"
         },
         "participants": [
           {
@@ -1228,7 +1344,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:665fd787cd23200a3e3cbd5e26d6a7071fc987f4250fe84ec68dceafd1cb1a73",
+        "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1236,9 +1352,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-deflection-v1",
+          "id": "standard-spatial-v1",
           "revision": 1,
-          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
+          "contentHash": "sha256:ac84981f6df8c1cbbb66554627dfe5ac3c6741ba9ed5d44495831792447d511d"
         },
         "participants": [
           {
@@ -1273,7 +1389,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:dc24f33f686ed97447429ab7e6427b35315dca6e74dbbb271916740aab83c5e7",
+        "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -1281,9 +1397,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-deflection-v1",
+          "id": "standard-spatial-v1",
           "revision": 1,
-          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
+          "contentHash": "sha256:ac84981f6df8c1cbbb66554627dfe5ac3c6741ba9ed5d44495831792447d511d"
         },
         "participants": [
           {
@@ -1318,7 +1434,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:2fee298d3b61a7546ed31c0110fc9e5369061ad07440d54641694b29a18fce6d",
+        "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1326,9 +1442,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-deflection-v1",
+          "id": "standard-spatial-v1",
           "revision": 1,
-          "contentHash": "sha256:b2a20760f6cc646beaf3f483aa9ca66459d99ca06c6fce740c86a232698483fa"
+          "contentHash": "sha256:a561031d36ca46bcd37092f12282a739618cc340322550c93648d9d6f87bc58c"
         },
         "participants": [
           {
@@ -1827,6 +1943,59 @@
         "p6-recovery-14",
         "p6-recovery-15",
         "p6-recovery-16"
+      ]
+    },
+    {
+      "id": "p6-teleport",
+      "title": "P6-06: whole-body boundary relocation, frozen anchors, atomic world and replay",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "p6-teleport-pairs",
+        "p6-teleport-wall",
+        "p6-teleport-budget",
+        "p6-world-rollback",
+        "p6-teleport-worker",
+        "p6-teleport-view",
+        "p6-player-teleport"
+      ]
+    },
+    {
+      "id": "p6-spatial-objects",
+      "title": "P6-07: shared object lifetime, barriers, areas, beams and recorded replay",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "p6.spatial-object-pairs",
+        "p6.spatial-object-area",
+        "p6.spatial-object-beam",
+        "p6-spatial-privacy",
+        "p6-spatial-enumeration",
+        "p6-cap-commands",
+        "p6-cap-objects",
+        "p6-beam-depth",
+        "p6-barrier-ties",
+        "p6-player-barrier",
+        "p6-player-area",
+        "p6-player-beam",
+        "p6-barrier-range-false",
+        "p6-barrier-range-true"
+      ]
+    },
+    {
+      "id": "p6-phasing",
+      "title": "P6-08: material masks, preserved floors and bounded solid exit",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "p6.phasing-pairs",
+        "p6-phasing-samples",
+        "p6-phase-exit",
+        "p6-phase-support-box",
+        "p6-phase-support-sphere",
+        "p6-phase-support-pillar",
+        "p6-player-phasing",
+        "p6-prefixed-terrain"
       ]
     }
   ]

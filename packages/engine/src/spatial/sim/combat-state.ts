@@ -45,6 +45,7 @@ export const cloneActor = (state: ActorState): ActorState => ({
     ...state.body,
     motion: {
       ...state.body.motion,
+      ...(state.body.motion.phasing ? { phasing: structuredClone(state.body.motion.phasing) } : {}),
       position: { ...state.body.motion.position },
       velocity: { ...state.body.motion.velocity },
       facing: { ...state.body.motion.facing },
@@ -90,6 +91,9 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
     velocity: { ...motion.velocity },
     facing: { ...motion.facing },
     grounded: motion.grounded,
+    ...(motion.phasing !== undefined
+      ? { phasing: motion.phasing ? structuredClone(motion.phasing) : null }
+      : {}),
     ...(motion.posture
       ? {
           posture: {

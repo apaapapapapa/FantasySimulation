@@ -1,0 +1,269 @@
+[
+  {
+    "kind": "ability",
+    "id": "spatial-blink-retreat-v1",
+    "revision": 1,
+    "definition": {
+      "name": "退避の転移術師",
+      "originalText": "P6-06。発射時に相対位置を固定し、次の境界で全身の空きを確認して移動する。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 4,
+        "uses": 3
+      },
+      "castSteps": 2,
+      "recoverySteps": 10,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [],
+      "relocation": {
+        "anchor": "self",
+        "direction": "back",
+        "distanceMm": 2000,
+        "maxDistanceMm": 20000
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-blink-retreat-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "退避の転移術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-blink-retreat-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 16000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "character",
+    "id": "blink-retreat-mage-v1",
+    "revision": 1,
+    "definition": {
+      "name": "退避の転移術師",
+      "originalText": "P6-06の対戦検証用。公式リーグの参加者は変更しない。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:spatial-blink-retreat-v1:1"
+        },
+        {
+          "$ref": "ability:drain-ember-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:spatial-blink-retreat-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spatial-blink-flank-v1",
+    "revision": 1,
+    "definition": {
+      "name": "背後へ渡る術師",
+      "originalText": "P6-06。発射時に相対位置を固定し、次の境界で全身の空きを確認して移動する。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "visible",
+        "value": true
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 4,
+        "uses": 3
+      },
+      "castSteps": 2,
+      "recoverySteps": 10,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [],
+      "relocation": {
+        "anchor": "observed-enemy",
+        "direction": "back",
+        "distanceMm": 1500,
+        "maxDistanceMm": 20000
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-blink-flank-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "背後へ渡る術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-blink-flank-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 1500,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "character",
+    "id": "blink-flank-mage-v1",
+    "revision": 1,
+    "definition": {
+      "name": "背後へ渡る術師",
+      "originalText": "P6-06の対戦検証用。公式リーグの参加者は変更しない。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:spatial-blink-flank-v1:1"
+        },
+        {
+          "$ref": "ability:drain-ember-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:spatial-blink-flank-v1-policy:1"
+      }
+    }
+  }
+]

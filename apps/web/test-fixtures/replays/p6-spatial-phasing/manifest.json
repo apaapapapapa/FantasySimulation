@@ -1,0 +1,606 @@
+{
+  "attemptId": "p6-spatial-phasing-attempt",
+  "checkpoints": [
+    {
+      "bytes": 175,
+      "checksum": "sha256:10b72bfb6e8294162e223d91d1fd38b42f19e33c46890ddd807fe787240d597e",
+      "file": "checkpoint-00000.json.gz",
+      "index": 0,
+      "nextRecord": 0,
+      "rawBytes": 203,
+      "step": 0
+    }
+  ],
+  "chunks": [
+    {
+      "bytes": 4789,
+      "checkpoint": 0,
+      "checksum": "sha256:5e33bcc25fc388d16fce38b7f67d2cad3bcfc499225a2530918c37b553a080d6",
+      "file": "chunk-00000.ndjson.gz",
+      "firstRecord": 0,
+      "fromStep": 0,
+      "index": 0,
+      "rawBytes": 115086,
+      "records": 62,
+      "toStep": 58
+    }
+  ],
+  "end": {
+    "kind": "result",
+    "result": {
+      "eventHash": "sha256:61e7db64a6c862a854d8486e9e1009591ccd55ad7a3720b3adbc75d4d8cabcc3",
+      "outcome": {
+        "details": {
+          "cause": "e.4",
+          "context": [
+            {
+              "actors": ["left"],
+              "causes": [{ "eventId": "e.4", "kind": "event" }],
+              "point": "boundary",
+              "revisions": [
+                {
+                  "contentHash": "sha256:a8d5774b8782bbd849b0479ed858b0b00c126d67aa3f1c94822a5f8cebd391c3",
+                  "id": "initial-status-0",
+                  "kind": "status",
+                  "revision": 1
+                }
+              ],
+              "ruleId": "phasing.exit-limit",
+              "step": 58,
+              "wave": null
+            }
+          ],
+          "limit": 50,
+          "observed": 51
+        },
+        "kind": "truncated",
+        "reason": "Spatial budget exceeded: phase-exit-steps",
+        "resource": "phase-exit-steps"
+      },
+      "physicsStateHash": "sha256:9859faa5ebdd204712565486398e38cea3b192aa50eeea2b91f92224ac5a8cca",
+      "schemaVersion": 1,
+      "simulationHash": "sha256:4b3388c5cfbed736c923d55e02141a4cdbe05416af09c52b3f8adf56b52a401e",
+      "stats": {
+        "candidates": 2,
+        "casts": 1315,
+        "events": 53,
+        "logBytes": 115086,
+        "pathNodes": 0,
+        "peakProjectiles": 0
+      },
+      "steps": 58,
+      "trajectoryHash": "sha256:0e7975dd6af9b90407cb0f1f58e80d0cca6912955ef45d78f627509262a50b82",
+      "tsStateHash": "sha256:928266729854fc38b16747501cd947b795810ae39d89749a33eaafb931ddad05"
+    }
+  },
+  "eventHash": "sha256:61e7db64a6c862a854d8486e9e1009591ccd55ad7a3720b3adbc75d4d8cabcc3",
+  "id": "p6-spatial-phasing",
+  "input": {
+    "aiProfile": "observed-utility-v1",
+    "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
+    "engineVersion": "spatial-v1.22",
+    "eventSchemaVersion": 1,
+    "implementationDigest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+    "participants": [
+      {
+        "actorId": "left",
+        "character": {
+          "contentHash": "sha256:9c9ae4bd1bbf38f2c34da230a07c0d67e07b0b8066920910d51eddbac62ed379",
+          "id": "status-actor-0",
+          "revision": 1
+        },
+        "facing": { "x": 1, "y": 0, "z": 0 },
+        "position": { "x": -2000, "y": 902, "z": 0 },
+        "rngSeed": 2654435731,
+        "rngStream": 0
+      },
+      {
+        "actorId": "right",
+        "character": {
+          "contentHash": "sha256:14f351718e9126059e19252af6451a4157159bf577560e2a0dde6f97550ee0c4",
+          "id": "status-actor-1",
+          "revision": 1
+        },
+        "facing": { "x": -1, "y": 0, "z": 0 },
+        "position": { "x": 2000, "y": 902, "z": 0 },
+        "rngSeed": 1013904216,
+        "rngStream": 1
+      }
+    ],
+    "physicsProfile": {
+      "actorCollision": "binary64-analytic-upright-capsule-sweep-v1",
+      "aiMs": 100,
+      "axis": "right-handed-Y-up",
+      "contactTimeEpsilon": 0.000001,
+      "creationOrder": "ascending-ASCII-id",
+      "floatEncoding": "IEEE754-binary64-big-endian-hex-negative-zero-normalized",
+      "gravityMmPerSecond2": -9807,
+      "id": "spatial-v1",
+      "inputUnits": "integer-mm-ms",
+      "maxMoveSegments": 8,
+      "maxSteps": 6000,
+      "physicsConversion": "TS-binary64-metres-to-Rapier-binary32-at-each-WASM-call",
+      "rapier": "0.20.0",
+      "simultaneousObstacleContact": "wall-first-within-epsilon",
+      "skinMm": 2,
+      "stepMs": 20,
+      "trigonometry": "quarter-sine-1-degree-linear-1e9-v1"
+    },
+    "physicsProfileHash": "sha256:fec78a239c989b1345919bad1e4188561054dffae03303ac338d739c3e40df98",
+    "prng": "xorshift32-v1",
+    "replaySchemaVersion": 1,
+    "revisions": [
+      {
+        "contentHash": "sha256:a314871c229d3bcd133b7417a8c5aaabc9880853ca768df962806597995084e0",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": { "kind": "direct" },
+          "castSteps": 0,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 100,
+          "costs": { "hp": 0, "mp": 0, "uses": 1 },
+          "effects": [
+            {
+              "kind": "apply-status",
+              "status": {
+                "contentHash": "sha256:a8d5774b8782bbd849b0479ed858b0b00c126d67aa3f1c94822a5f8cebd391c3",
+                "id": "initial-status-0",
+                "revision": 1
+              }
+            }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "剣",
+          "originalText": "正面の相手を剣で攻撃する",
+          "rangeMm": 10000,
+          "recoverySteps": 3,
+          "target": "self",
+          "trigger": "battle-start"
+        },
+        "id": "initial-grant-0",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:bd9ecb4dd3a4af96a70218e2e75ba6b8f0207a7ca8dc59b165e766dcc6289755",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": { "kind": "direct" },
+          "castSteps": 0,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 100,
+          "costs": { "hp": 0, "mp": 0, "uses": 1 },
+          "effects": [
+            {
+              "kind": "apply-status",
+              "status": {
+                "contentHash": "sha256:a8d5774b8782bbd849b0479ed858b0b00c126d67aa3f1c94822a5f8cebd391c3",
+                "id": "initial-status-1",
+                "revision": 1
+              }
+            }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "剣",
+          "originalText": "正面の相手を剣で攻撃する",
+          "rangeMm": 10000,
+          "recoverySteps": 3,
+          "target": "self",
+          "trigger": "battle-start"
+        },
+        "id": "initial-grant-1",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:a17f8707459dda23e620d6960a971fc68f281bc4d26d1d787d6c890be0f66f87",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": { "kind": "hitscan", "radiusMm": 0 },
+          "castSteps": 0,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 100,
+          "costs": { "hp": 0, "mp": 0, "uses": 1 },
+          "effects": [
+            {
+              "amount": 1,
+              "attackScaleBps": 0,
+              "defense": "none",
+              "element": "physical",
+              "kind": "damage"
+            },
+            {
+              "direction": "away",
+              "durationSteps": 1,
+              "kind": "force",
+              "profile": "linear-v1",
+              "speedMmPerSecond": 50000
+            }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "剣",
+          "originalText": "正面の相手を剣で攻撃する",
+          "rangeMm": 10000,
+          "recoverySteps": 3,
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "phase-push-fixture",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:c5774981c1e715752bd432dad89d8c9ad7cbbe79c34ca911b344b70ffd6b6ab9",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:a17f8707459dda23e620d6960a971fc68f281bc4d26d1d787d6c890be0f66f87",
+              "id": "phase-push-fixture",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "剣士",
+          "originalText": "",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:7a44efc575069a60c8e99fc6f1a8dd2396d26e96fb17ecdb2f516fca37807388",
+            "id": "phase-hold-fixture",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "phase-walker-fixture",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:9c9ae4bd1bbf38f2c34da230a07c0d67e07b0b8066920910d51eddbac62ed379",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:a17f8707459dda23e620d6960a971fc68f281bc4d26d1d787d6c890be0f66f87",
+              "id": "phase-push-fixture",
+              "revision": 1
+            },
+            {
+              "contentHash": "sha256:a314871c229d3bcd133b7417a8c5aaabc9880853ca768df962806597995084e0",
+              "id": "initial-grant-0",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "剣士",
+          "originalText": "",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:7a44efc575069a60c8e99fc6f1a8dd2396d26e96fb17ecdb2f516fca37807388",
+            "id": "phase-hold-fixture",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "status-actor-0",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:14f351718e9126059e19252af6451a4157159bf577560e2a0dde6f97550ee0c4",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:a17f8707459dda23e620d6960a971fc68f281bc4d26d1d787d6c890be0f66f87",
+              "id": "phase-push-fixture",
+              "revision": 1
+            },
+            {
+              "contentHash": "sha256:bd9ecb4dd3a4af96a70218e2e75ba6b8f0207a7ca8dc59b165e766dcc6289755",
+              "id": "initial-grant-1",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "剣士",
+          "originalText": "",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:7a44efc575069a60c8e99fc6f1a8dd2396d26e96fb17ecdb2f516fca37807388",
+            "id": "phase-hold-fixture",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "status-actor-1",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:7a44efc575069a60c8e99fc6f1a8dd2396d26e96fb17ecdb2f516fca37807388",
+        "definition": {
+          "flightAltitudeMm": 4000,
+          "jumpWhenBlocked": false,
+          "movement": "hold",
+          "name": "接近戦",
+          "originalText": "",
+          "preferredDistanceMm": 1200,
+          "priorities": [{ "abilityId": "phase-push-fixture", "when": { "kind": "always" } }]
+        },
+        "id": "phase-hold-fixture",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:a9c6d40594279829137bf2f047c9d861283dce0137bd538885d7b2cf311c9acf",
+        "definition": {
+          "ai": {
+            "actionWeight": 100,
+            "appearancePriors": {
+              "cues": [
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "fire" }],
+                  "match": { "surface": "red" }
+                },
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "ice" }],
+                  "match": { "surface": "blue" }
+                }
+              ],
+              "defaultEfficacyBps": 7500
+            },
+            "damageQuantum": 10,
+            "dodgeWeight": 600,
+            "explorationWeight": 60,
+            "healthPrior": 200,
+            "horizonSteps": 50,
+            "initialKnowledge": "empty-match-v1",
+            "killWeight": 2400,
+            "knowledgeTtlSteps": 500,
+            "memorySamples": 32,
+            "observation": "visible-coarse-v1",
+            "profile": "observed-utility-v1",
+            "random": "actor-purpose-rejection-v1",
+            "riskWeight": 800,
+            "slots": "simultaneous-v1"
+          },
+          "aoeOcclusion": "five-samples-equal-linear-v1",
+          "bodyContact": "symmetric-stop",
+          "curveErrorMm": 1,
+          "fallDamagePerMeterPerSecond": 5,
+          "fallSafeSpeedMmPerSecond": 8000,
+          "gravityMmPerSecond2": -9807,
+          "maxSteps": 65,
+          "name": "標準3D・空間操作・透過",
+          "rulesVersion": "spatial-v1.22",
+          "simultaneousConflict": "unresolved",
+          "stepMs": 20
+        },
+        "id": "standard-spatial-v1",
+        "kind": "ruleset",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:871380da5b5ddf7943f1bb71d5bc98b40446f7d310cb7d0563bddeb7e9906425",
+        "definition": {
+          "bounds": {
+            "max": { "x": 50000, "y": 50000, "z": 50000 },
+            "min": { "x": -50000, "y": -1000, "z": -50000 }
+          },
+          "name": "平地",
+          "navigation": { "edges": [], "nodes": [], "version": "support-graph-v1" },
+          "obstacles": [
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": 0, "y": -500, "z": 0 },
+              "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+              "id": "floor",
+              "kind": "box",
+              "slopeMilliDegrees": 0,
+              "yawMilliDegrees": 0
+            },
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": -3000, "y": 1000, "z": 0 },
+              "halfExtents": { "x": 500, "y": 1000, "z": 1000 },
+              "id": "phase-wall-0",
+              "kind": "box",
+              "material": "stone",
+              "slopeMilliDegrees": 0,
+              "yawMilliDegrees": 0
+            },
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": 3000, "y": 1000, "z": 0 },
+              "halfExtents": { "x": 500, "y": 1000, "z": 1000 },
+              "id": "phase-wall-1",
+              "kind": "box",
+              "material": "stone",
+              "slopeMilliDegrees": 0,
+              "yawMilliDegrees": 0
+            }
+          ],
+          "terrainKnowledge": "surveyed"
+        },
+        "id": "phase-exit-arena",
+        "kind": "scenario",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:a8d5774b8782bbd849b0479ed858b0b00c126d67aa3f1c94822a5f8cebd391c3",
+        "definition": {
+          "durationSteps": 8,
+          "maxStacks": 1,
+          "modifiers": {
+            "attack": 0,
+            "defense": 0,
+            "flight": false,
+            "rooted": false,
+            "speedBps": 10000
+          },
+          "name": "initial effect",
+          "originalText": "fixture through the common status pipeline",
+          "periodic": [],
+          "phasing": { "floor": false, "materials": ["stone"] },
+          "stackKey": "phase-stone",
+          "stacking": "refresh"
+        },
+        "id": "initial-status-0",
+        "kind": "status",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:a8d5774b8782bbd849b0479ed858b0b00c126d67aa3f1c94822a5f8cebd391c3",
+        "definition": {
+          "durationSteps": 8,
+          "maxStacks": 1,
+          "modifiers": {
+            "attack": 0,
+            "defense": 0,
+            "flight": false,
+            "rooted": false,
+            "speedBps": 10000
+          },
+          "name": "initial effect",
+          "originalText": "fixture through the common status pipeline",
+          "periodic": [],
+          "phasing": { "floor": false, "materials": ["stone"] },
+          "stackKey": "phase-stone",
+          "stacking": "refresh"
+        },
+        "id": "initial-status-1",
+        "kind": "status",
+        "revision": 1,
+        "schemaVersion": 1
+      }
+    ],
+    "ruleset": {
+      "contentHash": "sha256:a9c6d40594279829137bf2f047c9d861283dce0137bd538885d7b2cf311c9acf",
+      "id": "standard-spatial-v1",
+      "revision": 1
+    },
+    "scenario": {
+      "contentHash": "sha256:871380da5b5ddf7943f1bb71d5bc98b40446f7d310cb7d0563bddeb7e9906425",
+      "id": "phase-exit-arena",
+      "revision": 1
+    },
+    "schemaVersion": 3,
+    "seed": 42,
+    "seedDerivation": "actor-stream-v1",
+    "wasmHash": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4"
+  },
+  "lastVerifiedStep": 58,
+  "profile": {
+    "codec": "gzip",
+    "id": "display-ndjson-gzip-v1",
+    "interpolation": "recorded-piecewise-linear",
+    "maxCheckpointSteps": 250,
+    "maxRawBytes": 256032768,
+    "maxStoredBytes": 16777216,
+    "stepMs": 20,
+    "targetChunkBytes": 131072,
+    "units": "metres-binary64"
+  },
+  "records": 62,
+  "resultId": "p6-spatial-phasing-result",
+  "schemaVersion": 1,
+  "simulationHash": "sha256:4b3388c5cfbed736c923d55e02141a4cdbe05416af09c52b3f8adf56b52a401e",
+  "trajectoryHash": "sha256:0e7975dd6af9b90407cb0f1f58e80d0cca6912955ef45d78f627509262a50b82"
+}

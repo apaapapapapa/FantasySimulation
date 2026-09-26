@@ -175,6 +175,16 @@ export const CAPABILITY_COVERAGE = {
     'blades.test.ts',
     'hits an interior shaft crossing that neither endpoint nor the tip path touches',
   ),
+  'attack:area': attack(
+    'area',
+    'spatial-objects.test.ts',
+    'sweeps an area crossing and retains detached ledger occupancy between pulses',
+  ),
+  'attack:beam': attack(
+    'beam',
+    'spatial-objects.test.ts',
+    'clips a moving beam at blockers and uses one shared hit ledger',
+  ),
   'attack:radial': attack(
     'radial',
     'blades.test.ts',

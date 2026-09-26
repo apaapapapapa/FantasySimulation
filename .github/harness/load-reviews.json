@@ -2,6 +2,20 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+      "beforeDigest": "833e10dbe2a4cfb935d7fe1ed755c8d413095fe013f4fa624f7818ca7a48d2a3",
+      "afterDigest": "ece8c7827296c3fb0772e7fa759d6baf27094f8099e2c73f0d9e487f660881ac",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "P6-06..08 introduces spatial-v1.22 and new spatial rules under ADR0010 while retaining all 114 main catalogue definitions and existing expected fixtures. Reviewed the canonical load collector on one Linux runner: exact main e7d6d20a07c40aa916200d8225a7e256591e4f4b versus committed checkpoint 70401399d2a1f627bec5e0998f033b597e077a80, frozen installs, warmups and five alternating trials for each of seven cases (35 observations per revision). Both identities, regression probes, deterministic ceilings and all bounded commands passed. Outcome kinds and all seven count/byte cost vectors are stable and identical across revisions. The final review fixes (explicit arena identity, barrier placement range and a shorter unpublished stacking label) independently pass 1628 tests and 285 corpus mappings; the subsequent working-tree load verification has the identical afterDigest. The corpus fixtures differ by engine/rules identity, so this is an independent version transition: paired timing/RSS comparability remains unknown. The initial collection retained an unknown comparison until this review; no failed report is relabelled. Current-head clean-source and actual main CI must validate their own source, baseline, corpus and measurements. No profile limits, expected outputs or gate logic change.",
+      "evidence": [
+        ".github/harness/load-evidence/p6-spatial-v22.json",
+        "packages/engine/fixtures/spatial/corpus.json",
+        "docs/adr/0017-p6-spatial-mechanics.md"
+      ]
+    },
+    {
       "baselineSha": "b6b6b067fed78688dfa6e9db5aa5740d4f4e5423",
       "beforeDigest": "613ae49c35c57da5b29c2ef50fe6cd45288a9d3f7c8bd4db5a73d201518817fe",
       "afterDigest": "833e10dbe2a4cfb935d7fe1ed755c8d413095fe013f4fa624f7818ca7a48d2a3",

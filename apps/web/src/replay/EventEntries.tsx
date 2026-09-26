@@ -32,6 +32,13 @@ export function EventEntries({
                 Shield {event.before.shield} → {event.after.shield}
               </p>
             )}
+            {event.teleport && (
+              <p>
+                テレポート: ({event.teleport.from.x}, {event.teleport.from.y},{' '}
+                {event.teleport.from.z}) → ({event.teleport.to.x}, {event.teleport.to.y},{' '}
+                {event.teleport.to.z}) m。境界で移動し、経路は補間しません。
+              </p>
+            )}
             {event.projectileDeflection && (
               <p>
                 跳ね返し: {event.projectileDeflection.originalOwnerId} →{' '}

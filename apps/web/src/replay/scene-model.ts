@@ -93,6 +93,17 @@ export function buildSceneModel(
         : index === 0
           ? '#d4b780'
           : '#68b7db',
+      phasing: actor.phasing
+        ? {
+            materials: [
+              ...new Set(
+                [...actor.phasing.active, ...actor.phasing.retained].flatMap((c) => c.materials),
+              ),
+            ],
+            pending: actor.phasing.exitPending,
+            intervals: actor.phasing.extendedIntervals,
+          }
+        : null,
       locomotion: actor.locomotion ?? null,
       stamina:
         actor.resources.stamina === undefined
@@ -220,6 +231,22 @@ export function buildSceneModel(
       };
     }),
     actors,
+    objects: (checkpoint.state?.objects ?? []).map((o) => ({
+      id: o.id,
+      kind: o.kind,
+      position: point(o.position),
+      shape: o.shape ?? null,
+      colour: o.kind === 'barrier' ? '#62c7ee' : o.kind === 'area' ? '#f6a96d' : '#ff87cf',
+      durability: o.durability === undefined ? null : `${o.durability}/${o.maxDurability}`,
+      beams:
+        o.geometry && o.geometry.kind === 'ray'
+          ? o.geometry.segments.map((s, i) => ({
+              id: `${o.id}:${i}`,
+              points: [point(s.start), point(s.end)] as [Point, Point],
+              radius: o.geometry!.radiusMm / 1000,
+            }))
+          : [],
+    })),
     projectiles: (checkpoint.state?.projectiles ?? []).map((p) => ({
       id: p.id,
       position: point(p.position),

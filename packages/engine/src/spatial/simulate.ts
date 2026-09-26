@@ -1,3 +1,4 @@
+import type { SpatialObject } from './rules/spatial-objects.ts';
 import type { ActorState, MeleeState, PreparedBattle } from './state.ts';
 import {
   BudgetSchema,
@@ -25,6 +26,7 @@ import { startPhase } from './sim/phase-start.ts';
 import { releasePhase } from './sim/phase-release.ts';
 import { contactPhase } from './sim/phase-contact.ts';
 import { resolutionPhase } from './sim/phase-resolution.ts';
+import type { PendingRelocation } from './state.ts';
 export type SimulationEnd = {
   steps: number;
   outcome: Outcome;
@@ -46,7 +48,13 @@ function outcomeFromError(error: unknown, diagnostics: boolean): Outcome {
       kind: 'truncated',
       resource: error.resource,
       reason: error.message,
-      ...(diagnostics && error.details ? { details: error.details } : {}),
+      ...((diagnostics ||
+        error.resource.startsWith('spatial-') ||
+        error.resource.startsWith('interference-') ||
+        error.resource === 'phase-exit-steps') &&
+      error.details
+        ? { details: error.details }
+        : {}),
     };
   if (error instanceof UnresolvedRuleError)
     return {
@@ -65,7 +73,7 @@ export function* simulate(
 ): Generator<StreamRecord, SimulationEnd> {
   const budget = BudgetSchema.parse(inputBudget);
   // Validate geometry before counting execution work. Invalid spawn is input failure, not a rule outcome.
-  const world = createBattleWorld(battle);
+  let world = createBattleWorld(battle);
   let step = 0,
     sequence = 0,
     bytes = 0,
@@ -75,6 +83,8 @@ export function* simulate(
   let melees: MeleeState[] = [];
   let projectiles: ProjectileState[] = [];
   let ledger = new HitLedger();
+  let relocations: PendingRelocation[] | undefined;
+  let objects: SpatialObject[] | undefined;
   const work = new WorkMeter(budget);
   try {
     actors = [...battle.actors]
@@ -83,7 +93,12 @@ export function* simulate(
     const navigators = new Map(
       actors.map((a) => [
         actorId(a),
-        new Navigator(world, a.body.motion.actor, battle.scenario, battle.rules),
+        new Navigator(
+          world.forQuery({ ignoreDynamic: true }),
+          a.body.motion.actor,
+          battle.scenario,
+          battle.rules,
+        ),
       ]),
     );
     world.casts = 0;
@@ -99,28 +114,60 @@ export function* simulate(
     yield structuredClone(initial);
     while (step < battle.rules.maxSteps && !outcome) {
       const context = { battle, budget, world, navigators, work };
-      const previous = () => ({ actors, melees, projectiles, ledger, serial });
+      const previous = () => ({
+        actors,
+        melees,
+        projectiles,
+        ledger,
+        serial,
+        ...(relocations ? { relocations } : {}),
+        ...(objects ? { objects } : {}),
+      });
+      let transaction: StepTransaction | undefined;
       // Boundary and interval are independent atomic commits. Work already attempted is retained.
       try {
         const tx = new StepTransaction(context, previous(), step, sequence, bytes, 'boundary');
+        transaction = tx;
         boundaryPhase(tx);
         const record = tx.boundaryRecord();
-        if (record.changes.length || tx.journal.events.length) {
+        const publish =
+          record.changes.length > 0 || tx.journal.events.length > 0 || !!record.objects;
+        if (publish) {
           const committed = tx.journal.finish(record);
           actors = tx.next.actors;
           bytes += committed.bytes;
           sequence += tx.journal.events.length;
           melees = melees.filter((m) => attachedStageAlive(m, actors, step));
-          yield structuredClone(record);
         } else actors = tx.next.actors;
+        ({ relocations, objects, ledger, serial } = tx.next);
+        const oldWorld = world;
+        world = tx.commitWorld(world);
+        context.world = world;
+        if (world !== oldWorld) {
+          navigators.clear();
+          for (const actor of actors)
+            navigators.set(
+              actorId(actor),
+              new Navigator(
+                world.forQuery({ ignoreDynamic: true }),
+                actor.body.motion.actor,
+                battle.scenario,
+                battle.rules,
+              ),
+            );
+        }
+        if (publish) yield structuredClone(record);
         outcome = verdict(actors);
         if (outcome) break;
       } catch (error) {
         outcome = outcomeFromError(error, !!battle.rules.interferenceDiagnostics);
         break;
+      } finally {
+        transaction?.discardWorld();
       }
       try {
         const tx = new StepTransaction(context, previous(), step, sequence, bytes, 'interval');
+        transaction = tx;
         decisionPhase(tx);
         startPhase(tx);
         releasePhase(tx);
@@ -129,7 +176,7 @@ export function* simulate(
         const record = tx.intervalRecord();
         const committed = tx.journal.finish(record);
         tx.finishInterval();
-        ({ actors, melees, projectiles, ledger, serial } = tx.next);
+        ({ actors, melees, projectiles, ledger, serial, relocations, objects } = tx.next);
         step++;
         bytes += committed.bytes;
         sequence += tx.journal.events.length;
@@ -137,6 +184,8 @@ export function* simulate(
         outcome = verdict(actors);
       } catch (error) {
         outcome = outcomeFromError(error, !!battle.rules.interferenceDiagnostics);
+      } finally {
+        transaction?.discardWorld();
       }
     }
     outcome ??= { kind: 'draw', reason: 'time-limit' };
@@ -173,6 +222,30 @@ export function* simulate(
           },
         })),
         serial,
+        ...(objects?.length
+          ? {
+              objects: objects.map(({ ability, ...o }) => ({
+                ...o,
+                ability: {
+                  id: ability.id,
+                  revision: ability.revision,
+                  contentHash: ability.contentHash,
+                },
+              })),
+            }
+          : {}),
+        ...(relocations?.length
+          ? {
+              relocations: relocations.map(({ ability, ...command }) => ({
+                ...command,
+                ability: {
+                  id: ability.id,
+                  revision: ability.revision,
+                  contentHash: ability.contentHash,
+                },
+              })),
+            }
+          : {}),
         ...(ledger.snapshot().length ? { hitLedger: ledger.snapshot() } : {}),
         projectiles: projectiles.map((p) => ({
           ...p,

@@ -1,3 +1,6 @@
+import { attackWorld } from '../rules/phasing.ts';
+import type { AbilityRevision } from '../state.ts';
+import type { AttackContact } from '../rules/attacks.ts';
 import type { ActorState, PreparedBattle } from '../state.ts';
 import type { PendingEffect } from './combat-effects.ts';
 import type { Journal } from '../rules/journal.ts';
@@ -21,6 +24,12 @@ export function releaseCounters(
   step: number,
   ledger: HitLedger,
   countCandidate: () => void,
+  onWall?: (
+    actor: ActorState,
+    ability: AbilityRevision,
+    contact: AttackContact,
+    cause: string,
+  ) => void,
 ): PendingEffect[] {
   const effects: PendingEffect[] = [];
   for (const actor of actors) {
@@ -66,7 +75,7 @@ export function releaseCounters(
       actor.mind.random = aim.random;
       countCandidate();
       const contact = hitscan(
-        world,
+        attackWorld(world, { ownerId: actorId, ability }, actor.body.motion),
         actor.body.motion,
         enemy.body.motion,
         aim.direction,
@@ -99,7 +108,10 @@ export function releaseCounters(
         point: contact.point,
         reason: contact.kind,
       });
-      if (contact.kind !== 'body') continue;
+      if (contact.kind !== 'body') {
+        onWall?.(actor, ability, contact, hit.id);
+        continue;
+      }
       const accepted = ledger.contact(
         {
           actionId: reaction.context.activationId,

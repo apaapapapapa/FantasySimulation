@@ -59,6 +59,20 @@ function segmentBoxClosest(start: Vec3, end: Vec3, half: Vec3) {
 }
 /** Whole horizontal blade, including its shaft, against boxes/ramps and upright pillars. */
 export function bladeObstacleContact(start: Vec3, end: Vec3, radius: number, obstacle: Obstacle) {
+  if (obstacle.kind === 'sphere') {
+    const delta = sub(end, start),
+      square = dot(delta, delta);
+    const t = square
+      ? Math.max(0, Math.min(1, dot(sub(obstacle.position, start), delta) / square))
+      : 0;
+    const axis = add(start, mul(delta, t)),
+      gap = sub(axis, obstacle.position);
+    return {
+      distance: Math.sqrt(dot(gap, gap)) - radius - obstacle.halfExtents.x,
+      point: sub(axis, mul(unit(gap), radius)),
+      normal: unit(gap),
+    };
+  }
   if (obstacle.kind === 'pillar') {
     const axis = closestHorizontal(start, end, obstacle.position);
     const delta = sub(axis, obstacle.position);
@@ -73,6 +87,7 @@ export function bladeObstacleContact(start: Vec3, end: Vec3, radius: number, obs
     return {
       distance: Math.sqrt(horizontal ** 2 + vertical ** 2) - radius,
       point: sub(axis, mul(unit(gap), radius)),
+      normal: unit(gap),
     };
   }
   const local = (p: Vec3) =>
@@ -88,6 +103,7 @@ export function bladeObstacleContact(start: Vec3, end: Vec3, radius: number, obs
   return {
     distance: Math.sqrt(closest.squared) - radius,
     point: sub(axis, mul(unit(gap), radius)),
+    normal: unit(gap),
   };
 }
 function closestHorizontal(start: Vec3, end: Vec3, position: Vec3) {
@@ -117,6 +133,17 @@ export function bladeBodyContact(
 }
 export function capsuleObstacleContact(position: Vec3, body: Capsule, obstacle: Obstacle) {
   const local = sub(position, obstacle.position);
+  if (obstacle.kind === 'sphere') {
+    const delta = {
+      ...local,
+      y: Math.sign(local.y) * Math.max(0, Math.abs(local.y) - body.halfHeight),
+    };
+    const distance = Math.sqrt(dot(delta, delta));
+    return {
+      distance: distance - body.radius - obstacle.halfExtents.x,
+      normal: distance > 1e-12 ? unit(delta) : undefined,
+    };
+  }
   let squared: number, delta: Vec3;
   if (obstacle.kind === 'pillar') {
     const radius = Math.sqrt(local.x ** 2 + local.z ** 2);
@@ -155,7 +182,7 @@ export function capsuleOverlapsObstacle(
 
 /** Stabilize a contact strictly inside a box face; preserve edge/corner normals. */
 export function faceNormal(obstacle: Obstacle, point: Vec3, fallback: Vec3): Vec3 {
-  if (obstacle.kind === 'pillar') return fallback;
+  if (obstacle.kind !== undefined) return fallback;
   const local = obstacle.rotation
     ? rotate(sub(point, obstacle.position), inverse(obstacle.rotation))
     : sub(point, obstacle.position);
@@ -179,7 +206,7 @@ export function planarContactTime(
   body: Capsule,
   skin: number,
 ): number | undefined {
-  if (obstacle.kind === 'pillar' || dot(normal, velocity) >= -1e-12) return undefined;
+  if (obstacle.kind !== undefined || dot(normal, velocity) >= -1e-12) return undefined;
   const localNormal = obstacle.rotation ? rotate(normal, inverse(obstacle.rotation)) : normal;
   const axis = (['x', 'y', 'z'] as const).find((a) => Math.abs(localNormal[a]) > 1 - 1e-10);
   if (!axis) return undefined;
@@ -205,4 +232,45 @@ export function planarContactTime(
   )
     ? time
     : undefined;
+}
+
+/** Strict solid-volume interior is distinct from legal support/surface contact. */
+export function pointInsideObstacle(point: Vec3, obstacle: Obstacle, tolerance = 1e-6): boolean {
+  const p = obstacle.rotation
+      ? rotate(sub(point, obstacle.position), inverse(obstacle.rotation))
+      : sub(point, obstacle.position),
+    h = obstacle.halfExtents;
+  if (obstacle.kind === 'sphere') return dot(p, p) < (h.x - tolerance) ** 2;
+  if (obstacle.kind === 'pillar')
+    return p.x * p.x + p.z * p.z < (h.x - tolerance) ** 2 && Math.abs(p.y) < h.y - tolerance;
+  return (
+    Math.abs(p.x) < h.x - tolerance &&
+    Math.abs(p.y) < h.y - tolerance &&
+    Math.abs(p.z) < h.z - tolerance
+  );
+}
+export function outwardSurfaceRay(point: Vec3, velocity: Vec3, obstacle: Obstacle): boolean {
+  if (pointInsideObstacle(point, obstacle)) return false;
+  const p = obstacle.rotation
+      ? rotate(sub(point, obstacle.position), inverse(obstacle.rotation))
+      : sub(point, obstacle.position),
+    v = obstacle.rotation ? rotate(velocity, inverse(obstacle.rotation)) : velocity,
+    h = obstacle.halfExtents;
+  if (obstacle.kind === 'sphere')
+    return Math.abs(Math.sqrt(dot(p, p)) - h.x) <= 1e-6 && dot(p, v) > 1e-12;
+  if (obstacle.kind === 'pillar')
+    return (
+      (Math.abs(Math.sqrt(p.x * p.x + p.z * p.z) - h.x) <= 1e-6 &&
+        Math.abs(p.y) <= h.y + 1e-6 &&
+        p.x * v.x + p.z * v.z > 1e-12) ||
+      (Math.abs(Math.abs(p.y) - h.y) <= 1e-6 &&
+        p.x * p.x + p.z * p.z <= (h.x + 1e-6) ** 2 &&
+        p.y * v.y > 1e-12)
+    );
+  return (
+    (['x', 'y', 'z'] as const).every((k) => Math.abs(p[k]) <= h[k] + 1e-6) &&
+    (['x', 'y', 'z'] as const).some(
+      (k) => Math.abs(Math.abs(p[k]) - h[k]) <= 1e-6 && p[k] * v[k] > 1e-12,
+    )
+  );
 }

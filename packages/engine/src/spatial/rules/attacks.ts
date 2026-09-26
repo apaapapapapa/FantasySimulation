@@ -97,7 +97,13 @@ export function launchDirection(facing: Vec3, errorMilliDegrees: number, random:
     random: next,
   };
 }
-export type AttackContact = { kind: 'wall' | 'body'; time: number; point: Vec3; center: Vec3 };
+export type AttackContact = {
+  kind: 'wall' | 'body';
+  time: number;
+  point: Vec3;
+  center: Vec3;
+  obstacleIds?: string[];
+};
 /** Attack overlap counts even for a stationary or separating body; movement contact has different semantics. */
 export function traceAttack(
   world: SpatialWorld,
@@ -109,6 +115,7 @@ export function traceAttack(
 ): AttackContact | null {
   let wall: number | undefined;
   let wallPoint: Vec3 | undefined;
+  let obstacleIds: string[] | undefined;
   const shape = ballShape(radius);
   for (const piece of trace) {
     if (world.overlaps(piece.start, shape, 'attack')) {
@@ -119,6 +126,7 @@ export function traceAttack(
     const hit = world.sweep(piece.start, sub(piece.end, piece.start), shape, 'attack');
     if (hit) {
       wall = piece.from + (piece.to - piece.from) * hit.time_of_impact;
+      obstacleIds = [hit.obstacleId];
       wallPoint = sub(at(trace, wall), mul(hit.normal1, radius));
       break;
     }
@@ -136,7 +144,13 @@ export function traceAttack(
     blocking.wall =
       wall === undefined
         ? null
-        : { kind: 'wall', time: wall, point: wallPoint!, center: at(trace, wall) };
+        : {
+            kind: 'wall',
+            time: wall,
+            point: wallPoint!,
+            center: at(trace, wall),
+            ...(obstacleIds ? { obstacleIds } : {}),
+          };
   if (!hit) return null;
   const center = at(trace, hit.time);
   const targetPosition = at(targetTrace, hit.time);
@@ -150,7 +164,7 @@ export function traceAttack(
   };
   const point =
     hit.kind === 'wall' ? wallPoint! : sub(center, mul(unit(sub(center, axis)), radius));
-  return { ...hit, point, center };
+  return { ...hit, point, center, ...(hit.kind === 'wall' && obstacleIds ? { obstacleIds } : {}) };
 }
 /** Prevent an offset weapon from appearing through a wall between the body and its muzzle. */
 export function muzzleBlocked(world: SpatialWorld, state: MotionState): boolean {

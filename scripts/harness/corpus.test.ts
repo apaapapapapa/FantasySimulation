@@ -88,6 +88,19 @@ function definition(pinned?: { contract: Contract; identity: InputIdentity }): D
   };
 }
 const realPinned = async () => observedInput(await prepareBattle(await sampleManifest(20)));
+function fillRegistry(source: Draft) {
+  const extra = Array.from({ length: 510 }, (_, i) => `capacity-${i}`);
+  for (const id of extra) source.tests[id] = { file: tests.golden.file, name: id };
+  for (let offset = 0; offset < extra.length; offset += 64)
+    source.categories.push({
+      id: `capacity-${offset}`,
+      title: 'bounded registry',
+      state: 'implemented',
+      owner: null,
+      tests: extra.slice(offset, offset + 64),
+    });
+  return extra;
+}
 const battleResult = (): BattleResult => ({
   schemaVersion: 1,
   simulationHash: digest('1'),
@@ -132,6 +145,22 @@ describe('regression corpus definition', () => {
     assert.ok(corpus.entries.length > 0);
     for (const category of corpus.categories)
       assert.equal(category.state === 'planned', category.owner !== null);
+  });
+  it('retains every required test above 256 and fails closed beyond the reviewed 512 registry capacity', () => {
+    const source = definition();
+    fillRegistry(source);
+    const parsed = parseCorpus(source);
+    assert.equal(parsed.tests.size, 512);
+    assert.deepEqual([...parsed.tests.keys()], Object.keys(source.tests));
+    const unreferenced = structuredClone(source);
+    unreferenced.categories.at(-1)!.tests.pop();
+    assert.throws(() => parseCorpus(unreferenced), /unreferenced/);
+    source.tests.overflow = {
+      file: 'packages/engine/src/spatial/capacity.test.ts',
+      name: 'overflow',
+    };
+    source.categories.at(-1)!.tests.push('overflow');
+    assert.throws(() => parseCorpus(source), /1\.\.512/);
   });
   it.each([
     ['unknown fields', (c: Draft) => (c.extra = true), /expected exactly/],
@@ -379,8 +408,13 @@ describe('parallel corpus observation bound by the aggregate', { timeout: 30000 
       throw error;
     }
   }
-  function receipts(root: string, statuses: Partial<Record<TestKey, string>> = {}) {
+  function receipts(
+    root: string,
+    statuses: Partial<Record<TestKey, string>> = {},
+    extra: readonly string[] = [],
+  ) {
     const mapped = vitestJson(root, statuses).testResults;
+    mapped[0]!.assertionResults.push(...extra.map((fullName) => ({ fullName, status: 'passed' })));
     const files = [
       ...mapped,
       ...fillers.map((file) => ({
@@ -452,6 +486,45 @@ describe('parallel corpus observation bound by the aggregate', { timeout: 30000 
       process.env.GITHUB_RUN_ATTEMPT = '2';
       writeFileSync(join(repo.root, 'corpus.json'), '{}');
       assert.throws(() => bindCorpus(repo.root, 'corpus.json', TEST_SHARDS), /Stale/);
+    } finally {
+      restore();
+      repo.dispose();
+    }
+  });
+  it('binds all 512 required tests, rejects missing results and bounds observed registries', async () => {
+    let extra: string[] = [];
+    const { repo, observation, restore } = await observed((value) => {
+      extra = fillRegistry(value);
+    });
+    try {
+      assert.equal(observation.exitCode, 0);
+      receipts(repo.root, {}, extra);
+      assert.equal(bindCorpus(repo.root, 'corpus.json', TEST_SHARDS).exitCode, 0);
+      const directory = join(repo.root, '.generated/harness/corpus');
+      const saved = JSON.parse(readFileSync(join(directory, 'results.json'), 'utf8')) as {
+        tests: { key: string; status: string }[];
+      };
+      assert.deepEqual(
+        saved.tests.map((test) => test.key),
+        ['golden', 'order', ...extra],
+      );
+      assert.ok(saved.tests.every((test) => test.status === 'pass'));
+
+      receipts(repo.root, {}, extra.slice(0, -1));
+      const missing = bindCorpus(repo.root, 'corpus.json', TEST_SHARDS);
+      assert.equal(missing.exitCode, 2);
+      assert.equal(
+        missing.report.checks.find((check) => check.id === 'corpus:tests')?.status,
+        'unknown',
+      );
+
+      const path = join(directory, 'observation.json');
+      const overflow = JSON.parse(readFileSync(path, 'utf8')) as {
+        definition: { tests: unknown[] };
+      };
+      overflow.definition.tests.push(['overflow', { file: tests.golden.file, name: 'overflow' }]);
+      writeFileSync(path, JSON.stringify(overflow));
+      assert.throws(() => bindCorpus(repo.root, 'corpus.json', TEST_SHARDS), /at most 512/);
     } finally {
       restore();
       repo.dispose();

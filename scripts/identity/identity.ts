@@ -14,7 +14,7 @@ export function engineIdentity(root: string) {
   const rapier = runtimePackage(root, 'packages/engine', '@dimforge/rapier3d-compat');
   const wasm = hash(readFileSync(join(rapier, 'dist/rapier_wasm3d_bg.wasm')));
   const binding = hash(readFileSync(join(rapier, 'dist/rapier.mjs')));
-  const tablePath = 'packages/engine/src/spatial/sine-table.json';
+  const tablePath = 'packages/domain/src/spatial/sine-table.json';
   const profilePath = 'packages/engine/src/spatial/profile.json';
   if (
     ![tablePath, profilePath].every((path) => closure.sources.some(([source]) => source === path))

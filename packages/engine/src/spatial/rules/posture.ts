@@ -70,20 +70,27 @@ export function advancePosture(
     const body = postureBody(self, state.transition.to)!;
     const position = posturePosition(self, body),
       shape = capsuleShape(bodyCapsule(body));
+    // A contained smaller capsule cannot introduce penetration, even during safe exit.
+    const oldBody = self.actor.character.body;
+    const contained =
+      body.heightMm <= oldBody.heightMm &&
+      body.radiusMm <= oldBody.radiusMm &&
+      body.heightMm - body.radiusMm <= oldBody.heightMm - oldBody.radiusMm;
     const blocked =
-      world.overlaps(position, shape) ||
-      others.some(
-        (other) =>
-          other.actor.participant.actorId !== self.actor.participant.actorId &&
-          firstContact(
-            straight(position, position),
-            shape,
-            straight(other.position, other.position),
-            capsuleShape(bodyCapsule(other.actor.character.body)),
-            0,
-            true,
-          ) !== undefined,
-      );
+      !contained &&
+      (world.forQuery({ ownerId: self.actor.participant.actorId }).overlaps(position, shape) ||
+        others.some(
+          (other) =>
+            other.actor.participant.actorId !== self.actor.participant.actorId &&
+            firstContact(
+              straight(position, position),
+              shape,
+              straight(other.position, other.position),
+              capsuleShape(bodyCapsule(other.actor.character.body)),
+              0,
+              true,
+            ) !== undefined,
+        ));
     if (!blocked) {
       state.current = state.transition.to;
       self = {

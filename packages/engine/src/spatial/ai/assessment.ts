@@ -19,6 +19,7 @@ import { abilityCategories } from '../rules/categories.ts';
 import { appearancePrior } from './appearance.ts';
 import { shapeEstimate, stageMotionEstimate } from './shape-assessment.ts';
 import { abilityPlan, authoredStages } from '../rules/ability-plan.ts';
+import { relocationDestination } from '../rules/relocation.ts';
 
 export const clampBps = (n: number) => Math.max(0, Math.min(10000, Math.round(n)));
 export const boundedWeight = (n: number) => Math.max(0, Math.min(1_000_000, Math.round(n)));
@@ -101,15 +102,20 @@ export function efficacy(
     evidence: [],
   };
 }
-export function assessAbility(view: DecisionView, ability: AbilityRevision): CandidateAssessment {
+export function assessAbility(
+  view: DecisionView,
+  ability: AbilityRevision,
+  clear: KnownClearance = () => true,
+): CandidateAssessment {
   return abilityPlan(ability).kind === 'staged'
-    ? assessStages(view, ability)
-    : assessSingle(view, ability).assessment;
+    ? assessStages(view, ability, clear)
+    : assessSingle(view, ability, undefined, clear).assessment;
 }
 function assessSingle(
   view: DecisionView,
   ability: AbilityRevision,
   timing?: { cast: number; duration: number },
+  clear: KnownClearance = () => true,
 ) {
   const rules = view.rules,
     weights = view.self.actor.policy.evaluation ?? {
@@ -128,6 +134,10 @@ function assessSingle(
   const beforeHitRisk = Math.min(1, (burnRisk * Math.max(1, cast)) / rules.horizonSteps);
   const observedThreat =
     (view.memory.observation?.projectiles.length ?? 0) * 0.15 +
+    (view.memory.observation?.spatial?.filter(
+      (o) => o.ownerId !== view.self.actor.participant.actorId && o.kind !== 'barrier',
+    ).length ?? 0) *
+      0.2 +
     (target?.action === 'cast' ? 0.25 : target?.action === 'active' ? 0.4 : 0);
   const exposure = Math.min(1, (observedThreat * duration * riskAversion) / rules.horizonSteps);
   const costBps = clampBps(
@@ -147,6 +157,45 @@ function assessSingle(
     confidencePower = 0;
   const evidence: string[] = [],
     reasons: string[] = [];
+  if (d.barrier) {
+    const destination = relocationDestination(
+      d.barrier.placement,
+      view.self,
+      view.memory.observation?.enemy,
+    );
+    const possible =
+      !!destination &&
+      length(sub(destination, view.self.position)) <= d.barrier.placement.maxDistanceMm / 1000;
+    if (possible)
+      utility +=
+        rules.actionWeight * (0.3 + (view.memory.observation?.projectiles.length ? 0.7 : 0));
+    confidence = 2500;
+    reasons.push('own barrier placement and delayed visible threats; occupancy remains uncertain');
+  }
+  if (d.relocation) {
+    const destination = relocationDestination(
+      d.relocation,
+      view.self,
+      view.memory.observation?.enemy,
+    );
+    const feasible =
+      destination &&
+      length(sub(destination, view.self.position)) <= d.relocation.maxDistanceMm / 1000 &&
+      clear(destination, destination, view.self.actor.character.body);
+    const preferred = view.self.actor.policy.preferredDistanceMm / 1000;
+    const improvement =
+      target && destination
+        ? Math.abs(length(sub(target.position, view.self.position)) - preferred) -
+          Math.abs(length(sub(target.position, destination)) - preferred)
+        : 0;
+    if (feasible)
+      utility += rules.actionWeight * Math.max(0, 0.2 + improvement / 2 + observedThreat);
+    success = feasible ? 6500 : 0;
+    confidence = 2500;
+    reasons.push(
+      'own relocation range and known endpoint; exposure and delayed occupancy remain uncertain',
+    );
+  }
   const effects = abilityPlan(ability).effects;
   const stateValue = assessStatusEffects(view, effects, d.target, view.step + cast);
   utility += (stateValue.risk?.nonDamageValue ?? stateValue.value) * rules.actionWeight;
@@ -323,7 +372,11 @@ function assessSingle(
   return { assessment, score };
 }
 /** Reuse the same utility terms for each reachable own stage; physical offsets are never speed-scaled again. */
-function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAssessment {
+function assessStages(
+  view: DecisionView,
+  ability: AbilityRevision,
+  clear: KnownClearance,
+): CandidateAssessment {
   const { stages: _stages, ...definition } = ability.definition;
   const plan = authoredStages(ability);
   const clock = actionClock(ability.definition, view.self.actor.character.stats.actionSpeedBps, 0);
@@ -375,9 +428,17 @@ function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAs
           { ...view, resources },
           {
             ...ability,
-            definition: { ...definition, costs, attack: stage.attack, effects: stage.effects },
+            definition: {
+              ...definition,
+              costs,
+              attack: stage.attack,
+              effects: stage.effects,
+              relocation: stage.relocation,
+              barrier: stage.barrier,
+            },
           },
           { cast: (clock?.launchAt ?? 8000) + stage.offsetSteps, duration },
+          clear,
         ),
       );
       if (stage.selfMotion) parts.at(-1)!.score *= 1 - motion.exposure;
@@ -386,6 +447,7 @@ function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAs
     view,
     { ...ability, definition },
     { cast: clock?.launchAt ?? 8000, duration },
+    clear,
   ).assessment;
   const average = (key: 'successBps' | 'efficacyBps' | 'confidenceBps') =>
     parts.length ? Math.round(parts.reduce((n, p) => n + p.assessment[key], 0) / parts.length) : 0;

@@ -230,6 +230,8 @@ export async function withInitialStatus(
     effects: [{ kind: 'apply-status', status: reference(status) }],
   };
   delete startup.stages;
+  delete startup.relocation;
+  delete startup.barrier;
   const ability = await sealRevision('ability', `initial-grant-${index}`, 1, startup);
   const participant = manifest.participants[index];
   const old = manifest.revisions.find(

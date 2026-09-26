@@ -41,6 +41,8 @@ function blade(shape: AttackVariant<'arc' | 'radial'>, geometry: AttackGeometry)
     );
 }
 const geometryHandlers: AttackHandlers<AttackGeometry, void> = {
+  area: unavailable,
+  beam: unavailable,
   direct: unavailable,
   projectile: unavailable, // Detached projectiles have their own recorded display contract.
   melee: (shape, geometry) => linear(shape, geometry, 'sphere'),

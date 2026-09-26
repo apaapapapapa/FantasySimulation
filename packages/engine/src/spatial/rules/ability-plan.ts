@@ -35,6 +35,8 @@ function compilePlan(source: DeepReadonly<Definition<'ability'>>): AbilityPlan {
         durationSteps: source.attack.kind === 'melee' ? source.attack.activeSteps : 1,
         attack: source.attack,
         effects: source.effects,
+        ...(source.relocation ? { relocation: source.relocation } : {}),
+        ...(source.barrier ? { barrier: source.barrier } : {}),
       },
     ],
     effects: abilityEffects(source),

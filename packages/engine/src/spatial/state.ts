@@ -1,6 +1,7 @@
 /** Pure execution state types. Runtime behavior depends on these definitions, never the reverse. */
 import type {
   ActorDisplay,
+  BodyPhasing,
   AttackGeometry,
   Cognition,
   DeepReadonly,
@@ -13,6 +14,7 @@ import type {
   ObservedStage,
   ObservedStatus,
   ObservedSurface,
+  ObservedSpatial,
   Posture,
   ReactionDisplay,
   ResourceState,
@@ -56,6 +58,7 @@ export type MotionState = {
   facing: Vec3;
   grounded: boolean;
   posture?: PostureState;
+  phasing?: BodyPhasing | null;
   vision?: { rangeMm: number; fovMilliDegrees: number; enabled: boolean; visible: boolean };
 };
 
@@ -111,6 +114,7 @@ export type Observation = DeepReadonly<{
   enemy: ObservedActor | null;
   projectiles: ObservableProjectile[];
   terrain?: ObservedSurface[];
+  spatial?: ObservedSpatial[];
 }>;
 
 export type PerceptionMemory = DeepReadonly<{
@@ -208,6 +212,16 @@ export type StageRuntime = {
 };
 
 export type AbilityRevision = DeepReadonly<Extract<Revision, { kind: 'ability' }>>;
+export type PendingRelocation = {
+  ownerId: string;
+  actionId: string;
+  ability: AbilityRevision;
+  cause: string;
+  at: number;
+  destination: Vec3;
+  maxDistanceMm: number;
+  stage?: StageContact;
+};
 
 export type ActionState = {
   id: string;
@@ -273,6 +287,7 @@ export type MeleeState = DamageSnapshot & {
 };
 
 export type DamageSnapshot = DamageSource & {
+  phaseSlopeY?: number;
   /** A redirected projectile cannot generate drain for either owner. */
   drainDisabled?: true;
   dealtByElement?: Readonly<

@@ -6,11 +6,46 @@ import {
   type DeepReadonly,
   type Stage,
 } from '@fantasy/domain/spatial/execution';
+import { relocationDestination } from '../rules/relocation.ts';
+import { objectGeometry } from '../world/object-geometry.ts';
+import { capsuleObstacleContact } from '../world/geometry.ts';
+import { bodyCapsule } from '../world/terrain.ts';
 import { bodyPoint } from '../world/visibility.ts';
 import { bladePose } from '../rules/blades.ts';
 import { dot, length, mul, sub } from '../math.ts';
 
 const shapeHandlers: AttackHandlers<DecisionView, number> = {
+  area: (shape, view) => {
+    const target = view.memory.observation?.enemy;
+    const position = relocationDestination(shape.placement, view.self, target);
+    if (
+      !position ||
+      !target ||
+      length(sub(position, view.self.position)) > shape.placement.maxDistanceMm / 1000
+    )
+      return 0;
+    const body = target.size
+      ? bodyCapsule({ ...view.self.actor.character.body, ...target.size })
+      : { radius: 0.3, halfHeight: 0.6 };
+    const gap = capsuleObstacleContact(
+      target.position,
+      body,
+      objectGeometry('estimate', shape.shape, position),
+    ).distance;
+    const uncertainty =
+      length(target.velocity) *
+      (shape.armDelaySteps + view.self.actor.character.perception.reactionSteps) *
+      0.02;
+    return gap <= 0 ? 0.85 / (1 + uncertainty) : 0.2 / (1 + gap + uncertainty);
+  },
+  beam: (shape, view) => {
+    const target = view.memory.observation?.enemy ?? view.memory.lastSeen;
+    if (!target) return 0.2;
+    const radius = (shape.radiusMm + (target.size?.radiusMm ?? 300)) / 1000;
+    const drift =
+      length(target.velocity) * view.self.actor.character.perception.reactionSteps * 0.02;
+    return Math.max(0.15, (0.9 * radius) / (radius + drift));
+  },
   direct: () => 1,
   hitscan: () => 1,
   projectile: (_shape, view) =>

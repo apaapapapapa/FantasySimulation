@@ -1,9 +1,7 @@
 # ADR 0017: P6 spatial mechanics
 
-**Accepted by the owner in ChatGPT, 2026-09-26.** Refs #155 §7/Q-9/Q-10,
-#1, #61, #45, #10. Baseline main `63b49c60bba9af4007061b7eb1228c7b4fad8ac4`;
-P6-00 (#164/#166/#178) is merged. This is P6-05 only: no executable/schema/DB/rules,
-identity, fixture expectations or production changes. Group 1 can progress independently.
+**Owner-approved 2026-09-26.** Refs #155 §7/Q-9/Q-10, #1, #61, #45, #10.
+P6-00 merged; P6-05 was design-only; Group1 progresses independently.
 [ADR 0016](0016-p6-foundation.md) governs admission, diagnostics and milestone publication;
 [stage/motion](../rules/stages-motion.md) and [reactions](../rules/reactions.md) retain ownership.
 
@@ -23,8 +21,8 @@ Unimplemented payloads remain rejected even with experimental permission.
 | Following      | Boundary translations; blocked move holds prior pose, no pushing.           |
 | Q-10 exit      | Body-only protection<=50 intervals, then diagnostic truncated; no ejection. |
 
-Random teleport, rotating/deforming barriers, hollow shells and independent emitters
-need later versioned contracts. They fail input validation in this increment.
+Random teleport, rotating/deforming barriers, hollow shells and independent emitters are rejected
+until later versioned contracts.
 
 ## One coordinator and an atomic world
 
@@ -38,9 +36,8 @@ journal fits. Free failed candidates and keep the old world/TS/RNG/IDs/ledger/re
 Unchanged geometry reuses the world (durability-only changes do not rebuild). Attempted casts/candidates remain counted on failure.
 No additional simulation clock, recursive contact loop or incremental half-commits.
 
-Canonical order (owner slot/emission ordinal) assigns handles only; gather geometric ties
-before resolution. Handles never decide winners or become public IDs. Reordered inputs
-preserve physics hashes; mapped slot/position/RNG swaps use symmetry fixtures.
+Owner slot/emission ordinal orders handles, never winners or public IDs; resolve geometric
+ties together. Test reorder physics hashes and mapped slot/position/RNG symmetry.
 
 | Phase              | Addition, in order                                                              |
 | ------------------ | ------------------------------------------------------------------------------- |
@@ -60,9 +57,8 @@ Boundary0 starting phasing is allowed through ordinary starting statuses; initia
 still satisfy existing solid-body validation. The last allowed interval processes effects
 normally but does not add boundary6000 activation; pending commands are logged as battle-ended.
 
-The existing world physics/geometry/movement/visibility/navigation adapters share query
-context: layer, actor/attack owner, materials, floor policy, ignored self object. Apply it
-in every sweep/overlap/support/muzzle/blast/nav path, including f64 fallbacks and Rapier.
+Physics, geometry, movement, visibility and navigation share layer/owner/material/floor/ignored-object
+context across sweeps, overlaps, support, muzzle, blast and navigation, including f64 and Rapier.
 Invalidate geometry caches; AI uses delayed known dynamic objects even on surveyed terrain.
 All queries charge the existing work meter.
 
@@ -90,8 +86,7 @@ Destination validity ignores the mover's phasing: teleport never embeds a body. 
 cross walls, bodies and barriers; endpoints may not. Positive overlap uses the existing
 binary64 penetration tolerance; legal support touching is not penetration. Pairwise compare
 all candidate endpoints, including individually invalid ones, and fail every overlapping
-candidate. Swaps into occupied starts fail even if both intend to leave. Failure diagnostics
-are recorded for replay; enemy cognition does not receive hidden obstruction/coordinate data.
+candidate. Swaps into occupied starts fail even if both intend to leave. Record failures for replay without exposing hidden obstructions/coordinates to enemy cognition.
 
 Success changes centre only. Retain facing, velocity, gravity accumulator, force contributions
 and clocks; invalidate support/navigation caches and end active dodge without refund. Resume
@@ -119,7 +114,7 @@ none|owner|enemy|both; at least one blocks. Material is energy. For attack queri
 by current attack owner (including deflected projectiles), not original power snapshot.
 Vision selectors use observer; movement selectors use mover. All shapes are solid volumes.
 
-Placement anchors use the teleport targeting vocabulary and range/visibility rules. No
+Barrier placement.maxDistanceMm<=ability.rangeMm; anchors use teleport targeting/visibility rules. No
 terrain/active-barrier penetration; no overlap with any actor it movement-blocks. A vision-
 or attack-only barrier may contain a body, but inside-origin occlusion applies, including
 muzzle checks; a barrier never supplies an escape exception. Proposed overlapping barrier
@@ -250,17 +245,15 @@ cache-independent world state. Failed attempts never leave dangling IDs. Domain 
 references/time/geometry/caps atomically without engine; old omission=no new feature.
 Checkpoints and both seek directions restore the complete display. Jump boundaries never interpolate, including loop/reverse seek.
 
-Own AI derives range/occupancy/exposure/cost/uncertainty from definitions and known terrain,
-never ability IDs. Enemy experience uses delayed visible geometry/coarse activation/damage,
-not durability/uses/private endpoints/masks/unseen objects. Replay truth stays separate from
-cognition and delayed dynamic navigation. Pages must render from records or explicitly show unsupported elements
-until its renderer lands; never silently substitute straight motion or invisible barriers.
+AI derives range/occupancy/exposure/cost/uncertainty from definitions and known terrain, never
+ability IDs. Enemy knowledge is delayed visible geometry/activation/damage, excluding private
+durability/uses/endpoints/masks/unseen objects. Keep replay truth separate from cognition and
+navigation. Render records or explicit unsupported cues; never hide barriers or replace motion.
 
 ## Delivery ownership and acceptance
 
-One integration owner edits shared schema/variants, matrix/coverage, coordinator/transaction,
-query context, rules IDs/version and identity. Feature owners own resolver/AI/record tests;
-renderer/API consume domain records. No independent restamps of shared files.
+One owner integrates schema/variants, matrix/coverage, transactions, query context, version and identity.
+Feature owners supply resolver/AI/record tests; renderer/API consume domain records. No separate restamps.
 
 1. P6-05: design/document compaction/review/approval only.
 2. P6-06a: shared query and atomic world with legacy no-op fixtures; 06b teleport end-to-end.
@@ -292,9 +285,8 @@ conversion. Proposed DTO spelling can be refined during schema review, not these
 | X2 old/new replay, Worker/SQLite/Pages                  | Engine-free seek/loop, old omission, malformed rejection/unsupported cue.        |
 | X3 repeat/reorder and mapped slot/position/RNG swaps    | Same-input result/event/trajectory/TS/physics hashes, independent symmetry.      |
 
-These are planned tests, not implemented evidence. Each feature needs new-ID sample battles,
-all prepare/job/league admission paths including dormant closure, matrix coverage, strict
-schema/exhaustive switches, AI/privacy/replay/renderer tests, corpus and load gates.
-P6-05 runs quality/verify, committed clean-source and Linux PR/main CI. Owner approval of
-PR #182 head `fa1b7850b5aabed2ea12d18cc949be012943110e` precedes implementation.
+Acceptance also requires new-ID samples, prepare/job/league admission including dormant closure,
+matrix coverage, strict schemas/exhaustive switches, AI/privacy/replay/renderer tests,
+corpus/load gates, quality/verify, clean-source and Linux PR/main CI.
+Approved design: PR #182 head `fa1b7850b5aabed2ea12d18cc949be012943110e`.
 #155 stays open for the remaining P6 work; its spatial design approval is satisfied.

@@ -62,12 +62,12 @@ export function identityProject() {
     [ENTRY]:
       "export * from './nested.ts';\nimport './boot.ts';\nexport const load = () => import('./lazy.ts');\nexport type { Hidden } from './types.ts';\n",
     [`${SPATIAL}/nested.ts`]:
-      "export { value } from '@fantasy/domain/spatial/execution';\nexport { physics } from '@dimforge/rapier3d-compat';\nimport profile from './profile.json' with {type:'json'};\nimport table from './sine-table.json' with {type:'json'};\nexport const data = [profile,table];\n",
+      "export { value } from '@fantasy/domain/spatial/execution';\nexport { physics } from '@dimforge/rapier3d-compat';\nimport profile from './profile.json' with {type:'json'};\nimport table from '../../../domain/src/spatial/sine-table.json' with {type:'json'};\nexport const data = [profile,table];\n",
     [`${SPATIAL}/boot.ts`]: 'const boot = 1;\n',
     [`${SPATIAL}/lazy.ts`]: "export { value } from './nested.ts';\n",
     [`${SPATIAL}/types.ts`]: 'export type Hidden = string;\n',
     [`${SPATIAL}/profile.json`]: '{"step":20}\n',
-    [`${SPATIAL}/sine-table.json`]: '[0,1,0,-1]\n',
+    [`${DOMAIN}/src/spatial/sine-table.json`]: '[0,1,0,-1]\n',
     [`${DOMAIN}/src/spatial/execution.ts`]: "export { value } from 'zod';\n",
     [OUTPUT]: '{}\n',
     [`${RAPIER}/package.json`]: manifest('@dimforge/rapier3d-compat', '0.20.0'),

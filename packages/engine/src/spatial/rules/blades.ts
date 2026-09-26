@@ -10,6 +10,8 @@ import { bladeBodyContact, bladeObstacleContact } from '../world/geometry.ts';
 import { add, cosDegrees, length, mul, sinDegrees, sub, unit, type Vec3 } from '../math.ts';
 import {
   at,
+  advanceContact,
+  traceBoundaries,
   CONTACT_TOLERANCE,
   firstImpact,
   SpatialBudgetError,
@@ -29,27 +31,6 @@ export function bladePose(root: Vec3, facing: Vec3, reach: number, angle: number
     z: forward.z * cosDegrees(angle) + forward.x * sinDegrees(angle),
   });
   return { root, tip: add(root, mul(direction, reach)) };
-}
-/** Lipschitz advancement cannot step across first contact; non-convergence is explicit truncation. */
-function advance(
-  world: SpatialWorld,
-  from: number,
-  to: number,
-  speed: number,
-  separation: (time: number) => number,
-) {
-  let time = from;
-  for (let iteration = 0; iteration < 256; iteration++) {
-    world.countCast();
-    const distance = separation(time);
-    if (distance <= CONTACT_TOLERANCE) return time;
-    if (time === to || speed < 1e-12 || distance > speed * (to - time) + CONTACT_TOLERANCE)
-      return undefined;
-    const next = Math.min(to, time + (0.9 * distance) / speed);
-    if (next <= time) throw new SpatialBudgetError('blade-sweep', 'no progress');
-    time = next;
-  }
-  throw new SpatialBudgetError('blade-sweep', '256 conservative advances');
 }
 /** One attached blade adapter; body/root motion follows every actual shared-physics trace bend. */
 export function sweepBlade(
@@ -82,15 +63,9 @@ export function sweepBlade(
     const p = pose(time);
     return bladeBodyContact(p.root, p.tip, radius, at(targetTrace, time), capsule);
   };
-  const boundaries = [
-    ...new Set([
-      0,
-      1,
-      ...owner.flatMap((s) => [s.from, s.to]),
-      ...targetTrace.flatMap((s) => [s.from, s.to]),
-    ]),
-  ].sort((a, b) => a - b);
+  const boundaries = traceBoundaries(owner, targetTrace);
   let wall: number | undefined, wallPoint: Vec3 | undefined, body: number | undefined;
+  let obstacleIds: string[] = [];
   for (let i = 1; i < boundaries.length; i++) {
     const from = boundaries[i - 1]!,
       to = boundaries[i]!;
@@ -101,22 +76,28 @@ export function sweepBlade(
       for (const obstacle of obstacles) {
         const contact = (t: number) => {
           const p = pose(t);
-          return bladeObstacleContact(p.root, p.tip, radius, obstacle);
+          return (
+            world.floorContact(obstacle, 'attack', p.root, p.tip, radius) ??
+            bladeObstacleContact(p.root, p.tip, radius, obstacle)
+          );
         };
-        const time = advance(
-          world,
-          from,
-          to,
-          rootSpeed + rotationSpeed,
-          (t) => contact(t).distance,
-        );
-        if (time !== undefined && (wall === undefined || time < wall)) {
-          wall = time;
-          wallPoint = contact(time).point;
+        const time = advanceContact(world, from, to, rootSpeed + rotationSpeed, (t) => {
+          const c = contact(t);
+          return c.distance;
+        });
+        if (time !== undefined) {
+          if (wall === undefined || time < wall) {
+            obstacleIds =
+              wall === undefined || time < wall - CONTACT_TOLERANCE
+                ? [obstacle.id]
+                : [...obstacleIds, obstacle.id];
+            wall = time;
+            wallPoint = contact(time).point;
+          } else if (time <= wall + CONTACT_TOLERANCE) obstacleIds.push(obstacle.id);
         }
       }
     if (body === undefined)
-      body = advance(
+      body = advanceContact(
         world,
         from,
         to,
@@ -142,6 +123,7 @@ export function sweepBlade(
         ...impact,
         point: impact.kind === 'body' ? bodyContact(impact.time).point : wallPoint!,
         center: pose(impact.time).root,
+        ...(impact.kind === 'wall' && obstacleIds.length ? { obstacleIds } : {}),
       }
     : null;
   const end = wall ?? 1;
@@ -170,7 +152,7 @@ export function sweepBlade(
     wall:
       wall === undefined
         ? null
-        : { kind: 'wall', time: wall, point: wallPoint!, center: pose(wall).root },
+        : { kind: 'wall', time: wall, point: wallPoint!, center: pose(wall).root, obstacleIds },
     geometry: {
       kind: 'blade',
       radiusMm: shape.bladeRadiusMm,

@@ -1,3 +1,4 @@
+import { spatialEscape } from './spatial-observation.ts';
 import type { MotionIntent, DecisionView, DecisionRandom, Decision } from '../state.ts';
 export type { Decision } from '../state.ts';
 import {
@@ -45,6 +46,7 @@ function movementGoal(view: DecisionView, facing: Vec3, flight: boolean): Vec3 |
     else if (policy.movement !== 'approach' && distance < preferred - 0.1)
       goal = sub(view.self.position, mul(direction, preferred - distance));
   }
+  goal = spatialEscape(view, goal);
   if (flight) goal = { ...(goal ?? view.self.position), y: policy.flightAltitudeMm / 1000 };
   return goal;
 }
@@ -117,7 +119,7 @@ export function choosePolicy(
       excluded.push({ abilityId: ability.id, reason });
       continue;
     }
-    const assessment = assessAbility(assessmentView, ability);
+    const assessment = assessAbility(assessmentView, ability, clear);
     if (assessment.weight) candidates.push(assessment);
     else excluded.push({ abilityId: ability.id, reason: 'no estimated benefit' });
   }
@@ -311,6 +313,14 @@ export function choosePolicy(
           }
         : null,
       observedProjectiles: (observation?.projectiles ?? []).map((p) => p.id).sort(compareIds),
+      ...(observation?.spatial
+        ? {
+            observedSpatial: observation.spatial.map((o) => ({
+              ...o,
+              pointsMm: o.pointsMm.map((p) => ({ ...p })),
+            })),
+          }
+        : {}),
       terrain: view.memory.terrain.map((s) => ({
         ...s,
         pointMm: { ...s.pointMm },

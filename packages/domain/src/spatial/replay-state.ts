@@ -1,3 +1,5 @@
+import { validatePhasing, validatePhasingTransition } from './replay-validation/phasing.ts';
+import { validateSpatialObject, applySpatialObjects } from './replay-validation/spatial-object.ts';
 import { compareIds } from './canonical.ts';
 import { parseJson } from './contracts.ts';
 import type { Outcome } from './records.ts';
@@ -99,6 +101,7 @@ export class ReplayState {
       if (!definition) return fail('unknown actor');
       validateReactions(this.context, actor, definition, step, nextEvent);
       validateForces(this.context, actor, step);
+      validatePhasing(this.context, actor, nextEvent);
       requireReplay(
         actor.resources.hp <= definition.character.stats.hp &&
           actor.resources.mp <= definition.character.stats.mp &&
@@ -124,6 +127,16 @@ export class ReplayState {
       validateAction(actor, definition, step);
     }
     const ids = new Set(state.actors.map((a) => a.id));
+    for (const object of state.objects ?? []) {
+      requireReplay(!ids.has(object.id), 'duplicate entity');
+      ids.add(object.id);
+      validateSpatialObject(this.context, object, step, nextEvent);
+      if (object.kind === 'beam')
+        requireReplay(
+          same(object.position, state.actors.find((a) => a.id === object.ownerId)?.position),
+          'beam owner pose',
+        );
+    }
     for (const p of state.projectiles) {
       requireReplay(!ids.has(p.id), 'duplicate entity');
       ids.add(p.id);
@@ -137,6 +150,20 @@ export class ReplayState {
     nextEvent = this.value.nextEvent,
   ) {
     validateInterferences(this.context, outcome, step, nextEvent);
+    if (outcome.kind === 'truncated' && outcome.resource === 'phase-exit-steps')
+      requireReplay(
+        outcome.details?.observed === 51 &&
+          outcome.details.limit === 50 &&
+          state.actors.some(
+            (a) =>
+              a.phasing?.exitPending &&
+              a.phasing.extendedIntervals === 50 &&
+              [...a.phasing.active, ...a.phasing.retained].some((c) =>
+                c.causes.includes(outcome.details!.cause),
+              ),
+          ),
+        'phasing exit truncation binding',
+      );
     if (outcome.kind === 'win')
       requireReplay(
         state.actors.some((a) => a.id === outcome.winner && a.resources.hp > 0) &&
@@ -193,7 +220,9 @@ export class ReplayState {
       boundaryApplied = prior.boundaryApplied;
     if (record.kind === 'initial') {
       requireReplay(
-        prior.state === null && record.state.projectiles.length === 0,
+        prior.state === null &&
+          record.state.projectiles.length === 0 &&
+          !record.state.objects?.length,
         'duplicate/nonempty initial',
       );
       state = record.state;
@@ -222,7 +251,9 @@ export class ReplayState {
     } else {
       if (!prior.state) return fail('missing initial');
       state = structuredClone(prior.state);
-      const entities = new Set([...state.actors, ...state.projectiles].map((e) => e.id));
+      const entities = new Set(
+        [...state.actors, ...state.projectiles, ...(state.objects ?? [])].map((e) => e.id),
+      );
       if (record.kind === 'terminal') {
         requireReplay(record.step === step, 'terminal step');
         this.validateOutcome(record.outcome, state, step);
@@ -245,6 +276,8 @@ export class ReplayState {
           step = record.toStep;
           boundaryApplied = false;
         }
+        if (record.objects)
+          applySpatialObjects(this.context, prior, state, record.objects, record, entities);
         const changed = new Set<string>();
         for (const delta of record.changes) {
           const index = state.actors.findIndex((a) => a.id === delta.id);
@@ -299,6 +332,7 @@ export class ReplayState {
           this.paths(record.paths, before, after, removed);
         }
       }
+      if (record.kind !== 'terminal') validatePhasingTransition(prior, state, record);
       validateEvents(this.context, this.value, record, entities);
     }
     this.validateState(
@@ -308,6 +342,7 @@ export class ReplayState {
     );
     state.actors.sort((a, b) => compareIds(a.id, b.id));
     state.projectiles.sort((a, b) => compareIds(a.id, b.id));
+    state.objects?.sort((a, b) => compareIds(a.id, b.id));
     this.value = {
       schemaVersion: 1,
       simulationHash: prior.simulationHash,

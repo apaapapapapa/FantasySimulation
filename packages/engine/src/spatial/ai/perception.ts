@@ -1,3 +1,5 @@
+import { observeSpatial } from './spatial-observation.ts';
+import type { SpatialObject } from '../rules/spatial-objects.ts';
 import { bodyPoint, canSee } from '../world/visibility.ts';
 import type {
   MotionState,
@@ -73,11 +75,16 @@ function observeTerrain(world: SpatialWorld, self: MotionState, step: number): O
           Math.min(6, (self.vision?.rangeMm ?? self.actor.character.perception.rangeMm) / 1000),
         ),
       ),
-      hit = world.raycast(eye, end, 'movement');
+      hit = world
+        .forQuery({ ownerId: self.actor.participant.actorId })
+        .raycast(eye, end, 'movement');
     if (hit && canSee(world, self, sub(hit.point, mul(direction, 0.005))))
       surfaces.push({
         pointMm: roundedVector(hit.point, 1000),
         normalBps: roundedVector(unit(hit.normal), 10000),
+        ...(world.allObstacles().find((o) => o.id === hit.obstacleId)?.material
+          ? { material: world.allObstacles().find((o) => o.id === hit.obstacleId)!.material! }
+          : {}),
         sampledAt: step,
         availableAt: step + self.actor.character.perception.reactionSteps,
       });
@@ -218,6 +225,7 @@ export function perceive(
   terrainMode: 'surveyed' | 'observed' = 'surveyed',
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
   bounds?: DeepReadonly<Definition<'scenario'>['bounds']>,
+  objects: readonly SpatialObject[] = [],
 ): PerceptionMemory {
   const interval = self.actor.character.perception.reactionSteps;
   let pending = [...previous.pending],
@@ -283,6 +291,7 @@ export function perceive(
       observedStatuses.length > 0 ||
       lastSeen?.statuses !== undefined ||
       previous.pending.some((s) => s.enemy?.statuses !== undefined);
+    const spatial = observeSpatial(world, self, objects);
     pending.push({
       sampledAt: step,
       availableAt: step + interval,
@@ -327,6 +336,9 @@ export function perceive(
             },
           }
         : null,
+      ...(spatial.length || previous.observation?.spatial || previous.pending.some((s) => s.spatial)
+        ? { spatial }
+        : {}),
       projectiles: projectiles
         .filter(
           (p) => p.ownerId !== self.actor.participant.actorId && canSee(world, self, p.position),
@@ -353,7 +365,12 @@ export function perceive(
           ...(p.element ? { element: p.element } : {}),
           ...(p.attackCueId ? { attackCueId: p.attackCueId } : {}),
         })),
-      terrain: terrainMode === 'observed' ? observeTerrain(world, self, step) : [],
+      terrain:
+        terrainMode === 'observed' ||
+        spatial.some((o) => o.kind === 'barrier') ||
+        observation?.spatial?.some((o) => o.kind === 'barrier')
+          ? observeTerrain(world, self, step)
+          : [],
     });
     sampledAt = step;
   }

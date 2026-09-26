@@ -27,6 +27,10 @@ results.json holds corpus hash, engine identity, platform/Node, commands and bot
 Observed digests are not expected values; owning tests retain independent expectations.
 Intentional inputs/mappings require same-PR rationale/review. Never regenerate candidate
 expectations to pass. Corpus correctness is not performance acceptance.
+P6 integration retains all existing bindings: its 266+ required tests exceed the old 256-entry
+registry capacity. Reviewed capacity is now 512; per-category64, entry64, byte/time limits,
+identity and missing/failed-test checks remain. The boundary regression retains every key,
+rejects an unreferenced last key and rejects entry513; no test mapping is dropped.
 
 ## Linux, Worker and property evidence
 

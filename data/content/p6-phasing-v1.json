@@ -1,0 +1,603 @@
+[
+  {
+    "kind": "ruleset",
+    "id": "standard-spatial-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "definition": {
+      "name": "標準3D・空間操作・透過",
+      "rulesVersion": "spatial-v1.22",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1"
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard-tactics-spatial-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "definition": {
+      "name": "観測・索敵・姿勢・脅威時の遮蔽・空間操作・透過",
+      "rulesVersion": "spatial-v1.22",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1",
+        "minimumCandidateWeightBps": 500,
+        "relativeImpactBps": [2500, 7500, 12500],
+        "reapplication": "self-observed-v1",
+        "groundEvasion": "posture-jump-v1",
+        "cover": "observed-threat-v1",
+        "search": {
+          "maxWaitSteps": 500,
+          "cellsPerSide": 5,
+          "revisitSteps": 500,
+          "lowSightMm": 100,
+          "goalTimeoutSteps": 150
+        }
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "experimental-spatial-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "definition": {
+      "name": "P6共通基盤・実験",
+      "rulesVersion": "spatial-v1.22",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1",
+        "minimumCandidateWeightBps": 500,
+        "relativeImpactBps": [2500, 7500, 12500],
+        "reapplication": "self-observed-v1",
+        "groundEvasion": "posture-jump-v1",
+        "cover": "observed-threat-v1",
+        "search": {
+          "maxWaitSteps": 500,
+          "cellsPerSide": 5,
+          "revisitSteps": 500,
+          "lowSightMm": 100,
+          "goalTimeoutSteps": 150
+        }
+      },
+      "experimental": {
+        "mechanics": [
+          "absolute-evasion",
+          "absolute-hit",
+          "immortality",
+          "instant-death",
+          "mind-read",
+          "time-stop"
+        ]
+      },
+      "interferenceDiagnostics": "v1",
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "status",
+    "id": "phase-stone-energy-v1",
+    "revision": 1,
+    "definition": {
+      "name": "石と結界の透過",
+      "originalText": "身体のみ石・energyを通過する。支持する床面、身体同士、arena境界は残る。",
+      "stackKey": "phase-se",
+      "categories": ["buff"],
+      "visibility": "visible",
+      "durationSteps": 100,
+      "maxStacks": 1,
+      "stacking": "refresh",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false,
+        "silenced": false
+      },
+      "periodic": [],
+      "phasing": {
+        "materials": ["stone", "energy"],
+        "floor": false
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "phase-grant-v1",
+    "revision": 1,
+    "definition": {
+      "name": "幽相の旅人",
+      "originalText": "P6-08。身体と攻撃の透過は別々の明示許可。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 8,
+        "uses": 0
+      },
+      "castSteps": 1,
+      "recoverySteps": 5,
+      "cooldownSteps": 120,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "$ref": "status:phase-stone-energy-v1:1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "phase-traveller-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "幽相の旅人",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "phase-grant-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "sword"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "character",
+    "id": "phase-traveller-v1",
+    "revision": 1,
+    "definition": {
+      "name": "幽相の旅人",
+      "originalText": "P6-08用の新規定義。配布済みIDを保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:phase-grant-v1:1"
+        },
+        {
+          "$ref": "ability:sword:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:phase-traveller-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "phase-bolt-v1",
+    "revision": 1,
+    "definition": {
+      "name": "壁抜きの射手",
+      "originalText": "P6-08。身体と攻撃の透過は別々の明示許可。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 3,
+        "uses": 0
+      },
+      "castSteps": 3,
+      "recoverySteps": 5,
+      "cooldownSteps": 12,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "projectile",
+        "speedMmPerSecond": 18000,
+        "radiusMm": 30,
+        "lifetimeSteps": 100,
+        "gravityScaleBps": 0,
+        "homingTurnMilliDegreesPerSecond": 0,
+        "observation": "launch-only",
+        "explosionRadiusMm": 0,
+        "maxHitsPerTarget": 1,
+        "phasing": {
+          "materials": ["stone", "energy"],
+          "floor": false
+        }
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 6,
+          "attackScaleBps": 7000,
+          "element": "arcane",
+          "defense": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "phase-archer-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "壁抜きの射手",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "phase-bolt-v1"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 8000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "character",
+    "id": "phase-archer-v1",
+    "revision": 1,
+    "definition": {
+      "name": "壁抜きの射手",
+      "originalText": "P6-08用の新規定義。配布済みIDを保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:phase-bolt-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:phase-archer-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "scenario",
+    "id": "phase-stone-corridor-v1",
+    "revision": 1,
+    "definition": {
+      "name": "石壁の回廊",
+      "bounds": {
+        "min": {
+          "x": -50000,
+          "y": -1000,
+          "z": -50000
+        },
+        "max": {
+          "x": 50000,
+          "y": 50000,
+          "z": 50000
+        }
+      },
+      "obstacles": [
+        {
+          "id": "floor",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": -500,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 50000,
+            "y": 500,
+            "z": 50000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        },
+        {
+          "id": "stone-wall",
+          "kind": "box",
+          "material": "stone",
+          "center": {
+            "x": 0,
+            "y": 1800,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 200,
+            "y": 1800,
+            "z": 4000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": false,
+            "attack": true
+          }
+        }
+      ],
+      "navigation": {
+        "version": "support-graph-v1",
+        "nodes": [],
+        "edges": []
+      },
+      "terrainKnowledge": "surveyed"
+    }
+  }
+]

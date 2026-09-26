@@ -12,6 +12,7 @@ import { evidencePath, git } from './source.ts';
 import { sharedTests } from '../ci/tests.ts';
 
 export const CORPUS_OUTPUT = '.generated/harness/corpus';
+export const CORPUS_TEST_CAPACITY = 512;
 export const CORPUS_CHECKS = [
   'corpus:definition',
   'corpus:engine-identity',
@@ -349,7 +350,7 @@ function restoreCorpus(value: unknown): Corpus | null {
   if (value === null) return null;
   const corpus = record(value);
   const tests = new Map(
-    array(corpus.tests, 256, 'observed tests').map((item) => {
+    array(corpus.tests, CORPUS_TEST_CAPACITY, 'observed tests').map((item) => {
       const [key, test] = array(item, 2, 'observed test');
       const ref = record(test);
       return [text(key), { file: text(ref.file), name: text(ref.name) }] as const;

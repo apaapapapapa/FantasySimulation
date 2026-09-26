@@ -696,6 +696,99 @@
   },
   {
     "kind": "ability",
+    "id": "phase-bolt-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:e1027f2fa379fa5ff0debe945a9f59fc37a684c3cf2562f067c1948833092317",
+    "definition": {
+      "name": "壁抜きの射手",
+      "originalText": "P6-08。身体と攻撃の透過は別々の明示許可。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 3,
+        "uses": 0
+      },
+      "castSteps": 3,
+      "recoverySteps": 5,
+      "cooldownSteps": 12,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "phasing": {
+          "materials": ["stone", "energy"],
+          "floor": false
+        },
+        "kind": "projectile",
+        "speedMmPerSecond": 18000,
+        "radiusMm": 30,
+        "lifetimeSteps": 100,
+        "gravityScaleBps": 0,
+        "homingTurnMilliDegreesPerSecond": 0,
+        "observation": "launch-only",
+        "explosionRadiusMm": 0,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 6,
+          "attackScaleBps": 7000,
+          "element": "arcane",
+          "defense": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "phase-grant-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:456e8b0a5d7c851e3ff0cdd2d696182c04a39ea22c92c0724db17901c4bf5377",
+    "definition": {
+      "name": "幽相の旅人",
+      "originalText": "P6-08。身体と攻撃の透過は別々の明示許可。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 8,
+        "uses": 0
+      },
+      "castSteps": 1,
+      "recoverySteps": 5,
+      "cooldownSteps": 120,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "phase-stone-energy-v1",
+            "revision": 1,
+            "contentHash": "sha256:22bee84dff47845c2bee96aaa77168a857695dd70b951448186eba941cfb482a"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "projectile-deflection-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -988,6 +1081,330 @@
           "extinguish": true
         }
       ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spatial-area-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:2bc11d09b79ad01f39eb7bb2a5e781c743d727bbaf8229c22e8a48cbb6305edd",
+    "definition": {
+      "name": "残響の陣術師",
+      "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 6,
+        "uses": 2
+      },
+      "castSteps": 2,
+      "recoverySteps": 12,
+      "cooldownSteps": 150,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "area",
+        "placement": {
+          "anchor": "observed-enemy",
+          "direction": "front",
+          "distanceMm": 0,
+          "maxDistanceMm": 12000
+        },
+        "shape": {
+          "kind": "sphere",
+          "radiusMm": 1800
+        },
+        "durationSteps": 150,
+        "armDelaySteps": 5,
+        "periodSteps": 25
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 0,
+          "element": "arcane",
+          "defense": "magic"
+        }
+      ],
+      "stages": [
+        {
+          "id": "emit",
+          "offsetSteps": 0,
+          "durationSteps": 1,
+          "attack": {
+            "kind": "area",
+            "placement": {
+              "anchor": "observed-enemy",
+              "direction": "front",
+              "distanceMm": 0,
+              "maxDistanceMm": 12000
+            },
+            "shape": {
+              "kind": "sphere",
+              "radiusMm": 1800
+            },
+            "durationSteps": 150,
+            "armDelaySteps": 5,
+            "periodSteps": 25
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 12,
+              "attackScaleBps": 0,
+              "element": "arcane",
+              "defense": "magic"
+            }
+          ],
+          "hit": {
+            "group": "shared",
+            "maxHits": 4,
+            "minIntervalSteps": 1,
+            "requireSeparation": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spatial-barrier-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:84e6bf7208e50d53ed18b1a2460ea2f7c7b420eadbaaa671ac91fc86788ed753",
+    "definition": {
+      "name": "境界の結界術師",
+      "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 6,
+        "uses": 2
+      },
+      "castSteps": 2,
+      "recoverySteps": 12,
+      "cooldownSteps": 150,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [],
+      "stages": [
+        {
+          "id": "emit",
+          "offsetSteps": 0,
+          "durationSteps": 1,
+          "attack": {
+            "kind": "direct"
+          },
+          "effects": [],
+          "hit": {
+            "group": "shared",
+            "maxHits": 4,
+            "minIntervalSteps": 1,
+            "requireSeparation": false
+          },
+          "barrier": {
+            "placement": {
+              "anchor": "self",
+              "direction": "front",
+              "distanceMm": 1200,
+              "maxDistanceMm": 12000
+            },
+            "shape": {
+              "kind": "sphere",
+              "radiusMm": 700
+            },
+            "durationSteps": 150,
+            "attachment": "fixed",
+            "durability": 45,
+            "blocks": {
+              "movement": "enemy",
+              "vision": "none",
+              "attack": "enemy"
+            }
+          }
+        }
+      ],
+      "barrier": {
+        "placement": {
+          "anchor": "self",
+          "direction": "front",
+          "distanceMm": 1200,
+          "maxDistanceMm": 12000
+        },
+        "shape": {
+          "kind": "sphere",
+          "radiusMm": 700
+        },
+        "durationSteps": 150,
+        "attachment": "fixed",
+        "durability": 45,
+        "blocks": {
+          "movement": "enemy",
+          "vision": "none",
+          "attack": "enemy"
+        }
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spatial-beam-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:341fe27a18970c970300ea60d1031fc3b2df2ed8bfb4dd405545939557aad492",
+    "definition": {
+      "name": "光条の照射術師",
+      "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 6,
+        "uses": 2
+      },
+      "castSteps": 2,
+      "recoverySteps": 12,
+      "cooldownSteps": 150,
+      "movementWhileCasting": "allow",
+      "rangeMm": 12000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "beam",
+        "radiusMm": 80
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 0,
+          "element": "arcane",
+          "defense": "magic"
+        }
+      ],
+      "stages": [
+        {
+          "id": "emit",
+          "offsetSteps": 0,
+          "durationSteps": 25,
+          "attack": {
+            "kind": "beam",
+            "radiusMm": 80
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 12,
+              "attackScaleBps": 0,
+              "element": "arcane",
+              "defense": "magic"
+            }
+          ],
+          "hit": {
+            "group": "shared",
+            "maxHits": 4,
+            "minIntervalSteps": 6,
+            "requireSeparation": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spatial-blink-flank-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:3e72e38247bf86e9d388d8015b59c877b14352ee0a9fc2f3d61a95240d51f173",
+    "definition": {
+      "name": "背後へ渡る術師",
+      "originalText": "P6-06。発射時に相対位置を固定し、次の境界で全身の空きを確認して移動する。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "visible",
+        "value": true
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 4,
+        "uses": 3
+      },
+      "castSteps": 2,
+      "recoverySteps": 10,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [],
+      "relocation": {
+        "anchor": "observed-enemy",
+        "direction": "back",
+        "distanceMm": 1500,
+        "maxDistanceMm": 20000
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "spatial-blink-retreat-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:f2b61f9ac4b6c6c87bba2f510f52f39a814c2c33e8390b53cebace67371f221b",
+    "definition": {
+      "name": "退避の転移術師",
+      "originalText": "P6-06。発射時に相対位置を固定し、次の境界で全身の空きを確認して移動する。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 4,
+        "uses": 3
+      },
+      "castSteps": 2,
+      "recoverySteps": 10,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [],
+      "relocation": {
+        "anchor": "self",
+        "direction": "back",
+        "distanceMm": 2000,
+        "maxDistanceMm": 20000
+      }
     }
   },
   {
@@ -1405,6 +1822,396 @@
         "id": "archer-policy",
         "revision": 1,
         "contentHash": "sha256:84929035bc77b8b535df55c8c8f5524bcd1cbb906a17fd7dbc2056d4b1a81843"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "area-mage-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:1f4eb1e94eba729e8ff5d10e15d2f3087e596c3a77fdda42134ab3ca10a8511c",
+    "definition": {
+      "name": "残響の陣術師",
+      "originalText": "P6-07用の新規定義。既存の配布IDと内容は保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "spatial-area-v1",
+          "revision": 1,
+          "contentHash": "sha256:2bc11d09b79ad01f39eb7bb2a5e781c743d727bbaf8229c22e8a48cbb6305edd"
+        },
+        {
+          "id": "drain-ember-v1",
+          "revision": 1,
+          "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "spatial-area-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:126fa60e313b858a4ccaafaa4dc5b68954f5b56b2f12fba5de7040c972392724"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "barrier-mage-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:08e5be48d431d79edf7a69dba8809f40810bf997bfb737722d5fdb2fa4d6304f",
+    "definition": {
+      "name": "境界の結界術師",
+      "originalText": "P6-07用の新規定義。既存の配布IDと内容は保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "spatial-barrier-v1",
+          "revision": 1,
+          "contentHash": "sha256:84e6bf7208e50d53ed18b1a2460ea2f7c7b420eadbaaa671ac91fc86788ed753"
+        },
+        {
+          "id": "drain-ember-v1",
+          "revision": 1,
+          "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "spatial-barrier-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:13f6c0145bb829f4010c99a3ce61f1056029adfe02a4f19fdaee1a488ebce5b6"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "beam-mage-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:304c721d324fe0324e9f8c53e1becffc4d97241a84dce6d5444599de4ab9a66f",
+    "definition": {
+      "name": "光条の照射術師",
+      "originalText": "P6-07用の新規定義。既存の配布IDと内容は保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "spatial-beam-v1",
+          "revision": 1,
+          "contentHash": "sha256:341fe27a18970c970300ea60d1031fc3b2df2ed8bfb4dd405545939557aad492"
+        },
+        {
+          "id": "drain-ember-v1",
+          "revision": 1,
+          "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "spatial-beam-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:cdb5dab23b4f032b675540f0343d791f414df81caeb88c8ff65e652feee5abd3"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "blink-flank-mage-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:06957cd97669c8b963152e7bb3696eebbd5664cf93b6a0933fb27d1f9fef618f",
+    "definition": {
+      "name": "背後へ渡る術師",
+      "originalText": "P6-06の対戦検証用。公式リーグの参加者は変更しない。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "spatial-blink-flank-v1",
+          "revision": 1,
+          "contentHash": "sha256:3e72e38247bf86e9d388d8015b59c877b14352ee0a9fc2f3d61a95240d51f173"
+        },
+        {
+          "id": "drain-ember-v1",
+          "revision": 1,
+          "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "spatial-blink-flank-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:b836a4905912071cd33651ee229d0fb4566d0aaf99f968f2547126ac39d8d37a"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "blink-retreat-mage-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:6486539be7f38602e046cb890a80f5bffe62235b50f6680080a18e0e5042ec46",
+    "definition": {
+      "name": "退避の転移術師",
+      "originalText": "P6-06の対戦検証用。公式リーグの参加者は変更しない。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "spatial-blink-retreat-v1",
+          "revision": 1,
+          "contentHash": "sha256:f2b61f9ac4b6c6c87bba2f510f52f39a814c2c33e8390b53cebace67371f221b"
+        },
+        {
+          "id": "drain-ember-v1",
+          "revision": 1,
+          "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "spatial-blink-retreat-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:686b3b28cf806bbc077e956c0dadc6b9af2da41ff018adca71e36e3ad95dbd67"
       }
     }
   },
@@ -2264,6 +3071,157 @@
         "id": "mirror-shooter-v1-policy",
         "revision": 1,
         "contentHash": "sha256:57fb7b67c72f3d1e93bd55b1135deffb4fa84f588cdd75454089ea9245b7892d"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "phase-archer-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:6c17348c39d8ccf3af6dc34c53a7a8e0cccf5c98f611d955448d00febdabe151",
+    "definition": {
+      "name": "壁抜きの射手",
+      "originalText": "P6-08用の新規定義。配布済みIDを保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "phase-bolt-v1",
+          "revision": 1,
+          "contentHash": "sha256:e1027f2fa379fa5ff0debe945a9f59fc37a684c3cf2562f067c1948833092317"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "phase-archer-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:12cb99d17715409605d3b2e50862e74c98c278d1fccb287ce04ba23dd1947780"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "phase-traveller-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:3171a185f2d61013c8114fbb80b33086077584579507af3091c4d074851cafae",
+    "definition": {
+      "name": "幽相の旅人",
+      "originalText": "P6-08用の新規定義。配布済みIDを保持。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "phase-grant-v1",
+          "revision": 1,
+          "contentHash": "sha256:456e8b0a5d7c851e3ff0cdd2d696182c04a39ea22c92c0724db17901c4bf5377"
+        },
+        {
+          "id": "sword",
+          "revision": 1,
+          "contentHash": "sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "phase-traveller-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:2bf3dc4a7d7f63e58cc01ec0cd3b9a1052bf31460c4f58d2b6d3d44af665963a"
       }
     }
   },
@@ -3660,6 +4618,58 @@
   },
   {
     "kind": "policy",
+    "id": "phase-archer-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:12cb99d17715409605d3b2e50862e74c98c278d1fccb287ce04ba23dd1947780",
+    "definition": {
+      "name": "壁抜きの射手",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "phase-bolt-v1"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 8000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "phase-traveller-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:2bf3dc4a7d7f63e58cc01ec0cd3b9a1052bf31460c4f58d2b6d3d44af665963a",
+    "definition": {
+      "name": "幽相の旅人",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "phase-grant-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "sword"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "policy",
     "id": "posture-archer-v1-policy",
     "revision": 1,
     "schemaVersion": 1,
@@ -3764,6 +4774,151 @@
       "preferredDistanceMm": 6000,
       "flightAltitudeMm": 6000,
       "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-area-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:126fa60e313b858a4ccaafaa4dc5b68954f5b56b2f12fba5de7040c972392724",
+    "definition": {
+      "name": "残響の陣術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-area-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-barrier-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:13f6c0145bb829f4010c99a3ce61f1056029adfe02a4f19fdaee1a488ebce5b6",
+    "definition": {
+      "name": "境界の結界術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-barrier-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-beam-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:cdb5dab23b4f032b675540f0343d791f414df81caeb88c8ff65e652feee5abd3",
+    "definition": {
+      "name": "光条の照射術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-beam-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-blink-flank-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:b836a4905912071cd33651ee229d0fb4566d0aaf99f968f2547126ac39d8d37a",
+    "definition": {
+      "name": "背後へ渡る術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-blink-flank-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 1500,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "spatial-blink-retreat-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:686b3b28cf806bbc077e956c0dadc6b9af2da41ff018adca71e36e3ad95dbd67",
+    "definition": {
+      "name": "退避の転移術師",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spatial-blink-retreat-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 16000,
+      "flightAltitudeMm": 3000,
+      "jumpWhenBlocked": false
     }
   },
   {
@@ -4043,6 +5198,95 @@
     "definition": {
       "name": "P6共通基盤・実験",
       "rulesVersion": "spatial-v1.20",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1",
+        "minimumCandidateWeightBps": 500,
+        "relativeImpactBps": [2500, 7500, 12500],
+        "reapplication": "self-observed-v1",
+        "groundEvasion": "posture-jump-v1",
+        "cover": "observed-threat-v1",
+        "search": {
+          "maxWaitSteps": 500,
+          "cellsPerSide": 5,
+          "revisitSteps": 500,
+          "lowSightMm": 100,
+          "goalTimeoutSteps": 150
+        }
+      },
+      "experimental": {
+        "mechanics": [
+          "absolute-evasion",
+          "absolute-hit",
+          "immortality",
+          "instant-death",
+          "mind-read",
+          "time-stop"
+        ]
+      },
+      "interferenceDiagnostics": "v1",
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "experimental-spatial-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:6494574c03787aff4f867a4a0592acdad4d35c6fc6b77eeb565591ac035e2082",
+    "definition": {
+      "name": "P6共通基盤・実験",
+      "rulesVersion": "spatial-v1.22",
       "ai": {
         "profile": "observed-utility-v1",
         "observation": "visible-coarse-v1",
@@ -4658,6 +5902,72 @@
   },
   {
     "kind": "ruleset",
+    "id": "standard-spatial-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:ac84981f6df8c1cbbb66554627dfe5ac3c6741ba9ed5d44495831792447d511d",
+    "definition": {
+      "name": "標準3D・空間操作・透過",
+      "rulesVersion": "spatial-v1.22",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1"
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
     "id": "standard-stages-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -4767,6 +6077,84 @@
     "definition": {
       "name": "観測・索敵・姿勢・脅威時の遮蔽・飛翔体の跳ね返し",
       "rulesVersion": "spatial-v1.21",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1",
+        "minimumCandidateWeightBps": 500,
+        "relativeImpactBps": [2500, 7500, 12500],
+        "reapplication": "self-observed-v1",
+        "groundEvasion": "posture-jump-v1",
+        "cover": "observed-threat-v1",
+        "search": {
+          "maxWaitSteps": 500,
+          "cellsPerSide": 5,
+          "revisitSteps": 500,
+          "lowSightMm": 100,
+          "goalTimeoutSteps": 150
+        }
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "standard-tactics-spatial-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:35233231ef63cb4fe680cc6d4f88ca37cbe216d47fd227eb56e4ca415bfcf8c9",
+    "definition": {
+      "name": "観測・索敵・姿勢・脅威時の遮蔽・空間操作・透過",
+      "rulesVersion": "spatial-v1.22",
       "ai": {
         "profile": "observed-utility-v1",
         "observation": "visible-coarse-v1",
@@ -6687,6 +8075,79 @@
   },
   {
     "kind": "scenario",
+    "id": "phase-stone-corridor-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:93e57860d7d9dbc23f2d93a8eca17211905a46430621c69556a89c290a03dc67",
+    "definition": {
+      "name": "石壁の回廊",
+      "bounds": {
+        "min": {
+          "x": -50000,
+          "y": -1000,
+          "z": -50000
+        },
+        "max": {
+          "x": 50000,
+          "y": 50000,
+          "z": 50000
+        }
+      },
+      "obstacles": [
+        {
+          "id": "floor",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": -500,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 50000,
+            "y": 500,
+            "z": 50000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": true,
+            "attack": true
+          }
+        },
+        {
+          "material": "stone",
+          "id": "stone-wall",
+          "kind": "box",
+          "center": {
+            "x": 0,
+            "y": 1800,
+            "z": 0
+          },
+          "halfExtents": {
+            "x": 200,
+            "y": 1800,
+            "z": 4000
+          },
+          "yawMilliDegrees": 0,
+          "slopeMilliDegrees": 0,
+          "blocks": {
+            "movement": true,
+            "vision": false,
+            "attack": true
+          }
+        }
+      ],
+      "navigation": {
+        "version": "support-graph-v1",
+        "nodes": [],
+        "edges": []
+      },
+      "terrainKnowledge": "surveyed"
+    }
+  },
+  {
+    "kind": "scenario",
     "id": "pillars",
     "revision": 1,
     "schemaVersion": 1,
@@ -7363,6 +8824,36 @@
           "element": "fire"
         }
       ]
+    }
+  },
+  {
+    "kind": "status",
+    "id": "phase-stone-energy-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:22bee84dff47845c2bee96aaa77168a857695dd70b951448186eba941cfb482a",
+    "definition": {
+      "phasing": {
+        "materials": ["stone", "energy"],
+        "floor": false
+      },
+      "name": "石と結界の透過",
+      "originalText": "身体のみ石・energyを通過する。支持する床面、身体同士、arena境界は残る。",
+      "stackKey": "phase-se",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 100,
+      "categories": ["buff"],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false,
+        "silenced": false
+      },
+      "periodic": []
     }
   },
   {
