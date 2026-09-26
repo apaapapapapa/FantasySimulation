@@ -112,6 +112,7 @@ export const ActorDisplaySchema = z.strictObject({
     })
     .optional(),
   reactions: z.array(ReactionDisplaySchema).max(160).optional(),
+  revivals: z.number().int().min(0).max(4).optional(),
   force: z
     .strictObject({
       fromStep: step,

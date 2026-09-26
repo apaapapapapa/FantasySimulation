@@ -8,6 +8,15 @@ export function validateReactions(
   step: number,
   nextEvent: number,
 ) {
+  const revival = definition.abilities.find(
+    (a) => a.definition.reaction?.response.kind === 'revive',
+  );
+  requireReplay(
+    revival
+      ? actor.revivals !== undefined && actor.revivals <= revival.definition.costs.uses
+      : actor.revivals === undefined,
+    'revival display/count',
+  );
   const reactions = actor.reactions ?? [];
   requireReplay(
     new Set(reactions.map((r) => r.abilityId)).size === reactions.length &&

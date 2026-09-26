@@ -267,18 +267,18 @@
     },
     {
       "id": "revival",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "One finite before-defeat restoration per actor, after all waves; at most four per match.",
       "generation": "p6"
     },
     {
       "id": "seal",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Next-boundary temporary category/ID suppression; cohorts and clocks survive, seals are immune.",
       "generation": "p6"
     },
     {
@@ -723,7 +723,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, revival; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -734,7 +734,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, seal; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -1196,7 +1196,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, revival; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -1207,7 +1207,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, seal; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -1722,8 +1722,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -1733,8 +1734,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -2225,8 +2227,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -2236,8 +2239,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -2728,8 +2732,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "revival is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -2739,8 +2744,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "seal is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -3231,8 +3237,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -3242,8 +3249,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -3734,8 +3742,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -3745,8 +3754,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -4214,7 +4224,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, revival; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -4225,7 +4235,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, seal; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -4710,8 +4720,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -4721,8 +4732,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -5213,8 +5225,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -5224,8 +5237,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -5716,8 +5730,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -5727,8 +5742,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -6219,8 +6235,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -6230,8 +6247,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -6722,8 +6740,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "revival is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -6733,8 +6752,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "seal is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -7261,8 +7281,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -7272,8 +7293,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -7741,7 +7763,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, revival; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -7752,7 +7774,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, seal; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -8237,8 +8259,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -8248,8 +8271,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -8740,8 +8764,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -8751,8 +8776,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -9220,7 +9246,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, revival; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -9231,7 +9257,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, seal; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -9716,8 +9742,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -9727,8 +9754,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -10196,7 +10224,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, revival; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -10207,7 +10235,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, seal; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -10669,7 +10697,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, revival; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -10680,7 +10708,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, seal; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -11142,7 +11170,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, revival; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -11153,7 +11181,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, seal; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -11638,8 +11666,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -11649,8 +11678,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -12141,8 +12171,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -12152,8 +12183,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -12644,8 +12676,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -12655,8 +12688,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -13159,8 +13193,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -13170,8 +13205,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -13662,8 +13698,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -13673,8 +13710,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -14142,7 +14180,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, revival; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -14153,7 +14191,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, seal; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -14638,8 +14676,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -14649,8 +14688,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -15141,8 +15181,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "revival is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -15152,8 +15193,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "seal is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -15644,8 +15686,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -15655,8 +15698,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -16147,8 +16191,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16158,8 +16203,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -16650,8 +16696,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16661,8 +16708,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -16767,7 +16815,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -16778,7 +16826,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -16788,8 +16836,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16799,8 +16848,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16810,8 +16860,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "revival is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16821,8 +16872,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16832,8 +16884,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16844,7 +16897,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -16854,8 +16907,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16865,8 +16919,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16876,8 +16931,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16887,8 +16943,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16898,8 +16955,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "revival is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16909,8 +16967,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16921,7 +16980,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -16931,8 +16990,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16942,8 +17002,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16954,7 +17015,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -16964,8 +17025,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -16976,7 +17038,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -16987,7 +17049,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -16998,7 +17060,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -17008,8 +17070,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17019,8 +17082,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17030,8 +17094,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17041,8 +17106,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17052,8 +17118,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17064,7 +17131,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -17074,8 +17141,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17085,8 +17153,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "revival is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17096,8 +17165,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17107,8 +17177,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17118,8 +17189,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17129,8 +17201,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17140,8 +17213,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival, seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17151,8 +17225,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17162,8 +17237,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17173,8 +17249,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17184,8 +17261,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17195,8 +17273,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival, teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17207,7 +17286,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -17218,7 +17297,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -17228,8 +17307,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -17240,7 +17320,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -17251,7 +17331,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -17261,8 +17341,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17272,8 +17353,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17283,8 +17365,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "seal is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17294,8 +17377,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17305,8 +17389,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17317,7 +17402,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -17327,8 +17412,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17338,8 +17424,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17349,8 +17436,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17360,8 +17448,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17371,8 +17460,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "seal is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17382,8 +17472,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17394,7 +17485,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -17404,8 +17495,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17415,8 +17507,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17427,7 +17520,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -17437,8 +17530,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17449,7 +17543,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -17460,7 +17554,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -17471,7 +17565,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -17481,8 +17575,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17492,8 +17587,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17503,8 +17599,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17514,8 +17611,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17525,8 +17623,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17537,7 +17636,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -17547,8 +17646,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17558,8 +17658,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "seal is not implemented; reject before execution."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17569,8 +17670,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17580,8 +17682,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17591,8 +17694,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17602,8 +17706,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal, revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17613,8 +17718,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17624,8 +17730,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17635,8 +17742,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17646,8 +17754,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17657,8 +17766,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17668,8 +17778,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal, teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -17680,7 +17791,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -17691,7 +17802,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -17701,8 +17812,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -18099,8 +18211,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -18110,8 +18223,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -18602,8 +18716,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -18613,8 +18728,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -19105,8 +19221,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -19116,8 +19233,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -19608,8 +19726,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -19619,8 +19738,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -20111,8 +20231,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -20122,8 +20243,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },
@@ -20591,7 +20713,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, revival; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20602,7 +20724,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, seal; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -21064,7 +21186,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, revival; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -21075,7 +21197,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, seal; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -21560,8 +21682,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for revival; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "revival.after-waves",
+          "summary": "All damage, healing, absorption, drain and non-restorative waves precede the single eligible revival. Reserve all owner reactions together; explicit HP reset, finite uses and four-use cap precede verdict. Statuses, forces, objects and paid actions retain their lifecycle."
         }
       ]
     },
@@ -21571,8 +21694,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for seal; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "seal.old-cohorts",
+          "summary": "Seal applies from next boundary: matching ability starts/releases/reactions and status modifiers/pulses/elemental responses stop. No retroactive projectile/object cancellation; statuses expire normally; seals cannot seal seals. Existing dispel protection and phasing safe-exit apply."
         }
       ]
     },

@@ -1,3 +1,4 @@
+import { effectiveStatuses, sealedAbilityCategories } from '@fantasy/domain/spatial/execution';
 import type { ActorState, DecisionView, StatusRevision } from '../state.ts';
 import profile from '../profile.json' with { type: 'json' };
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
@@ -59,11 +60,12 @@ export function selfView(
         actor.actions.action.ability.definition.movementWhileCasting === 'stop'
       ),
     silenced: stats.silenced,
+    sealedCategories: sealedAbilityCategories(actor.statuses, step),
     speedBps: Math.floor((stats.speedBps * postureSpeed(actor.body.motion)) / 10000),
     ...damageSource(stats),
     magicPower: stats.magicPower ?? stats.attack,
     burnDamage,
-    waterExtinguishable: active.some((s) =>
+    waterExtinguishable: effectiveStatuses(active, step).some((s) =>
       statusReactions(s.revision.definition).some(
         (r) => r.element === 'water' && r.response.kind === 'remove',
       ),

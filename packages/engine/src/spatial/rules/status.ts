@@ -1,3 +1,4 @@
+import { effectiveStatuses } from '@fantasy/domain/spatial/execution';
 import type { ResolvedActor, StatusRevision, StatusCohort } from '../state.ts';
 export type { StatusRevision, StatusCohort } from '../state.ts';
 import {
@@ -80,7 +81,7 @@ export function periodicPulseCount(
 /** Expiry precedes periodic effects. A new status first pulses at its activation boundary. */
 export function statusBoundary(statuses: readonly StatusCohort[], step: number) {
   const removed = statuses.filter((s) => s.endStep <= step).map(clone);
-  const active = statuses.filter((s) => s.startStep <= step && step < s.endStep);
+  const active = effectiveStatuses(statuses, step);
   const pulses = active.flatMap((s) => {
     const causes = Object.freeze([...s.causes]);
     return s.revision.definition.periodic.flatMap((effect, index) =>
@@ -278,24 +279,20 @@ export function effectiveStats(
     flight = false,
     rooted = false,
     silenced = false;
-  for (const status of statuses)
-    if (status.startStep <= step && step < status.endStep) {
-      const modifiers = status.revision.definition.modifiers;
-      attack += modifiers.attack * status.stacks;
-      defense += modifiers.defense * status.stacks;
-      speedBps += (modifiers.speedBps - 10000) * status.stacks;
-      flight ||= modifiers.flight;
-      rooted ||= modifiers.rooted;
-      silenced ||= modifiers.silenced ?? false;
-    }
+  for (const status of effectiveStatuses(statuses, step)) {
+    const modifiers = status.revision.definition.modifiers;
+    attack += modifiers.attack * status.stacks;
+    defense += modifiers.defense * status.stacks;
+    speedBps += (modifiers.speedBps - 10000) * status.stacks;
+    flight ||= modifiers.flight;
+    rooted ||= modifiers.rooted;
+    silenced ||= modifiers.silenced ?? false;
+  }
   attack = adjustedStatusValue(attack, 'attack', statuses, step);
   defense = adjustedStatusValue(defense, 'defense', statuses, step);
   const has = (target: 'magicPower' | 'magicDefense') =>
-    statuses.some(
-      (s) =>
-        s.startStep <= step &&
-        step < s.endStep &&
-        s.revision.definition.adjustments?.some((a) => a.target === target),
+    effectiveStatuses(statuses, step).some((s) =>
+      s.revision.definition.adjustments?.some((a) => a.target === target),
     );
   return {
     attack,

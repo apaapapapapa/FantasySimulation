@@ -1,3 +1,4 @@
+import { effectiveStatuses } from '@fantasy/domain/spatial/execution';
 import type { StatusCohort, StatusRevision } from '../state.ts';
 import {
   compareIds,
@@ -87,7 +88,7 @@ export function reactionDamageBps(
 ) {
   return (
     10000 +
-    statuses.reduce(
+    effectiveStatuses(statuses, step).reduce(
       (sum, s) =>
         sum +
         (s.startStep <= step && step < s.endStep
@@ -119,7 +120,7 @@ export function planStatusReactions(
     causes: string[];
   }[] = [];
   const groups = new Map<StatusRevision, StatusCohort[]>();
-  for (const s of statuses.filter((s) => s.startStep <= step && step < s.endStep)) {
+  for (const s of effectiveStatuses(statuses, step)) {
     const key =
       [...groups.keys()].find(
         (r) =>

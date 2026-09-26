@@ -2,7 +2,7 @@ import { actionClock, declarationCost, inObservedRange } from '../rules/attacks.
 import { ResourceBudget } from '../rules/resources.ts';
 import { resourceReady } from '../rules/locomotion.ts';
 import { selfView } from '../ai/self-view.ts';
-import { blockedBySilence } from '../rules/categories.ts';
+import { blockedBySilence, blockedBySeal } from '../rules/categories.ts';
 import { conditionMatches } from '../rules/conditions.ts';
 import { admitPair, rejectPair } from '../rules/pair-admission.ts';
 import { postureAllows } from '../rules/posture.ts';
@@ -49,6 +49,7 @@ export function startPhase(tx: StepTransaction) {
           const legal =
             inObservedRange(definition, view) &&
             conditionMatches(definition.condition, view) &&
+            !blockedBySeal(view, definition) &&
             !(view.silenced && blockedBySilence(definition));
           if (!admission.ok || !legal) {
             rejectPair(actor, previousMovement.get(actorId(actor))!);
@@ -71,10 +72,12 @@ export function startPhase(tx: StepTransaction) {
           },
         ]);
         const silenced = !!view.silenced && blockedBySilence(definition);
+        const sealed = blockedBySeal(view, definition);
         if (
           !postureAllows(actor.body.motion, definition) ||
           !inObservedRange(definition, view) ||
           !payment.ok ||
+          sealed ||
           silenced
         ) {
           if (payment.ok) resources.cancel('action');
@@ -96,11 +99,13 @@ export function startPhase(tx: StepTransaction) {
             ruleId: 'action.start',
             reason: !payment.ok
               ? `insufficient-${payment.reason}`
-              : silenced
-                ? 'silenced'
-                : !postureAllows(actor.body.motion, definition)
-                  ? 'posture'
-                  : 'observed-range-or-facing',
+              : sealed
+                ? 'sealed'
+                : silenced
+                  ? 'silenced'
+                  : !postureAllows(actor.body.motion, definition)
+                    ? 'posture'
+                    : 'observed-range-or-facing',
           });
         } else {
           const paid = resources.commit('action');

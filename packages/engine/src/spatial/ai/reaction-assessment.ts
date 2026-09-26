@@ -1,12 +1,13 @@
 import type { ActorState, DecisionView } from '../state.ts';
 import {
   compareIds,
+  revivalHp,
   type ReactionEstimate,
   type ObservedReaction,
 } from '@fantasy/domain/spatial/execution';
 import { assessAbility, boundedWeight } from './assessment.ts';
 import { conditionMatches } from '../rules/conditions.ts';
-import { blockedBySilence } from '../rules/categories.ts';
+import { blockedBySilence, blockedBySeal } from '../rules/categories.ts';
 import { postureAllows } from '../rules/posture.ts';
 import { payCost } from '../rules/attacks.ts';
 import { resourceReady } from '../rules/locomotion.ts';
@@ -27,21 +28,26 @@ export function assessReactions(view: DecisionView) {
     const used = view.used[ability.id] ?? 0;
     const readyAt = view.reactionReadyAt[ability.id] ?? 0;
     const payment = payCost(d, view.resources, used, resourceReady(view));
-    const reason = !postureAllows(view.self, d)
-      ? 'posture'
-      : view.incapacitated
-        ? 'incapacitated'
-        : view.silenced && blockedBySilence(d)
-          ? 'silenced'
-          : readyAt > view.step
-            ? 'cooldown-or-recovery'
-            : !payment.ok
-              ? `insufficient-${payment.reason}`
-              : !view.self.actor.character.stats.actionSpeedBps
-                ? 'action-speed'
-                : !conditionMatches(d.condition, view)
-                  ? 'condition'
-                  : 'automatic-trigger; estimate only';
+    const reason =
+      reaction.response.kind === 'revive' && used >= 4
+        ? 'revival-limit'
+        : !postureAllows(view.self, d)
+          ? 'posture'
+          : view.incapacitated
+            ? 'incapacitated'
+            : blockedBySeal(view, d)
+              ? 'sealed'
+              : view.silenced && blockedBySilence(d)
+                ? 'silenced'
+                : readyAt > view.step
+                  ? 'cooldown-or-recovery'
+                  : !payment.ok
+                    ? `insufficient-${payment.reason}`
+                    : !view.self.actor.character.stats.actionSpeedBps
+                      ? 'action-speed'
+                      : !conditionMatches(d.condition, view)
+                        ? 'condition'
+                        : 'automatic-trigger; estimate only';
     const eligible = reason === 'automatic-trigger; estimate only';
     const assessment = assessAbility(view, ability);
     const relevantThreat =
@@ -57,6 +63,21 @@ export function assessReactions(view: DecisionView) {
       assessment.successBps = relevantThreat ? 5000 : 0;
       assessment.confidenceBps = 1000;
       assessment.reason = `own ${reaction.response.kind}/filter/cost; delayed visible threat; contact and eligibility uncertain`;
+    } else if (reaction.response.kind === 'revive') {
+      const hp = revivalHp(reaction.response.health, view.self.actor.character.stats.hp);
+      assessment.weight = eligible
+        ? boundedWeight(
+            (view.rules.riskWeight * hp) /
+              Math.max(1, view.resources.hp) /
+              (1 + assessment.costBps / 5000),
+          )
+        : 0;
+      assessment.survivalBps = eligible
+        ? Math.round((10000 * hp) / view.self.actor.character.stats.hp)
+        : 0;
+      assessment.confidenceBps = 1000;
+      assessment.reason =
+        'own explicit revival HP, costs, finite uses and four-use cap; future eligibility uncertain';
     } else {
       assessment.confidenceBps = Math.min(1000, assessment.confidenceBps);
       assessment.reason = `automatic ${d.trigger}; ${assessment.reason}`.slice(0, 300);
@@ -69,7 +90,12 @@ export function assessReactions(view: DecisionView) {
       point: d.trigger,
       response: reaction.response.kind,
       readyAt,
-      remainingUses: d.costs.uses ? Math.max(0, d.costs.uses - used) : null,
+      remainingUses: d.costs.uses
+        ? Math.max(
+            0,
+            Math.min(d.costs.uses, reaction.response.kind === 'revive' ? 4 : d.costs.uses) - used,
+          )
+        : null,
       eligible,
       reason,
       assessment,
@@ -85,6 +111,8 @@ export function visibleReactionCue(actor: ActorState, step: number): ObservedRea
     .filter((r) => r.activatedAt <= step && step < r.recoveryUntil && r.state !== 'cancelled')
     .sort(
       (a, b) =>
+        Number(responseOf(b.abilityId) === 'revive') -
+          Number(responseOf(a.abilityId) === 'revive') ||
         Number(responseOf(b.abilityId) === 'deflect') -
           Number(responseOf(a.abilityId) === 'deflect') ||
         b.activatedAt - a.activatedAt ||

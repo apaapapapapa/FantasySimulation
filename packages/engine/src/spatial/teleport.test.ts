@@ -7,7 +7,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { relocationManifest, spatialTransaction } from '../../test-support/spatial-objects.ts';
 import { battleEvents, boxObstacle, editScenario } from '../../test-support/fixtures.ts';
-import { recordedCheckpoints } from '../../test-support/replay.ts';
+import { recordedCheckpoints, runReversedEnumeration } from '../../test-support/replay.ts';
 import { initializePhysics } from './world/physics.ts';
 import { relocationDestination } from './rules/relocation.ts';
 import { activateRelocations, queueRelocation } from './sim/relocation.ts';
@@ -261,11 +261,7 @@ it('runs new-ID teleport samples and preserves results under input enumeration',
   const run = await runBattle(input);
   expect(battleEvents(run.records).some((e) => e.teleport)).toBe(true);
   await recordedCheckpoints(input, run);
-  const reversed = await runBattle({
-    ...input,
-    participants: [...input.participants].reverse(),
-    revisions: [...input.revisions].reverse(),
-  });
+  const reversed = await runReversedEnumeration(input);
   expect(reversed.records).toEqual(run.records);
   expect({ ...reversed.result, simulationHash: run.result.simulationHash }).toEqual(run.result);
 });

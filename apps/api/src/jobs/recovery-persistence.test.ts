@@ -1,21 +1,19 @@
 import { expect, it } from 'vite-plus/test';
 import { ResultSchema } from '@fantasy/domain/spatial';
-import { runBattle } from '@fantasy/engine/spatial';
 import { recoveryManifest } from '../../../../packages/engine/test-support/recovery.ts';
-import { withRuntime, specInput } from '../../test-support/runtime.ts';
+import { withRuntime, runPersistedBattle } from '../../test-support/runtime.ts';
 import { seekReplay, verifyReplay } from '../replay/replay-reader.ts';
 
 it('round-trips absorbed and drained recovery through a real Worker SQLite and replay seek', async () => {
   await withRuntime(
     async ({ runtime, store, jobs, root }) => {
       const input = await recoveryManifest();
-      await store.seedRevisions(input.revisions);
-      const prepared = await store.prepareSpec(specInput(input));
-      const direct = await runBattle(prepared.manifest);
-      const job = await runtime.submit(specInput(input), 'p6-recovery', 'persist');
-      const done = await runtime.wait(job.id);
+      const { direct, done, saved } = await runPersistedBattle(
+        { runtime, store, jobs },
+        input,
+        'p6-recovery',
+      );
       expect(done.state).toBe('completed');
-      const saved = jobs.result(done.resultId!)!;
       expect(ResultSchema.parse(JSON.parse(saved.resultJson))).toEqual(direct.result);
       const verified = await verifyReplay(root, saved.replayId);
       const end = await seekReplay(root, saved.replayId, verified.checkpoint.nextRecord);

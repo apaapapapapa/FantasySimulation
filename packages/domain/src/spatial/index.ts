@@ -10,6 +10,7 @@ export * from './batch.ts';
 export * from './publication.ts';
 export * from './cognition.ts';
 export * from './status-references.ts';
+export * from './status-sealing.ts';
 export * from './numeric.ts';
 export * from './league.ts';
 export * from './league-results.ts';

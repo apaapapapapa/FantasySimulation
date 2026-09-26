@@ -13,7 +13,7 @@ import { conditionMatches } from '../rules/conditions.ts';
 import { declarationCost, inObservedRange, payCost } from '../rules/attacks.ts';
 import { copyPublicStatuses } from '../rules/status-observation.ts';
 import { usesObservedConditions } from '../rules/observed-conditions.ts';
-import { blockedBySilence } from '../rules/categories.ts';
+import { blockedBySilence, blockedBySeal } from '../rules/categories.ts';
 import { assessAbility, type KnownClearance } from './assessment.ts';
 import { assessReactions } from './reaction-assessment.ts';
 import { dodgeOptions } from './dodge.ts';
@@ -106,15 +106,17 @@ export function choosePolicy(
                     resourceReady(view),
                   )
                 ? 'flight-reserve'
-                : view.silenced && blockedBySilence(d)
-                  ? 'silenced'
-                  : !enabled || !conditionMatches(d.condition, view)
-                    ? 'condition'
-                    : !actor.character.stats.actionSpeedBps
-                      ? 'action-speed'
-                      : !inObservedRange(d, view)
-                        ? 'observed-range-or-facing'
-                        : null;
+                : blockedBySeal(view, d)
+                  ? 'sealed'
+                  : view.silenced && blockedBySilence(d)
+                    ? 'silenced'
+                    : !enabled || !conditionMatches(d.condition, view)
+                      ? 'condition'
+                      : !actor.character.stats.actionSpeedBps
+                        ? 'action-speed'
+                        : !inObservedRange(d, view)
+                          ? 'observed-range-or-facing'
+                          : null;
     if (reason) {
       excluded.push({ abilityId: ability.id, reason });
       continue;

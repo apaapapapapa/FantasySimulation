@@ -7,7 +7,7 @@ import {
 } from '@fantasy/domain/spatial/execution';
 import type { PendingEffect, EffectContext } from './combat-effects.ts';
 import { ResourceBudget } from '../rules/resources.ts';
-import { abilityCategories, blockedBySilence } from '../rules/categories.ts';
+import { abilityCategories, blockedBySilence, blockedBySeal } from '../rules/categories.ts';
 import { postureAllows } from '../rules/posture.ts';
 import { selfView } from '../ai/self-view.ts';
 import { conditionMatches } from '../rules/conditions.ts';
@@ -107,8 +107,10 @@ export function reactionCandidates(
       return (
         d.reaction &&
         d.trigger === point &&
+        (d.reaction.response.kind !== 'revive' || (actor.actions.used[a.id] ?? 0) < 4) &&
         !view.incapacitated &&
         postureAllows(actor.body.motion, d) &&
+        !blockedBySeal(view, d) &&
         !(view.silenced && blockedBySilence(d)) &&
         (actor.actions.cooldowns[a.id] ?? 0) <= activationStep &&
         (!d.costs.uses || (actor.actions.used[a.id] ?? 0) < d.costs.uses) &&

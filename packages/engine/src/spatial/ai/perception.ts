@@ -236,6 +236,9 @@ export function perceive(
   let deflections = previous.deflections
     ? [...previous.deflections.filter((d) => d.expiresAt > step)]
     : undefined;
+  let revivals = previous.revivals
+    ? previous.revivals.filter((r) => r.expiresAt > step)
+    : undefined;
   let threatHistory = previous.threatHistory ? [...previous.threatHistory] : undefined;
   for (const sample of pending)
     if (sample.availableAt <= step) {
@@ -258,6 +261,16 @@ export function perceive(
           },
         ].slice(-2);
       }
+      if (sample.enemy?.reaction?.response === 'revive')
+        revivals = [
+          ...(revivals ?? []).filter((r) => r.targetId !== sample.enemy!.id),
+          {
+            targetId: sample.enemy.id,
+            sampledAt: sample.sampledAt,
+            availableAt: sample.availableAt,
+            expiresAt: sample.sampledAt + rules.knowledgeTtlSteps,
+          },
+        ].slice(-2);
       terrain.push(...(sample.terrain ?? []));
       if (rules.reapplication)
         for (const p of sample.projectiles) {
@@ -438,6 +451,7 @@ export function perceive(
         }
       : {}),
     ...(deflections ? { deflections } : {}),
+    ...(revivals ? { revivals } : {}),
     ...(statusChangedAt !== undefined && { statusChangedAt }),
     ...(threatHistory ? { threatHistory: threatHistory.filter((e) => e.expiresAt > step) } : {}),
     pendingExperience: previous.pendingExperience.filter(

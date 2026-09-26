@@ -24,6 +24,10 @@ export const hasAbilityCategory = (ability: Ability, category: AbilityCategory) 
   abilityCategories(ability).includes(category);
 /** Silence blocks every ability with the `magic` category, including physical+magic hybrids. */
 export const blockedBySilence = (ability: Ability) => hasAbilityCategory(ability, 'magic');
+export const blockedBySeal = (
+  view: { sealedCategories?: readonly AbilityCategory[] },
+  ability: Ability,
+) => !!view.sealedCategories?.some((c) => hasAbilityCategory(ability, c));
 
 export const statusCategories = (status: Status): readonly StatusCategory[] =>
   status.categories ?? NONE;

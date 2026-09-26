@@ -6,6 +6,15 @@ export function recoveryDisplay(events: readonly BattleEvent[]) {
     const absorption = event.damage?.absorption,
       drain = event.damage?.drain;
     return [
+      ...(event.revival && event.actorId
+        ? [
+            {
+              id: event.id + ':revival',
+              actorId: event.actorId,
+              label: `蘇生: HP ${event.before?.hp} → ${event.after?.hp} / 使用 ${event.revival.use}/4回`,
+            },
+          ]
+        : []),
       ...(absorption && event.targetId
         ? [
             {
