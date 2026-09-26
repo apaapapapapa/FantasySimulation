@@ -40,8 +40,14 @@ function LeagueDocument({
   route: LeagueRoute;
 }) {
   const read = useCallback(
-    (signal: AbortSignal) => leagueSnapshot(library, route.snapshot, signal),
-    [library, route.snapshot],
+    (signal: AbortSignal) =>
+      leagueSnapshot(
+        library,
+        route.snapshot,
+        signal,
+        catalog.leagues?.find((ref) => ref.hash === route.snapshot),
+      ),
+    [library, route.snapshot, catalog],
   );
   const data = usePublicData(read);
   if (data?.error)
@@ -55,7 +61,13 @@ function LeagueDocument({
   return (
     <>
       <section className="panel" aria-label="リーグ概要">
-        <h2>{snapshot.name}</h2>
+        <h2>
+          {snapshot.name}
+          {snapshot.leagueClass === 'experimental' ? '（実験）' : ''}
+        </h2>
+        {snapshot.leagueClass === 'experimental' && (
+          <p>実験rulesetのリーグです。標準リーグとは別の得点・順位を表示しています。</p>
+        )}
         <p>
           {snapshot.characters.length}体 · {snapshot.battlefields.length}戦場 · seed{' '}
           {snapshot.trials}試行 · 通常/交換配置

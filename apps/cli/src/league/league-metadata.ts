@@ -8,6 +8,7 @@ import {
   type LeagueFileRef,
   type PublicCatalog,
   type RevisionRef,
+  assertLeagueMetadata,
 } from '@fantasy/domain/spatial';
 import { normalizeStoredLeagueDefinition } from '@fantasy/engine/spatial';
 
@@ -24,26 +25,10 @@ export async function leagueMetadata(
 ) {
   const snapshot = await json(ref, PublicLeagueSnapshotSchema);
   const revision = await json(snapshot.definition, LeagueRevisionSchema);
-  const { leagueHash, ...body } = revision,
-    { definition, engineVersion, implementationDigest } = revision;
-  if (
-    leagueHash !== (await contentHash(body)) ||
-    revision.inputHash !==
-      (await contentHash({ definition, engineVersion, implementationDigest })) ||
-    ref.id !== definition.id ||
-    ref.leagueHash !== leagueHash ||
-    ref.inputHash !== revision.inputHash ||
-    snapshot.leagueHash !== leagueHash ||
-    snapshot.inputHash !== revision.inputHash ||
-    snapshot.sourceSha !== revision.sourceSha ||
-    snapshot.engineVersion !== engineVersion ||
-    snapshot.implementationDigest !== implementationDigest ||
-    snapshot.id !== definition.id ||
-    snapshot.name !== definition.name ||
-    snapshot.trials !== definition.trials ||
-    snapshot.masterSeed !== definition.masterSeed
-  )
+  const { definition } = revision;
+  const leagueClass = await assertLeagueMetadata(snapshot, revision, ref).catch(() => {
     throw new OperationError('DATA_INVALID', 'League snapshot definition identity mismatch');
+  });
   const normalized = await normalizeStoredLeagueDefinition(definition).catch(() => {
     throw new OperationError('DATA_INVALID', 'League definition revision or closure invalid');
   });
@@ -101,5 +86,5 @@ export async function leagueMetadata(
       2 * standings.resolved
   )
     throw new OperationError('DATA_INVALID', 'League summary denominator mismatch');
-  return { snapshot, revision, definitionHash: await contentHash(normalized) };
+  return { snapshot, revision, leagueClass, definitionHash: await contentHash(normalized) };
 }

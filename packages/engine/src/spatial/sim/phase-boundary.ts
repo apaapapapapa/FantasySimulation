@@ -83,6 +83,7 @@ export function boundaryPhase(tx: StepTransaction) {
       }
     }
     commitEffects(next, effects, {
+      interferencePoint: 'startup',
       battle,
       journal,
       step,

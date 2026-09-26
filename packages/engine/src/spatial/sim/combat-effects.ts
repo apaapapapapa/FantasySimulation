@@ -1,7 +1,6 @@
-import type { DamageSnapshot, ActorState, PreparedBattle, MotionState } from '../state.ts';
+import type { DamageSnapshot, ActorState, MotionState } from '../state.ts';
 import type {
   BattleEvent,
-  Budget,
   DeepReadonly,
   Effect,
   StageContact,
@@ -11,7 +10,7 @@ import { resolveEffects } from '../rules/effects.ts';
 import { damagePower } from '../rules/damage.ts';
 import type { Journal } from '../rules/journal.ts';
 import { observeImpact, observeReveal, rememberExperience } from '../ai/perception.ts';
-import { at, type SpatialWorld } from '../world/physics.ts';
+import { at } from '../world/physics.ts';
 import type { MovedActor } from '../world/movement.ts';
 import { queueForce } from '../rules/forces.ts';
 import { planStatusEffects } from '../rules/status-reactions.ts';
@@ -19,6 +18,7 @@ import { applyStatuses, UnresolvedRuleError } from '../rules/status.ts';
 import type { EffectApplication } from '../rules/effects.ts';
 import { rememberThreat } from '../ai/threat-memory.ts';
 import { sub, unit, type Vec3 } from '../math.ts';
+import { recordInterference } from './interference.ts';
 const effectEventKinds = {
   damage: 'damage',
   heal: 'heal',
@@ -60,16 +60,8 @@ export function contactObservation(
   };
   return { self: motion(self), target: motion(target) };
 }
-export type EffectContext = {
-  aliveAtStart?: ReadonlySet<string>;
-  battle: PreparedBattle;
-  journal: Journal;
-  step: number;
-  activationStep: number;
-  phase: BattleEvent['phase'];
-  budget: Budget;
-  world: SpatialWorld;
-};
+import type { EffectContext } from './effect-context.ts';
+export type { EffectContext } from './effect-context.ts';
 /** Emit causal applications, then commit every target from the same defense/status snapshot. */
 export function commitEffects(
   actors: ActorState[],
@@ -97,19 +89,24 @@ export function commitEffects(
     });
     return { ...effect, id: event.id, event };
   });
-  const resolved = resolveEffects(
-    actors.map((a) => ({
-      actor: a.body.motion.actor,
-      resources: a.vitals.resources,
-      statuses: a.statuses,
-    })),
-    applications,
-    battle.statuses,
-    step,
-    activationStep,
-    budget,
-    deferStatuses,
-  );
+  let resolved: ReturnType<typeof resolveEffects>;
+  try {
+    resolved = resolveEffects(
+      actors.map((a) => ({
+        actor: a.body.motion.actor,
+        resources: a.vitals.resources,
+        statuses: a.statuses,
+      })),
+      applications,
+      battle.statuses,
+      step,
+      activationStep,
+      budget,
+      deferStatuses,
+    );
+  } catch (error) {
+    recordInterference(error, context);
+  }
   for (const result of resolved) {
     const actor = actors.find((a) => a.body.motion.actor.participant.actorId === result.actorId)!;
     for (const app of applications.filter((a) => a.targetId === result.actorId)) {
@@ -289,35 +286,40 @@ export function commitTransactionStatuses(
   for (const actor of actors) {
     const id = actor.body.motion.actor.participant.actorId;
     const incoming = applications.filter((a) => a.targetId === id);
-    let plan: ReturnType<typeof planStatusEffects>;
     try {
-      plan = planStatusEffects(actor.statuses, incoming, battle.statuses, step);
-    } catch (error) {
-      if (!(error instanceof UnresolvedRuleError)) throw error;
-      throw new UnresolvedRuleError(
-        error.ruleId,
-        error.revisions,
-        `${error.message}; point=status-commit; step=${activationStep}; actor=${id}; causes=${incoming
-          .slice(0, 8)
-          .map((a) => a.id)
-          .join(',')}; total=${incoming.length}`,
+      let plan: ReturnType<typeof planStatusEffects>;
+      try {
+        plan = planStatusEffects(actor.statuses, incoming, battle.statuses, step);
+      } catch (error) {
+        if (!(error instanceof UnresolvedRuleError)) throw error;
+        throw new UnresolvedRuleError(
+          error.ruleId,
+          error.revisions,
+          `${error.message}; point=status-commit; step=${activationStep}; actor=${id}; causes=${incoming
+            .slice(0, 8)
+            .map((a) => a.id)
+            .join(',')}; total=${incoming.length}`,
+          error.detail,
+        );
+      }
+      const applied = applyStatuses(
+        plan.statuses,
+        plan.applications,
+        plan.dispels,
+        activationStep,
+        budget,
       );
+      emitStatusChanges(
+        { actorId: id, reactions: plan.traces, changes: [...plan.changes, ...applied.changes] },
+        journal,
+        activationStep,
+        phase,
+      );
+      rememberApplications(actor, applied.changes, incoming, context);
+      actor.statuses = applied.statuses;
+    } catch (error) {
+      recordInterference(error, { ...context, interferencePoint: 'status-commit' }, id);
     }
-    const applied = applyStatuses(
-      plan.statuses,
-      plan.applications,
-      plan.dispels,
-      activationStep,
-      budget,
-    );
-    emitStatusChanges(
-      { actorId: id, reactions: plan.traces, changes: [...plan.changes, ...applied.changes] },
-      journal,
-      activationStep,
-      phase,
-    );
-    rememberApplications(actor, applied.changes, incoming, context);
-    actor.statuses = applied.statuses;
   }
 }
 
