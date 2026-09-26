@@ -7,7 +7,7 @@ inputs:
 outputs:
   cache-hit:
     value: ${{ steps.modules.outputs.cache-hit == 'true' || steps.dependencies.outputs.cache-hit == 'true' }}
-    description: Exact dependency cache hit; an empty value means unknown
+    description: Exact node_modules or content-store cache hit
 runs:
   using: composite
   steps:
@@ -48,7 +48,7 @@ runs:
       shell: bash
       env:
         SETUP_STARTED: ${{ steps.clock.outputs.started }}
-        CACHE_HIT: ${{ steps.modules.outputs.cache-hit == 'true' || steps.dependencies.outputs.cache-hit }}
+        CACHE_HIT: ${{ steps.modules.outputs.cache-hit == 'true' || steps.dependencies.outputs.cache-hit == 'true' }}
         INSTALL_RESULT: ${{ steps.modules.outputs.cache-hit == 'true' && 'cached' || steps.install.outcome }}
       run: |
         node --input-type=module <<'NODE'

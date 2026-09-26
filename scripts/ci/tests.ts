@@ -7,7 +7,7 @@ import { git } from '../harness/source.ts';
 import { runCommand } from '../harness/process.ts';
 import { readBoundedJson } from '../harness/files.ts';
 import { record } from '../harness/report.ts';
-import { testFiles } from './test-plan.ts';
+import { shardFiles, testFiles } from './test-plan.ts';
 
 export const TEST_SHARDS = 6;
 const digest = (bytes: string | Buffer) => createHash('sha256').update(bytes).digest('hex');
@@ -83,13 +83,14 @@ export async function runTests(root: string, shard: number, shards: number) {
   mkdirSync(directory, { recursive: true });
   const identity = testIdentity(root);
   const output = join(directory, 'vitest.json');
+  // Exact inventory paths; the aggregate still rejects a missing, extra or duplicated file.
   const args = [
     'test',
     'run',
     '--reporter=default',
     '--reporter=json',
     `--outputFile.json=${output}`,
-    ...(shards > 1 ? [`--shard=${shard}/${shards}`] : []),
+    ...(shards > 1 ? shardFiles(testFiles(root), shards)[shard - 1]! : []),
   ];
   const result = await runCommand('vp', args, root);
   writeFileSync(join(directory, 'tests.log'), result.output);
