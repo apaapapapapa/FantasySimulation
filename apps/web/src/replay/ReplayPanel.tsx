@@ -45,6 +45,7 @@ export function ReplayPanel({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
+  const [repeat, setRepeat] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [cameraMode, setCameraMode] = useState<CameraMode>('overview');
   const [overlays, setOverlays] = useState(NO_OVERLAYS);
@@ -134,17 +135,26 @@ export function ReplayPanel({
   }, [player, target, failed]);
   useEffect(() => {
     if (!playing || !replay) return;
-    const anchor = cursor.current.target,
-      started = performance.now();
+    let anchor = cursor.current.target;
+    let started: number | undefined;
     const end = replay.manifest.lastVerifiedStep ?? 0;
     let frame = 0;
     const tick = (now: number) => {
       if (!cursor.current.loading) {
-        const next = playbackStep(anchor, now - started, speed, end);
-        setTarget(next);
-        if (next === end) {
-          setPlaying(false);
-          return;
+        if (cursor.current.target === end && repeat && end > 0) {
+          // Show the loaded final frame before rewinding. Start the next clock
+          // only once step 0 has loaded, so buffering cannot skip the opening.
+          setTarget(0);
+          anchor = 0;
+          started = undefined;
+        } else {
+          started ??= now;
+          const next = playbackStep(anchor, now - started, speed, end);
+          setTarget(next);
+          if (next === end && (!repeat || end === 0)) {
+            setPlaying(false);
+            return;
+          }
         }
       }
       frame = requestAnimationFrame(tick);
@@ -158,7 +168,7 @@ export function ReplayPanel({
       cancelAnimationFrame(frame);
       document.removeEventListener('visibilitychange', hidden);
     };
-  }, [playing, speed, replay]);
+  }, [playing, speed, replay, repeat]);
   const end = replay?.manifest.end;
   const last = replay?.manifest.lastVerifiedStep ?? 0;
   const shown = state?.step;
@@ -274,12 +284,21 @@ export function ReplayPanel({
               </div>
               <div className="actions">
                 <button
-                  disabled={!playing && (loading || target >= last)}
+                  disabled={!playing && (loading || last === 0 || (!repeat && target >= last))}
                   onClick={() => setPlaying((value) => !value)}
                 >
                   {playing ? '一時停止' : '再生'}
                 </button>
                 <button onClick={() => seek(0)}>先頭へ</button>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={repeat}
+                    disabled={last === 0}
+                    onChange={(e) => setRepeat(e.target.checked)}
+                  />
+                  繰り返し再生
+                </label>
                 <label>
                   再生速度
                   <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
