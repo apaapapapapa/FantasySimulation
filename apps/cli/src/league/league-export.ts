@@ -1,3 +1,4 @@
+import { OperationError } from '@fantasy/api/artifacts';
 import {
   PublicLeagueDetailSchema,
   PublicLeagueSnapshotSchema,
@@ -35,12 +36,12 @@ export async function exportLeague(
     checked.attempts.map((attempt) => [attempt.slotId, attempt.outcome.kind] as const),
   );
   if (partitions.length !== plan.partitions.length)
-    throw new Error('Missing league partition definition');
+    throw new OperationError('DATA_INVALID', 'Missing league partition definition');
   const files = new Map<string, PublicationFile>();
   const add = (file: PublicationFile) => {
     const prior = files.get(file.key);
     if (prior && (prior.checksum !== file.checksum || prior.bytes !== file.bytes))
-      throw new Error('Conflicting league publication bytes');
+      throw new OperationError('DATA_INVALID', 'Conflicting league publication bytes');
     files.set(file.key, file);
   };
   const addJson = (value: unknown) => {
@@ -53,7 +54,8 @@ export async function exportLeague(
   const pairs = new Map<string, PublicLeagueSlotPage['rows']>();
   for (const entry of partitions) {
     const { partition, batch } = await validateLeaguePartition(plan, entry.partition, entry.batch);
-    if (seen.has(partition.index)) throw new Error('Duplicate league partition definition');
+    if (seen.has(partition.index))
+      throw new OperationError('DATA_INVALID', 'Duplicate league partition definition');
     seen.add(partition.index);
     const result = checked.results.find((r) => r.index.planId === batch.id);
     const source = result
@@ -69,7 +71,7 @@ export async function exportLeague(
     for (const slot of partition.slots) {
       const batchSlot = batch.slots.find((s) => s.key === slot.id.slice(7))!;
       const rowIndex = built.rows.findIndex((row) => row.slotId === batchSlot.id);
-      if (rowIndex < 0) throw new Error('Missing public league row');
+      if (rowIndex < 0) throw new OperationError('DATA_INVALID', 'Missing public league row');
       const key = slot.characters.map((c) => c.id).join('/');
       const rows = pairs.get(key) ?? [];
       rows.push({

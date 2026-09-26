@@ -1,5 +1,6 @@
 import { expect, it } from 'vite-plus/test';
 import { join } from 'node:path';
+import { readFile } from 'node:fs/promises';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { BattleBundles } from '@fantasy/api/artifacts';
 import { reserveLeaguePartition } from '@fantasy/api/tooling';
@@ -10,6 +11,7 @@ import { exportLeague, leagueFile } from './league-export.ts';
 import { commitPublication } from '../publication/publication-catalog.ts';
 import { localPublicationGraph } from '../publication/publication-graph.ts';
 import { leagueFailure } from './league-diagnostics.ts';
+import { probeLeague } from './league-probe.ts';
 
 function initialWork(fixture: Awaited<ReturnType<typeof leaguePublicationFixture>>) {
   return buildLeagueWork(
@@ -80,9 +82,10 @@ it('rejects a new execution that reserves retry 2 but flattens only attempt 1', 
     await commitPublication(target, [...admitted.files, forged.file], [], {
       leagueWork: forged.ref,
     });
-    await expect(localPublicationGraph(target)).rejects.toThrow(
-      'New execution journal omits its reserved attempts',
-    );
+    await expect(localPublicationGraph(target)).rejects.toMatchObject({
+      code: 'DATA_INVALID',
+      message: 'New execution journal omits its reserved attempts',
+    });
   });
 }, 30000);
 
@@ -99,6 +102,11 @@ it('checks every catalog league identity before deduplicating retained snapshots
     await expect(localPublicationGraph(target)).rejects.toThrow(
       'Conflicting league catalog reference',
     );
+    await expect(
+      probeLeague(fixture.plan.revision.definition, fixture.plan.source.sha, (key) =>
+        readFile(join(target, key)),
+      ),
+    ).rejects.toMatchObject({ code: 'DATA_INVALID', message: 'League probe catalog identity' });
   });
 }, 30000);
 

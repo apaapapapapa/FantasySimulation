@@ -1,3 +1,4 @@
+import { OperationError } from '@fantasy/api/artifacts';
 import {
   PublicLeagueSnapshotSchema,
   PublicLeagueDetailSchema,
@@ -54,13 +55,13 @@ export async function validatePublicLeague(
     snapshot.trials !== definition.trials ||
     snapshot.masterSeed !== definition.masterSeed
   )
-    throw new Error('League snapshot definition identity mismatch');
+    throw new OperationError('DATA_INVALID', 'League snapshot definition identity mismatch');
   for (const revision of definition.revisions)
     if (revision.contentHash !== (await revisionHash(revision)))
-      throw new Error('League definition revision checksum');
+      throw new OperationError('DATA_INVALID', 'League definition revision checksum');
   const named = (kind: 'character' | 'scenario', id: string) => {
     const value = definition.revisions.find((r) => r.kind === kind && r.id === id);
-    if (!value) throw new Error('League named revision missing');
+    if (!value) throw new OperationError('DATA_INVALID', 'League named revision missing');
     return {
       id,
       revision: value.revision,
@@ -81,7 +82,7 @@ export async function validatePublicLeague(
       })),
     )
   )
-    throw new Error('League display metadata mismatch');
+    throw new OperationError('DATA_INVALID', 'League display metadata mismatch');
   const expected = new Map<
     string,
     Awaited<ReturnType<ReturnType<typeof leagueCoordinates>['next']>>['value']
@@ -98,7 +99,7 @@ export async function validatePublicLeague(
       detail.standing.character !== summary.character ||
       detail.opponents.length !== definition.characters.length - 1
     )
-      throw new Error('League detail identity mismatch');
+      throw new OperationError('DATA_INVALID', 'League detail identity mismatch');
     const opponents = new Set<string>();
     for (const opponent of detail.opponents) {
       if (
@@ -106,13 +107,14 @@ export async function validatePublicLeague(
         opponent.character === summary.character ||
         !definition.characters.some((c) => c.id === opponent.character)
       )
-        throw new Error('League opponent mismatch');
+        throw new OperationError('DATA_INVALID', 'League opponent mismatch');
       opponents.add(opponent.character);
       const characters = [summary.character, opponent.character].sort();
       const pair = characters.join('/'),
         declaration = canonicalJson(opponent.pages);
       if (pairPages.has(pair)) {
-        if (pairPages.get(pair) !== declaration) throw new Error('Inconsistent league pair pages');
+        if (pairPages.get(pair) !== declaration)
+          throw new OperationError('DATA_INVALID', 'Inconsistent league pair pages');
         continue;
       }
       pairPages.set(pair, declaration);
@@ -125,7 +127,7 @@ export async function validatePublicLeague(
           page.rows.length !== pageRef.rows ||
           !same(page.characters, characters)
         )
-          throw new Error('League slot page identity mismatch');
+          throw new OperationError('DATA_INVALID', 'League slot page identity mismatch');
         for (const row of page.rows) {
           const planned = expected.get(row.slot.id),
             { simulationHash, ...coordinate } = row.slot;
@@ -139,7 +141,7 @@ export async function validatePublicLeague(
               characters,
             )
           )
-            throw new Error('League planned slot mismatch');
+            throw new OperationError('DATA_INVALID', 'League planned slot mismatch');
           last = row.slot.id;
           visited.add(row.slot.id);
           const set = sets.get(row.setHash),
@@ -164,7 +166,10 @@ export async function validatePublicLeague(
               scenario: reference(match.scenario),
             })
           )
-            throw new Error('League slot and public replay binding mismatch');
+            throw new OperationError(
+              'DATA_INVALID',
+              'League slot and public replay binding mismatch',
+            );
           const key = `${pair}/${row.slot.scenario.id}`;
           const cell = cells.get(key) ?? {
             characters: row.slot.characters.map((c) => c.id) as [string, string],
@@ -186,7 +191,8 @@ export async function validatePublicLeague(
     }
     details.push(detail.standing);
   }
-  if (visited.size !== expected.size) throw new Error('League publication omits planned slots');
+  if (visited.size !== expected.size)
+    throw new OperationError('DATA_INVALID', 'League publication omits planned slots');
   const scores = scoreLeagueCounts({
     characters: definition.characters.map((c) => c.id),
     battlefields: definition.battlefields.map((f) => ({
@@ -202,7 +208,7 @@ export async function validatePublicLeague(
       scores.rows.map(({ scenarios: _, opponents: __, ...row }) => row),
     )
   )
-    throw new Error('League published score mismatch');
+    throw new OperationError('DATA_INVALID', 'League published score mismatch');
   return snapshot;
 }
 
@@ -220,9 +226,10 @@ export async function validatePublicLeagueWork(
     const page = await json(pageRef, LeagueProgressPageSchema),
       { id, ...body } = page;
     if (id !== (await contentHash(body)) || page.records.length !== pageRef.records)
-      throw new Error('League progress page mismatch');
+      throw new OperationError('DATA_INVALID', 'League progress page mismatch');
     for (const record of page.records) {
-      if (records.has(record.simulationHash)) throw new Error('Duplicate retained league progress');
+      if (records.has(record.simulationHash))
+        throw new OperationError('DATA_INVALID', 'Duplicate retained league progress');
       records.set(record.simulationHash, record);
       for (const attempt of record.attempts)
         if (attempt.objectHash) {
@@ -232,7 +239,10 @@ export async function validatePublicLeagueWork(
             receipt.simulationHash !== record.simulationHash ||
             receipt.result.outcome.kind !== attempt.state
           )
-            throw new Error('Retained league attempt has no verified receipt');
+            throw new OperationError(
+              'DATA_INVALID',
+              'Retained league attempt has no verified receipt',
+            );
         }
     }
   }
@@ -250,15 +260,15 @@ export async function validatePublicLeagueWork(
       reservation.planId !== work.planId ||
       reservation.executionId !== work.executionId
     )
-      throw new Error('Retained league reservation mismatch');
+      throw new OperationError('DATA_INVALID', 'Retained league reservation mismatch');
     partitions.add(reservation.partitionId);
     for (const record of reservation.progress.records) {
       if (reservations.has(record.simulationHash))
-        throw new Error('Duplicate simulation in league reservations');
+        throw new OperationError('DATA_INVALID', 'Duplicate simulation in league reservations');
       reservations.set(record.simulationHash, record);
       const retained = records.get(record.simulationHash);
       if (!retained || (!work.previousWork && !same(retained, record)))
-        throw new Error('Journal omits its reserved attempts');
+        throw new OperationError('DATA_INVALID', 'Journal omits its reserved attempts');
     }
   }
   return { work, records, reservations };
@@ -270,7 +280,10 @@ export function assertLeagueWorkTransition(previous: WorkState, current: WorkSta
   if (!sameExecution)
     for (const [hash, record] of current.reservations)
       if (!same(current.records.get(hash), record))
-        throw new Error('New execution journal omits its reserved attempts');
+        throw new OperationError(
+          'DATA_INVALID',
+          'New execution journal omits its reserved attempts',
+        );
   if (
     sameExecution &&
     (!same(previous.work.reservations, current.work.reservations) ||
@@ -278,10 +291,11 @@ export function assertLeagueWorkTransition(previous: WorkState, current: WorkSta
       previous.work.inputHash !== current.work.inputHash ||
       previous.work.sourceSha !== current.work.sourceSha)
   )
-    throw new Error('League execution journal identity changed');
+    throw new OperationError('DATA_INVALID', 'League execution journal identity changed');
   for (const [hash, prior] of previous.records) {
     const next = current.records.get(hash);
-    if (!next) throw new Error('League journal drops retained attempt history');
+    if (!next)
+      throw new OperationError('DATA_INVALID', 'League journal drops retained attempt history');
     if (same(prior, next)) continue;
     const last = prior.attempts.at(-1);
     if (
@@ -315,7 +329,7 @@ export function assertLeagueWorkTransition(previous: WorkState, current: WorkSta
       )
         continue;
     }
-    throw new Error('League journal rewrites consumed attempts');
+    throw new OperationError('DATA_INVALID', 'League journal rewrites consumed attempts');
   }
   for (const [hash, record] of current.records)
     if (
@@ -325,5 +339,5 @@ export function assertLeagueWorkTransition(previous: WorkState, current: WorkSta
         record.attempts[0]!.state !== 'reserved' ||
         record.attempts[0]!.executionId !== current.work.executionId)
     )
-      throw new Error('New league attempt lacks durable admission');
+      throw new OperationError('DATA_INVALID', 'New league attempt lacks durable admission');
 }

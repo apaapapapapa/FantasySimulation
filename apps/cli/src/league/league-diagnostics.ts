@@ -37,7 +37,7 @@ const descriptions = {
     'no',
   ],
   PUBLICATION_CONFLICT: [
-    'The publication generation changed.',
+    'Publication conflicts with retained data or the current generation.',
     'Read back the current generation and investigate competing publication before retrying.',
     'conditional',
   ],
@@ -125,6 +125,7 @@ export function leagueFailure(error: unknown, context: LeagueFailureContext) {
       : 'UNKNOWN';
   const [message, action, retry] = descriptions[code];
   const target = error instanceof OperationError ? error.targetHash : undefined;
+  // Match the entire identifier: JavaScript's $ also accepts a final line terminator.
   return {
     schemaVersion: 1,
     status: 'failed',
@@ -135,10 +136,11 @@ export function leagueFailure(error: unknown, context: LeagueFailureContext) {
     retry,
     action,
     ...(publicationState ? { publicationState } : {}),
-    ...(typeof target === 'string' && /^sha256:[a-f0-9]{64}$/.test(target)
+    ...(typeof target === 'string' && target.match(/^sha256:[a-f0-9]{64}$/)?.[0] === target
       ? { targetHash: target }
       : {}),
-    ...(context.executionId && /^league-[0-9]{1,20}-[0-9]{1,5}$/.test(context.executionId)
+    ...(context.executionId &&
+    context.executionId.match(/^league-[0-9]{1,20}-[0-9]{1,5}$/)?.[0] === context.executionId
       ? { executionId: context.executionId }
       : {}),
   } as const;

@@ -115,6 +115,9 @@ it.each([
   `sha256:${'a'.repeat(64)}\n${secret}`,
   'a'.repeat(10000),
   `league-123-1\r${secret}`,
+  `sha256:${'a'.repeat(64)}\n`,
+  'league-123-1\n',
+  'league-123-1\u2028',
 ])('omits noncanonical, oversized or control-bearing identifiers', (id) => {
   const report = leagueFailure(new OperationError('DATA_INVALID', secret, id), {
     command: 'finish',

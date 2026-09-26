@@ -46,7 +46,8 @@ export async function reserveLeaguePartition(
       attempts: [],
     };
     if (record.attempts.some((a) => a.executionId === executionId))
-      throw new Error(
+      throw new OperationError(
+        'IDENTITY_MISMATCH',
         'Execution ID was already reserved; use a new execution and retain its history',
       );
     const attempt = nextLeagueAttempt(record);

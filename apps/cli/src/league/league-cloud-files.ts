@@ -17,7 +17,7 @@ export async function cloudJson(
   code: 'INPUT_INVALID' | 'DATA_INVALID' = 'DATA_INVALID',
 ): Promise<unknown> {
   await publicationDirectory(dirname(path));
-  const data = await readBoundedFile(path, ref?.bytes ?? 16000000);
+  const data = await readBoundedFile(path, ref?.bytes ?? 16000000, code);
   if (ref && (data.length !== ref.bytes || sha256(data) !== ref.hash))
     throw new OperationError('DATA_INVALID', 'League cloud file checksum mismatch');
   return operationInput(

@@ -67,7 +67,7 @@ export function assertPublicData(value: unknown): void {
         value,
       )
     )
-      throw new Error('Private text is not publishable');
+      throw new OperationError('DATA_INVALID', 'Private text is not publishable');
   } else if (Array.isArray(value)) value.forEach(assertPublicData);
   else if (value && typeof value === 'object') {
     for (const [key, item] of Object.entries(value)) {
@@ -76,7 +76,7 @@ export function assertPublicData(value: unknown): void {
           key,
         )
       )
-        throw new Error('Private field is not publishable');
+        throw new OperationError('DATA_INVALID', 'Private field is not publishable');
       assertPublicData(key);
       assertPublicData(item);
     }
@@ -93,7 +93,7 @@ export async function publicationDirectory(path: string, create = false): Promis
       if (error.code !== 'EEXIST') throw error;
     });
   if (!(await lstat(full)).isDirectory())
-    throw new Error('Publication directory must not be a symlink');
+    throw new OperationError('DATA_INVALID', 'Publication directory must not be a symlink');
 }
 export async function optionalPublicationFile(path: string, limit: number) {
   try {
@@ -107,13 +107,14 @@ export async function optionalPublicationFile(path: string, limit: number) {
 export function publicationJson(key: string, value: unknown): PublicationFile {
   assertPublicData(value);
   const data = Buffer.from(canonicalJson(value));
-  if (data.length > MAX_PUBLIC_JSON_BYTES) throw new Error('Public JSON byte limit');
+  if (data.length > MAX_PUBLIC_JSON_BYTES)
+    throw new OperationError('BUDGET_EXCEEDED', 'Public JSON byte limit');
   return { key: PublicKeySchema.parse(key), bytes: data.length, checksum: sha256(data), data };
 }
 export async function publicationBytes(file: PublicationFile) {
   const data = file.data ?? (await readBoundedFile(file.source!, file.bytes));
   if (data.length !== file.bytes || sha256(data) !== file.checksum)
-    throw new Error('Publication input changed after verification');
+    throw new OperationError('DATA_INVALID', 'Publication input changed after verification');
   return data;
 }
 export async function inspectPublicArtifact(file: PublicationFile, rawBytes?: number) {
@@ -140,8 +141,9 @@ export async function publicationInventory(root: string, objectsOnly = false) {
         await walk(path, key + '/');
       else if (entry.isFile()) {
         files.set(PublicKeySchema.parse(key), (await lstat(path)).size);
-        if (files.size > PUBLICATION_MAX_FILES) throw new Error('Publication file count limit');
-      } else throw new Error('Unexpected publication entry or symlink');
+        if (files.size > PUBLICATION_MAX_FILES)
+          throw new OperationError('BUDGET_EXCEEDED', 'Publication file count limit');
+      } else throw new OperationError('DATA_INVALID', 'Unexpected publication entry or symlink');
     }
   }
   await walk(root, '');
@@ -157,7 +159,7 @@ export async function writePublication(
   maxBytes: number,
 ) {
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > PUBLICATION_MAX_BYTES)
-    throw new Error('Invalid publication capacity');
+    throw new OperationError('INPUT_INVALID', 'Invalid publication capacity');
   const stored = await publicationInventory(root);
   const incoming = new Map<string, string>();
   for (const file of files.filter((f) => f.key.endsWith('/receipt.json'))) {
@@ -171,12 +173,12 @@ export async function writePublication(
   const keys = new Set<string>();
   for (const file of files) {
     PublicKeySchema.parse(file.key);
-    if (keys.has(file.key)) throw new Error('Duplicate publication key');
+    if (keys.has(file.key)) throw new OperationError('DATA_INVALID', 'Duplicate publication key');
     keys.add(file.key);
     if (stored.has(file.key)) {
       const existing = await readBoundedFile(join(root, file.key), file.bytes);
       if (existing.length !== file.bytes || sha256(existing) !== file.checksum)
-        throw new Error('Immutable publication collision');
+        throw new OperationError('PUBLICATION_CONFLICT', 'Immutable publication collision');
     } else additions.push(file);
   }
   const unchanged = previous?.equals(current.data!) ?? false;
@@ -188,11 +190,11 @@ export async function writePublication(
     bytes > maxBytes ||
     stored.size + additions.length + (previous ? 0 : 1) > PUBLICATION_MAX_FILES
   )
-    throw new Error('Publication capacity exceeded before writing');
+    throw new OperationError('BUDGET_EXCEEDED', 'Publication capacity exceeded before writing');
   const assertGeneration = async () => {
     const now = await optionalPublicationFile(join(root, current.key), MAX_PUBLIC_JSON_BYTES);
     if (!(now === null ? previous === null : previous !== null && now.equals(previous)))
-      throw new Error('Publication generation changed');
+      throw new OperationError('PUBLICATION_CONFLICT', 'Publication generation changed');
   };
   await assertGeneration();
   for (const file of additions) {

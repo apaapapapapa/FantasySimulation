@@ -34,6 +34,8 @@ describe('bounded independent replay artifacts', () => {
     'checkpoint-size',
     'record-overflow',
     'checkpoint-overflow',
+    'record-file-length',
+    'checkpoint-file-length',
   ])(
     'classifies saved %s corruption even when compressed checksums are consistent',
     async (kind) => {
@@ -42,6 +44,17 @@ describe('bounded independent replay artifacts', () => {
         const directory = join(root, manifest.id);
         const ref = kind.startsWith('checkpoint') ? manifest.checkpoints[0]! : manifest.chunks[0]!;
         const original = await readCompressed(directory, ref);
+        if (kind.endsWith('file-length')) {
+          const file = join(directory, ref.file);
+          await writeFile(
+            file,
+            Buffer.concat([await readFile(file), Buffer.from('PRIVATE_SIZE_SENTINEL')]),
+          );
+          await expect(verifyReplayDirectory(directory, manifest)).rejects.toMatchObject({
+            code: 'DATA_INVALID',
+          });
+          return;
+        }
         const raw =
           kind === 'checkpoint-json'
             ? '{'

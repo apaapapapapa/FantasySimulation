@@ -202,7 +202,9 @@ describe('public saved-batch export', () => {
     await withReplayDirectory(async (root) => {
       const f = await publicationFixture(join(root, 'batch')),
         target = join(root, 'public');
-      await expect(exportPublication(f.plan, [f], target, 1)).rejects.toThrow(/capacity/);
+      await expect(exportPublication(f.plan, [f], target, 1)).rejects.toMatchObject({
+        code: 'BUDGET_EXCEEDED',
+      });
       expect(await readdir(target)).toEqual([]);
       await exportPublication(f.plan, [f], target);
       const pointer = await readFile(join(target, 'catalog/current.json'));
@@ -210,7 +212,9 @@ describe('public saved-batch export', () => {
         join(target, 'objects', f.receipt.objectHash.slice(7), 'manifest.json'),
         '{}',
       );
-      await expect(exportPublication(f.plan, [f], target)).rejects.toThrow(/collision/);
+      await expect(exportPublication(f.plan, [f], target)).rejects.toMatchObject({
+        code: 'PUBLICATION_CONFLICT',
+      });
       expect(await readFile(join(target, 'catalog/current.json'))).toEqual(pointer);
     });
   });

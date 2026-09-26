@@ -68,9 +68,11 @@ export async function probeLeague(input: unknown, sourceSha: string, read: Publi
     const work = saved(PublicLeagueWorkSchema, await leagueJson(catalog.leagueWork));
     for (const ref of work.progress) {
       const page = await validateProgressPage(await leagueJson(ref));
-      if (page.records.length !== ref.records) throw new Error('League probe progress count');
+      if (page.records.length !== ref.records)
+        throw new OperationError('DATA_INVALID', 'League probe progress count');
       for (const record of page.records) {
-        if (records.has(record.simulationHash)) throw new Error('Duplicate league probe history');
+        if (records.has(record.simulationHash))
+          throw new OperationError('DATA_INVALID', 'Duplicate league probe history');
         records.set(record.simulationHash, record);
       }
     }
@@ -88,7 +90,7 @@ export async function probeLeague(input: unknown, sourceSha: string, read: Publi
   const ref = catalog?.leagues?.find((entry) => entry.id === revision.definition.id);
   const snapshot = ref ? saved(PublicLeagueSnapshotSchema, await leagueJson(ref)) : undefined;
   if (ref && (snapshot?.leagueHash !== ref.leagueHash || snapshot.inputHash !== ref.inputHash))
-    throw new Error('League probe catalog identity');
+    throw new OperationError('DATA_INVALID', 'League probe catalog identity');
   const estimate = estimateLeague(revision.definition, LEAGUE_PROFILE, {
     reused,
     retries,

@@ -29,7 +29,7 @@ async function main() {
     throw new OperationError('INPUT_INVALID', 'Invalid league cloud command');
   const root = resolve(directory);
   const executionId = `league-${required('GITHUB_RUN_ID')}-${required('GITHUB_RUN_ATTEMPT')}`;
-  if (!/^league-[0-9]{1,20}-[0-9]{1,5}$/.test(executionId))
+  if (executionId.match(/^league-[0-9]{1,20}-[0-9]{1,5}$/)?.[0] !== executionId)
     throw new OperationError('INPUT_INVALID', 'Invalid Actions run identity');
   failureContext.executionId = executionId;
   const source = executionSource();
@@ -37,7 +37,7 @@ async function main() {
     throw new OperationError('IDENTITY_MISMATCH', 'Untested cloud source');
   failureContext.validating = false;
   const definition = async () => {
-    if (!input || !/^data\/leagues\/[a-zA-Z0-9][a-zA-Z0-9_-]*\.json$/.test(input))
+    if (!input || input.match(/^data\/leagues\/[a-zA-Z0-9][a-zA-Z0-9_-]*\.json$/)?.[0] !== input)
       throw new OperationError('INPUT_INVALID', 'Expected a committed data/leagues definition');
     return cloudJson(join(repository, input), undefined, 'INPUT_INVALID');
   };

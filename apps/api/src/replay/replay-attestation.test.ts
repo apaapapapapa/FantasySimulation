@@ -13,6 +13,7 @@ import {
   readReplayManifest,
   replayValidationProfile,
   REPLAY_VALIDATION_PROFILE,
+  verifyReplayDirectory,
 } from './replay-reader.ts';
 import { readCompressed, sha256 } from './replay-files.ts';
 
@@ -118,6 +119,10 @@ describe('checksum reuse of semantically verified replay bytes', { timeout: 30_0
         bytes: bytes.length,
         rawBytes: Buffer.byteLength(raw),
         checksum: sha256(bytes),
+      });
+      await expect(verifyReplayDirectory(directory, manifest)).rejects.toMatchObject({
+        code: 'DATA_INVALID',
+        message: 'Checkpoint does not match the verified prefix',
       });
       await writeFile(join(directory, 'manifest.json'), canonicalJson(manifest));
       const metadata = new ArtifactStore(jobs, root).metadata(manifest);

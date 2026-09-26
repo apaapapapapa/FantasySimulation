@@ -58,7 +58,11 @@ export async function syncDirectory(path: string) {
   }
 }
 /** Bound the actual read, including concurrent growth; never follow artifact symlinks. */
-export async function readBoundedFile(path: string, limit: number): Promise<Buffer> {
+export async function readBoundedFile(
+  path: string,
+  limit: number,
+  code: 'INPUT_INVALID' | 'DATA_INVALID' = 'DATA_INVALID',
+): Promise<Buffer> {
   const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
     const info = await file.stat();
@@ -67,8 +71,9 @@ export async function readBoundedFile(path: string, limit: number): Promise<Buff
     // cannot redirect the already-open handle or pass the identity comparison.
     const entry = await lstat(path);
     if (entry.isSymbolicLink() || entry.dev !== info.dev || entry.ino !== info.ino)
-      throw new Error('Artifact entry changed or is a symlink');
-    if (!info.isFile() || info.size > limit) throw new Error('Artifact size/type limit');
+      throw new OperationError(code, 'Artifact entry changed or is a symlink');
+    if (!info.isFile() || info.size > limit)
+      throw new OperationError(code, 'Artifact size/type limit');
     const bytes = Buffer.alloc(Math.min(info.size + 1, limit + 1));
     let size = 0;
     while (size < bytes.length) {
@@ -76,7 +81,7 @@ export async function readBoundedFile(path: string, limit: number): Promise<Buff
       if (!read.bytesRead) break;
       size += read.bytesRead;
     }
-    if (size !== info.size) throw new Error('Artifact changed while reading');
+    if (size !== info.size) throw new OperationError(code, 'Artifact changed while reading');
     return bytes.subarray(0, size);
   } finally {
     await file.close();

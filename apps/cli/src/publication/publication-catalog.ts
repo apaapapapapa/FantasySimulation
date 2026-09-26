@@ -1,3 +1,4 @@
+import { OperationError, operationInput } from '@fantasy/api/artifacts';
 import { mkdir, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import {
@@ -43,19 +44,32 @@ export async function commitPublication(
     let prior: PublicCatalog | undefined;
     let priorFile: PublicationFile | undefined;
     if (previous) {
-      const pointer = PublicCatalogCurrentSchema.parse(JSON.parse(previous.toString('utf8')));
+      const pointer = operationInput(
+        () =>
+          PublicCatalogCurrentSchema.parse(
+            JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(previous)),
+          ),
+        'DATA_INVALID',
+      );
       const key = `catalog/${publicHashName(pointer.catalogHash)}.json`;
       const data = await readBoundedFile(join(root, key), pointer.bytes);
       if (data.length !== pointer.bytes || sha256(data) !== pointer.catalogHash)
-        throw new Error('Existing catalog checksum mismatch');
-      prior = PublicCatalogSchema.parse(JSON.parse(data.toString('utf8')));
+        throw new OperationError('DATA_INVALID', 'Existing catalog checksum mismatch');
+      prior = operationInput(
+        () =>
+          PublicCatalogSchema.parse(
+            JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data)),
+          ),
+        'DATA_INVALID',
+      );
       priorHash = pointer.catalogHash;
       priorFile = { key, bytes: data.length, checksum: priorHash, data };
     }
     const sets = new Map((prior?.sets ?? []).map((ref) => [ref.setHash, ref]));
     for (const ref of addedSets) {
       const old = sets.get(ref.setHash);
-      if (old && old.bytes !== ref.bytes) throw new Error('Existing set size mismatch');
+      if (old && old.bytes !== ref.bytes)
+        throw new OperationError('DATA_INVALID', 'Existing set size mismatch');
       sets.set(ref.setHash, ref);
     }
     const leagues = new Map((prior?.leagues ?? []).map((ref) => [ref.id, ref]));

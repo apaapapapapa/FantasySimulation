@@ -1,4 +1,4 @@
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, truncate } from 'node:fs/promises';
 import { join } from 'node:path';
 import { afterEach, beforeEach, expect, it, vi } from 'vite-plus/test';
 import { withReplayDirectory } from '@fantasy/api/testing';
@@ -155,11 +155,12 @@ it.each(['{', '{}'])(
   },
 );
 
-it('classifies invalid committed definition JSON as input rather than saved-data corruption', async () => {
+it.each(['json', 'size'])('classifies invalid committed definition %s as input', async (kind) => {
   const files = await import('./league-cloud-files.ts'),
     readJson = files.cloudJson;
   await withReplayDirectory(async (root) => {
     await writeFile(join(root, 'invalid-definition.json'), `{${secret}`);
+    if (kind === 'size') await truncate(join(root, 'invalid-definition.json'), 16000001);
     vi.spyOn(files, 'cloudJson').mockImplementation((_path, ref, code) =>
       readJson(join(root, 'invalid-definition.json'), ref, code),
     );
@@ -209,8 +210,12 @@ it.each([`{${secret}`, JSON.stringify({ result: { outcome: secret } })])(
   },
 );
 
-it('rejects secret-bearing Actions identity before execution and omits it from every output', async () => {
-  vi.stubEnv('GITHUB_RUN_ID', `123\n${secret}`);
+it.each([
+  ['GITHUB_RUN_ID', `123\n${secret}`],
+  ['GITHUB_RUN_ATTEMPT', '1\n'],
+  ['GITHUB_RUN_ATTEMPT', '1\u2028'],
+])('rejects invalid Actions identity before execution (%s)', async (key, value) => {
+  vi.stubEnv(key, value);
   await withReplayDirectory(async (root) => {
     expect(await invoke(root, 'run')).toBe(1);
     expect(operations.run).not.toHaveBeenCalled();
