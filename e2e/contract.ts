@@ -38,13 +38,71 @@ export const UI_STATIC_CASES = [
   'static-local-file',
   'static-step-link',
 ] as const;
+/**
+ * Static browser parts run as separate CI jobs; together they execute every static case in both
+ * browsers exactly once. WebKit, the slowest browser, is split by durations measured on main run
+ * 36233578962. Each part is validated against its own case list and browser.
+ */
+export const UI_STATIC_PARTS = {
+  'static-chromium': { browser: 'chromium', cases: UI_STATIC_CASES },
+  'static-webkit-1': {
+    browser: 'webkit',
+    cases: [
+      'static-errors',
+      'static-replay-controls',
+      'static-selection-another-attempt',
+      'static-mobile-controls',
+      'static-local-file',
+      'static-long-replay',
+      'static-timeline-overlays',
+      'static-selection-invalid-link',
+      'static-status-expiry',
+      'static-partials',
+      'static-league-overview',
+      'static-league-provisional',
+    ],
+  },
+  'static-webkit-2': {
+    browser: 'webkit',
+    cases: [
+      'static-webgl-2d-to-end',
+      'static-repeat-playback',
+      'static-selection-reused',
+      'static-selection-original',
+      'static-step-link',
+      'static-selection',
+      'static-league-pair-replay',
+      'static-network-boundary',
+      'static-webgl-fallback',
+      'static-stale-navigation',
+      'static-list-cost-and-states',
+    ],
+  },
+} as const satisfies Record<
+  string,
+  { browser: 'chromium' | 'webkit'; cases: readonly (typeof UI_STATIC_CASES)[number][] }
+>;
+export type UiStaticPart = keyof typeof UI_STATIC_PARTS;
+export const UI_STATIC_SCENARIOS = Object.keys(UI_STATIC_PARTS) as UiStaticPart[];
 export const UI_FAULTS = ['startup', 'timeout', 'crash'] as const;
-export type UiScenario = 'smoke' | 'static' | (typeof UI_FAULTS)[number];
+export type UiScenario = 'smoke' | UiStaticPart | (typeof UI_FAULTS)[number];
+/** CI jobs: the editor/battle suite with its fault probes, then each static part. */
+export const UI_PARTS = ['interactive', ...UI_STATIC_SCENARIOS] as const;
+export type UiPart = (typeof UI_PARTS)[number];
+export const UI_MATRIX_JOB = 'UI (Linux ${{ matrix.part }})';
+export const UI_JOBS = UI_PARTS.map((part) => `UI (Linux ${part})`);
+export const isStaticScenario = (scenario: UiScenario): scenario is UiStaticPart =>
+  UI_STATIC_SCENARIOS.some((part) => part === scenario);
 export function uiScenario(value: string | undefined): UiScenario {
   if (value === undefined || value === 'smoke') return 'smoke';
-  if (value === 'static') return value;
-  if (UI_FAULTS.some((fault) => fault === value)) return value as UiScenario;
+  const known = [...UI_STATIC_SCENARIOS, ...UI_FAULTS].find((scenario) => scenario === value);
+  if (known) return known;
   throw new Error('Unknown UI execution scenario');
+}
+export function uiPart(value: string): UiPart {
+  const part = UI_PARTS.find((known) => known === value);
+  if (!part) throw new Error('Unknown UI part');
+  return part;
 }
 export const UI_SETTINGS = {
   browser: 'chromium',
@@ -60,18 +118,28 @@ export const UI_SETTINGS = {
   globalTimeout: 120_000,
 } as const;
 
-export const uiCases = (scenario: UiScenario) =>
-  scenario === 'smoke' ? UI_CASES : scenario === 'static' ? UI_STATIC_CASES : [scenario];
-export const uiBrowsers = (scenario: UiScenario) =>
-  scenario === 'static' ? (['chromium', 'webkit'] as const) : (['chromium'] as const);
+export const uiCases = (scenario: UiScenario): readonly string[] =>
+  scenario === 'smoke'
+    ? UI_CASES
+    : isStaticScenario(scenario)
+      ? UI_STATIC_PARTS[scenario].cases
+      : [scenario];
+export const uiBrowsers = (scenario: UiScenario): readonly ('chromium' | 'webkit')[] =>
+  isStaticScenario(scenario) ? [UI_STATIC_PARTS[scenario].browser] : ['chromium'];
 export function uiSettings(scenario: UiScenario) {
+  const isStatic = isStaticScenario(scenario);
   return {
     ...UI_SETTINGS,
     browsers: uiBrowsers(scenario),
-    retries: scenario === 'smoke' || scenario === 'static' ? 1 : 0,
-    globalTimeout: scenario === 'static' ? 300000 : UI_SETTINGS.globalTimeout,
-    timeout: scenario === 'static' ? 30000 : UI_SETTINGS.timeout,
+    retries: scenario === 'smoke' || isStatic ? 1 : 0,
+    globalTimeout: isStatic ? 300000 : UI_SETTINGS.globalTimeout,
+    timeout: isStatic ? 30000 : UI_SETTINGS.timeout,
   };
+}
+/** Selects exact case titles; Playwright matches `project file describe title` joined by spaces. */
+export function uiCaseGrep(cases: readonly string[]): RegExp {
+  const escaped = cases.map((id) => id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(`(?:^| )(?:${escaped.join('|')})(?: |$)`);
 }
 export const CHROMIUM_ARGS = [
   '--use-gl=angle',

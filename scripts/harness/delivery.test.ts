@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
-import { assessDelivery, conversationDigest, parseSnapshot, VERIFY_JOBS } from './delivery.ts';
+import { assessDelivery, conversationDigest, parseSnapshot } from './delivery.ts';
 import type { DeliverySnapshot, RunEvidence } from './delivery.ts';
 import type { Report } from './report.ts';
 import { assessGate } from '../ci/gate.ts';
@@ -48,23 +48,13 @@ function evidence(main = false): RunEvidence {
   return {
     before: structuredClone(run),
     after: structuredClone(run),
-    jobs: VERIFY_JOBS.map((name, index) => ({
-      id: index + 1,
-      name,
-      run_id: run.id,
-      run_attempt: 1,
-      status: 'completed',
-      conclusion: 'success',
-    })),
-    sources: VERIFY_JOBS.map((_, index) => ({
-      jobId: index + 1,
-      report: sourceReport(main),
-      logDigest: 'e'.repeat(64),
-    })),
+    // plannedRun adds the planner, gate and Linux source jobs of the current workflow.
+    jobs: [],
+    sources: [],
     commits: { [TESTED]: { sha: TESTED, parents: [{ sha: BASE }, { sha: HEAD }] } },
   };
 }
-export function fixture(merged = false): DeliverySnapshot {
+export function fixture(merged = false, full = true): DeliverySnapshot {
   const pull = {
     number: 13,
     title: 'feat: tested change',
@@ -78,7 +68,9 @@ export function fixture(merged = false): DeliverySnapshot {
     changed_files: 1,
   };
   const prRun = evidence();
+  plannedRun(prRun, full);
   const mainRun = merged ? evidence(true) : null;
+  if (mainRun) plannedRun(mainRun, true, true);
   return {
     schemaVersion: 1,
     repository: 'owner/repo',
@@ -298,18 +290,14 @@ function plannedRun(run: RunEvidence, full: boolean, main = false) {
         id,
       })),
     };
-  for (const [index, os] of ['ubuntu-latest'].entries()) {
-    const report = sourceReport(main);
-    if (!full) {
-      report.producer = 'docs-check';
-      report.checks[0]!.id = 'docs:diff';
-      report.checks[1]!.id = 'docs:links';
-      report.checks.push({ ...report.checks[1]!, id: 'docs:context' });
-      change(run.jobs[index], 'name', `Docs (${os})`);
-    }
-    run.sources[index]!.report = report;
-    reports[full ? os : `docs-${os}`] = report;
+  const report = sourceReport(main);
+  if (!full) {
+    report.producer = 'docs-check';
+    report.checks[0]!.id = 'docs:diff';
+    report.checks[1]!.id = 'docs:links';
+    report.checks.push({ ...report.checks[1]!, id: 'docs:context' });
   }
+  reports[full ? 'ubuntu-latest' : 'docs-ubuntu-latest'] = report;
   const results = {
     changes: 'success',
     security: 'success',
@@ -321,15 +309,21 @@ function plannedRun(run: RunEvidence, full: boolean, main = false) {
     ui: plan.ui ? 'success' : 'skipped',
   };
   const id = main ? 20 : 10;
-  for (const [index, name] of ['changes', 'ci-gate'].entries())
-    run.jobs.push({
-      id: 3 + index,
-      name,
-      run_id: id,
-      run_attempt: 1,
-      status: 'completed',
-      conclusion: 'success',
-    });
+  const job = (jobId: number, name: string, conclusion = 'success') => ({
+    id: jobId,
+    name,
+    run_id: id,
+    run_attempt: 1,
+    status: 'completed',
+    conclusion,
+  });
+  // A full plan's ci-gate aggregates and prints the Linux source report; wording plans run Docs.
+  run.jobs.push(
+    job(3, 'changes'),
+    job(4, 'ci-gate'),
+    job(5, 'Docs (ubuntu-latest)', full ? 'skipped' : 'success'),
+  );
+  run.sources = [{ jobId: full ? 4 : 5, report, logDigest: 'e'.repeat(64) }];
   run.plan = { jobId: 3, value: plan, logDigest: 'e'.repeat(64) };
   run.gate = {
     jobId: 4,
@@ -337,21 +331,16 @@ function plannedRun(run: RunEvidence, full: boolean, main = false) {
       .report,
     logDigest: 'e'.repeat(64),
   };
-  const skipped = full ? 'Docs (ubuntu-latest)' : 'Verify (ubuntu-latest)';
-  run.jobs.push({
-    id: 5,
-    name: skipped,
-    run_id: id,
-    run_attempt: 1,
-    status: 'completed',
-    conclusion: 'skipped',
-  });
-  return skipped;
 }
 function plannedFixture(full: boolean) {
-  const value = fixture();
-  const skipped = plannedRun(value.prRun!, full);
-  value.checks.push({ id: 5, name: skipped, status: 'completed', conclusion: 'skipped' });
+  const value = fixture(false, full);
+  if (full)
+    value.checks.push({
+      id: 5,
+      name: 'Docs (ubuntu-latest)',
+      status: 'completed',
+      conclusion: 'skipped',
+    });
   return value;
 }
 describe('delivery with differential CI', () => {
@@ -376,7 +365,7 @@ describe('delivery with differential CI', () => {
     };
     // PRs never wait for main-only browser, paired load or CodeQL work.
     for (const name of [
-      'UI (Linux Chromium/WebKit)',
+      'UI (Linux ${{ matrix.part }})',
       'Paired load (ubuntu-latest, ${{ matrix.shard }}/3)',
     ])
       for (const full of [true, false]) assert.equal(skip(plannedFixture(full), name), 0);
@@ -408,12 +397,7 @@ describe('delivery with differential CI', () => {
     const gate = value.prRun!.gate!.report as Report;
     gate.checks = gate.checks.filter((check) => check.id !== 'corpus:artifacts');
     assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
-    const merged = () => {
-      const result = fixture(true);
-      plannedRun(result.prRun!, true);
-      plannedRun(result.mainRun!, true, true);
-      return result;
-    };
+    const merged = () => fixture(true);
     assert.equal(assessDelivery(merged(), 'merge', receipt(merged())).exitCode, 0);
     for (const id of [
       'corpus:artifacts',

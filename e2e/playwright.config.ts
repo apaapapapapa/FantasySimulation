@@ -1,6 +1,14 @@
 import { resolve } from 'node:path';
 import { defineConfig } from '@playwright/test';
-import { CHROMIUM_ARGS, localOrigin, uiSettings, uiScenario } from './contract.ts';
+import {
+  CHROMIUM_ARGS,
+  isStaticScenario,
+  localOrigin,
+  uiCaseGrep,
+  uiCases,
+  uiSettings,
+  uiScenario,
+} from './contract.ts';
 
 const output = process.env.FANTASY_UI_OUTPUT;
 if (!output) throw new Error('Run vp run test:e2e; direct execution has no isolated servers');
@@ -8,8 +16,10 @@ const scenario = uiScenario(process.env.FANTASY_UI_SCENARIO);
 const settings = uiSettings(scenario);
 
 export default defineConfig({
-  testDir: scenario === 'smoke' ? './specs' : scenario === 'static' ? './static' : './faults',
+  testDir: scenario === 'smoke' ? './specs' : isStaticScenario(scenario) ? './static' : './faults',
   testMatch: '**/*.spec.ts',
+  // A static part runs only its exact cases; coverage then rejects any missing or extra case.
+  ...(isStaticScenario(scenario) ? { grep: uiCaseGrep(uiCases(scenario)) } : {}),
   outputDir: resolve(output, 'tests'),
   fullyParallel: false,
   forbidOnly: true,

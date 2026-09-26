@@ -1,22 +1,31 @@
-name: Pinned Chromium and WebKit
-description: Browser-only cache, exact Playwright/OS/architecture identity; no test results
+name: Pinned Playwright browser
+description: Browser-only cache, exact Playwright/browser/OS/architecture identity; no test results
+inputs:
+  browser:
+    description: The single browser a UI part runs (chromium or webkit); only its system libraries are installed
+    required: true
 runs:
   using: composite
   steps:
-    - name: Read the locked Playwright version
+    - name: Read the locked Playwright version and the requested browser
       id: version
       shell: bash
-      run: echo "version=$(node -p 'require("@playwright/test/package.json").version')" >> "$GITHUB_OUTPUT"
+      env:
+        BROWSER: ${{ inputs.browser }}
+      run: |
+        case "$BROWSER" in chromium|webkit) ;; *) echo "Unsupported browser: $BROWSER" >&2; exit 1 ;; esac
+        echo "version=$(node -p 'require("@playwright/test/package.json").version')" >> "$GITHUB_OUTPUT"
     - uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
       id: browser
       with:
         path: .generated/playwright
-        key: fantasy-chromium-webkit-v2-${{ runner.os }}-${{ runner.arch }}-${{ steps.version.outputs.version }}
-    - name: Install browser libraries and exact Chromium and WebKit
+        key: fantasy-${{ inputs.browser }}-v3-${{ runner.os }}-${{ runner.arch }}-${{ steps.version.outputs.version }}
+    - name: Install browser libraries and the exact browser
       shell: bash
       env:
         PLAYWRIGHT_BROWSERS_PATH: .generated/playwright
-      run: vp exec playwright install --with-deps chromium webkit --only-shell
+        BROWSER: ${{ inputs.browser }}
+      run: vp exec playwright install --with-deps "$BROWSER" --only-shell
     - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25
       if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.browser.outputs.cache-hit != 'true'
       with:

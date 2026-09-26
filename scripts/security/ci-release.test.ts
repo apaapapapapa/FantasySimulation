@@ -7,7 +7,7 @@ await test('Release overrides ancestor skips while explicitly requiring all succ
   const file = new URL('../../.github/workflows/ci.yml', import.meta.url);
   const release = readFileSync(file, 'utf8').split('\n  release:\n')[1];
   assert.ok(release);
-  assert.ok(release.includes('needs: [verify, ci-gate, security, dependency-policy]'));
+  assert.ok(release.includes('needs: [ci-gate, security, dependency-policy]'));
   const condition = /^    if: >-\n([\s\S]*?)^    runs-on:/m.exec(release)?.[1];
   assert.ok(condition);
   assert.equal(
@@ -15,7 +15,6 @@ await test('Release overrides ancestor skips while explicitly requiring all succ
     [
       'always()',
       '!cancelled()',
-      "needs.verify.result == 'success'",
       "needs['ci-gate'].result == 'success'",
       "needs.security.result == 'success'",
       "needs['dependency-policy'].result == 'success'",
