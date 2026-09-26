@@ -120,11 +120,16 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
   ui:
-    # Equivalent to plan.ui; ci-gate rejects any mismatch, so the browser job need not wait for it.
+    # Equivalent to plan.ui; ci-gate rejects any mismatch, so the browser jobs need not wait for it.
+    # Each part is a separate runner; ci-gate recombines and rechecks their raw evidence.
     if: github.event_name != 'pull_request'
-    name: UI (Linux Chromium/WebKit)
+    name: UI (Linux ${{ matrix.part }})
     runs-on: ubuntu-latest
     timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [interactive, static-chromium, static-webkit-1, static-webkit-2]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
@@ -132,13 +137,15 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-project
       - uses: ./.github/actions/setup-playwright
-      - name: Run local editor/battle, lifecycle faults and independent static viewer
-        run: vp exec node scripts/harness.ts ui .generated/harness/ui
+        with:
+          browser: ${{ startsWith(matrix.part, 'static-webkit') && 'webkit' || 'chromium' }}
+      - name: Run this part of the editor/battle, fault and static viewer browser suites
+        run: vp exec node scripts/harness.ts ui .generated/harness/ui --part ${{ matrix.part }}
       - name: Preserve all attempts and failure artifacts
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: harness-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          name: harness-ui-${{ matrix.part }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: .generated/harness/ui/
           retention-days: 7
           if-no-files-found: error
@@ -159,53 +166,6 @@ jobs:
         if: always()
         with:
           name: harness-corpus
-          path: .generated/harness/
-          retention-days: 7
-          if-no-files-found: error
-          include-hidden-files: true
-  verify:
-    needs: [changes, tasks, corpus]
-    if: always() && needs.changes.outputs.full == 'true'
-    name: Verify (ubuntu-latest)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
-        with:
-          node-version-file: .node-version
-          run-install: false
-          cache: false
-      - name: Require all task jobs
-        env:
-          TASK_RESULT: ${{ needs.tasks.result }}
-          CORPUS_RESULT: ${{ needs.corpus.result }}
-        run: |
-          test "$TASK_RESULT" = success
-          test "$CORPUS_RESULT" = success
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: ci-plan
-          path: .generated/harness/ci
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          pattern: harness-task-*
-          path: .generated/harness/
-          merge-multiple: true
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          name: harness-corpus
-          path: .generated/harness/
-      - name: Verify complete source task and test coverage and bind the corpus observation
-        run: vp exec node scripts/ci/verify.ts aggregate
-      - name: Preserve source evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: harness-ubuntu-latest
           path: .generated/harness/
           retention-days: 7
           if-no-files-found: error
@@ -245,7 +205,8 @@ jobs:
           include-hidden-files: true
   ci-gate:
     name: ci-gate
-    # Verify runs in parallel on the same receipts; release and delivery still require it.
+    # The single aggregation point: it binds the task receipts and corpus observation itself, and
+    # its log and artifact carry the Linux source report used by release, delivery and Issue completion.
     needs: [changes, tasks, corpus, load, docs, ui, security, dependency-policy]
     if: always()
     runs-on: ubuntu-latest
@@ -275,7 +236,7 @@ jobs:
         with:
           name: harness-corpus
           path: .generated/harness/
-      - name: Aggregate the same source receipts and corpus observation as Verify
+      - name: Verify complete source task and test coverage and bind the corpus observation
         if: always() && needs.changes.outputs.full == 'true'
         run: vp exec node scripts/ci/verify.ts aggregate
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -300,7 +261,8 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: always() && needs.changes.outputs.ui == 'true'
         with:
-          name: harness-ui-${{ github.run_id }}-${{ github.run_attempt }}
+          pattern: harness-ui-*-${{ github.run_id }}-${{ github.run_attempt }}
+          merge-multiple: true
           path: .generated/harness/ci/evidence/ui
       - name: Bind every security receipt to the common report
         if: always()
@@ -319,20 +281,20 @@ jobs:
         run: |
           export CI_RESULTS="$(node --input-type=module -e 'const x=JSON.parse(process.env.CI_RESULTS);console.log(JSON.stringify(Object.fromEntries(Object.entries(x).map(([k,v])=>[k,v.result]))))')"
           vp exec node scripts/ci/gate.ts
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: Preserve source and gate evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: ci-gate
+          name: harness-ubuntu-latest
           path: .generated/harness/
           if-no-files-found: error
           retention-days: 7
           include-hidden-files: true
   release:
     name: Release
-    needs: [verify, ci-gate, security, dependency-policy]
+    needs: [ci-gate, security, dependency-policy]
     if: >-
       always() && !cancelled() &&
-      needs.verify.result == 'success' &&
       needs['ci-gate'].result == 'success' &&
       needs.security.result == 'success' &&
       needs['dependency-policy'].result == 'success' &&

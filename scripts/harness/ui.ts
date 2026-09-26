@@ -7,19 +7,43 @@ import { artifactDirectory, git, repositoryRoot, sourceIdentity } from './source
 import { runCommand, safeEnvironment } from './process.ts';
 import { assessReport } from './report.ts';
 import type { Report } from './report.ts';
-import { inspectUiDiagnostics, inspectUiStatic, uiCoverage } from './ui-results.ts';
+import {
+  inspectUiDiagnostics,
+  inspectUiStatic,
+  staticEvidence,
+  uiCoverage,
+  uiProducer,
+} from './ui-results.ts';
 import {
   UI_CHECKS,
   UI_RUN_CHECKS,
   UI_FAULTS,
+  UI_STATIC_SCENARIOS,
+  isStaticScenario,
   uiSettings,
   uiCases,
   uiBrowsers,
+  type UiPart,
   type UiScenario,
 } from '../../e2e/contract.ts';
 
-export async function collectUi(input: string, relative = `.generated/harness/ui-${randomUUID()}`) {
+/**
+ * `all` runs every suite in one process (local use). CI runs each part in its own job: the
+ * interactive part keeps the editor/battle report and fault probes at the root, and each static
+ * part writes `static/<part>`; the gate recombines and rechecks them from raw artifacts.
+ */
+export async function collectUi(
+  input: string,
+  relative = `.generated/harness/ui-${randomUUID()}`,
+  part: UiPart | 'all' = 'all',
+) {
+  if (part !== 'all' && part !== 'interactive')
+    return await runUiOnce(input, `${relative}/static/${part}`, part);
   const result = await runUiOnce(input, relative, 'smoke');
+  const run = {
+    id: process.env.GITHUB_RUN_ID ?? null,
+    attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
+  };
   let diagnostics;
   let staticResult;
   try {
@@ -28,15 +52,14 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
       const probe = await runUiOnce(input, `${relative}/diagnostics/${scenario}`, scenario);
       if (probe.interrupted) throw new Error('UI diagnostics interrupted');
     }
-    await runUiOnce(input, `${relative}/static`, 'static');
-    staticResult = inspectUiStatic(join(input, relative), result.report, {
-      id: process.env.GITHUB_RUN_ID ?? null,
-      attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
-    });
-    diagnostics = inspectUiDiagnostics(join(input, relative), result.report, {
-      id: process.env.GITHUB_RUN_ID ?? null,
-      attempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
-    });
+    if (part === 'all') {
+      for (const scenario of UI_STATIC_SCENARIOS) {
+        const probe = await runUiOnce(input, `${relative}/static/${scenario}`, scenario);
+        if (probe.interrupted) throw new Error('UI static execution interrupted');
+      }
+      staticResult = inspectUiStatic(join(input, relative), result.report, run);
+    }
+    diagnostics = inspectUiDiagnostics(join(input, relative), result.report, run);
   } catch (error) {
     diagnostics = {
       status: 'unknown' as const,
@@ -52,17 +75,21 @@ export async function collectUi(input: string, relative = `.generated/harness/ui
       sourceSha: result.report.sourceSha,
     })),
   });
-  result.report.checks.push({
-    id: 'ui:static-replay',
-    required: true,
-    ...(staticResult ?? {
-      status: 'unknown' as const,
-      reason: 'Static browser execution did not complete',
-    }),
-    evidence: [{ uri: `${relative}/static/command.json`, sourceSha: result.report.sourceSha }],
-  });
+  if (part === 'all')
+    result.report.checks.push({
+      id: 'ui:static-replay',
+      required: true,
+      ...(staticResult ?? {
+        status: 'unknown' as const,
+        reason: 'Static browser execution did not complete',
+      }),
+      evidence: staticEvidence(relative, result.report.sourceSha),
+    });
   result.report.finishedAt = new Date().toISOString();
-  const assessment = assessReport(result.report, UI_CHECKS);
+  const assessment = assessReport(
+    result.report,
+    part === 'all' ? UI_CHECKS : [...UI_RUN_CHECKS, 'ui:diagnostics'],
+  );
   writeFileSync(
     join(input, relative, 'report.json'),
     JSON.stringify(assessment.report, null, 2) + '\n',
@@ -124,7 +151,7 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
     }
   }
   writeFileSync(join(directory, 'runner.log'), result.output);
-  if ((scenario === 'smoke' || scenario === 'static') && result.exitCode !== 0)
+  if ((scenario === 'smoke' || isStaticScenario(scenario)) && result.exitCode !== 0)
     console.error(result.output);
   let results: unknown = null;
   try {
@@ -192,8 +219,7 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
   const report: Report = {
     ...info,
     schemaVersion: 1,
-    producer:
-      scenario === 'smoke' ? 'ui-runner' : scenario === 'static' ? 'ui-static' : 'ui-diagnostic',
+    producer: uiProducer(scenario),
     startedAt,
     finishedAt: new Date().toISOString(),
     checks: [

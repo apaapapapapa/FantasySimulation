@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { isAbsolute, relative, resolve, join, dirname } from 'node:path';
+import { isAbsolute, relative, resolve, join, dirname, posix } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { createHash } from 'node:crypto';
 import { record, text, identity, assessReport } from './report.ts';
@@ -9,6 +9,8 @@ import {
   UI_CHECKS,
   UI_RUN_CHECKS,
   UI_FAULTS,
+  UI_STATIC_SCENARIOS,
+  isStaticScenario,
   uiCases,
   uiBrowsers,
   uiSettings,
@@ -17,7 +19,19 @@ import {
 } from '../../e2e/contract.ts';
 import { readBoundedJson } from './files.ts';
 
-/** Validate relocated CI artifacts against the same run/attempt, raw files and attachments. */
+export const uiProducer = (scenario: UiScenario) =>
+  scenario === 'smoke' ? 'ui-runner' : isStaticScenario(scenario) ? 'ui-static' : 'ui-diagnostic';
+export const staticEvidence = (relative: string, sourceSha: string) =>
+  UI_STATIC_SCENARIOS.map((part) => ({
+    uri: `${relative}/static/${part}/command.json`,
+    sourceSha,
+  }));
+
+/**
+ * Validate relocated CI artifacts against the same run/attempt, raw files and attachments. CI
+ * runs the static parts in separate jobs, so the static result is recomputed here from their raw
+ * evidence; a report that already claims it (a local run of every suite) must agree.
+ */
 export function readUiEvidence(
   directory: string,
   expected: Identity,
@@ -31,12 +45,29 @@ export function readUiEvidence(
   )
     throw new Error('Missing or inconsistent UI diagnostic evidence');
   const staticResult = inspectUiStatic(directory, expected, run);
-  if (
-    staticResult.status !== 'pass' ||
-    report.checks.find((check) => check.id === 'ui:static-replay')?.status !== 'pass'
-  )
+  const claimed = report.checks.find((check) => check.id === 'ui:static-replay');
+  // Every part was written below the interactive report's output, so receipts share its base.
+  const base = posix.dirname(
+    report.checks.find((check) => check.id === 'ui:source')?.evidence[0]?.uri ??
+      '.generated/harness/ui/command.json',
+  );
+  if (staticResult.status !== 'pass' || (claimed && claimed.status !== 'pass'))
     throw new Error('Missing or inconsistent static UI evidence');
-  return assessReport(report, UI_CHECKS).report;
+  return assessReport(
+    {
+      ...report,
+      checks: [
+        ...report.checks.filter((check) => check.id !== 'ui:static-replay'),
+        {
+          id: 'ui:static-replay',
+          required: true,
+          ...staticResult,
+          evidence: staticEvidence(base, report.sourceSha),
+        },
+      ],
+    },
+    UI_CHECKS,
+  ).report;
 }
 
 export function readUiRun(
@@ -126,8 +157,7 @@ export function readUiRun(
     report.candidateSha !== info.candidateSha ||
     report.testMergeSha !== info.testMergeSha ||
     report.baselineSha !== info.baselineSha ||
-    report.producer !==
-      (scenario === 'smoke' ? 'ui-runner' : scenario === 'static' ? 'ui-static' : 'ui-diagnostic')
+    report.producer !== uiProducer(scenario)
   )
     throw new Error('UI report identity mismatch');
   if (
@@ -145,7 +175,7 @@ export function readUiRun(
       ? ['server-start', 'api-ready', 'servers-stopped', 'failure']
       : [
           'server-start',
-          scenario === 'static' ? 'fixtures-ready' : 'api-ready',
+          isStaticScenario(scenario) ? 'fixtures-ready' : 'api-ready',
           'web-ready',
           'browser',
           'browser-finished',
@@ -175,23 +205,25 @@ export function inspectUiStatic(
   run: { id: string | null; attempt: string | null },
 ): { status: CheckStatus; reason: string } {
   try {
-    const folder = join(directory, 'static');
-    const report = readUiRun(folder, expected, run, 'static');
-    const execution = record(readBoundedJson(join(folder, 'execution.json')));
-    const origins = record(execution.origins);
-    const servers = record(readBoundedJson(join(folder, 'servers.json')));
-    if (
-      assessReport(report, UI_RUN_CHECKS).exitCode !== 0 ||
-      !isDeepStrictEqual(execution.settings, uiSettings('static')) ||
-      origins.api !== null ||
-      servers.apiOrigin !== null ||
-      !isDeepStrictEqual(execution.samples, []) ||
-      localOrigin(text(origins.web)) === localOrigin(text(origins.data)) ||
-      servers.webOrigin !== origins.web ||
-      servers.dataOrigin !== origins.data ||
-      servers.stopped !== true
-    )
-      throw new Error('Static suite did not pass in independent API-free origins');
+    for (const part of UI_STATIC_SCENARIOS) {
+      const folder = join(directory, 'static', part);
+      const report = readUiRun(folder, expected, run, part);
+      const execution = record(readBoundedJson(join(folder, 'execution.json')));
+      const origins = record(execution.origins);
+      const servers = record(readBoundedJson(join(folder, 'servers.json')));
+      if (
+        assessReport(report, UI_RUN_CHECKS).exitCode !== 0 ||
+        !isDeepStrictEqual(execution.settings, uiSettings(part)) ||
+        origins.api !== null ||
+        servers.apiOrigin !== null ||
+        !isDeepStrictEqual(execution.samples, []) ||
+        localOrigin(text(origins.web)) === localOrigin(text(origins.data)) ||
+        servers.webOrigin !== origins.web ||
+        servers.dataOrigin !== origins.data ||
+        servers.stopped !== true
+      )
+        throw new Error(`Static ${part} did not pass in independent API-free origins`);
+    }
     return {
       status: 'pass',
       reason:
