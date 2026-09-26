@@ -40,13 +40,12 @@ Startup/db:seed adds missing IDs only; demo:spatial runs samples.
 ## Content authoring
 
 Sources: `data/content/**/*.json`; output: `data/spatial/catalog.json`.
-Preserve builtin-v1.json and published revisions. Files hold one revision or an array:
-kind, id, revision, definition; schemaVersion defaults to 1. New revisions may omit
-contentHash; supplied hashes must match. Authoring-only
-`{"$ref":"status:soaked-v1:1"}` resolves dependencies; pinned refs do not rebind.
-Duplicates, missing refs and cycles fail. Run `node scripts/spatial-catalog.ts --write`,
-review field differences/affected revision IDs, then `vp run verify`.
-Workbench shows structural differences.
+JSON holds a revision or array: kind, id, revision, definition; schemaVersion defaults to 1.
+Omit contentHash to generate it; supplied hashes must match.
+`{"$ref":"status:soaked-v1:1"}` resolves refs; pinned refs never rebind.
+Preserve builtin-v1.json and published revisions. Duplicate IDs, missing refs and cycles fail.
+Run `node scripts/spatial-catalog.ts --write`; review field diffs, affected IDs and hashes.
+Append new IDs/hashes to `data/spatial/published-revisions.json` before `vp run verify`.
 
 ## Batch
 
