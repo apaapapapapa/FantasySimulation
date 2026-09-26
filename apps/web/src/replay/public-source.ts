@@ -21,8 +21,20 @@ import {
 import { readBounded, ReplayLoadError, strictText, toLoadError } from './artifacts.ts';
 import { parseSavedManifest, type ReplaySource } from './open-replay.ts';
 
+export interface PublicReadObservation {
+  requestId: number;
+  key: string;
+  event: 'request' | 'response' | 'failed';
+  elapsedMs: number;
+  decodedBytes?: number;
+}
+
 /** A configured public data origin only. This adapter has no local API fallback. */
-export function publicLibrary(root: string, request: typeof fetch = fetch) {
+export function publicLibrary(
+  root: string,
+  request: typeof fetch = fetch,
+  observe?: (value: PublicReadObservation) => void,
+) {
   const base = new URL(root);
   if (
     !['http:', 'https:'].includes(base.protocol) ||
@@ -33,15 +45,34 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
   )
     throw new ReplayLoadError('unavailable', 'Invalid public data URL');
   if (!base.pathname.endsWith('/')) base.pathname += '/';
+  let sequence = 0;
   async function bytes(
     key: string,
     limit: number,
     signal?: AbortSignal,
     expected?: { checksum: string; bytes?: number },
   ) {
+    let requestId = 0;
+    const startedAt = performance.now();
+    const report = (event: PublicReadObservation['event'], decodedBytes?: number) => {
+      if (!requestId || !observe) return;
+      try {
+        observe({
+          requestId,
+          key,
+          event,
+          elapsedMs: performance.now() - startedAt,
+          ...(decodedBytes === undefined ? {} : { decodedBytes }),
+        });
+      } catch {
+        // Optional observation must never change loading, validation or cancellation.
+      }
+    };
     try {
       signal?.throwIfAborted();
       const url = new URL(PublicKeySchema.parse(key), base);
+      requestId = ++sequence;
+      report('request');
       const response = await request(url, {
         signal: signal ?? null,
         credentials: 'omit',
@@ -73,6 +104,7 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
         throw new ReplayLoadError('damaged', `Public data response ${response.status}: ${key}`);
       }
       const value = await readBounded(response.body ?? new Blob().stream(), limit, key);
+      report('response', value.byteLength);
       signal?.throwIfAborted();
       if (
         expected &&
@@ -82,6 +114,7 @@ export function publicLibrary(root: string, request: typeof fetch = fetch) {
         throw new ReplayLoadError('damaged', `Public data checksum/size mismatch: ${key}`);
       return value;
     } catch (error) {
+      report('failed');
       throw toLoadError(error, 'unavailable', signal);
     }
   }

@@ -2,9 +2,16 @@ import { test, expect } from '../fixtures.ts';
 import { leagueFiles, leagueGenerations, leagueRows } from '../league-fixtures.ts';
 import { leagueLink } from '../../apps/web/src/publication/league-route.ts';
 import { serveFixture } from './fixtures.ts';
+import type { PublicReadObservation } from '../../apps/web/src/replay/public-source.ts';
 
 test('static-league-overview', async ({ page, context }, info) => {
   const loaded: { key: string; bytes: number }[] = [];
+  const observations: PublicReadObservation[] = [];
+  page.on('console', (message) => {
+    const prefix = 'FANTASY_PUBLICATION_READ ';
+    if (message.text().startsWith(prefix))
+      observations.push(JSON.parse(message.text().slice(prefix.length)) as PublicReadObservation);
+  });
   await serveFixture(context, leagueFiles, (key, bytes) => loaded.push({ key, bytes }));
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/FantasySimulation/');
@@ -21,12 +28,26 @@ test('static-league-overview', async ({ page, context }, info) => {
     ),
   ).toBe(true);
   expect(loaded.reduce((sum, f) => sum + f.bytes, 0)).toBeLessThan(6000);
+  expect(observations).toEqual([]);
+  const initial = [...loaded];
+  loaded.length = 0;
+  await page.goto('/FantasySimulation/?publication-metrics=1');
+  await expect(table.getByRole('row')).toHaveCount(4);
+  expect(loaded).toEqual(initial);
+  expect(observations.filter((entry) => entry.event === 'request')).toHaveLength(3);
+  expect(observations.filter((entry) => entry.event === 'failed')).toEqual([]);
+  expect(
+    observations
+      .filter((entry) => entry.event === 'response')
+      .map((entry) => ({ key: entry.key, bytes: entry.decodedBytes })),
+  ).toEqual(initial);
   await info.attach('league-initial-load', {
     body: Buffer.from(
       JSON.stringify({
         requests: loaded.length,
         bytes: loaded.reduce((sum, f) => sum + f.bytes, 0),
         files: loaded,
+        observations,
       }),
     ),
     contentType: 'application/json',
