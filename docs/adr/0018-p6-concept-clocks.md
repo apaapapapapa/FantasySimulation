@@ -213,15 +213,19 @@ Start S empty and calculate every actor from the SAME S:
 A_i = h_i + R_i
 f_i(S) = 1 if i belongs to S, otherwise 0
 B_i(S) = min(D_i, max(0, A_i - f_i(S)))
-L_i(S) = incoming drain healing allocated from all B(S)
+L_i(S) = 0 if h_i=0; otherwise drain healing from B(S) credited to source i
 U_i(S) = A_i - D_i + L_i(S)
 S_next = S union {i in E | K_i or U_i(S) <= 0}
 ```
 
-Opening-dead actors have R=B=ordinary recovery=0 and stay HP0 until revive. Allocate B exactly
-and proportionally over NUMERIC post-shield contributions only; use the existing rational
-allocator, recovery multipliers and one floor per drain contribution. Defeat's non-damage HP
-removal never increases B; returned/disabled/periodic/environment/cost drains remain disabled.
+Opening-dead sources have R=B=L=0 until explicit revival. Exclude their drain credits BEFORE
+summing L in every probe/final allocation, not just at the final HP clamp. Keep accepted damage
+and target attribution; never redistribute skipped credits or backfill them on later revival.
+Opening-alive sources remain eligible even if U<=0 or K sets final HP0 (N10 versus N12).
+Allocate B exactly and proportionally over NUMERIC post-shield contributions only; use the
+existing rational allocator, recovery multipliers and one floor per drain contribution.
+Defeat's non-damage HP removal never increases B; returned/disabled/periodic/environment/cost
+drains remain disabled.
 L never feeds B. Add all newly required guards together until S_next=S. Then guarded HP=1,
 unguarded K gives0, otherwise clamp U once to [0,maxHP]. Only now commit HP/shield/drain and one
 charge per selected actor. The probe emits/consumes nothing.

@@ -46,7 +46,7 @@
       "eligibleGuard": false,
       "defeat": false
     },
-    "fieldMeaning": "drainBpsOnIncoming heals the opponent from this actor numeric damage basis, using that opponent recovery multiplier. expected.drainBasis is capacity before drain rate, even when rate is zero. Opening-dead recipients receive no ordinary recovery.",
+    "fieldMeaning": "drainBpsOnIncoming credits the opponent only if that damage source has opening hp>0, using its recovery multiplier and this target numeric basis. Opening hp=0 forces effective ordinary healing, drainBasis and drainReceived to0 in every allocation. Keep accepted target damage/basis; do not redistribute skipped credits or backfill them on revival. expected.drainBasis is capacity before drain rate even when credit is disabled; final HP0 alone does not exclude an opening-alive source.",
     "expectations": "Authored independently from the proposed arithmetic, not recorded from a production resolver; verification must assert them, not regenerate them."
   },
   "arithmeticCases": {
@@ -530,8 +530,8 @@
     },
     "D5": {
       "owner": "P6-09b",
-      "given": "N10 and N12; defeated or returned source.",
-      "expected": "Defeat overrides same-wave incoming drain; opening HP0 is never revived by ordinary recovery; returned payload cannot drain."
+      "given": "N10/N11 versus N12 and actor swaps; opening-dead and returned sources; later explicit revival.",
+      "expected": "N12: dead source HP/guard/basis/drain all0 before final HP clamp; target HP6/basis4, no redirected credit. Later revival does not back-credit it. N10 retains drainReceived4 but defeat sets HP0; N11 survives at HP2 without revival. Returned payload cannot drain."
     },
     "D6": {
       "owner": "P6-09b",
