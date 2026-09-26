@@ -109,7 +109,8 @@ export class PublicationS3 implements PublicationStore {
       (kind === 'B' && this.classBRequests >= this.budget.maxClassBRequests)
     )
       throw new OperationError('BUDGET_EXCEEDED', 'S3 request class budget exceeded');
-    this.signal.throwIfAborted();
+    if (this.signal.aborted)
+      throw new OperationError('BUDGET_EXCEEDED', 'S3 transport deadline exceeded');
     this.requests++;
     if (kind === 'A') this.classARequests++;
     else this.classBRequests++;
@@ -136,11 +137,13 @@ export class PublicationS3 implements PublicationStore {
     throw new OperationError(
       code !== 'UNKNOWN'
         ? code
-        : status === 401 || status === 403
-          ? 'REMOTE_AUTH'
-          : status === 409 || status === 412
-            ? 'PUBLICATION_CONFLICT'
-            : 'REMOTE_UNAVAILABLE',
+        : this.signal.aborted
+          ? 'BUDGET_EXCEEDED'
+          : status === 401 || status === 403
+            ? 'REMOTE_AUTH'
+            : status === 409 || status === 412
+              ? 'PUBLICATION_CONFLICT'
+              : 'REMOTE_UNAVAILABLE',
       `S3 operation failed (HTTP ${status ?? 'unknown'}); no credentials logged`,
     );
   }

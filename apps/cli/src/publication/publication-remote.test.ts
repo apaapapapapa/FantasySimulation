@@ -1,7 +1,8 @@
-import { mkdtemp, rm, readFile, cp } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, writeFile, cp } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { afterEach, expect, it } from 'vite-plus/test';
+import { afterEach, expect, it, vi } from 'vite-plus/test';
+import { BattleBundles } from '@fantasy/api/artifacts';
 import { SUPPORTED_REPLAY_FORMAT } from '@fantasy/domain';
 import { publicationFixture } from '../../test-support/publication.ts';
 import { exportPublication } from './publication-export.ts';
@@ -46,7 +47,54 @@ class MemoryStore implements PublicationStore {
 }
 const roots: string[] = [];
 afterEach(async () => {
+  vi.restoreAllMocks();
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
+});
+it('starts the reserved transport after one full local validation and preserves readback', async () => {
+  const { directory, store, options } = await setup();
+  const verify = vi.spyOn(BattleBundles.prototype, 'verify');
+  const start = vi.fn(async (graph: Awaited<ReturnType<typeof localPublicationGraph>>) => {
+    expect(verify).toHaveBeenCalledTimes(graph.objects.size);
+    expect(graph.files.has('catalog/current.json')).toBe(true);
+    expect(store.writes).toEqual([]);
+    return store;
+  });
+  const result = await publishPublication(directory, start, options);
+  expect(start).toHaveBeenCalledTimes(1);
+  expect(verify).toHaveBeenCalledTimes(1);
+  expect(result.status).toBe('verified');
+  expect(store.writes.at(-1)).toBe('catalog/current.json');
+});
+it('does not reserve a data transport for a corrupt local publication', async () => {
+  const { directory, store, options } = await setup();
+  await writeFile(join(directory, 'catalog/current.json'), '{}');
+  const start = vi.fn(async () => store);
+  const error = await publishPublication(directory, start, options).catch(
+    (error: unknown) => error,
+  );
+  expect(leagueFailure(error, { command: 'publish' })).toMatchObject({
+    publicationState: 'not-committed',
+    code: 'DATA_INVALID',
+  });
+  expect(start).not.toHaveBeenCalled();
+  expect(store.writes).toEqual([]);
+});
+it('rejects changed local bytes after transport admission without committing the pointer', async () => {
+  const { directory, store, options } = await setup();
+  const error = await publishPublication(
+    directory,
+    async (graph) => {
+      const artifact = [...graph.files.values()].find((file) => file.key.endsWith('.gz'))!;
+      await writeFile(artifact.source!, Buffer.alloc(artifact.bytes));
+      return store;
+    },
+    options,
+  ).catch((error: unknown) => error);
+  expect(leagueFailure(error, { command: 'publish' })).toMatchObject({
+    publicationState: 'not-committed',
+    code: 'DATA_INVALID',
+  });
+  expect(store.objects.has('catalog/current.json')).toBe(false);
 });
 async function setup() {
   const root = await mkdtemp(join(tmpdir(), 'remote-publication-'));

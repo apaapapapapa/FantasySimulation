@@ -29,6 +29,10 @@ export interface PublicationStore {
   put(key: string, data: Buffer, previousEtag: string | null): Promise<void>;
   remove(key: string): Promise<void>;
 }
+/** Starts transport and reserves usage only after the complete local graph is verified. */
+export type PublicationStoreFactory = (
+  graph: Awaited<ReturnType<typeof localPublicationGraph>>,
+) => Promise<PublicationStore>;
 export interface PublishOptions {
   viewer(): Promise<unknown>;
   ancestor(source: string, viewer: string): boolean;
@@ -90,7 +94,7 @@ export class PublicationFailure extends Error {
 /** Bounded stage barriers; S3 conditional writes make pointer replacement atomic. */
 export async function publishPublication(
   root: string,
-  store: PublicationStore,
+  destination: PublicationStore | PublicationStoreFactory,
   options: PublishOptions,
 ) {
   let phase: PublicationPhase = 'not-committed';
@@ -101,6 +105,7 @@ export async function publishPublication(
     const maxWorker = limit(options.maxWorkerRequests, 200, 1000);
     const concurrency = publicationConcurrency(options.concurrency);
     const graph = await localPublicationGraph(root);
+    const store = typeof destination === 'function' ? await destination(graph) : destination;
     const compatible = async () => {
       const viewer = ViewerBuildSchema.parse(await options.viewer());
       for (const source of graph.sources)
