@@ -15,7 +15,7 @@ import {
   planLeague,
   reserveLeaguePartition,
   runLeaguePartition,
-  validateLeaguePlan,
+  validateStoredLeaguePlan,
   type LeagueCheckInput,
 } from '@fantasy/api/tooling';
 import { localPublicationGraph } from '../publication/publication-graph.ts';
@@ -190,7 +190,7 @@ export async function finishCloudLeague(
   executionId: string,
 ) {
   const prepared = await preparedLeague(preparedRoot);
-  await validateLeaguePlan(prepared.plan);
+  await validateStoredLeaguePlan(prepared.plan);
   if (
     prepared.executionId !== executionId ||
     canonicalJson(prepared.plan.source) !== canonicalJson(source)

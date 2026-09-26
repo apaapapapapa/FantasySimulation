@@ -117,6 +117,23 @@ export async function validateLeagueRevision(input: unknown): Promise<LeagueRevi
   return rebuilt;
 }
 
+/** Authenticate saved identities without rebuilding them with the installed engine. */
+export async function validateStoredLeagueRevision(input: unknown): Promise<LeagueRevision> {
+  const revision = parseJson(LeagueRevisionSchema, input);
+  const { leagueHash, ...body } = revision;
+  const { definition, engineVersion, implementationDigest } = revision;
+  const rules = requireRevision(revisionIndex(definition.revisions), 'ruleset', definition.ruleset);
+  if (
+    leagueHash !== (await contentHash(body)) ||
+    revision.inputHash !==
+      (await contentHash({ definition, engineVersion, implementationDigest })) ||
+    rules.definition.rulesVersion !== engineVersion ||
+    canonicalJson(definition) !== canonicalJson(await normalizeStoredLeagueDefinition(definition))
+  )
+    throw new Error('Stored league revision checksum or definition mismatch');
+  return revision;
+}
+
 /** Bounded iteration avoids retaining every expanded manifest in memory. */
 export async function* leagueMatches(
   input: LeagueRevision,

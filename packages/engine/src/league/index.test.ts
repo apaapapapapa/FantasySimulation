@@ -1,5 +1,10 @@
 import { expect, it } from 'vite-plus/test';
-import { actorSeed, leagueSlotCount, LeagueDefinitionSchema } from '@fantasy/domain/spatial';
+import {
+  actorSeed,
+  contentHash,
+  leagueSlotCount,
+  LeagueDefinitionSchema,
+} from '@fantasy/domain/spatial';
 import { observedRules } from '@fantasy/samples';
 import { leagueFixture, leagueSource, plannedLeague } from '../../test-support/league.ts';
 import {
@@ -9,8 +14,29 @@ import {
   normalizeStoredLeagueDefinition,
   leagueDefinitionHash,
   validateLeagueRevision,
+  validateStoredLeagueRevision,
 } from './index.ts';
 import { revisionHash } from '@fantasy/domain/spatial';
+
+it.each(['checksum', 'input-hash', 'definition-order', 'rules-version'] as const)(
+  'rejects saved league identity corruption: %s',
+  async (fault) => {
+    const saved = await createLeagueRevision(await leagueFixture(), leagueSource);
+    if (fault === 'checksum') saved.sourceSha = 'e'.repeat(40);
+    if (fault === 'input-hash') saved.inputHash = 'sha256:' + 'f'.repeat(64);
+    if (fault === 'definition-order') saved.definition.characters.reverse();
+    if (fault === 'rules-version') saved.engineVersion = 'unrelated-engine';
+    if (fault !== 'checksum') {
+      if (fault !== 'input-hash') {
+        const { definition, engineVersion, implementationDigest } = saved;
+        saved.inputHash = await contentHash({ definition, engineVersion, implementationDigest });
+      }
+      const { leagueHash: _, ...body } = saved;
+      saved.leagueHash = await contentHash(body);
+    }
+    await expect(validateStoredLeagueRevision(saved)).rejects.toThrow('checksum or definition');
+  },
+);
 
 it('compares validated historical definitions without current-engine eligibility or identity', async () => {
   const input = await leagueFixture();

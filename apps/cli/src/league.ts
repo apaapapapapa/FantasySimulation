@@ -6,9 +6,10 @@ import { BattleBundles, readBoundedFile, publishImmutableFile } from '@fantasy/a
 import {
   planLeague,
   validateLeaguePlan,
+  validateStoredLeaguePlan,
   reserveLeaguePartition,
   runLeaguePartition,
-  checkLeague,
+  checkStoredLeague,
   executionSource,
   type LeagueCheckInput,
 } from '@fantasy/api/tooling';
@@ -148,9 +149,12 @@ async function main() {
     rest.length === (command === 'export' ? 1 : 0)
   ) {
     const directory = resolve(input),
-      plan = await validateLeaguePlan(await readJson(join(directory, 'league.json'))),
+      plan = await validateStoredLeaguePlan(await readJson(join(directory, 'league.json'))),
+      partitions = [],
       completed: LeagueCheckInput[] = [];
     for (let i = 0; i < plan.partitions.length; i++) {
+      const partition = await partitionAt(directory, plan, i);
+      partitions.push(partition);
       const root = resolve(output, String(i));
       let result: unknown;
       try {
@@ -160,7 +164,7 @@ async function main() {
         throw error;
       }
       completed.push({
-        ...(await partitionAt(directory, plan, i)),
+        ...partition,
         reservation: await immutableJson(join(root, 'reservations')),
         result,
         bundles: new BattleBundles(join(root, 'bundles')),
@@ -168,15 +172,12 @@ async function main() {
     }
     if (command === 'export') {
       const { exportLeague } = await import('./league/league-export.ts');
-      const partitions = [];
-      for (let i = 0; i < plan.partitions.length; i++)
-        partitions.push(await partitionAt(directory, plan, i));
       console.log(
         canonicalJson(await exportLeague(plan, partitions, completed, resolve(rest[0]!))),
       );
       return;
     }
-    const result = await checkLeague(plan, completed);
+    const result = await checkStoredLeague(plan, partitions, completed);
     console.log(
       canonicalJson({
         status: result.standings.status,

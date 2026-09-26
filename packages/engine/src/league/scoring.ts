@@ -16,7 +16,12 @@ import {
   type LeagueAttempt,
 } from '@fantasy/domain/spatial';
 import { fraction, type Fraction } from '../spatial/rules/effects.ts';
-import { leagueMatches, validateLeagueRevision } from './index.ts';
+import {
+  leagueMatches,
+  leagueCoordinates,
+  validateLeagueRevision,
+  validateStoredLeagueRevision,
+} from './index.ts';
 
 export function compareLeagueFractions(a: Fraction, b: Fraction): number {
   const difference =
@@ -237,16 +242,42 @@ export async function aggregateLeague(
   input: readonly LeagueSlot[],
   attempts: readonly LeagueAttempt[],
 ): Promise<LeagueStandings> {
-  const { definition } = await validateLeagueRevision(league);
+  return aggregate(league, input, attempts, false);
+}
+
+/** The caller authenticates saved slot hashes against their plans and recorded bundles. */
+export async function aggregateStoredLeague(
+  league: LeagueRevision,
+  input: readonly LeagueSlot[],
+  attempts: readonly LeagueAttempt[],
+): Promise<LeagueStandings> {
+  return aggregate(league, input, attempts, true);
+}
+
+async function aggregate(
+  league: LeagueRevision,
+  input: readonly LeagueSlot[],
+  attempts: readonly LeagueAttempt[],
+  stored: boolean,
+): Promise<LeagueStandings> {
+  const { definition } = await (stored ? validateStoredLeagueRevision : validateLeagueRevision)(
+    league,
+  );
   if (input.length > MAX_LEAGUE_SLOTS) throw new Error('Excessive planned slots');
   const slots = new Map<string, LeagueSlot>(),
     cells = plannedCells(definition);
   const expected = new Map<string, string>();
-  for await (const match of leagueMatches(league))
-    expected.set(match.slot.id, canonicalJson(match.slot));
+  if (stored) {
+    for await (const match of leagueCoordinates(definition))
+      expected.set(match.slot.id, canonicalJson(match.slot));
+  } else {
+    for await (const match of leagueMatches(league))
+      expected.set(match.slot.id, canonicalJson(match.slot));
+  }
   for (const value of input) {
     const slot = LeagueSlotSchema.parse(value);
-    if (expected.get(slot.id) !== canonicalJson(slot))
+    const { simulationHash: _hash, ...coordinate } = slot;
+    if (expected.get(slot.id) !== canonicalJson(stored ? coordinate : slot))
       throw new Error('Unknown, duplicate or incompatible league slot');
     expected.delete(slot.id);
     const { characters, scenario } = slot;

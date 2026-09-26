@@ -52,20 +52,7 @@ export class BattleBundles {
     const { objectHash: recorded, ...body } = receipt;
     if (recorded !== objectHash || recorded !== (await contentHash(body)))
       throw new OperationError('DATA_INVALID', 'Bundle receipt hash mismatch');
-    const manifestBytes = await readBoundedFile(
-      join(directory, 'manifest.json'),
-      MAX_REPLAY_MANIFEST_BYTES,
-    );
-    if (sha256(manifestBytes) !== receipt.manifestChecksum)
-      throw new OperationError('DATA_INVALID', 'Bundle manifest checksum mismatch');
-    const manifest = operationInput(
-      () =>
-        parseJson(
-          ReplayManifestSchema,
-          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes)) as unknown,
-        ),
-      'DATA_INVALID',
-    );
+    const { manifest, manifestBytes } = await this.readManifest(receipt);
     const bytes =
       manifestBytes.length +
       [...manifest.chunks, ...manifest.checkpoints].reduce((n, ref) => n + ref.bytes, 0);
@@ -82,6 +69,27 @@ export class BattleBundles {
       throw new OperationError('DATA_INVALID', 'Bundle result/attempt/replay binding mismatch');
     await verifyReplayDirectory(directory, manifest);
     return receipt;
+  }
+  /** The checksum still applies when a consumer reads the saved input after full verification. */
+  async manifest(receipt: BundleReceipt): Promise<ReplayManifest> {
+    return (await this.readManifest(receipt)).manifest;
+  }
+  private async readManifest(receipt: BundleReceipt) {
+    const manifestBytes = await readBoundedFile(
+      join(this.objectPath(receipt.objectHash), 'manifest.json'),
+      MAX_REPLAY_MANIFEST_BYTES,
+    );
+    if (sha256(manifestBytes) !== receipt.manifestChecksum)
+      throw new OperationError('DATA_INVALID', 'Bundle manifest checksum mismatch');
+    const manifest = operationInput(
+      () =>
+        parseJson(
+          ReplayManifestSchema,
+          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes)) as unknown,
+        ),
+      'DATA_INVALID',
+    );
+    return { manifest, manifestBytes };
   }
   async cached(simulationHash: string) {
     let bytes: Buffer;
