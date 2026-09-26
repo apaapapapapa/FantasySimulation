@@ -2902,11 +2902,41 @@
   "completedAt": "2026-09-26T01:43:56.261Z",
   "processMaxRssKb": 505560,
   "driver": {
-    "archive": "FantasySimulation-league-io-evidence-d6213977.zip",
-    "path": ".generated/io-investigation/measure.ts",
-    "sha256": "9159e3a06bfbb15ad5283a3979841dcea6dfe1d39eebb32c4e58f5eee143ce2b",
-    "rawResultsSha256": "57c749608323bb72e01e8e57f37d640465e601744185efa1634d37371ef62451",
-    "reproduction": "On a fresh checkout of environment.sourceSha, install pinned dependencies with frozen lockfile, extract measure.ts to driver.path, then run command. The driver requires a fresh .generated/io-investigation/data directory and does not use production credentials."
+    "recorded": {
+      "path": "docs/measurements/league-io-investigation/recorded-driver.ts.gz",
+      "compression": "gzip",
+      "uncompressedSha256": "9159e3a06bfbb15ad5283a3979841dcea6dfe1d39eebb32c4e58f5eee143ce2b",
+      "originalPath": ".generated/io-investigation/measure.ts"
+    },
+    "reproducer": {
+      "path": "scripts/measurements/league-io.ts",
+      "sha256": "5cf4407fcb2764d3c60604ee35cd339f1d7918eb7cfe24e8af27664ce92f4cb6",
+      "changes": "Typed and formatted the recorded driver, shared repeated pipeline calls, added exact-source/clean-checkout guards and an explicit expected-rejection assertion. This follow-up does not replace the recorded measurements."
+    },
+    "rawResults": {
+      "path": "docs/measurements/league-io-investigation/raw-results.json.gz",
+      "compression": "gzip",
+      "uncompressedSha256": "57c749608323bb72e01e8e57f37d640465e601744185efa1634d37371ef62451"
+    },
+    "reproduction": {
+      "startDirectory": "Repository root of this PR; use a fresh .generated/league-io-repro worktree path.",
+      "prerequisites": "Linux, Node 24.19.0, pnpm 11.27.1 and frozen dependencies. No production credentials or R2 access are used.",
+      "commands": [
+        "git worktree add --detach .generated/league-io-repro d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+        "mkdir -p .generated/league-io-repro/.generated/io-investigation",
+        "cp scripts/measurements/league-io.ts .generated/league-io-repro/.generated/io-investigation/measure.ts",
+        "cd .generated/league-io-repro",
+        "pnpm install --frozen-lockfile",
+        "node --import ./apps/cli/node_modules/tsx/dist/loader.mjs .generated/io-investigation/measure.ts > .generated/io-investigation/run.log"
+      ],
+      "outputs": [
+        ".generated/io-investigation/results.json",
+        ".generated/io-investigation/run.log"
+      ],
+      "comparison": "Re-execution produces a new observation with its own wall time, RSS, environment and recording IDs. The raw evidence committed here remains the original 2026-09-26 observation at d6213977.",
+      "originalDriverAlternative": "For the byte-identical historical driver, replace the cp step with gzip -dc docs/measurements/league-io-investigation/recorded-driver.ts.gz > .generated/league-io-repro/.generated/io-investigation/measure.ts. Use the same source SHA and fresh directories.",
+      "inspectRaw": "gzip -dc docs/measurements/league-io-investigation/raw-results.json.gz"
+    }
   },
   "relatedPrStateAtObservation": {
     "147": "merged",
