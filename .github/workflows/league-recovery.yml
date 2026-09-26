@@ -7,7 +7,7 @@ on:
         type: string
         required: true
       source_run_id:
-        description: Failed Daily league run with successful compute jobs
+        description: Failed or publication-interrupted Daily league run with successful compute jobs
         type: string
         required: true
       source_attempt:

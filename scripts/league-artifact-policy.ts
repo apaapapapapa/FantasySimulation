@@ -1,5 +1,40 @@
 import type { pagesSource } from './pages-policy.ts';
 
+type RecoveryJob = Parameters<typeof pagesSource>[1][number] & {
+  steps?: { name: string; status: string; conclusion: string | null; number: number }[];
+};
+
+/** An interrupted upload is recoverable only after the original finalizer completed. */
+function recoverablePublication(runConclusion: string | null, publish: RecoveryJob | undefined) {
+  if (runConclusion === 'failure' && publish?.conclusion === 'failure') return true;
+  if (
+    !['failure', 'cancelled', 'timed_out'].includes(runConclusion ?? '') ||
+    !['cancelled', 'timed_out'].includes(publish?.conclusion ?? '') ||
+    !Array.isArray(publish?.steps)
+  )
+    return false;
+  const finalized = publish.steps.filter(
+    (step) => step.name === 'Validate received partitions and preserve every missing denominator',
+  );
+  const interrupted = publish.steps.filter(
+    (step) => step.name === 'Reserve publication budget and verify R2 and Worker readback',
+  );
+  const before = finalized[0],
+    after = interrupted[0];
+  return (
+    finalized.length === 1 &&
+    interrupted.length === 1 &&
+    before?.status === 'completed' &&
+    before.conclusion === 'success' &&
+    after?.status === 'completed' &&
+    ['cancelled', 'timed_out'].includes(after.conclusion ?? '') &&
+    Number.isSafeInteger(before.number) &&
+    before.number > 0 &&
+    Number.isSafeInteger(after.number) &&
+    after.number > before.number
+  );
+}
+
 /** Download plus full revalidation needs more time than artifact transfer alone. */
 export function leagueArtifactTimeout(operation: unknown) {
   if (operation === 'recover') return 90 * 60 * 1000;
@@ -11,7 +46,7 @@ export function leagueArtifactTimeout(operation: unknown) {
 /** Recovery validates saved results only; it never admits or repeats a simulation. */
 export function leagueRecoverySource(
   run: Parameters<typeof pagesSource>[0] & { id: number; run_attempt: number },
-  jobs: Parameters<typeof pagesSource>[1],
+  jobs: RecoveryJob[],
   expected: { runId: number; attempt: number },
 ) {
   const compute = jobs.filter((job) => job.name.startsWith('compute ('));
@@ -30,10 +65,12 @@ export function leagueRecoverySource(
     run.head_branch !== 'main' ||
     run.head_repository?.full_name !== 'apaapapapapa/FantasySimulation' ||
     run.status !== 'completed' ||
-    run.conclusion !== 'failure' ||
     run.head_sha.match(/^[a-f0-9]{40}$/)?.[0] !== run.head_sha ||
     !phase('prepare', 'success') ||
-    !phase('publish', 'failure') ||
+    !recoverablePublication(
+      run.conclusion,
+      jobs.find((job) => job.name === 'publish'),
+    ) ||
     compute.length < 1 ||
     compute.length > 64 ||
     new Set(jobs.map((job) => job.name)).size !== jobs.length ||

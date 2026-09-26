@@ -26,7 +26,7 @@ it('blocks recovery when the newly validated catalog differs from original compl
     expect(() => assertRecoveryCatalog(original, hash)).toThrow('differs');
 });
 
-it('accepts only the exact failed main publication with completed successful workers', () => {
+function recoveryAttempt() {
   const run = {
     id: 123,
     run_attempt: 1,
@@ -45,6 +45,11 @@ it('accepts only the exact failed main publication with completed successful wor
     head_sha: run.head_sha,
   }));
   const expected = { runId: 123, attempt: 1 };
+  return { run, jobs, expected };
+}
+
+it('accepts only the exact failed main publication with completed successful workers', () => {
+  const { run, jobs, expected } = recoveryAttempt();
   expect(leagueRecoverySource(run, jobs, expected)).toBe(run.head_sha);
   for (const change of [
     { id: 124 },
@@ -71,6 +76,74 @@ it('accepts only the exact failed main publication with completed successful wor
   expect(() =>
     leagueRecoverySource(run, [...jobs, { ...jobs[0]!, conclusion: 'failure' }], expected),
   ).toThrow();
+});
+
+it('recovers interrupted publication only after successful original finalization', () => {
+  const { run, jobs, expected } = recoveryAttempt();
+  const steps = [
+    {
+      name: 'Validate received partitions and preserve every missing denominator',
+      number: 7,
+      status: 'completed',
+      conclusion: 'success',
+    },
+    {
+      name: 'Reserve publication budget and verify R2 and Worker readback',
+      number: 8,
+      status: 'completed',
+      conclusion: 'cancelled',
+    },
+  ];
+  for (const conclusion of ['cancelled', 'timed_out']) {
+    const attempt = { ...run, conclusion };
+    const phases = jobs.map((job) =>
+      job.name === 'publish'
+        ? { ...job, conclusion, steps: [steps[0]!, { ...steps[1]!, conclusion }] }
+        : job,
+    );
+    expect(leagueRecoverySource(attempt, phases, expected)).toBe(run.head_sha);
+    expect(leagueRecoverySource({ ...run, conclusion: 'failure' }, phases, expected)).toBe(
+      run.head_sha,
+    );
+    for (const evidence of [
+      undefined,
+      [],
+      [steps[1]!],
+      [steps[0]!],
+      [...steps, steps[0]!],
+      [{ ...steps[0]!, conclusion: 'cancelled' }, steps[1]!],
+      [{ ...steps[0]!, status: 'in_progress' }, steps[1]!],
+      [steps[0]!, { ...steps[1]!, conclusion: 'success' }],
+      [steps[0]!, { ...steps[1]!, number: 7 }],
+      [steps[0]!, { ...steps[1]!, number: Number.NaN }],
+    ])
+      expect(() =>
+        leagueRecoverySource(
+          attempt,
+          jobs.map((job) =>
+            job.name === 'publish'
+              ? { ...job, conclusion, ...(evidence === undefined ? {} : { steps: evidence }) }
+              : job,
+          ),
+          expected,
+        ),
+      ).toThrow('Recovery requires');
+    expect(() =>
+      leagueRecoverySource(
+        attempt,
+        phases.map((job) =>
+          job.name === 'compute (0)' ? { ...job, conclusion: 'cancelled' } : job,
+        ),
+        expected,
+      ),
+    ).toThrow('Recovery requires');
+    expect(() =>
+      leagueRecoverySource({ ...attempt, conclusion: 'success' }, phases, expected),
+    ).toThrow('Recovery requires');
+    expect(() => leagueRecoverySource(attempt, phases, { ...expected, attempt: 2 })).toThrow(
+      'Recovery requires',
+    );
+  }
 });
 it('binds each download to the current run/attempt name, immutable ID and digest', () => {
   const name = 'league-123-2-input-0',
