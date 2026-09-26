@@ -21,10 +21,15 @@ function coverage(): Record<string, CapabilityCoverage> {
     },
   };
 }
-function inspect(code: string, contract = coverage(), expected = ['effect:example']) {
+function inspect(
+  code: string,
+  contract = coverage(),
+  expected = ['effect:example'],
+  testSource = 'declare function expect(x: unknown): void; expect(1);',
+) {
   const project = createTestProject({
     [path]: code,
-    'feature.test.ts': 'declare function expect(x: unknown): void; expect(1);',
+    'feature.test.ts': testSource,
   });
   try {
     return withSources(project.root, [path, 'feature.test.ts'], (files) =>
@@ -39,10 +44,26 @@ it('requires every current effect and shape to have live owners and behavioral t
   expect(capabilityCoverage(process.cwd(), qualityPaths(process.cwd()))).toEqual([]);
 });
 
+it('rejects absent test files, empty coverage and files without assertions', () => {
+  const code = 'const work = (n: number) => n + 1;';
+  for (const tests of [[], ['missing.test.ts']]) {
+    const contract = coverage();
+    contract['effect:example']!.tests = tests;
+    expect(inspect(code, contract).some((finding) => finding.role === 'tests')).toBe(true);
+  }
+  expect(
+    inspect(code, coverage(), ['effect:example'], 'const value = 1;').some(
+      (finding) => finding.role === 'tests',
+    ),
+  ).toBe(true);
+});
+
 it.each([
   '() => {}',
   '() => undefined',
   '() => false',
+  '() => void 0',
+  '() => { const result = void 0; return result; }',
   '() => { return; }',
   '() => { const result = false; return result; }',
   '() => { const a = 0; const b = (a + 1); return b; }',
@@ -55,6 +76,10 @@ it.each([
 it('resolves aliases instead of treating an empty function name as implementation', () => {
   expect(inspect('const empty = () => {}; const work = empty;')).toHaveLength(5);
   expect(inspect('const work = (n: number) => n + 1;')).toEqual([]);
+  expect(inspect('const work = (n: number) => { const result = n + 1; return result; };')).toEqual(
+    [],
+  );
+  expect(inspect('const work = (n: number) => void console.log(n);')).toEqual([]);
 });
 
 it('requires explicit, live delegation and rejects missing responsibilities/new schema kinds', () => {

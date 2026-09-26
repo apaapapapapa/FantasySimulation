@@ -3,7 +3,12 @@ import { gunzipSync } from 'node:zlib';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { StreamRecordSchema, type ActorDelta, type ReplayManifest } from '@fantasy/domain/spatial';
+import {
+  StreamRecordSchema,
+  type ActorDelta,
+  type BattleEvent,
+  type ReplayManifest,
+} from '@fantasy/domain/spatial';
 import { openReplay, type OpenedReplay } from './open-replay.ts';
 import { ReplayPlayer } from './replay-player.ts';
 import { readLocalFiles, localReplaySource } from './local-source.ts';
@@ -11,6 +16,7 @@ import { buildSceneModel } from './scene-model.ts';
 import { Scene2D } from './Scene2D.tsx';
 import { NO_OVERLAYS } from './overlays.ts';
 import { ReplayResources } from './ReplayResources.tsx';
+import { EventEntries } from './EventEntries.tsx';
 
 // #61 elements recorded by the real writer (stamina, walk/run, staged dash/sweep, force).
 const FIXTURE = new URL(
@@ -19,6 +25,7 @@ const FIXTURE = new URL(
 );
 let opened: OpenedReplay;
 let deltas: { step: number; change: ActorDelta }[];
+let savedEvents: BattleEvent[];
 beforeAll(async () => {
   const files = new Map<string, Uint8Array<ArrayBuffer>>();
   for (const name of await readdir(FIXTURE))
@@ -38,6 +45,7 @@ beforeAll(async () => {
     Buffer.from(files.get('manifest.json')!).toString(),
   ) as ReplayManifest;
   // Expected values come from the raw saved deltas, not from the projection under test.
+  savedEvents = [];
   deltas = manifest.chunks.flatMap((chunk) =>
     gunzipSync(files.get(chunk.file)!)
       .toString()
@@ -45,6 +53,7 @@ beforeAll(async () => {
       .split('\n')
       .flatMap((line) => {
         const record = StreamRecordSchema.parse(JSON.parse(line));
+        if ('events' in record) savedEvents.push(...record.events);
         return record.kind === 'interval' || record.kind === 'boundary'
           ? record.changes.map((change) => ({
               step: record.kind === 'interval' ? record.toStep : record.step,
@@ -71,6 +80,20 @@ async function view(step: number) {
 }
 
 describe('#61 display records', () => {
+  it('renders saved force events with their rule and causal diagnostics', () => {
+    const events = savedEvents.filter((event) => event.kind === 'force');
+    expect(events.length).toBeGreaterThan(0);
+    const markup = renderToStaticMarkup(
+      createElement(EventEntries, { events, step: events[0]!.step, onSeek: () => {} }),
+    );
+    for (const event of events) {
+      expect(markup).toContain(event.id);
+      expect(markup).toContain(event.ruleId);
+      for (const cause of event.causes) expect(markup).toContain(cause);
+    }
+    expect(markup).toContain('force');
+    expect(markup).toContain('aria-current="step"');
+  });
   it('names recorded walk/run locomotion and shows stamina against its maximum', async () => {
     const run = first((c) => c.locomotion?.mode === 'run');
     const { model, table } = await view(run.step);

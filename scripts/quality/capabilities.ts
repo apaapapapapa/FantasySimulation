@@ -5,6 +5,7 @@ import {
   isVariableDeclaration,
   isVariableStatement,
   isPrefixUnaryExpression,
+  isVoidExpression,
   isBinaryExpression,
   isIdentifier,
   isStringLiteral,
@@ -71,6 +72,7 @@ function constant(
   if (isParenthesizedExpression(node) || isAsExpression(node) || isSatisfiesExpression(node))
     return constant(node.expression, locals);
   if (isPrefixUnaryExpression(node)) return constant(node.operand, locals);
+  if (isVoidExpression(node)) return constant(node.expression, locals);
   if (isBinaryExpression(node)) return constant(node.left, locals) && constant(node.right, locals);
   return (
     node.kind === SyntaxKind.NullKeyword ||
