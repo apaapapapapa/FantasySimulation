@@ -30,6 +30,7 @@ export const responseMechanics = {
   effects: 'reaction-effects',
   counter: 'counter',
   deflect: 'projectile-deflection',
+  revive: 'revival',
 } satisfies Record<NonNullable<Definition<'ability'>['reaction']>['response']['kind'], MechanicId>;
 export const periodicMechanics = {
   damage: 'damage',
@@ -96,6 +97,7 @@ export function closureMechanics(revisions: readonly Revision[]): MechanicUse[] 
     } else if (owner.kind === 'status') {
       const status = owner.definition;
       if (status.phasing) add('phasing');
+      if (status.seals) add('seal');
       if (status.adjustments?.some((a) => a.target === 'absorption')) add('attribute-absorption');
       if (status.categories?.includes('permanent')) add('permanent');
       if (status.modifiers.flight || status.flightStaminaPerSecond !== undefined) add('flight');

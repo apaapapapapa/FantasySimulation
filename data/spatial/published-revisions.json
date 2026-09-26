@@ -842,6 +842,54 @@
       "id": "phase-stone-energy-v1",
       "revision": 1,
       "contentHash": "sha256:22bee84dff47845c2bee96aaa77168a857695dd70b951448186eba941cfb482a"
+    },
+    {
+      "kind": "ability",
+      "id": "phoenix-revival-v1",
+      "revision": 1,
+      "contentHash": "sha256:776f6f996e52b62777bd41c6c4a6662c3f5049f6bc6a21a8d71bac41e60a6035"
+    },
+    {
+      "kind": "ability",
+      "id": "phoenix-strike-v1",
+      "revision": 1,
+      "contentHash": "sha256:921359e79a907b85e4bf372da2378f127d768e65ff1bb9750362a0b699f8a97b"
+    },
+    {
+      "kind": "ability",
+      "id": "sealing-bolt-v1",
+      "revision": 1,
+      "contentHash": "sha256:1dc5f75885c01d1e6b421a2d8f4393e55465e09fd5ba0de6229840925b073f3e"
+    },
+    {
+      "kind": "character",
+      "id": "phoenix-duelist-v1",
+      "revision": 1,
+      "contentHash": "sha256:51c95707a73b4a5f5899f77bdf63c6dd8ab36c22bbe5ea23bc4184d5bb841210"
+    },
+    {
+      "kind": "character",
+      "id": "seal-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:644a9814851ccfef359e4beb47979c50c281bc86559316d370e3d77d755b91e9"
+    },
+    {
+      "kind": "policy",
+      "id": "phoenix-duelist-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:f020114ee1a0007b1ec4a9347f09ff752ac66546991a0e80f45070f038e2c79d"
+    },
+    {
+      "kind": "policy",
+      "id": "seal-mage-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:7b753b078361e46c480adfe9f5c1180a5bb7e3cdef976b4d15ddd877fc85dfc4"
+    },
+    {
+      "kind": "status",
+      "id": "suppress-special-v1",
+      "revision": 1,
+      "contentHash": "sha256:4bd5aefceaa2fe377134afec2bed9bf777a03e8f9f4073f672bcbf3f75d23246"
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { effectiveStatuses } from '@fantasy/domain/spatial/execution';
 import type { StatusCohort, MotionState } from '../state.ts';
 import {
   canonicalJson,
@@ -40,7 +41,13 @@ export function statusBenefit(
     Number(m.flight) +
     (status.phasing ? 0.5 : 0) -
     Number(m.rooted) -
-    Number(m.silenced ?? false);
+    Number(m.silenced ?? false) -
+    (status.seals
+      ? ((status.seals.abilityCategories?.length ?? 0) +
+          (status.seals.statusCategories?.length ?? 0) +
+          (status.seals.statusIds?.length ?? 0)) /
+        2
+      : 0);
   for (const a of status.adjustments ?? []) {
     if (!adjustmentApplies(a)) continue;
     if (a.target === 'staminaRecovery' && resources.stamina === false) continue;
@@ -75,7 +82,7 @@ export function statusBenefit(
 }
 /** Explicit visibility publishes only coarse semantics: no revision/hash, quantity, stacks or clock. */
 export function publicStatuses(statuses: readonly StatusCohort[], step: number): ObservedStatus[] {
-  const publicEntries = statuses
+  const publicEntries = effectiveStatuses(statuses, step)
     .filter(
       (s) =>
         s.startStep <= step && step < s.endStep && s.revision.definition.visibility === 'visible',

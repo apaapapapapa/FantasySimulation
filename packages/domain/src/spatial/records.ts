@@ -119,6 +119,7 @@ export const EventSchema = z
       'stage-interrupt',
       'force',
       'reaction',
+      'revival',
       'teleport',
     ]),
     actorId: IdSchema.nullable(),
@@ -173,6 +174,7 @@ export const EventSchema = z
     stage: StageContactSchema.optional(),
     force: ForceContributionSchema.optional(),
     reaction: ReactionContextSchema.optional(),
+    revival: z.strictObject({ use: z.number().int().min(1).max(4) }).optional(),
     teleport: z.strictObject({ from: PhysicalVectorSchema, to: PhysicalVectorSchema }).optional(),
     wave: z.number().int().min(0).max(8).optional(),
     sourceActorId: IdSchema.optional(),
@@ -180,6 +182,15 @@ export const EventSchema = z
     projectileDeflection: ProjectileDeflectionSchema.optional(),
   })
   .superRefine((event, ctx) => {
+    if (
+      (event.kind === 'revival') !== !!event.revival ||
+      (event.revival &&
+        (!event.reaction ||
+          event.reaction.point !== 'before-defeat' ||
+          !event.actorId ||
+          !event.abilityId))
+    )
+      ctx.addIssue({ code: 'custom', message: 'Revival requires before-defeat owner and use' });
     if (
       (event.kind === 'teleport') !== !!event.teleport ||
       (event.teleport && (event.phase !== 'boundary' || !event.actorId || !event.abilityId))

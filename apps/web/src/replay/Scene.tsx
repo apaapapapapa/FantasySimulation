@@ -177,6 +177,12 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
                 wireframe={a.phasing?.pending ?? false}
               />
             </mesh>
+            {(a.sealing || a.revived) && (
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[a.radius * 1.8, 0.05, 8, 32]} />
+                <meshBasicMaterial color={a.revived ? '#72e0c1' : '#d9a6ff'} />
+              </mesh>
+            )}
             {a.casting && (
               <mesh rotation={[Math.PI / 2, 0, 0]}>
                 <torusGeometry args={[a.radius * 1.5, 0.04, 6, 24]} />

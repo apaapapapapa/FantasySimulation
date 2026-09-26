@@ -109,6 +109,13 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
       : {}),
     resources: { ...state.vitals.resources },
     ...(state.body.locomotion ? { locomotion: { ...state.body.locomotion } } : {}),
+    ...(motion.actor.abilities.some((a) => a.definition.reaction?.response.kind === 'revive')
+      ? {
+          revivals: motion.actor.abilities
+            .filter((a) => a.definition.reaction?.response.kind === 'revive')
+            .reduce((n, a) => n + (state.actions.used[a.id] ?? 0), 0),
+        }
+      : {}),
     statuses: state.statuses.map((s) => ({
       revision: {
         id: s.revision.id,

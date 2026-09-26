@@ -16,7 +16,7 @@ import type {
 } from '@fantasy/domain/spatial/execution';
 import { conditionMatches } from './conditions.ts';
 import { inObservedRange } from './attacks.ts';
-import { blockedBySilence } from './categories.ts';
+import { blockedBySilence, blockedBySeal } from './categories.ts';
 import { postureAllows } from './posture.ts';
 import type { ResourceBudget } from './resources.ts';
 import type { Journal } from './journal.ts';
@@ -141,11 +141,13 @@ export function checkStageInterruption(
       ? 'defeated'
       : view.incapacitated
         ? 'incapacitated'
-        : view.silenced && blockedBySilence(action.ability.definition)
-          ? 'silenced'
-          : current && stage.interruptWhen && conditionMatches(stage.interruptWhen, view)
-            ? 'interrupt-condition'
-            : null;
+        : blockedBySeal(view, action.ability.definition)
+          ? 'sealed'
+          : view.silenced && blockedBySilence(action.ability.definition)
+            ? 'silenced'
+            : current && stage.interruptWhen && conditionMatches(stage.interruptWhen, view)
+              ? 'interrupt-condition'
+              : null;
   if (reason) interruptStage(actor, step, journal, phase, reason);
 }
 /** Damage attribution, rather than net HP loss, also handles simultaneous healing. */
@@ -216,16 +218,18 @@ export function releaseStage(
     ? 'posture'
     : view.incapacitated
       ? 'incapacitated'
-      : view.silenced && blockedBySilence(definition)
-        ? 'silenced'
-        : stage.interruptWhen && conditionMatches(stage.interruptWhen, view)
-          ? 'interrupt-condition'
-          : !conditionMatches(definition.condition, view) ||
-              (stage.startCondition && !conditionMatches(stage.startCondition, view))
-            ? 'start-condition'
-            : stage.attack && !inObservedRange({ ...definition, attack: stage.attack }, view)
-              ? 'observed-range-or-facing'
-              : null;
+      : blockedBySeal(view, definition)
+        ? 'sealed'
+        : view.silenced && blockedBySilence(definition)
+          ? 'silenced'
+          : stage.interruptWhen && conditionMatches(stage.interruptWhen, view)
+            ? 'interrupt-condition'
+            : !conditionMatches(definition.condition, view) ||
+                (stage.startCondition && !conditionMatches(stage.startCondition, view))
+              ? 'start-condition'
+              : stage.attack && !inObservedRange({ ...definition, attack: stage.attack }, view)
+                ? 'observed-range-or-facing'
+                : null;
   if (reason) {
     interruptStage(actor, step, journal, 'launch', reason);
     return null;

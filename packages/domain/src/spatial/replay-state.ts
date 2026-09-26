@@ -1,3 +1,4 @@
+import { validateRevivalCounts } from './replay-validation/revival.ts';
 import { validatePhasing, validatePhasingTransition } from './replay-validation/phasing.ts';
 import { validateSpatialObject, applySpatialObjects } from './replay-validation/spatial-object.ts';
 import { compareIds } from './canonical.ts';
@@ -335,6 +336,7 @@ export class ReplayState {
       if (record.kind !== 'terminal') validatePhasingTransition(prior, state, record);
       validateEvents(this.context, this.value, record, entities);
     }
+    validateRevivalCounts(prior.state?.actors, state.actors, record);
     this.validateState(
       state,
       step,

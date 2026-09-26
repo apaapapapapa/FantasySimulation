@@ -1,3 +1,4 @@
+import { runBattle } from '../src/spatial/run.ts';
 import {
   ReplayState,
   replayContext,
@@ -24,3 +25,10 @@ export async function recordedCheckpoints(
   }
   return { context, replay, checkpoints };
 }
+
+export const runReversedEnumeration = (input: Manifest) =>
+  runBattle({
+    ...input,
+    participants: [...input.participants].reverse(),
+    revisions: [...input.revisions].reverse(),
+  });

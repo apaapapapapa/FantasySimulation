@@ -107,6 +107,7 @@ export function displayChanges(
         'phasing',
         'force',
         'reactions',
+        'revivals',
         'resources',
         'locomotion',
         'statuses',

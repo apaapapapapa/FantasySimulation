@@ -41,7 +41,9 @@ export type SpatialInterferenceMechanic =
   | 'barrier'
   | 'area'
   | 'beam'
-  | 'phasing';
+  | 'phasing'
+  | 'revival'
+  | 'seal';
 export type InterferenceMechanic = RecoveryInterferenceMechanic | 'projectile-deflection';
 const pairProjectile: Definition<'ability'>['attack'] = {
   kind: 'projectile',
@@ -104,6 +106,17 @@ export async function interferencePairManifest(
     const status = initialStatus({ categories: ['debuff'], durationSteps: 20 });
     let reaction: Partial<Definition<'ability'>> | undefined;
     switch (mechanic) {
+      case 'revival':
+        status.periodic = [{ kind: 'damage', amount: 100, element: 'fire', everySteps: 1000 }];
+        reaction = {
+          trigger: 'before-defeat',
+          effects: [],
+          reaction: { response: { kind: 'revive', health: { kind: 'fixed', amount: 40 } } },
+        };
+        break;
+      case 'seal':
+        status.seals = { abilityCategories: ['magic'] };
+        break;
       case 'phasing':
         status.phasing = { materials: ['generic', 'stone', 'energy'], floor: false };
         action.attack = {

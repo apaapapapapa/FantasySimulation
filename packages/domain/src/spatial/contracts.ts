@@ -165,7 +165,7 @@ export const ObservedPhaseSchema = z.enum(['idle', 'cast', 'active', 'recovery']
 export const ReactionPointSchema = z.enum(['before-hit', 'after-damage', 'before-defeat']);
 export const ObservedReactionSchema = z.strictObject({
   point: ReactionPointSchema,
-  response: z.enum(['parry', 'effects', 'counter', 'deflect']),
+  response: z.enum(['parry', 'effects', 'counter', 'deflect', 'revive']),
 });
 export type ObservedReaction = z.infer<typeof ObservedReactionSchema>;
 export const ObservedStageSchema = z.strictObject({
@@ -404,7 +404,22 @@ export const StatusReactionSchema = z.strictObject({
   damageTakenBps: uint(30000).optional(),
 });
 export type StatusReaction = z.infer<typeof StatusReactionSchema>;
+export const SealSchema = z
+  .strictObject({
+    abilityCategories: categoryList(AbilityCategorySchema).optional(),
+    statusCategories: categoryList(StatusCategorySchema).optional(),
+    statusIds: categoryList(IdSchema).optional(),
+  })
+  .refine(
+    (s) => !!(s.abilityCategories || s.statusCategories || s.statusIds),
+    'Seal requires a selector',
+  );
+export const RevivalHealthSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('fixed'), amount: positive(1_000_000) }),
+  z.strictObject({ kind: z.literal('max-hp'), bps: positive(10000) }),
+]);
 export const StatusSchema = z.strictObject({
+  seals: SealSchema.optional(),
   phasing: PhasingSchema.optional(),
   name: z.string().min(1).max(100),
   originalText: z.string().max(20_000),
@@ -568,6 +583,7 @@ export const ReactionSchema = z.strictObject({
     z.strictObject({ kind: z.literal('effects') }),
     z.strictObject({ kind: z.literal('counter') }),
     z.strictObject({ kind: z.literal('deflect'), powerBps: uint(30000).optional() }),
+    z.strictObject({ kind: z.literal('revive'), health: RevivalHealthSchema }),
   ]),
   categories: categoryList(AbilityCategorySchema).optional(),
   elements: categoryList(ElementSchema).optional(),
@@ -609,12 +625,25 @@ export const AbilitySchema = z
       !ability.effects.length &&
       response?.kind !== 'parry' &&
       response?.kind !== 'deflect' &&
+      response?.kind !== 'revive' &&
       !ability.relocation &&
       !ability.barrier
     )
       ctx.addIssue({
         code: 'custom',
         message: 'Only parry, deflect and spatial operations may omit payload effects',
+      });
+    if (
+      response?.kind === 'revive' &&
+      (ability.trigger !== 'before-defeat' ||
+        ability.costs.hp !== 0 ||
+        ability.costs.uses < 1 ||
+        ability.effects.some((e) => e.kind !== 'dispel'))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'Revival requires before-defeat, finite uses, no HP cost and only optional dispels',
       });
     if (reaction) {
       if (ability.castSteps !== 0 || ability.stages)

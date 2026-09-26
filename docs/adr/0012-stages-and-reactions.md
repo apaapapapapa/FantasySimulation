@@ -22,7 +22,7 @@ projectile deflection only: aim at the delayed observed attacker if visible; oth
 reverse the incoming direction;
 transfer ownership, preserve launch power/speed/gravity/lifetime, no homing, resume next
 interval. No explosion there/re-deflection; exclude melee/hitscan/explosions/periodic damage.
-[P6-02 recovery](../rules/spatial-v1.md) implements absorption/drain. Revival remains a future
+[P6-02 recovery](../rules/spatial-v1.md) implements absorption/drain. [P6-03 revival](../rules/reactions.md) is an explicit
 bounded reaction after healing/all waves, <=4/actor/match.
 Reaction caps/rollback apply. [ADR0016](0016-p6-foundation.md) defines the approved foundation.
 [ADR0017](0017-p6-spatial-mechanics.md) defines the accepted Group2 spatial contracts.

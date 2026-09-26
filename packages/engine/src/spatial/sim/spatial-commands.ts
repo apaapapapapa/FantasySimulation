@@ -22,7 +22,7 @@ import { blocksQuery } from '../geometry-types.ts';
 import { relocationDestination } from '../rules/relocation.ts';
 import { statusDamageSource } from '../rules/status-damage.ts';
 import { barrierObstacle, type SpatialObject } from '../rules/spatial-objects.ts';
-import { blockedBySilence } from '../rules/categories.ts';
+import { blockedBySilence, blockedBySeal } from '../rules/categories.ts';
 import { selfView } from '../ai/self-view.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 
@@ -39,7 +39,11 @@ export function spatialSourceAllowed(
   )
     return false;
   const view = selfView(actor, tx.step, tx.context.battle.rules.ai, tx.context.battle.statuses);
-  return !view.incapacitated && !(view.silenced && blockedBySilence(command.ability.definition));
+  return (
+    !view.incapacitated &&
+    !blockedBySeal(view, command.ability.definition) &&
+    !(view.silenced && blockedBySilence(command.ability.definition))
+  );
 }
 export function spatialBudgets(tx: StepTransaction, cause: string) {
   const objects = tx.next.objects ?? [],

@@ -1,3 +1,4 @@
+import { effectiveStatuses } from '@fantasy/domain/spatial/execution';
 import type { DecisionView, StatusCohort, Gait } from '../state.ts';
 export type { Gait } from '../state.ts';
 import type { DeepReadonly, Definition, ResourceState } from '@fantasy/domain/spatial/execution';
@@ -17,7 +18,7 @@ export function gaitProfile(character: DeepReadonly<Definition<'character'>>, ga
 }
 /** Competing flight grants offer alternatives; omitted cost is a free grant. */
 export function flightRate(statuses: readonly StatusCohort[], step: number): number {
-  const grants = statuses.filter(
+  const grants = effectiveStatuses(statuses, step).filter(
     (s) => s.startStep <= step && step < s.endStep && s.revision.definition.modifiers.flight,
   );
   return grants.length

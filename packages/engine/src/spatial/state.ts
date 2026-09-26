@@ -128,6 +128,7 @@ export type PerceptionMemory = DeepReadonly<{
   expired: string[];
   terrain: ObservedSurface[];
   statusChangedAt?: number;
+  revivals?: { targetId: string; sampledAt: number; availableAt: number; expiresAt: number }[];
   deflections?: { targetId: string; sampledAt: number; availableAt: number; expiresAt: number }[];
   threatHistory?: ThreatExperience[];
   search?: SearchMemory;
@@ -160,6 +161,7 @@ export type DecisionView = {
   speedBps: number;
   flightStaminaPerSecond: number;
   silenced: boolean;
+  sealedCategories?: readonly import('@fantasy/domain/spatial/execution').AbilityCategory[];
   incapacitated: boolean;
   ownStatuses: readonly StatusCohort[] | undefined;
   burnDamage: number | undefined;

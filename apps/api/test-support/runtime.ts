@@ -1,3 +1,4 @@
+import { runBattle } from '@fantasy/engine/spatial';
 import { JobStore } from '../src/jobs/job-store.ts';
 import { join } from 'node:path';
 import { catalogManifest } from '@fantasy/samples';
@@ -34,4 +35,22 @@ async function runtimeFixture(directory: string, options: RuntimeOptions, maxSte
   const spec = specInput(manifest);
   const runtime = await BattleService.open(store, root, options);
   return { directory, filename, root, store, manifest, spec, runtime, jobs: new JobStore(store) };
+}
+
+/** Exercise the same input directly and through a real Worker with immutable SQLite seeding. */
+export async function runPersistedBattle(
+  {
+    runtime,
+    store,
+    jobs,
+  }: Pick<Awaited<ReturnType<typeof runtimeFixture>>, 'runtime' | 'store' | 'jobs'>,
+  input: Manifest,
+  key: string,
+) {
+  await store.seedRevisions(input.revisions);
+  const prepared = await store.prepareSpec(specInput(input));
+  const direct = await runBattle(prepared.manifest);
+  const job = await runtime.submit(specInput(input), key, 'persist');
+  const done = await runtime.wait(job.id);
+  return { direct, done, saved: jobs.result(done.resultId!)! };
 }

@@ -1152,6 +1152,50 @@
     "p6-barrier-range-true": {
       "file": "packages/engine/src/spatial/spatial-objects.test.ts",
       "name": "bounds barrier placement by ability range with authored stages true"
+    },
+    "p6-revival-seal-pairs": {
+      "file": "packages/engine/src/spatial/revival-seal-interference.test.ts",
+      "name": "executes all 124 revival and seal ordered pairs with explicit restoration and suppression expectations"
+    },
+    "p6-revival-cap": {
+      "file": "packages/engine/src/spatial/revival.test.ts",
+      "name": "retains periodic states and stops at four revivals without truncating"
+    },
+    "p6-revival-final": {
+      "file": "packages/engine/src/spatial/revival.test.ts",
+      "name": "revives on the last interval and floors maximum-HP ratios once"
+    },
+    "p6-revival-corruption": {
+      "file": "packages/engine/src/spatial/revival.test.ts",
+      "name": "rejects forged revival HP, uses, activation and display counts during engine-free replay"
+    },
+    "p6-revival-rollback": {
+      "file": "packages/engine/src/spatial/revival-integration.test.ts",
+      "name": "rolls back both owners revival resources uses records and HP when reaction work is exhausted"
+    },
+    "p6-revival-observation": {
+      "file": "packages/engine/src/spatial/revival-integration.test.ts",
+      "name": "learns only delayed visible revival existence and assesses own finite restoration"
+    },
+    "p6-revival-seal-samples": {
+      "file": "packages/engine/src/spatial/revival-integration.test.ts",
+      "name": "runs new phoenix and seal samples without rewriting published characters"
+    },
+    "p6-seal-cohorts": {
+      "file": "packages/engine/src/spatial/sealing.test.ts",
+      "name": "suspends permanent modifiers flight pulses and elemental reactions without removing cohorts or pausing clocks"
+    },
+    "p6-revival-seal-display": {
+      "file": "apps/web/src/replay/revival-seal-display.test.ts",
+      "name": "shows recorded revival and sealing in the shared 3D model, 2D scene and resource table"
+    },
+    "p6-revival-worker": {
+      "file": "apps/api/src/jobs/revival-seal-persistence.test.ts",
+      "name": "persists revival and sealed reactions through Worker SQLite seek and rewind, sealed=false"
+    },
+    "p6-seal-worker": {
+      "file": "apps/api/src/jobs/revival-seal-persistence.test.ts",
+      "name": "persists revival and sealed reactions through Worker SQLite seek and rewind, sealed=true"
     }
   },
   "entries": [
@@ -1996,6 +2040,25 @@
         "p6-phase-support-pillar",
         "p6-player-phasing",
         "p6-prefixed-terrain"
+      ]
+    },
+    {
+      "id": "p6-revival-sealing",
+      "title": "P6-03/04: finite revival, temporary sealing, 124 pairs, observation and recorded persistence/display",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "p6-revival-seal-pairs",
+        "p6-revival-cap",
+        "p6-revival-final",
+        "p6-revival-corruption",
+        "p6-revival-rollback",
+        "p6-revival-observation",
+        "p6-revival-seal-samples",
+        "p6-seal-cohorts",
+        "p6-revival-seal-display",
+        "p6-revival-worker",
+        "p6-seal-worker"
       ]
     }
   ]
