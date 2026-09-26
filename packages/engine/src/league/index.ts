@@ -1,15 +1,16 @@
 import {
   CURRENT_ENGINE_VERSION,
   DEFAULT_BUDGET,
-  canonicalJson,
   compareIds,
-  contentHash,
-  parseJson,
   revisionHash,
   revisionIndex,
   revisionKey,
   requireRevision,
+  resolveClosure,
   LeagueDefinitionSchema,
+  canonicalJson,
+  contentHash,
+  parseJson,
   LeagueRevisionSchema,
   ManifestSchema,
   type LeagueDefinition,
@@ -43,15 +44,16 @@ export async function leagueTrialSeed(masterSeed: number, trial: number): Promis
   return Number.parseInt(hash.slice(7, 15), 16);
 }
 
-export async function normalizeLeagueDefinition(input: unknown): Promise<LeagueDefinition> {
+/** Structural validation only: historical pinned definitions are never executed here. */
+export async function normalizeStoredLeagueDefinition(input: unknown): Promise<LeagueDefinition> {
   const definition = parseJson(LeagueDefinitionSchema, input);
   const lookup = revisionIndex(definition.revisions);
   const rules = requireRevision(lookup, 'ruleset', definition.ruleset);
-  requireExecutableRules(rules.definition);
   // Reject even unused corrupt definitions before reducing to the pinned closure.
   for (const revision of definition.revisions)
     if (revision.contentHash !== (await revisionHash(revision)))
       throw new Error(`Invalid league revision content: ${revision.id}`);
+  resolveClosure(definition.revisions, lookup, 4096);
   definition.characters.sort((a, b) => compareIds(a.id, b.id));
   definition.battlefields.sort((a, b) => compareIds(a.scenario.id, b.scenario.id));
   for (const field of definition.battlefields)
@@ -72,6 +74,18 @@ export async function normalizeLeagueDefinition(input: unknown): Promise<LeagueD
   definition.budget = { ...DEFAULT_BUDGET, ...definition.budget };
   definition.retryBudget = { ...DEFAULT_BUDGET, ...definition.retryBudget };
   return definition;
+}
+
+export async function normalizeLeagueDefinition(input: unknown): Promise<LeagueDefinition> {
+  const definition = await normalizeStoredLeagueDefinition(input);
+  const rules = requireRevision(revisionIndex(definition.revisions), 'ruleset', definition.ruleset);
+  requireExecutableRules(rules.definition);
+  return definition;
+}
+
+/** Comparison metadata, never a simulation or result-cache identity. */
+export async function leagueDefinitionHash(input: unknown): Promise<string> {
+  return contentHash(await normalizeStoredLeagueDefinition(input));
 }
 
 export async function createLeagueRevision(
