@@ -85,7 +85,9 @@ export function summarizeLeagueMeasurements(inputs: unknown[]) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const directory = process.argv[2];
   if (!directory)
-    throw new Error('Usage: node --import tsx scripts/league-measurements.ts timing-directory');
+    throw new Error(
+      'Usage (from apps/cli): node --import tsx ../../scripts/league-measurements.ts timing-directory',
+    );
   const names = readdirSync(directory).filter((n) => /^measurement-[a-f0-9-]+\.json$/.test(n));
   if (names.length > 1000) throw new Error('Observation file limit');
   console.log(
