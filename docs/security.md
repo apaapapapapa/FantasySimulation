@@ -132,8 +132,8 @@ Remaining operational acceptance for Issue #8:
 1. Verify actual hosted Renovate activity. The owner already completed App
    authorization; do not ask for it again. A valid `renovate.json` or authorization
    confirmation does not prove bot execution. See [dependency updates](dependency-updates.md).
-2. Approve one suitable update from the bot's Dependency Dashboard. Confirm the real
-   bot PR has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
+2. Review a suitable update PR automatically created by Renovate. Confirm it
+   has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
    correct lockfile. Preserve manual review, including vulnerability updates.
    Run Linux verification and all security evidence; do not manufacture a
    bot-authored PR to claim acceptance. See the official
