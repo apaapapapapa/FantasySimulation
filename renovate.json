@@ -3,11 +3,11 @@
   "extends": ["config:best-practices"],
   "enabledManagers": ["npm", "github-actions", "nodenv", "custom.regex"],
   "timezone": "Asia/Tokyo",
-  "schedule": ["before 8am on monday"],
+  "schedule": ["at any time"],
   "prHourlyLimit": 2,
   "prConcurrentLimit": 3,
   "dependencyDashboard": true,
-  "dependencyDashboardApproval": true,
+  "dependencyDashboardApproval": false,
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
   "automerge": false,
@@ -21,7 +21,8 @@
   "lockFileMaintenance": {
     "enabled": true,
     "automerge": false,
-    "dependencyDashboardApproval": true
+    "dependencyDashboardApproval": false,
+    "schedule": ["* 0-3 * * 1"]
   },
   "packageRules": [
     {
@@ -42,7 +43,7 @@
       "groupSlug": "vite-plus-toolchain",
       "separateMajorMinor": false,
       "rangeStrategy": "pin",
-      "dependencyDashboardApproval": true,
+      "dependencyDashboardApproval": false,
       "automerge": false
     },
     {
@@ -50,14 +51,14 @@
       "matchPackageNames": ["node", "pnpm", "@types/node"],
       "groupName": "Node and pnpm toolchain",
       "groupSlug": "node-pnpm-toolchain",
-      "dependencyDashboardApproval": true,
+      "dependencyDashboardApproval": false,
       "automerge": false
     },
     {
       "description": "Future physics/WASM updates require identity and determinism evidence, even patches.",
       "matchPackageNames": ["@dimforge/rapier*", "/rapier/i"],
       "groupName": "Physics engine and WASM",
-      "dependencyDashboardApproval": true,
+      "dependencyDashboardApproval": false,
       "automerge": false
     },
     {

@@ -61,7 +61,16 @@ export function renovateOutcome(value: unknown): Outcome {
     object(config.lockFileMaintenance).automerge === false,
     'LOCKFILE_AUTOMERGE_FORBIDDEN',
   );
-  requireCondition(config.dependencyDashboardApproval === true, 'MANUAL_APPROVAL_REQUIRED');
+  requireCondition(config.dependencyDashboard === true, 'DEPENDENCY_DASHBOARD_REQUIRED');
+  requireCondition(
+    config.dependencyDashboardApproval === false,
+    'PR_CREATION_APPROVAL_MUST_BE_DISABLED',
+  );
+  const schedule = array(config.schedule);
+  requireCondition(
+    schedule.length === 1 && schedule[0] === 'at any time',
+    'NORMAL_UPDATE_SCHEDULE_MUST_BE_UNRESTRICTED',
+  );
   for (const value of array(config.packageRules)) {
     const rule = object(value);
     requireCondition(rule.automerge === false, 'RULE_AUTOMERGE_FORBIDDEN');
@@ -73,6 +82,9 @@ export function renovateOutcome(value: unknown): Outcome {
       for (const [key, entry] of Object.entries(value)) {
         if (key === 'automerge' || key === 'platformAutomerge') {
           requireCondition(entry === false, 'NESTED_AUTOMERGE_FORBIDDEN');
+        }
+        if (key === 'dependencyDashboardApproval') {
+          requireCondition(entry === false, 'NESTED_PR_CREATION_APPROVAL_FORBIDDEN');
         }
         inspect(entry);
       }

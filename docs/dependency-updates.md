@@ -1,35 +1,42 @@
 # Dependency updates (H4 / Issue #8)
 
-## Renovate configuration versus activation
+## Configuration and hosted activation
 
-`renovate.json` uses strict JSON for the formatter and policy parser. The regression
-test reads the real file and rejects duplicate bot configuration.
-The owner confirmed the hosted Renovate App authorization in
-[Issue #8](https://github.com/apaapapapapa/FantasySimulation/issues/8#issuecomment-5782312771).
-Do not request authorization again. Record actual bot activity, its trial update
-PR, extraction, lockfile and CI in #8. Maintainer updates and validator success
-do not establish bot operation.
+`renovate.json` is strict JSON. CI validates the actual file and rejects duplicate
+bots, automatic merging and PR-creation approval overrides. The owner confirmed
+[App authorization](https://github.com/apaapapapapa/FantasySimulation/issues/8#issuecomment-5782312771);
+do not request it again. Validator success or maintainer PRs do not establish bot activity.
 
-If no Dashboard or bot PR appears, inspect the repository's recent jobs in the
-[Mend Developer Portal](https://developer.mend.io/) using the official
-[troubleshooting guide](https://docs.renovatebot.com/troubleshooting/).
-Check errors and `dryRun=lookup`: hosted Silent mode suppresses Issues and PRs.
-The Monday schedule alone does not prove operation. Do not add another bot,
-fabricate bot activity or disable approval to work around missing activity.
+The owner's 2026-09-26 portal screenshot showed completed jobs in **Silent** mode.
+That suppresses Dashboard Issues and automatic PRs, even when jobs are DONE.
+Check this repository in the [Mend Developer Portal](https://developer.mend.io/)
+and select Interactive mode, then verify an actual Dashboard/PR and job log.
+[Hosted mode](https://docs.renovatebot.com/mend-hosted/hosted-apps-config/) is separate
+from repository scheduling; changing this file does not prove Silent was disabled.
+Do not add another bot or fabricate activation evidence.
 
-Normal updates require Dependency Dashboard approval and run before 08:00
-Monday in Asia/Tokyo, at most two PRs per hour and three concurrently.
-Vulnerability proposals can be raised immediately without dashboard approval,
-but all merges still require human review. Root, platform, vulnerability,
-lockfile and package-rule automatic merging are explicitly disabled.
-The local policy also rejects a nested automatic-merge override.
+## Automatic proposals, reviewed merges
 
-CI uses official validator `44.106.0` without write tokens, App secrets or repository
-credentials. It is not an update bot. Validator and Linux toolchain checks must
-pass `Dependency policy / dependency-policy-gate`; release also requires verification
-and security gates. The policy schedule does not control the hosted App's schedule.
+Per the owner's 2026-09-26 request and #8's no-automerge requirement, normal updates
+may be proposed at any time, without Dependency Dashboard approval. The Dashboard
+remains an overview, not a prerequisite to creating PRs. This includes Vite+, Node,
+pnpm and Rapier groups. Keep the existing two-PR/hour and three-concurrent-PR limits
+and `config:best-practices`; removing the weekly window does not bypass release-age
+safety checks or control when the hosted service actually runs.
 
-Run the regression tests and actual repository-pin check with the pinned Node:
+Standalone lockfile maintenance retains Renovate's weekly window, now explicit as
+Monday 00:00-04:00 Asia/Tokyo, without pre-approval. This does not restrict lockfile
+changes accompanying normal version-update PRs. Vulnerability proposals retain
+their unrestricted schedule and no pre-approval.
+
+All merges still require reviewed diffs and passing CI. Root, platform, vulnerability,
+lockfile and package-rule automerge remain false, including nested overrides.
+The main Ruleset and security/verification gates are unchanged. Creating a PR is
+not approval to merge it, even for minor, patch or vulnerability updates.
+
+CI runs official validator `44.106.0` and Linux toolchain policy without write tokens
+or App secrets. It is not the update bot; its workflow schedule is independent.
+With the pinned Node, run:
 
 ```sh
 vp run security:test
@@ -37,37 +44,26 @@ node scripts/security/toolchain.ts
 pnpm --package=renovate@44.106.0 dlx renovate-config-validator --strict renovate.json
 ```
 
-## Coupled Vite+ updates
+## Coupled toolchain and physics updates
 
-The group covers root `vite-plus`, Vite alias, peer override and Vitest; a custom
-manager covers `peerDependencyRules`. Review the upstream bundled versions and
-update these pins, lockfile and compatibility record together with source evidence.
-Never advance that record automatically through a regex. Vite+ v0.3.3 pins Vitest
-and `@vitest/*` to 4.1.11. Matching version strings do not validate installation.
-Linux frozen install, type checks, engine identity, tests, build and security
-checks must pass on the update's current SHA, following the current
-[CI contract](development/ci.md). Windows is no longer an acceptance requirement.
+Review Vite+, Vite alias, peer override, bundled Vitest, lockfile and compatibility
+record together. The existing group/custom manager remains; never automatically
+advance the reviewed compatibility record. Vite+ 0.3.3 pins Vitest and `@vitest/*`
+to 4.1.11. Node, pnpm and Node types remain a separate group with exact pins and
+a matching root engine range. After a pnpm pin change, refresh existing shims with
+`vp install --force --frozen-lockfile`.
 
-Node, pnpm and Node types form a separate review group. Pins stay exact;
-`.node-version` must satisfy the root engine range. Changed range syntax requires
-policy review. Linux installation must verify actual package-manager compatibility.
-After changing the pnpm pin, use `vp install --force --frozen-lockfile` to refresh
-existing bin shims and installed package-manager metadata.
-
-## Physics and WASM updates
-
-Even Rapier patch updates must show the physics version, exact WASM/build hash,
-engine identity and fixed-seed determinism/replay fixture diff.
-Run `engine:check` and review genuine behavior changes before deliberately
-regenerating an identity or fixture. Never automatically stamp away a mismatch.
-Keep such updates human-approved, even when tests or vulnerability checks pass.
+Even Rapier patches require physics version, exact WASM/build hash, engine identity
+and fixed-seed determinism/replay evidence before merging. Run `engine:check`;
+never regenerate identities or expected fixtures merely to pass. All update PRs
+need Linux frozen install, type checks, tests, build, security and applicable engine
+checks under the [CI contract](development/ci.md). Windows is not required.
 
 ## Remaining acceptance
 
-Main protection and H4 report/gate integration are complete; their current
-contracts and operational acceptance are in [security checks](security.md).
-Issue #8 retains actual bot/toolchain updates, an actual Rapier/WASM update and
-the first GitHub `schedule` executions. Keep unavailable update paths pending;
-do not downgrade dependencies or switch to a prerelease just to create evidence.
-Manual runs are not scheduled runs. Use the existing
-[Issue completion protocol](issue-completion.md) only after all remaining items pass.
+[Issue #8](https://github.com/apaapapapapa/FantasySimulation/issues/8) retains actual
+bot/toolchain updates, an actual Rapier/WASM update and first GitHub `schedule` runs.
+Do not downgrade or use prereleases merely to create evidence; manual runs are not
+scheduled runs. Use the [completion protocol](issue-completion.md) only after all
+remaining acceptance passes. Main protection and H4 report/gate integration are
+already recorded in [security checks](security.md).
