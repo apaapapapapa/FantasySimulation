@@ -272,6 +272,15 @@ it('allows follower support tangency and damages all tied barriers unless terrai
     shielded.free();
   }
 });
+it.each([false, true])(
+  'bounds barrier placement by ability range with authored stages %s',
+  (staged) => {
+    const ability = objectAbility('barrier');
+    if (!staged) delete ability.stages;
+    expect(AbilitySchema.parse(ability).rangeMm).toBe(8000);
+    expect(() => AbilitySchema.parse({ ...ability, rangeMm: 7999 })).toThrow(/Barrier placement/);
+  },
+);
 it('rejects unsupported object triggers, missing authored windows and impossible arm times', () => {
   expect(
     AbilitySchema.safeParse({ ...objectAbility('barrier'), trigger: 'battle-start' }).success,

@@ -19,6 +19,7 @@ export type SpatialQuery = {
 export type BlockSelector = 'none' | 'owner' | 'enemy' | 'both';
 export type Obstacle = {
   id: string;
+  arenaBoundary?: true;
   kind?: 'pillar' | 'sphere';
   order?: number;
   position: Vec3;
@@ -48,7 +49,7 @@ export function blocksQuery(
   const phase = query.phase;
   if (
     phase?.layer === layer &&
-    !obstacle.id.startsWith('boundary.') &&
+    !obstacle.arenaBoundary &&
     phase.materials.includes(obstacle.material ?? 'generic') &&
     (overlap ||
       phase.floor ||

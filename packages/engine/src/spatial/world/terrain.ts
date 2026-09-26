@@ -59,6 +59,7 @@ export function terrainObstacles(scenario: DeepReadonly<Definition<'scenario'>>)
     for (const sign of [-1, 1])
       obstacles.push({
         id: `boundary.${axis}.${sign === -1 ? 'min' : 'max'}`,
+        arenaBoundary: true,
         position: { ...center, [axis]: (sign === -1 ? min[axis] : max[axis]) + sign },
         halfExtents: { ...extents, [axis]: 1 },
         blocks: { movement: true, vision: true, attack: true },

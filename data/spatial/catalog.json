@@ -751,7 +751,7 @@
     "id": "phase-grant-v1",
     "revision": 1,
     "schemaVersion": 1,
-    "contentHash": "sha256:b5a20bfde8315e140e137976a2c9461777cf6150f79b4fe3f268dc485e933e01",
+    "contentHash": "sha256:456e8b0a5d7c851e3ff0cdd2d696182c04a39ea22c92c0724db17901c4bf5377",
     "definition": {
       "name": "幽相の旅人",
       "originalText": "P6-08。身体と攻撃の透過は別々の明示許可。",
@@ -781,7 +781,7 @@
           "status": {
             "id": "phase-stone-energy-v1",
             "revision": 1,
-            "contentHash": "sha256:fca7072653676f9b2910100219b8387fbe380799a6768456d07a0d793947b0fc"
+            "contentHash": "sha256:22bee84dff47845c2bee96aaa77168a857695dd70b951448186eba941cfb482a"
           }
         }
       ]
@@ -3152,7 +3152,7 @@
     "id": "phase-traveller-v1",
     "revision": 1,
     "schemaVersion": 1,
-    "contentHash": "sha256:117c2c1c972b61fce2da5c896097f13bd3cc429b7eb8dd666963a73d6e273356",
+    "contentHash": "sha256:3171a185f2d61013c8114fbb80b33086077584579507af3091c4d074851cafae",
     "definition": {
       "name": "幽相の旅人",
       "originalText": "P6-08用の新規定義。配布済みIDを保持。",
@@ -3209,7 +3209,7 @@
         {
           "id": "phase-grant-v1",
           "revision": 1,
-          "contentHash": "sha256:b5a20bfde8315e140e137976a2c9461777cf6150f79b4fe3f268dc485e933e01"
+          "contentHash": "sha256:456e8b0a5d7c851e3ff0cdd2d696182c04a39ea22c92c0724db17901c4bf5377"
         },
         {
           "id": "sword",
@@ -8831,7 +8831,7 @@
     "id": "phase-stone-energy-v1",
     "revision": 1,
     "schemaVersion": 1,
-    "contentHash": "sha256:fca7072653676f9b2910100219b8387fbe380799a6768456d07a0d793947b0fc",
+    "contentHash": "sha256:22bee84dff47845c2bee96aaa77168a857695dd70b951448186eba941cfb482a",
     "definition": {
       "phasing": {
         "materials": ["stone", "energy"],
@@ -8839,7 +8839,7 @@
       },
       "name": "石と結界の透過",
       "originalText": "身体のみ石・energyを通過する。支持する床面、身体同士、arena境界は残る。",
-      "stackKey": "phase-stone-energy-v1",
+      "stackKey": "phase-se",
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 100,

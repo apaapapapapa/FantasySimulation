@@ -23,7 +23,8 @@ import { HitLedger } from './rules/hit-ledger.ts';
 import { WorkMeter } from './sim/work-meter.ts';
 import { updateBodyPhasing, executedPhaseInterval } from './sim/phasing.ts';
 import { initialStatus } from '../../test-support/ai.ts';
-import { sealRevision } from './manifest-builder.ts';
+import { ManifestBuilder, sealRevision } from './manifest-builder.ts';
+import { createBattleWorld } from './world/terrain.ts';
 import { moveActors } from './world/movement.ts';
 import { sweepBlade } from './rules/blades.ts';
 import { straight } from './world/physics.ts';
@@ -42,7 +43,7 @@ it.each(['movement', 'attack'] as const)(
     const world = new SpatialWorld([
       stone(),
       { ...stone(), id: 'far-wood', material: 'wood', position: { x: 3, y: 1, z: 0 } },
-      { ...stone(), id: 'boundary.x.max', position: { x: 6, y: 1, z: 0 } },
+      { ...stone(), id: 'boundary.x.max', arenaBoundary: true, position: { x: 6, y: 1, z: 0 } },
     ]);
     const phase = { materials: ['stone' as const], floor: false, layer, minGroundY: 0.7 },
       query = world.forQuery({ phase });
@@ -106,6 +107,41 @@ it('does not add an exit retry after the match has already ended', async () => {
     run = await runBattle(input);
   expect(run.result.outcome).toEqual({ kind: 'draw', reason: 'time-limit' });
   await recordedCheckpoints(input, run);
+});
+it('phases authored boundary-prefixed terrain while retaining generated arena walls and exit protection', async () => {
+  const original = await phasingManifest(),
+    old = original.revisions.find((r) => r.kind === 'scenario')!;
+  const renamed = await sealRevision('scenario', 'prefixed-phase-arena', 1, {
+    ...old.definition,
+    obstacles: old.definition.obstacles.map((o) => ({ ...o, id: `boundary.${o.id}` })),
+  });
+  const input = await ManifestBuilder.relink(original, [{ from: old, to: renamed }]),
+    battle = await prepareBattle(input),
+    world = createBattleWorld(battle);
+  try {
+    for (const layer of ['movement', 'attack'] as const) {
+      const query = world.forQuery({
+        phase: { materials: ['stone', 'generic'], floor: true, layer, minGroundY: 0.7 },
+      });
+      expect(query.overlaps({ x: -3, y: 0.9, z: 0 }, ballShape(0.3), layer)).toBe(false);
+      expect(
+        query.raycast(
+          { x: 0, y: 0.9, z: 0 },
+          { x: battle.scenario.bounds.max.x / 1000 + 2, y: 0.9, z: 0 },
+          layer,
+        )?.obstacleId,
+      ).toBe('boundary.x.max');
+    }
+  } finally {
+    world.free();
+  }
+  const run = await runBattle(input);
+  expect(run.result.steps).toBe(58);
+  expect(run.result.outcome).toMatchObject({ kind: 'truncated', resource: 'phase-exit-steps' });
+  const saved = await recordedCheckpoints(input, run);
+  expect(saved.checkpoints.at(-1)!.state!.actors.map((a) => a.phasing?.extendedIntervals)).toEqual([
+    50, 50,
+  ]);
 });
 it('retains the counter across regrant and sealing and resets only at full solid clearance', async () => {
   const battle = await prepareBattle(await phasingManifest()),

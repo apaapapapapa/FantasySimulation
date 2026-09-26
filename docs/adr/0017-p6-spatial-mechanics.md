@@ -114,7 +114,7 @@ none|owner|enemy|both; at least one blocks. Material is energy. For attack queri
 by current attack owner (including deflected projectiles), not original power snapshot.
 Vision selectors use observer; movement selectors use mover. All shapes are solid volumes.
 
-Placement anchors use the teleport targeting vocabulary and range/visibility rules. No
+Barrier placement.maxDistanceMm<=ability.rangeMm; anchors use teleport targeting/visibility rules. No
 terrain/active-barrier penetration; no overlap with any actor it movement-blocks. A vision-
 or attack-only barrier may contain a body, but inside-origin occlusion applies, including
 muzzle checks; a barrier never supplies an escape exception. Proposed overlapping barrier

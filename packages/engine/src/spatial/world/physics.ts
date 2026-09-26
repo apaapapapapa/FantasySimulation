@@ -303,7 +303,7 @@ export class SpatialWorld {
   private floorSlope(obstacle: Obstacle, layer: Layer) {
     const p = this.query.phase;
     return p?.layer === layer &&
-      !obstacle.id.startsWith('boundary.') &&
+      !obstacle.arenaBoundary &&
       p.materials.includes(obstacle.material ?? 'generic') &&
       !p.floor &&
       !p.floorMaterials?.includes(obstacle.material ?? 'generic') &&

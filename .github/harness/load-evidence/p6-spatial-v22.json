@@ -1,0 +1,3243 @@
+{
+  "schemaVersion": 1,
+  "collector": ["vp", "run", "harness", "load", "e7d6d20a07c40aa916200d8225a7e256591e4f4b"],
+  "observed": {
+    "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "candidateSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "baselineSha": "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+    "testMergeSha": null,
+    "sourceState": "clean",
+    "runnerId": "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+    "profile": {
+      "schemaVersion": 1,
+      "id": "spatial-fixed-v1",
+      "warmups": 1,
+      "samples": 5,
+      "limits": {
+        "sample-symmetric-melee": {
+          "steps": 200,
+          "casts": 2200,
+          "candidates": 16,
+          "pathNodes": 0,
+          "events": 150,
+          "logBytes": 300000,
+          "trajectoryBytes": 500000
+        },
+        "catalog-swordsman-sky-mage-pillars": {
+          "steps": 6000,
+          "casts": 55000,
+          "candidates": 200,
+          "pathNodes": 700,
+          "events": 3200,
+          "logBytes": 11000000,
+          "trajectoryBytes": 17000000
+        },
+        "catalog-fire-mage-healer-flat": {
+          "steps": 850,
+          "casts": 16500,
+          "candidates": 350,
+          "pathNodes": 0,
+          "events": 700,
+          "logBytes": 1800000,
+          "trajectoryBytes": 2700000
+        },
+        "catalog-archer-guardian-flat": {
+          "steps": 900,
+          "casts": 18000,
+          "candidates": 275,
+          "pathNodes": 0,
+          "events": 600,
+          "logBytes": 1700000,
+          "trajectoryBytes": 2800000
+        },
+        "catalog-storm-mage-ice-mage-flat": {
+          "steps": 150,
+          "casts": 2400,
+          "candidates": 12,
+          "pathNodes": 0,
+          "events": 120,
+          "logBytes": 275000,
+          "trajectoryBytes": 500000
+        },
+        "catalog-lancer-swordsman-pillars": {
+          "steps": 6000,
+          "casts": 48000,
+          "candidates": 0,
+          "pathNodes": 0,
+          "events": 3100,
+          "logBytes": 9000000,
+          "trajectoryBytes": 16500000
+        },
+        "observed-ai-seer-ember": {
+          "steps": 250,
+          "casts": 6000,
+          "candidates": 600,
+          "pathNodes": 0,
+          "events": 300,
+          "logBytes": 900000,
+          "trajectoryBytes": 1500000
+        }
+      }
+    },
+    "previousProfile": {
+      "schemaVersion": 1,
+      "id": "spatial-fixed-v1",
+      "warmups": 1,
+      "samples": 5,
+      "limits": {
+        "sample-symmetric-melee": {
+          "steps": 200,
+          "casts": 2200,
+          "candidates": 16,
+          "pathNodes": 0,
+          "events": 150,
+          "logBytes": 300000,
+          "trajectoryBytes": 500000
+        },
+        "catalog-swordsman-sky-mage-pillars": {
+          "steps": 6000,
+          "casts": 55000,
+          "candidates": 200,
+          "pathNodes": 700,
+          "events": 3200,
+          "logBytes": 11000000,
+          "trajectoryBytes": 17000000
+        },
+        "catalog-fire-mage-healer-flat": {
+          "steps": 850,
+          "casts": 16500,
+          "candidates": 350,
+          "pathNodes": 0,
+          "events": 700,
+          "logBytes": 1800000,
+          "trajectoryBytes": 2700000
+        },
+        "catalog-archer-guardian-flat": {
+          "steps": 900,
+          "casts": 18000,
+          "candidates": 275,
+          "pathNodes": 0,
+          "events": 600,
+          "logBytes": 1700000,
+          "trajectoryBytes": 2800000
+        },
+        "catalog-storm-mage-ice-mage-flat": {
+          "steps": 150,
+          "casts": 2400,
+          "candidates": 12,
+          "pathNodes": 0,
+          "events": 120,
+          "logBytes": 275000,
+          "trajectoryBytes": 500000
+        },
+        "catalog-lancer-swordsman-pillars": {
+          "steps": 6000,
+          "casts": 48000,
+          "candidates": 0,
+          "pathNodes": 0,
+          "events": 3100,
+          "logBytes": 9000000,
+          "trajectoryBytes": 16500000
+        },
+        "observed-ai-seer-ember": {
+          "steps": 250,
+          "casts": 6000,
+          "candidates": 600,
+          "pathNodes": 0,
+          "events": 300,
+          "logBytes": 900000,
+          "trajectoryBytes": 1500000
+        }
+      }
+    },
+    "before": {
+      "schemaVersion": 1,
+      "sourceState": "clean",
+      "runnerId": "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+      "sourceSha": "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+      "driverSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+      "driverHash": "b0fad8ce89c17293b00060ab23489ad58aba322014d8a99bb36a409cf6530838",
+      "corpusHash": "13a0b0e158ea2121430a534713be918eb9ff2734689f7211978e9df85952d3ec",
+      "fixtureHash": "b586c734b0e8f37b326d3e4caaa499fe9ed5cfdcd695d3714ce3829f75015642",
+      "profileHash": "4cb5180b941352a70134f03abebb0d8f8c468c246bfca74c2696f7f1d1a7c508",
+      "engine": {
+        "digest": "sha256:f57c23160950fe32400feb92d24416851068642648c1f3896da956193a95ecfc",
+        "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+        "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+        "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+      },
+      "toolchain": {
+        "node": "v24.19.0",
+        "packageManager": "pnpm@11.27.1",
+        "lockHash": "2740dab4e175d7334a94b2b7eff1bb5cfe7950eb255c27811f64d87412e9ba5c",
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "cores": 8
+      },
+      "samples": [
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:133c1c8ca36fa260f7b4eab19a19f5ac9cbda642a95f6c770d026f86d13e314a",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 156.350816,
+          "cpuMicros": 202272,
+          "peakRssBytes": 163905536,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:10f27a8f2361bbb0afe394e6a86b15ce40321fcef3167cd1eb9ba7f87ad0966e",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 606.3121080000001,
+          "cpuMicros": 704724,
+          "peakRssBytes": 205373440,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:36f4760fb0440043a28d74d39da01f7cf73b262aa5f541678f4b3910c5f107da",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 1016.1530569999995,
+          "cpuMicros": 1082074,
+          "peakRssBytes": 224006144,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:93fdea58ca80d376bfb97ea5538952e7a690346e7f5c00939776fd03671724ab",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 620.2178719999993,
+          "cpuMicros": 726247,
+          "peakRssBytes": 306864128,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:665fd787cd23200a3e3cbd5e26d6a7071fc987f4250fe84ec68dceafd1cb1a73",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 97.49501499999951,
+          "cpuMicros": 102970,
+          "peakRssBytes": 306864128,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:dc24f33f686ed97447429ab7e6427b35315dca6e74dbbb271916740aab83c5e7",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 3234.6506839999984,
+          "cpuMicros": 3668963,
+          "peakRssBytes": 372449280,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:2fee298d3b61a7546ed31c0110fc9e5369061ad07440d54641694b29a18fce6d",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 217.56818399999975,
+          "cpuMicros": 239617,
+          "peakRssBytes": 372449280,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:133c1c8ca36fa260f7b4eab19a19f5ac9cbda642a95f6c770d026f86d13e314a",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 104.69975199999999,
+          "cpuMicros": 146369,
+          "peakRssBytes": 163524608,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:10f27a8f2361bbb0afe394e6a86b15ce40321fcef3167cd1eb9ba7f87ad0966e",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 350.509869,
+          "cpuMicros": 441586,
+          "peakRssBytes": 196747264,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:36f4760fb0440043a28d74d39da01f7cf73b262aa5f541678f4b3910c5f107da",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 623.4856319999999,
+          "cpuMicros": 653487,
+          "peakRssBytes": 216657920,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:93fdea58ca80d376bfb97ea5538952e7a690346e7f5c00939776fd03671724ab",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 518.1268570000002,
+          "cpuMicros": 552437,
+          "peakRssBytes": 299560960,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:665fd787cd23200a3e3cbd5e26d6a7071fc987f4250fe84ec68dceafd1cb1a73",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 78.01344100000006,
+          "cpuMicros": 82801,
+          "peakRssBytes": 300474368,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:dc24f33f686ed97447429ab7e6427b35315dca6e74dbbb271916740aab83c5e7",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 2192.715208999999,
+          "cpuMicros": 2662346,
+          "peakRssBytes": 379858944,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:2fee298d3b61a7546ed31c0110fc9e5369061ad07440d54641694b29a18fce6d",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 135.825605,
+          "cpuMicros": 153112,
+          "peakRssBytes": 379858944,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:133c1c8ca36fa260f7b4eab19a19f5ac9cbda642a95f6c770d026f86d13e314a",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 150.93577800000003,
+          "cpuMicros": 187890,
+          "peakRssBytes": 163315712,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:10f27a8f2361bbb0afe394e6a86b15ce40321fcef3167cd1eb9ba7f87ad0966e",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 442.9259119999999,
+          "cpuMicros": 541630,
+          "peakRssBytes": 195092480,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:36f4760fb0440043a28d74d39da01f7cf73b262aa5f541678f4b3910c5f107da",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 659.0678039999998,
+          "cpuMicros": 749121,
+          "peakRssBytes": 213753856,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:93fdea58ca80d376bfb97ea5538952e7a690346e7f5c00939776fd03671724ab",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 627.5446650000004,
+          "cpuMicros": 762477,
+          "peakRssBytes": 296431616,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:665fd787cd23200a3e3cbd5e26d6a7071fc987f4250fe84ec68dceafd1cb1a73",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 88.6575640000001,
+          "cpuMicros": 95049,
+          "peakRssBytes": 296431616,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:dc24f33f686ed97447429ab7e6427b35315dca6e74dbbb271916740aab83c5e7",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 3361.1519960000005,
+          "cpuMicros": 3950876,
+          "peakRssBytes": 377335808,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:2fee298d3b61a7546ed31c0110fc9e5369061ad07440d54641694b29a18fce6d",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 138.82056600000033,
+          "cpuMicros": 155312,
+          "peakRssBytes": 377335808,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:133c1c8ca36fa260f7b4eab19a19f5ac9cbda642a95f6c770d026f86d13e314a",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 113.91635899999983,
+          "cpuMicros": 155047,
+          "peakRssBytes": 157855744,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:10f27a8f2361bbb0afe394e6a86b15ce40321fcef3167cd1eb9ba7f87ad0966e",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 818.8730959999998,
+          "cpuMicros": 886587,
+          "peakRssBytes": 192552960,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:36f4760fb0440043a28d74d39da01f7cf73b262aa5f541678f4b3910c5f107da",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 660.8054490000004,
+          "cpuMicros": 762923,
+          "peakRssBytes": 216178688,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:93fdea58ca80d376bfb97ea5538952e7a690346e7f5c00939776fd03671724ab",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 532.3046990000003,
+          "cpuMicros": 587354,
+          "peakRssBytes": 258088960,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:665fd787cd23200a3e3cbd5e26d6a7071fc987f4250fe84ec68dceafd1cb1a73",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 84.7238870000001,
+          "cpuMicros": 88755,
+          "peakRssBytes": 289546240,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:dc24f33f686ed97447429ab7e6427b35315dca6e74dbbb271916740aab83c5e7",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 2257.2789030000004,
+          "cpuMicros": 2840265,
+          "peakRssBytes": 398495744,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:2fee298d3b61a7546ed31c0110fc9e5369061ad07440d54641694b29a18fce6d",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 226.86821600000076,
+          "cpuMicros": 239772,
+          "peakRssBytes": 398495744,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:133c1c8ca36fa260f7b4eab19a19f5ac9cbda642a95f6c770d026f86d13e314a",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 147.19387300000005,
+          "cpuMicros": 198429,
+          "peakRssBytes": 162422784,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:10f27a8f2361bbb0afe394e6a86b15ce40321fcef3167cd1eb9ba7f87ad0966e",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 384.08475,
+          "cpuMicros": 541659,
+          "peakRssBytes": 205733888,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:36f4760fb0440043a28d74d39da01f7cf73b262aa5f541678f4b3910c5f107da",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 569.2155539999999,
+          "cpuMicros": 642132,
+          "peakRssBytes": 223907840,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:93fdea58ca80d376bfb97ea5538952e7a690346e7f5c00939776fd03671724ab",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 472.58314999999993,
+          "cpuMicros": 530113,
+          "peakRssBytes": 299933696,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:665fd787cd23200a3e3cbd5e26d6a7071fc987f4250fe84ec68dceafd1cb1a73",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 78.58462500000041,
+          "cpuMicros": 82871,
+          "peakRssBytes": 299933696,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:dc24f33f686ed97447429ab7e6427b35315dca6e74dbbb271916740aab83c5e7",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 2079.008685999999,
+          "cpuMicros": 2547092,
+          "peakRssBytes": 359829504,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:2fee298d3b61a7546ed31c0110fc9e5369061ad07440d54641694b29a18fce6d",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 139.0576170000004,
+          "cpuMicros": 160694,
+          "peakRssBytes": 359829504,
+          "memoryReason": null
+        }
+      ]
+    },
+    "after": {
+      "schemaVersion": 1,
+      "sourceState": "clean",
+      "runnerId": "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+      "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+      "driverSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+      "driverHash": "b0fad8ce89c17293b00060ab23489ad58aba322014d8a99bb36a409cf6530838",
+      "corpusHash": "f83b77ab0687a25cba3cb01ff936c60e046f1fd4e3dafdfbed402b94fe2dad2d",
+      "fixtureHash": "b3f8a38e60a4c4cca6fc9b750cc657233b22bc11b6f6234301361ab30fb4220b",
+      "profileHash": "4cb5180b941352a70134f03abebb0d8f8c468c246bfca74c2696f7f1d1a7c508",
+      "engine": {
+        "digest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+        "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+        "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+        "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+      },
+      "toolchain": {
+        "node": "v24.19.0",
+        "packageManager": "pnpm@11.27.1",
+        "lockHash": "2740dab4e175d7334a94b2b7eff1bb5cfe7950eb255c27811f64d87412e9ba5c",
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "cores": 8
+      },
+      "samples": [
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 120.28191200000003,
+          "cpuMicros": 165537,
+          "peakRssBytes": 166879232,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 405.67992900000013,
+          "cpuMicros": 502321,
+          "peakRssBytes": 195727360,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 692.8135729999999,
+          "cpuMicros": 772347,
+          "peakRssBytes": 216838144,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 633.5495559999999,
+          "cpuMicros": 784571,
+          "peakRssBytes": 306413568,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 108.72510000000057,
+          "cpuMicros": 118647,
+          "peakRssBytes": 306413568,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 3323.914133,
+          "cpuMicros": 3791703,
+          "peakRssBytes": 362778624,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 164.65037499999926,
+          "cpuMicros": 183465,
+          "peakRssBytes": 362778624,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 136.41256099999998,
+          "cpuMicros": 181709,
+          "peakRssBytes": 164536320,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 452.50245700000005,
+          "cpuMicros": 543467,
+          "peakRssBytes": 197758976,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 982.6999600000004,
+          "cpuMicros": 1047473,
+          "peakRssBytes": 214835200,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 849.1079399999999,
+          "cpuMicros": 891652,
+          "peakRssBytes": 299683840,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 92.10786900000039,
+          "cpuMicros": 98589,
+          "peakRssBytes": 300417024,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 4986.633476000001,
+          "cpuMicros": 5591468,
+          "peakRssBytes": 372727808,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 255.44840599999952,
+          "cpuMicros": 274010,
+          "peakRssBytes": 372727808,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 298.148463,
+          "cpuMicros": 345440,
+          "peakRssBytes": 165969920,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 628.678703,
+          "cpuMicros": 723787,
+          "peakRssBytes": 195420160,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 1171.8515619999998,
+          "cpuMicros": 1240275,
+          "peakRssBytes": 216363008,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 954.4676939999999,
+          "cpuMicros": 1079885,
+          "peakRssBytes": 291889152,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 186.28545399999985,
+          "cpuMicros": 193806,
+          "peakRssBytes": 291889152,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 4213.578355999998,
+          "cpuMicros": 4662017,
+          "peakRssBytes": 361824256,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 252.466295000002,
+          "cpuMicros": 263653,
+          "peakRssBytes": 361824256,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 112.18995900000004,
+          "cpuMicros": 149718,
+          "peakRssBytes": 164405248,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 369.48044200000004,
+          "cpuMicros": 450934,
+          "peakRssBytes": 195620864,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 614.6560100000002,
+          "cpuMicros": 685119,
+          "peakRssBytes": 217640960,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 549.6558669999995,
+          "cpuMicros": 590309,
+          "peakRssBytes": 301293568,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 80.65607100000034,
+          "cpuMicros": 87575,
+          "peakRssBytes": 302383104,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 2456.025276000001,
+          "cpuMicros": 2968277,
+          "peakRssBytes": 383549440,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 148.16775299999972,
+          "cpuMicros": 163016,
+          "peakRssBytes": 383549440,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 175.81244100000004,
+          "cpuMicros": 233692,
+          "peakRssBytes": 164544512,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 583.6997840000001,
+          "cpuMicros": 671401,
+          "peakRssBytes": 196145152,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 591.2562619999999,
+          "cpuMicros": 675558,
+          "peakRssBytes": 217448448,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 606.5957440000002,
+          "cpuMicros": 648669,
+          "peakRssBytes": 301371392,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 418.3723089999994,
+          "cpuMicros": 421701,
+          "peakRssBytes": 302145536,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 2145.0211870000003,
+          "cpuMicros": 2569332,
+          "peakRssBytes": 401997824,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 145.4285600000003,
+          "cpuMicros": 159807,
+          "peakRssBytes": 401997824,
+          "memoryReason": null
+        }
+      ]
+    }
+  },
+  "commands": {
+    "runnerId": "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+    "commands": [
+      {
+        "command": [
+          "/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin/node",
+          "scripts/engine-identity.ts"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "engine-check-after.log"
+      },
+      {
+        "command": [
+          "git",
+          "worktree",
+          "add",
+          "--detach",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+          "e7d6d20a07c40aa916200d8225a7e256591e4f4b"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "checkout.log"
+      },
+      {
+        "command": [
+          "vp",
+          "install",
+          "--frozen-lockfile",
+          "--",
+          "--store-dir",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/pm-store"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "install.log"
+      },
+      {
+        "command": ["vp", "exec", "node", "scripts/engine-identity.ts"],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "engine-check-before.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/regression-probe.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+          "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/regression-before.json"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": ""
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/regression-probe.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+          "70401399d2a1f627bec5e0998f033b597e077a80",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/regression-after.json"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": ""
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+          "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/0-before.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "0-before.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+          "70401399d2a1f627bec5e0998f033b597e077a80",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/packages/engine/fixtures/spatial/corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.github/harness/load-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/0-after.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "0-after.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+          "70401399d2a1f627bec5e0998f033b597e077a80",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/packages/engine/fixtures/spatial/corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.github/harness/load-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/1-after.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "1-after.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+          "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/1-before.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "1-before.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+          "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/2-before.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "2-before.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+          "70401399d2a1f627bec5e0998f033b597e077a80",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/packages/engine/fixtures/spatial/corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.github/harness/load-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/2-after.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "2-after.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+          "70401399d2a1f627bec5e0998f033b597e077a80",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/packages/engine/fixtures/spatial/corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.github/harness/load-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/3-after.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "3-after.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+          "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/3-before.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "3-before.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+          "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/4-before.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/baseline",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "4-before.log"
+      },
+      {
+        "command": [
+          "vp",
+          "exec",
+          "node",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/scripts/harness/load-capture.ts",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+          "70401399d2a1f627bec5e0998f033b597e077a80",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/packages/engine/fixtures/spatial/corpus.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.github/harness/load-profile.json",
+          "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe/.generated/harness/load-pair/4-after.json",
+          "1",
+          "250d366d-52b8-429d-86e5-e4e48bbeecd0",
+          "evidence"
+        ],
+        "cwd": "/workspace/scratch/fec297950260/FantasySimulation/.generated/p6-transition-probe",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "output": "4-after.log"
+      }
+    ],
+    "errors": [],
+    "shard": null,
+    "runId": null,
+    "runAttempt": null
+  },
+  "report": {
+    "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "candidateSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "baselineSha": "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+    "testMergeSha": null,
+    "schemaVersion": 1,
+    "producer": "load-runner",
+    "startedAt": "2026-09-26T18:56:22.303Z",
+    "finishedAt": "2026-09-26T18:58:54.325Z",
+    "checks": [
+      {
+        "id": "load:regression",
+        "required": true,
+        "status": "pass",
+        "reason": "Both revisions retain the regression fix; no fresh reproduction claimed",
+        "evidence": [
+          {
+            "uri": ".generated/harness/load-pair/regression-before.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/load-pair/regression-after.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "load:budget:before",
+        "required": true,
+        "status": "pass",
+        "reason": "All fixed profiles completed within deterministic count/byte ceilings",
+        "evidence": [
+          {
+            "uri": ".generated/harness/load-pair/results.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "load:budget:after",
+        "required": true,
+        "status": "pass",
+        "reason": "All fixed profiles completed within deterministic count/byte ceilings",
+        "evidence": [
+          {
+            "uri": ".generated/harness/load-pair/results.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "load:comparison",
+        "required": true,
+        "status": "unknown",
+        "reason": "Unreviewed profile or cost change",
+        "evidence": [
+          {
+            "uri": ".generated/harness/load-pair/results.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "load:collection",
+        "required": true,
+        "status": "pass",
+        "reason": "Completed bounded commands on the same runner with alternating pairs and warmups",
+        "evidence": [
+          {
+            "uri": ".generated/harness/load-pair/commands.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      }
+    ]
+  },
+  "regressionBefore": {
+    "id": "missing-corpus-entries",
+    "sourceSha": "e7d6d20a07c40aa916200d8225a7e256591e4f4b",
+    "driverSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "driverHash": "7ead93e58181b356adb35f966a98f089e912dc01d37341a06dfa034e210a6a60",
+    "status": "passed",
+    "assertion": "Missing corpus entries must not pass identity or repetition",
+    "message": ""
+  },
+  "regressionAfter": {
+    "id": "missing-corpus-entries",
+    "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "driverSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "driverHash": "7ead93e58181b356adb35f966a98f089e912dc01d37341a06dfa034e210a6a60",
+    "status": "passed",
+    "assertion": "Missing corpus entries must not pass identity or repetition",
+    "message": ""
+  },
+  "boundary": {
+    "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "candidateSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "baselineSha": null,
+    "testMergeSha": null,
+    "schemaVersion": 1,
+    "producer": "corpus-runner",
+    "startedAt": "2026-09-26T18:41:38.620Z",
+    "finishedAt": "2026-09-26T18:43:53.113Z",
+    "checks": [
+      {
+        "id": "corpus:definition",
+        "required": true,
+        "status": "pass",
+        "reason": "7 fixed inputs, 282 required tests and 35 coverage categories",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "corpus:engine-identity",
+        "required": true,
+        "status": "pass",
+        "reason": "Existing engine:check (node scripts/engine-identity.ts) exit=0; bounded=false",
+        "evidence": [
+          {
+            "uri": ".generated/harness/corpus/engine-check.log",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "corpus:identity",
+        "required": true,
+        "status": "pass",
+        "reason": "7 fixed inputs match their pinned manifest identity and engine contract",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/results.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "corpus:repeat",
+        "required": true,
+        "status": "pass",
+        "reason": "7 fixed inputs reproduced identical result, event, trajectory, TS state and physics digests twice",
+        "evidence": [
+          {
+            "uri": ".generated/harness/corpus/results.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "corpus:tests",
+        "required": true,
+        "status": "pass",
+        "reason": "282 required existing tests passed",
+        "evidence": [
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/tests.log",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:repeatability",
+        "required": true,
+        "status": "pass",
+        "reason": "同一入力の反復でresult/event/state/物理digestが一致: 3/3 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:fixed-digests",
+        "required": true,
+        "status": "pass",
+        "reason": "固定入力の期待digest: 5/5 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:enumeration-order",
+        "required": true,
+        "status": "pass",
+        "reason": "意味を持たない列挙順を変えても判定が不変: 7/7 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:ordered-arrays",
+        "required": true,
+        "status": "pass",
+        "reason": "意味を持つ配列順の保持: 3/3 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:simultaneous-defeat",
+        "required": true,
+        "status": "pass",
+        "reason": "同時致死: 4/4 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:body-contact",
+        "required": true,
+        "status": "pass",
+        "reason": "同時移動と身体接触: 2/2 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:occlusion",
+        "required": true,
+        "status": "pass",
+        "reason": "遮蔽: 7/7 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:thin-wall",
+        "required": true,
+        "status": "pass",
+        "reason": "薄い壁: 3/3 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:high-speed",
+        "required": true,
+        "status": "pass",
+        "reason": "高速移動と動く対象との連続衝突: 5/5 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:observation",
+        "required": true,
+        "status": "pass",
+        "reason": "観測制約: 6/6 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:outcome-kinds",
+        "required": true,
+        "status": "pass",
+        "reason": "win/draw/unresolved/truncatedの区別とゲーム内時間切れ: 6/6 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:budget-retry",
+        "required": true,
+        "status": "pass",
+        "reason": "予算増加での再試行（打切りと完走を決定性違反にしない）: 3/3 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:numeric-profile",
+        "required": true,
+        "status": "pass",
+        "reason": "数値encodingと固定三角関数: 2/2 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:corpus-artifacts",
+        "required": true,
+        "status": "pass",
+        "reason": "Linuxの固定入力・反復出力digestのartifactを検証: 1/1 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:fairness-exchange",
+        "required": true,
+        "status": "pass",
+        "reason": "主体・位置・向き・乱数対応を明示した左右交換の公平性: 1/1 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:worker-order",
+        "required": true,
+        "status": "pass",
+        "reason": "Worker数・投入順を変えたdigest比較: 1/1 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:job-outcomes",
+        "required": true,
+        "status": "pass",
+        "reason": "job failed/cancelledとホストtimeoutを勝敗・drawへ変換しない: 3/3 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:load-budget",
+        "required": true,
+        "status": "pass",
+        "reason": "計算量・ログ容量の計測と上限、同一runnerでのpaired比較: 7/7 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:baseline-regression",
+        "required": true,
+        "status": "pass",
+        "reason": "固定baseline/candidate SHAの比較と回帰証跡: 1/1 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:observed-ai",
+        "required": true,
+        "status": "pass",
+        "reason": "観測非干渉・確率分布・知識取得・実際の回避: 4/4 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:bounded-properties",
+        "required": true,
+        "status": "pass",
+        "reason": "固定seedと縮小証跡を持つ境界・状態遷移property: 4/4 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:generalized-status",
+        "required": true,
+        "status": "pass",
+        "reason": "状態反応・補正・常時効果・期限・非公開状態と観測遅延・保存参照: 20/20 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:locomotion-resources",
+        "required": true,
+        "status": "pass",
+        "reason": "歩走・残枠共有・枯渇・経路・保存互換: 6/6 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:generalized-ai",
+        "required": true,
+        "status": "pass",
+        "reason": "G-05 外観データ・観測条件・状態効用・確率・保存: 13/13 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:simultaneous-slots",
+        "required": true,
+        "status": "pass",
+        "reason": "同じ観測からの技と回避・共有資源・保存: 7/7 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:staged-actions",
+        "required": true,
+        "status": "pass",
+        "reason": "段階攻撃・段ごとの資源・中断・共有命中・保存: 25/25 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:shape-motion-forces",
+        "required": true,
+        "status": "pass",
+        "reason": "G-07b: 回転刃・段階移動・強制移動・費用・保存: 27/27 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:reactive-activations",
+        "required": true,
+        "status": "pass",
+        "reason": "G-08: 反応点・受け流し・反撃・上限・原子性・観測・保存: 34/34 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:tactical-ai",
+        "required": true,
+        "status": "pass",
+        "reason": "Issue #45: 相対手応え・再付与・索敵・姿勢・遮蔽・保存: 20/20 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:p6-foundation",
+        "required": true,
+        "status": "pass",
+        "reason": "P6-00: ordered interference, causal rollback, bounded diagnostics and experimental admission: 19/19 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:p6-deflection",
+        "required": true,
+        "status": "pass",
+        "reason": "P6-01: contact replacement, delayed observation and saved ownership: 10/10 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:p6-recovery",
+        "required": true,
+        "status": "pass",
+        "reason": "P6-02吸収・ドレイン: 同時解決、有理数配分、92干渉、観測、鏡映サンプル、Worker/SQLite/Replay表示: 7/7 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:p6-teleport",
+        "required": true,
+        "status": "pass",
+        "reason": "P6-06: whole-body boundary relocation, frozen anchors, atomic world and replay: 7/7 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:p6-spatial-objects",
+        "required": true,
+        "status": "pass",
+        "reason": "P6-07: shared object lifetime, barriers, areas, beams and recorded replay: 12/12 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      },
+      {
+        "id": "coverage:p6-phasing",
+        "required": true,
+        "status": "pass",
+        "reason": "P6-08: material masks, preserved floors and bounded solid exit: 7/7 mapped existing tests passed",
+        "evidence": [
+          {
+            "uri": "packages/engine/fixtures/spatial/corpus.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          },
+          {
+            "uri": ".generated/harness/corpus/vitest.json",
+            "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80"
+          }
+        ]
+      }
+    ]
+  },
+  "workingTreeVerification": {
+    "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "candidateSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+    "baselineSha": null,
+    "testMergeSha": null,
+    "sourceState": "working-tree",
+    "runnerId": "082a807f-8cec-482a-bc50-fda7ecedd7ee",
+    "profile": {
+      "schemaVersion": 1,
+      "id": "spatial-fixed-v1",
+      "warmups": 1,
+      "samples": 5,
+      "limits": {
+        "sample-symmetric-melee": {
+          "steps": 200,
+          "casts": 2200,
+          "candidates": 16,
+          "pathNodes": 0,
+          "events": 150,
+          "logBytes": 300000,
+          "trajectoryBytes": 500000
+        },
+        "catalog-swordsman-sky-mage-pillars": {
+          "steps": 6000,
+          "casts": 55000,
+          "candidates": 200,
+          "pathNodes": 700,
+          "events": 3200,
+          "logBytes": 11000000,
+          "trajectoryBytes": 17000000
+        },
+        "catalog-fire-mage-healer-flat": {
+          "steps": 850,
+          "casts": 16500,
+          "candidates": 350,
+          "pathNodes": 0,
+          "events": 700,
+          "logBytes": 1800000,
+          "trajectoryBytes": 2700000
+        },
+        "catalog-archer-guardian-flat": {
+          "steps": 900,
+          "casts": 18000,
+          "candidates": 275,
+          "pathNodes": 0,
+          "events": 600,
+          "logBytes": 1700000,
+          "trajectoryBytes": 2800000
+        },
+        "catalog-storm-mage-ice-mage-flat": {
+          "steps": 150,
+          "casts": 2400,
+          "candidates": 12,
+          "pathNodes": 0,
+          "events": 120,
+          "logBytes": 275000,
+          "trajectoryBytes": 500000
+        },
+        "catalog-lancer-swordsman-pillars": {
+          "steps": 6000,
+          "casts": 48000,
+          "candidates": 0,
+          "pathNodes": 0,
+          "events": 3100,
+          "logBytes": 9000000,
+          "trajectoryBytes": 16500000
+        },
+        "observed-ai-seer-ember": {
+          "steps": 250,
+          "casts": 6000,
+          "candidates": 600,
+          "pathNodes": 0,
+          "events": 300,
+          "logBytes": 900000,
+          "trajectoryBytes": 1500000
+        }
+      }
+    },
+    "previousProfile": null,
+    "before": null,
+    "after": {
+      "schemaVersion": 1,
+      "sourceState": "working-tree",
+      "runnerId": "082a807f-8cec-482a-bc50-fda7ecedd7ee",
+      "sourceSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+      "driverSha": "70401399d2a1f627bec5e0998f033b597e077a80",
+      "driverHash": "b0fad8ce89c17293b00060ab23489ad58aba322014d8a99bb36a409cf6530838",
+      "corpusHash": "cd166f858bedb271e4b85d0ba4037ca11b6e360f7376b0a61d35558790aca5fa",
+      "fixtureHash": "b3f8a38e60a4c4cca6fc9b750cc657233b22bc11b6f6234301361ab30fb4220b",
+      "profileHash": "4cb5180b941352a70134f03abebb0d8f8c468c246bfca74c2696f7f1d1a7c508",
+      "engine": {
+        "digest": "sha256:098e2da3b0f311da564c0d37036faee70ef6ff4a0476ae496ab686db3ee1f4f0",
+        "wasm": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4",
+        "binding": "sha256:09a000bee2ad827608780cf8821258cadc243aaeb8881ab3e769de73f945eee0",
+        "table": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8"
+      },
+      "toolchain": {
+        "node": "v24.19.0",
+        "packageManager": "pnpm@11.27.1",
+        "lockHash": "2740dab4e175d7334a94b2b7eff1bb5cfe7950eb255c27811f64d87412e9ba5c",
+        "platform": "linux",
+        "arch": "x64",
+        "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+        "cores": 8
+      },
+      "samples": [
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 180.2269960000001,
+          "cpuMicros": 238785,
+          "peakRssBytes": 164339712,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 165.8105529999998,
+          "cpuMicros": 237314,
+          "peakRssBytes": 164339712,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 95.17784699999993,
+          "cpuMicros": 123220,
+          "peakRssBytes": 164339712,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 112.84092499999997,
+          "cpuMicros": 129131,
+          "peakRssBytes": 164339712,
+          "memoryReason": null
+        },
+        {
+          "id": "sample-symmetric-melee",
+          "inputHash": "sha256:80febc4d3c199674b686d786d0cb4dd484a7babdd586fb20c966fb695ca25d93",
+          "outcome": "draw",
+          "costs": {
+            "steps": 151,
+            "casts": 1728,
+            "candidates": 8,
+            "pathNodes": 0,
+            "events": 109,
+            "logBytes": 225119,
+            "trajectoryBytes": 232779
+          },
+          "elapsedMs": 84.47766700000011,
+          "cpuMicros": 109377,
+          "peakRssBytes": 164339712,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 392.9606039999999,
+          "cpuMicros": 463183,
+          "peakRssBytes": 203350016,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 556.2050339999996,
+          "cpuMicros": 609266,
+          "peakRssBytes": 204869632,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 409.02595599999995,
+          "cpuMicros": 465176,
+          "peakRssBytes": 208662528,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 398.15319299999965,
+          "cpuMicros": 419279,
+          "peakRssBytes": 212406272,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-swordsman-sky-mage-pillars",
+          "inputHash": "sha256:ecc8ca66d6d128fd28ccd093c64426724ca29607aeae2e44c8c156f8326437db",
+          "outcome": "win",
+          "costs": {
+            "steps": 434,
+            "casts": 9949,
+            "candidates": 133,
+            "pathNodes": 545,
+            "events": 237,
+            "logBytes": 741805,
+            "trajectoryBytes": 714954
+          },
+          "elapsedMs": 350.4508480000004,
+          "cpuMicros": 376970,
+          "peakRssBytes": 216293376,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 646.8214479999997,
+          "cpuMicros": 747993,
+          "peakRssBytes": 304013312,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 814.0146450000002,
+          "cpuMicros": 894772,
+          "peakRssBytes": 310444032,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 616.1905930000003,
+          "cpuMicros": 746153,
+          "peakRssBytes": 318164992,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 555.5959750000002,
+          "cpuMicros": 602903,
+          "peakRssBytes": 324243456,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-fire-mage-healer-flat",
+          "inputHash": "sha256:2a46e5627c6c470e6d59bb73928fd17d993ddf5e9b7cc99b8ec330c35240a993",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 12864,
+            "candidates": 269,
+            "pathNodes": 0,
+            "events": 578,
+            "logBytes": 1465000,
+            "trajectoryBytes": 1385911
+          },
+          "elapsedMs": 585.4371229999997,
+          "cpuMicros": 637657,
+          "peakRssBytes": 331726848,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 501.1903709999988,
+          "cpuMicros": 627946,
+          "peakRssBytes": 345485312,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 513.0523050000011,
+          "cpuMicros": 582604,
+          "peakRssBytes": 353824768,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 523.5569369999994,
+          "cpuMicros": 674994,
+          "peakRssBytes": 359669760,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 536.7012479999994,
+          "cpuMicros": 623620,
+          "peakRssBytes": 359669760,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-archer-guardian-flat",
+          "inputHash": "sha256:9e8905c91663795291e2659ac2131c7b4f151ac9c82074178b7616cd0cf940b9",
+          "outcome": "win",
+          "costs": {
+            "steps": 747,
+            "casts": 13755,
+            "candidates": 205,
+            "pathNodes": 0,
+            "events": 458,
+            "logBytes": 1314166,
+            "trajectoryBytes": 1384127
+          },
+          "elapsedMs": 487.7330899999997,
+          "cpuMicros": 532537,
+          "peakRssBytes": 359669760,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 92.2861240000002,
+          "cpuMicros": 190861,
+          "peakRssBytes": 402137088,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 80.13517200000024,
+          "cpuMicros": 158460,
+          "peakRssBytes": 403554304,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 80.01138999999966,
+          "cpuMicros": 162002,
+          "peakRssBytes": 409845760,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 81.99872300000061,
+          "cpuMicros": 169136,
+          "peakRssBytes": 416137216,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-storm-mage-ice-mage-flat",
+          "inputHash": "sha256:4a2357623eea3c42d3a09e177b6097ec66f0588697e695d34b4daaf38caadc2d",
+          "outcome": "win",
+          "costs": {
+            "steps": 121,
+            "casts": 1900,
+            "candidates": 7,
+            "pathNodes": 0,
+            "events": 86,
+            "logBytes": 201826,
+            "trajectoryBytes": 213915
+          },
+          "elapsedMs": 85.44858600000043,
+          "cpuMicros": 93827,
+          "peakRssBytes": 416137216,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 2110.264816000001,
+          "cpuMicros": 2339767,
+          "peakRssBytes": 416137216,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 2969.5405690000007,
+          "cpuMicros": 3065733,
+          "peakRssBytes": 444317696,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 4137.901477000003,
+          "cpuMicros": 4354295,
+          "peakRssBytes": 468922368,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 4185.973647999999,
+          "cpuMicros": 4438651,
+          "peakRssBytes": 469123072,
+          "memoryReason": null
+        },
+        {
+          "id": "catalog-lancer-swordsman-pillars",
+          "inputHash": "sha256:0cbec57d0d30c3fb9ca4a1acd76eff40599b9b665652d287106a9fd30d6eb2e9",
+          "outcome": "draw",
+          "costs": {
+            "steps": 6000,
+            "casts": 38400,
+            "candidates": 0,
+            "pathNodes": 0,
+            "events": 2401,
+            "logBytes": 6966051,
+            "trajectoryBytes": 8197496
+          },
+          "elapsedMs": 3818.799994000001,
+          "cpuMicros": 3911939,
+          "peakRssBytes": 472006656,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 219.31192499999452,
+          "cpuMicros": 232256,
+          "peakRssBytes": 472006656,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 243.08112399999663,
+          "cpuMicros": 254399,
+          "peakRssBytes": 472006656,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 231.00488499999483,
+          "cpuMicros": 247854,
+          "peakRssBytes": 472006656,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 195.8997079999972,
+          "cpuMicros": 203179,
+          "peakRssBytes": 472006656,
+          "memoryReason": null
+        },
+        {
+          "id": "observed-ai-seer-ember",
+          "inputHash": "sha256:e72b6c0fca3b22db91f211e7f567f1fe296fd26fc4c778c867660a6e35391ae5",
+          "outcome": "win",
+          "costs": {
+            "steps": 138,
+            "casts": 2350,
+            "candidates": 98,
+            "pathNodes": 0,
+            "events": 139,
+            "logBytes": 338843,
+            "trajectoryBytes": 311984
+          },
+          "elapsedMs": 197.900195000002,
+          "cpuMicros": 248268,
+          "peakRssBytes": 472006656,
+          "memoryReason": null
+        }
+      ]
+    }
+  }
+}

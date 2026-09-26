@@ -236,7 +236,7 @@
     "definition": {
       "name": "石と結界の透過",
       "originalText": "身体のみ石・energyを通過する。支持する床面、身体同士、arena境界は残る。",
-      "stackKey": "phase-stone-energy-v1",
+      "stackKey": "phase-se",
       "categories": ["buff"],
       "visibility": "visible",
       "durationSteps": 100,

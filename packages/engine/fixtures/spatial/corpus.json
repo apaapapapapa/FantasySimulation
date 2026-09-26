@@ -1140,6 +1140,18 @@
     "p6-player-phasing": {
       "file": "apps/web/src/replay/spatial-player.test.ts",
       "name": "restores saved phasing through forward reverse and loop playback"
+    },
+    "p6-prefixed-terrain": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "phases authored boundary-prefixed terrain while retaining generated arena walls and exit protection"
+    },
+    "p6-barrier-range-false": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "bounds barrier placement by ability range with authored stages false"
+    },
+    "p6-barrier-range-true": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "bounds barrier placement by ability range with authored stages true"
     }
   },
   "entries": [
@@ -1965,7 +1977,9 @@
         "p6-barrier-ties",
         "p6-player-barrier",
         "p6-player-area",
-        "p6-player-beam"
+        "p6-player-beam",
+        "p6-barrier-range-false",
+        "p6-barrier-range-true"
       ]
     },
     {
@@ -1980,7 +1994,8 @@
         "p6-phase-support-box",
         "p6-phase-support-sphere",
         "p6-phase-support-pillar",
-        "p6-player-phasing"
+        "p6-player-phasing",
+        "p6-prefixed-terrain"
       ]
     }
   ]

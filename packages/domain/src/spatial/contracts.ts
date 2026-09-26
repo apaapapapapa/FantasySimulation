@@ -693,6 +693,8 @@ export const AbilitySchema = z
           code: 'custom',
           message: 'Area and beam require an enemy action with authored stages',
         });
+      if (plan.barrier && plan.barrier.placement.maxDistanceMm > ability.rangeMm)
+        ctx.addIssue({ code: 'custom', message: 'Barrier placement exceeds ability range' });
       if (plan.attack?.kind === 'area' && plan.attack.placement.maxDistanceMm > ability.rangeMm)
         ctx.addIssue({ code: 'custom', message: 'Area placement exceeds ability range' });
     }

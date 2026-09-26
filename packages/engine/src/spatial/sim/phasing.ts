@@ -33,9 +33,7 @@ export function updateBodyPhasing(tx: StepTransaction) {
     for (const contribution of allPrior) {
       const materials = contribution.materials.filter(
         (material) =>
-          occupied.some(
-            (o) => !o.id.startsWith('boundary.') && (o.material ?? 'generic') === material,
-          ) &&
+          occupied.some((o) => !o.arenaBoundary && (o.material ?? 'generic') === material) &&
           (!current.materials.includes(material) ||
             (contribution.floor && !current.floorMaterials.includes(material))),
       );
