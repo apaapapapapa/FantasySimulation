@@ -1,3 +1,4 @@
+import { OperationError } from '../operation-error.ts';
 import {
   contentHash,
   canonicalJson,
@@ -25,31 +26,35 @@ export type LeagueCheckInput = {
 };
 export async function checkLeague(input: unknown, completed: readonly LeagueCheckInput[]) {
   const plan = await validateLeaguePlan(input);
-  if (completed.length > plan.partitions.length) throw new Error('Excessive league results');
+  if (completed.length > plan.partitions.length)
+    throw new OperationError('DATA_INVALID', 'Excessive league results');
   const seen = new Set<number>(),
     attempts: LeagueAttempt[] = [],
     results: LeaguePartitionResult[] = [];
   for (const entry of completed) {
     const { partition, batch } = await validateLeaguePartition(plan, entry.partition, entry.batch);
-    if (seen.has(partition.index)) throw new Error('Duplicate league partition result');
+    if (seen.has(partition.index))
+      throw new OperationError('DATA_INVALID', 'Duplicate league partition result');
     seen.add(partition.index);
     const reservation = await validateLeagueReservation(plan, partition, entry.reservation);
     const result = parseJson(LeaguePartitionResultSchema, entry.result),
       { id, ...body } = result;
-    if (id !== (await contentHash(body))) throw new Error('League result checksum mismatch');
-    if (result.reservationId !== reservation.id) throw new Error('Result reservation mismatch');
+    if (id !== (await contentHash(body)))
+      throw new OperationError('DATA_INVALID', 'League result checksum mismatch');
+    if (result.reservationId !== reservation.id)
+      throw new OperationError('DATA_INVALID', 'Result reservation mismatch');
     await validateProgressPage(result.progress);
     const progress = await verifyLeagueProgress(result.progress.records, entry.bundles);
     const checked = await checkedBatch(batch, [{ index: result.index, bundles: entry.bundles }]);
     if (progress.size !== partition.slots.length)
-      throw new Error('Result progress coverage mismatch');
+      throw new OperationError('DATA_INVALID', 'Result progress coverage mismatch');
     for (const slot of partition.slots) {
       const history = progress.get(slot.simulationHash),
         batchSlot = batch.slots.find((s) => s.key === slot.id.slice(7))!;
       const latest = history?.attempts.at(-1),
         recorded = checked.found.get(batchSlot.id)!;
       if (!history || (latest?.objectHash ?? null) !== (recorded.receipt?.objectHash ?? null))
-        throw new Error('Result and progress receipt mismatch');
+        throw new OperationError('DATA_INVALID', 'Result and progress receipt mismatch');
       const reserved = reservation.progress.records.find(
         (r) => r.simulationHash === slot.simulationHash,
       )!;
@@ -75,14 +80,18 @@ export async function checkLeague(input: unknown, completed: readonly LeagueChec
             latest?.executionId !== last.executionId ||
             latest?.attempt !== last.attempt))
       )
-        throw new Error('Result rewrites reserved attempt history');
+        throw new OperationError('DATA_INVALID', 'Result rewrites reserved attempt history');
       for (const attempt of history.attempts) {
         const receipt = attempt.objectHash ? await entry.bundles.verify(attempt.objectHash) : null;
         let outcome: LeagueAttempt['outcome'];
         if (receipt?.result.outcome.kind === 'win') {
           const winner = receipt.result.outcome.winner;
           const actor = batchSlot.spec.participants.find((p) => p.actorId === winner);
-          if (!actor) throw new Error('League winner does not belong to planned match');
+          if (!actor)
+            throw new OperationError(
+              'DATA_INVALID',
+              'League winner does not belong to planned match',
+            );
           outcome = { kind: 'win', winner: actor.character.id, resultHash: receipt.resultHash };
         } else if (receipt?.result.outcome.kind === 'draw')
           outcome = { kind: 'draw', resultHash: receipt.resultHash };
@@ -101,7 +110,7 @@ export async function checkLeague(input: unknown, completed: readonly LeagueChec
         });
       }
       if (recorded.state === 'complete' && latest?.state !== 'win' && latest?.state !== 'draw')
-        throw new Error('Completed row lacks a definitive attempt');
+        throw new OperationError('DATA_INVALID', 'Completed row lacks a definitive attempt');
     }
     results.push(result);
   }

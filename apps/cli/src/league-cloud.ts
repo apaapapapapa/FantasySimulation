@@ -1,34 +1,45 @@
 import { appendFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { executionSource } from '@fantasy/api/tooling';
+import { executionSource, OperationError } from '@fantasy/api/tooling';
 import { probeLeague } from './league/league-probe.ts';
 import { prepareCloudLeague, runCloudLeague, finishCloudLeague } from './league/league-cloud.ts';
 import { cloudJson, writeCloudJson } from './league/league-cloud-files.ts';
 import { transferCloudLeague } from './league/league-transfer.ts';
 import { publicHttp, ancestorOf } from './publication/publication-http.ts';
 
+import { reportLeagueFailure, type LeagueFailureContext } from './league/league-diagnostics.ts';
+
+const failureContext: LeagueFailureContext = { validating: true };
+let reportRoot: string | undefined;
 const repository = fileURLToPath(new URL('../../../', import.meta.url));
 const required = (name: string) => {
   const value = process.env[name];
-  if (!value) throw new Error(`Missing ${name}`);
+  if (!value) throw new OperationError('INPUT_INVALID', `Missing ${name}`);
   return value;
 };
 async function main() {
   const [command, directory, input] = process.argv.slice(2);
+  failureContext.command = command ?? 'unknown';
+  if (directory) reportRoot = resolve(directory);
   if (
     !directory ||
     !['probe', 'restore', 'prepare', 'admit', 'run', 'finish', 'publish'].includes(command ?? '')
   )
-    throw new Error('Invalid league cloud command');
-  const root = resolve(directory),
-    source = executionSource();
+    throw new OperationError('INPUT_INVALID', 'Invalid league cloud command');
+  const root = resolve(directory);
   const executionId = `league-${required('GITHUB_RUN_ID')}-${required('GITHUB_RUN_ATTEMPT')}`;
-  if (source.sha !== required('GITHUB_SHA')) throw new Error('Untested cloud source');
+  if (!/^league-[0-9]{1,20}-[0-9]{1,5}$/.test(executionId))
+    throw new OperationError('INPUT_INVALID', 'Invalid Actions run identity');
+  failureContext.executionId = executionId;
+  const source = executionSource();
+  if (source.sha !== required('GITHUB_SHA'))
+    throw new OperationError('IDENTITY_MISMATCH', 'Untested cloud source');
+  failureContext.validating = false;
   const definition = async () => {
     if (!input || !/^data\/leagues\/[a-zA-Z0-9][a-zA-Z0-9_-]*\.json$/.test(input))
-      throw new Error('Expected a committed data/leagues definition');
-    return cloudJson(join(repository, input));
+      throw new OperationError('INPUT_INVALID', 'Expected a committed data/leagues definition');
+    return cloudJson(join(repository, input), undefined, 'INPUT_INVALID');
   };
   if (command === 'probe') {
     const result = await probeLeague(
@@ -108,9 +119,7 @@ async function main() {
     if (command === 'restore') await writeCloudJson(join(root, 'inventory.json'), inventory);
   }
 }
-await main().catch(() => {
-  console.error(
-    'League cloud operation failed; no credentials or private diagnostics logged. Inspect phase metrics and validated inputs.',
-  );
+await main().catch(async (error: unknown) => {
   process.exitCode = 1;
+  await reportLeagueFailure(error, failureContext, reportRoot, process.env.GITHUB_STEP_SUMMARY);
 });

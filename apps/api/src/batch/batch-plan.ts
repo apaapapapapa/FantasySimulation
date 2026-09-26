@@ -1,3 +1,4 @@
+import { OperationError } from '../operation-error.ts';
 import { execFileSync } from 'node:child_process';
 import {
   BatchInputSchema,
@@ -24,7 +25,10 @@ export function executionSource(): ExecutionSource {
       maxBuffer: 1_000_000,
     }).trim();
   if (git(['status', '--porcelain', '--untracked-files=normal']))
-    throw new Error('Batch execution requires a clean committed source tree');
+    throw new OperationError(
+      'IDENTITY_MISMATCH',
+      'Batch execution requires a clean committed source tree',
+    );
   return ExecutionSourceSchema.parse({
     sha: git(['rev-parse', 'HEAD']),
     node: process.versions.node,
@@ -37,9 +41,15 @@ export async function createBatchPlan(input: unknown, source: ExecutionSource): 
     store = openStore(':memory:');
   try {
     if (data.matches.length * data.estimatedBytesPerMatch > data.maxOutputBytes)
-      throw new Error('Planned storage estimate exceeds the declared batch limit; split the plan');
+      throw new OperationError(
+        'BUDGET_EXCEEDED',
+        'Planned storage estimate exceeds the declared batch limit; split the plan',
+      );
     if (data.matches.length * data.estimatedBytesPerMatch + 40 * 1024 ** 2 > data.maxWorkBytes)
-      throw new Error('Planned storage estimate exceeds local work capacity; split the plan');
+      throw new OperationError(
+        'BUDGET_EXCEEDED',
+        'Planned storage estimate exceeds local work capacity; split the plan',
+      );
     if (new Set(data.matches.map((m) => m.key)).size !== data.matches.length)
       throw new Error('Duplicate planned match key');
     await store.loadPinnedRevisions(data.revisions);
@@ -75,12 +85,16 @@ export async function createBatchPlan(input: unknown, source: ExecutionSource): 
 export async function validateBatchPlan(input: unknown, source: ExecutionSource) {
   const plan = parseJson(BatchPlanSchema, input),
     { id, ...body } = plan;
-  if (id !== (await contentHash(body))) throw new Error('Batch plan checksum mismatch');
+  if (id !== (await contentHash(body)))
+    throw new OperationError('DATA_INVALID', 'Batch plan checksum mismatch');
   if (
     canonicalJson(plan.source) !== canonicalJson(source) ||
     plan.implementationDigest !== implementation.digest
   )
-    throw new Error('Batch execution source does not match the pinned plan');
+    throw new OperationError(
+      'IDENTITY_MISMATCH',
+      'Batch execution source does not match the pinned plan',
+    );
   const rebuilt = await createBatchPlan(
     {
       schemaVersion: 1,
@@ -94,7 +108,7 @@ export async function validateBatchPlan(input: unknown, source: ExecutionSource)
     source,
   );
   if (canonicalJson(plan) !== canonicalJson(rebuilt))
-    throw new Error('Planned simulation/slot identity mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'Planned simulation/slot identity mismatch');
   return plan;
 }
 export { shardSlots } from './batch-check.ts';

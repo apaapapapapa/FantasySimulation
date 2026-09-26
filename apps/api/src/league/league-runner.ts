@@ -1,3 +1,4 @@
+import { OperationError } from '../operation-error.ts';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
@@ -122,16 +123,16 @@ export async function runLeaguePartition(
   const started = performance.now(),
     plan = await validateLeaguePlan(planInput);
   if (canonicalJson(source) !== canonicalJson(plan.source))
-    throw new Error('League execution source mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'League execution source mismatch');
   const { partition, batch } = await validateLeaguePartition(plan, partitionInput, batchInput);
   const reservation = await validateLeagueReservation(plan, partition, reservationInput),
     { id } = reservation;
   if (reservation.executionId !== executionId)
-    throw new Error('League reservation identity mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'League reservation identity mismatch');
   const records = await verifyLeagueProgress(reservation.progress.records, options.retained);
   const deadline = options.deadlineMs ?? 1500000;
   if (!Number.isInteger(deadline) || deadline < 1 || deadline > 1800000)
-    throw new Error('Invalid league deadline');
+    throw new OperationError('INPUT_INVALID', 'Invalid league deadline');
   await mkdir(join(root, 'reservations'), { recursive: true });
   // This create-only claim also blocks concurrent local runners and same-token reruns.
   await publishImmutableFile(
@@ -161,7 +162,7 @@ export async function runLeaguePartition(
     };
     if (latest && (latest.state === 'win' || latest.state === 'draw')) {
       if (!options.retained || !latest.objectHash)
-        throw new Error('Reusable result is unavailable');
+        throw new OperationError('DATA_INVALID', 'Reusable result is unavailable');
       entry.receipt = await bundles.importConfirmed(options.retained, latest.objectHash);
       entry.state = 'complete';
       entry.reused = true;
@@ -196,7 +197,10 @@ export async function runLeaguePartition(
         latest.executionId !== executionId ||
         latest.attempt !== attempt
       )
-        throw new Error('Returned result has no matching reservation');
+        throw new OperationError(
+          'IDENTITY_MISMATCH',
+          'Returned result has no matching reservation',
+        );
       if (entry.state === 'pending') {
         record.attempts.pop(); // Proven not admitted: retain the same available attempt and prior partial replay.
         continue;

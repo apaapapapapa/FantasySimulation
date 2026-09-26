@@ -58,14 +58,14 @@ it('keeps league verification alive after a long upload while bounding each requ
   const league = publicHttp('https://viewer.example/', 7200000);
   await league('build.json', 4096);
   await vi.advanceTimersByTimeAsync(1800000); // Upload and HEAD verification take thirty minutes.
-  await expect(manual('build.json', 4096)).rejects.toThrow('fixture timeout');
+  await expect(manual('build.json', 4096)).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE' });
   await expect(league('build.json', 4096)).resolves.toEqual(Buffer.from('{}'));
   const last = signals.at(-1)!;
   expect(last.aborted).toBe(false);
   await vi.advanceTimersByTimeAsync(300000);
   expect(last.aborted).toBe(true); // The individual request still has a five-minute bound.
   await vi.advanceTimersByTimeAsync(5400000);
-  await expect(league('build.json', 4096)).rejects.toThrow('fixture timeout');
+  await expect(league('build.json', 4096)).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE' });
   for (const invalid of [0, 7200001, 1.5, NaN])
     expect(() => publicHttp('https://viewer.example/', invalid)).toThrow('deadline');
 });

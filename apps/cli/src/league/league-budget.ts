@@ -1,3 +1,4 @@
+import { OperationError } from '@fantasy/api/tooling';
 import {
   LeagueUsageSchema,
   LeagueUsageLeaseSchema,
@@ -15,22 +16,23 @@ const CONTROL_RESERVE = 10000; // Per month for bounded probes/control failures;
 export function reserveLeagueUsage(previous: unknown, input: LeagueUsageLease): LeagueUsage {
   const lease = LeagueUsageLeaseSchema.parse(input);
   if (new Date(lease.day + 'T00:00:00Z').toISOString().slice(0, 10) !== lease.day)
-    throw new Error('Invalid ledger date');
+    throw new OperationError('INPUT_INVALID', 'Invalid ledger date');
   const month = lease.day.slice(0, 7);
   const old = previous === null ? null : LeagueUsageSchema.parse(previous);
-  if (old && old.month > month) throw new Error('League usage clock moved backwards');
+  if (old && old.month > month)
+    throw new OperationError('DATA_INVALID', 'League usage clock moved backwards');
   if (old?.leases.some((entry) => entry.day.slice(0, 7) !== old.month || entry.day > lease.day))
-    throw new Error('Invalid league usage date history');
+    throw new OperationError('DATA_INVALID', 'Invalid league usage date history');
   const leases = old?.month === month ? [...old.leases] : [];
   if (leases.some((entry) => entry.id === lease.id))
-    throw new Error('League usage lease already consumed');
+    throw new OperationError('USAGE_CONSUMED', 'League usage lease already consumed');
   leases.push(lease);
   const ids = new Set<string>();
   const total = { classA: CONTROL_RESERVE, classB: CONTROL_RESERVE };
   const days = new Map<string, number>();
   for (const entry of leases) {
     if (entry.day.slice(0, 7) !== month || ids.has(entry.id))
-      throw new Error('Invalid league usage history');
+      throw new OperationError('DATA_INVALID', 'Invalid league usage history');
     ids.add(entry.id);
     total.classA += entry.classA;
     total.classB += entry.classB;
@@ -41,7 +43,7 @@ export function reserveLeagueUsage(previous: unknown, input: LeagueUsageLease): 
     total.classB > LEAGUE_USAGE_LIMITS.classB ||
     [...days.values()].some((value) => value + 1000 > LEAGUE_USAGE_LIMITS.worker)
   )
-    throw new Error('League monthly or daily request budget exhausted');
+    throw new OperationError('BUDGET_EXCEEDED', 'League monthly or daily request budget exhausted');
   const result = LeagueUsageSchema.parse({
     schemaVersion: 1,
     month,
@@ -49,7 +51,7 @@ export function reserveLeagueUsage(previous: unknown, input: LeagueUsageLease): 
     leases: leases.sort((a, b) => a.id.localeCompare(b.id)),
   });
   if (Buffer.byteLength(canonicalJson(result)) > PUBLICATION_CONTROL_BYTES)
-    throw new Error('League usage ledger size limit');
+    throw new OperationError('BUDGET_EXCEEDED', 'League usage ledger size limit');
   return result;
 }
 
@@ -64,14 +66,15 @@ export async function admitLeagueUsage(
   const before = await store.readControl();
   const next = reserveLeagueUsage(before ? JSON.parse(before.data.toString('utf8')) : null, lease);
   const bytes = Buffer.from(canonicalJson(next));
-  let uncertain: unknown;
   try {
     await store.putControl(bytes, before?.etag ?? null);
-  } catch (error) {
-    uncertain = error;
+  } catch {
+    // A failed response can still represent a consumed lease. Only exact read-back recovers it.
   }
-  const after = await store.readControl();
+  const after = await store.readControl().catch(() => {
+    throw new OperationError('USAGE_UNVERIFIED', 'League usage reservation not verified');
+  });
   if (!after || !after.data.equals(bytes))
-    throw uncertain ?? new Error('League usage reservation not verified');
+    throw new OperationError('USAGE_UNVERIFIED', 'League usage reservation not verified');
   return next;
 }
