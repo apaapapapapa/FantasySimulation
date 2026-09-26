@@ -1,0 +1,77 @@
+name: Recover league publication
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful main CI for this recovery code
+        type: string
+        required: true
+      source_run_id:
+        description: Failed Daily league run with successful compute jobs
+        type: string
+        required: true
+      source_attempt:
+        description: Exact original run attempt
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: r2-publication
+  cancel-in-progress: false
+defaults:
+  run:
+    working-directory: apps/cli
+env:
+  PUBLICATION_VIEWER_URL: https://apaapapapapa.github.io/FantasySimulation/
+  PUBLICATION_WORKER_URL: https://fantasysimulation-replay-reader.tokyojp.workers.dev/
+jobs:
+  recover:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    environment: r2-publication
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/pages-gate
+        with:
+          run-id: ${{ inputs.ci_run_id }}
+          league-phase: start
+      - name: Require publication environment
+        env:
+          ENABLED: ${{ vars.R2_PUBLICATION_ENABLED }}
+        run: test "$ENABLED" = true
+      - uses: ./.github/actions/setup-project
+      - name: Verify original main CI and immutable artifacts, then finalize without simulation
+        uses: ./.github/actions/league-artifacts
+        with:
+          operation: recover
+          recovery-run: ${{ inputs.source_run_id }}
+          recovery-attempt: ${{ inputs.source_attempt }}
+      - uses: ./.github/actions/pages-gate
+        with:
+          run-id: ${{ inputs.ci_run_id }}
+          league-phase: finish
+      - name: Publish identical results with new durable usage leases
+        env:
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node --import tsx src/league-cloud.ts publish .generated/league
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: league-recovery-measurements-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            apps/cli/.generated/league/reports/*.json
+            apps/cli/.generated/league/prepared/estimate.json
+            apps/cli/.generated/league/prepared/completion.json
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 7

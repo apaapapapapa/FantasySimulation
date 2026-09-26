@@ -1,5 +1,35 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
-import { publicHttp } from './publication-http.ts';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+import { withReplayDirectory } from '@fantasy/api/testing';
+import { publicHttp, ancestorOf } from './publication-http.ts';
+
+it('fetches a Pages commit published after checkout without moving HEAD or trusting unrelated history', async () => {
+  await withReplayDirectory(async (root) => {
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync('git', args, { cwd, stdio: 'pipe', encoding: 'utf8' }).trim();
+    const remote = join(root, 'remote'),
+      checkout = join(root, 'checkout');
+    git(root, 'init', remote);
+    git(remote, 'config', 'user.name', 'Publication fixture');
+    git(remote, 'config', 'user.email', 'publication@example.invalid');
+    git(remote, 'commit', '--allow-empty', '-m', 'source');
+    const source = git(remote, 'rev-parse', 'HEAD');
+    git(root, 'clone', '--no-local', remote, checkout);
+    git(remote, 'commit', '--allow-empty', '-m', 'new viewer');
+    const viewer = git(remote, 'rev-parse', 'HEAD');
+    expect(() => git(checkout, 'cat-file', '-e', `${viewer}^{commit}`)).toThrow();
+    expect(ancestorOf(source, viewer, checkout)).toBe(true);
+    expect(git(checkout, 'rev-parse', 'HEAD')).toBe(source);
+    git(remote, 'checkout', '--orphan', 'unrelated');
+    git(remote, 'commit', '--allow-empty', '-m', 'foreign viewer');
+    expect(ancestorOf(source, git(remote, 'rev-parse', 'HEAD'), checkout)).toBe(false);
+    git(checkout, 'remote', 'remove', 'origin');
+    expect(ancestorOf(source, 'f'.repeat(40), checkout)).toBe(false);
+    expect(ancestorOf(source, viewer, checkout)).toBe(true);
+    expect(() => ancestorOf(source, viewer + '\n', checkout)).toThrow('Invalid source SHA');
+  });
+});
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
