@@ -12,6 +12,12 @@
   "semanticCommitType": "chore",
   "automerge": false,
   "platformAutomerge": false,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "ignoreTests": false,
+  "internalChecksAsSuccess": false,
+  "rebaseWhen": "behind-base-branch",
+  "separateMinorPatch": true,
   "vulnerabilityAlerts": {
     "enabled": true,
     "automerge": false,
@@ -26,7 +32,7 @@
   },
   "packageRules": [
     {
-      "description": "Never automatically merge any manager or update type.",
+      "description": "Default to manual merge; only the final guarded minor rule opts in.",
       "matchPackageNames": ["*"],
       "automerge": false
     },
@@ -66,6 +72,24 @@
       "matchManagers": ["github-actions"],
       "pinDigests": true,
       "automerge": false
+    },
+    {
+      "description": "Automerge stable minor updates after CI, excluding reviewed toolchains and physics.",
+      "matchUpdateTypes": ["minor"],
+      "matchCurrentVersion": "!/^0/",
+      "matchPackageNames": [
+        "!vite-plus",
+        "!vite",
+        "!vitest",
+        "!@voidzero-dev/vite-plus-*",
+        "!@vitest/*",
+        "!node",
+        "!pnpm",
+        "!@types/node",
+        "!@dimforge/rapier*",
+        "!/rapier/i"
+      ],
+      "automerge": true
     }
   ],
   "customManagers": [

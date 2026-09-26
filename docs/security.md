@@ -134,9 +134,10 @@ This does not establish actual update-PR acceptance. See [dependency updates](de
 
 Remaining operational acceptance for Issue #8:
 
-1. Review a suitable update PR automatically created by Renovate. Confirm it
-   has automerge disabled, coupled Vite+/alias/peer/Vitest pins and the
-   correct lockfile. Preserve manual review, including vulnerability updates.
+1. Review actual bot update PRs under the [minor-automerge policy](dependency-updates.md).
+   Verify eligible minor PRs merge only after CI, while excluded updates remain manual.
+   Coupled Vite+/alias/peer/Vitest pins and lockfiles still need manual review,
+   as do vulnerability-alert, Node/pnpm and physics updates.
    Run Linux verification and all security evidence; do not manufacture a
    bot-authored PR to claim acceptance. See the official
    [Renovate configuration reference](https://docs.renovatebot.com/configuration-options/).
