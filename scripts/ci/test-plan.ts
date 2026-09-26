@@ -17,13 +17,13 @@ export function testFiles(root: string): string[] {
 
 /**
  * Approximate CI seconds per file: the mean of four six-shard ubuntu-latest runs (36241620593,
- * 36241602362, 36243792959, 36246318306; files added since then from fewer runs). Durations include
- * contention from the other workers in a shard, so these are scheduling hints only: every inventory
- * file still runs exactly once, and a stale or missing weight only unbalances the shards. Files
- * under two seconds are unlisted and weigh one second, so a new heavy test file needs a weight or it
- * is treated as light. The real-Worker corpus counts its CPU instead: about 20 s with up to three
- * busy Worker threads. Sharing a shard with other heavy files slowed it to 31 s (main run
- * 36239802179), so it gets a shard of light files.
+ * 36241602362, 36243792959, 36246318306; files added since then from later runs). Durations
+ * include contention from the other workers in a shard, so these are scheduling hints only: every
+ * inventory file still runs exactly once, and a stale or missing weight only unbalances the shards.
+ * Files under two seconds are unlisted and weigh one second, so a new heavy test file needs a
+ * weight or it is treated as light. The real-Worker corpus counts its CPU instead: about 20 s with
+ * up to three busy Worker threads. Sharing a shard with other heavy files slowed it to 31 s (main
+ * run 36239802179), so it gets a shard of light files.
  */
 export const TEST_WEIGHTS: Readonly<Record<string, number>> = {
   'apps/api/src/jobs/worker-corpus.test.ts': 60,
@@ -66,6 +66,7 @@ export const TEST_WEIGHTS: Readonly<Record<string, number>> = {
   'apps/cli/src/publication/publication-restore.test.ts': 4,
   'scripts/harness/loop/regression.test.ts': 4,
   'apps/api/src/jobs/resource-persistence.test.ts': 3,
+  'packages/engine/src/spatial/recovery-interference.test.ts': 3,
   'apps/api/src/http/app.test.ts': 2,
   'apps/cli/src/league/league-history.test.ts': 2,
   'packages/engine/src/spatial/ai-integration.test.ts': 2,
