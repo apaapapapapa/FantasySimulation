@@ -20,7 +20,6 @@ Contexts allow assigned origins, block WebSockets/service workers; not an OS san
 `execution.json` records lockfile-pinned Playwright/browser revisions, Noto Sans JP 400,
 locale/timezone/viewport and software-GL settings. Browser cache identity includes
 OS/architecture/Playwright. Main, manual and weekly CI require both suites; PRs skip them.
-Static cases run two workers over isolated read-only origins; other scenarios keep one.
 
 Reports bind SHA/CI attempt/case/browser/retry/raw hashes and retain failed traces/images.
 Flaky, missing, skipped, unstarted or stale runs fail. The gate rechecks moved artifacts.
