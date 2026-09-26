@@ -12,6 +12,7 @@ import {
 import { withSources } from './quality/ast.ts';
 import { duplication, DUPLICATION_POLICY } from './quality/duplication.ts';
 import { determinism } from './quality/determinism.ts';
+import { capabilityCoverage } from './quality/capabilities.ts';
 import { assessReport } from './harness/report.ts';
 import type { Check, Report } from './harness/report.ts';
 import { sourceIdentity } from './harness/source.ts';
@@ -20,6 +21,7 @@ const required = [
   'quality:typescript',
   'quality:architecture',
   'quality:determinism',
+  'quality:capabilities',
   'quality:duplication',
   'quality:migrations',
   'quality:context',
@@ -81,6 +83,7 @@ try {
         [...files].flatMap(([path, file]) => determinism(path, file, checker)),
     ),
   );
+  await run('quality:capabilities', () => capabilityCoverage(root, paths));
   await run('quality:duplication', () => {
     details.duplicationCoverage = {
       policy: DUPLICATION_POLICY,
