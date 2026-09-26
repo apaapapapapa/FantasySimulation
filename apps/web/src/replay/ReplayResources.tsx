@@ -1,6 +1,7 @@
 import type { ReplayCheckpoint, ReplayContext } from '@fantasy/domain/spatial';
 import { motionSummary } from './motion-labels.ts';
 import { stageCount } from './scene-model.ts';
+import { recoveryDisplay } from './recovery-display.ts';
 
 export function ReplayResources({
   context,
@@ -39,6 +40,15 @@ export function ReplayResources({
                     {definition.appearance.silhouette} / {definition.appearance.surface}
                   </small>
                 )}
+                {recoveryDisplay(
+                  checkpoint.lastRecord && 'events' in checkpoint.lastRecord
+                    ? checkpoint.lastRecord.events
+                    : [],
+                )
+                  .filter((item) => item.actorId === actor.id)
+                  .map((item) => (
+                    <p key={item.id}>{item.label}</p>
+                  ))}
               </th>
               <td>{JSON.stringify(actor.position)}</td>
               {(['hp', 'mp', 'shield', 'stamina'] as const).map((resource) => {

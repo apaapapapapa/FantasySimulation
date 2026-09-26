@@ -78,7 +78,7 @@ use only own geometry and observed threats/terrain. Candidate order cannot add u
 
 The pinned full specification owns exact G-02 power/scaling/rounding and G-03 cohort/
 adjustment/element-reaction/AI formulas and worked fixtures; damage.ts owns shared arithmetic.
-Order power-defense(floor0)->coverage->resistance->dealt->received->shared shield->HP;
+Order power-defense(floor0)->coverage->resistance->dealt->received->absorption->shared shield->HP;
 BigInt floors, exact proportional attribution, one simultaneous HP+heal-damage clamp.
 Launch freezes source; target modifiers/cohorts frozen per transaction. Omitted magic inherits
 adjusted physical; explicit0 independent. Defense and element/category remain separate.
@@ -92,6 +92,13 @@ Visibility/capability selectors remain separate; committed attacks survive actio
 Visible status summaries<=64 omit exact hidden values; own evaluation uses full closure,
 enemy uses delivered summaries only. Contextual impacts cannot retrain baseline resistance.
 Type/cause overflow truncates, never drops statuses. Sealing remains P6.
+
+P6-02 (#184) [full recovery contract](https://github.com/apaapapapapa/FantasySimulation/blob/be04fcd5d0c34b88b5ffbdd8894b22de11b8d607/docs/rules/spatial-v1.md)
+supplements this baseline: absorption before shield becomes same-wave hpRecovery-scaled
+healing. Drain uses exact shares of capped actual HP loss; apply rates before one floor,
+freeze bases before reciprocal credits, then clamp HP once. No self/periodic/cost/fall/
+redirected drain. Contact/periodic reactions, delayed coarse observations and optional
+recovery records follow that contract; replay stays engine-free. See recovery-pairs.json.
 
 ## 同時選択（#45、spatial-v1.15）
 

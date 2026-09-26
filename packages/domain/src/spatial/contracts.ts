@@ -305,6 +305,7 @@ export const EffectSchema = z.discriminatedUnion('kind', [
     element: ElementSchema,
     scaling: DamageScalingSchema.optional(),
     defense: DamageDefenseSchema.optional(),
+    drainBps: uint(10_000).optional(),
   }),
   z.strictObject({ kind: z.literal('heal'), amount: uint(1_000_000) }),
   z.strictObject({ kind: z.literal('shield'), amount: uint(1_000_000) }),
@@ -340,6 +341,7 @@ export const AdjustmentTargetSchema = z.enum([
   'damageDealt',
   'damageTaken',
   'resistance',
+  'absorption',
   'hpRecovery',
   'staminaRecovery',
   'perceptionRange',
@@ -361,11 +363,17 @@ export const StatusAdjustmentSchema = z
     if (a.operation === 'multiply' && (a.amount < 0 || a.amount > 30000))
       ctx.addIssue({ code: 'custom', message: 'Multiplier must be between 0 and 30000 Bps' });
     if (
-      (a.target === 'resistance' && !a.element) ||
-      (a.element && !['resistance', 'damageDealt', 'damageTaken'].includes(a.target)) ||
+      (['resistance', 'absorption'].includes(a.target) && !a.element) ||
+      (a.element &&
+        !['resistance', 'absorption', 'damageDealt', 'damageTaken'].includes(a.target)) ||
       (a.category && a.target !== 'damageDealt')
     )
       ctx.addIssue({ code: 'custom', message: 'Invalid adjustment selector' });
+    if (a.target === 'absorption' && (a.operation !== 'add' || a.amount < 0 || a.amount > 10000))
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Absorption adds between 0 and 10000 Bps per element',
+      });
   });
 export type StatusAdjustment = z.infer<typeof StatusAdjustmentSchema>;
 export const StatusReactionSchema = z.strictObject({

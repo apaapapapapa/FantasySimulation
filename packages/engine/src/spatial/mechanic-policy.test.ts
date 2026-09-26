@@ -205,6 +205,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
     'damageDealt',
     'damageTaken',
     'resistance',
+    'absorption',
     'hpRecovery',
     'staminaRecovery',
     'perceptionRange',

@@ -64,7 +64,8 @@ export const ExperienceSchema = z
     ability: RefSchema,
     element: ElementSchema,
     defense: DamageDefenseSchema.optional(),
-    kind: z.enum(['impact', 'shield', 'uncertain', 'reveal']),
+    kind: z.enum(['impact', 'shield', 'uncertain', 'reveal', 'absorption']),
+    absorptionBand: z.enum(['weak', 'strong']).optional(),
     sampledAt: tick,
     availableAt: tick,
     expiresAt: tick,
@@ -76,6 +77,8 @@ export const ExperienceSchema = z
     observedStatuses: ObservedStatusesSchema.optional(),
   })
   .superRefine((e, ctx) => {
+    if ((e.kind === 'absorption') !== !!e.absorptionBand)
+      ctx.addIssue({ code: 'custom', message: 'Absorption evidence carries only a coarse band' });
     if (e.availableAt < e.sampledAt || e.expiresAt < e.sampledAt)
       ctx.addIssue({ code: 'custom', message: 'Experience time precedes observation' });
     if ((e.kind === 'impact' || e.kind === 'reveal') !== (!!e.range || !!e.impactBand))

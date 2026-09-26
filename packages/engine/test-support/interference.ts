@@ -30,6 +30,10 @@ export const LEGACY_INTERFERENCE_MECHANICS = [
   'visibility',
 ] as const;
 export type LegacyInterferenceMechanic = (typeof LEGACY_INTERFERENCE_MECHANICS)[number];
+export type RecoveryInterferenceMechanic =
+  | LegacyInterferenceMechanic
+  | 'attribute-absorption'
+  | 'drain';
 const damage = (amount: number): Effect => ({
   kind: 'damage',
   amount,
@@ -40,8 +44,8 @@ const damage = (amount: number): Effect => ({
 
 /** Real two-sided contacts plus startup cohorts; no expected values or table lookup. */
 export async function interferencePairManifest(
-  left: LegacyInterferenceMechanic,
-  right: LegacyInterferenceMechanic,
+  left: RecoveryInterferenceMechanic,
+  right: RecoveryInterferenceMechanic,
 ): Promise<Manifest> {
   const input = await combatManifest(10, {
     ability: {
@@ -79,6 +83,23 @@ export async function interferencePairManifest(
     const status = initialStatus({ categories: ['debuff'], durationSteps: 20 });
     let reaction: Partial<Definition<'ability'>> | undefined;
     switch (mechanic) {
+      case 'attribute-absorption':
+        status.adjustments = [
+          { target: 'absorption', operation: 'add', element: 'fire', amount: 10000 },
+        ];
+        break;
+      case 'drain':
+        action.effects = [
+          {
+            kind: 'damage',
+            amount: 4,
+            attackScaleBps: 0,
+            element: 'fire',
+            defense: 'none',
+            drainBps: 10000,
+          },
+        ];
+        break;
       case 'damage':
         action.effects = [damage(7)];
         break;

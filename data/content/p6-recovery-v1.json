@@ -1,0 +1,275 @@
+[
+  {
+    "kind": "status",
+    "id": "fire-absorption-v1",
+    "revision": 1,
+    "definition": {
+      "name": "火炎吸収体質",
+      "originalText": "火属性のダメージを100%吸収する常時効果。",
+      "stackKey": "absorb-fire",
+      "stacking": "refresh",
+      "durationSteps": 6000,
+      "maxStacks": 1,
+      "categories": ["permanent"],
+      "visibility": "hidden",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [],
+      "adjustments": [
+        {
+          "target": "absorption",
+          "operation": "add",
+          "element": "fire",
+          "amount": 10000
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "drain-ember-v1",
+    "revision": 1,
+    "definition": {
+      "name": "吸命の火弾",
+      "originalText": "火属性の飛翔体。実際のHP損失の50%で回復する。",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 5,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "projectile",
+        "speedMmPerSecond": 30000,
+        "radiusMm": 80,
+        "lifetimeSteps": 100,
+        "gravityScaleBps": 0,
+        "homingTurnMilliDegreesPerSecond": 0,
+        "observation": "launch-only",
+        "explosionRadiusMm": 0,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 30,
+          "attackScaleBps": 0,
+          "element": "fire",
+          "defense": "none",
+          "drainBps": 5000
+        }
+      ],
+      "categories": ["magic"]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "fire-absorption-trait-v1",
+    "revision": 1,
+    "definition": {
+      "name": "火炎吸収",
+      "originalText": "戦闘開始時に火炎吸収体質を付与する。",
+      "trigger": "battle-start",
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 1
+      },
+      "castSteps": 0,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "$ref": "status:fire-absorption-v1:1"
+          }
+        }
+      ],
+      "categories": ["magic"]
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "drain-ember-policy-v1",
+    "revision": 1,
+    "definition": {
+      "name": "吸命火弾",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 10000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "character",
+    "id": "ember-drainer-v1",
+    "revision": 1,
+    "definition": {
+      "name": "吸命の術師",
+      "originalText": "P6-02検証用。公式20体とは別のサンプル。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:drain-ember-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:drain-ember-policy-v1:1"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "ember-absorber-v1",
+    "revision": 1,
+    "definition": {
+      "name": "火炎吸収の術師",
+      "originalText": "P6-02検証用。公式20体とは別のサンプル。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:drain-ember-v1:1"
+        },
+        {
+          "$ref": "ability:fire-absorption-trait-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:drain-ember-policy-v1:1"
+      }
+    }
+  }
+]
