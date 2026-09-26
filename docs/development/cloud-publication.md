@@ -21,8 +21,9 @@ Daily leagueは毎日03:17 UTC予定（遅延あり）。変更・再試行対�
 mode=dry-runで見積もり、publishで公開（既定20キャラ）。
 予算・試行を先に保存し、失敗も分母に含む暫定順位を公開。
 各試合の再試行1回、上限自動拡張・削除なし。
-再開は新規runかRe-run all jobs。**失敗ジョブだけ再実行しない**。
-artifactは7日、公開R2履歴は保持。費用・実公開・スマホ表示は別途実測。
+再開は新規runかRe-run all jobs。失敗ジョブだけ再実行しない。
+全compute成功後の公開失敗はRecover league publicationで元run/attemptを指定。
+元の結果だけ検証・公開し、再計算せず新しい通信leaseを消費する。artifactは7日。
 
 失敗はexit 1、Summaryと`reports/failure-<command>.json`に分類・段階・対処を残す。
 `PUBLICATION_COMMIT_UNKNOWN`は成否不明、`PUBLICATION_UNVERIFIED`は公開後の検証未完了。
@@ -34,4 +35,4 @@ R2/Workerを読み戻し、同一公開入力で復旧する。`USAGE_UNVERIFIED
 Actions → Publish replaysは手動。成功main CIのrun IDをci_run_idに指定し、Public viewer成功も確認。
 plan_input=sampleは2試合。独自入力はdata/publication/<name>.json。dry-run後にpublish。
 dry-runは認証付きR2読取りのみ、復元は既定256MB。同じSHA・CI ID・入力でRe-run all jobs。
-詳しくは[コマンド](local-usage.md)。
+[コマンド](local-usage.md)。

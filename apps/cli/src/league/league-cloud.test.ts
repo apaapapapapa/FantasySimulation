@@ -55,6 +55,14 @@ it('resumes a missing worker once, verifies results, skips unchanged input and r
     expect(selection.files.some((path) => /\/(?:\.work|complete|indexes|plans)\//.test(path))).toBe(
       false,
     );
+    // Publication recovery must keep the original data identity, even on newer tooling.
+    for (const [candidate, execution] of [
+      [{ ...source, sha: 'e'.repeat(40) }, 'second'],
+      [source, 'new-publication-run'],
+    ] as const)
+      await expect(
+        finishCloudLeague(second, join(root, 'results'), publicRoot, candidate, execution),
+      ).rejects.toThrow('finalizer identity');
     expect(
       await finishCloudLeague(second, join(root, 'results'), publicRoot, source, 'second'),
     ).toMatchObject({ status: 'formal', planned: 4, resolved: 4 });
