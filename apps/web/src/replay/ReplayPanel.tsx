@@ -7,14 +7,37 @@ import { Scene2D } from './Scene2D.tsx';
 import { replayErrorText as errorText } from './load-message.ts';
 import { SceneBoundary } from './SceneBoundary.tsx';
 import { playbackStep } from './playback-clock.ts';
-import type { CameraMode } from './Scene.tsx';
+import type { CameraMode, CameraNudge } from './Scene.tsx';
+import { webglAvailable } from './webgl.ts';
+import { shareTimeLabel } from './share.ts';
 import { ReplayEvents, CurrentEvents } from './ReplayEvents.tsx';
 import { NO_OVERLAYS, OVERLAY_LABELS } from './overlays.ts';
 import { ReplayResources } from './ReplayResources.tsx';
 
 const Scene = lazy(() => import('./Scene.tsx'));
 
-export function ReplayPanel({ source }: { source: ReplaySource }) {
+type View = '3d' | '2d';
+const NUDGES: [CameraNudge['kind'], string][] = [
+  ['left', '左へ回す'],
+  ['right', '右へ回す'],
+  ['in', '近づく'],
+  ['out', '離れる'],
+];
+
+export function ReplayPanel({
+  source,
+  local = false,
+  initialStep = 0,
+  stepLink,
+}: {
+  source: ReplaySource;
+  /** A viewer-chosen file: never presented as a published match or an official ranking. */
+  local?: boolean;
+  /** Step requested by a shared link; applied once when this source opens. */
+  initialStep?: number;
+  /** Shareable URL for the displayed step; omitted where no stable link exists. */
+  stepLink?: (step: number) => string;
+}) {
   const [replay, setReplay] = useState<ReplaySession | null>(null);
   const [frame, setFrame] = useState<ReplayFrame | null>(null);
   const state = frame?.checkpoint;
@@ -25,6 +48,13 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
   const [speed, setSpeed] = useState(1);
   const [cameraMode, setCameraMode] = useState<CameraMode>('overview');
   const [overlays, setOverlays] = useState(NO_OVERLAYS);
+  const [webgl] = useState(webglAvailable);
+  const [view, setView] = useState<View>(webgl ? '3d' : '2d');
+  const [nudge, setNudge] = useState<CameraNudge | null>(null);
+  const [zoom, setZoom] = useState(1);
+  const [copied, setCopied] = useState('');
+  const [notice, setNotice] = useState('');
+  const requested = useRef(initialStep);
   const player = replay?.manifest.end.kind === 'result' ? replay : null;
   const model = useMemo(
     () =>
@@ -66,11 +96,19 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
     setFrame(null);
     setTarget(0);
     setError('');
+    setNotice('');
     setLoading(true);
     setPlaying(false);
     void openReplaySession(source, controller.signal)
       .then((opened) => {
         if (!controller.signal.aborted) {
+          const last = opened.manifest.lastVerifiedStep ?? 0,
+            step = requested.current;
+          if (step > last)
+            setNotice(
+              `リンクのstep ${step} は記録済み範囲 0–${last} の外です。先頭から表示します。`,
+            );
+          else if (opened.manifest.end.kind === 'result') setTarget(step);
           setReplay(opened);
           if (opened.manifest.end.kind !== 'result') setLoading(false);
         }
@@ -123,9 +161,39 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
   }, [playing, speed, replay]);
   const end = replay?.manifest.end;
   const last = replay?.manifest.lastVerifiedStep ?? 0;
+  const shown = state?.step;
+  const link =
+    stepLink && shown !== undefined ? new URL(stepLink(shown), window.location.href).href : null;
+  function camera(kind: CameraNudge['kind']) {
+    if (view === '2d') {
+      if (kind === 'in' || kind === 'out')
+        setZoom((z) => Math.min(8, Math.max(1, kind === 'in' ? z * 1.5 : z / 1.5)));
+      return;
+    }
+    setCameraMode('free');
+    setNudge((previous) => ({ kind, seq: (previous?.seq ?? 0) + 1 }));
+  }
+  const flat = model && (
+    <Scene2D
+      model={model}
+      overlays={overlays}
+      zoom={zoom}
+      focus={cameraMode === 'follow' ? model.follow : model.centre}
+    />
+  );
   return (
-    <section ref={panel} tabIndex={-1} className="panel" aria-label="保存リプレイ">
-      <h2>保存リプレイ</h2>
+    <section
+      ref={panel}
+      tabIndex={-1}
+      className={local ? 'panel local-replay' : 'panel'}
+      aria-label={local ? 'ローカルリプレイ' : '保存リプレイ'}
+    >
+      <h2>{local ? 'ローカルファイルのリプレイ' : '保存リプレイ'}</h2>
+      {local && (
+        <p role="note" className="message local-note">
+          この端末で選んだファイルです。公開済みの試合・正式なランキングには含まれず、送信もしていません。checksumは破損検出用で、内容の真正性は確認していません。
+        </p>
+      )}
       {loading && (
         <p role="status" aria-label="読込状態">
           記録を読み込んでいます
@@ -134,6 +202,11 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
       {error && (
         <p role="alert" className="message error">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className="message error">
+          {notice}
         </p>
       )}
       {replay && (
@@ -159,16 +232,46 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
             )}
           {end?.kind === 'result' && (
             <>
-              {model && (
-                <SceneBoundary
-                  key={`scene:${replay.manifest.simulationHash}`}
-                  fallback={<Scene2D model={model} overlays={overlays} />}
-                >
-                  <Suspense fallback={<p>3D表示を準備しています</p>}>
-                    <Scene model={model} cameraMode={cameraMode} overlays={overlays} />
-                  </Suspense>
-                </SceneBoundary>
+              {!webgl && (
+                <p role="status" aria-label="描画状態">
+                  WebGLを利用できないため、2Dの俯瞰図と時系列のログで表示しています。
+                </p>
               )}
+              {model &&
+                (view === '2d' ? (
+                  flat
+                ) : (
+                  <SceneBoundary key={`scene:${replay.manifest.simulationHash}`} fallback={flat}>
+                    <Suspense fallback={<p>3D表示を準備しています</p>}>
+                      <Scene
+                        model={model}
+                        cameraMode={cameraMode}
+                        overlays={overlays}
+                        nudge={nudge}
+                      />
+                    </Suspense>
+                  </SceneBoundary>
+                ))}
+              <div className="actions" aria-label="カメラ操作">
+                <label>
+                  表示
+                  <select value={view} onChange={(e) => setView(e.target.value as View)}>
+                    <option value="3d" disabled={!webgl}>
+                      3D
+                    </option>
+                    <option value="2d">2D（俯瞰図）</option>
+                  </select>
+                </label>
+                {NUDGES.map(([kind, label]) => (
+                  <button
+                    key={kind}
+                    disabled={view === '2d' && (kind === 'left' || kind === 'right')}
+                    onClick={() => camera(kind)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
               <div className="actions">
                 <button
                   disabled={!playing && (loading || target >= last)}
@@ -244,7 +347,36 @@ export function ReplayPanel({ source }: { source: ReplaySource }) {
               </div>
               <p>
                 表示中のstep: <output aria-label="現在のstep">{state?.step ?? '—'}</output>
+                {shown !== undefined && (
+                  <>
+                    {' '}
+                    / 表示時刻{' '}
+                    <output aria-label="表示時刻">
+                      {shareTimeLabel(shown, replay.manifest.profile.stepMs)}
+                    </output>
+                  </>
+                )}
               </p>
+              {link && (
+                <p className="share">
+                  <a href={link} aria-label="この場面へのリンク">
+                    この場面（step {shown}）へのリンク
+                  </a>{' '}
+                  <button
+                    onClick={() => {
+                      // Clipboard access can be absent or denied; the link stays selectable.
+                      if (!navigator.clipboard) return;
+                      void navigator.clipboard
+                        .writeText(link)
+                        .then(() => setCopied(link))
+                        .catch(() => setCopied(''));
+                    }}
+                  >
+                    リンクをコピー
+                  </button>
+                  {copied === link && <span role="status"> コピーしました</span>}
+                </p>
+              )}
               <p>
                 色付きの身体・効果の印と、白線の判定形状を分けて表示します。視野は遮蔽判定前の定義上の範囲です。
               </p>

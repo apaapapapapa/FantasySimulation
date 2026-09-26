@@ -32,6 +32,10 @@ export const UI_STATIC_CASES = [
   'static-long-replay',
   'static-timeline-overlays',
   'static-status-expiry',
+  'static-webgl-2d-to-end',
+  'static-mobile-controls',
+  'static-local-file',
+  'static-step-link',
 ] as const;
 export const UI_FAULTS = ['startup', 'timeout', 'crash'] as const;
 export type UiScenario = 'smoke' | 'static' | (typeof UI_FAULTS)[number];
@@ -64,7 +68,7 @@ export function uiSettings(scenario: UiScenario) {
     ...UI_SETTINGS,
     browsers: uiBrowsers(scenario),
     retries: scenario === 'smoke' || scenario === 'static' ? 1 : 0,
-    globalTimeout: scenario === 'static' ? 180000 : UI_SETTINGS.globalTimeout,
+    globalTimeout: scenario === 'static' ? 300000 : UI_SETTINGS.globalTimeout,
     timeout: scenario === 'static' ? 30000 : UI_SETTINGS.timeout,
   };
 }

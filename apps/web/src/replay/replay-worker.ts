@@ -1,5 +1,6 @@
 import { apiReplaySource } from './api-source.ts';
 import { publicLibrary } from './public-source.ts';
+import { localReplaySource } from './local-source.ts';
 import { openReplay } from './open-replay.ts';
 import { ReplayPlayer } from './replay-player.ts';
 import { toLoadError } from './artifacts.ts';
@@ -26,7 +27,9 @@ scope.onmessage = ({ data }) => {
       const source =
         location.mode === 'api'
           ? apiReplaySource(location.id, { base: location.base })
-          : publicLibrary(location.root).source(location.row);
+          : location.mode === 'local'
+            ? localReplaySource({ manifestBytes: location.manifest, files: location.files })
+            : publicLibrary(location.root).source(location.row);
       const replay = await openReplay(source, { signal });
       if (replay.manifest.end.kind === 'result') player = new ReplayPlayer(replay);
       value = { manifest: replay.manifest, context: replay.context };

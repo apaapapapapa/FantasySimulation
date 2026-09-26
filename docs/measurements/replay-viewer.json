@@ -232,10 +232,14 @@
     {
       "fixture": "publication-long / measure-6000",
       "scope": "Initial bounded loading, distant/backward/cached/overlapping seeks, camera interaction, speed and simulated visibility pause/resume preserve recorded state and result hash."
+    },
+    {
+      "fixture": "replays / stage-vanguard-staged-duelist-300",
+      "scope": "New #82 engine-generated recording (e2e/generate-stage-fixture.ts) loaded as local files: #61 stamina, walk/run, two-stage return cut, dash stage motion, radial blade and active forced motion. stage-display.test.ts and static-local-file check the labels and recorded-velocity arrows; placed areas and beams are not engine features and are not claimed."
     }
   ],
   "limitations": [
-    "Physical iPhone, iPad and Android devices, touch controls and actual operating-system suspension have not been tested. Chromium/WebKit on Linux CI do not prove physical-device support (#82).",
+    "Phone width and touch controls are checked only by Playwright mobile emulation (390x844, hasTouch, isMobile) on Linux Chromium/WebKit, using taps and on-screen camera buttons. Physical iPhone, iPad and Android devices, real drag/pinch gestures and actual operating-system suspension remain unverified.",
     "Visibility testing overrides document.hidden and dispatches visibilitychange; it does not emulate OS process eviction.",
     "Teleport and other unimplemented discontinuous abilities have no claimed fixture coverage. Add their saved display fixtures when those abilities are implemented.",
     "Launch events without coordinates and effective vision altered by status without a recorded value are omitted and explained; coordinates/ranges are not invented.",

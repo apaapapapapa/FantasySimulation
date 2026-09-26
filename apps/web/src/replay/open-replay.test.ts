@@ -149,7 +149,14 @@ describe('saved replay loading through the local API adapter', () => {
     const svg = renderToStaticMarkup(
       createElement(Scene2D, {
         model,
-        overlays: { vision: true, collision: true, paths: true, hits: true, rays: true },
+        overlays: {
+          vision: true,
+          collision: true,
+          paths: true,
+          hits: true,
+          rays: true,
+          motion: true,
+        },
       }),
     );
     expect(svg).toContain('#f3e59b');

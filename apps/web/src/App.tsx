@@ -4,6 +4,7 @@ import { BattlePanel } from './workbench/BattlePanel.tsx';
 import { ReplayPanel } from './replay/ReplayPanel.tsx';
 import { apiReplaySource } from './replay/api-source.ts';
 import { PublicViewer } from './publication/PublicViewer.tsx';
+import { LocalReplays } from './replay/LocalReplays.tsx';
 export function App() {
   return import.meta.env.VITE_APP_MODE === 'public' ? (
     <PublicViewer root={import.meta.env.VITE_PUBLICATION_ROOT} />
@@ -48,6 +49,7 @@ function LocalApp() {
         <BattlePanel revisionTick={revisionTick} onReplay={setReplayId} />
       </div>
       {replaySource && <ReplayPanel source={replaySource} />}
+      <LocalReplays />
     </main>
   );
 }

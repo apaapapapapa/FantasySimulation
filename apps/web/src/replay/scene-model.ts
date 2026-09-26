@@ -9,6 +9,12 @@ import type {
 export type Point = [number, number, number];
 type Shape = { id: string; kind: AttackGeometry['kind']; radius: number; points: [Point, Point] };
 const point = (v: { x: number; y: number; z: number }): Point => [v.x, v.y, v.z];
+/** Arrows show the recorded velocity over this display interval; they never move bodies. */
+export const ARROW_SECONDS = 0.1;
+const ahead = (from: Point, velocity: Point): [Point, Point] => [
+  from,
+  from.map((n, i) => n + velocity[i]! * ARROW_SECONDS) as Point,
+];
 const metres = (v: { x: number; y: number; z: number }): Point =>
   point(v).map((n) => n / 1000) as Point;
 const colours = {
@@ -87,7 +93,59 @@ export function buildSceneModel(
         : index === 0
           ? '#d4b780'
           : '#68b7db',
+      locomotion: actor.locomotion ?? null,
+      stamina:
+        actor.resources.stamina === undefined
+          ? null
+          : { value: actor.resources.stamina, max: definition.stamina?.max ?? null },
+      stage: actor.action?.stage
+        ? {
+            abilityId: actor.action.abilityId,
+            index: actor.action.stage.contact.stageIndex,
+            count: stageCount(context, definition, actor.action.abilityId),
+            state: actor.action.stage.state,
+            shape: actor.action.stage.shape,
+            motion: actor.action.stage.motion
+              ? {
+                  kind: actor.action.stage.motion.kind,
+                  applied: actor.action.stage.motion.applied,
+                  metresPerSecond: actor.action.stage.motion.speedMmPerSecond / 1000,
+                }
+              : null,
+          }
+        : null,
+      force: actor.force?.active
+        ? { applied: point(actor.force.applied), capped: actor.force.capped }
+        : null,
     };
+  });
+  // Recorded forced velocity (m/s) and the requested stage-motion velocity; no path is inferred.
+  const arrows = (checkpoint.state?.actors ?? []).flatMap((actor) => {
+    const from = point(actor.position),
+      motion = actor.action?.stage?.motion;
+    return [
+      ...(actor.force?.active
+        ? [
+            {
+              id: `${actor.id}:force`,
+              kind: 'force' as const,
+              points: ahead(from, point(actor.force.applied)),
+            },
+          ]
+        : []),
+      ...(motion && actor.action?.stage?.state === 'active'
+        ? [
+            {
+              id: `${actor.id}:stage-motion`,
+              kind: 'stage-motion' as const,
+              points: ahead(
+                from,
+                point(motion.direction).map((n) => (n * motion.speedMmPerSecond) / 1000) as Point,
+              ),
+            },
+          ]
+        : []),
+    ];
   });
   const paths = records.flatMap((record) =>
     record.kind === 'interval'
@@ -169,6 +227,7 @@ export function buildSceneModel(
     })),
     paths,
     shapes,
+    arrows,
     events: hits,
     rays: [
       ...shapes.filter((shape) => shape.kind === 'ray'),
@@ -206,6 +265,19 @@ export function buildSceneModel(
   };
 }
 export type SceneModel = ReturnType<typeof buildSceneModel>;
+
+/** Declared stage count of the recorded ability revision; null for legacy single-stage data. */
+export function stageCount(
+  context: ReplayContext,
+  character: ReplayContext['actors'][number]['character'],
+  abilityId: string,
+) {
+  const ref = character.abilities.find((a) => a.id === abilityId);
+  const ability = context.manifest.revisions.find(
+    (r) => r.kind === 'ability' && r.id === ref?.id && r.revision === ref?.revision,
+  );
+  return ability?.kind === 'ability' ? (ability.definition.stages?.length ?? 1) : null;
+}
 
 /** The same 3D cone boundary is projected by both renderers; no visibility is inferred. */
 export function visionRing(actor: SceneModel['actors'][number]): Point[] {
