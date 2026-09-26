@@ -274,33 +274,32 @@ describe('delivery evidence', () => {
   });
 });
 
-function plannedFixture(full: boolean) {
-  const value = fixture();
-  const run = value.prRun!;
-  const plan = classify(sourceReport(), 'pull_request', [
+function plannedRun(run: RunEvidence, full: boolean, main = false) {
+  const plan = classify(sourceReport(main), main ? 'push' : 'pull_request', [
     full ? 'apps/web/source.ts' : 'README.md',
   ]);
-  const security = sourceReport();
+  const sha = main ? MERGED : TESTED;
+  const security = sourceReport(main);
   security.producer = 'security-evidence';
   security.checks = SECURITY_CHECKS.map((id) => ({
     id,
     required: true,
     status: 'pass',
     reason: 'fixture',
-    evidence: [{ uri: '.generated/harness/ci/security.json', sourceSha: TESTED }],
+    evidence: [{ uri: '.generated/harness/ci/security.json', sourceSha: sha }],
   }));
   const reports: Record<string, Report> = { security };
-  if (full)
+  if (plan.ui)
     reports.ui = {
-      ...sourceReport(),
+      ...sourceReport(main),
       producer: 'ui-runner',
       checks: UI_CHECKS.map((id) => ({
-        ...sourceReport().checks[0]!,
+        ...sourceReport(main).checks[0]!,
         id,
       })),
     };
   for (const [index, os] of ['ubuntu-latest'].entries()) {
-    const report = sourceReport();
+    const report = sourceReport(main);
     if (!full) {
       report.producer = 'docs-check';
       report.checks[0]!.id = 'docs:diff';
@@ -315,16 +314,18 @@ function plannedFixture(full: boolean) {
     changes: 'success',
     security: 'success',
     'dependency-policy': 'success',
-    verify: full ? 'success' : 'skipped',
-    load: full ? 'success' : 'skipped',
+    tasks: 'success',
+    corpus: 'success',
+    load: plan.load ? 'success' : 'skipped',
     docs: full ? 'skipped' : 'success',
-    ui: full ? 'success' : 'skipped',
+    ui: plan.ui ? 'success' : 'skipped',
   };
+  const id = main ? 20 : 10;
   for (const [index, name] of ['changes', 'ci-gate'].entries())
     run.jobs.push({
       id: 3 + index,
       name,
-      run_id: 10,
+      run_id: id,
       run_attempt: 1,
       status: 'completed',
       conclusion: 'success',
@@ -340,11 +341,16 @@ function plannedFixture(full: boolean) {
   run.jobs.push({
     id: 5,
     name: skipped,
-    run_id: 10,
+    run_id: id,
     run_attempt: 1,
     status: 'completed',
     conclusion: 'skipped',
   });
+  return skipped;
+}
+function plannedFixture(full: boolean) {
+  const value = fixture();
+  const skipped = plannedRun(value.prRun!, full);
   value.checks.push({ id: 5, name: skipped, status: 'completed', conclusion: 'skipped' });
   return value;
 }
@@ -355,13 +361,8 @@ describe('delivery with differential CI', () => {
     report.checks = report.checks.filter((check) => check.id !== 'docs:context');
     assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
   });
-  it('accepts only observed matrix skips authorized by the exact wording plan', () => {
-    for (const name of [
-      'Source (${{ matrix.task }})',
-      'Corpus (ubuntu-latest)',
-      'Paired load (ubuntu-latest, ${{ matrix.shard }}/3)',
-    ]) {
-      const value = plannedFixture(false);
+  it('accepts only observed skips authorized by the exact plan', () => {
+    const skip = (value: DeliverySnapshot, name: string) => {
       value.prRun!.jobs.push({
         id: 20,
         name,
@@ -371,19 +372,17 @@ describe('delivery with differential CI', () => {
         conclusion: 'skipped',
       });
       value.checks.push({ id: 20, name, status: 'completed', conclusion: 'skipped' });
-      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
-      const full = plannedFixture(true);
-      full.prRun!.jobs.push({
-        id: 20,
-        name,
-        run_id: 10,
-        run_attempt: 1,
-        status: 'completed',
-        conclusion: 'skipped',
-      });
-      full.checks.push({ id: 20, name, status: 'completed', conclusion: 'skipped' });
-      assert.equal(assessDelivery(full, 'pr', receipt(full)).exitCode, 2);
-    }
+      return assessDelivery(value, 'pr', receipt(value)).exitCode;
+    };
+    // PRs never wait for main-only browser, paired load or CodeQL work.
+    for (const name of [
+      'UI (Linux Chromium/WebKit)',
+      'Paired load (ubuntu-latest, ${{ matrix.shard }}/3)',
+    ])
+      for (const full of [true, false]) assert.equal(skip(plannedFixture(full), name), 0);
+    // Source tasks and the corpus observation run for every PR, including wording-only ones.
+    for (const name of ['Source (${{ matrix.task }})', 'Corpus (ubuntu-latest)'])
+      for (const full of [true, false]) assert.equal(skip(plannedFixture(full), name), 2);
   });
   it('accepts full and wording plans only with Linux receipts and the aggregate', () => {
     for (const full of [true, false]) {
@@ -405,11 +404,27 @@ describe('delivery with differential CI', () => {
     }
   });
   it('requires corpus and the complete paired load receipt even when CI claims success', () => {
-    for (const id of ['corpus:artifacts', 'ci-evidence:load-pair']) {
-      const value = plannedFixture(true);
-      const gate = value.prRun!.gate!.report as Report;
-      gate.checks = gate.checks.filter((check) => check.id !== id);
-      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    const value = plannedFixture(true);
+    const gate = value.prRun!.gate!.report as Report;
+    gate.checks = gate.checks.filter((check) => check.id !== 'corpus:artifacts');
+    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 2);
+    const merged = () => {
+      const result = fixture(true);
+      plannedRun(result.prRun!, true);
+      plannedRun(result.mainRun!, true, true);
+      return result;
+    };
+    assert.equal(assessDelivery(merged(), 'merge', receipt(merged())).exitCode, 0);
+    for (const id of [
+      'corpus:artifacts',
+      'ci-evidence:load-pair',
+      'ci-evidence:ui',
+      'security:codeql-severity',
+    ]) {
+      const main = merged();
+      const report = main.mainRun!.gate!.report as Report;
+      report.checks = report.checks.filter((check) => check.id !== id);
+      assert.equal(assessDelivery(main, 'merge', receipt(main)).exitCode, 2, id);
     }
   });
   it('rejects missing, stale, failing and foreign-attempt plan/gate receipts', () => {

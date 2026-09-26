@@ -12,6 +12,7 @@ export interface Plan extends Identity {
   simulation: boolean;
   codeql: boolean;
   ui: boolean;
+  load: boolean;
   reason: string;
   paths: string[];
 }
@@ -44,19 +45,25 @@ export function classify(info: Identity, event: string, paths: string[] | null):
         /^apps\/web\/(?:src\/[\w./-]+\.(?:tsx?|css)|index\.html)$/.test(path),
     );
   const simulation = event !== 'pull_request' || info.baselineSha === null || !presentationOnly;
+  // PRs use the fast lane; browser E2E, CodeQL and paired load gate main, dispatch and schedule
+  // runs, and the release that follows them, instead of every PR.
+  const extended = event !== 'pull_request';
   return {
     ...info,
     schemaVersion: 1,
     event,
     full,
     simulation,
-    codeql: full,
-    ui: full,
-    reason: full
-      ? simulation
-        ? 'All checks: source/configuration, main/dispatch/schedule or uncertain comparison'
-        : 'Presentation-only PR: static checks, all tests, builds and security; engine corpus/load excluded'
-      : 'Known nonempty PR diff contains only wording documents',
+    codeql: extended,
+    ui: extended,
+    load: extended,
+    reason: !full
+      ? 'Known nonempty PR diff contains only wording documents'
+      : extended
+        ? 'All checks: main/dispatch/schedule, including browser E2E, CodeQL and paired load'
+        : simulation
+          ? 'PR fast lane: static checks, all tests, build, corpus and security; E2E, CodeQL and paired load run on main'
+          : 'Presentation-only PR fast lane: static checks, all tests, build and security; corpus excluded',
     paths: paths ?? [],
   };
 }
@@ -87,7 +94,8 @@ export function parsePlan(input: unknown): Plan {
     value.full !== expected.full ||
     value.simulation !== expected.simulation ||
     value.codeql !== expected.codeql ||
-    value.ui !== expected.ui
+    value.ui !== expected.ui ||
+    value.load !== expected.load
   )
     throw new Error('CI scope differs from the conservative path policy');
   return {
@@ -98,6 +106,7 @@ export function parsePlan(input: unknown): Plan {
     simulation: expected.simulation,
     codeql: expected.codeql,
     ui: expected.ui,
+    load: expected.load,
     paths,
     reason: value.reason,
   };
@@ -161,7 +170,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     if (process.env.GITHUB_OUTPUT)
       appendFileSync(
         process.env.GITHUB_OUTPUT,
-        `full=${plan.full}\nsimulation=${plan.simulation}\ncodeql=${plan.codeql}\nui=${plan.ui}\nbaseline=${plan.baselineSha ?? ''}\n`,
+        `full=${plan.full}\nsimulation=${plan.simulation}\ncodeql=${plan.codeql}\nui=${plan.ui}\nload=${plan.load}\nbaseline=${plan.baselineSha ?? ''}\n`,
       );
     console.log(`FANTASY_CI_PLAN=${JSON.stringify(plan)}`);
   } catch (error) {

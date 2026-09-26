@@ -81,7 +81,7 @@ jobs:
       - name: Plan CodeQL scope from the actual merge diff
         id: scope
         run: node scripts/ci/plan.ts "$RUNNER_TEMP/codeql-plan.json"
-      - name: Record verified wording-only scope
+      - name: Record the verified planned CodeQL exclusion (wording-only or PR fast lane)
         if: steps.scope.outputs.codeql == 'false'
         run: node scripts/security/codeql-scope.ts
       - name: Initialize JavaScript and TypeScript analysis

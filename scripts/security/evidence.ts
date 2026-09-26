@@ -4,6 +4,7 @@ import { readBoundedJson } from '../harness/files.ts';
 import { assessReport, identity, record, timestamp } from '../harness/report.ts';
 import type { Check, Identity, Report } from '../harness/report.ts';
 import { isMain } from './common.ts';
+import { codeqlScopeReason } from './codeql-scope.ts';
 import { parsePlan, type Plan } from '../ci/plan.ts';
 
 const definitions = [
@@ -103,11 +104,13 @@ export function assessSecurityEvidence(
       if (matches) {
         if (receipt.status === 'fail') status = 'fail';
         else if (receipt.status === 'pass') {
-          const scoped =
-            checkId === 'codeql-severity' && plan !== undefined && !parsePlan(plan).codeql;
+          const scope =
+            checkId === 'codeql-severity' && plan !== undefined && !parsePlan(plan).codeql
+              ? codeqlScopeReason(parsePlan(plan))
+              : null;
           if (
-            scoped
-              ? receipt.reason === 'WORDING_ONLY_NO_CODE_CHANGE' &&
+            scope
+              ? receipt.reason === scope &&
                 counts.plannedSkip === 1 &&
                 Object.keys(counts).length === 1
               : passingCounts(checkId, counts)
