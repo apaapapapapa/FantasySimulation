@@ -19,13 +19,15 @@ Timeout/abort kills owned processes. DB/replays are excluded from uploads.
 Contexts allow assigned origins, block WebSockets/service workers; not an OS sandbox.
 `execution.json` records lockfile-pinned Playwright/browser revisions, Noto Sans JP 400,
 locale/timezone/viewport and software-GL settings. Browser cache identity includes
-OS/architecture/Playwright. Main, manual and weekly CI require both suites; PRs skip them.
+OS/architecture/browser/Playwright. Main, manual and weekly CI require both suites in four
+parallel parts (Chromium editor/battle+faults, Chromium static, two WebKit static halves);
+PRs skip them.
 
 Reports bind SHA/CI attempt/case/browser/retry/raw hashes and retain failed traces/images.
-Flaky, missing, skipped, unstarted or stale runs fail. The gate rechecks moved artifacts.
+Flaky, missing, skipped, unstarted or stale runs fail. The gate rechecks recombined parts.
 Separate startup/timeout/crash probes require failure artifacts and cleanup.
-Their expected failures never satisfy normal coverage. Static coverage requires both
-browsers and API-free execution.
+Their expected failures never satisfy normal coverage. Static parts must cover each case
+in both browsers exactly once, API-free.
 
 Fixtures use #81 schemas and unchanged 240-step bytes. `provenance.json` pins the archive;
 partial/unexecuted slots are synthetic. Regeneration requires review.

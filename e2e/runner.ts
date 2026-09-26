@@ -4,7 +4,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import type { startServers } from './servers.ts';
 import type { startStaticServers } from './static-servers.ts';
-import { CHROMIUM_ARGS, uiSettings, uiScenario } from './contract.ts';
+import { CHROMIUM_ARGS, isStaticScenario, uiSettings, uiScenario } from './contract.ts';
 
 const require = createRequire(import.meta.url);
 const output = process.env.FANTASY_UI_OUTPUT;
@@ -23,10 +23,9 @@ let servers: Awaited<ReturnType<typeof startServers | typeof startStaticServers>
 try {
   progress(stage);
   // A missing web package fails after the real API has bound, exercising partial startup cleanup.
-  const start =
-    scenario === 'static'
-      ? (await import('./static-servers.ts')).startStaticServers
-      : (await import('./servers.ts')).startServers;
+  const start = isStaticScenario(scenario)
+    ? (await import('./static-servers.ts')).startStaticServers
+    : (await import('./servers.ts')).startServers;
   servers = await start(
     scenario === 'startup' ? join(temporary, 'missing-web') : process.cwd(),
     temporary,
@@ -37,7 +36,7 @@ try {
           ? 'servers-stopped'
           : state.webOrigin
             ? 'web-ready'
-            : scenario === 'static'
+            : isStaticScenario(scenario)
               ? 'fixtures-ready'
               : 'api-ready',
       );

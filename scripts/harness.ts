@@ -50,9 +50,14 @@ try {
     process.exitCode = snapshot.errors.length ? 2 : 0;
   } else {
     let result;
-    if (command === 'ui' && args.length === 0) {
+    if (command === 'ui' && (args.length === 0 || (args.length === 2 && args[0] === '--part'))) {
       const { collectUi } = await import('./harness/ui.ts');
-      result = await collectUi(process.cwd(), input === 'auto' ? undefined : input);
+      const { uiPart } = await import('../e2e/contract.ts');
+      result = await collectUi(
+        process.cwd(),
+        input === 'auto' ? undefined : input,
+        args.length ? uiPart(args[1]!) : 'all',
+      );
     } else if (command === 'source' && args.length === 0)
       result = await collectSource(process.cwd(), input);
     else if (command === 'corpus' && (args.length === 0 || args[0] === '--observe')) {

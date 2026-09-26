@@ -7,8 +7,10 @@ import type { Plan } from '../ci/plan.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { CORPUS_ARTIFACT_CHECK } from './corpus-compare.ts';
 import { LOAD_JOBS, LOAD_MATRIX_JOB } from './load-contract.ts';
+import { UI_JOBS, UI_MATRIX_JOB } from '../../e2e/contract.ts';
 
-export const VERIFY_JOBS = ['Verify (ubuntu-latest)'] as const;
+/** Full plans: ci-gate aggregates the Linux task receipts and prints their source report. */
+export const SOURCE_REPORT_JOBS = ['ci-gate'] as const;
 export const DOCS_JOBS = ['Docs (ubuntu-latest)'] as const;
 export type DeliveryTarget = 'pr' | 'merge';
 export interface RunEvidence {
@@ -318,7 +320,7 @@ export function validateRun(
       };
   }
   let testedSource: string | null = null;
-  for (const name of plan?.full === false ? DOCS_JOBS : VERIFY_JOBS) {
+  for (const name of plan?.full === false ? DOCS_JOBS : SOURCE_REPORT_JOBS) {
     const matching = jobs.filter((job) => job.name === name);
     if (matching.length !== 1) return { status: 'unknown', reason: `Missing or ambiguous ${name}` };
     const job = matching[0]!;
@@ -461,9 +463,9 @@ export function assessDelivery(
     const plan = parsePlan(snapshot.prRun.plan.value);
     // Source tasks and the corpus observation always run; only these jobs are planned skips.
     const names: readonly string[] = [
-      ...(plan.full ? DOCS_JOBS : VERIFY_JOBS),
+      ...(plan.full ? DOCS_JOBS : []),
       ...(plan.load ? [] : [...LOAD_JOBS, LOAD_MATRIX_JOB]),
-      ...(plan.ui ? [] : ['UI (Linux Chromium/WebKit)']),
+      ...(plan.ui ? [] : [...UI_JOBS, UI_MATRIX_JOB]),
     ];
     for (const job of objects(snapshot.prRun.jobs))
       if (names.includes(String(job.name)) && job.conclusion === 'skipped')
