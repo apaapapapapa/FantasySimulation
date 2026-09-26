@@ -2,6 +2,24 @@
   "schemaVersion": 1,
   "reviews": [
     {
+      "baselineSha": "b6b6b067fed78688dfa6e9db5aa5740d4f4e5423",
+      "beforeDigest": "613ae49c35c57da5b29c2ef50fe6cd45288a9d3f7c8bd4db5a73d201518817fe",
+      "afterDigest": "833e10dbe2a4cfb935d7fe1ed755c8d413095fe013f4fa624f7818ca7a48d2a3",
+      "introduction": false,
+      "comparison": "independent",
+      "reviewer": "Codex self-review; not independent approval",
+      "reason": "P6-01 (#185) introduces spatial-v1.21 and new standard-deflection-v1 / standard-tactics-deflection-v1 rules under ADR0010 while preserving all 105 published definitions. Reviewed actual main CI 36262433450 attempt 1: exact baseline b6b6b067fed78688dfa6e9db5aa5740d4f4e5423 versus merged source cad13a8c255119569b337e15331a803c4556ebde. The official readPairedShards collector validates all three physical-runner shards, raw commands, warmups, five alternating trials of each of seven cases (35 observations per revision), regression probes and unchanged deterministic ceilings. Every outcome kind and step/cast/candidate/path-node/event/log-byte/trajectory-byte vector is stable within each revision and identical across revisions. The seven recipes, seeds, scenarios and participants are unchanged; only engine/rules and derived fixed input identities change. Node v24.19.0, pnpm 11.27.1, lockfile, physics assets and load profile are identical. Candidate corpus independently passes seven inputs and 256 mapped regressions; all 1554 tests and four Linux UI partitions pass. This exact-baseline review supplies the missing independent-transition record, retaining unknown paired comparability and making no same-input timing or RSS claim. It changes no budgets, expectations or gate logic and does not relabel the original failed gate as successful. Subsequent CI must validate its own actual source, baseline and raw evidence.",
+      "evidence": [
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36262433450/artifacts/10913051995",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36262433450/artifacts/10913071822",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36262433450/artifacts/10913106770",
+        "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36262433450/artifacts/10913196517",
+        "packages/engine/fixtures/spatial/corpus.json",
+        "packages/engine/src/spatial/projectile-deflection-boundaries.test.ts",
+        "docs/rules/reactions.md"
+      ]
+    },
+    {
       "baselineSha": "445ba503c254ba32a84cafdf7dab5af3de758ceb",
       "beforeDigest": "da38951681f9fc25390e86158c888669365afd0365c0700fb001943a3e17db8b",
       "afterDigest": "613ae49c35c57da5b29c2ef50fe6cd45288a9d3f7c8bd4db5a73d201518817fe",
