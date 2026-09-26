@@ -17,7 +17,7 @@ function coverage(): Record<string, CapabilityCoverage> {
         replay: responsibility,
         display: responsibility,
       },
-      tests: ['feature.test.ts'],
+      tests: [{ path: 'feature.test.ts', name: 'handles example' }],
     },
   };
 }
@@ -25,7 +25,7 @@ function inspect(
   code: string,
   contract = coverage(),
   expected = ['effect:example'],
-  testSource = 'declare function expect(x: unknown): void; expect(1);',
+  testSource = "import { it, expect } from 'vite-plus/test'; it('handles example', () => { const example = 1; expect(example).toBe(1); });",
 ) {
   const project = createTestProject({
     [path]: code,
@@ -46,7 +46,7 @@ it('requires every current effect and shape to have live owners and behavioral t
 
 it('rejects absent test files, empty coverage and files without assertions', () => {
   const code = 'const work = (n: number) => n + 1;';
-  for (const tests of [[], ['missing.test.ts']]) {
+  for (const tests of [[], [{ path: 'missing.test.ts', name: 'handles example' }]]) {
     const contract = coverage();
     contract['effect:example']!.tests = tests;
     expect(inspect(code, contract).some((finding) => finding.role === 'tests')).toBe(true);
@@ -56,6 +56,24 @@ it('rejects absent test files, empty coverage and files without assertions', () 
       (finding) => finding.role === 'tests',
     ),
   ).toBe(true);
+});
+
+it('requires a unique active named test with a kind reference and an assertion in its callback', () => {
+  for (const source of [
+    "it('unrelated', () => { expect('example').toBe('example'); });",
+    "it('handles example', () => { expect(1).toBe(1); });",
+    "expect('example').toBe('example'); it('handles example', () => {});",
+    "it.skip('handles example', () => { expect('example').toBe('example'); });",
+    "describe.skip('group', () => { it('handles example', () => { expect('example').toBe('example'); }); });",
+    "it('handles example', () => { expect('example'); });",
+    "it('handles example', () => { expect('example').toBe('example'); }); it('handles example', () => {});",
+  ]) {
+    expect(
+      inspect('const work = (n: number) => n + 1;', coverage(), ['effect:example'], source).some(
+        (finding) => finding.role === 'tests',
+      ),
+    ).toBe(true);
+  }
 });
 
 it.each([
@@ -89,6 +107,19 @@ it.each([
   '() => { const a = 0; const b = (a + 1); return b; }',
   '() => { const a = undefined; const b = a; return b; }',
   '() => { return false; performWork(); }',
+  '() => { if (false) performWork(); }',
+  '() => { if (0) performWork(); }',
+  '() => { if (NaN) performWork(); }',
+  '() => { if (Number.NaN) performWork(); }',
+  '() => { if (1 === 2) performWork(); }',
+  '() => { const enabled = false; if (enabled) performWork(); }',
+  '() => { if (!true) { performWork(); } }',
+  '() => { if (true) return; performWork(); }',
+  '() => { if (true) { return false; } else performWork(); }',
+  '() => { while (false) performWork(); }',
+  '() => { for (let i = 0; false; i++) performWork(); }',
+  '() => { { return; } performWork(); }',
+  '() => { false; NaN; }',
 ])('rejects a claimed implemented handler %s', (body) => {
   expect(inspect(`const work = ${body};`)).toHaveLength(CAPABILITY_ROLES.length);
 });
@@ -114,6 +145,15 @@ it('resolves aliases instead of treating an empty function name as implementatio
   expect(
     inspect('const work = (n: number) => { const Number = { NaN: n }; return Number.NaN; };'),
   ).toEqual([]);
+  for (const body of [
+    '() => { if (true) performWork(); }',
+    '() => { if (false) return; else performWork(); }',
+    '() => { if (false) performWork(); performOtherWork(); }',
+    '() => { do { performWork(); } while (false); }',
+    '() => { for (performWork(); false;) {} }',
+    '() => { if ({ value: performWork() }) {} }',
+  ])
+    expect(inspect(`const work = ${body};`)).toEqual([]);
 });
 
 it('requires explicit, live delegation and rejects missing responsibilities/new schema kinds', () => {

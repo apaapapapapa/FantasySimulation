@@ -4,6 +4,7 @@ import {
   isFunctionExpression,
   isVariableDeclaration,
   isVariableStatement,
+  isVariableDeclarationList,
   isPrefixUnaryExpression,
   isVoidExpression,
   isBinaryExpression,
@@ -26,11 +27,17 @@ import {
   isBlock,
   isReturnStatement,
   isCallExpression,
+  isExpressionStatement,
+  isIfStatement,
+  isWhileStatement,
+  isDoStatement,
+  isForStatement,
   SyntaxKind,
 } from 'typescript/unstable/ast';
 import type { Node, SourceFile } from 'typescript/unstable/ast';
 import { EffectSchema, AttackSchema } from '@fantasy/domain/spatial';
 import { walk, withSources } from './ast.ts';
+import { hasBehavioralEvidence } from './capability-evidence.ts';
 import {
   CAPABILITY_ROLES,
   CAPABILITY_COVERAGE,
@@ -153,6 +160,104 @@ function constant(
     (isIdentifier(node) && locals.get(node.text) === true)
   );
 }
+type Bindings = { constants: Map<string, boolean>; truth: Map<string, boolean | undefined> };
+function truth(node: Node | undefined, bindings: Bindings): boolean | undefined {
+  if (!node) return undefined;
+  if (isParenthesizedExpression(node) || isAsExpression(node) || isSatisfiesExpression(node))
+    return truth(node.expression, bindings);
+  if (isIdentifier(node) && bindings.truth.has(node.text)) return bindings.truth.get(node.text);
+  if (node.kind === SyntaxKind.FalseKeyword || node.kind === SyntaxKind.NullKeyword) return false;
+  if (
+    node.kind === SyntaxKind.TrueKeyword ||
+    isObjectLiteralExpression(node) ||
+    isArrayLiteralExpression(node)
+  )
+    return true;
+  if (isStringLiteral(node)) return node.text.length !== 0;
+  if (node.kind === SyntaxKind.NumericLiteral) return Number(node.getText()) !== 0;
+  if (isPrefixUnaryExpression(node) && node.operator === SyntaxKind.ExclamationToken) {
+    const value = truth(node.operand, bindings);
+    return value === undefined ? undefined : !value;
+  }
+  if (isVoidExpression(node) && constant(node.expression, bindings.constants)) return false;
+  if (builtInConstant(node, bindings.constants))
+    return !/(?:^|[.\"'])(?:NaN|undefined)(?:[\"']\])?$/.test(node.getText());
+  return undefined;
+}
+type Work = { work: boolean; stops: boolean };
+function statementsWork(statements: readonly Node[], bindings: Bindings): Work {
+  let work = false;
+  for (const statement of statements) {
+    const next = statementWork(statement, bindings);
+    work ||= next.work;
+    if (next.stops) return { work, stops: true };
+  }
+  return { work, stops: false };
+}
+function statementWork(statement: Node, bindings: Bindings): Work {
+  const { constants, truth: truths } = bindings;
+  const result = (work: boolean, stops = false): Work => ({ work, stops });
+  const branch = (node: Node | undefined) =>
+    node
+      ? statementWork(node, { constants: new Map(constants), truth: new Map(truths) })
+      : result(false);
+  if (isBlock(statement)) return statementsWork(statement.statements, bindings);
+  if (isVariableStatement(statement) || isVariableDeclarationList(statement)) {
+    let work = false;
+    const declarations = isVariableStatement(statement)
+      ? statement.declarationList.declarations
+      : statement.declarations;
+    for (const declaration of declarations) {
+      const inert = constant(declaration.initializer, constants);
+      const value = truth(declaration.initializer, bindings);
+      if (isIdentifier(declaration.name)) {
+        constants.set(declaration.name.text, inert);
+        truths.set(declaration.name.text, value);
+      }
+      work ||= !inert;
+    }
+    return result(work);
+  }
+  if (isReturnStatement(statement)) return result(!constant(statement.expression, constants), true);
+  if (statement.kind === SyntaxKind.ThrowStatement) return result(false, true);
+  if (isExpressionStatement(statement)) return result(!constant(statement.expression, constants));
+  if (isIfStatement(statement)) {
+    const selected = truth(statement.expression, bindings);
+    const conditionWork = !constant(statement.expression, constants);
+    if (selected !== undefined) {
+      const chosen = branch(selected ? statement.thenStatement : statement.elseStatement);
+      return result(conditionWork || chosen.work, chosen.stops);
+    }
+    const yes = branch(statement.thenStatement),
+      no = branch(statement.elseStatement);
+    return result(conditionWork || (yes.work && no.work), yes.stops && no.stops);
+  }
+  if (isWhileStatement(statement) || isForStatement(statement)) {
+    const condition = isWhileStatement(statement) ? statement.expression : statement.condition;
+    // A loop with a proven false condition never reaches its body or incrementor.
+    if (condition && constant(condition, constants) && truth(condition, bindings) !== true) {
+      const initializer = isForStatement(statement) ? statement.initializer : undefined;
+      return result(
+        initializer !== undefined &&
+          (isVariableDeclarationList(initializer)
+            ? statementWork(initializer, bindings).work
+            : !constant(initializer, constants)),
+      );
+    }
+    return result(
+      branch(statement.statement).work ||
+        (condition !== undefined && !constant(condition, constants)),
+    );
+  }
+  if (isDoStatement(statement)) return branch(statement.statement);
+  if (isFunctionDeclaration(statement) || statement.kind === SyntaxKind.EmptyStatement)
+    return result(false);
+  let work = false;
+  statement.forEachChild((child) => {
+    work ||= statementWork(child, bindings).work;
+  });
+  return result(work || (isCallExpression(statement) && !constant(statement, constants)));
+}
 function hasImplementation(node: Node | undefined): boolean {
   if (
     !node ||
@@ -167,23 +272,7 @@ function hasImplementation(node: Node | undefined): boolean {
       if (isIdentifier(binding)) locals.set(binding.text, false);
     });
   if (!isBlock(body)) return !constant(body, locals);
-  let substantive = false;
-  for (const statement of body.statements) {
-    if (isVariableStatement(statement)) {
-      for (const declaration of statement.declarationList.declarations) {
-        const inert = constant(declaration.initializer, locals);
-        if (isIdentifier(declaration.name)) locals.set(declaration.name.text, inert);
-        substantive ||= !inert;
-      }
-    } else if (isReturnStatement(statement)) {
-      return substantive || !constant(statement.expression, locals);
-    } else if (statement.kind === SyntaxKind.ThrowStatement) {
-      return substantive;
-    } else if (statement.kind !== SyntaxKind.EmptyStatement) {
-      substantive = true;
-    }
-  }
-  return substantive;
+  return statementsWork(body.statements, { constants: locals, truth: new Map() }).work;
 }
 export type CapabilityFinding = { capability: string; role: string; reason: string };
 
@@ -222,19 +311,14 @@ export function inspectCapabilities(
       }
     }
     if (!entry.tests.length) add(id, 'tests', 'No behavioral test coverage declared');
-    for (const path of entry.tests) {
-      const file = files.get(path);
-      let assertion = false;
-      if (file && /\.(?:test|spec)\.tsx?$/.test(path))
-        walk(file, (node) => {
-          if (
-            isCallExpression(node) &&
-            isIdentifier(node.expression) &&
-            node.expression.text === 'expect'
-          )
-            assertion = true;
-        });
-      if (!assertion) add(id, 'tests', `Missing test or assertions: ${path}`);
+    for (const evidence of entry.tests) {
+      const file = files.get(evidence.path);
+      if (!file || !hasBehavioralEvidence(file, evidence, id))
+        add(
+          id,
+          'tests',
+          `Missing capability-specific test/assertion: ${evidence.path} :: ${evidence.name}`,
+        );
     }
   }
   return findings;
@@ -243,7 +327,7 @@ export function inspectCapabilities(
 export function capabilityCoverage(root: string, tracked: readonly string[]) {
   const paths = new Set<string>();
   for (const entry of Object.values(CAPABILITY_COVERAGE)) {
-    entry.tests.forEach((path) => paths.add(path));
+    entry.tests.forEach(({ path }) => paths.add(path));
     for (const responsibility of Object.values(entry.roles)) {
       if (responsibility.status === 'unsupported') continue;
       paths.add(responsibility.owner.path);

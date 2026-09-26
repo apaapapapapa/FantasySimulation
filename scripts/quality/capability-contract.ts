@@ -20,8 +20,9 @@ export type CapabilityResponsibility =
   | { status: 'unsupported'; reason: string };
 export type CapabilityCoverage = {
   roles: Record<CapabilityRole, CapabilityResponsibility>;
-  tests: readonly string[];
+  tests: readonly CapabilityTest[];
 };
+export type CapabilityTest = { path: string; name: string };
 type CapabilityId =
   | `effect:${Effect['kind']}`
   | `attack:${Definition<'ability'>['attack']['kind']}`;
@@ -43,11 +44,11 @@ const delegated = (
 const replay = owner('packages/domain/src/spatial/replay-validation/event.ts', 'validateEvents');
 const display = owner('apps/web/src/replay/EventEntries.tsx', 'EventEntries');
 const observation = owner(engine + 'ai/perception.ts', 'perceive');
-const flow = 'scripts/quality/capability-flow.test.ts';
 
 function effect(
   kind: Effect['kind'],
   test: string,
+  name: string,
   deferred?: CapabilityOwner,
   assessedTogether = false,
 ): CapabilityCoverage {
@@ -69,10 +70,14 @@ function effect(
       replay: implemented(replay),
       display: implemented(display),
     },
-    tests: [engine + test, 'apps/api/src/replay/replay-storage.test.ts', flow],
+    tests: [{ path: test.startsWith('scripts/') ? test : engine + test, name }],
   };
 }
-function attack(kind: Definition<'ability'>['attack']['kind'], test: string): CapabilityCoverage {
+function attack(
+  kind: Definition<'ability'>['attack']['kind'],
+  test: string,
+  name: string,
+): CapabilityCoverage {
   const assessAt = owner(engine + 'ai/shape-assessment.ts', 'shapeHandlers', kind);
   return {
     roles: {
@@ -89,7 +94,7 @@ function attack(kind: Definition<'ability'>['attack']['kind'], test: string): Ca
       replay: implemented(replay),
       display: implemented(display),
     },
-    tests: [engine + test, 'e2e/static/viewer.spec.ts', flow],
+    tests: [{ path: engine + test, name }],
   };
 }
 
@@ -98,40 +103,81 @@ function attack(kind: Definition<'ability'>['attack']['kind'], test: string): Ca
  * bespoke visual effects need their own assertions, not a new unconditional exemption.
  */
 export const CAPABILITY_COVERAGE = {
-  'effect:damage': effect('damage', 'damage-integration.test.ts'),
-  'effect:heal': effect('heal', 'effects.test.ts'),
-  'effect:shield': effect('shield', 'effects.test.ts'),
+  'effect:damage': effect(
+    'damage',
+    'effects.test.ts',
+    'applies defense, resistance and a shared shield without allocating remainders by order',
+  ),
+  'effect:heal': effect(
+    'heal',
+    'effects.test.ts',
+    'aggregates healing and damage before clamping, including HP already spent as a legal self-cost',
+  ),
+  'effect:shield': effect(
+    'shield',
+    'effects.test.ts',
+    'combines shields granted in the same interval and preserves simultaneous lethal effects',
+  ),
   'effect:apply-status': effect(
     'apply-status',
-    'status-integration.test.ts',
+    'effects.test.ts',
+    'activates new status modifiers at the next boundary and resolves simultaneous dispel against existing cohorts only',
     owner(engine + 'rules/status-reactions.ts', 'planStatusEffects'),
     true,
   ),
   'effect:dispel': effect(
     'dispel',
-    'status-generalization.test.ts',
+    'effects.test.ts',
+    'dispels existing statuses by listed ID or shared category and keeps uncategorized ones',
     owner(engine + 'rules/status-reactions.ts', 'planStatusEffects'),
     true,
   ),
   'effect:water': effect(
     'water',
-    'status-integration.test.ts',
+    'effects.test.ts',
+    'water removes only existing extinguishable burning while simultaneous new burning remains',
     owner(engine + 'rules/status-reactions.ts', 'planStatusEffects'),
   ),
   'effect:reveal': effect(
     'reveal',
     'knowledge.test.ts',
+    'reveals one permitted field only on activation, with ward, occlusion, delay and expiry',
     owner(engine + 'sim/combat-effects.ts', 'commitEffects'),
   ),
   'effect:force': effect(
     'force',
-    'forced-movement.test.ts',
+    'scripts/quality/capability-flow.test.ts',
+    'connects an authored effect through simulation, durable storage, replay and visible diagnostics',
     owner(engine + 'sim/combat-effects.ts', 'commitEffects'),
   ),
-  'attack:direct': attack('direct', 'effects.test.ts'),
-  'attack:melee': attack('melee', 'attacks.test.ts'),
-  'attack:hitscan': attack('hitscan', 'attacks.test.ts'),
-  'attack:projectile': attack('projectile', 'projectiles.test.ts'),
-  'attack:arc': attack('arc', 'blades.test.ts'),
-  'attack:radial': attack('radial', 'blades.test.ts'),
+  'attack:direct': attack(
+    'direct',
+    'simulate.test.ts',
+    'allows an immediate committed heal to offset an HP cost that consumed the last HP',
+  ),
+  'attack:melee': attack(
+    'melee',
+    'attacks.test.ts',
+    'detects a moving target crossing a thrust between endpoints and retains every body slide segment',
+  ),
+  'attack:hitscan': attack(
+    'hitscan',
+    'attacks.test.ts',
+    'stops an instantaneous thick shot at a thin transparent wall before the target',
+  ),
+  'attack:projectile': attack(
+    'projectile',
+    'projectiles.test.ts',
+    'hits once per projectile at high speed and records spawn, clipped path, impact and removal',
+  ),
+  'attack:arc': attack(
+    'arc',
+    'blades.test.ts',
+    'hits an interior shaft crossing that neither endpoint nor the tip path touches',
+  ),
+  'attack:radial': attack(
+    'radial',
+    'blades.test.ts',
+    'executes a staged radial sweep once per target and restores recorded blade geometry',
+  ),
 } satisfies Record<CapabilityId, CapabilityCoverage>;
