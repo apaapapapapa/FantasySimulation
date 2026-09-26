@@ -6,6 +6,7 @@ import { withReplayDirectory } from '../../test-support/replays.ts';
 import { planLeague } from './league-plan.ts';
 import { reserveLeaguePartition, runLeaguePartition } from './league-runner.ts';
 import { Measurements } from '../measurements.ts';
+import { BattleBundles } from '../batch/battle-bundle.ts';
 
 it('measures real Worker/persistence/reverification without changing results or planned identities', async () => {
   await withReplayDirectory(async (root) => {
@@ -53,6 +54,13 @@ it('measures real Worker/persistence/reverification without changing results or 
     expect(report.validation.uniqueReplays).toBe(4);
     expect(report.validation.repeatedCalls).toBe(12);
     expect(report.stages['db.walCheckpoint']?.count).toBe(4);
+    // Every stored record, including each match's deferred terminal record, is one append span.
+    const bundles = new BattleBundles(join(root, 'measured', 'bundles'));
+    let records = 0;
+    for (const slot of candidate.index.slots)
+      if (slot.receipt) records += (await bundles.manifest(slot.receipt)).records;
+    expect(records).toBeGreaterThan(4);
+    expect(report.stages['record.append']?.count).toBe(records);
     expect(report.stages.decompress?.count).toBeGreaterThan(0);
     expect(report.stages['json.records']?.count).toBeGreaterThan(0);
     expect(report.stages['hash.bytes']?.count).toBeGreaterThan(0);

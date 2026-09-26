@@ -348,7 +348,7 @@ export class BattleService {
       if (controller.signal.aborted) throw controller.signal.reason;
       const result = parseJson(ResultSchema, output.result);
       if (!pendingTerminal) throw new Error('Worker did not supply a terminal record');
-      await writer.append(pendingTerminal);
+      await measureAsync('record.append', () => writer!.append(pendingTerminal!));
       terminal = true;
       const manifest = await measureAsync('record.finish', () =>
         writer!.finish({ kind: 'result', result }, resultId),
