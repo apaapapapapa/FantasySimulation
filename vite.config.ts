@@ -15,8 +15,8 @@ export default defineConfig({
   fmt: { singleQuote: true, semi: true },
   test: {
     environment: 'node',
-    // Integration suites start their own bounded pools; cap concurrent test processes.
-    maxWorkers: process.platform === 'win32' ? 1 : 4,
+    // Integration suites can start four Workers each; bound concurrent test files too.
+    maxWorkers: process.platform === 'win32' ? 1 : 2,
     include: TEST_INCLUDE,
     // These use node:test and are required by security:test in the same verify command.
     exclude: TEST_EXCLUDE,
