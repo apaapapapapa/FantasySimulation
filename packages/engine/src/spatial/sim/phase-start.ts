@@ -6,6 +6,7 @@ import { blockedBySilence } from '../rules/categories.ts';
 import { conditionMatches } from '../rules/conditions.ts';
 import { admitPair, rejectPair } from '../rules/pair-admission.ts';
 import { postureAllows } from '../rules/posture.ts';
+import { abilityPlan } from '../rules/ability-plan.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 export function startPhase(tx: StepTransaction) {
   const { battle } = tx.context;
@@ -133,7 +134,7 @@ export function startPhase(tx: StepTransaction) {
             startedAt: step,
             ...clock,
             released: false,
-            ...(definition.stages
+            ...(abilityPlan(ability).kind === 'staged'
               ? { stages: { index: -1, next: 0, active: false, cause: start.id } }
               : {}),
           };
