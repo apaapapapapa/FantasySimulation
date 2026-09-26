@@ -32,7 +32,7 @@ rewriting. No-stop progression remains identical; thaw never produces catch-up b
   projectile owner. Frozen owner's projectiles do not advance or collide.
 
 P6-10 first admits this fixed profile, not arbitrary user-authored masks. Current owner after
- deflection determines projectile freezing; original launch power/provenance is unchanged.
+deflection determines projectile freezing; original launch power/provenance is unchanged.
 Contacted/deferred projectiles stay consumed; thaw cannot hit a second time or reset ledgers.
 Frozen actors keep their capsule as collision geometry. Other actors and unfrozen shots can
 contact it. Actor-attached melee/beams do not emit while their owner's action/motion is frozen.
