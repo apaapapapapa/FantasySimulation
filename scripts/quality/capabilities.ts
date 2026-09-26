@@ -3,6 +3,9 @@ import {
   isFunctionDeclaration,
   isFunctionExpression,
   isVariableDeclaration,
+  isVariableStatement,
+  isPrefixUnaryExpression,
+  isBinaryExpression,
   isIdentifier,
   isStringLiteral,
   isObjectLiteralExpression,
@@ -60,16 +63,22 @@ function target(file: SourceFile, owner: CapabilityOwner): Node | undefined {
   }
   return expression(file, node);
 }
-function constant(node: Node | undefined): boolean {
+function constant(
+  node: Node | undefined,
+  locals: ReadonlyMap<string, boolean> = new Map(),
+): boolean {
+  if (!node) return true;
+  if (isParenthesizedExpression(node) || isAsExpression(node) || isSatisfiesExpression(node))
+    return constant(node.expression, locals);
+  if (isPrefixUnaryExpression(node)) return constant(node.operand, locals);
+  if (isBinaryExpression(node)) return constant(node.left, locals) && constant(node.right, locals);
   return (
-    !node ||
     node.kind === SyntaxKind.NullKeyword ||
     node.kind === SyntaxKind.TrueKeyword ||
     node.kind === SyntaxKind.FalseKeyword ||
     node.kind === SyntaxKind.NumericLiteral ||
     node.kind === SyntaxKind.StringLiteral ||
-    node.kind === SyntaxKind.VoidExpression ||
-    (isIdentifier(node) && node.text === 'undefined')
+    (isIdentifier(node) && (node.text === 'undefined' || locals.get(node.text) === true))
   );
 }
 function hasImplementation(node: Node | undefined): boolean {
@@ -81,12 +90,24 @@ function hasImplementation(node: Node | undefined): boolean {
   const body = node.body;
   if (!body) return false;
   if (!isBlock(body)) return !constant(body);
-  return body.statements.some(
-    (statement) =>
-      statement.kind !== SyntaxKind.EmptyStatement &&
-      statement.kind !== SyntaxKind.ThrowStatement &&
-      !(isReturnStatement(statement) && constant(statement.expression)),
-  );
+  const locals = new Map<string, boolean>();
+  let substantive = false;
+  for (const statement of body.statements) {
+    if (isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        const inert = constant(declaration.initializer, locals);
+        if (isIdentifier(declaration.name)) locals.set(declaration.name.text, inert);
+        substantive ||= !inert;
+      }
+    } else if (isReturnStatement(statement)) {
+      return substantive || !constant(statement.expression, locals);
+    } else if (statement.kind === SyntaxKind.ThrowStatement) {
+      return substantive;
+    } else if (statement.kind !== SyntaxKind.EmptyStatement) {
+      substantive = true;
+    }
+  }
+  return substantive;
 }
 export type CapabilityFinding = { capability: string; role: string; reason: string };
 

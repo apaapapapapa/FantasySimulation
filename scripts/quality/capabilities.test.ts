@@ -39,12 +39,18 @@ it('requires every current effect and shape to have live owners and behavioral t
   expect(capabilityCoverage(process.cwd(), qualityPaths(process.cwd()))).toEqual([]);
 });
 
-it.each(['() => {}', '() => undefined', '() => false', '() => { return; }'])(
-  'rejects a claimed implemented handler %s',
-  (body) => {
-    expect(inspect(`const work = ${body};`)).toHaveLength(CAPABILITY_ROLES.length);
-  },
-);
+it.each([
+  '() => {}',
+  '() => undefined',
+  '() => false',
+  '() => { return; }',
+  '() => { const result = false; return result; }',
+  '() => { const a = 0; const b = (a + 1); return b; }',
+  '() => { const a = undefined; const b = a; return b; }',
+  '() => { return false; performWork(); }',
+])('rejects a claimed implemented handler %s', (body) => {
+  expect(inspect(`const work = ${body};`)).toHaveLength(CAPABILITY_ROLES.length);
+});
 
 it('resolves aliases instead of treating an empty function name as implementation', () => {
   expect(inspect('const empty = () => {}; const work = empty;')).toHaveLength(5);

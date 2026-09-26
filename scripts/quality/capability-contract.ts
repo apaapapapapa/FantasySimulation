@@ -43,7 +43,7 @@ const delegated = (
 const replay = owner('packages/domain/src/spatial/replay-validation/event.ts', 'validateEvents');
 const display = owner('apps/web/src/replay/EventEntries.tsx', 'EventEntries');
 const observation = owner(engine + 'ai/perception.ts', 'perceive');
-const flow = 'apps/web/src/replay/capability-flow.test.ts';
+const flow = 'scripts/quality/capability-flow.test.ts';
 
 function effect(
   kind: Effect['kind'],
