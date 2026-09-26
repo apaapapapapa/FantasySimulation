@@ -11,3 +11,7 @@ export * from './record-hashes.ts';
 export * from './revision-graph.ts';
 export * from './combat-derivations.ts';
 export * from './variants.ts';
+export * from './mechanics.ts';
+export * from './interference.ts';
+export * from './mechanic-uses.ts';
+export * from './interference-records.ts';

@@ -28,6 +28,10 @@ See [quality](../../docs/development/duplication.md),
 
 ## GitHub collection and review
 
+`delivery` remains strict for agent/manual merges, even bot PRs. Only hosted Renovate
+uses the [minor exception](../../docs/dependency-updates.md), guarded by H4 CI and the
+Ruleset. Audit its real merges separately; bot identity never replaces a review receipt.
+
 Supply read-only `GH_TOKEN`: contents, Actions, PRs, Checks and statuses.
 Pinned Octokit owns auth/HTTP/pagination; no other key or `gh` is needed.
 

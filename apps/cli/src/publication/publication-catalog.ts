@@ -73,7 +73,18 @@ export async function commitPublication(
       sets.set(ref.setHash, ref);
     }
     const leagues = new Map((prior?.leagues ?? []).map((ref) => [ref.id, ref]));
-    if (options.league) leagues.set(options.league.id, options.league);
+    if (options.league) {
+      const previous = leagues.get(options.league.id);
+      if (
+        previous &&
+        (previous.leagueClass ?? 'standard') !== (options.league.leagueClass ?? 'standard')
+      )
+        throw new OperationError(
+          'IDENTITY_MISMATCH',
+          'League class change requires a separate league ID',
+        );
+      leagues.set(options.league.id, options.league);
+    }
     const leagueWork = options.leagueWork ?? prior?.leagueWork;
     const catalog = PublicCatalogSchema.parse({
       schemaVersion: 1,

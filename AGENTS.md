@@ -51,8 +51,11 @@ Policy changes require explicit review and regression tests.
 Run focused checks while editing and `vp run check:quality` before staging new files.
 Add meaningful behavior/persistence/regression tests. Run `vp run verify` before
 committing, then the skill's clean-source harness. Verify startup for runtime/build
-changes. Linux CI, latest PR review and post-merge main CI remain required. Missing,
-interrupted or stale evidence never passes. Keep commands/limitations accurate.
+changes. Linux CI, latest PR review and post-merge main CI remain required for agent
+delivery. The owner-approved [Renovate minor policy](docs/dependency-updates.md) is the
+only unattended-merge exception: its CI policy and Ruleset replace an agent review
+receipt, not CI or thread resolution. Agents manually merging bot PRs still use the
+delivery skill. Missing, interrupted or stale evidence never passes.
 Intentional corpus inputs or mapped-test changes need a reason in the same PR;
 never regenerate expected outputs from the candidate just to pass.
 

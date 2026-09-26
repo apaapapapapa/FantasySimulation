@@ -11,6 +11,7 @@ import {
   canonicalJson,
   revisionKey,
   requireRevision,
+  revisionIndex,
   DraftInputSchema,
   DraftSchema,
   ManifestSchema,
@@ -30,6 +31,8 @@ import {
   revisionHash,
   sealRevision,
   unsupportedExecutionReason,
+  requireMechanics,
+  requireExecutableRules,
   type PreparedBattle,
 } from '@fantasy/engine/spatial';
 import { repositoryRoot } from '../config.ts';
@@ -346,7 +349,11 @@ export class Store {
     if (!spec) throw new StoreError('conflict', 'Saved specification is unavailable');
     const reason = unsupportedExecutionReason(spec.manifest);
     if (reason) throw new StoreError('conflict', reason);
-    return { simulationHash, manifest: parseJson(ManifestSchema, spec.manifest) };
+    const manifest = parseJson(ManifestSchema, spec.manifest);
+    const rules = requireRevision(revisionIndex(manifest.revisions), 'ruleset', manifest.ruleset);
+    requireExecutableRules(rules.definition);
+    requireMechanics(rules, manifest.revisions);
+    return { simulationHash, manifest };
   }
 }
 export const openStore = (filename: string) => new Store(filename);
