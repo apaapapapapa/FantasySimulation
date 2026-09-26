@@ -1,5 +1,6 @@
 import { jsonText } from '../api-client.ts';
 import { useDefinitionEditor } from './useDefinitionEditor.ts';
+import { DefinitionDiff } from './DefinitionDiff.tsx';
 export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
   const {
     kind,
@@ -183,10 +184,8 @@ export function DefinitionEditor({ onPublished }: { onPublished(): void }) {
         {base && (
           <details>
             <summary>公開revisionとの比較</summary>
-            <p>
-              編集元 r{base.revision} / 現在のJSON{' '}
-              {definition === jsonText(base.definition) ? '変更なし' : '変更あり'}
-            </p>
+            <p>編集元 r{base.revision}</p>
+            <DefinitionDiff before={base.definition} text={definition} />
             <pre>{jsonText(base.definition)}</pre>
             <label>
               参照するrevision

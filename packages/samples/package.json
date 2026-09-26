@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./authoring": "./src/authoring-index.ts"
   },
   "dependencies": {
     "@fantasy/domain": "workspace:*",
