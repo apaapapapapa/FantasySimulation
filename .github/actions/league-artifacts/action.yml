@@ -1,9 +1,9 @@
 name: Verified league artifacts
-description: Same-run immutable artifact IDs and SHA256, with explicit public file allowlists
+description: Immutable artifact IDs and SHA256, with explicit public file allowlists
 inputs:
   operation:
     required: true
-    description: prepare, input, result or aggregate
+    description: prepare, input, result, aggregate or verified recovery
   artifact-id:
     default: ''
     description: Expected immutable artifact ID
@@ -13,6 +13,12 @@ inputs:
   partition:
     default: ''
     description: Matrix partition index
+  recovery-run:
+    default: ''
+    description: Completed main league run for publication-only recovery
+  recovery-attempt:
+    default: ''
+    description: Exact original attempt; old attempts and partial reruns are rejected
 outputs:
   matrix:
     value: ${{ steps.transfer.outputs.matrix }}
@@ -33,10 +39,33 @@ runs:
         LEAGUE_ARTIFACT_ID: ${{ inputs.artifact-id }}
         LEAGUE_ARTIFACT_DIGEST: ${{ inputs.digest }}
         LEAGUE_PARTITION: ${{ inputs.partition }}
+        LEAGUE_RECOVERY_RUN: ${{ inputs.recovery-run }}
+        LEAGUE_RECOVERY_ATTEMPT: ${{ inputs.recovery-attempt }}
       with:
         script: |
           const {execFileSync} = require('node:child_process');
+          const env = {...process.env};
+          if (env.LEAGUE_ARTIFACT_OPERATION === 'recover') {
+            const {leagueRecoverySource} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/league-artifact-policy.ts`);
+            const {leagueSource} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/pages-policy.ts`);
+            const repo = {owner: context.repo.owner, repo: context.repo.repo};
+            if (`${repo.owner}/${repo.repo}` !== 'apaapapapapa/FantasySimulation' || context.ref !== 'refs/heads/main') throw new Error('Main-only recovery');
+            const run_id = Number(env.LEAGUE_RECOVERY_RUN), attempt_number = Number(env.LEAGUE_RECOVERY_ATTEMPT);
+            if (!Number.isSafeInteger(run_id) || run_id < 1 || !Number.isSafeInteger(attempt_number) || attempt_number < 1) throw new Error('Invalid recovery identity');
+            const {data: run} = await github.rest.actions.getWorkflowRun({...repo, run_id});
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {...repo, run_id, attempt_number, per_page: 100});
+            const sha = leagueRecoverySource(run, jobs, {runId: run_id, attempt: attempt_number});
+            const {data: runs} = await github.rest.actions.listWorkflowRuns({...repo, workflow_id: 'ci.yml', event: 'push', branch: 'main', head_sha: sha, per_page: 1});
+            const ci = runs.workflow_runs[0];
+            if (!ci) throw new Error('Original source CI missing');
+            const ciJobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {...repo, run_id: ci.id, attempt_number: ci.run_attempt, per_page: 100});
+            const {data: main} = await github.rest.repos.getBranch({...repo, branch: 'main'});
+            const {data: comparison} = await github.rest.repos.compareCommits({...repo, base: sha, head: main.commit.sha});
+            env.LEAGUE_RECOVERY_SHA = leagueSource(ci, ciJobs, main.commit.sha, sha, 'finish', comparison.status);
+            env.LEAGUE_RECOVERY_PARTITIONS = String(jobs.filter(job => job.name.startsWith('compute (')).length);
+            env.LEAGUE_ARTIFACT_TOKEN = core.getInput('github-token', {required: true});
+          }
           execFileSync('node', ['--import', 'tsx', '../../scripts/league-artifacts.ts'], {
-            cwd: `${process.env.GITHUB_WORKSPACE}/apps/cli`, env: process.env,
+            cwd: `${process.env.GITHUB_WORKSPACE}/apps/cli`, env,
             stdio: 'inherit', timeout: 3600000
           });

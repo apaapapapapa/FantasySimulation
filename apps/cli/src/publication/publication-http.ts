@@ -15,9 +15,36 @@ export class PublicReadFailure extends OperationError {
 }
 
 export function ancestorOf(source: string, viewer: string, repository: string) {
-  if (![source, viewer].every((s) => /^[a-f0-9]{40}$/.test(s)))
+  if (![source, viewer].every((s) => s.match(/^[a-f0-9]{40}$/)?.[0] === s))
     throw new Error('Invalid source SHA');
   try {
+    try {
+      execFileSync('git', ['cat-file', '-e', `${viewer}^{commit}`], {
+        cwd: repository,
+        stdio: 'ignore',
+        timeout: 5000,
+      });
+    } catch {
+      // Pages can advance while a long publication validates its saved graph.
+      // Fetch only the observed commit; never move HEAD or accept ancestry on faith.
+      execFileSync(
+        'git',
+        [
+          'fetch',
+          '--no-tags',
+          '--no-recurse-submodules',
+          '--no-write-fetch-head',
+          'origin',
+          viewer,
+        ],
+        {
+          cwd: repository,
+          stdio: 'ignore',
+          timeout: 30000,
+          env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+        },
+      );
+    }
     execFileSync('git', ['merge-base', '--is-ancestor', source, viewer], {
       cwd: repository,
       stdio: 'ignore',
