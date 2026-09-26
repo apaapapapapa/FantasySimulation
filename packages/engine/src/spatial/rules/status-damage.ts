@@ -29,5 +29,6 @@ export function statusDamageSource(
 }
 export const copyDamageSnapshot = (source: DamageSnapshot): DamageSnapshot => ({
   ...damageSource(source),
+  ...(source.drainDisabled && { drainDisabled: true }),
   ...(source.dealtByElement && { dealtByElement: { ...source.dealtByElement } }),
 });

@@ -104,4 +104,4 @@ shield/heal/defeat, filters/silence, cost groups, deferred release/cancellation,
 cross-interval depth, limits/rollback, private information, malformed replay,
 Worker persistence and deterministic saved records. Existing fixed recipe identities
 change only for engine/rules; expected results are not regenerated.
-P6 retains reflection/absorption/revival and their competing-replacement rules.
+P6-02 absorption/drain use the same waves; deflection/revival remain separate mechanisms.

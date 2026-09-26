@@ -221,6 +221,7 @@ export function commitEffects(
                     ),
                     ...(app.effect.defense !== undefined && { defense: app.effect.defense }),
                     impact: detail.calculation?.afterModifiers ?? detail.afterResistance,
+                    ...(detail.absorption && { absorbed: detail.absorption.converted }),
                     shield: BigInt(detail.absorbed.numerator) > 0n,
                     // A defended contact cannot establish permanent elemental efficacy.
                     partial: !!app.damageCancelled || (app.scaleBps ?? 10000) !== 10000,
@@ -238,6 +239,28 @@ export function commitEffects(
     if (!deferStatuses) rememberApplications(actor, result.changes, applications, context);
     actor.vitals.resources = result.resources;
     actor.statuses = result.statuses;
+  }
+  for (const result of resolved) {
+    for (const detail of result.damage) {
+      if (!detail.drain?.healing) continue;
+      const app = applications.find((a) => a.id === detail.applicationId)!;
+      const source = resolved.find((r) => r.actorId === app.actorId)!;
+      journal.emit({
+        step: activationStep,
+        phase,
+        kind: 'heal',
+        ruleId: 'damage.drain',
+        actorId: app.actorId,
+        targetId: app.actorId,
+        abilityId: app.abilityId,
+        parentEventId: app.id,
+        causes: [app.id],
+        amount: detail.drain.healing,
+        after: { ...source.resources },
+        reason: 'same-wave-hp-loss-drain',
+        ...(deferStatuses ? { wave: waveIndex } : {}),
+      });
+    }
   }
   return { applications, resolved };
 }
