@@ -2,13 +2,17 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeAll, expect, it } from 'vite-plus/test';
 import { prepareBattle, runPreparedBattle } from '@fantasy/engine/spatial';
-import { initializePhysics } from '../../packages/engine/src/spatial/world/physics.ts';
-import { reactionManifest } from '../../packages/engine/test-support/reactions.ts';
-import { battleEvents } from '../../packages/engine/test-support/fixtures.ts';
-import { withReplayDirectory } from '../../apps/api/test-support/replays.ts';
-import { ReplayWriter } from '../../apps/api/src/replay/replay-writer.ts';
-import { readReplayManifest, seekReplay, verifyReplay } from '../../apps/api/src/replay/replay-reader.ts';
-import { EventEntries } from '../../apps/web/src/replay/EventEntries.tsx';
+import { initializePhysics } from '../../../../packages/engine/src/spatial/world/physics.ts';
+import { reactionManifest } from '../../../../packages/engine/test-support/reactions.ts';
+import { battleEvents } from '../../../../packages/engine/test-support/fixtures.ts';
+import { withReplayDirectory } from '../../../api/test-support/replays.ts';
+import { ReplayWriter } from '../../../api/src/replay/replay-writer.ts';
+import {
+  readReplayManifest,
+  seekReplay,
+  verifyReplay,
+} from '../../../api/src/replay/replay-reader.ts';
+import { EventEntries } from './EventEntries.tsx';
 
 beforeAll(initializePhysics);
 
@@ -53,9 +57,15 @@ it('connects an authored effect through simulation, durable storage, replay and 
     const record = restored.lastRecord;
     if (!record || !('events' in record)) throw new Error('Missing saved effect events');
     const restoredForce = record.events.filter((event) => event.kind === 'force');
-    expect(restoredForce).toEqual(force.filter((event) => record.events.some((r) => r.id === event.id)));
+    expect(restoredForce).toEqual(
+      force.filter((event) => record.events.some((r) => r.id === event.id)),
+    );
     const markup = renderToStaticMarkup(
-      createElement(EventEntries, { events: restoredForce, step: force[0]!.step, onSeek: () => {} }),
+      createElement(EventEntries, {
+        events: restoredForce,
+        step: force[0]!.step,
+        onSeek: () => {},
+      }),
     );
     for (const event of restoredForce) {
       expect(markup).toContain(event.id);

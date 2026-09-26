@@ -73,7 +73,10 @@ function constant(node: Node | undefined): boolean {
   );
 }
 function hasImplementation(node: Node | undefined): boolean {
-  if (!node || !(isFunctionDeclaration(node) || isFunctionExpression(node) || isArrowFunction(node)))
+  if (
+    !node ||
+    !(isFunctionDeclaration(node) || isFunctionExpression(node) || isArrowFunction(node))
+  )
     return false;
   const body = node.body;
   if (!body) return false;
@@ -112,7 +115,8 @@ export function inspectCapabilities(
       const implementation = file && target(file, responsibility.owner);
       if (!implementation) add(id, role, 'Owning symbol or handler is missing/ambiguous');
       if (responsibility.status === 'implemented') {
-        if (!hasImplementation(implementation)) add(id, role, 'Empty or constant handler is not an implementation');
+        if (!hasImplementation(implementation))
+          add(id, role, 'Empty or constant handler is not an implementation');
       } else {
         const delegateFile = files.get(responsibility.delegate.path);
         const destination = delegateFile && target(delegateFile, responsibility.delegate);
@@ -126,7 +130,11 @@ export function inspectCapabilities(
       let assertion = false;
       if (file && /\.(?:test|spec)\.tsx?$/.test(path))
         walk(file, (node) => {
-          if (isCallExpression(node) && isIdentifier(node.expression) && node.expression.text === 'expect')
+          if (
+            isCallExpression(node) &&
+            isIdentifier(node.expression) &&
+            node.expression.text === 'expect'
+          )
             assertion = true;
         });
       if (!assertion) add(id, 'tests', `Missing test or assertions: ${path}`);

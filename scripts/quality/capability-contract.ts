@@ -1,6 +1,12 @@
 import type { Effect, Definition } from '@fantasy/domain/spatial';
 
-export const CAPABILITY_ROLES = ['resolution', 'assessment', 'observation', 'replay', 'display'] as const;
+export const CAPABILITY_ROLES = [
+  'resolution',
+  'assessment',
+  'observation',
+  'replay',
+  'display',
+] as const;
 export type CapabilityRole = (typeof CAPABILITY_ROLES)[number];
 export type CapabilityOwner = { path: string; symbol: string; member?: string };
 export type CapabilityResponsibility =
@@ -16,7 +22,9 @@ export type CapabilityCoverage = {
   roles: Record<CapabilityRole, CapabilityResponsibility>;
   tests: readonly string[];
 };
-type CapabilityId = `effect:${Effect['kind']}` | `attack:${Definition<'ability'>['attack']['kind']}`;
+type CapabilityId =
+  | `effect:${Effect['kind']}`
+  | `attack:${Definition<'ability'>['attack']['kind']}`;
 const engine = 'packages/engine/src/spatial/';
 const owner = (path: string, symbol: string, member?: string): CapabilityOwner => ({
   path,
@@ -35,7 +43,7 @@ const delegated = (
 const replay = owner('packages/domain/src/spatial/replay-validation/event.ts', 'validateEvents');
 const display = owner('apps/web/src/replay/EventEntries.tsx', 'EventEntries');
 const observation = owner(engine + 'ai/perception.ts', 'perceive');
-const flow = 'scripts/quality/capability-flow.test.ts';
+const flow = 'apps/web/src/replay/capability-flow.test.ts';
 
 function effect(
   kind: Effect['kind'],
