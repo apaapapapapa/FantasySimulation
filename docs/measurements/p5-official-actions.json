@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "kind": "official-league-actions",
+  "status": "running",
+  "definition": "data/leagues/official-20-v1.json",
+  "sourceSha": "ffa49bc8bc0f6fb603834ee72cfc4f015757f273",
+  "mainCiRunId": 36211783934,
+  "viewerRunId": 36212063498,
+  "dryRun": {
+    "runId": 36212097198,
+    "attempt": 1,
+    "artifactId": 10896116991,
+    "archiveDigest": "sha256:67c17b9e308f51435a7fb5d60e53d2343f1f754cad060184752d5b124f392519",
+    "probe": {
+      "bytes": 272,
+      "estimate": {
+        "compute": 7600,
+        "estimatedBytes": 6000000000,
+        "estimatedFiles": 335183,
+        "estimatedMs": 30400000,
+        "exhausted": 0,
+        "matchesPerPlan": 128,
+        "newMatches": 7600,
+        "partitions": 60,
+        "planned": 7600,
+        "readRequests": 670366,
+        "retries": 0,
+        "reused": 0,
+        "writeRequests": 335183
+      },
+      "inputHash": "sha256:c8bedc02b3057902bfadf3cb29745be3c5d20b8c3b15c1ae7bc126e52f076d60",
+      "needed": true,
+      "requests": 2,
+      "retentionVerification": "Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission.",
+      "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
+      "sourceSha": "ffa49bc8bc0f6fb603834ee72cfc4f015757f273"
+    }
+  },
+  "publication": {
+    "runId": 36212301947,
+    "attempt": 1,
+    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36212301947",
+    "phaseTransport": [
+      {
+        "phase": "league-36212301947-1-restore",
+        "control": {
+          "logicalRequests": 10,
+          "classARequests": 3,
+          "classBRequests": 7,
+          "maxAttempts": 1,
+          "successfulWrites": 2,
+          "readBytes": 1075,
+          "uploadedBytes": 584
+        },
+        "transport": {
+          "logicalRequests": 35,
+          "classARequests": 0,
+          "classBRequests": 35,
+          "maxAttempts": 1,
+          "successfulWrites": 0,
+          "readBytes": 170878,
+          "uploadedBytes": 0
+        }
+      },
+      {
+        "phase": "league-36212301947-1-admit",
+        "control": {
+          "logicalRequests": 8,
+          "classARequests": 3,
+          "classBRequests": 5,
+          "maxAttempts": 1,
+          "successfulWrites": 2,
+          "readBytes": 2444,
+          "uploadedBytes": 1193
+        },
+        "transport": {
+          "logicalRequests": 216,
+          "classARequests": 72,
+          "classBRequests": 144,
+          "maxAttempts": 1,
+          "successfulWrites": 71,
+          "readBytes": 173846,
+          "uploadedBytes": 2988143
+        }
+      }
+    ]
+  },
+  "cloudBefore": {
+    "schemaVersion": 1,
+    "observedAt": "2026-09-26T02:14:26.643Z",
+    "kind": "cloudflare-pre-league-analytics",
+    "notice": "Adaptive analytics is observational and may lag; it is not a billing invoice.",
+    "r2AccountOperationsMonthToDate": [
+      {
+        "dimensions": {
+          "actionType": "ListBuckets"
+        },
+        "sum": {
+          "requests": 47
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutObject"
+        },
+        "sum": {
+          "requests": 1765
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutBucket"
+        },
+        "sum": {
+          "requests": 2
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutBucketLifecycleConfiguration"
+        },
+        "sum": {
+          "requests": 541
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "ListMultipartUploads"
+        },
+        "sum": {
+          "requests": 10
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "GetObject"
+        },
+        "sum": {
+          "requests": 9519
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "HeadObject"
+        },
+        "sum": {
+          "requests": 186
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "GetBucketLifecycleConfiguration"
+        },
+        "sum": {
+          "requests": 1107
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "HeadBucket"
+        },
+        "sum": {
+          "requests": 987
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "ListObjects"
+        },
+        "sum": {
+          "requests": 43
+        }
+      }
+    ],
+    "r2AccountStorageDayMaxima": {
+      "payloadBytes": 253117922,
+      "metadataBytes": 300566
+    },
+    "r2TargetStorage": {
+      "metadataSize": 3247,
+      "objectCount": 34,
+      "payloadSize": 170759
+    },
+    "workersAccountDay": {
+      "requests": 38,
+      "errors": 0
+    },
+    "workersReaderDay": {
+      "errors": 0,
+      "requests": 4
+    }
+  },
+  "remainingEvidence": [
+    "Final Actions outcome and immutable league snapshot",
+    "Measured storage, transfer, request and runtime totals",
+    "Production viewer navigation, initial load and pricing estimate"
+  ],
+  "notes": [
+    "This running record is not an Issue completion declaration.",
+    "The 6GB estimate includes a conservative workload profile; actual publication is measured separately.",
+    "Production credentials remain in the protected Actions Environment."
+  ]
+}
