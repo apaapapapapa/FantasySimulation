@@ -12,6 +12,8 @@ import {
   publicHashName,
 } from '@fantasy/domain/spatial';
 import {
+  OperationError,
+  operationInput,
   publishImmutableFile,
   readBoundedFile,
   sha256,
@@ -33,8 +35,12 @@ const absent = (error: unknown) => (error as NodeJS.ErrnoException).code === 'EN
 
 /** Reused for local export and remote collisions; a result hash includes its event/trajectory hashes. */
 export function receiptIdentity(key: string, bytes: Buffer, results: Map<string, string>) {
-  const receipt = BundleReceiptSchema.parse(
-    JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)),
+  const receipt = operationInput(
+    () =>
+      BundleReceiptSchema.parse(
+        JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)),
+      ),
+    'DATA_INVALID',
   );
   const { objectHash, ...body } = receipt;
   const definitive =
@@ -48,7 +54,7 @@ export function receiptIdentity(key: string, bytes: Buffer, results: Map<string,
       results.has(receipt.simulationHash) &&
       results.get(receipt.simulationHash) !== receipt.resultHash)
   )
-    throw new Error('Existing simulation result conflict');
+    throw new OperationError('DATA_INVALID', 'Existing simulation result conflict');
   if (definitive) results.set(receipt.simulationHash, receipt.resultHash);
   return receipt;
 }
@@ -116,7 +122,7 @@ export async function inspectPublicArtifact(file: PublicationFile, rawBytes?: nu
     rawBytes === undefined ? data : gunzipSync(data, { maxOutputLength: rawBytes }),
   );
   for (const line of file.key.endsWith('.ndjson.gz') ? text.trimEnd().split('\n') : [text])
-    assertPublicData(JSON.parse(line) as unknown);
+    assertPublicData(operationInput(() => JSON.parse(line) as unknown, 'DATA_INVALID'));
 }
 
 export async function publicationInventory(root: string, objectsOnly = false) {

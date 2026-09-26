@@ -11,10 +11,6 @@ const operations = vi.hoisted(() => ({
   finish: vi.fn(),
   transfer: vi.fn(),
 }));
-vi.mock('@fantasy/api/tooling', async (original) => ({
-  ...(await original<typeof import('@fantasy/api/tooling')>()),
-  executionSource: operations.source,
-}));
 vi.mock('./league-probe.ts', () => ({ probeLeague: operations.probe }));
 vi.mock('./league-cloud.ts', () => ({
   prepareCloudLeague: operations.prepare,
@@ -27,6 +23,10 @@ const originalArgv = process.argv,
 const secret = 'CLI_PRIVATE_SENTINEL';
 beforeEach(() => {
   vi.resetModules();
+  vi.doMock('@fantasy/api/tooling', async (original) => ({
+    ...(await original<typeof import('@fantasy/api/tooling')>()),
+    executionSource: operations.source,
+  }));
   for (const operation of Object.values(operations)) operation.mockReset();
   operations.source.mockReturnValue({
     sha: 'a'.repeat(40),
@@ -172,6 +172,42 @@ it('classifies invalid committed definition JSON as input rather than saved-data
     expect(report + summary).not.toContain(secret);
   });
 });
+
+it.each([`{${secret}`, JSON.stringify({ result: { outcome: secret } })])(
+  'identifies a malformed retained receipt during real preparation',
+  async (data) => {
+    const actual = await vi.importActual<typeof import('./league-cloud.ts')>('./league-cloud.ts');
+    const { publicationFixture } = await import('../../test-support/publication.ts');
+    const { exportPublication } = await import('../publication/publication-export.ts');
+    operations.prepare.mockImplementation(actual.prepareCloudLeague);
+    await withReplayDirectory(async (root) => {
+      const fixture = await publicationFixture(join(root, 'fixture'));
+      await exportPublication(fixture.plan, [fixture], join(root, 'public'));
+      await writeFile(
+        join(root, 'public', 'objects', fixture.receipt.objectHash.slice(7), 'receipt.json'),
+        data,
+      );
+      await writeFile(
+        join(root, 'inventory.json'),
+        JSON.stringify({
+          files: 1,
+          bytes: 1,
+          receipts: 1,
+          usedReadRequests: 0,
+          usedWriteRequests: 0,
+        }),
+      );
+      expect(await invoke(root, 'prepare')).toBe(1);
+      const report = await readFile(join(root, 'reports/failure-prepare.json'), 'utf8');
+      expect(JSON.parse(report)).toMatchObject({ code: 'DATA_INVALID', phase: 'planning' });
+      const summary = await readFile(join(root, 'summary.md'), 'utf8');
+      expect(summary).toContain('Saved data failed validation');
+      expect(report + summary + vi.mocked(console.error).mock.calls.flat().join(' ')).not.toContain(
+        secret,
+      );
+    });
+  },
+);
 
 it('rejects secret-bearing Actions identity before execution and omits it from every output', async () => {
   vi.stubEnv('GITHUB_RUN_ID', `123\n${secret}`);

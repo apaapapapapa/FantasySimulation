@@ -1,4 +1,4 @@
-import { OperationError } from '@fantasy/api/tooling';
+import { OperationError, operationInput } from '@fantasy/api/tooling';
 import {
   LeagueUsageSchema,
   LeagueUsageLeaseSchema,
@@ -14,11 +14,14 @@ export const LEAGUE_USAGE_LIMITS = { classA: 900000, classB: 9000000, worker: 90
 const CONTROL_RESERVE = 10000; // Per month for bounded probes/control failures; not spendable by jobs.
 
 export function reserveLeagueUsage(previous: unknown, input: LeagueUsageLease): LeagueUsage {
-  const lease = LeagueUsageLeaseSchema.parse(input);
+  const lease = operationInput(() => LeagueUsageLeaseSchema.parse(input), 'INPUT_INVALID');
   if (new Date(lease.day + 'T00:00:00Z').toISOString().slice(0, 10) !== lease.day)
     throw new OperationError('INPUT_INVALID', 'Invalid ledger date');
   const month = lease.day.slice(0, 7);
-  const old = previous === null ? null : LeagueUsageSchema.parse(previous);
+  const old =
+    previous === null
+      ? null
+      : operationInput(() => LeagueUsageSchema.parse(previous), 'DATA_INVALID');
   if (old && old.month > month)
     throw new OperationError('DATA_INVALID', 'League usage clock moved backwards');
   if (old?.leases.some((entry) => entry.day.slice(0, 7) !== old.month || entry.day > lease.day))
@@ -64,7 +67,10 @@ export async function admitLeagueUsage(
   lease: LeagueUsageLease,
 ) {
   const before = await store.readControl();
-  const next = reserveLeagueUsage(before ? JSON.parse(before.data.toString('utf8')) : null, lease);
+  const previous = before
+    ? operationInput(() => JSON.parse(before.data.toString('utf8')) as unknown, 'DATA_INVALID')
+    : null;
+  const next = reserveLeagueUsage(previous, lease);
   const bytes = Buffer.from(canonicalJson(next));
   try {
     await store.putControl(bytes, before?.etag ?? null);

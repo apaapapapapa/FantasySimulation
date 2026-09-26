@@ -10,11 +10,41 @@ import {
 } from '@fantasy/domain/spatial';
 import saved from '../../../../packages/domain/fixtures/replay/mutual-hit.json' with { type: 'json' };
 import { ReplayWriter } from './replay-writer.ts';
-import { readReplayManifest, seekReplay, verifyReplay } from './replay-reader.ts';
+import {
+  readReplayManifest,
+  seekReplay,
+  verifyReplay,
+  verifyReplayDirectory,
+} from './replay-reader.ts';
 import { readBoundedFile, readCompressed, sha256 } from './replay-files.ts';
 import { withReplayDirectory, recordedBattle, artifactBytes } from '../../test-support/replays.ts';
 
 describe('bounded independent replay artifacts', () => {
+  it.each(['record-schema', 'record-json', 'checkpoint-json'])(
+    'classifies saved %s corruption even when compressed checksums are consistent',
+    async (kind) => {
+      await withReplayDirectory(async (root) => {
+        const { manifest } = await recordedBattle(root, 20);
+        const directory = join(root, manifest.id);
+        const ref = kind === 'checkpoint-json' ? manifest.checkpoints[0]! : manifest.chunks[0]!;
+        const original = await readCompressed(directory, ref);
+        const raw =
+          kind === 'checkpoint-json'
+            ? '{'
+            : [kind === 'record-schema' ? '{}' : '{', ...original.split('\n').slice(1)].join('\n');
+        const bytes = gzipSync(raw);
+        await writeFile(join(directory, ref.file), bytes);
+        Object.assign(ref, {
+          bytes: bytes.length,
+          rawBytes: Buffer.byteLength(raw),
+          checksum: sha256(bytes),
+        });
+        await expect(verifyReplayDirectory(directory, manifest)).rejects.toMatchObject({
+          code: 'DATA_INVALID',
+        });
+      });
+    },
+  );
   it('rejects symlinks before reading their target through the opened handle', async () => {
     await withReplayDirectory(async (root) => {
       const target = join(root, 'target'),

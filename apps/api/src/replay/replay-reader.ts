@@ -1,6 +1,7 @@
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { operationInput } from '../operation-error.ts';
 import {
   canonicalJson,
   parseJson,
@@ -44,9 +45,13 @@ export async function readReplayManifest(
   const bytes = await readBoundedFile(join(directory, 'manifest.json'), MAX_REPLAY_MANIFEST_BYTES);
   if (expectedChecksum !== undefined && sha256(bytes) !== expectedChecksum)
     throw new Error('Manifest checksum mismatch');
-  const manifest = parseJson(
-    ReplayManifestSchema,
-    JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown,
+  const manifest = operationInput(
+    () =>
+      parseJson(
+        ReplayManifestSchema,
+        JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown,
+      ),
+    'DATA_INVALID',
   );
   if (manifest.id !== id) throw new Error('Replay ID mismatch');
   return manifest;
@@ -54,10 +59,13 @@ export async function readReplayManifest(
 export async function readReplayChunk(directory: string, manifest: ReplayManifest, index: number) {
   const ref = manifest.chunks[index];
   if (!ref) throw new Error('Unknown replay chunk');
-  return replayChunkRecords(await readCompressed(directory, ref), ref);
+  const raw = await readCompressed(directory, ref);
+  return operationInput(() => replayChunkRecords(raw, ref), 'DATA_INVALID');
 }
-const readCheckpoint = async (directory: string, manifest: ReplayManifest, index: number) =>
-  JSON.parse(await readCompressed(directory, manifest.checkpoints[index]!)) as unknown;
+const readCheckpoint = async (directory: string, manifest: ReplayManifest, index: number) => {
+  const raw = await readCompressed(directory, manifest.checkpoints[index]!);
+  return operationInput(() => JSON.parse(raw) as unknown, 'DATA_INVALID');
+};
 /** Full verification precedes writing, untrusted import/publication and legacy receipt adoption. */
 export async function verifyReplayDirectory(directory: string, manifest: ReplayManifest) {
   const context = await replayContext(manifest.input, manifest.simulationHash);
@@ -70,7 +78,7 @@ export async function verifyReplayDirectory(directory: string, manifest: ReplayM
       throw new Error('Checkpoint does not match the verified prefix');
     const records = await readReplayChunk(directory, manifest, i);
     for (const input of records) {
-      const record = replay.apply(input);
+      const record = operationInput(() => replay.apply(input), 'DATA_INVALID');
       if ('events' in record)
         for (const event of record.events) events.update(eventHashLine(event));
       trajectory.update(trajectoryHashLine(record));

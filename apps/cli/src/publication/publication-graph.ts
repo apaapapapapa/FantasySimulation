@@ -249,7 +249,7 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
       const old = cached.get(ref.hash);
       if (old && old.bytes !== ref.bytes)
         throw new OperationError('DATA_INVALID', 'League reference size mismatch');
-      if (old) return schema.parse(old.value);
+      if (old) return operationInput(() => schema.parse(old.value), 'DATA_INVALID');
       const value = await json(
         `leagues/${publicHashName(ref.hash)}.json`,
         schema,
@@ -319,10 +319,10 @@ export async function localPublicationGraph(root: string) {
   for (const objectHash of graph.objects) {
     await bundles.verify(objectHash);
     const prefix = `objects/${publicHashName(objectHash)}/`;
-    const manifest = ReplayManifestSchema.parse(
-      JSON.parse(
-        (await read(prefix + 'manifest.json', MAX_REPLAY_MANIFEST_BYTES)).toString('utf8'),
-      ),
+    const manifestBytes = await read(prefix + 'manifest.json', MAX_REPLAY_MANIFEST_BYTES);
+    const manifest = operationInput(
+      () => ReplayManifestSchema.parse(JSON.parse(manifestBytes.toString('utf8'))),
+      'DATA_INVALID',
     );
     for (const artifact of [...manifest.chunks, ...manifest.checkpoints])
       await inspectPublicArtifact(graph.files.get(prefix + artifact.file)!, artifact.rawBytes);
