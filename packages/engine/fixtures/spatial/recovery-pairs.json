@@ -1,0 +1,746 @@
+{
+  "schemaVersion": 1,
+  "basis": "Authored arithmetic: HP40/shield1, fire4 (damage7, counter2, stage4+2, taken50%, dealt80%); full absorption; drain100%. The 100m/s projectile crosses the 1.5m separation in the first 20ms wave; later stages and counter waves cannot use already-clamped drain healing.",
+  "cases": [
+    {
+      "id": "apply-status/attribute-absorption",
+      "left": "apply-status",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "apply-status/drain",
+      "left": "apply-status",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "contact/attribute-absorption",
+      "left": "contact",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "contact/drain",
+      "left": "contact",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "counter/attribute-absorption",
+      "left": "counter",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "counter/drain",
+      "left": "counter",
+      "right": "drain",
+      "hp": {
+        "right": 38
+      }
+    },
+    {
+      "id": "damage/attribute-absorption",
+      "left": "damage",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "damage/drain",
+      "left": "damage",
+      "right": "drain",
+      "hp": {
+        "right": 37
+      }
+    },
+    {
+      "id": "dispel/attribute-absorption",
+      "left": "dispel",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "dispel/drain",
+      "left": "dispel",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "elemental-reaction/attribute-absorption",
+      "left": "elemental-reaction",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "elemental-reaction/drain",
+      "left": "elemental-reaction",
+      "right": "drain",
+      "hp": {
+        "right": 38
+      }
+    },
+    {
+      "id": "flight/attribute-absorption",
+      "left": "flight",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "flight/drain",
+      "left": "flight",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "force/attribute-absorption",
+      "left": "force",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "force/drain",
+      "left": "force",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "heal/attribute-absorption",
+      "left": "heal",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "heal/drain",
+      "left": "heal",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "motion/attribute-absorption",
+      "left": "motion",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "motion/drain",
+      "left": "motion",
+      "right": "drain",
+      "hp": {
+        "right": 38
+      }
+    },
+    {
+      "id": "parry/attribute-absorption",
+      "left": "parry",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "parry/drain",
+      "left": "parry",
+      "right": "drain",
+      "hp": {
+        "right": 37
+      }
+    },
+    {
+      "id": "periodic/attribute-absorption",
+      "left": "periodic",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "periodic/drain",
+      "left": "periodic",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "permanent/attribute-absorption",
+      "left": "permanent",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "permanent/drain",
+      "left": "permanent",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "projectile/attribute-absorption",
+      "left": "projectile",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "projectile/drain",
+      "left": "projectile",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "reaction-effects/attribute-absorption",
+      "left": "reaction-effects",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "reaction-effects/drain",
+      "left": "reaction-effects",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "resource/attribute-absorption",
+      "left": "resource",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "resource/drain",
+      "left": "resource",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "reveal/attribute-absorption",
+      "left": "reveal",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "reveal/drain",
+      "left": "reveal",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "shield/attribute-absorption",
+      "left": "shield",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "shield/drain",
+      "left": "shield",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "silence/attribute-absorption",
+      "left": "silence",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "silence/drain",
+      "left": "silence",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "stages/attribute-absorption",
+      "left": "stages",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "stages/drain",
+      "left": "stages",
+      "right": "drain",
+      "hp": {
+        "right": 38
+      }
+    },
+    {
+      "id": "status-adjustment/attribute-absorption",
+      "left": "status-adjustment",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "status-adjustment/drain",
+      "left": "status-adjustment",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "visibility/attribute-absorption",
+      "left": "visibility",
+      "right": "attribute-absorption",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "visibility/drain",
+      "left": "visibility",
+      "right": "drain",
+      "hp": {
+        "right": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/apply-status",
+      "left": "attribute-absorption",
+      "right": "apply-status",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/contact",
+      "left": "attribute-absorption",
+      "right": "contact",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/counter",
+      "left": "attribute-absorption",
+      "right": "counter",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/damage",
+      "left": "attribute-absorption",
+      "right": "damage",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/dispel",
+      "left": "attribute-absorption",
+      "right": "dispel",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/elemental-reaction",
+      "left": "attribute-absorption",
+      "right": "elemental-reaction",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/flight",
+      "left": "attribute-absorption",
+      "right": "flight",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/force",
+      "left": "attribute-absorption",
+      "right": "force",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/heal",
+      "left": "attribute-absorption",
+      "right": "heal",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/motion",
+      "left": "attribute-absorption",
+      "right": "motion",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/parry",
+      "left": "attribute-absorption",
+      "right": "parry",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/periodic",
+      "left": "attribute-absorption",
+      "right": "periodic",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/permanent",
+      "left": "attribute-absorption",
+      "right": "permanent",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/projectile",
+      "left": "attribute-absorption",
+      "right": "projectile",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/reaction-effects",
+      "left": "attribute-absorption",
+      "right": "reaction-effects",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/resource",
+      "left": "attribute-absorption",
+      "right": "resource",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/reveal",
+      "left": "attribute-absorption",
+      "right": "reveal",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/shield",
+      "left": "attribute-absorption",
+      "right": "shield",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/silence",
+      "left": "attribute-absorption",
+      "right": "silence",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/stages",
+      "left": "attribute-absorption",
+      "right": "stages",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/status-adjustment",
+      "left": "attribute-absorption",
+      "right": "status-adjustment",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/visibility",
+      "left": "attribute-absorption",
+      "right": "visibility",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/attribute-absorption",
+      "left": "attribute-absorption",
+      "right": "attribute-absorption",
+      "hp": {
+        "left": 40,
+        "right": 40
+      }
+    },
+    {
+      "id": "attribute-absorption/drain",
+      "left": "attribute-absorption",
+      "right": "drain",
+      "hp": {
+        "left": 40,
+        "right": 37
+      }
+    },
+    {
+      "id": "drain/apply-status",
+      "left": "drain",
+      "right": "apply-status",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/contact",
+      "left": "drain",
+      "right": "contact",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/counter",
+      "left": "drain",
+      "right": "counter",
+      "hp": {
+        "left": 38
+      }
+    },
+    {
+      "id": "drain/damage",
+      "left": "drain",
+      "right": "damage",
+      "hp": {
+        "left": 37
+      }
+    },
+    {
+      "id": "drain/dispel",
+      "left": "drain",
+      "right": "dispel",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/elemental-reaction",
+      "left": "drain",
+      "right": "elemental-reaction",
+      "hp": {
+        "left": 38
+      }
+    },
+    {
+      "id": "drain/flight",
+      "left": "drain",
+      "right": "flight",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/force",
+      "left": "drain",
+      "right": "force",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/heal",
+      "left": "drain",
+      "right": "heal",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/motion",
+      "left": "drain",
+      "right": "motion",
+      "hp": {
+        "left": 38
+      }
+    },
+    {
+      "id": "drain/parry",
+      "left": "drain",
+      "right": "parry",
+      "hp": {
+        "left": 37
+      }
+    },
+    {
+      "id": "drain/periodic",
+      "left": "drain",
+      "right": "periodic",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/permanent",
+      "left": "drain",
+      "right": "permanent",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/projectile",
+      "left": "drain",
+      "right": "projectile",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/reaction-effects",
+      "left": "drain",
+      "right": "reaction-effects",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/resource",
+      "left": "drain",
+      "right": "resource",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/reveal",
+      "left": "drain",
+      "right": "reveal",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/shield",
+      "left": "drain",
+      "right": "shield",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/silence",
+      "left": "drain",
+      "right": "silence",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/stages",
+      "left": "drain",
+      "right": "stages",
+      "hp": {
+        "left": 38
+      }
+    },
+    {
+      "id": "drain/status-adjustment",
+      "left": "drain",
+      "right": "status-adjustment",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/visibility",
+      "left": "drain",
+      "right": "visibility",
+      "hp": {
+        "left": 40
+      }
+    },
+    {
+      "id": "drain/attribute-absorption",
+      "left": "drain",
+      "right": "attribute-absorption",
+      "hp": {
+        "left": 37,
+        "right": 40
+      }
+    },
+    {
+      "id": "drain/drain",
+      "left": "drain",
+      "right": "drain",
+      "hp": {
+        "left": 40,
+        "right": 40
+      }
+    }
+  ]
+}

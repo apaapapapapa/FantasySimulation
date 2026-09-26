@@ -1,4 +1,5 @@
 import type { BattleEvent } from '@fantasy/domain/spatial';
+import { recoveryDisplay } from './recovery-display.ts';
 
 export function EventEntries({
   events,
@@ -39,6 +40,9 @@ export function EventEntries({
                 {event.damage.toHp.numerator}/{event.damage.toHp.denominator}
               </p>
             )}
+            {recoveryDisplay([event]).map((item) => (
+              <p key={item.id}>{item.label}</p>
+            ))}
             <pre>{JSON.stringify(event.cognition ?? event, null, 2)}</pre>
           </details>
         </li>

@@ -115,6 +115,18 @@ export const EventSchema = z
         defenseApplied: count,
         afterDefense: count,
         afterResistance: count,
+        absorption: z
+          .strictObject({ element: ElementSchema, converted: count, healing: count })
+          .optional(),
+        drain: z
+          .strictObject({
+            basis: z.strictObject({
+              numerator: z.string().regex(/^\d{1,40}$/),
+              denominator: z.string().regex(/^[1-9]\d{0,39}$/),
+            }),
+            healing: count,
+          })
+          .optional(),
         calculation: z
           .strictObject({
             element: ElementSchema,
