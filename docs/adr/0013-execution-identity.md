@@ -1,76 +1,55 @@
 # ADR 0013: Execution-only engine identity
 
-Accepted by owner in ChatGPT, 2026-09-24 (#106 D-1). Refs #106 R-01/D-4 and
-[compatibility](0010-battle-version-compatibility.md). This document changes no
-executable, digest, fixture or saved data.
+Accepted by owner in ChatGPT, 2026-09-24 (#106 D-1/R-01/D-4).
+[ADR 0010](0010-battle-version-compatibility.md) owns compatibility.
 
 ## Identity contract
 
-`source-closure-v2` hashes executable source closure, resolved runtime dependencies,
-pinned Node and physics assets. Unrelated dependency/script/API/Web/publication/sample
-changes preserve BattleSpecs and confirmed-result caches. This is file-level identity:
-editing a reachable file can require a restamp despite equivalent behavior.
+`source-closure-v2` hashes executable file closure, runtime dependencies, pinned Node
+and physics assets. Unrelated API/Web/publication/sample/dev changes preserve specs
+and caches; equivalent reachable-file edits can still require reviewed restamps.
+Canonical SHA-256 uses sorted POSIX paths, LF-normalized UTF-8 source/JSON, dependency
+identities and physics hashes; CRLF/enumeration order are irrelevant.
 
-Canonical SHA-256 payload: sorted POSIX-relative paths, LF-normalized UTF-8 source/JSON,
-dependency identities and physics hashes. Enumeration order and CRLF do not affect it.
+- Roots: prepareBattle, simulate, runBattle/runPreparedBattle and finalization through
+  narrow execution exports. Pinned TypeScript follows static/runtime reexports, side
+  effects, literal dynamic imports and JSON; cycles once. Erased type imports add no
+  edge; inline `{ type T }` retains side effects. No regex/manual source allowlist.
+- Resolve workspace exports to contained files with validated ESM/export assumptions.
+  Unknown/ambiguous/unresolved/nonliteral/unsupported/missing inputs fail closed.
+  No HTTP/DB/Web/sample closure. Linux `/proc/self/fd` binds containment to opened
+  descriptors against parent swaps; unavailable inspection/other platforms fail.
+  Payload itself remains platform-independent.
+- Recursively resolve runtime packages through frozen pnpm importers/snapshots,
+  retaining names, versions/peer identities/integrity/transitives (initially Rapier/Zod,
+  not a fixed allowlist). Missing integrity, installed/pinned mismatch or unsupported
+  locks fail. Ignore unrelated entries/scripts/dev dependencies.
+- Include exact `.node-version`, physics profile, angle table, actual WASM/binding
+  hashes; verify executing Node/assets. Exclude generated implementation.json from
+  its own digest; derive its other identities from inputs. Whole manifests/tsconfig/
+  lock/generator are not payload inputs; selected export/dependency resolution is
+  still validated. Discovery/resolution/build assumptions need explicit policy review.
 
-- Roots: prepareBattle, simulate, runBattle/runPreparedBattle and result finalization
-  through the narrow execution entry. Follow every static/runtime re-export, side effect,
-  literal dynamic import and JSON edge using pinned TypeScript parsing/resolution.
-  Erased import/export type adds no edge; inline `{ type T }` retains module side effects
-  under verbatim syntax and adds an edge. No regex discovery or manual source allowlist.
-- Resolve workspace exports to concrete contained files with checked ESM/export assumptions.
-  Unknown/unresolved/ambiguous imports, nonliteral loading, unsupported forms and missing
-  inputs fail closed; traverse cycles once. No HTTP/DB/Web/sample module in the closure.
-  Linux `/proc/self/fd` binds containment to the opened descriptor before bounded reading;
-  parent-path swaps cannot approve another file. Missing descriptor inspection fails;
-  other capture platforms are unsupported. The payload remains platform-independent.
-- Recursively resolve external runtime packages from frozen pnpm importers/snapshots,
-  retaining names, versions/peer identities and integrity, including relevant transitives.
-  Initially Rapier and domain's Zod; future dependencies are not limited to them. Missing
-  integrity, installed/pinned mismatch or unsupported locks fail. Ignore unrelated entries,
-  importer scripts and development-only tools.
-- Include exact `.node-version`, physics profile, angle table, actual Rapier WASM and
-  binding hashes; check executing Node and installed assets. Exclude generated
-  implementation.json to avoid recursion; derive its other identities from these inputs.
-- Whole package/root manifests, tsconfig, lockfile and generator are excluded as hash
-  inputs; their selected export/dependency resolution remains validated. Discovery,
-  resolution or build-assumption changes require explicit quality-policy review.
+Domain execution owns definitions/manifest, records/stream, canonical, random/numeric
+and pure rules. Engine uses only that entry; HTTP/batch/publication/replay validation
+stay outside. Dependency-cruiser/regressions enforce it. Samples owns catalog/published
+rules/tactical samples/builders and depends on public engine, never the reverse.
+Public tooling/builders stay outside roots. Preserve published IDs/hashes/data bytes.
 
-## Boundaries and compatibility
+## Compatibility and verification
 
-Domain execution exports definitions/manifest, records/stream, canonical, random/numeric
-and pure rule derivations. Engine runtime imports only that entry; HTTP/batch/publication/
-replay validation stay separate. Dependency-cruiser and regression fixtures enforce this.
-Samples owns catalog/published-rules/tactical-samples/sample builders and depends on the
-public engine, never the reverse. Preserve all published IDs/hashes and data/spatial bytes.
-Public engine tooling/builders remain outside execution roots.
+The approved [one-time transition receipt](https://github.com/apaapapapapa/FantasySimulation/blob/4d27971ce4ff43cf4b3c33af03af31b6d6ea124a/docs/adr/0013-execution-identity.md#one-time-transition-and-acceptance)
+pins source/digests/counts/unchanged physics/data. `node scripts/engine-identity.ts --inputs`
+prints current payload. Review each restamp: unchanged decisions need no rules bump;
+changed decisions follow ADR 0010. Algorithm version remains v2. New simulationHashes
+never rewrite saved specs/results/replays; old-identity retry/recovery returns 409.
+No historical engine/digest alias/automatic migration or runtime-refactor cache promise.
 
-The approved one-time algorithm migration permits no automatic expected-output repair.
-The [transition receipt](https://github.com/apaapapapapa/FantasySimulation/blob/4d27971ce4ff43cf4b3c33af03af31b6d6ea124a/docs/adr/0013-execution-identity.md#one-time-transition-and-acceptance)
-pins baseline/head, old/new digest, payload/package counts and unchanged physics/data.
-`node scripts/engine-identity.ts --inputs` prints the current payload. Review the single
-restamp explicitly. Identical decisions require no rules/engine bump; decision changes
-need a separate ADR 0010 version. The identity algorithm has its own v2 tag.
-
-The restamp changes new simulationHash values, never saved specs/results. Recorded replay
-remains readable; old-identity retry/recovery stays unsupported (409). No historical engine,
-digest alias or automatic migration. Future reachable edits still need reviewed restamps;
-v2 promises no cache stability for runtime refactors.
-
-## Verification and document budget
-
-Regress runtime source/dependency/integrity/Node/physics changes versus unchanged identity
-for Web/API/publication/samples/dev dependencies/root scripts. Cover nested imports,
-re-exports, JSON, transitives, file enumeration and line endings. Missing files/integrity,
-invalid locks, unresolved/dynamic imports and stale output fail instead of stamping partial
-closures. Check built Worker/direct-engine results against independent existing fixtures
-and fixed corpus inputs/event/trajectory/TypeScript/physics digests; never regenerate
-expected outputs to pass.
-
+Regress runtime source/dependency/integrity/Node/physics changes versus unrelated edits;
+cover imports/reexports/JSON/transitives/order/line endings and fail-closed/stale output.
+Compare built Worker/direct engine with independent fixtures and fixed corpus
+input/event/trajectory/TS/physics hashes; never regenerate expectations to pass.
 [Delivery](../../.agents/skills/fantasy-delivery/SKILL.md) requires clean-source and Linux
-PR/main CI. R-05 D-2 follows [ADR 0006](0006-recorded-replay.md); other #106 work stays in its
-acceptance list. Total documentation remains 170,000 bytes with existing document/entry
-limits. Condense completed evidence into immutable links; retain current contracts and
-reproduction commands. Exact-boundary/overflow tests protect this budget. R-01/P5 use
-reclaimed space, with no exclusions or higher thresholds.
+PR/main evidence. R-05 D-2 follows ADR 0006; other #106 acceptance remains separate.
+[Context policy](../development/ai-context.md) retains 170,000 bytes including ADRs and
+existing entry/document limits; immutable history links preserve measurements.
