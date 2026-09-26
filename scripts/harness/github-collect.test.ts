@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'vite-plus/test';
 import {
   collectPages,
+  collectRun,
   collectSnapshot,
   collectThreads,
   sourceFromLog,
@@ -9,6 +10,7 @@ import {
 } from './github-collect.ts';
 import type { Gateway, Page } from './github.ts';
 import type { Report } from './report.ts';
+import { classify } from '../ci/plan.ts';
 
 function gateway(pages: Page[] = []): Gateway {
   return {
@@ -171,4 +173,73 @@ it('parses CI markers separately and rejects duplicates, missing or unknown mark
   assert.throws(() => markerFromLog(line, 'FANTASY_CI_GATE'));
   assert.throws(() => markerFromLog(line + line, 'FANTASY_CI_PLAN'));
   assert.throws(() => markerFromLog(line, '.*'));
+});
+
+it('reads the Linux source report from the ci-gate aggregate, and only for full plans', async () => {
+  const sourceSha = 'a'.repeat(40);
+  const report = (producer: string): Report => ({
+    schemaVersion: 1,
+    producer,
+    sourceSha,
+    candidateSha: sourceSha,
+    baselineSha: null,
+    testMergeSha: null,
+    startedAt: '2026-01-01T00:00:00Z',
+    finishedAt: '2026-01-01T00:00:00Z',
+    checks: [
+      {
+        id: 'fixture',
+        required: true,
+        status: 'pass',
+        reason: 'fixture',
+        evidence: [{ uri: 'log.txt', sourceSha }],
+      },
+    ],
+  });
+  const line = (marker: string, value: unknown) =>
+    `2026-01-01T00:00:00Z ${marker}=${JSON.stringify(value)}\n`;
+  const run = async (full: boolean, gateSource: boolean) => {
+    const info = {
+      sourceSha,
+      candidateSha: 'b'.repeat(40),
+      baselineSha: 'c'.repeat(40),
+      testMergeSha: sourceSha,
+    };
+    const plan = classify(info, 'pull_request', [full ? 'apps/api/src/main.ts' : 'README.md']);
+    const logs: Record<string, string> = {
+      1: line('FANTASY_CI_PLAN', plan),
+      2:
+        line('FANTASY_CI_GATE', report('ci-gate')) +
+        (gateSource ? line('FANTASY_SOURCE_REPORT', report('source-runner')) : ''),
+      3: line('FANTASY_DOCS_REPORT', report('docs-check')),
+    };
+    const jobs = ['changes', 'ci-gate', 'Docs (ubuntu-latest)'].map((name, index) => ({
+      id: index + 1,
+      name,
+      status: 'completed',
+      conclusion: name.startsWith('Docs') && full ? 'skipped' : 'success',
+    }));
+    const client: Gateway = {
+      ...gateway([{ data: jobs, next: false, total: jobs.length }]),
+      async get(route) {
+        const job = /\/actions\/jobs\/(\d+)\/logs$/.exec(route)?.[1];
+        if (job) return logs[job];
+        if (route.endsWith('/actions/runs/10')) return { id: 10, run_attempt: 1 };
+        return { sha: sourceSha };
+      },
+    };
+    return collectRun(client, 'GET /repos/owner/repo', { id: 10 });
+  };
+  const full = await run(true, true);
+  assert.deepEqual(
+    full.sources.map((source) => [source.jobId, (source.report as Report).producer]),
+    [[2, 'source-runner']],
+  );
+  const docs = await run(false, false);
+  assert.deepEqual(
+    docs.sources.map((source) => [source.jobId, (source.report as Report).producer]),
+    [[3, 'docs-check']],
+  );
+  // A full plan whose gate never aggregated the source receipts cannot be collected.
+  await assert.rejects(run(true, false), /marker missing/);
 });

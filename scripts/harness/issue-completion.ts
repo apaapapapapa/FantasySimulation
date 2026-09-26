@@ -9,7 +9,6 @@ export const completionMarker = '<!-- harness:issue-completed:v1 -->';
 export const requiredJobs = [
   'changes',
   'ci-gate',
-  'Verify (ubuntu-latest)',
   ...SOURCE_JOBS,
   ...LOAD_JOBS,
   'Security / Secret scan',

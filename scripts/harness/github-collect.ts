@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseReport, record, sha, text } from './report.ts';
 import { artifactDirectory } from './source.ts';
-import { newestRun, natural, objects, repositoryName, VERIFY_JOBS, DOCS_JOBS } from './delivery.ts';
+import { newestRun, natural, objects, repositoryName, DOCS_JOBS } from './delivery.ts';
 import type { DeliverySnapshot, RunEvidence } from './delivery.ts';
 import type { Gateway } from './github.ts';
 import { parsePlan } from '../ci/plan.ts';
@@ -164,7 +164,7 @@ export function markerFromLog(value: unknown, marker: string) {
     logDigest: createHash('sha256').update(content).digest('hex'),
   };
 }
-async function collectRun(
+export async function collectRun(
   gateway: Gateway,
   prefix: string,
   selected: Record<string, unknown>,
@@ -178,11 +178,24 @@ async function collectRun(
   const commits: Record<string, unknown> = {};
   let plan: RunEvidence['plan'];
   let gate: RunEvidence['gate'];
+  let gateLog: unknown = null;
+  const addSource = async (
+    jobId: number,
+    log: unknown,
+    marker: 'FANTASY_SOURCE_REPORT' | 'FANTASY_DOCS_REPORT',
+  ) => {
+    const parsed = markerFromLog(log, marker);
+    const report = parseReport(parsed.value);
+    sources.push({ jobId, report, logDigest: parsed.logDigest });
+    if (!(report.sourceSha in commits))
+      commits[report.sourceSha] = await gateway.get(`${prefix}/commits/${sha(report.sourceSha)}`);
+  };
   for (const job of objects(jobs)) {
     if (job.status !== 'completed' || job.conclusion === 'skipped') continue;
     if (job.name === 'changes' || job.name === 'ci-gate') {
+      const log = await gateway.get(`${prefix}/actions/jobs/${natural(job.id)}/logs`);
       const parsed = markerFromLog(
-        await gateway.get(`${prefix}/actions/jobs/${natural(job.id)}/logs`),
+        log,
         job.name === 'changes' ? 'FANTASY_CI_PLAN' : 'FANTASY_CI_GATE',
       );
       if (job.name === 'changes') {
@@ -199,21 +212,20 @@ async function collectRun(
           report: parseReport(parsed.value),
           logDigest: parsed.logDigest,
         };
+        gateLog = log;
       }
       continue;
     }
-    if (![...VERIFY_JOBS, ...DOCS_JOBS].some((name) => name === job.name)) continue;
-    const jobId = natural(job.id);
-    const marker = markerFromLog(
-      await gateway.get(`${prefix}/actions/jobs/${jobId}/logs`),
-      DOCS_JOBS.some((name) => name === job.name) ? 'FANTASY_DOCS_REPORT' : 'FANTASY_SOURCE_REPORT',
-    );
-    const parsed = { report: parseReport(marker.value), logDigest: marker.logDigest };
-    sources.push({ jobId, ...parsed });
-    const commit = parsed.report.sourceSha;
-    if (!(commit in commits))
-      commits[commit] = await gateway.get(`${prefix}/commits/${sha(commit)}`);
+    if (DOCS_JOBS.some((name) => name === job.name))
+      await addSource(
+        natural(job.id),
+        await gateway.get(`${prefix}/actions/jobs/${natural(job.id)}/logs`),
+        'FANTASY_DOCS_REPORT',
+      );
   }
+  // A full plan's Linux source report comes from the aggregate step inside ci-gate itself.
+  if (gate && plan && parsePlan(plan.value).full)
+    await addSource(gate.jobId, gateLog, 'FANTASY_SOURCE_REPORT');
   const after = await gateway.get(`${prefix}/actions/runs/${id}`);
   return {
     before,
