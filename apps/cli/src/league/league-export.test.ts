@@ -1,6 +1,6 @@
-import { expect, it } from 'vite-plus/test';
+import { expect, it, vi } from 'vite-plus/test';
 import { join } from 'node:path';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import {
   LeaguePartitionResultSchema,
   PublicLeagueSnapshotSchema,
@@ -11,12 +11,12 @@ import {
   type LeagueProgress,
 } from '@fantasy/domain/spatial';
 import { withReplayDirectory } from '@fantasy/api/testing';
-import { planLeague, reserveLeaguePartition } from '@fantasy/api/tooling';
+import { checkLeague, planLeague, reserveLeaguePartition } from '@fantasy/api/tooling';
 import { BattleBundles } from '@fantasy/api/artifacts';
 import { leagueFixture, leagueEstimate } from '@fantasy/samples/testing';
 import { leaguePublicationFixture, publicationLeagueSource } from '../../test-support/leagues.ts';
 import { exportLeague, leagueFile } from './league-export.ts';
-import { buildLeagueWork, finishLeagueWork } from './league-work.ts';
+import { buildLeagueWork, finishCheckedLeagueWork } from './league-work.ts';
 import { localPublicationGraph } from '../publication/publication-graph.ts';
 import { commitPublication } from '../publication/publication-catalog.ts';
 
@@ -140,10 +140,9 @@ it('keeps absent partitions in the denominator and writes durable reservations b
     expect(initial.catalog.leagueWork).toEqual(work.ref);
     expect(initial.catalog.sets).toEqual([]);
     expect(work.records.every((r) => r.attempts[0]!.state === 'reserved')).toBe(true);
-    const finished = await finishLeagueWork(
-      fixture.plan,
+    const finished = await finishCheckedLeagueWork(
+      await checkLeague(fixture.plan, fixture.completed.slice(0, 1)),
       fixture.reservations,
-      fixture.completed.slice(0, 1),
       work,
       new BattleBundles(target),
     );
@@ -152,7 +151,16 @@ it('keeps absent partitions in the denominator and writes durable reservations b
       fixture.partitions,
       fixture.completed.slice(0, 1),
       target,
-      finished,
+      async (checked) => {
+        const shared = await finishCheckedLeagueWork(
+          checked,
+          fixture.reservations,
+          work,
+          new BattleBundles(target),
+        );
+        expect(shared).toEqual(finished);
+        return shared;
+      },
     );
     expect(missing).toMatchObject({
       status: 'provisional',
@@ -176,6 +184,35 @@ it('keeps absent partitions in the denominator and writes durable reservations b
     await expect(localPublicationGraph(target)).rejects.toThrow(/rewrites consumed attempts/);
   });
 }, 30000);
+
+it.each(['before', 'after'] as const)(
+  'rejects bundle corruption %s the journal callback without advancing the catalog',
+  async (when) => {
+    await withReplayDirectory(async (root) => {
+      const fixture = await leaguePublicationFixture(join(root, 'run'));
+      const target = join(root, 'public');
+      await exportLeague(fixture.plan, fixture.partitions, [], target);
+      const pointer = join(target, 'catalog/current.json');
+      const original = await readFile(pointer);
+      const entry = fixture.completed[0]!;
+      const result = LeaguePartitionResultSchema.parse(entry.result);
+      const objectHash = result.progress.records[0]!.attempts[0]!.objectHash!;
+      const corrupt = () =>
+        writeFile(join(entry.bundles.root, 'objects', objectHash.slice(7), 'receipt.json'), '{}');
+      if (when === 'before') await corrupt();
+      const journal = vi.fn(async () => {
+        await corrupt();
+        return { ref: leagueFile({}).ref, files: [] };
+      });
+      await expect(
+        exportLeague(fixture.plan, fixture.partitions, fixture.completed, target, journal),
+      ).rejects.toMatchObject({ code: 'DATA_INVALID' });
+      expect(journal).toHaveBeenCalledTimes(when === 'before' ? 0 : 1);
+      expect(await readFile(pointer)).toEqual(original);
+    });
+  },
+  30000,
+);
 
 it('retains the first partial snapshot and receipt after the one larger-budget retry completes', async () => {
   await withReplayDirectory(async (root) => {

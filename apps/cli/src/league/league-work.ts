@@ -10,13 +10,13 @@ import {
 } from '@fantasy/domain/spatial';
 import { BattleBundles } from '@fantasy/api/artifacts';
 import {
-  checkLeague,
   progressPage,
   reserveLeaguePartition,
   validateLeaguePartition,
   validateLeaguePlan,
   verifyLeagueProgress,
   type LeagueCheckInput,
+  type checkLeague,
 } from '@fantasy/api/tooling';
 import { leagueFile } from './league-export.ts';
 import type { PublicationFile } from '../publication/publication-files.ts';
@@ -66,13 +66,14 @@ export async function buildLeagueWork(
   return packLeagueWork(plan, reservations, [...records.values()], prior.ref, executionId);
 }
 
-export async function finishLeagueWork(
-  plan: LeaguePlan,
+/** Pack results already authenticated by exportLeague's checkLeague call. */
+export async function finishCheckedLeagueWork(
+  verified: Awaited<ReturnType<typeof checkLeague>>,
   reservations: readonly LeagueReservation[],
-  completed: readonly LeagueCheckInput[],
   reserved: { ref: LeagueFileRef; records: readonly LeagueProgress[]; work: PublicLeagueWork },
   retained: BattleBundles,
 ) {
+  const { plan } = verified;
   if (
     reserved.work.planId !== plan.id ||
     reserved.work.sourceSha !== plan.source.sha ||
@@ -92,7 +93,6 @@ export async function finishLeagueWork(
     )
       throw new OperationError('DATA_INVALID', 'Completion reservation was not published');
   }
-  const verified = await checkLeague(plan, completed);
   const records = await verifyLeagueProgress(reserved.records, retained);
   for (const result of verified.results) {
     if (!reservations.some((r) => r.id === result.reservationId))

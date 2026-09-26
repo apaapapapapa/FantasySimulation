@@ -24,7 +24,7 @@ import {
   PUBLICATION_CONTROL_BYTES,
 } from '../publication/publication-files.ts';
 import { commitPublication } from '../publication/publication-catalog.ts';
-import { buildLeagueWork, finishLeagueWork } from './league-work.ts';
+import { buildLeagueWork, finishCheckedLeagueWork } from './league-work.ts';
 import { exportLeague } from './league-export.ts';
 import { LEAGUE_PROFILE, probeLeague, requireLeagueProbeBinding } from './league-probe.ts';
 import { PublicReadFailure } from '../publication/publication-http.ts';
@@ -199,7 +199,7 @@ export async function finishCloudLeague(
   const graph = await localPublicationGraph(publicRoot);
   if (!graph.latestWork || graph.catalog.leagueWork?.hash !== prepared.work.hash)
     throw new OperationError('IDENTITY_MISMATCH', 'Cloud reservation journal mismatch');
-  const inputs = [],
+  const inputs: LeagueCloudInput[] = [],
     completed: LeagueCheckInput[] = [];
   for (let index = 0; index < prepared.inputs.length; index++) {
     const input = await cloudInput(preparedRoot, prepared, index);
@@ -216,18 +216,19 @@ export async function finishCloudLeague(
       bundles: new BattleBundles(join(resultRoot, String(index), 'bundles')),
     });
   }
-  const work = await finishLeagueWork(
-    prepared.plan,
-    inputs.map((input) => input.reservation),
-    completed,
-    {
-      ref: prepared.work,
-      work: graph.latestWork.work,
-      records: [...graph.latestWork.records.values()],
-    },
-    new BattleBundles(publicRoot),
+  const reserved = {
+    ref: prepared.work,
+    work: graph.latestWork.work,
+    records: [...graph.latestWork.records.values()],
+  };
+  const exported = await exportLeague(prepared.plan, inputs, completed, publicRoot, (checked) =>
+    finishCheckedLeagueWork(
+      checked,
+      inputs.map((input) => input.reservation),
+      reserved,
+      new BattleBundles(publicRoot),
+    ),
   );
-  const exported = await exportLeague(prepared.plan, inputs, completed, publicRoot, work);
   await writeCloudJson(join(preparedRoot, 'completion.json'), {
     ...exported,
     receivedPartitions: completed.length,

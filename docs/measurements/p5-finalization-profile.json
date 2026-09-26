@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "kind": "league-finalization-component-profile",
+  "baselineToolingSha": "7883615c0a992bedf8d85d277d88e6024d496250",
+  "runId": 36230476390,
+  "attempt": 1,
+  "partitionIndex": 0,
+  "artifacts": [
+    {
+      "id": 10903515369,
+      "name": "league-36230476390-1-input-0",
+      "archiveDigest": "sha256:ee637708b68995c3d5224f1f962011fe67b7141df694d29c4f17da614c3d64f9"
+    },
+    {
+      "id": 10903261539,
+      "name": "league-36230476390-1-result-0",
+      "archiveDigest": "sha256:ef9e1346bb324b70960527ca10ea51e32ca0de0b717cc662c30d08d82c5a1026"
+    }
+  ],
+  "method": "One checkLeague call on the original 7600-slot plan and partition 0 result. Artifact ZIP digests verified before extraction. Node 24.19.0 on Linux x64, V8 CPU profiler enabled; BattleBundles.verify wrapper records elapsed time and call counts without changing verification. No simulation or network publication.",
+  "measurement": {
+    "startedAt": "2026-09-26T10:39:25.174Z",
+    "finishedAt": "2026-09-26T10:41:28.716Z",
+    "elapsedMs": 123540.923768,
+    "verifyMs": 55583.88547999999,
+    "verifyCalls": 384,
+    "uniqueBundles": 128,
+    "callsPerBundle": [3],
+    "slots": 7600,
+    "partitions": 1,
+    "resolved": 128,
+    "missingPartitions": 59,
+    "artifactSourceSha": "7d2a3368f61ab81590bd31c6ce15ba339a7fbbf4"
+  },
+  "limitations": [
+    "Partial component profile, not a full Actions finalization or end-to-end publication measurement. Profiler overhead is included. No full-run speedup is inferred.",
+    "The running Daily league uses older tooling; this local change does not modify that run."
+  ],
+  "regression": {
+    "test": "apps/cli/src/league/league-cloud.test.ts",
+    "case": "resumes a missing worker once, verifies results, skips unchanged input and reuses pairs for a new participant",
+    "completedFixtureSlots": 4,
+    "beforeBundleVerifications": 28,
+    "expectedAfterBundleVerifications": 16,
+    "interpretation": "The old finalizer runs checkLeague for the journal and again for export (3 checks per bundle each), plus the independent export check. Share one authenticated result with the journal, retaining all three binding checks and the independent export check."
+  },
+  "preserved": "Original result/source/execution/reservation identity; retained attempt history; byte checks and privacy inspection during export; recovery catalog equality; transport, capacity and quota limits. Corruption before or after the journal callback must fail before catalog publication."
+}

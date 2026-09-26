@@ -3,10 +3,10 @@ import { join } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { BattleBundles } from '@fantasy/api/artifacts';
-import { reserveLeaguePartition } from '@fantasy/api/tooling';
+import { checkLeague, reserveLeaguePartition } from '@fantasy/api/tooling';
 import { leagueFixture } from '@fantasy/samples/testing';
 import { leaguePublicationFixture } from '../../test-support/leagues.ts';
-import { buildLeagueWork, finishLeagueWork } from './league-work.ts';
+import { buildLeagueWork, finishCheckedLeagueWork } from './league-work.ts';
 import { exportLeague, leagueFile } from './league-export.ts';
 import { commitPublication } from '../publication/publication-catalog.ts';
 import { localPublicationGraph } from '../publication/publication-graph.ts';
@@ -52,10 +52,9 @@ it('rejects a new execution that reserves retry 2 but flattens only attempt 1', 
     const initial = await initialWork(fixture);
     await commitPublication(target, initial.files, [], { leagueWork: initial.ref });
     const retained = new BattleBundles(target);
-    const finished = await finishLeagueWork(
-      fixture.plan,
+    const finished = await finishCheckedLeagueWork(
+      await checkLeague(fixture.plan, fixture.completed),
       fixture.reservations,
-      fixture.completed,
       initial,
       retained,
     );
