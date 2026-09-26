@@ -18,6 +18,7 @@ import { adjustedStatusValue, damageStatusBps } from '../rules/status-modifiers.
 import { abilityCategories } from '../rules/categories.ts';
 import { appearancePrior } from './appearance.ts';
 import { shapeEstimate, stageMotionEstimate } from './shape-assessment.ts';
+import { abilityPlan, authoredStages } from '../rules/ability-plan.ts';
 
 export const clampBps = (n: number) => Math.max(0, Math.min(10000, Math.round(n)));
 export const boundedWeight = (n: number) => Math.max(0, Math.min(1_000_000, Math.round(n)));
@@ -88,7 +89,7 @@ export function efficacy(
   };
 }
 export function assessAbility(view: DecisionView, ability: AbilityRevision): CandidateAssessment {
-  return ability.definition.stages
+  return abilityPlan(ability).kind === 'staged'
     ? assessStages(view, ability)
     : assessSingle(view, ability).assessment;
 }
@@ -133,7 +134,8 @@ function assessSingle(
     confidencePower = 0;
   const evidence: string[] = [],
     reasons: string[] = [];
-  const stateValue = assessStatusEffects(view, d.effects, d.target, view.step + cast);
+  const effects = abilityPlan(ability).effects;
+  const stateValue = assessStatusEffects(view, effects, d.target, view.step + cast);
   utility += (stateValue.risk?.nonDamageValue ?? stateValue.value) * rules.actionWeight;
   if (stateValue.risk) {
     const { before, after } = stateValue.risk;
@@ -228,7 +230,7 @@ function assessSingle(
     'apply-status': () => {}, // Already assessed together by the status transaction above.
     dispel: () => {},
   };
-  for (const effect of d.effects) {
+  for (const effect of effects) {
     if (!stateValue.handled.has(effect)) matchEffect(effect, effectAssessments, undefined);
   }
   if (totalPower > 0) {
@@ -292,8 +294,8 @@ function assessSingle(
 }
 /** Reuse the same utility terms for each reachable own stage; physical offsets are never speed-scaled again. */
 function assessStages(view: DecisionView, ability: AbilityRevision): CandidateAssessment {
-  const { stages, ...definition } = ability.definition;
-  const plan = stages!;
+  const { stages: _stages, ...definition } = ability.definition;
+  const plan = authoredStages(ability);
   const clock = actionClock(ability.definition, view.self.actor.character.stats.actionSpeedBps, 0);
   const duration = clock?.recoveryUntil ?? 8000;
   const costs = plan.reduce(

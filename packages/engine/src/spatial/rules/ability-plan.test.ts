@@ -1,6 +1,6 @@
 import { expect, it } from 'vite-plus/test';
 import { sampleManifest } from '@fantasy/samples';
-import { abilityEffects, RevisionSchema, AbilitySchema } from '@fantasy/domain/spatial';
+import { RevisionSchema, AbilitySchema } from '@fantasy/domain/spatial';
 import { prepareBattle } from '../prepare.ts';
 import { abilityPlan, prepareAbility, authoredStages } from './ability-plan.ts';
 
@@ -23,6 +23,8 @@ it('normalizes a single attack without authoring stages or changing its saved de
   expect(abilityPlan(prepared)).toBe(prepared.execution);
   expect(() => authoredStages(prepared)).toThrow('authored stage');
   expect(RevisionSchema.safeParse(prepared).success).toBe(false);
+  source.definition.costs.mp = 999;
+  expect(prepared.definition.costs.mp).toBe(saved.definition.costs.mp);
 });
 
 it('preserves authored clocks, cost presence and first-stage effect multiplicity', async () => {
@@ -50,7 +52,10 @@ it('preserves authored clocks, cost presence and first-stage effect multiplicity
   expect(authoredStages(prepared)).toEqual(source.definition.stages);
   expect(authoredStages(prepared)[0]!.cost).toBeUndefined();
   expect(authoredStages(prepared)[1]!.cost).toEqual({ hp: 0, mp: 0 });
-  expect(prepared.execution.effects).toEqual(abilityEffects(source.definition));
+  expect(prepared.execution.effects).toEqual([
+    ...source.definition.effects,
+    ...source.definition.effects,
+  ]);
   expect(prepared.execution.effects.length).toBe(2 * source.definition.effects.length);
 });
 
