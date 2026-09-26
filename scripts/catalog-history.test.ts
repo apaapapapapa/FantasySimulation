@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { sampleCatalog } from '@fantasy/samples';
+import { compileCatalog } from '@fantasy/samples/authoring';
 import { revisionHash } from '@fantasy/engine/spatial';
 import { RevisionSchema } from '@fantasy/domain/spatial';
 import savedCatalog from '../data/spatial/catalog.json' with { type: 'json' };
@@ -41,6 +42,24 @@ describe('published catalog immutability', () => {
           break;
       }
       await expect(assertPublishedRevisions(catalog)).rejects.toThrow(/Published sample|Duplicate/);
+      if (change !== 'unrecorded')
+        await expect(assertPublishedRevisions(catalog, { allowAdditions: true })).rejects.toThrow(
+          /Published sample|Duplicate/,
+        );
     },
   );
+  it('generates hashes for new authored IDs before requiring their inventory entry', async () => {
+    const source = savedCatalog.find((revision) => revision.kind === 'scenario')!;
+    const { contentHash: _hash, ...authored } = source;
+    const catalog = await compileCatalog([
+      ...savedCatalog,
+      { ...authored, id: 'new-authored-scenario' },
+    ]);
+    const added = catalog.find((revision) => revision.id === 'new-authored-scenario')!;
+    expect(added.contentHash).toBe(await revisionHash(added));
+    await expect(
+      assertPublishedRevisions(catalog, { allowAdditions: true }),
+    ).resolves.toBeUndefined();
+    await expect(assertPublishedRevisions(catalog)).rejects.toThrow('record every distributed ID');
+  });
 });
