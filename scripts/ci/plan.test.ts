@@ -16,9 +16,9 @@ const info: Identity = {
   baselineSha: 'c'.repeat(40),
   testMergeSha: 'a'.repeat(40),
 };
-function evidence(ids: readonly string[]): Report {
+function evidence(ids: readonly string[], source: Identity = info): Report {
   return {
-    ...info,
+    ...source,
     schemaVersion: 1,
     producer: 'fixture',
     startedAt: '2026-09-22T00:00:00Z',
@@ -28,22 +28,36 @@ function evidence(ids: readonly string[]): Report {
       required: true,
       status: 'pass',
       reason: 'Executed assertion',
-      evidence: [{ uri: '.generated/result.json', sourceSha: info.sourceSha }],
+      evidence: [{ uri: '.generated/result.json', sourceSha: source.sourceSha }],
     })),
   };
 }
 describe('conservative CI planning', () => {
-  it('excludes simulation only for presentation-only PRs and CodeQL only for wording', () => {
+  it('excludes simulation only for presentation-only PRs and extended checks for every PR', () => {
     const presentation = classify(info, 'pull_request', [
       'apps/web/src/App.tsx',
       'apps/web/src/main.css',
     ]);
-    expect(presentation).toMatchObject({ full: true, simulation: false, codeql: true });
+    const lane = { codeql: false, ui: false, load: false };
+    expect(presentation).toMatchObject({ full: true, simulation: false, ...lane });
+    expect(classify(info, 'pull_request', ['scripts/ci/plan.ts'])).toMatchObject({
+      full: true,
+      simulation: true,
+      ...lane,
+    });
     expect(classify(info, 'pull_request', ['README.md'])).toMatchObject({
       full: false,
       simulation: false,
-      codeql: false,
+      ...lane,
     });
+    for (const event of ['push', 'workflow_dispatch', 'schedule'])
+      expect(classify(info, event, ['README.md'])).toMatchObject({
+        full: true,
+        simulation: true,
+        codeql: true,
+        ui: true,
+        load: true,
+      });
     for (const path of [
       'apps/web/package.json',
       'apps/web/vite.config.ts',
@@ -55,8 +69,10 @@ describe('conservative CI planning', () => {
       expect(classify(info, 'pull_request', ['apps/web/src/App.tsx', path]).simulation).toBe(true);
     for (const event of ['push', 'workflow_dispatch', 'schedule'])
       expect(classify(info, event, ['README.md']).simulation).toBe(true);
-    for (const field of ['full', 'simulation', 'codeql', 'ui'] as const)
+    for (const field of ['full', 'simulation', 'codeql', 'ui', 'load'] as const)
       expect(() => parsePlan({ ...presentation, [field]: !presentation[field] })).toThrow(Error);
+    const { load: _, ...legacy } = presentation;
+    expect(() => parsePlan(legacy)).toThrow(Error);
   });
   it('shortcuts only nonempty wording-only PRs', () => {
     expect(classify(info, 'pull_request', ['README.md', 'docs/usage.md']).full).toBe(false);
@@ -102,21 +118,33 @@ describe('fail-closed CI gate', () => {
     changes: 'success',
     security: 'success',
     'dependency-policy': 'success',
-    verify: 'success',
-    load: 'success',
+    tasks: 'success',
+    corpus: 'success',
+    load: 'skipped',
     docs: 'skipped',
-    ui: 'success',
+    ui: 'skipped',
   };
   const corpus = corpusEvidence(info);
   const security = { ...evidence(SECURITY_CHECKS), producer: 'security-evidence' };
   const reports = {
-    ...loadReceipts(info),
     'ubuntu-latest': evidence(['source-clean', 'source-verify']),
     security,
-    ui: { ...evidence(UI_CHECKS), producer: 'ui-runner' },
   };
+  // Main, dispatch and scheduled runs add browser E2E and paired load evidence.
+  const main: Identity = { ...info, candidateSha: info.sourceSha, testMergeSha: null };
+  const mainPlan = classify(main, 'push', ['apps/web/a.ts']);
+  const mainResults = { ...results, load: 'success', ui: 'success' };
+  const mainSecurity = { ...evidence(SECURITY_CHECKS, main), producer: 'security-evidence' };
+  const mainReports = {
+    ...loadReceipts(main),
+    'ubuntu-latest': evidence(['source-clean', 'source-verify'], main),
+    security: mainSecurity,
+    ui: { ...evidence(UI_CHECKS, main), producer: 'ui-runner' },
+  };
+  const mainCorpus = corpusEvidence(main);
   it('requires Linux evidence and exact source identities', () => {
     expect(assessGate(plan, results, reports, corpus).exitCode).toBe(0);
+    expect(assessGate(mainPlan, mainResults, mainReports, mainCorpus).exitCode).toBe(0);
     expect(assessGate(plan, results, { 'ubuntu-latest': reports['ubuntu-latest'] }).exitCode).toBe(
       2,
     );
@@ -127,46 +155,60 @@ describe('fail-closed CI gate', () => {
       }).exitCode,
     ).toBe(2);
   });
+  it('keeps PRs in the fast lane without browser, CodeQL or paired load evidence', () => {
+    const gate = assessGate(plan, results, reports, corpus).report;
+    expect(gate.checks.map((check) => check.id)).not.toContain('ci-evidence:ui');
+    expect(gate.checks.map((check) => check.id)).not.toContain('ci-evidence:load-pair');
+    for (const job of ['load', 'ui'])
+      expect(assessGate(plan, { ...results, [job]: 'success' }, reports, corpus).exitCode).toBe(1);
+  });
   it('accepts only the planned presentation scope while retaining source and security checks', () => {
     const presentation = classify(info, 'pull_request', ['apps/web/src/App.tsx']);
-    const observed = { ...results, load: 'skipped' };
     expect(
-      assessGate(presentation, observed, {
+      assessGate(presentation, results, {
         'ubuntu-latest': reports['ubuntu-latest'],
         security,
-        ui: reports.ui,
       }).exitCode,
     ).toBe(0);
-    expect(assessGate(plan, observed, reports, corpus).exitCode).toBe(1);
-    expect(assessGate(presentation, { ...observed, verify: 'skipped' }, reports).exitCode).toBe(1);
+    expect(assessGate(plan, results, reports).exitCode).toBe(2);
+    expect(assessGate(presentation, { ...results, tasks: 'skipped' }, reports).exitCode).toBe(1);
+    expect(assessGate(presentation, { ...results, corpus: 'skipped' }, reports).exitCode).toBe(1);
   });
   it('rejects job failure, cancellation, unplanned skip and absence', () => {
-    for (const job of ['verify', 'load', 'ui'])
+    for (const job of ['tasks', 'corpus', 'load', 'ui'])
       for (const value of ['failure', 'cancelled', 'skipped', undefined])
-        expect(assessGate(plan, { ...results, [job]: value }, reports).exitCode).toBe(1);
+        expect(
+          assessGate(mainPlan, { ...mainResults, [job]: value }, mainReports, mainCorpus).exitCode,
+        ).toBe(1);
     expect(assessGate(plan, { ...results, changes: 'failure' }, reports).exitCode).toBe(1);
     expect(assessGate(plan, { ...results, security: 'skipped' }, reports).exitCode).toBe(1);
   });
   it('requires independent paired evidence from the exact source and baseline', () => {
-    const paired = loadReceipts(info)['load-pair']!;
+    const paired = loadReceipts(main)['load-pair']!;
     for (const invalid of [
       null,
       { ...paired, sourceSha: 'd'.repeat(40) },
       { ...paired, baselineSha: 'd'.repeat(40) },
       { ...paired, checks: paired.checks.filter((check) => check.id !== 'load:regression') },
     ])
-      expect(assessGate(plan, results, { ...reports, 'load-pair': invalid }, corpus).exitCode).toBe(
-        2,
-      );
+      expect(
+        assessGate(mainPlan, mainResults, { ...mainReports, 'load-pair': invalid }, mainCorpus)
+          .exitCode,
+      ).toBe(2);
   });
   it('requires current-source UI coverage rather than trusting a green browser job', () => {
     for (const ui of [
       null,
-      { ...reports.ui, producer: 'fixture' },
-      { ...reports.ui, candidateSha: 'd'.repeat(40) },
-      { ...reports.ui, checks: reports.ui.checks.filter((check) => check.id !== 'ui:coverage') },
+      { ...mainReports.ui, producer: 'fixture' },
+      { ...mainReports.ui, candidateSha: 'd'.repeat(40) },
+      {
+        ...mainReports.ui,
+        checks: mainReports.ui.checks.filter((check) => check.id !== 'ui:coverage'),
+      },
     ])
-      expect(assessGate(plan, results, { ...reports, ui }, corpus).exitCode).toBe(2);
+      expect(assessGate(mainPlan, mainResults, { ...mainReports, ui }, mainCorpus).exitCode).toBe(
+        2,
+      );
   });
   it('requires each H4 check even when every security job reports success', () => {
     expect(assessGate(plan, results, { ...reports, security: null }).exitCode).toBe(2);
@@ -193,15 +235,7 @@ describe('fail-closed CI gate', () => {
   });
   it('permits planned skip only with passing lightweight and security evidence', () => {
     const docs = classify(info, 'pull_request', ['README.md']),
-      observed = {
-        changes: 'success',
-        security: 'success',
-        'dependency-policy': 'success',
-        verify: 'skipped',
-        load: 'skipped',
-        docs: 'success',
-        ui: 'skipped',
-      };
+      observed = { ...results, docs: 'success' };
     const docReports = {
       'docs-ubuntu-latest': evidence(['docs:diff', 'docs:links', 'docs:context']),
       security,
@@ -229,6 +263,8 @@ describe('fail-closed CI gate', () => {
     ).toBe(2);
     expect(assessGate(docs, { ...observed, docs: 'skipped' }, {}).exitCode).toBe(1);
     expect(assessGate(docs, { ...observed, load: 'failure' }, docReports).exitCode).toBe(1);
+    // Wording-only PRs still run and require the source tasks and corpus observation.
+    expect(assessGate(docs, { ...observed, tasks: 'failure' }, docReports).exitCode).toBe(1);
   });
 });
 it(
@@ -295,7 +331,10 @@ it(
         full: true,
         simulation: true,
         codeql: true,
+        ui: true,
+        load: true,
       });
+      expect(plan).toMatchObject({ codeql: false, ui: false, load: false });
       for (const baseline of [undefined, 'main', '']) {
         writeFileSync(eventPath, JSON.stringify({ inputs: { baseline } }));
         expect(collectPlan(root, dispatch).baselineSha).toBeNull();

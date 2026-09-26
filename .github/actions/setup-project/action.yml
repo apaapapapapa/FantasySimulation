@@ -1,8 +1,12 @@
 name: Locked project environment
-description: Pinned Node/Vite+/pnpm with dependency-only caching; never caches verification results
+description: Pinned Node/Vite+/pnpm with exact-key dependency caching; never caches verification results
+inputs:
+  store:
+    description: Also restore the pnpm content store for a later frozen install, such as a paired load baseline
+    default: 'false'
 outputs:
   cache-hit:
-    value: ${{ steps.dependencies.outputs.cache-hit }}
+    value: ${{ steps.modules.outputs.cache-hit == 'true' || steps.dependencies.outputs.cache-hit == 'true' }}
     description: Exact dependency cache hit; an empty value means unknown
 runs:
   using: composite
@@ -15,12 +19,28 @@ runs:
         node-version-file: .node-version
         cache: false
         run-install: false
+    - id: key
+      shell: bash
+      run: echo "inputs=${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'apps/*/package.json', 'packages/*/package.json', '.github/actions/setup-project/action.yml') }}" >> "$GITHUB_OUTPUT"
+    # Workspace node_modules exactly as the frozen install on main produced them, saved before any
+    # task ran. An exact hit skips relinking, lifecycle scripts and repeated lockfile verification.
+    - uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
+      id: modules
+      if: inputs.store != 'true'
+      with:
+        path: |
+          node_modules
+          apps/*/node_modules
+          packages/*/node_modules
+        key: fantasy-modules-v1-${{ steps.key.outputs.inputs }}
     - uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25
       id: dependencies
+      if: steps.modules.outputs.cache-hit != 'true'
       with:
         path: .generated/pm-store
-        key: fantasy-deps-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.node-version', 'package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'apps/*/package.json', 'packages/*/package.json', '.github/actions/setup-project/action.yml') }}
+        key: fantasy-deps-v2-${{ steps.key.outputs.inputs }}
     - id: install
+      if: steps.modules.outputs.cache-hit != 'true'
       shell: bash
       run: vp install --frozen-lockfile -- --store-dir .generated/pm-store
     - name: Record environment setup observations
@@ -28,16 +48,24 @@ runs:
       shell: bash
       env:
         SETUP_STARTED: ${{ steps.clock.outputs.started }}
-        CACHE_HIT: ${{ steps.dependencies.outputs.cache-hit }}
-        INSTALL_RESULT: ${{ steps.install.outcome }}
+        CACHE_HIT: ${{ steps.modules.outputs.cache-hit == 'true' || steps.dependencies.outputs.cache-hit }}
+        INSTALL_RESULT: ${{ steps.modules.outputs.cache-hit == 'true' && 'cached' || steps.install.outcome }}
       run: |
         node --input-type=module <<'NODE'
         import {mkdirSync,writeFileSync} from 'node:fs';
         mkdirSync('.generated/harness/metrics',{recursive:true});
-        writeFileSync('.generated/harness/metrics/setup.json',JSON.stringify({sourceSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,runAttempt:process.env.GITHUB_RUN_ATTEMPT,node:process.version,os:process.platform,arch:process.arch,startedAt:process.env.SETUP_STARTED,finishedAt:new Date().toISOString(),installResult:process.env.INSTALL_RESULT,cacheHit:process.env.CACHE_HIT==='true'?true:process.env.CACHE_HIT==='false'?false:null,cachePolicy:'dependency-store-only; exact runtime/manager/manifest/lock/config key; no fallback'},null,2)+'\n');
+        writeFileSync('.generated/harness/metrics/setup.json',JSON.stringify({sourceSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,runAttempt:process.env.GITHUB_RUN_ATTEMPT,node:process.version,os:process.platform,arch:process.arch,startedAt:process.env.SETUP_STARTED,finishedAt:new Date().toISOString(),installResult:process.env.INSTALL_RESULT,cacheHit:process.env.CACHE_HIT==='true'?true:process.env.CACHE_HIT==='false'?false:null,cachePolicy:'exact runtime/manager/manifest/lock/config key; node_modules saved before tasks or content store; no fallback'},null,2)+'\n');
         NODE
     - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25
-      if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.dependencies.outputs.cache-hit != 'true'
+      if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.dependencies.outputs.cache-hit != 'true' && steps.install.outcome == 'success'
       with:
         path: .generated/pm-store
-        key: ${{ steps.dependencies.outputs.cache-primary-key }}
+        key: fantasy-deps-v2-${{ steps.key.outputs.inputs }}
+    - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25
+      if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && inputs.store != 'true' && steps.modules.outputs.cache-hit != 'true' && steps.install.outcome == 'success'
+      with:
+        path: |
+          node_modules
+          apps/*/node_modules
+          packages/*/node_modules
+        key: fantasy-modules-v1-${{ steps.key.outputs.inputs }}

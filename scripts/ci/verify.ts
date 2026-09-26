@@ -9,8 +9,11 @@ import { runCommand } from '../harness/process.ts';
 import { bytesHash } from '../harness/load-contract.ts';
 import { parsePlan, type Plan } from './plan.ts';
 import { sharedTests, TEST_SHARDS } from './tests.ts';
+import { bindCorpus } from '../harness/corpus-checks.ts';
 
 export const TEST_TASKS = Array.from({ length: TEST_SHARDS }, (_, index) => `tests-${index + 1}`);
+export const SOURCE_OUTPUT = '.generated/harness/source';
+const CORPUS_DEFINITION = 'packages/engine/fixtures/spatial/corpus.json';
 export const SOURCE_TASKS = ['static', ...TEST_TASKS, 'build', 'corpus'];
 export const SOURCE_JOBS = SOURCE_TASKS.map((task) =>
   task === 'corpus' ? 'Corpus (ubuntu-latest)' : `Source (${task})`,
@@ -20,16 +23,10 @@ export function taskCommand(task: string): string[] {
   if (task === 'static') return ['node', 'scripts/ci/verify.ts', 'static'];
   if (task === 'build') return ['vp', 'run', 'build'];
   if (TEST_TASKS.includes(task))
-    return ['node', 'scripts/ci/tests.ts', task.slice(-1), String(TEST_SHARDS)];
+    return ['node', 'scripts/ci/tests.ts', task.slice('tests-'.length), String(TEST_SHARDS)];
+  // Observed in parallel with the tests; the aggregate binds it to their shared receipts.
   if (task === 'corpus')
-    return [
-      'node',
-      'scripts/harness.ts',
-      'corpus',
-      'packages/engine/fixtures/spatial/corpus.json',
-      '--tests',
-      String(TEST_SHARDS),
-    ];
+    return ['node', 'scripts/harness.ts', 'corpus', CORPUS_DEFINITION, '--observe'];
   throw new Error('Unknown verification task');
 }
 export function expectedTasks(plan: Plan) {
@@ -160,7 +157,9 @@ function aggregate(root: string) {
   });
   const tasks = assessTasks(plan, receipts);
   sharedTests(root, TEST_SHARDS);
-  const directory = join(root, '.generated/harness/source');
+  if (plan.simulation && bindCorpus(root, CORPUS_DEFINITION, TEST_SHARDS).exitCode !== 0)
+    throw new Error('Corpus observation did not pass with the shared test receipts');
+  const directory = join(root, SOURCE_OUTPUT);
   mkdirSync(directory, { recursive: true });
   const startedAt = tasks.map((task) => task.startedAt).sort()[0]!,
     finishedAt = new Date().toISOString();
@@ -183,7 +182,7 @@ function aggregate(root: string) {
         required: true,
         status: 'pass',
         reason:
-          'All planned canonical verification tasks and complete test inventory passed; load evidence is independently required by ci-gate',
+          'All planned canonical verification tasks, complete test inventory and the bound corpus passed; load evidence is independently required by ci-gate',
         evidence: expectedTasks(plan).map((task) => ({
           uri: `.generated/harness/tasks/${task}/receipt.json`,
           sourceSha: info.sourceSha,

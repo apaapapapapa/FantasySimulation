@@ -34,6 +34,7 @@ jobs:
       full: ${{ steps.plan.outputs.full }}
       simulation: ${{ steps.plan.outputs.simulation }}
       ui: ${{ steps.plan.outputs.ui }}
+      load: ${{ steps.plan.outputs.load }}
       baseline: ${{ steps.plan.outputs.baseline }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -85,25 +86,28 @@ jobs:
           path: .generated/harness/docs/
           if-no-files-found: error
           retention-days: 7
+  # Source tasks and the corpus observation start with the workflow instead of waiting for the
+  # plan; they run for every PR and ci-gate/Verify bind them to the plan afterwards.
   tasks:
-    needs: changes
-    if: needs.changes.outputs.full == 'true'
     name: Source (${{ matrix.task }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
-        task: [static, tests-1, tests-2, tests-3, build]
+        task: [static, tests-1, tests-2, tests-3, tests-4, tests-5, tests-6, build]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
+      - name: Resolve the comparison baseline from the exact tested tree
+        id: plan
+        run: vp exec node scripts/ci/plan.ts "$RUNNER_TEMP/plan.json"
       - name: Run canonical verification task
         env:
-          MIGRATION_BASE_SHA: ${{ needs.changes.outputs.baseline }}
+          MIGRATION_BASE_SHA: ${{ steps.plan.outputs.baseline }}
           SOURCE_TASK: ${{ matrix.task }}
         run: vp exec node scripts/ci/verify.ts phase "$SOURCE_TASK"
       - name: Preserve executed task and test evidence
@@ -116,8 +120,8 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
   ui:
-    needs: changes
-    if: needs.changes.outputs.ui == 'true'
+    # Equivalent to plan.ui; ci-gate rejects any mismatch, so the browser job need not wait for it.
+    if: github.event_name != 'pull_request'
     name: UI (Linux Chromium/WebKit)
     runs-on: ubuntu-latest
     timeout-minutes: 8
@@ -140,8 +144,6 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
   corpus:
-    needs: [changes, tasks]
-    if: needs.changes.outputs.simulation == 'true'
     name: Corpus (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -151,12 +153,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        with:
-          pattern: harness-task-tests-*
-          path: .generated/harness/
-          merge-multiple: true
-      - name: Reuse exact test receipts and execute independent corpus repetitions
+      - name: Execute independent corpus repetitions while the tests run
         run: vp exec node scripts/ci/verify.ts phase corpus
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
@@ -182,14 +179,13 @@ jobs:
           node-version-file: .node-version
           run-install: false
           cache: false
-      - name: Require all planned task jobs
+      - name: Require all task jobs
         env:
           TASK_RESULT: ${{ needs.tasks.result }}
           CORPUS_RESULT: ${{ needs.corpus.result }}
-          SIMULATION: ${{ needs.changes.outputs.simulation }}
         run: |
           test "$TASK_RESULT" = success
-          if [ "$SIMULATION" = true ]; then test "$CORPUS_RESULT" = success; else test "$CORPUS_RESULT" = skipped; fi
+          test "$CORPUS_RESULT" = success
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: ci-plan
@@ -200,11 +196,10 @@ jobs:
           path: .generated/harness/
           merge-multiple: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        if: needs.changes.outputs.simulation == 'true'
         with:
           name: harness-corpus
           path: .generated/harness/
-      - name: Verify complete source task and test coverage
+      - name: Verify complete source task and test coverage and bind the corpus observation
         run: vp exec node scripts/ci/verify.ts aggregate
       - name: Preserve source evidence
         if: always()
@@ -217,7 +212,7 @@ jobs:
           include-hidden-files: true
   load:
     needs: changes
-    if: needs.changes.outputs.simulation == 'true'
+    if: needs.changes.outputs.load == 'true'
     name: Paired load (ubuntu-latest, ${{ matrix.shard }}/3)
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -231,6 +226,9 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
+        with:
+          # The baseline worktree performs a second frozen install from the same content store.
+          store: true
       - name: Compare assigned cases on one runner with five alternating pairs
         env:
           LOAD_BASE_SHA: ${{ needs.changes.outputs.baseline }}
@@ -247,13 +245,15 @@ jobs:
           include-hidden-files: true
   ci-gate:
     name: ci-gate
-    needs: [changes, verify, load, docs, ui, security, dependency-policy]
+    # Verify runs in parallel on the same receipts; release and delivery still require it.
+    needs: [changes, tasks, corpus, load, docs, ui, security, dependency-policy]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
         with:
@@ -267,10 +267,19 @@ jobs:
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: always() && needs.changes.outputs.full == 'true'
         with:
-          name: harness-ubuntu-latest
-          path: .generated/harness/ci/evidence/ubuntu-latest
+          pattern: harness-task-*
+          path: .generated/harness/
+          merge-multiple: true
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-        if: always() && needs.changes.outputs.simulation == 'true'
+        if: always() && needs.changes.outputs.full == 'true'
+        with:
+          name: harness-corpus
+          path: .generated/harness/
+      - name: Aggregate the same source receipts and corpus observation as Verify
+        if: always() && needs.changes.outputs.full == 'true'
+        run: vp exec node scripts/ci/verify.ts aggregate
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        if: always() && needs.changes.outputs.load == 'true'
         with:
           pattern: harness-load-*
           path: .generated/harness/ci/evidence/load
@@ -314,7 +323,7 @@ jobs:
         if: always()
         with:
           name: ci-gate
-          path: .generated/harness/ci/
+          path: .generated/harness/
           if-no-files-found: error
           retention-days: 7
           include-hidden-files: true

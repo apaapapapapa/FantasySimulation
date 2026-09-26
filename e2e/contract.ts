@@ -67,6 +67,9 @@ export function uiSettings(scenario: UiScenario) {
   return {
     ...UI_SETTINGS,
     browsers: uiBrowsers(scenario),
+    // Static cases use isolated read-only fixture origins, so Chromium and WebKit files may share
+    // the runner; API/SQLite and fault scenarios keep one worker.
+    workers: scenario === 'static' ? 2 : UI_SETTINGS.workers,
     retries: scenario === 'smoke' || scenario === 'static' ? 1 : 0,
     globalTimeout: scenario === 'static' ? 300000 : UI_SETTINGS.globalTimeout,
     timeout: scenario === 'static' ? 30000 : UI_SETTINGS.timeout,

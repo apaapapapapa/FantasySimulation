@@ -9,7 +9,7 @@ import { readBoundedJson } from '../harness/files.ts';
 import { record } from '../harness/report.ts';
 import { testFiles } from './test-plan.ts';
 
-export const TEST_SHARDS = 3;
+export const TEST_SHARDS = 6;
 const digest = (bytes: string | Buffer) => createHash('sha256').update(bytes).digest('hex');
 export function testIdentity(root: string) {
   const untracked = git(root, ['ls-files', '--others', '--exclude-standard', '-z'])

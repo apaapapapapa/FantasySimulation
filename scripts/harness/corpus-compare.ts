@@ -98,7 +98,7 @@ export function compareCorpus(
         }
       }
       check.evidence.push({
-        uri: '.generated/harness/ci/evidence/ubuntu-latest/corpus/results.json',
+        uri: '.generated/harness/corpus/results.json',
         sourceSha: info.sourceSha,
       });
     }

@@ -3,7 +3,7 @@
 // at 36aaf69d3f7a61195af4e85a468514dfbb1ecc80; no HiFiScout code or catalog/D1 adapters are copied.
 import { createHash } from 'node:crypto';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { join } from 'node:path';
 import {
   canonicalJson,
   contentHash,
@@ -19,77 +19,42 @@ import {
   type PreparedBattle,
 } from '@fantasy/engine/spatial';
 import { catalogManifest, sampleManifest } from '@fantasy/samples';
+import {
+  array,
+  CORPUS_OUTPUT,
+  observedExitCode,
+  OBSERVATION_FILE,
+  saveCorpusEvidence,
+  serializeCorpus,
+  vitestOutcomes,
+  type Category,
+  type Contract,
+  type Corpus,
+  type CorpusObservationRecord,
+  type Entry,
+  type EntryResult,
+  type InputIdentity,
+  type Recipe,
+  type TestRef,
+  type TestRun,
+} from './corpus-checks.ts';
 import { readBoundedBytes, readBoundedJson } from './files.ts';
-import { runCommand, type CommandResult } from './process.ts';
-import { assessReport, evidenceUri, record, text } from './report.ts';
-import type { Check, CheckStatus, Report } from './report.ts';
+import { runCommand } from './process.ts';
+import { evidenceUri, record } from './report.ts';
 import { evidencePath, repositoryRoot, sourceIdentity } from './source.ts';
-import { sharedTests } from '../ci/tests.ts';
 
-export const CORPUS_OUTPUT = '.generated/harness/corpus';
-export const CORPUS_CHECKS = [
-  'corpus:definition',
-  'corpus:engine-identity',
-  'corpus:identity',
-  'corpus:repeat',
-  'corpus:tests',
-] as const;
-
-export type Recipe =
-  | { kind: 'sample'; maxSteps: number }
-  | {
-      kind: 'catalog';
-      left: string;
-      right: string;
-      scenario: string;
-      maxSteps: number;
-      seed: number;
-    };
-/** Everything a corpus result depends on except the implementation digest of the running engine. */
-export interface Contract {
-  engineVersion: string;
-  rulesVersion: string;
-  manifestSchemaVersion: number;
-  eventSchemaVersion: number;
-  replaySchemaVersion: number;
-  prng: string;
-  seedDerivation: string;
-  physicsProfileHash: string;
-  wasmHash: string;
-  angleTableHash: string;
-}
-export interface InputIdentity {
-  inputHash: string;
-  seed: number;
-  scenario: RevisionRef;
-  ruleset: RevisionRef;
-  participants: { actorId: string; character: RevisionRef }[];
-}
-export interface TestRef {
-  file: string;
-  name: string;
-}
-export interface Entry {
-  id: string;
-  purpose: string;
-  recipe: Recipe;
-  oracles: string[];
-  identity: InputIdentity;
-}
-export interface Category {
-  id: string;
-  title: string;
-  state: 'implemented' | 'planned';
-  owner: string | null;
-  tests: string[];
-}
-export interface Corpus {
-  schemaVersion: 1;
-  contract: Contract;
-  tests: ReadonlyMap<string, TestRef>;
-  entries: Entry[];
-  categories: Category[];
-}
+// Existing callers, including the regression probe loaded from older checkouts, keep this module.
+export {
+  CORPUS_CHECKS,
+  CORPUS_OUTPUT,
+  corpusChecks,
+  vitestOutcomes,
+  type Contract,
+  type CorpusObservation,
+  type EntryResult,
+  type InputIdentity,
+  type Recipe,
+} from './corpus-checks.ts';
 
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 function fields(value: unknown, keys: readonly string[], where: string) {
@@ -122,11 +87,6 @@ function reference(value: unknown, where: string): RevisionRef {
   const parsed = RefSchema.safeParse(value);
   if (!parsed.success) throw new Error(`${where}: invalid revision reference`);
   return parsed.data;
-}
-function array(value: unknown, max: number, where: string): unknown[] {
-  if (!Array.isArray(value) || value.length > max)
-    throw new Error(`${where}: array of at most ${max} items required`);
-  return value;
 }
 function unique(values: readonly string[], where: string) {
   if (new Set(values).size !== values.length) throw new Error(`${where}: duplicate values`);
@@ -321,18 +281,6 @@ function differences(expected: object, actual: object): string[] {
     .filter((key) => canonicalJson(left[key] ?? null) !== canonicalJson(right[key] ?? null))
     .sort();
 }
-export interface EntryResult {
-  id: string;
-  simulationHash: string | null;
-  contract: Contract | null;
-  identity: InputIdentity | null;
-  contractDifferences: string[];
-  identityDifferences: string[];
-  runs: BattleResult[];
-  repeatDifferences: string[];
-  inputError: string | null;
-  runError: string | null;
-}
 /** Rebuild a fixed input, pin its identity, then execute it twice through the real engine. */
 export async function observeEntry(
   entry: Entry,
@@ -375,197 +323,24 @@ export async function observeEntry(
   return result;
 }
 
-const testKey = (test: TestRef) => `${test.file}\n${test.name}`;
-/** Map Vitest JSON reporter output to repository-relative test IDs. */
-export function vitestOutcomes(root: string, value: unknown) {
-  const outcomes = new Map<string, string[]>();
-  let failedFiles = 0;
-  for (const item of array(record(value).testResults, 10_000, 'testResults')) {
-    const file = record(item);
-    const path = relative(root, resolve(text(file.name))).replaceAll('\\', '/');
-    if (file.status === 'failed') failedFiles++;
-    for (const assertion of array(file.assertionResults, 100_000, `${path} assertions`)) {
-      const test = record(assertion);
-      const key = testKey({ file: path, name: text(test.fullName) });
-      outcomes.set(key, [...(outcomes.get(key) ?? []), text(test.status)]);
-    }
-  }
-  return { outcomes, failedFiles };
-}
-function testStatus(outcomes: ReadonlyMap<string, string[]> | null, test: TestRef): CheckStatus {
-  const seen = outcomes?.get(testKey(test)) ?? [];
-  if (seen.includes('failed')) return 'fail';
-  return seen.length && seen.every((status) => status === 'passed') ? 'pass' : 'unknown';
-}
-function combined(statuses: readonly CheckStatus[]): CheckStatus {
-  if (statuses.includes('fail')) return 'fail';
-  return statuses.length && statuses.every((status) => status === 'pass') ? 'pass' : 'unknown';
-}
-export interface TestRun {
-  shared?: boolean;
-  command: CommandResult | null;
-  outcomes: ReadonlyMap<string, string[]> | null;
-  failedFiles: number;
-  error: string | null;
-}
-export interface CorpusObservation {
-  sourceSha: string;
-  corpusPath: string;
-  corpus: Corpus | null;
-  definitionError: string | null;
-  engineCheck: CommandResult;
-  tests: TestRun;
-  entries: EntryResult[];
-}
-const bounded = (value: string) => (value.length > 2000 ? `${value.slice(0, 1997)}...` : value);
-/** Missing, skipped or unexecuted evidence stays unknown; planned coverage is never reported as passed. */
-export function corpusChecks(observation: CorpusObservation): Check[] {
-  const { corpus, corpusPath, engineCheck, tests, entries } = observation;
-  const evidence = (...paths: string[]) =>
-    paths.map((path) => ({
-      uri: path === corpusPath ? path : `${CORPUS_OUTPUT}/${path}`,
-      sourceSha: observation.sourceSha,
-    }));
-  const checks: Check[] = [
-    {
-      id: 'corpus:definition',
-      required: true,
-      status: corpus ? 'pass' : 'unknown',
-      reason: corpus
-        ? `${corpus.entries.length} fixed inputs, ${corpus.tests.size} required tests and ${corpus.categories.length} coverage categories`
-        : bounded(`Invalid corpus definition: ${observation.definitionError ?? 'unavailable'}`),
-      evidence: evidence(corpusPath),
-    },
-    {
-      id: 'corpus:engine-identity',
-      required: true,
-      status: engineCheck.exitCode === 0 && !engineCheck.bounded ? 'pass' : 'fail',
-      reason: `Existing engine:check (node scripts/engine-identity.ts) exit=${engineCheck.exitCode}; bounded=${engineCheck.bounded}`,
-      evidence: evidence('engine-check.log'),
-    },
-  ];
-  if (!corpus) return checks;
-  const expectedIds = corpus.entries.map((entry) => entry.id).sort();
-  const actualIds = entries.map((entry) => entry.id).sort();
-  const completeEntries = JSON.stringify(expectedIds) === JSON.stringify(actualIds);
-  const drift = entries.filter(
-    (entry) =>
-      entry.inputError || entry.contractDifferences.length || entry.identityDifferences.length,
-  );
-  checks.push({
-    id: 'corpus:identity',
-    required: true,
-    status: drift.length ? 'fail' : completeEntries ? 'pass' : 'unknown',
-    reason: drift.length
-      ? bounded(
-          `Fixed input or engine contract differs from the reviewed corpus: ${drift
-            .map(
-              (entry) =>
-                `${entry.id} (${entry.inputError ?? [...entry.contractDifferences.map((key) => `contract.${key}`), ...entry.identityDifferences].join(', ')})`,
-            )
-            .join('; ')}`,
-        )
-      : completeEntries
-        ? `${entries.length} fixed inputs match their pinned manifest identity and engine contract`
-        : 'Missing, duplicate or extra fixed inputs',
-    evidence: evidence(corpusPath, 'results.json'),
-  });
-  const unstable = entries.filter((entry) => entry.repeatDifferences.length);
-  const incomplete = entries.filter((entry) => entry.runs.length !== 2);
-  checks.push({
-    id: 'corpus:repeat',
-    required: true,
-    status: unstable.length ? 'fail' : incomplete.length || !completeEntries ? 'unknown' : 'pass',
-    reason: unstable.length
-      ? bounded(
-          `Determinism violation: ${unstable.map((entry) => `${entry.id} (${entry.repeatDifferences.join(', ')})`).join('; ')}`,
-        )
-      : incomplete.length
-        ? bounded(
-            `Repeated execution incomplete: ${incomplete.map((entry) => `${entry.id} (${entry.inputError ?? entry.runError ?? 'not run'})`).join('; ')}`,
-          )
-        : `${entries.length} fixed inputs reproduced identical result, event, trajectory, TS state and physics digests twice`,
-    evidence: evidence('results.json'),
-  });
-  const required = [...corpus.tests.entries()].map(([key, test]) => ({
-    key,
-    status: testStatus(tests.outcomes, test),
-  }));
-  const missing = required.filter((test) => test.status === 'unknown').map((test) => test.key);
-  const failed = required.filter((test) => test.status === 'fail').map((test) => test.key);
-  const runner = tests.command;
-  let status: CheckStatus = 'pass',
-    reason = `${required.length} required existing tests passed`;
-  if (!tests.outcomes) {
-    status = 'unknown';
-    reason = `No Vitest result evidence: ${tests.error ?? 'not run'}`;
-  } else if (failed.length || tests.failedFiles) {
-    status = 'fail';
-    reason = `Failed required tests: ${failed.join(', ') || 'none'}; unsuccessful test files: ${tests.failedFiles}`;
-  } else if (missing.length) {
-    status = 'unknown';
-    reason = `Required tests missing, renamed or not passed: ${missing.join(', ')}`;
-  } else if (!tests.shared && (runner?.exitCode !== 0 || runner.bounded)) {
-    status = 'unknown';
-    reason = `Vitest exit=${runner?.exitCode}; bounded=${runner?.bounded}`;
-  }
-  checks.push({
-    id: 'corpus:tests',
-    required: true,
-    status,
-    reason: bounded(reason),
-    evidence: evidence('vitest.json', 'tests.log'),
-  });
-  for (const category of corpus.categories) {
-    if (category.state === 'planned') {
-      checks.push({
-        id: `coverage:${category.id}`,
-        required: false,
-        status: 'unknown',
-        reason: bounded(`Planned by ${category.owner}: ${category.title}. Not counted as covered.`),
-        evidence: evidence(corpusPath),
-      });
-      continue;
-    }
-    const statuses = category.tests.map((key) =>
-      testStatus(tests.outcomes, corpus.tests.get(key)!),
-    );
-    checks.push({
-      id: `coverage:${category.id}`,
-      required: true,
-      status: combined(statuses),
-      reason: bounded(
-        `${category.title}: ${statuses.filter((value) => value === 'pass').length}/${statuses.length} mapped existing tests passed`,
-      ),
-      evidence: evidence(corpusPath, 'vitest.json'),
-    });
-  }
-  return checks;
-}
-
 export interface CorpusOptions {
-  testShards?: number;
   run?: typeof runCommand;
   build?: RecipeBuilder;
   battle?: BattleRunner;
   env?: NodeJS.ProcessEnv;
 }
-/** Read-only corpus runner: existing checks/tests are executed, never rewritten or restamped. */
-export async function collectCorpus(
-  inputRoot: string,
-  corpusPath: string,
-  options: CorpusOptions = {},
-) {
-  const run = options.run ?? runCommand;
+const ENGINE_CHECK = ['scripts/engine-identity.ts'];
+/** Source identity, definition and engine identity of a fresh corpus run; no test outcome yet. */
+async function observeDefinition(inputRoot: string, corpusPath: string, options: CorpusOptions) {
   const root = repositoryRoot(inputRoot);
-  const info = sourceIdentity(root, options.env ?? process.env);
+  const env = options.env ?? process.env;
+  const info = sourceIdentity(root, env);
   const startedAt = new Date().toISOString();
   const path = evidenceUri(corpusPath);
   const directory = evidencePath(root, CORPUS_OUTPUT);
   // Remove the previous run first so an interrupted command can never leave stale results behind.
   rmSync(directory, { recursive: true, force: true });
   mkdirSync(directory, { recursive: true });
-  const output = (name: string) => join(directory, name);
   let corpus: Corpus | null = null,
     definitionError: string | null = null,
     corpusSha256: string | null = null;
@@ -576,26 +351,50 @@ export async function collectCorpus(
   } catch (error) {
     definitionError = message(error);
   }
-  const engineCheck = await run(process.execPath, ['scripts/engine-identity.ts'], root, {
+  const engineCheck = await (options.run ?? runCommand)(process.execPath, ENGINE_CHECK, root, {
     timeoutMs: 2 * 60 * 1000,
     maxBytes: 1024 * 1024,
   });
-  writeFileSync(output('engine-check.log'), engineCheck.output);
+  writeFileSync(join(directory, 'engine-check.log'), engineCheck.output);
+  return {
+    root,
+    env,
+    info,
+    startedAt,
+    path,
+    directory,
+    corpus,
+    definitionError,
+    corpusSha256,
+    engineCheck,
+  };
+}
+async function observeEntries(corpus: Corpus | null, options: CorpusOptions) {
+  const entries: EntryResult[] = [];
+  if (corpus)
+    for (const entry of corpus.entries)
+      entries.push(await observeEntry(entry, corpus.contract, options.build, options.battle));
+  return entries;
+}
+const commandRecord = (args: string[], result: { exitCode: number | null; bounded: boolean }) => ({
+  command: [process.execPath, ...args],
+  exitCode: result.exitCode,
+  bounded: result.bounded,
+});
+/** Read-only corpus runner: existing checks/tests are executed, never rewritten or restamped. */
+export async function collectCorpus(
+  inputRoot: string,
+  corpusPath: string,
+  options: CorpusOptions = {},
+) {
+  const run = options.run ?? runCommand;
+  const { root, info, startedAt, path, directory, corpus, definitionError, ...observed } =
+    await observeDefinition(inputRoot, corpusPath, options);
+  const { corpusSha256, engineCheck } = observed;
+  const output = (name: string) => join(directory, name);
   const tests: TestRun = { command: null, outcomes: null, failedFiles: 0, error: null };
   let testArgs: string[] = [];
-  if (corpus && options.testShards !== undefined) {
-    try {
-      const result = sharedTests(root, options.testShards);
-      writeFileSync(output('vitest.json'), JSON.stringify(result) + '\n');
-      writeFileSync(
-        output('tests.log'),
-        `Validated current-tree/current-run test receipts (${options.testShards} shards); no tests re-executed.\n`,
-      );
-      Object.assign(tests, vitestOutcomes(root, result), { shared: true });
-    } catch (error) {
-      tests.error = message(error);
-    }
-  } else if (corpus) {
+  if (corpus) {
     const files = [...new Set([...corpus.tests.values()].map((test) => test.file))].sort();
     testArgs = [
       join(root, 'node_modules', 'vite-plus', 'bin', 'vp'),
@@ -619,65 +418,74 @@ export async function collectCorpus(
       tests.error = message(error);
     }
   }
-  const entries: EntryResult[] = [];
-  if (corpus)
-    for (const entry of corpus.entries)
-      entries.push(await observeEntry(entry, corpus.contract, options.build, options.battle));
-  const checks = corpusChecks({
-    sourceSha: info.sourceSha,
-    corpusPath: path,
-    corpus,
-    definitionError,
-    engineCheck,
-    tests,
-    entries,
-  });
-  writeFileSync(
-    output('results.json'),
-    JSON.stringify(
-      {
-        ...info,
-        schemaVersion: 1,
-        platform: process.platform,
-        nodeVersion: process.version,
-        corpus: { path, sha256: corpusSha256 },
-        engine: implementation,
-        commands: {
-          sharedTestShards: tests.shared ? options.testShards : null,
-          engineCheck: {
-            command: [process.execPath, 'scripts/engine-identity.ts'],
-            exitCode: engineCheck.exitCode,
-            bounded: engineCheck.bounded,
-          },
-          tests: tests.command && {
-            command: [process.execPath, ...testArgs],
-            exitCode: tests.command.exitCode,
-            bounded: tests.command.bounded,
-          },
-        },
-        tests: corpus
-          ? [...corpus.tests.entries()].map(([key, test]) => ({
-              key,
-              ...test,
-              status: testStatus(tests.outcomes, test),
-            }))
-          : [],
-        entries,
-      },
-      null,
-      2,
-    ) + '\n',
+  const entries = await observeEntries(corpus, options);
+  return saveCorpusEvidence(
+    directory,
+    {
+      info,
+      startedAt,
+      platform: process.platform,
+      nodeVersion: process.version,
+      corpusSha256,
+      engine: implementation,
+      engineCheck: commandRecord(ENGINE_CHECK, engineCheck),
+      sharedTestShards: null,
+      tests: tests.command && commandRecord(testArgs, tests.command),
+    },
+    {
+      sourceSha: info.sourceSha,
+      corpusPath: path,
+      corpus,
+      definitionError,
+      engineCheck,
+      tests,
+      entries,
+    },
   );
-  const report: Report = {
-    ...info,
+}
+/**
+ * CI observation in parallel with the test shards. The aggregate binds it to their receipts with
+ * bindCorpus, producing the same results/report as standalone collection without rerunning tests.
+ */
+export async function observeCorpus(
+  inputRoot: string,
+  corpusPath: string,
+  options: CorpusOptions = {},
+) {
+  const { env, info, startedAt, path, directory, corpus, definitionError, ...observed } =
+    await observeDefinition(inputRoot, corpusPath, options);
+  const { corpusSha256, engineCheck } = observed;
+  const entries = await observeEntries(corpus, options);
+  const saved: CorpusObservationRecord & { schemaVersion: 1; producer: 'corpus-observer' } = {
     schemaVersion: 1,
-    producer: 'corpus-runner',
+    producer: 'corpus-observer',
+    info,
+    runId: env.GITHUB_RUN_ID ?? null,
+    runAttempt: env.GITHUB_RUN_ATTEMPT ?? null,
     startedAt,
-    finishedAt: new Date().toISOString(),
-    checks,
+    platform: process.platform,
+    nodeVersion: process.version,
+    corpusPath: path,
+    corpusSha256,
+    engine: implementation,
+    engineCheck: commandRecord(ENGINE_CHECK, engineCheck),
+    sharedTestShards: null,
+    tests: null,
+    definition: serializeCorpus(corpus),
+    definitionError,
+    entries,
   };
-  const required = checks.filter((check) => check.required).map((check) => check.id);
-  const assessed = assessReport(report, [...new Set([...CORPUS_CHECKS, ...required])]);
-  writeFileSync(output('report.json'), JSON.stringify(assessed.report, null, 2) + '\n');
-  return assessed;
+  writeFileSync(join(directory, OBSERVATION_FILE), JSON.stringify(saved, null, 2) + '\n');
+  return observedExitCode(
+    {
+      sourceSha: info.sourceSha,
+      corpusPath: path,
+      corpus,
+      definitionError,
+      engineCheck,
+      tests: { command: null, outcomes: null, failedFiles: 0, error: 'Bound by the aggregate' },
+      entries,
+    },
+    info,
+  );
 }

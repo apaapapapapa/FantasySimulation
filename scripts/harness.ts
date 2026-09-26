@@ -55,16 +55,10 @@ try {
       result = await collectUi(process.cwd(), input === 'auto' ? undefined : input);
     } else if (command === 'source' && args.length === 0)
       result = await collectSource(process.cwd(), input);
-    else if (
-      command === 'corpus' &&
-      (args.length === 0 || (args.length === 2 && args[0] === '--tests'))
-    ) {
-      const { collectCorpus } = await import('./harness/corpus.ts');
-      result = await collectCorpus(
-        process.cwd(),
-        input,
-        args.length ? { testShards: Number(args[1]) } : {},
-      );
+    else if (command === 'corpus' && (args.length === 0 || args[0] === '--observe')) {
+      if (args.length > 1) throw new Error('Unexpected corpus arguments');
+      const { collectCorpus, observeCorpus } = await import('./harness/corpus.ts');
+      result = await (args.length ? observeCorpus : collectCorpus)(process.cwd(), input);
     } else if (
       command === 'load' &&
       (args.length === 0 || (args.length === 2 && args[0] === '--shard'))
@@ -98,7 +92,8 @@ try {
     } else throw new Error('Unknown command or unexpected arguments');
     console.log(JSON.stringify(result.report, null, 2));
     if (command === 'source') console.log(`FANTASY_SOURCE_REPORT=${JSON.stringify(result.report)}`);
-    if (command === 'corpus') console.log(`FANTASY_CORPUS_REPORT=${JSON.stringify(result.report)}`);
+    if (command === 'corpus' && !args.length)
+      console.log(`FANTASY_CORPUS_REPORT=${JSON.stringify(result.report)}`);
     process.exitCode = result.exitCode;
   }
 } catch (error) {

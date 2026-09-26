@@ -8,6 +8,7 @@ import { sampleManifest } from '@fantasy/samples';
 import {
   collectCorpus,
   corpusChecks,
+  observeCorpus,
   observedInput,
   observeEntry,
   parseCorpus,
@@ -17,9 +18,12 @@ import {
   type EntryResult,
   type InputIdentity,
 } from './corpus.ts';
+import { bindCorpus } from './corpus-checks.ts';
+import { bytesHash } from './load-contract.ts';
 import type { CommandResult } from './process.ts';
 import { assessReport } from './report.ts';
 import { testRepository } from './test-support/repository.ts';
+import { TEST_SHARDS, testIdentity } from '../ci/tests.ts';
 
 const digest = (fill: string) => `sha256:${fill.repeat(64)}`;
 const ref = (id: string) => ({ id, revision: 1, contentHash: digest('b') });
@@ -332,6 +336,139 @@ describe('corpus runner evidence', { timeout: 30000 }, () => {
         'unknown',
       );
     } finally {
+      repo.dispose();
+    }
+  });
+});
+
+describe('parallel corpus observation bound by the aggregate', { timeout: 30000 }, () => {
+  const run = { GITHUB_RUN_ID: '41', GITHUB_RUN_ATTEMPT: '2' };
+  // Every shard must report at least one file: the two mapped tests plus unmapped fillers.
+  const fillers = Array.from(
+    { length: TEST_SHARDS - 2 },
+    (_, index) => `packages/engine/src/spatial/filler-${index}.test.ts`,
+  );
+  async function observed(edit: (value: Draft) => void = () => {}) {
+    const value = definition(await realPinned());
+    edit(value);
+    const repo = testRepository({
+      'corpus.json': JSON.stringify(value),
+      ...Object.fromEntries(
+        [...Object.values(tests).map((test) => test.file), ...fillers].map((file) => [
+          file,
+          'export {};\n',
+        ]),
+      ),
+    });
+    const previous = { ...process.env };
+    Object.assign(process.env, run);
+    try {
+      const commands: string[] = [];
+      const observation = await observeCorpus(repo.root, 'corpus.json', {
+        env: run,
+        battle: async () => battleResult(),
+        run: async (_program, args) => {
+          commands.push(args[0]!);
+          return command();
+        },
+      });
+      return { repo, observation, commands, restore: () => (process.env = previous) };
+    } catch (error) {
+      process.env = previous;
+      repo.dispose();
+      throw error;
+    }
+  }
+  function receipts(root: string, statuses: Partial<Record<TestKey, string>> = {}) {
+    const mapped = vitestJson(root, statuses).testResults;
+    const files = [
+      ...mapped,
+      ...fillers.map((file) => ({
+        name: join(root, file),
+        status: 'passed',
+        assertionResults: [{ fullName: 'filler', status: 'passed' }],
+      })),
+    ];
+    for (const [index, file] of files.entries()) {
+      const directory = join(root, '.generated/harness/tests', String(index + 1));
+      mkdirSync(directory, { recursive: true });
+      const bytes = JSON.stringify({
+        success: file.status === 'passed',
+        numFailedTests: file.status === 'passed' ? 0 : 1,
+        numFailedTestSuites: 0,
+        testResults: [file],
+      });
+      writeFileSync(join(directory, 'vitest.json'), bytes);
+      writeFileSync(
+        join(directory, 'receipt.json'),
+        JSON.stringify({
+          identity: testIdentity(root),
+          shard: index + 1,
+          shards: TEST_SHARDS,
+          exitCode: 0,
+          bounded: false,
+          digest: bytesHash(bytes),
+        }),
+      );
+    }
+  }
+  it('observes without running tests, then binds shared receipts into the standalone format', async () => {
+    const { repo, observation, commands, restore } = await observed();
+    try {
+      assert.deepEqual(commands, ['scripts/engine-identity.ts']);
+      assert.equal(observation.exitCode, 0);
+      assert.equal(observation.report.producer, 'corpus-observer');
+      const output = join(repo.root, '.generated/harness/corpus');
+      assert.equal(existsSync(join(output, 'report.json')), false);
+      receipts(repo.root);
+      const bound = bindCorpus(repo.root, 'corpus.json', TEST_SHARDS);
+      assert.equal(bound.exitCode, 0);
+      assert.equal(bound.report.producer, 'corpus-runner');
+      const saved = JSON.parse(readFileSync(join(output, 'results.json'), 'utf8')) as {
+        commands: { sharedTestShards: number; tests: unknown };
+        entries: EntryResult[];
+      };
+      assert.equal(saved.commands.sharedTestShards, TEST_SHARDS);
+      assert.equal(saved.commands.tests, null);
+      assert.equal(saved.entries[0]!.runs.length, 2);
+    } finally {
+      restore();
+      repo.dispose();
+    }
+  });
+  it('fails the bound report for failed mapped tests and rejects stale observations', async () => {
+    const { repo, restore } = await observed();
+    try {
+      receipts(repo.root, { golden: 'failed' });
+      const failed = bindCorpus(repo.root, 'corpus.json', TEST_SHARDS);
+      assert.equal(failed.exitCode, 2);
+      assert.equal(
+        failed.report.checks.find((check) => check.id === 'corpus:tests')?.status,
+        'unknown',
+      );
+      receipts(repo.root);
+      process.env.GITHUB_RUN_ATTEMPT = '3';
+      assert.throws(() => bindCorpus(repo.root, 'corpus.json', TEST_SHARDS), /Stale/);
+      process.env.GITHUB_RUN_ATTEMPT = '2';
+      writeFileSync(join(repo.root, 'corpus.json'), '{}');
+      assert.throws(() => bindCorpus(repo.root, 'corpus.json', TEST_SHARDS), /Stale/);
+    } finally {
+      restore();
+      repo.dispose();
+    }
+  });
+  it('fails the observation itself on engine drift before any binding', async () => {
+    const { repo, observation, restore } = await observed(
+      (value) => (value.entries[0]!.identity.seed = 7),
+    );
+    try {
+      assert.equal(observation.exitCode, 1);
+      assert.equal(
+        observation.report.checks.find((check) => check.id === 'corpus:identity')?.status,
+        'fail',
+      );
+    } finally {
+      restore();
       repo.dispose();
     }
   });
