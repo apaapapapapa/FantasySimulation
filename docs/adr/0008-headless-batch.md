@@ -94,7 +94,8 @@ Conditional, readback-verified leases precede transfers; never refund failures. 
 Budget restore from inventory and publication from verified files/receipts, including uncertain-PUT
 GETs and Worker reads; one SDK attempt. Missing ledger with an existing journal requires recovery,
 never a reset. Other traffic/base fees remain uncapped.
-[7,600-slot measurements](../measurements/p5-official-actions.json).
+[7,600-slot evidence](../measurements/p5-official-actions.json): publication/readback and
+viewer acceptance pending (Refs #134).
 
 ## Capacity (2026-09-25)
 
