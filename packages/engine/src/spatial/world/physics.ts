@@ -8,6 +8,7 @@ import {
 } from '../geometry-types.ts';
 export type { Segment, Trace, Capsule, Obstacle, Layer } from '../geometry-types.ts';
 import RAPIER from '@dimforge/rapier3d-compat';
+import { walkableContact } from './walkable-geometry.ts';
 import {
   canonicalJson,
   type TruncationDetails,
@@ -47,6 +48,28 @@ export class SpatialBudgetError extends Error {
   }
 }
 
+/** Lipschitz advancement cannot step across first contact; non-convergence is explicit truncation. */
+export function advanceContact(
+  world: SpatialWorld,
+  from: number,
+  to: number,
+  speed: number,
+  separation: (time: number) => number,
+  resource = 'blade-sweep',
+) {
+  let time = from;
+  for (let iteration = 0; iteration < 256; iteration++) {
+    world.countCast();
+    const distance = separation(time);
+    if (distance <= CONTACT_TOLERANCE) return time;
+    if (time === to || speed < 1e-12 || distance > speed * (to - time) + CONTACT_TOLERANCE)
+      return undefined;
+    const next = Math.min(to, time + (0.9 * distance) / speed);
+    if (next <= time) throw new SpatialBudgetError(resource, 'no progress');
+    time = next;
+  }
+  throw new SpatialBudgetError(resource, '256 conservative advances');
+}
 export function at(trace: Trace, time: number): Vec3 {
   const segment = trace.find((piece) => piece.to >= time) ?? trace.at(-1);
   if (!segment) throw new Error('Empty movement trace');
@@ -269,6 +292,76 @@ export class SpatialWorld {
   queryBlocks(obstacle: Obstacle, layer: Layer, normal?: Vec3, overlap = false): boolean {
     return blocksQuery(obstacle, layer, this.query, normal, overlap);
   }
+  private acceptsCast(handle: number, layer: Layer, ignored: ReadonlySet<number>) {
+    const obstacle = this.materials.get(handle)!;
+    return (
+      !ignored.has(handle) &&
+      this.floorSlope(obstacle, layer) === undefined &&
+      blocksQuery(obstacle, layer, this.query)
+    );
+  }
+  private floorSlope(obstacle: Obstacle, layer: Layer) {
+    const p = this.query.phase;
+    return p?.layer === layer &&
+      !obstacle.id.startsWith('boundary.') &&
+      p.materials.includes(obstacle.material ?? 'generic') &&
+      !p.floor &&
+      !p.floorMaterials?.includes(obstacle.material ?? 'generic') &&
+      blocksQuery(obstacle, layer, this.query)
+      ? p.minGroundY
+      : undefined;
+  }
+  floorContact(obstacle: Obstacle, layer: Layer, start: Vec3, end: Vec3, radius: number) {
+    const slope = this.floorSlope(obstacle, layer);
+    return slope === undefined ? undefined : walkableContact(start, end, radius, obstacle, slope);
+  }
+  private floorSweep(
+    start: Vec3,
+    velocity: Vec3,
+    body: Capsule,
+    layer: Layer,
+    maxTime: number,
+    skin: number,
+    movement: boolean,
+  ) {
+    if (this.query.phase?.layer !== layer || this.query.phase.floor) return null;
+    let best: SweepHit | null = null;
+    for (const o of this.materials.values()) {
+      if (
+        this.floorSlope(o, layer) === undefined ||
+        (this.query.departingObjectIds?.includes(o.id) && outwardSurfaceRay(start, velocity, o))
+      )
+        continue;
+      const contact = (t: number) => {
+        const p = add(start, mul(velocity, t));
+        return this.floorContact(
+          o,
+          layer,
+          { ...p, y: p.y - body.halfHeight },
+          { ...p, y: p.y + body.halfHeight },
+          body.radius,
+        )!;
+      };
+      const initial = contact(0);
+      if (
+        movement &&
+        initial.distance <= skin + CONTACT_TOLERANCE &&
+        dot(velocity, initial.normal) >= -1e-10
+      )
+        continue;
+      const time = advanceContact(
+        this,
+        0,
+        best?.time_of_impact ?? maxTime,
+        length(velocity),
+        (t) => contact(t).distance - skin,
+        'floor-sweep',
+      );
+      if (time !== undefined && (!movement || dot(velocity, contact(time).normal) < -1e-10))
+        best = { time_of_impact: time, normal1: contact(time).normal, obstacleId: o.id };
+    }
+    return best;
+  }
   countCast() {
     if (++this.casts > this.castLimit) throw new SpatialBudgetError('casts');
   }
@@ -389,8 +482,10 @@ export class SpatialWorld {
     )
       return null;
     const ignored = new Set<number>();
-    let best: SweepHit | null = null;
     const body = capsuleDimensions(shape);
+    let best = body
+      ? this.floorSweep(start, velocity, body, layer, maxTime, skin, layer === 'movement')
+      : null;
     if (layer === 'movement' && body && shapeExtent) {
       for (const obstacle of this.materials.values()) {
         if (!blocksQuery(obstacle, layer, this.query) || obstacle.kind !== undefined) continue;
@@ -430,9 +525,7 @@ export class SpatialWorld {
         undefined,
         undefined,
         undefined,
-        (collider) =>
-          !ignored.has(collider.handle) &&
-          blocksQuery(this.materials.get(collider.handle)!, layer, this.query),
+        (collider) => this.acceptsCast(collider.handle, layer, ignored),
       );
       if (!hit) return best;
       const obstacle = this.materials.get(hit.collider.handle)!;
@@ -479,6 +572,23 @@ export class SpatialWorld {
     );
   }
   raycast(start: Vec3, end: Vec3, layer: Layer) {
+    const floor = this.floorSweep(
+      start,
+      sub(end, start),
+      { radius: 0, halfHeight: 0 },
+      layer,
+      1,
+      0,
+      false,
+    );
+    const floorHit = floor
+      ? {
+          time: floor.time_of_impact,
+          point: lerp(start, end, floor.time_of_impact),
+          normal: floor.normal1,
+          obstacleId: floor.obstacleId,
+        }
+      : undefined;
     const ignored = new Set<number>();
     for (let pass = 0; pass <= this.materials.size; pass++) {
       this.count();
@@ -490,11 +600,10 @@ export class SpatialWorld {
         undefined,
         undefined,
         undefined,
-        (collider) =>
-          !ignored.has(collider.handle) &&
-          blocksQuery(this.materials.get(collider.handle)!, layer, this.query),
+        (collider) => this.acceptsCast(collider.handle, layer, ignored),
       );
-      if (!hit) return undefined;
+      if (!hit) return floorHit;
+      if (floorHit && floorHit.time < hit.timeOfImpact) return floorHit;
       const obstacle = this.materials.get(hit.collider.handle)!,
         point = lerp(start, end, hit.timeOfImpact),
         normal = faceNormal(obstacle, point, hit.normal);
@@ -506,7 +615,7 @@ export class SpatialWorld {
         return { time: hit.timeOfImpact, point, normal, obstacleId: obstacle.id };
       ignored.add(hit.collider.handle);
     }
-    return undefined;
+    return floorHit;
   }
   occluded(start: Vec3, end: Vec3, layer: Layer): boolean {
     return this.raycast(start, end, layer) !== undefined;

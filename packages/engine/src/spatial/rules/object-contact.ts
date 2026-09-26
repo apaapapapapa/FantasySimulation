@@ -1,11 +1,13 @@
 import type { AttackGeometry } from '@fantasy/domain/spatial/execution';
 import type { Trace, Obstacle } from '../geometry-types.ts';
 import type { MotionState } from '../state.ts';
-import { add, dot, IDENTITY, mul, sub, unit, ZERO, type Vec3 } from '../math.ts';
+import { add, dot, IDENTITY, mul, sub, unit, length, ZERO, type Vec3 } from '../math.ts';
 import {
   at,
   traceBoundaries,
   capsuleShape,
+  ballShape,
+  firstContact,
   CONTACT_TOLERANCE,
   SpatialBudgetError,
   straight,
@@ -156,15 +158,25 @@ export function beamContact(
       if (samples.size > limit + 1) throw new SpatialBudgetError('curve-segments');
     }
   }
-  const segments: Extract<AttackGeometry, { kind: 'ray' | 'sphere' }>['segments'] = [],
-    walls: AttackContact[] = [];
-  let contact: AttackContact | null = null;
-  for (const time of [...samples].sort((a, b) => a - b)) {
+  type Sample = {
+    origin: Vec3;
+    end: Vec3;
+    hit: AttackContact | null;
+    wall: AttackContact | null;
+    muzzle: boolean;
+  };
+  const evaluated = new Map<number, Sample>();
+  const sample = (time: number): Sample => {
+    const previous = evaluated.get(time);
+    if (previous) return previous;
+    samples.add(time);
+    if (samples.size > limit + 1) throw new SpatialBudgetError('curve-segments');
     const center = at(owner, time),
       origin = add(center, offset),
-      end = add(origin, mul(direction, range));
-    const muzzle = world.raycast(center, origin, 'attack');
-    const targetAt = { ...target, position: at(targetTrace, time) };
+      end = add(origin, mul(direction, range)),
+      muzzle = world.raycast(center, origin, 'attack'),
+      targetAt = { ...target, position: at(targetTrace, time) },
+      blocking = { wall: null as AttackContact | null };
     const hit = muzzle
       ? {
           kind: 'wall' as const,
@@ -179,15 +191,72 @@ export function beamContact(
           radius,
           targetAt,
           straight(targetAt.position, targetAt.position),
+          blocking,
         );
-    segments.push({
-      start: muzzle ? { ...muzzle.point } : origin,
-      end: hit?.center ?? end,
-      from: time,
-      to: time,
-    });
-    if (hit?.kind === 'body' && !contact) contact = { ...hit, time };
-    if (hit?.kind === 'wall') walls.push({ ...hit, time });
+    const value = {
+      origin: muzzle ? { ...muzzle.point } : origin,
+      end,
+      hit,
+      wall: muzzle ? hit : blocking.wall,
+      muzzle: !!muzzle,
+    };
+    evaluated.set(time, value);
+    return value;
+  };
+  // Bound every relative body pose in an interval by one expanded capsule. Its ray
+  // entry is a lower bound on all body depths, not a sampled hit expectation.
+  const bodyLowerBound = (from: number, to: number) => {
+    const relative = (t: number) => sub(at(targetTrace, t), add(at(owner, t), offset)),
+      a = relative(from),
+      b = relative(to),
+      capsule = bodyCapsule(target.actor.character.body),
+      padding = length(sub(b, a)) / 2;
+    world.countCast();
+    const time = firstContact(
+      straight(ZERO, mul(direction, range)),
+      ballShape(radius),
+      straight(mul(add(a, b), 0.5), mul(add(a, b), 0.5)),
+      capsuleShape({ ...capsule, radius: capsule.radius + padding }),
+      0,
+      true,
+    );
+    return time === undefined ? undefined : time * range;
+  };
+  const search = (from: number, to: number): number | undefined => {
+    const a = sample(from),
+      b = sample(to);
+    if (a.hit?.kind === 'body') return from;
+    const lower = bodyLowerBound(from, to);
+    if (lower === undefined) return undefined;
+    const sameWall = a.wall?.obstacleIds?.some((id) => b.wall?.obstacleIds?.includes(id));
+    // A convex blocker hit by both parallel endpoint rays also intersects every
+    // intermediate ray. Its entry depth is convex, hence bounded above by endpoints.
+    if (
+      sameWall &&
+      ((a.muzzle && b.muzzle) ||
+        (!a.muzzle &&
+          !b.muzzle &&
+          Math.max(a.wall!.time, b.wall!.time) <= lower / range + CONTACT_TOLERANCE))
+    )
+      return undefined;
+    if (to - from <= CONTACT_TOLERANCE) {
+      if (b.hit?.kind === 'body') return to;
+      throw new SpatialBudgetError('beam-sweep', 'unresolved contact bracket');
+    }
+    const middle = (from + to) / 2;
+    return search(from, middle) ?? search(middle, to);
+  };
+  const partition = [...samples].sort((a, b) => a - b);
+  let time: number | undefined;
+  for (let i = 1; i < partition.length && time === undefined; i++)
+    time = search(partition[i - 1]!, partition[i]!);
+  const contact = time === undefined ? null : { ...sample(time).hit!, time },
+    segments: Extract<AttackGeometry, { kind: 'ray' | 'sphere' }>['segments'] = [],
+    walls: AttackContact[] = [];
+  for (const t of [...samples].sort((a, b) => a - b)) {
+    const value = sample(t);
+    segments.push({ start: value.origin, end: value.hit?.center ?? value.end, from: t, to: t });
+    if (value.hit?.kind === 'wall') walls.push({ ...value.hit, time: t });
   }
   return {
     contact,

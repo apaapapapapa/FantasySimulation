@@ -1,0 +1,355 @@
+{
+  "attemptId": "p6-spatial-area-attempt",
+  "checkpoints": [
+    {
+      "bytes": 176,
+      "checksum": "sha256:bae0e146a85417cdefd1f5c5f449458d637530c7bd7e36d20c69df76813c5efa",
+      "file": "checkpoint-00000.json.gz",
+      "index": 0,
+      "nextRecord": 0,
+      "rawBytes": 203,
+      "step": 0
+    }
+  ],
+  "chunks": [
+    {
+      "bytes": 3164,
+      "checkpoint": 0,
+      "checksum": "sha256:c4f07e38e7cd8114c49b2fbd37fcdf2d62fc01ccac26703d9782e45530903ad3",
+      "file": "chunk-00000.ndjson.gz",
+      "firstRecord": 0,
+      "fromStep": 0,
+      "index": 0,
+      "rawBytes": 41958,
+      "records": 24,
+      "toStep": 20
+    }
+  ],
+  "end": {
+    "kind": "result",
+    "result": {
+      "eventHash": "sha256:b9f725f78de77ac87c4b586fc3c08d58eab27976c305e4352a64ee348425f742",
+      "outcome": { "kind": "draw", "reason": "time-limit" },
+      "physicsStateHash": "sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976",
+      "schemaVersion": 1,
+      "simulationHash": "sha256:77d1a7d808005c3e210632cabd8533e3da859f77d302c32d40469da7c2e46fb9",
+      "stats": {
+        "candidates": 22,
+        "casts": 224,
+        "events": 37,
+        "logBytes": 41958,
+        "pathNodes": 0,
+        "peakProjectiles": 0
+      },
+      "steps": 20,
+      "trajectoryHash": "sha256:347f23bf749936917f54ad8d3da7fd0466ef207b06ff29c81d9b758d064fa8d3",
+      "tsStateHash": "sha256:e18fc0fefc47341fe0c02c61b67699c68e08710ff1923d6bf5792ef1dbb8a8a9"
+    }
+  },
+  "eventHash": "sha256:b9f725f78de77ac87c4b586fc3c08d58eab27976c305e4352a64ee348425f742",
+  "id": "p6-spatial-area",
+  "input": {
+    "aiProfile": "observed-utility-v1",
+    "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
+    "engineVersion": "spatial-v1.22",
+    "eventSchemaVersion": 1,
+    "implementationDigest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+    "participants": [
+      {
+        "actorId": "left",
+        "character": {
+          "contentHash": "sha256:9c50ee1520097e1bba026467187b5761cdb1838420b86acc1400705267cf7ec5",
+          "id": "object-area-test",
+          "revision": 1
+        },
+        "facing": { "x": 1, "y": 0, "z": 0 },
+        "position": { "x": -2000, "y": 902, "z": 0 },
+        "rngSeed": 2654435731,
+        "rngStream": 0
+      },
+      {
+        "actorId": "right",
+        "character": {
+          "contentHash": "sha256:9c50ee1520097e1bba026467187b5761cdb1838420b86acc1400705267cf7ec5",
+          "id": "object-area-test",
+          "revision": 1
+        },
+        "facing": { "x": -1, "y": 0, "z": 0 },
+        "position": { "x": 2000, "y": 902, "z": 0 },
+        "rngSeed": 1013904216,
+        "rngStream": 1
+      }
+    ],
+    "physicsProfile": {
+      "actorCollision": "binary64-analytic-upright-capsule-sweep-v1",
+      "aiMs": 100,
+      "axis": "right-handed-Y-up",
+      "contactTimeEpsilon": 0.000001,
+      "creationOrder": "ascending-ASCII-id",
+      "floatEncoding": "IEEE754-binary64-big-endian-hex-negative-zero-normalized",
+      "gravityMmPerSecond2": -9807,
+      "id": "spatial-v1",
+      "inputUnits": "integer-mm-ms",
+      "maxMoveSegments": 8,
+      "maxSteps": 6000,
+      "physicsConversion": "TS-binary64-metres-to-Rapier-binary32-at-each-WASM-call",
+      "rapier": "0.20.0",
+      "simultaneousObstacleContact": "wall-first-within-epsilon",
+      "skinMm": 2,
+      "stepMs": 20,
+      "trigonometry": "quarter-sine-1-degree-linear-1e9-v1"
+    },
+    "physicsProfileHash": "sha256:fec78a239c989b1345919bad1e4188561054dffae03303ac338d739c3e40df98",
+    "prng": "xorshift32-v1",
+    "replaySchemaVersion": 1,
+    "revisions": [
+      {
+        "contentHash": "sha256:19c8927987e23c0264d47f6919695cad01dc83cd6d48a679cb13ef0936c52b7f",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": {
+            "armDelaySteps": 2,
+            "durationSteps": 10,
+            "kind": "area",
+            "periodSteps": 3,
+            "placement": {
+              "anchor": "self",
+              "direction": "front",
+              "distanceMm": 4000,
+              "maxDistanceMm": 8000
+            },
+            "shape": { "kind": "sphere", "radiusMm": 500 }
+          },
+          "castSteps": 0,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 30,
+          "costs": { "hp": 0, "mp": 3, "uses": 1 },
+          "effects": [
+            { "amount": 6, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+          ],
+          "movementWhileCasting": "stop",
+          "name": "object area",
+          "originalText": "",
+          "rangeMm": 8000,
+          "recoverySteps": 3,
+          "stages": [
+            {
+              "attack": {
+                "armDelaySteps": 2,
+                "durationSteps": 10,
+                "kind": "area",
+                "periodSteps": 3,
+                "placement": {
+                  "anchor": "self",
+                  "direction": "front",
+                  "distanceMm": 4000,
+                  "maxDistanceMm": 8000
+                },
+                "shape": { "kind": "sphere", "radiusMm": 500 }
+              },
+              "durationSteps": 1,
+              "effects": [
+                { "amount": 6, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+              ],
+              "hit": {
+                "group": "field",
+                "maxHits": 2,
+                "minIntervalSteps": 1,
+                "requireSeparation": false
+              },
+              "id": "emit",
+              "offsetSteps": 0
+            }
+          ],
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "spatial-area-test",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:9c50ee1520097e1bba026467187b5761cdb1838420b86acc1400705267cf7ec5",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:19c8927987e23c0264d47f6919695cad01dc83cd6d48a679cb13ef0936c52b7f",
+              "id": "spatial-area-test",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "剣士",
+          "originalText": "",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:921f629cc9b93acdc13918d88facb2dcd0e8b85e27726a41da4c8fd2de36f969",
+            "id": "object-hold-test",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "object-area-test",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:921f629cc9b93acdc13918d88facb2dcd0e8b85e27726a41da4c8fd2de36f969",
+        "definition": {
+          "flightAltitudeMm": 4000,
+          "jumpWhenBlocked": false,
+          "movement": "hold",
+          "name": "接近戦",
+          "originalText": "",
+          "preferredDistanceMm": 4000,
+          "priorities": [{ "abilityId": "spatial-area-test", "when": { "kind": "always" } }]
+        },
+        "id": "object-hold-test",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:50d388980239390e7bb890fa5d726bf652fcfa97422fbd7d8308511944b944cf",
+        "definition": {
+          "ai": {
+            "actionWeight": 100,
+            "appearancePriors": {
+              "cues": [
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "fire" }],
+                  "match": { "surface": "red" }
+                },
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "ice" }],
+                  "match": { "surface": "blue" }
+                }
+              ],
+              "defaultEfficacyBps": 7500
+            },
+            "damageQuantum": 10,
+            "dodgeWeight": 600,
+            "explorationWeight": 60,
+            "healthPrior": 200,
+            "horizonSteps": 50,
+            "initialKnowledge": "empty-match-v1",
+            "killWeight": 2400,
+            "knowledgeTtlSteps": 500,
+            "memorySamples": 32,
+            "observation": "visible-coarse-v1",
+            "profile": "observed-utility-v1",
+            "random": "actor-purpose-rejection-v1",
+            "riskWeight": 800,
+            "slots": "simultaneous-v1"
+          },
+          "aoeOcclusion": "five-samples-equal-linear-v1",
+          "bodyContact": "symmetric-stop",
+          "curveErrorMm": 1,
+          "fallDamagePerMeterPerSecond": 5,
+          "fallSafeSpeedMmPerSecond": 8000,
+          "gravityMmPerSecond2": -9807,
+          "maxSteps": 20,
+          "name": "標準3D・空間操作・透過",
+          "rulesVersion": "spatial-v1.22",
+          "simultaneousConflict": "unresolved",
+          "stepMs": 20
+        },
+        "id": "standard-spatial-v1",
+        "kind": "ruleset",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+        "definition": {
+          "bounds": {
+            "max": { "x": 50000, "y": 50000, "z": 50000 },
+            "min": { "x": -50000, "y": -1000, "z": -50000 }
+          },
+          "name": "平地",
+          "navigation": { "edges": [], "nodes": [], "version": "support-graph-v1" },
+          "obstacles": [
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": 0, "y": -500, "z": 0 },
+              "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+              "id": "floor",
+              "kind": "box",
+              "slopeMilliDegrees": 0,
+              "yawMilliDegrees": 0
+            }
+          ],
+          "terrainKnowledge": "surveyed"
+        },
+        "id": "flat",
+        "kind": "scenario",
+        "revision": 1,
+        "schemaVersion": 1
+      }
+    ],
+    "ruleset": {
+      "contentHash": "sha256:50d388980239390e7bb890fa5d726bf652fcfa97422fbd7d8308511944b944cf",
+      "id": "standard-spatial-v1",
+      "revision": 1
+    },
+    "scenario": {
+      "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+      "id": "flat",
+      "revision": 1
+    },
+    "schemaVersion": 3,
+    "seed": 42,
+    "seedDerivation": "actor-stream-v1",
+    "wasmHash": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4"
+  },
+  "lastVerifiedStep": 20,
+  "profile": {
+    "codec": "gzip",
+    "id": "display-ndjson-gzip-v1",
+    "interpolation": "recorded-piecewise-linear",
+    "maxCheckpointSteps": 250,
+    "maxRawBytes": 256032768,
+    "maxStoredBytes": 16777216,
+    "stepMs": 20,
+    "targetChunkBytes": 131072,
+    "units": "metres-binary64"
+  },
+  "records": 24,
+  "resultId": "p6-spatial-area-result",
+  "schemaVersion": 1,
+  "simulationHash": "sha256:77d1a7d808005c3e210632cabd8533e3da859f77d302c32d40469da7c2e46fb9",
+  "trajectoryHash": "sha256:347f23bf749936917f54ad8d3da7fd0466ef207b06ff29c81d9b758d064fa8d3"
+}

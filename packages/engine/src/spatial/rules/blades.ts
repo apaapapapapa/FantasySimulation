@@ -10,6 +10,7 @@ import { bladeBodyContact, bladeObstacleContact } from '../world/geometry.ts';
 import { add, cosDegrees, length, mul, sinDegrees, sub, unit, type Vec3 } from '../math.ts';
 import {
   at,
+  advanceContact,
   traceBoundaries,
   CONTACT_TOLERANCE,
   firstImpact,
@@ -30,27 +31,6 @@ export function bladePose(root: Vec3, facing: Vec3, reach: number, angle: number
     z: forward.z * cosDegrees(angle) + forward.x * sinDegrees(angle),
   });
   return { root, tip: add(root, mul(direction, reach)) };
-}
-/** Lipschitz advancement cannot step across first contact; non-convergence is explicit truncation. */
-function advance(
-  world: SpatialWorld,
-  from: number,
-  to: number,
-  speed: number,
-  separation: (time: number) => number,
-) {
-  let time = from;
-  for (let iteration = 0; iteration < 256; iteration++) {
-    world.countCast();
-    const distance = separation(time);
-    if (distance <= CONTACT_TOLERANCE) return time;
-    if (time === to || speed < 1e-12 || distance > speed * (to - time) + CONTACT_TOLERANCE)
-      return undefined;
-    const next = Math.min(to, time + (0.9 * distance) / speed);
-    if (next <= time) throw new SpatialBudgetError('blade-sweep', 'no progress');
-    time = next;
-  }
-  throw new SpatialBudgetError('blade-sweep', '256 conservative advances');
 }
 /** One attached blade adapter; body/root motion follows every actual shared-physics trace bend. */
 export function sweepBlade(
@@ -96,11 +76,14 @@ export function sweepBlade(
       for (const obstacle of obstacles) {
         const contact = (t: number) => {
           const p = pose(t);
-          return bladeObstacleContact(p.root, p.tip, radius, obstacle);
+          return (
+            world.floorContact(obstacle, 'attack', p.root, p.tip, radius) ??
+            bladeObstacleContact(p.root, p.tip, radius, obstacle)
+          );
         };
-        const time = advance(world, from, to, rootSpeed + rotationSpeed, (t) => {
+        const time = advanceContact(world, from, to, rootSpeed + rotationSpeed, (t) => {
           const c = contact(t);
-          return world.queryBlocks(obstacle, 'attack', c.normal) ? c.distance : Infinity;
+          return c.distance;
         });
         if (time !== undefined) {
           if (wall === undefined || time < wall) {
@@ -114,7 +97,7 @@ export function sweepBlade(
         }
       }
     if (body === undefined)
-      body = advance(
+      body = advanceContact(
         world,
         from,
         to,

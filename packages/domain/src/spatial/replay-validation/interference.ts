@@ -1,3 +1,4 @@
+import { INTERFERENCE_LIMITS } from '../interference-records.ts';
 import type { Outcome } from '../records.ts';
 import type { ReplayContext } from './context.ts';
 import { emittedId, requireReplay } from './common.ts';
@@ -17,6 +18,7 @@ export function validateInterferences(
           'spatial-objects',
           'spatial-phase-contributions',
           'phase-exit-steps',
+          ...Object.keys(INTERFERENCE_LIMITS).map((key) => `interference-${key}`),
         ].includes(outcome.resource),
       'truncation diagnostics permission',
     );

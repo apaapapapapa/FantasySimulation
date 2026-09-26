@@ -1092,6 +1092,54 @@
     "p6-phase-exit": {
       "file": "packages/engine/src/spatial/phasing.test.ts",
       "name": "truncates at the retry after 50 executed embedded intervals and restores the last committed display"
+    },
+    "p6-phase-support-box": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "retains the later box support surface after a skipped side contact"
+    },
+    "p6-phase-support-sphere": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "retains the later sphere support surface after a skipped side contact"
+    },
+    "p6-phase-support-pillar": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "retains the later pillar support surface after a skipped side contact"
+    },
+    "p6-cap-commands": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "rolls back maxSpatialCommands plus one with replay-valid attempted causes"
+    },
+    "p6-cap-objects": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "rolls back maxSpatialObjects plus one with replay-valid attempted causes"
+    },
+    "p6-beam-depth": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "finds the first visible beam contact while a body crosses from behind an attack-only wall"
+    },
+    "p6-barrier-ties": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "allows follower support tangency and damages all tied barriers unless terrain shields the tie"
+    },
+    "p6-player-teleport": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved teleport through forward reverse and loop playback"
+    },
+    "p6-player-barrier": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved barrier through forward reverse and loop playback"
+    },
+    "p6-player-area": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved area through forward reverse and loop playback"
+    },
+    "p6-player-beam": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved beam through forward reverse and loop playback"
+    },
+    "p6-player-phasing": {
+      "file": "apps/web/src/replay/spatial-player.test.ts",
+      "name": "restores saved phasing through forward reverse and loop playback"
     }
   },
   "entries": [
@@ -1896,7 +1944,8 @@
         "p6-teleport-budget",
         "p6-world-rollback",
         "p6-teleport-worker",
-        "p6-teleport-view"
+        "p6-teleport-view",
+        "p6-player-teleport"
       ]
     },
     {
@@ -1909,7 +1958,14 @@
         "p6.spatial-object-area",
         "p6.spatial-object-beam",
         "p6-spatial-privacy",
-        "p6-spatial-enumeration"
+        "p6-spatial-enumeration",
+        "p6-cap-commands",
+        "p6-cap-objects",
+        "p6-beam-depth",
+        "p6-barrier-ties",
+        "p6-player-barrier",
+        "p6-player-area",
+        "p6-player-beam"
       ]
     },
     {
@@ -1917,7 +1973,15 @@
       "title": "P6-08: material masks, preserved floors and bounded solid exit",
       "state": "implemented",
       "owner": null,
-      "tests": ["p6.phasing-pairs", "p6-phasing-samples", "p6-phase-exit"]
+      "tests": [
+        "p6.phasing-pairs",
+        "p6-phasing-samples",
+        "p6-phase-exit",
+        "p6-phase-support-box",
+        "p6-phase-support-sphere",
+        "p6-phase-support-pillar",
+        "p6-player-phasing"
+      ]
     }
   ]
 }

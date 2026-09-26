@@ -1,6 +1,6 @@
 import type { DeepReadonly, SpatialShape } from '@fantasy/domain/spatial/execution';
 import type { Obstacle, Capsule } from '../geometry-types.ts';
-import { IDENTITY, ZERO, mul, sub, type Vec3 } from '../math.ts';
+import { IDENTITY, ZERO, add, length, mul, sub, type Vec3 } from '../math.ts';
 import { rotation } from './terrain.ts';
 import { rotate, capsuleOverlapsObstacle } from './geometry.ts';
 import { capsuleShape, obstacleShape, CONTACT_TOLERANCE, type SpatialWorld } from './physics.ts';
@@ -130,10 +130,23 @@ export function objectSweepsBody(
   return !!hit && hit.time_of_impact < 1 - CONTACT_TOLERANCE;
 }
 export function closestObjectPoint(obstacle: Obstacle, origin: Vec3): Vec3 {
-  return obstacleShape(obstacle).projectPoint(
-    obstacle.position,
-    obstacle.rotation ?? IDENTITY,
-    origin,
-    true,
-  ).point;
+  const q = obstacle.rotation,
+    delta = sub(origin, obstacle.position),
+    p = q ? rotate(delta, { x: -q.x, y: -q.y, z: -q.z, w: q.w }) : delta,
+    h = obstacle.halfExtents;
+  let closest: Vec3;
+  if (obstacle.kind === 'sphere') {
+    const distance = length(p);
+    closest = distance > h.x ? mul(p, h.x / distance) : p;
+  } else if (obstacle.kind === 'pillar') {
+    const radial = Math.sqrt(p.x * p.x + p.z * p.z),
+      scale = radial > h.x ? h.x / radial : 1;
+    closest = { x: p.x * scale, y: Math.max(-h.y, Math.min(h.y, p.y)), z: p.z * scale };
+  } else
+    closest = {
+      x: Math.max(-h.x, Math.min(h.x, p.x)),
+      y: Math.max(-h.y, Math.min(h.y, p.y)),
+      z: Math.max(-h.z, Math.min(h.z, p.z)),
+    };
+  return add(obstacle.position, q ? rotate(closest, q) : closest);
 }

@@ -1,0 +1,331 @@
+{
+  "attemptId": "p6-spatial-beam-attempt",
+  "checkpoints": [
+    {
+      "bytes": 176,
+      "checksum": "sha256:992ac8972fd987eb958e1df8036abef15390c72da7e178b3b902544898cc3c5a",
+      "file": "checkpoint-00000.json.gz",
+      "index": 0,
+      "nextRecord": 0,
+      "rawBytes": 203,
+      "step": 0
+    }
+  ],
+  "chunks": [
+    {
+      "bytes": 3178,
+      "checkpoint": 0,
+      "checksum": "sha256:d9eaefc369a4b72552c252cc760ff6c491cc35d0f84082721cbd2c0da1898d82",
+      "file": "chunk-00000.ndjson.gz",
+      "firstRecord": 0,
+      "fromStep": 0,
+      "index": 0,
+      "rawBytes": 42712,
+      "records": 23,
+      "toStep": 20
+    }
+  ],
+  "end": {
+    "kind": "result",
+    "result": {
+      "eventHash": "sha256:7d910db5ef24d5797e1800b884ff04e7af0e183ea4fbfb3f0c7681fd8ab6347c",
+      "outcome": { "kind": "draw", "reason": "time-limit" },
+      "physicsStateHash": "sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976",
+      "schemaVersion": 1,
+      "simulationHash": "sha256:1996341b965a94af1a08c0c8b1f4c6035e751e0a5d9586ad295004446d8f88e0",
+      "stats": {
+        "candidates": 8,
+        "casts": 484,
+        "events": 37,
+        "logBytes": 42712,
+        "pathNodes": 0,
+        "peakProjectiles": 0
+      },
+      "steps": 20,
+      "trajectoryHash": "sha256:1a13e5b2aab59f21932ec596a739a455ec811f63b98e38d5bdb3334595451f34",
+      "tsStateHash": "sha256:354a4c463f9799d72840094dcf63adf6d33d0a417be791fc7b27922c6373fec9"
+    }
+  },
+  "eventHash": "sha256:7d910db5ef24d5797e1800b884ff04e7af0e183ea4fbfb3f0c7681fd8ab6347c",
+  "id": "p6-spatial-beam",
+  "input": {
+    "aiProfile": "observed-utility-v1",
+    "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
+    "engineVersion": "spatial-v1.22",
+    "eventSchemaVersion": 1,
+    "implementationDigest": "sha256:66c2bb752ee1abcd2f6daef025cf89f00d273de460228225597e7bc029216557",
+    "participants": [
+      {
+        "actorId": "left",
+        "character": {
+          "contentHash": "sha256:3268f20c9b9afd4cb1e8d1c0de1a872383b81a79858a8d15ae3f5ecdc0ebd468",
+          "id": "object-beam-test",
+          "revision": 1
+        },
+        "facing": { "x": 1, "y": 0, "z": 0 },
+        "position": { "x": -2000, "y": 902, "z": 0 },
+        "rngSeed": 2654435731,
+        "rngStream": 0
+      },
+      {
+        "actorId": "right",
+        "character": {
+          "contentHash": "sha256:3268f20c9b9afd4cb1e8d1c0de1a872383b81a79858a8d15ae3f5ecdc0ebd468",
+          "id": "object-beam-test",
+          "revision": 1
+        },
+        "facing": { "x": -1, "y": 0, "z": 0 },
+        "position": { "x": 2000, "y": 902, "z": 0 },
+        "rngSeed": 1013904216,
+        "rngStream": 1
+      }
+    ],
+    "physicsProfile": {
+      "actorCollision": "binary64-analytic-upright-capsule-sweep-v1",
+      "aiMs": 100,
+      "axis": "right-handed-Y-up",
+      "contactTimeEpsilon": 0.000001,
+      "creationOrder": "ascending-ASCII-id",
+      "floatEncoding": "IEEE754-binary64-big-endian-hex-negative-zero-normalized",
+      "gravityMmPerSecond2": -9807,
+      "id": "spatial-v1",
+      "inputUnits": "integer-mm-ms",
+      "maxMoveSegments": 8,
+      "maxSteps": 6000,
+      "physicsConversion": "TS-binary64-metres-to-Rapier-binary32-at-each-WASM-call",
+      "rapier": "0.20.0",
+      "simultaneousObstacleContact": "wall-first-within-epsilon",
+      "skinMm": 2,
+      "stepMs": 20,
+      "trigonometry": "quarter-sine-1-degree-linear-1e9-v1"
+    },
+    "physicsProfileHash": "sha256:fec78a239c989b1345919bad1e4188561054dffae03303ac338d739c3e40df98",
+    "prng": "xorshift32-v1",
+    "replaySchemaVersion": 1,
+    "revisions": [
+      {
+        "contentHash": "sha256:bf7953c906031f302669ed09efd7ad2fab1015652585693742b510ba64b952d5",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": { "kind": "beam", "radiusMm": 30 },
+          "castSteps": 0,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 30,
+          "costs": { "hp": 0, "mp": 3, "uses": 1 },
+          "effects": [
+            { "amount": 6, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+          ],
+          "movementWhileCasting": "stop",
+          "name": "object beam",
+          "originalText": "",
+          "rangeMm": 8000,
+          "recoverySteps": 3,
+          "stages": [
+            {
+              "attack": { "kind": "beam", "radiusMm": 30 },
+              "durationSteps": 4,
+              "effects": [
+                { "amount": 6, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+              ],
+              "hit": {
+                "group": "field",
+                "maxHits": 2,
+                "minIntervalSteps": 1,
+                "requireSeparation": false
+              },
+              "id": "emit",
+              "offsetSteps": 0
+            }
+          ],
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "spatial-beam-test",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:3268f20c9b9afd4cb1e8d1c0de1a872383b81a79858a8d15ae3f5ecdc0ebd468",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:bf7953c906031f302669ed09efd7ad2fab1015652585693742b510ba64b952d5",
+              "id": "spatial-beam-test",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "剣士",
+          "originalText": "",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:3e26af8dc5eca556434eae35550afa6839caf0e884f533259ca090a75c1bf99e",
+            "id": "object-hold-test",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "object-beam-test",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:3e26af8dc5eca556434eae35550afa6839caf0e884f533259ca090a75c1bf99e",
+        "definition": {
+          "flightAltitudeMm": 4000,
+          "jumpWhenBlocked": false,
+          "movement": "hold",
+          "name": "接近戦",
+          "originalText": "",
+          "preferredDistanceMm": 4000,
+          "priorities": [{ "abilityId": "spatial-beam-test", "when": { "kind": "always" } }]
+        },
+        "id": "object-hold-test",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:50d388980239390e7bb890fa5d726bf652fcfa97422fbd7d8308511944b944cf",
+        "definition": {
+          "ai": {
+            "actionWeight": 100,
+            "appearancePriors": {
+              "cues": [
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "fire" }],
+                  "match": { "surface": "red" }
+                },
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "ice" }],
+                  "match": { "surface": "blue" }
+                }
+              ],
+              "defaultEfficacyBps": 7500
+            },
+            "damageQuantum": 10,
+            "dodgeWeight": 600,
+            "explorationWeight": 60,
+            "healthPrior": 200,
+            "horizonSteps": 50,
+            "initialKnowledge": "empty-match-v1",
+            "killWeight": 2400,
+            "knowledgeTtlSteps": 500,
+            "memorySamples": 32,
+            "observation": "visible-coarse-v1",
+            "profile": "observed-utility-v1",
+            "random": "actor-purpose-rejection-v1",
+            "riskWeight": 800,
+            "slots": "simultaneous-v1"
+          },
+          "aoeOcclusion": "five-samples-equal-linear-v1",
+          "bodyContact": "symmetric-stop",
+          "curveErrorMm": 1,
+          "fallDamagePerMeterPerSecond": 5,
+          "fallSafeSpeedMmPerSecond": 8000,
+          "gravityMmPerSecond2": -9807,
+          "maxSteps": 20,
+          "name": "標準3D・空間操作・透過",
+          "rulesVersion": "spatial-v1.22",
+          "simultaneousConflict": "unresolved",
+          "stepMs": 20
+        },
+        "id": "standard-spatial-v1",
+        "kind": "ruleset",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+        "definition": {
+          "bounds": {
+            "max": { "x": 50000, "y": 50000, "z": 50000 },
+            "min": { "x": -50000, "y": -1000, "z": -50000 }
+          },
+          "name": "平地",
+          "navigation": { "edges": [], "nodes": [], "version": "support-graph-v1" },
+          "obstacles": [
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": 0, "y": -500, "z": 0 },
+              "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+              "id": "floor",
+              "kind": "box",
+              "slopeMilliDegrees": 0,
+              "yawMilliDegrees": 0
+            }
+          ],
+          "terrainKnowledge": "surveyed"
+        },
+        "id": "flat",
+        "kind": "scenario",
+        "revision": 1,
+        "schemaVersion": 1
+      }
+    ],
+    "ruleset": {
+      "contentHash": "sha256:50d388980239390e7bb890fa5d726bf652fcfa97422fbd7d8308511944b944cf",
+      "id": "standard-spatial-v1",
+      "revision": 1
+    },
+    "scenario": {
+      "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+      "id": "flat",
+      "revision": 1
+    },
+    "schemaVersion": 3,
+    "seed": 42,
+    "seedDerivation": "actor-stream-v1",
+    "wasmHash": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4"
+  },
+  "lastVerifiedStep": 20,
+  "profile": {
+    "codec": "gzip",
+    "id": "display-ndjson-gzip-v1",
+    "interpolation": "recorded-piecewise-linear",
+    "maxCheckpointSteps": 250,
+    "maxRawBytes": 256032768,
+    "maxStoredBytes": 16777216,
+    "stepMs": 20,
+    "targetChunkBytes": 131072,
+    "units": "metres-binary64"
+  },
+  "records": 23,
+  "resultId": "p6-spatial-beam-result",
+  "schemaVersion": 1,
+  "simulationHash": "sha256:1996341b965a94af1a08c0c8b1f4c6035e751e0a5d9586ad295004446d8f88e0",
+  "trajectoryHash": "sha256:1a13e5b2aab59f21932ec596a739a455ec811f63b98e38d5bdb3334595451f34"
+}

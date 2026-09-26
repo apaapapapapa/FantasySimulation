@@ -5,7 +5,7 @@ import { battleEvents } from '../../test-support/fixtures.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
 import { runBattle } from './run.ts';
 import { initializePhysics, SpatialWorld, straight } from './world/physics.ts';
-import { objectsOverlap, objectGeometry, shapeFits } from './world/object-geometry.ts';
+import { objectsOverlap, objectGeometry, objectSweep, shapeFits } from './world/object-geometry.ts';
 import { prepareBattle } from './prepare.ts';
 import { initialActor } from './sim/combat-state.ts';
 import { createBattleWorld } from './world/terrain.ts';
@@ -18,9 +18,42 @@ import {
   expireSpatialObjects,
 } from './sim/spatial-commands.ts';
 import { areaContact, beamContact } from './rules/object-contact.ts';
-import { damageBarrierContact, commitBarrierDamage } from './sim/barrier-damage.ts';
+import {
+  barrierBlockers,
+  damageBarrierContact,
+  commitBarrierDamage,
+} from './sim/barrier-damage.ts';
 
 beforeAll(initializePhysics);
+it.each(['maxSpatialCommands', 'maxSpatialObjects'] as const)(
+  'rolls back %s plus one with replay-valid attempted causes',
+  async (resource) => {
+    const input = await objectManifest('barrier'),
+      output = await runBattle(input, { ...DEFAULT_BUDGET, [resource]: 1 });
+    expect(output.result.outcome).toMatchObject({
+      kind: 'truncated',
+      resource: resource === 'maxSpatialCommands' ? 'spatial-commands' : 'spatial-objects',
+      details: {
+        observed: 2,
+        limit: 1,
+        context: [
+          {
+            actors: ['left', 'right'],
+            causes: [
+              { kind: 'attempt', actorId: 'left' },
+              { kind: 'attempt', actorId: 'right' },
+            ],
+          },
+        ],
+      },
+    });
+    const saved = await recordedCheckpoints(input, output);
+    expect(saved.replay.checkpoint().state?.objects ?? []).toEqual([]);
+    expect((await runBattle(input, { ...DEFAULT_BUDGET, [resource]: 2 })).result.outcome.kind).toBe(
+      'draw',
+    );
+  },
+);
 it.each<SpatialShape>([
   { kind: 'sphere', radiusMm: 500 },
   { kind: 'box', sizeMm: { x: 200, y: 1000, z: 1000 }, yawMilliDegrees: 45000 },
@@ -191,6 +224,13 @@ it('sums two barrier damage requests without changing interval geometry and roll
       commitBarrierDamage(boundary);
       expect(object.kind === 'barrier' && object.durability).toBe(0);
       expect(boundary.context.world.obstacles('attack').some((o) => o.id === object.id)).toBe(true);
+      boundary.barrierDamage.clear();
+      const surface = { ...object.position, x: object.position.x - 0.5 };
+      damageBarrierContact(boundary, source, { ...contact, center: surface, point: surface }, 0, 2);
+      expect(boundary.barrierDamage.get(object.id)).toBe(6);
+      boundary.barrierDamage.clear();
+      damageBarrierContact(boundary, source, contact, 0, 2);
+      expect(boundary.barrierDamage.size).toBe(0);
       expireSpatialObjects(boundary);
       expect(boundary.next.objects).toEqual([]);
     } finally {
@@ -199,6 +239,37 @@ it('sums two barrier damage requests without changing interval geometry and roll
   } finally {
     tx.discardWorld();
     world.free();
+  }
+});
+
+it('allows follower support tangency and damages all tied barriers unless terrain shields the tie', () => {
+  const sphere = objectGeometry(
+      'follower',
+      { kind: 'sphere', radiusMm: 500 },
+      { x: 0, y: 0.5, z: 0 },
+    ),
+    floor = objectGeometry(
+      'floor',
+      { kind: 'box', sizeMm: { x: 10000, y: 1000, z: 10000 }, yawMilliDegrees: 0 },
+      { x: 0, y: -0.5, z: 0 },
+    ),
+    one = { ...sphere, id: 'one', ownerId: 'left', position: { x: 0, y: 1, z: -0.5 } },
+    two = { ...one, id: 'two', ownerId: 'right', position: { x: 0, y: 1, z: 0.5 } },
+    world = new SpatialWorld([one, two]),
+    shielded = new SpatialWorld([one, two, { ...sphere, id: 'terrain', position: one.position }]);
+  try {
+    expect(objectSweep(world, sphere, { ...sphere.position, x: 2 }, floor)).toBe(false);
+    const contact = {
+      kind: 'wall' as const,
+      time: 0,
+      center: { x: 0, y: 1, z: 0 },
+      point: { x: 0, y: 1, z: 0 },
+    };
+    expect(barrierBlockers(world, contact, 0).sort()).toEqual(['one', 'two']);
+    expect(barrierBlockers(shielded, contact, 0)).toEqual([]);
+  } finally {
+    world.free();
+    shielded.free();
   }
 });
 it('rejects unsupported object triggers, missing authored windows and impossible arm times', () => {
@@ -212,4 +283,39 @@ it('rejects unsupported object triggers, missing authored windows and impossible
   if (area.attack?.kind !== 'area') throw new Error('Fixture');
   area.attack.armDelaySteps = area.attack.durationSteps;
   expect(AbilitySchema.safeParse(area).success).toBe(false);
+});
+
+it('finds the first visible beam contact while a body crosses from behind an attack-only wall', async () => {
+  const battle = await prepareBattle(await objectManifest('beam')),
+    world = new SpatialWorld([
+      {
+        id: 'attack-wall',
+        position: { x: 0, y: 1, z: 0 },
+        halfExtents: { x: 0.1, y: 1, z: 2 },
+        blocks: { movement: false, vision: false, attack: true },
+      },
+    ]);
+  try {
+    const target = initialActor(world, battle.actors[1]).body.motion;
+    const result = beamContact(
+      world,
+      straight({ x: -2, y: 0.9, z: 0 }, { x: -2, y: 0.9, z: 0 }),
+      { x: 0, y: 0, z: 0 },
+      { x: 1, y: 0, z: 0 },
+      8,
+      0,
+      target,
+      straight({ x: 1, y: 0.9, z: 0 }, { x: -1, y: 0.9, z: 0 }),
+      64,
+    );
+    // Body radius is 0.3m: its near surface reaches wall x=-0.1 at t=0.4.
+    expect(result.contact?.kind).toBe('body');
+    expect(result.contact!.time).toBeCloseTo(0.4, 4);
+    expect(
+      result.geometry.kind === 'ray' &&
+        result.geometry.segments.some((s) => s.from > 0.4 && s.from < 0.401 && s.end.x < -0.1),
+    ).toBe(true);
+  } finally {
+    world.free();
+  }
 });

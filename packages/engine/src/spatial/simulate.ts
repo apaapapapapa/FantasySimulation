@@ -50,6 +50,7 @@ function outcomeFromError(error: unknown, diagnostics: boolean): Outcome {
       reason: error.message,
       ...((diagnostics ||
         error.resource.startsWith('spatial-') ||
+        error.resource.startsWith('interference-') ||
         error.resource === 'phase-exit-steps') &&
       error.details
         ? { details: error.details }

@@ -1,4 +1,11 @@
-import type { StageContact, Stage } from '@fantasy/domain/spatial/execution';
+import {
+  canonicalJson,
+  compareIds,
+  type StageContact,
+  type Stage,
+  type InterferenceCause,
+} from '@fantasy/domain/spatial/execution';
+import { boundedInterferences } from './interference.ts';
 import type { AbilityRevision, ActorState } from '../state.ts';
 import { add, length, sub, type Vec3 } from '../math.ts';
 import { SpatialBudgetError } from '../world/physics.ts';
@@ -45,8 +52,51 @@ export function spatialBudgets(tx: StepTransaction, cause: string) {
       tx.context.budget.maxSpatialCommands ?? 64,
     ],
   ] as const)
-    if (observed > limit)
-      throw new SpatialBudgetError(resource, undefined, { observed, limit, cause });
+    if (observed > limit) {
+      const commands =
+        resource === 'spatial-objects'
+          ? objects
+          : [...pending, ...objects.filter((o) => o.launchStep === tx.step)];
+      const causes = commands.map((command): InterferenceCause => {
+        const ordinal = tx.journal.events.findIndex((event) => event.id === command.cause);
+        if (ordinal < 0) return { kind: 'event', eventId: command.cause };
+        return {
+          kind: 'attempt',
+          step: tx.step,
+          point: 'contact',
+          wave: 0,
+          actorId: command.ownerId,
+          ordinal,
+          ability: {
+            id: command.ability.id,
+            revision: command.ability.revision,
+            contentHash: command.ability.contentHash,
+          },
+        };
+      });
+      const revisions = commands.map(({ ability: a }) => ({
+        kind: 'ability' as const,
+        id: a.id,
+        revision: a.revision,
+        contentHash: a.contentHash,
+      }));
+      throw new SpatialBudgetError(resource, undefined, {
+        observed,
+        limit,
+        cause,
+        context: boundedInterferences([
+          {
+            step: tx.step,
+            point: 'contact',
+            wave: 0,
+            actors: [...new Set(commands.map((c) => c.ownerId))].sort(compareIds),
+            causes: [...new Map(causes.map((c) => [canonicalJson(c), c])).values()],
+            revisions: [...new Map(revisions.map((r) => [canonicalJson(r), r])).values()],
+            ruleId: resource,
+          },
+        ]),
+      });
+    }
 }
 export function queueSpatialObject(
   tx: StepTransaction,

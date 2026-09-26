@@ -2,7 +2,7 @@ import { spatialBudgets } from './spatial-commands.ts';
 import type { Relocation, StageContact } from '@fantasy/domain/spatial/execution';
 import type { AbilityRevision, ActorState } from '../state.ts';
 import { length, sub } from '../math.ts';
-import { capsuleShape, SpatialBudgetError } from '../world/physics.ts';
+import { capsuleShape } from '../world/physics.ts';
 import { bodyCapsule, metres } from '../world/terrain.ts';
 import { capsulesOverlap, relocationDestination } from '../rules/relocation.ts';
 import { selfView } from '../ai/self-view.ts';
@@ -67,13 +67,6 @@ export function queueRelocation(
     ...(stage ? { stage } : {}),
   });
   spatialBudgets(tx, cause);
-  const limit = tx.context.budget.maxSpatialCommands ?? 64;
-  if (pending.length > limit)
-    throw new SpatialBudgetError('spatial-commands', undefined, {
-      observed: pending.length,
-      limit,
-      cause,
-    });
   if (pending.filter((p) => p.ownerId === actorId(actor) && p.at === tx.step + 1).length > 1)
     throw new Error('Multiple due relocations for one actor');
 }

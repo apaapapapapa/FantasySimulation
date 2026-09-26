@@ -25,6 +25,8 @@ import { updateBodyPhasing, executedPhaseInterval } from './sim/phasing.ts';
 import { initialStatus } from '../../test-support/ai.ts';
 import { sealRevision } from './manifest-builder.ts';
 import { moveActors } from './world/movement.ts';
+import { sweepBlade } from './rules/blades.ts';
+import { straight } from './world/physics.ts';
 
 beforeAll(initializePhysics);
 const stone = (): Obstacle => ({
@@ -332,3 +334,59 @@ it('permits a contained posture shrink during exit but rejects growth into newly
     f.world.free();
   }
 });
+
+it.each(['box', 'sphere', 'pillar'] as const)(
+  'retains the later %s support surface after a skipped side contact',
+  async (kind) => {
+    const f = await aiFixture(),
+      obstacle: Obstacle = {
+        ...stone(),
+        ...(kind === 'box' ? {} : { kind }),
+        position: { x: 0, y: 0, z: 0 },
+        halfExtents: { x: 1, y: 1, z: 1 },
+      },
+      world = new SpatialWorld([obstacle]);
+    try {
+      const query = world.forQuery({
+        phase: { materials: ['stone'], floor: false, layer: 'attack', minGroundY: 0.7 },
+      });
+      // The entire initial blade is beside the collider and below its top. During
+      // translation the blade reaches the retained top without another trace bend.
+      const result = sweepBlade(
+        query,
+        straight({ x: -3, y: 0.8, z: 0 }, { x: 0, y: 1.05, z: 0 }),
+        { x: 0, y: 0, z: 0 },
+        { x: 1, y: 0, z: 0 },
+        {
+          kind: 'arc',
+          reachMm: 500,
+          bladeRadiusMm: 100,
+          startAngleMilliDegrees: 0,
+          sweepMilliDegrees: 1,
+        },
+        0,
+        100,
+        f.enemy,
+        straight({ x: 10, y: 1, z: 0 }, { x: 10, y: 1, z: 0 }),
+        f.battle.rules,
+        DEFAULT_BUDGET,
+      );
+      expect(result.wall?.kind).toBe('wall');
+      expect(result.wall!.time).toBeGreaterThan(0.3);
+      expect(result.wall!.time).toBeLessThan(1);
+      // Starting inside a skipped side still encounters the retained surface.
+      const ray = query.raycast({ x: 0, y: 0.5, z: 0 }, { x: 0, y: 2, z: 0 }, 'attack');
+      expect(ray?.point.y).toBeCloseTo(1, 5);
+      const hit = query.sweep(
+        { x: 0, y: 0.5, z: 0 },
+        { x: 0, y: 1.5, z: 0 },
+        ballShape(0.1),
+        'attack',
+      );
+      expect(hit?.time_of_impact).toBeCloseTo(0.4 / 1.5, 5);
+    } finally {
+      world.free();
+      f.world.free();
+    }
+  },
+);
