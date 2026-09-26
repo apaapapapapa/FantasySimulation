@@ -46,7 +46,7 @@
     "@fantasy/domain": "workspace:*",
     "@fantasy/engine": "workspace:*",
     "@fantasy/samples": "workspace:*",
-    "@fontsource/noto-sans-jp": "5.2.8",
+    "@fontsource/noto-sans-jp": "5.2.9",
     "@octokit/core": "7.0.8",
     "@octokit/plugin-paginate-rest": "14.0.0",
     "@playwright/test": "1.63.0",
