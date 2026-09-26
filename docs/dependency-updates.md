@@ -7,12 +7,12 @@ bots, automatic merging and PR-creation approval overrides. The owner confirmed
 [App authorization](https://github.com/apaapapapapa/FantasySimulation/issues/8#issuecomment-5782312771);
 do not request it again. Validator success or maintainer PRs do not establish bot activity.
 
-The owner's 2026-09-26 portal screenshot showed completed jobs in **Silent** mode.
-That suppresses Dashboard Issues and automatic PRs, even when jobs are DONE.
-Check this repository in the [Mend Developer Portal](https://developer.mend.io/)
-and select Interactive mode, then verify an actual Dashboard/PR and job log.
-[Hosted mode](https://docs.renovatebot.com/mend-hosted/hosted-apps-config/) is separate
-from repository scheduling; changing this file does not prove Silent was disabled.
+The owner's 2026-09-26 screenshot showed completed jobs in Silent mode, which
+suppresses automatic Issues/PRs. Subsequently, the API confirmed `renovate[bot]`
+created [Dashboard #168](https://github.com/apaapapapapa/FantasySimulation/issues/168)
+at 11:28:43 UTC that day. Bot activity is verified; actual update-PR acceptance is
+separate. Do not ask the owner to repeat activation. [Hosted mode](https://docs.renovatebot.com/mend-hosted/hosted-apps-config/)
+is independent of this file; investigate portal jobs if activity stops again.
 Do not add another bot or fabricate activation evidence.
 
 ## Automatic proposals, reviewed merges
