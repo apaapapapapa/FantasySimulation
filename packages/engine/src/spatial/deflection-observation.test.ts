@@ -3,6 +3,8 @@ import { deflectionManifest, deflectionResponse } from '../../test-support/defle
 import { battleEvents } from '../../test-support/fixtures.ts';
 import { runBattle } from './run.ts';
 import { recordedCheckpoints } from '../../test-support/replay.ts';
+import { initialStatus, withInitialStatus } from '../../test-support/ai.ts';
+import { absorption, recoveryDamage } from '../../test-support/recovery.ts';
 
 it('learns only delayed visible deflection cues and discounts subsequent projectiles without private fields', async () => {
   const input = await deflectionManifest({
@@ -59,3 +61,44 @@ it('learns only delayed visible deflection cues and discounts subsequent project
   expect(own.some((r) => r.response === 'deflect' && r.remainingUses! < 3)).toBe(true);
   await recordedCheckpoints(input, output);
 });
+
+it.each([false, true])(
+  'observes returned-hit absorption without private launch power, hidden target=%s',
+  async (hidden) => {
+    const input = await deflectionManifest({ attack: { effects: [recoveryDamage(20)] } });
+    await withInitialStatus(
+      input,
+      0,
+      initialStatus({
+        adjustments: [
+          absorption(10000),
+          ...(hidden
+            ? [{ target: 'visibility' as const, operation: 'multiply' as const, amount: 0 }]
+            : []),
+        ],
+        ...(hidden && { visibility: 'hidden' }),
+      }),
+    );
+    const output = await runBattle(input);
+    const events = battleEvents(output.records);
+    const hit = events.find((e) => e.damage?.absorption)!;
+    expect(hit).toMatchObject({ actorId: 'right', targetId: 'left', sourceActorId: 'left' });
+    const learned = events
+      .filter((e) => e.actorId === 'right')
+      .flatMap((e) => (e.cognition?.kind === 'knowledge' ? e.cognition.learned : []))
+      .filter((e) => e.kind === 'absorption');
+    if (hidden) expect(learned).toHaveLength(0);
+    else {
+      expect(learned[0]).toMatchObject({
+        targetId: 'left',
+        absorptionBand: 'strong',
+        sampledAt: hit.step,
+        availableAt: hit.step + 5,
+        basePower: 0,
+        range: null,
+      });
+      expect(learned[0]).not.toHaveProperty('absorptionBps');
+    }
+    await recordedCheckpoints(input, output);
+  },
+);

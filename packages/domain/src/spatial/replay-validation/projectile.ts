@@ -67,6 +67,7 @@ export function validateDeflectionActivations(
   events: readonly BattleEvent[],
   causes: readonly string[],
 ) {
+  requireReplay(causes.length === d.activations.length, 'deflection activation event');
   for (const activation of d.activations) {
     const event = events.find((e) => e.id === activation.context.activationId);
     requireReplay(
