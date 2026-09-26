@@ -88,12 +88,10 @@ export async function compileCatalog(inputs: readonly unknown[]): Promise<Revisi
       }),
     }),
   );
-  const ordered = resolveClosure(
-    provisional,
-    revisionIndex(provisional),
-    CATALOG_AUTHORING_LIMIT,
-    { order: 'dependencies-first' },
-  );
+  const lookup = revisionIndex(provisional);
+  const ordered = resolveClosure(provisional, lookup, CATALOG_AUTHORING_LIMIT, {
+    order: 'dependencies-first',
+  });
   const compiled = new Map<string, Revision>();
   for (const candidate of ordered) {
     const key = revisionKey(candidate),
@@ -103,7 +101,10 @@ export async function compileCatalog(inputs: readonly unknown[]): Promise<Revisi
       definition: expandReferences(entry.definition, (dependency) => {
         const target = compiled.get(dependency);
         if (!target)
-          throw new RevisionGraphError('missing-revision', `Unresolved authored reference: ${dependency}`);
+          throw new RevisionGraphError(
+            'missing-revision',
+            `Unresolved authored reference: ${dependency}`,
+          );
         return revisionReference(target);
       }),
     });
@@ -112,14 +113,17 @@ export async function compileCatalog(inputs: readonly unknown[]): Promise<Revisi
       throw new Error(`Authored revision content hash mismatch: ${key}`);
     compiled.set(key, { ...revision, contentHash: hash });
   }
-  const revisions = [...compiled.values()].sort((a, b) => compareIds(revisionKey(a), revisionKey(b)));
-  const lookup = revisionIndex(revisions);
-  resolveClosure(revisions, lookup, CATALOG_AUTHORING_LIMIT);
+  // Preserve the published kind/ID ordering, including IDs that prefix another ID.
+  const revisions = [...compiled.values()].sort(
+    (a, b) =>
+      compareIds(`${a.kind}:${a.id}`, `${b.kind}:${b.id}`) || a.revision - b.revision,
+  );
+  const resolved = revisionIndex(revisions);
+  resolveClosure(revisions, resolved, CATALOG_AUTHORING_LIMIT);
   for (const revision of revisions)
     if (revision.kind === 'character') {
-      // A catalog may be large; each character's executable closure must still fit a manifest.
-      resolveClosure([revision], lookup);
-      validatePolicyAbilities(characterLoadout(revisionReference(revision), lookup));
+      resolveClosure([revision], resolved);
+      validatePolicyAbilities(characterLoadout(revisionReference(revision), resolved));
     }
   return revisions;
 }
