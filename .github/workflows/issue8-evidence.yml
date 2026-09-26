@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: bc3386e42578ce0fe559c00c0707d67d18c9761a
+          ref: da172ba574ba5f73955062b2d0d0d094c94a65a6
           fetch-depth: 0
           persist-credentials: false
       - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
@@ -40,7 +40,7 @@ jobs:
       - name: Export pinned formatter diff if verification failed
         if: failure()
         run: |
-          vp fmt scripts/security/toolchain.ts scripts/security/toolchain.test.ts scripts/security/renovate-file.test.ts
+          vp fmt scripts/security/toolchain.ts scripts/security/toolchain.test.ts scripts/security/renovate-file.test.ts scripts/harness/delivery.test.ts
           mkdir -p .generated/harness/issue8-format
           git diff > .generated/harness/issue8-format/format.patch
       - name: Export exact public source and public issue body
