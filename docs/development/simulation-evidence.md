@@ -14,8 +14,9 @@ Input identity excludes only implementationDigest: a reviewed restamp preserves 
 data, rules, WASM or table changes do not.
 
 - `corpus:engine-identity`: existing engine:check.
-- `corpus:tests`: same-tree/run/attempt JSON receipts from all three CI test shards;
-  standalone collection runs mapped existing tests via local Vite+/Vitest JSON, reusing assertions.
+- `corpus:tests`: same-tree/run/attempt JSON receipts from all CI test shards, bound to the
+  parallel observation by the aggregate; standalone collection runs mapped existing tests via
+  local Vite+/Vitest JSON, reusing assertions.
 - `corpus:identity`: engine builders reconstruct every pinned input/contract.
 - `corpus:repeat`: two real executions compare result/event/trajectory/TS/physics digests.
 - `coverage:<category>`: all mapped tests passed. Missing/renamed/skipped required tests stay

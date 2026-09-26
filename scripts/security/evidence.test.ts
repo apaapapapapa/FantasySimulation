@@ -81,6 +81,28 @@ await test('CodeQL scope exclusion requires an exact independently validated wor
   assert.throws(() =>
     assessSecurityEvidence(info, run, receipts, at, { ...docs, paths: ['apps/api/src/main.ts'] }),
   );
+  // Code PRs use the fast lane; the receipt must name it and main/manual runs still analyze.
+  const fastLane = {
+    ...receipts,
+    'codeql-severity': { ...receipts['codeql-severity'], reason: 'PR_FAST_LANE_CODEQL_ON_MAIN' },
+  };
+  const code = classify(info, 'pull_request', ['apps/api/src/main.ts']);
+  assert.equal(assessSecurityEvidence(info, run, fastLane, at, code).exitCode, 0);
+  assert.equal(assessSecurityEvidence(info, run, fastLane, at, docs).exitCode, 2);
+  const main = { ...info, candidateSha: info.sourceSha, testMergeSha: null };
+  for (const event of ['push', 'workflow_dispatch', 'schedule'])
+    assert.equal(
+      assessSecurityEvidence(main, run, fixtures(main), at, {
+        ...classify(main, event, ['README.md']),
+      }).exitCode,
+      0,
+    );
+  const mainFastLane = fixtures(main);
+  mainFastLane['codeql-severity'] = { ...fastLane['codeql-severity'], prHeadSha: null };
+  assert.equal(
+    assessSecurityEvidence(main, run, mainFastLane, at, classify(main, 'push', ['a.ts'])).exitCode,
+    2,
+  );
   assert.throws(() =>
     assessSecurityEvidence(info, run, receipts, at, { ...docs, sourceSha: 'd'.repeat(40) }),
   );

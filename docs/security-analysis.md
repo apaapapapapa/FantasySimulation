@@ -8,8 +8,8 @@ PR; it extends the existing H4 gate rather than replacing platform verification.
 
 The reusable security workflow analyzes `apps`, `packages` and `scripts`
 with CodeQL v4 pinned to `1c5b675653bb5c22dbe9b12b556ec555138e09fd`.
-PRs use the default JavaScript/TypeScript suite; main, manual and weekly runs
-use `security-extended`. There is no Markdown-only workflow bypass.
+PRs record a planned fast-lane exclusion (see [the runbook](security.md)); main, manual and
+weekly runs analyze with `security-extended` before release.
 No application build, dependency lifecycle script or production secret is
 needed for CodeQL extraction. Only its job receives `security-events: write`.
 The caller grants this permission to the reusable workflow; the other jobs

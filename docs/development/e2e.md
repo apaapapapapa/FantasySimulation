@@ -19,7 +19,7 @@ Timeout/abort kills owned processes. DB/replays are excluded from uploads.
 Contexts allow assigned origins, block WebSockets/service workers; not an OS sandbox.
 `execution.json` records lockfile-pinned Playwright/browser revisions, Noto Sans JP 400,
 locale/timezone/viewport and software-GL settings. Browser cache identity includes
-OS/architecture/Playwright. Full CI requires both suites; wording-only PRs skip them.
+OS/architecture/Playwright. Main, manual and weekly CI require both suites; PRs skip them.
 
 Reports bind SHA/CI attempt/case/browser/retry/raw hashes and retain failed traces/images.
 Flaky, missing, skipped, unstarted or stale runs fail. The gate rechecks moved artifacts.

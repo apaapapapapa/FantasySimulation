@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { classify } from './plan.ts';
 import { assessTasks, expectedTasks, taskCommand } from './verify.ts';
+import { TEST_SHARDS } from './tests.ts';
 import { loadBoundary, loadFixture } from '../harness/test-support/load.ts';
 import { validateSource } from '../harness/issue-completion.ts';
 
@@ -25,7 +26,8 @@ describe('source task collection', () => {
         ...run,
       };
     });
-    expect(assessTasks(plan, receipts, run)).toHaveLength(6);
+    // Static, every test shard, build and the corpus observation.
+    expect(assessTasks(plan, receipts, run)).toHaveLength(TEST_SHARDS + 3);
     for (const edits of [
       { task: 'unknown' },
       { exitCode: 1 },

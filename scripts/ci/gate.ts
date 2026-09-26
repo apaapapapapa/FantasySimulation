@@ -5,11 +5,13 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { compareCorpus } from '../harness/corpus-compare.ts';
+import { CORPUS_OUTPUT } from '../harness/corpus-checks.ts';
 import { assessReport, record } from '../harness/report.ts';
 import type { Check, Report } from '../harness/report.ts';
 import { SOURCE_CHECKS } from '../harness/source.ts';
 import { SECURITY_CHECKS } from '../security/evidence.ts';
 import { parsePlan } from './plan.ts';
+import { SOURCE_OUTPUT } from './verify.ts';
 import { DOCS_CHECKS } from './docs.ts';
 import type { Plan } from './plan.ts';
 import { readPairedShards } from './load-artifacts.ts';
@@ -25,12 +27,14 @@ export function assessGate(
   plan = parsePlan(plan);
   const evidence = [{ uri: '.generated/harness/ci/plan.json', sourceSha: plan.sourceSha }];
   const checks: Check[] = [];
+  // Source tasks and the corpus observation never wait for the plan, so they always run.
   const expected = {
     changes: 'success',
     security: 'success',
     'dependency-policy': 'success',
-    verify: plan.full ? 'success' : 'skipped',
-    load: plan.simulation ? 'success' : 'skipped',
+    tasks: 'success',
+    corpus: 'success',
+    load: plan.load ? 'success' : 'skipped',
     docs: plan.full ? 'skipped' : 'success',
     ui: plan.ui ? 'success' : 'skipped',
   };
@@ -87,7 +91,7 @@ export function assessGate(
     checks.push(
       compareCorpus(plan, corpus?.definition, corpus?.sha256 ?? '', corpus?.artifacts ?? {}),
     );
-  if (plan.simulation) {
+  if (plan.load) {
     for (const key of ['load-pair']) {
       let status: Check['status'] = 'unknown',
         reason = 'Missing load receipt';
@@ -145,8 +149,11 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       reports: Record<string, unknown> = {};
     for (const name of plan.full ? osNames : osNames.map((os) => `docs-${os}`)) {
       try {
+        // The gate aggregates the same task receipts as Verify instead of waiting for that job.
         reports[name] = json(
-          `.generated/harness/ci/evidence/${name}/${name.startsWith('docs-') ? 'docs' : 'source'}/report.json`,
+          name.startsWith('docs-')
+            ? `.generated/harness/ci/evidence/${name}/docs/report.json`
+            : `${SOURCE_OUTPUT}/report.json`,
         );
       } catch {
         reports[name] = null;
@@ -168,24 +175,23 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
       }
     }
     const artifacts: Record<string, unknown> = {};
-    for (const [os, platform] of [['ubuntu-latest', 'linux']] as const) {
+    for (const platform of ['linux'] as const) {
       try {
-        const directory = `.generated/harness/ci/evidence/${os}/corpus`;
         artifacts[platform] = {
-          results: json(`${directory}/results.json`),
-          report: json(`${directory}/report.json`),
+          results: json(`${CORPUS_OUTPUT}/results.json`),
+          report: json(`${CORPUS_OUTPUT}/report.json`),
         };
       } catch {
         /* Missing artifacts remain unknown, including a missing operating system. */
       }
     }
-    if (plan.simulation) {
+    if (plan.load) {
       try {
         reports['load-pair'] = readPairedShards(
           process.cwd(),
           '.generated/harness/ci/evidence/load',
           plan,
-          json('.generated/harness/ci/evidence/ubuntu-latest/corpus/report.json'),
+          json(`${CORPUS_OUTPUT}/report.json`),
         );
       } catch (error) {
         reports['load-pair'] = null;
