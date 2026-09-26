@@ -6,16 +6,17 @@ import { catalogChanges } from './catalog-changes.ts';
 
 it('finds transitive affected definitions without rebinding old pinned characters', async () => {
   const before = await compileCatalog(sources);
-  const character = before.find(
-    (r) => r.kind === 'character' && r.definition.abilities.length,
-  )!;
+  const character = before.find((r) => r.kind === 'character' && r.definition.abilities.length)!;
   if (character.kind !== 'character') throw new Error('Missing character');
   const ref = character.definition.abilities[0]!;
   const ability = before.find((r) => r.kind === 'ability' && r.id === ref.id)!;
   const revised = structuredClone(ability);
   revised.definition.name += ' revised';
   revised.contentHash = await revisionHash(revised);
-  const changed = catalogChanges(before, before.map((r) => (r === ability ? revised : r)));
+  const changed = catalogChanges(
+    before,
+    before.map((r) => (r === ability ? revised : r)),
+  );
   expect(changed.changes.map((entry) => entry.key)).toEqual([
     `ability:${ability.id}:${ability.revision}`,
   ]);
