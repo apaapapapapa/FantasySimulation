@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import { readFile, writeFile, readdir, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -10,11 +10,105 @@ import {
 } from '@fantasy/domain/spatial';
 import saved from '../../../../packages/domain/fixtures/replay/mutual-hit.json' with { type: 'json' };
 import { ReplayWriter } from './replay-writer.ts';
-import { readReplayManifest, seekReplay, verifyReplay } from './replay-reader.ts';
+import {
+  readReplayManifest,
+  seekReplay,
+  verifyReplay,
+  verifyReplayDirectory,
+} from './replay-reader.ts';
 import { readBoundedFile, readCompressed, sha256 } from './replay-files.ts';
 import { withReplayDirectory, recordedBattle, artifactBytes } from '../../test-support/replays.ts';
 
 describe('bounded independent replay artifacts', () => {
+  it.each([
+    'record-schema',
+    'record-json',
+    'checkpoint-json',
+    'record-gzip',
+    'checkpoint-gzip',
+    'record-truncated',
+    'checkpoint-truncated',
+    'record-utf8',
+    'checkpoint-utf8',
+    'record-size',
+    'checkpoint-size',
+    'record-overflow',
+    'checkpoint-overflow',
+    'record-file-length',
+    'checkpoint-file-length',
+    'record-newline',
+    'record-count',
+    'record-semantic',
+  ])(
+    'classifies saved %s corruption even when compressed checksums are consistent',
+    async (kind) => {
+      await withReplayDirectory(async (root) => {
+        const { manifest } = await recordedBattle(root, 20);
+        const directory = join(root, manifest.id);
+        const ref = kind.startsWith('checkpoint') ? manifest.checkpoints[0]! : manifest.chunks[0]!;
+        const original = await readCompressed(directory, ref);
+        if (kind === 'record-count') manifest.chunks[0]!.records++;
+        if (kind.endsWith('file-length')) {
+          const file = join(directory, ref.file);
+          await writeFile(
+            file,
+            Buffer.concat([await readFile(file), Buffer.from('PRIVATE_SIZE_SENTINEL')]),
+          );
+          await expect(verifyReplayDirectory(directory, manifest)).rejects.toMatchObject({
+            code: 'DATA_INVALID',
+          });
+          return;
+        }
+        let raw =
+          kind === 'checkpoint-json'
+            ? '{'
+            : kind.endsWith('utf8')
+              ? Buffer.from([0xff])
+              : kind === 'record-schema' || kind === 'record-json'
+                ? [kind === 'record-schema' ? '{}' : '{', ...original.split('\n').slice(1)].join(
+                    '\n',
+                  )
+                : original;
+        if (kind === 'record-newline') raw = original.slice(0, -1);
+        if (kind === 'record-semantic') {
+          const lines = original.split('\n');
+          lines[1] = lines[0]!; // Valid initial record in an invalid position, with unchanged count.
+          raw = lines.join('\n');
+        }
+        const compressed = gzipSync(raw);
+        const bytes = kind.endsWith('gzip')
+          ? Buffer.from('invalid gzip')
+          : kind.endsWith('truncated')
+            ? compressed.subarray(0, -1)
+            : compressed;
+        await writeFile(join(directory, ref.file), bytes);
+        Object.assign(ref, {
+          bytes: bytes.length,
+          rawBytes:
+            Buffer.byteLength(raw) +
+            (kind.endsWith('size') ? 1 : kind.endsWith('overflow') ? -1 : 0),
+          checksum: sha256(bytes),
+        });
+        await expect(verifyReplayDirectory(directory, manifest)).rejects.toMatchObject({
+          code: 'DATA_INVALID',
+        });
+      });
+    },
+  );
+  it('preserves unexpected validator exceptions instead of relabeling them as saved-data failures', async () => {
+    await withReplayDirectory(async (root) => {
+      const { manifest } = await recordedBattle(root, 20);
+      const error = new Error('PRIVATE_UNEXPECTED_VALIDATOR');
+      const apply = vi.spyOn(ReplayState.prototype, 'apply').mockImplementation(() => {
+        throw error;
+      });
+      try {
+        await expect(verifyReplayDirectory(join(root, manifest.id), manifest)).rejects.toBe(error);
+      } finally {
+        apply.mockRestore();
+      }
+    });
+  });
   it('rejects symlinks before reading their target through the opened handle', async () => {
     await withReplayDirectory(async (root) => {
       const target = join(root, 'target'),

@@ -1,3 +1,4 @@
+import { OperationError, operationInput } from '../operation-error.ts';
 import {
   BatchIndexSchema,
   BatchPlanSchema,
@@ -77,19 +78,19 @@ export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
   let shardCount: number | undefined;
   const found = new Map<string, BatchIndex['slots'][number]>();
   for (const value of indexes) {
-    const index = parseJson(BatchIndexSchema, value.index),
+    const index = operationInput(() => parseJson(BatchIndexSchema, value.index), 'DATA_INVALID'),
       { id, ...body } = index;
     if (
       index.planId !== plan.id ||
       canonicalJson(index.source) !== canonicalJson(plan.source) ||
       id !== (await contentHash(body))
     )
-      throw new Error('Batch index identity mismatch');
+      throw new OperationError('DATA_INVALID', 'Batch index identity mismatch');
     if (
       (shardCount !== undefined && shardCount !== index.shardCount) ||
       shardIds.has(index.shardIndex)
     )
-      throw new Error('Mixed or duplicate shard declarations');
+      throw new OperationError('DATA_INVALID', 'Mixed or duplicate shard declarations');
     shardCount = index.shardCount;
     shardIds.add(index.shardIndex);
     const selected = new Set(shardSlots(plan, index.shardIndex, index.shardCount).map((s) => s.id));
@@ -97,14 +98,14 @@ export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
       index.slots.length !== selected.size ||
       index.complete !== index.slots.every((s) => s.state === 'complete')
     )
-      throw new Error('Incomplete or inconsistent shard declaration');
+      throw new OperationError('DATA_INVALID', 'Incomplete or inconsistent shard declaration');
     for (const slot of index.slots) {
       if (
         !selected.has(slot.slotId) ||
         expected.get(slot.slotId) !== slot.simulationHash ||
         found.has(slot.slotId)
       )
-        throw new Error('Missing, duplicate or unexpected planned slot');
+        throw new OperationError('DATA_INVALID', 'Missing, duplicate or unexpected planned slot');
       found.set(slot.slotId, slot);
       sources.set(slot.slotId, value.bundles);
       if (slot.receipt) {
@@ -113,7 +114,7 @@ export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
           canonicalJson(await value.bundles.verify(slot.receipt.objectHash)) !==
             canonicalJson(slot.receipt)
         )
-          throw new Error('Index replay reference mismatch');
+          throw new OperationError('DATA_INVALID', 'Index replay reference mismatch');
       }
       const outcome = slot.receipt?.result.outcome.kind;
       if (
@@ -121,12 +122,15 @@ export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
         ((slot.state === 'unresolved' || slot.state === 'truncated') && outcome !== slot.state) ||
         ((slot.state === 'failed' || slot.state === 'pending') && slot.receipt !== null)
       )
-        throw new Error('Slot state/replay mismatch');
+        throw new OperationError('DATA_INVALID', 'Slot state/replay mismatch');
       if (
         slot.state === 'complete' &&
         (!slot.receipt || !['win', 'draw'].includes(slot.receipt.result.outcome.kind))
       )
-        throw new Error('Unverified or nondefinitive slot cannot be complete');
+        throw new OperationError(
+          'DATA_INVALID',
+          'Unverified or nondefinitive slot cannot be complete',
+        );
     }
   }
   const summary = {

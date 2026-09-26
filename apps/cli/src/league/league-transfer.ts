@@ -1,3 +1,4 @@
+import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { join } from 'node:path';
 import {
   PublicCatalogCurrentSchema,
@@ -31,7 +32,7 @@ export function leagueTransferBudget(
 ) {
   for (const n of [files, receipts, additions])
     if (!Number.isSafeInteger(n) || n < 0 || n > PUBLICATION_MAX_FILES)
-      throw new Error('Invalid league transfer counts');
+      throw new OperationError('INPUT_INVALID', 'Invalid league transfer counts');
   const classA = restore ? 1 : additions + 502;
   const classB = restore ? files + 3 : receipts + 2 * files + 10;
   const worker = restore ? 0 : 1000;
@@ -65,7 +66,13 @@ export async function transferCloudLeague(
       // A missing ledger is bootstrap only, never permission to reset an existing league.
       const pointer = await control.read('catalog/current.json', 4000000);
       if (pointer) {
-        const current = PublicCatalogCurrentSchema.parse(JSON.parse(pointer.data.toString('utf8')));
+        const current = operationInput(
+          () =>
+            PublicCatalogCurrentSchema.parse(
+              JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(pointer.data)),
+            ),
+          'DATA_INVALID',
+        );
         const catalog = await control.read(
           `catalog/${current.catalogHash.slice(7)}.json`,
           current.bytes,
@@ -75,9 +82,23 @@ export async function transferCloudLeague(
           catalog.data.length !== current.bytes ||
           sha256(catalog.data) !== current.catalogHash
         )
-          throw new Error('Cannot bootstrap usage from an unverified catalog');
-        if (PublicCatalogSchema.parse(JSON.parse(catalog.data.toString('utf8'))).leagueWork)
-          throw new Error('Existing league usage ledger is missing; manual recovery required');
+          throw new OperationError(
+            'DATA_INVALID',
+            'Cannot bootstrap usage from an unverified catalog',
+          );
+        if (
+          operationInput(
+            () =>
+              PublicCatalogSchema.parse(
+                JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(catalog.data)),
+              ),
+            'DATA_INVALID',
+          ).leagueWork
+        )
+          throw new OperationError(
+            'DATA_INVALID',
+            'Existing league usage ledger is missing; manual recovery required',
+          );
       }
       inventory = await control.inventory();
       if (
@@ -85,7 +106,7 @@ export async function transferCloudLeague(
         [...inventory.values()].reduce((sum, n) => sum + n, 0) + PUBLICATION_CONTROL_BYTES >
           PUBLICATION_MAX_BYTES
       )
-        throw new Error('No capacity for durable league usage ledger');
+        throw new OperationError('BUDGET_EXCEEDED', 'No capacity for durable league usage ledger');
     }
     await admitLeagueUsage(control, {
       ...identity,
@@ -99,7 +120,7 @@ export async function transferCloudLeague(
     inventory.set(PUBLICATION_CONTROL_KEY, PUBLICATION_CONTROL_BYTES);
     const bytes = [...inventory.values()].reduce((sum, n) => sum + n, 0);
     if (bytes > PUBLICATION_MAX_BYTES || inventory.size > PUBLICATION_MAX_FILES)
-      throw new Error('League retained capacity exceeded');
+      throw new OperationError('BUDGET_EXCEEDED', 'League retained capacity exceeded');
     const receipts = [...inventory.keys()].filter((key) => key.endsWith('/receipt.json')).length;
     const graph = options ? await localPublicationGraph(root) : null;
     const additions = graph
@@ -142,7 +163,7 @@ export async function transferCloudLeague(
   } finally {
     console.log(
       JSON.stringify({
-        phase: identity.id,
+        phase: options ? 'publication' : 'restoration',
         control: control.metrics(),
         transport: data?.metrics(),
       }),

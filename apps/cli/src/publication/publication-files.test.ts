@@ -75,7 +75,10 @@ it('refuses a stale expected generation before writing files', async () => {
         null,
         1_000_000,
       ),
-    ).rejects.toThrow(/generation changed/);
+    ).rejects.toMatchObject({
+      code: 'PUBLICATION_CONFLICT',
+      message: 'Publication generation changed',
+    });
     expect(await readdir(join(root, 'catalog'))).toEqual(['current.json']);
   });
 });

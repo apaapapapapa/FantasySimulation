@@ -23,6 +23,7 @@ import {
   GENERATED_UUID,
 } from '../replay/replay-files.ts';
 import { verifyReplayDirectory } from '../replay/replay-reader.ts';
+import { OperationError, operationInput } from '../operation-error.ts';
 import type { BattleService } from '../jobs/battle-service.ts';
 
 const hashName = (hash: string) => HashSchema.parse(hash).slice(7);
@@ -37,25 +38,33 @@ export class BattleBundles {
   }
   async verify(objectHash: string): Promise<BundleReceipt> {
     const directory = this.objectPath(objectHash);
-    if (!(await lstat(directory)).isDirectory()) throw new Error('Invalid bundle directory');
-    const receipt = parseJson(
-      BundleReceiptSchema,
-      JSON.parse(
-        (await readBoundedFile(join(directory, 'receipt.json'), 65536)).toString('utf8'),
-      ) as unknown,
+    if (!(await lstat(directory)).isDirectory())
+      throw new OperationError('DATA_INVALID', 'Invalid bundle directory');
+    const receiptBytes = await readBoundedFile(join(directory, 'receipt.json'), 65536);
+    const receipt = operationInput(
+      () =>
+        parseJson(
+          BundleReceiptSchema,
+          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(receiptBytes)) as unknown,
+        ),
+      'DATA_INVALID',
     );
     const { objectHash: recorded, ...body } = receipt;
     if (recorded !== objectHash || recorded !== (await contentHash(body)))
-      throw new Error('Bundle receipt hash mismatch');
+      throw new OperationError('DATA_INVALID', 'Bundle receipt hash mismatch');
     const manifestBytes = await readBoundedFile(
       join(directory, 'manifest.json'),
       MAX_REPLAY_MANIFEST_BYTES,
     );
     if (sha256(manifestBytes) !== receipt.manifestChecksum)
-      throw new Error('Bundle manifest checksum mismatch');
-    const manifest = parseJson(
-      ReplayManifestSchema,
-      JSON.parse(manifestBytes.toString('utf8')) as unknown,
+      throw new OperationError('DATA_INVALID', 'Bundle manifest checksum mismatch');
+    const manifest = operationInput(
+      () =>
+        parseJson(
+          ReplayManifestSchema,
+          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes)) as unknown,
+        ),
+      'DATA_INVALID',
     );
     const bytes =
       manifestBytes.length +
@@ -70,7 +79,7 @@ export class BattleBundles {
       sha256(canonicalJson(receipt.result)) !== receipt.resultHash ||
       bytes !== receipt.bytes
     )
-      throw new Error('Bundle result/attempt/replay binding mismatch');
+      throw new OperationError('DATA_INVALID', 'Bundle result/attempt/replay binding mismatch');
     await verifyReplayDirectory(directory, manifest);
     return receipt;
   }
@@ -85,12 +94,16 @@ export class BattleBundles {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
       throw error;
     }
-    const receipt = await this.verify(HashSchema.parse(JSON.parse(bytes.toString('utf8'))));
+    const objectHash = operationInput(
+      () => HashSchema.parse(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))),
+      'DATA_INVALID',
+    );
+    const receipt = await this.verify(objectHash);
     if (
       receipt.simulationHash !== simulationHash ||
       !['win', 'draw'].includes(receipt.result.outcome.kind)
     )
-      throw new Error('Definitive bundle pointer mismatch');
+      throw new OperationError('DATA_INVALID', 'Definitive bundle pointer mismatch');
     return receipt;
   }
   async storedBytes() {
@@ -106,14 +119,16 @@ export class BattleBundles {
         )
           await scan(path);
         else if (entry.isFile()) total += (await lstat(path)).size;
-        else throw new Error('Unexpected bundle storage entry');
-        if (total > this.maxBytes) throw new Error('Bundle storage limit exceeded');
+        else throw new OperationError('DATA_INVALID', 'Unexpected bundle storage entry');
+        if (total > this.maxBytes)
+          throw new OperationError('BUDGET_EXCEEDED', 'Bundle storage limit exceeded');
       }
     };
     for (const name of ['objects', 'complete', 'indexes', 'plans']) {
       const directory = join(this.root, name);
       await mkdir(directory, { recursive: true });
-      if (!(await lstat(directory)).isDirectory()) throw new Error('Invalid bundle collection');
+      if (!(await lstat(directory)).isDirectory())
+        throw new OperationError('DATA_INVALID', 'Invalid bundle collection');
       await scan(directory);
     }
     this.bytes = total;
@@ -130,23 +145,29 @@ export class BattleBundles {
     for (const name of ['complete', 'indexes', 'plans']) {
       const directory = join(this.root, name);
       await mkdir(directory, { recursive: true });
-      if (!(await lstat(directory)).isDirectory()) throw new Error('Invalid bundle collection');
+      if (!(await lstat(directory)).isDirectory())
+        throw new OperationError('DATA_INVALID', 'Invalid bundle collection');
       await remove(directory, '.immutable-staging-');
     }
     this.bytes = null;
   }
   private async capacity(bytes: number, reserve = 0) {
     if ((await this.storedBytes()) + bytes + reserve > this.maxBytes)
-      throw new Error('Bundle storage limit exceeded before publication');
+      throw new OperationError(
+        'BUDGET_EXCEEDED',
+        'Bundle storage limit exceeded before publication',
+      );
   }
   async publishJson(collection: 'plans' | 'indexes', id: string, value: unknown) {
     const text = canonicalJson(value),
       limit = collection === 'plans' ? 8_000_000 : 2_000_000;
-    if (Buffer.byteLength(text) > limit) throw new Error('Batch document byte limit');
+    if (Buffer.byteLength(text) > limit)
+      throw new OperationError('BUDGET_EXCEEDED', 'Batch document byte limit');
     const path = join(this.root, collection, hashName(id) + '.json');
     try {
       const previous = await readBoundedFile(path, limit);
-      if (previous.toString('utf8') !== text) throw new Error('Immutable batch document collision');
+      if (previous.toString('utf8') !== text)
+        throw new OperationError('DATA_INVALID', 'Immutable batch document collision');
       return path;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
@@ -161,7 +182,7 @@ export class BattleBundles {
     const original = await this.cached(receipt.simulationHash);
     if (original) {
       if (original.resultHash !== receipt.resultHash)
-        throw new Error('Definitive bundle publication conflict');
+        throw new OperationError('DATA_INVALID', 'Definitive bundle publication conflict');
       return;
     }
     const text = canonicalJson(receipt.objectHash);
@@ -204,18 +225,22 @@ export class BattleBundles {
   private async importBundle(source: BattleBundles, objectHash: string, definitive: boolean) {
     const receipt = await source.verify(objectHash);
     if (definitive && !['win', 'draw'].includes(receipt.result.outcome.kind))
-      throw new Error('Only definitive bundles can be reused');
+      throw new OperationError('DATA_INVALID', 'Only definitive bundles can be reused');
     const directory = source.objectPath(objectHash);
-    const manifest = parseJson(
-      ReplayManifestSchema,
-      JSON.parse(
-        (
-          await readBoundedFile(join(directory, 'manifest.json'), MAX_REPLAY_MANIFEST_BYTES)
-        ).toString('utf8'),
-      ),
+    const manifestBytes = await readBoundedFile(
+      join(directory, 'manifest.json'),
+      MAX_REPLAY_MANIFEST_BYTES,
+    );
+    const manifest = operationInput(
+      () =>
+        parseJson(
+          ReplayManifestSchema,
+          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes)) as unknown,
+        ),
+      'DATA_INVALID',
     );
     if (sha256(canonicalJson(manifest)) !== receipt.manifestChecksum)
-      throw new Error('Retained manifest changed during import');
+      throw new OperationError('DATA_INVALID', 'Retained manifest changed during import');
     return this.publishObject(receipt, manifest, (ref) =>
       readBoundedFile(join(directory, ref.file), ref.bytes),
     );
@@ -230,14 +255,15 @@ export class BattleBundles {
     const original = await this.cached(receipt.simulationHash);
     if (original && ['win', 'draw'].includes(receipt.result.outcome.kind)) {
       if (original.resultHash !== receipt.resultHash)
-        throw new Error('Definitive bundle result disagreement');
+        throw new OperationError('DATA_INVALID', 'Definitive bundle result disagreement');
       return original;
     }
     const receiptText = canonicalJson(receipt);
     // A crash after object rename but before pointer publication must not double-count its bytes.
     try {
       const existing = await this.verify(receipt.objectHash);
-      if (canonicalJson(existing) !== receiptText) throw new Error('Bundle object collision');
+      if (canonicalJson(existing) !== receiptText)
+        throw new OperationError('DATA_INVALID', 'Bundle object collision');
       await this.publishPointer(existing);
       return existing;
     } catch (error) {
@@ -251,7 +277,7 @@ export class BattleBundles {
       for (const ref of [...manifest.chunks, ...manifest.checkpoints]) {
         const bytes = await load(ref);
         if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
-          throw new Error('Replay changed during export');
+          throw new OperationError('DATA_INVALID', 'Replay changed during export');
         await writeDurableFile(join(staging, ref.file), bytes);
       }
       await writeDurableFile(join(staging, 'manifest.json'), canonicalJson(manifest));
@@ -265,7 +291,7 @@ export class BattleBundles {
         if (!['EEXIST', 'ENOTEMPTY', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? ''))
           throw error;
         if (canonicalJson(await this.verify(receipt.objectHash)) !== receiptText)
-          throw new Error('Bundle object collision');
+          throw new OperationError('DATA_INVALID', 'Bundle object collision');
         this.bytes = null;
       }
       await syncDirectory(join(this.root, 'objects'));
