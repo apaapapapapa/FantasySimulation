@@ -1,16 +1,13 @@
 import { OperationError } from '@fantasy/api/artifacts';
 import {
-  PublicLeagueSnapshotSchema,
   PublicLeagueDetailSchema,
   PublicLeagueSlotPageSchema,
-  LeagueRevisionSchema,
   LeagueProgressPageSchema,
   LeagueReservationSchema,
   PublicLeagueWorkSchema,
   type RevisionRef,
   canonicalJson,
   contentHash,
-  revisionHash,
   type LeagueFileRef,
   type PublicCatalog,
   type PublicReplaySet,
@@ -20,10 +17,8 @@ import {
 } from '@fantasy/domain/spatial';
 import { leagueCoordinates, scoreLeagueCounts } from '@fantasy/engine/spatial';
 
-export type LeagueJson = <T>(
-  ref: LeagueFileRef,
-  schema: { parse(value: unknown): T },
-) => Promise<T>;
+import { leagueMetadata } from './league-metadata.ts';
+import type { LeagueJson } from './league-metadata.ts';
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 const reference = ({ id, revision, contentHash }: RevisionRef) => ({ id, revision, contentHash });
 
@@ -34,55 +29,8 @@ export async function validatePublicLeague(
   sets: Map<string, PublicReplaySet>,
   pages: Map<string, PublicMatchPage>,
 ) {
-  const snapshot = await json(ref, PublicLeagueSnapshotSchema);
-  const revision = await json(snapshot.definition, LeagueRevisionSchema);
-  const { leagueHash, ...body } = revision,
-    { definition, engineVersion, implementationDigest } = revision;
-  if (
-    leagueHash !== (await contentHash(body)) ||
-    revision.inputHash !==
-      (await contentHash({ definition, engineVersion, implementationDigest })) ||
-    ref.id !== definition.id ||
-    ref.leagueHash !== leagueHash ||
-    ref.inputHash !== revision.inputHash ||
-    snapshot.leagueHash !== leagueHash ||
-    snapshot.inputHash !== revision.inputHash ||
-    snapshot.sourceSha !== revision.sourceSha ||
-    snapshot.engineVersion !== engineVersion ||
-    snapshot.implementationDigest !== implementationDigest ||
-    snapshot.id !== definition.id ||
-    snapshot.name !== definition.name ||
-    snapshot.trials !== definition.trials ||
-    snapshot.masterSeed !== definition.masterSeed
-  )
-    throw new OperationError('DATA_INVALID', 'League snapshot definition identity mismatch');
-  for (const revision of definition.revisions)
-    if (revision.contentHash !== (await revisionHash(revision)))
-      throw new OperationError('DATA_INVALID', 'League definition revision checksum');
-  const named = (kind: 'character' | 'scenario', id: string) => {
-    const value = definition.revisions.find((r) => r.kind === kind && r.id === id);
-    if (!value) throw new OperationError('DATA_INVALID', 'League named revision missing');
-    return {
-      id,
-      revision: value.revision,
-      contentHash: value.contentHash,
-      name: value.definition.name,
-    };
-  };
-  if (
-    !same(
-      snapshot.characters,
-      definition.characters.map((c) => named('character', c.id)),
-    ) ||
-    !same(
-      snapshot.battlefields,
-      definition.battlefields.map((f) => ({
-        scenario: named('scenario', f.scenario.id),
-        weight: f.weight,
-      })),
-    )
-  )
-    throw new OperationError('DATA_INVALID', 'League display metadata mismatch');
+  const { snapshot, revision } = await leagueMetadata(ref, json);
+  const { definition, leagueHash, engineVersion, implementationDigest } = revision;
   const expected = new Map<
     string,
     Awaited<ReturnType<ReturnType<typeof leagueCoordinates>['next']>>['value']

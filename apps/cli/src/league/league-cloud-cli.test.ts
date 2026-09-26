@@ -58,12 +58,45 @@ afterEach(() => {
 });
 
 async function invoke(root: string, command: string) {
+  if (command === 'prepare' || command === 'restore')
+    await writeFile(join(root, 'probe.json'), '{}');
   vi.stubEnv('GITHUB_STEP_SUMMARY', join(root, 'summary.md'));
   vi.stubEnv('GITHUB_OUTPUT', join(root, 'output.txt'));
   process.argv = ['node', 'league-cloud.ts', command, root, 'data/leagues/official-20-v1.json'];
   await import('../league-cloud.ts');
   return process.exitCode ?? 0;
 }
+
+it.each(['rules-milestone-required', 'engine-milestone-required'])(
+  'records a scheduled hold with exit zero and no admission: %s',
+  async (reason) => {
+    vi.stubEnv('LEAGUE_MODE', 'schedule');
+    vi.stubEnv('OFFICIAL_LEAGUE_DEFINITION', 'data/leagues/official-20-v1.json');
+    operations.probe.mockResolvedValue({ needed: false, reason, estimate: null });
+    await withReplayDirectory(async (root) => {
+      expect(await invoke(root, 'probe')).toBe(0);
+      expect(await readFile(join(root, 'output.txt'), 'utf8')).toBe('needed=false\n');
+      expect(await readFile(join(root, 'summary.md'), 'utf8')).toContain(reason);
+      expect(JSON.parse(await readFile(join(root, 'probe.json'), 'utf8'))).toEqual({
+        needed: false,
+        reason,
+        estimate: null,
+      });
+      expect(operations.prepare).not.toHaveBeenCalled();
+      expect(operations.transfer).not.toHaveBeenCalled();
+      expect(operations.probe.mock.calls[0]![3]).toBe('schedule');
+    });
+  },
+);
+
+it('rejects scheduling a definition other than the configured official league', async () => {
+  vi.stubEnv('LEAGUE_MODE', 'schedule');
+  vi.stubEnv('OFFICIAL_LEAGUE_DEFINITION', 'data/leagues/another.json');
+  await withReplayDirectory(async (root) => {
+    expect(await invoke(root, 'probe')).toBe(1);
+    expect(operations.probe).not.toHaveBeenCalled();
+  });
+});
 
 it.each([
   ['probe', 'INPUT_INVALID', 'planning'],

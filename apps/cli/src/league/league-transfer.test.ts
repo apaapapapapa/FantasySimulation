@@ -9,6 +9,8 @@ import { transferCloudLeague } from './league-transfer.ts';
 import { publicationLeagueSource } from '../../test-support/leagues.ts';
 import { sha256 } from '@fantasy/api/artifacts';
 import { leagueFailure, leagueFailureSummary } from './league-diagnostics.ts';
+import { withMilestonePublication } from '../../test-support/league-milestones.ts';
+import { probeLeague } from './league-probe.ts';
 
 afterEach(() => vi.restoreAllMocks());
 const config = {
@@ -18,6 +20,51 @@ const config = {
   secretAccessKey: 'fixture',
 };
 const identity = { id: 'fixture-restore', sourceSha: 'b'.repeat(40), day: '2026-09-25' };
+it.each(['catalog', 'source', 'definition', 'mode', 'hold', 'checksum'])(
+  'rejects a stale or invalid %s binding before restore leases or inventory',
+  async (change) => {
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const write = vi.spyOn(PublicationS3.prototype, 'putControl');
+    const ledger = vi.spyOn(PublicationS3.prototype, 'readControl');
+    const inventory = vi.spyOn(PublicationS3.prototype, 'inventory');
+    await withMilestonePublication(async (fixture) => {
+      const probe = await probeLeague(
+        fixture.definition,
+        identity.sourceSha,
+        fixture.read,
+        'publish',
+      );
+      const definition = structuredClone(fixture.definition);
+      if (change === 'catalog') probe.catalogHash = `sha256:${'c'.repeat(64)}`;
+      if (change === 'source') probe.sourceSha = 'c'.repeat(40);
+      if (change === 'definition') definition.name += ' changed';
+      if (change === 'mode') probe.mode = 'dry-run';
+      if (change === 'hold') probe.needed = false;
+      if (change === 'checksum')
+        fixture.files.set(`catalog/${probe.catalogHash!.slice(7)}.json`, Buffer.from('{}'));
+      vi.spyOn(PublicationS3.prototype, 'read').mockImplementation(async (key) => {
+        const data = fixture.files.get(key);
+        return data ? { data: Buffer.from(data), etag: 'fixture' } : null;
+      });
+      await expect(
+        transferCloudLeague(
+          config,
+          join(fixture.root, 'restored'),
+          join(fixture.root, 'reports'),
+          identity,
+          undefined,
+          { probe, definition },
+        ),
+      ).rejects.toMatchObject({
+        code: change === 'checksum' ? 'DATA_INVALID' : 'IDENTITY_MISMATCH',
+      });
+      expect(write).not.toHaveBeenCalled();
+      expect(ledger).not.toHaveBeenCalled();
+      expect(inventory).not.toHaveBeenCalled();
+    });
+  },
+);
+
 it.each(['pointer-json', 'pointer-utf8', 'catalog-json', 'catalog-utf8'])(
   'classifies malformed remote %s before consuming a lease',
   async (kind) => {
@@ -76,6 +123,19 @@ it('requires durable inventory/data leases before restore and never reuses the s
       join(root, 'public'),
       join(root, 'reports'),
       identity,
+      undefined,
+      {
+        probe: await probeLeague(
+          await leagueFixture(2, 1),
+          identity.sourceSha,
+          async () => {
+            const { PublicReadFailure } = await import('../publication/publication-http.ts');
+            throw new PublicReadFailure(404);
+          },
+          'publish',
+        ),
+        definition: await leagueFixture(2, 1),
+      },
     );
     expect(inventory).toMatchObject({ files: 1, bytes: 65536, usedWriteRequests: 10601 });
     const count = read.mock.calls.length;
