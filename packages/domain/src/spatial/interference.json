@@ -235,10 +235,10 @@
     },
     {
       "id": "projectile-deflection",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Before-hit projectile contact replacement, once per projectile; launch payload and bounded reaction ancestry persist.",
       "generation": "p6"
     },
     {
@@ -679,7 +679,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, projectile-deflection; permission never implements a mechanic."
+          "reason": "absolute-evasion is not implemented; reject before execution."
         }
       ]
     },
@@ -1152,7 +1152,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, projectile-deflection; permission never implements a mechanic."
+          "reason": "absolute-hit is not implemented; reject before execution."
         }
       ]
     },
@@ -1670,8 +1670,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -2152,7 +2153,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, projectile-deflection; permission never implements a mechanic."
+          "reason": "area is not implemented; reject before execution."
         }
       ]
     },
@@ -2640,8 +2641,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "projectile-deflection is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Deflection cancels the original body payload. The returned projectile keeps launch power and payload, changes owner once and resumes next interval. On its next contact, target absorption converts damage after modifiers and before shield; the cancelled contact never heals."
         }
       ]
     },
@@ -3122,7 +3124,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, projectile-deflection; permission never implements a mechanic."
+          "reason": "barrier is not implemented; reject before execution."
         }
       ]
     },
@@ -3595,7 +3597,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, projectile-deflection; permission never implements a mechanic."
+          "reason": "beam is not implemented; reject before execution."
         }
       ]
     },
@@ -4068,7 +4070,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, projectile-deflection; permission never implements a mechanic."
+          "reason": "causality is not implemented; reject before execution."
         }
       ]
     },
@@ -4556,8 +4558,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -5053,8 +5056,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -5550,8 +5554,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -6047,8 +6052,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -6544,8 +6550,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "projectile-deflection is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Deflection cancels the original body payload. The returned projectile keeps launch power and damage, changes owner once and resumes next interval. Its drain is disabled for both owners; only later unreflected damage can generate drain."
         }
       ]
     },
@@ -7077,8 +7084,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -7559,7 +7567,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, projectile-deflection; permission never implements a mechanic."
+          "reason": "existence-erasure is not implemented; reject before execution."
         }
       ]
     },
@@ -8047,8 +8055,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -8544,8 +8553,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -9026,7 +9036,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, projectile-deflection; permission never implements a mechanic."
+          "reason": "foresight is not implemented; reject before execution."
         }
       ]
     },
@@ -9514,8 +9524,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -9996,7 +10007,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, projectile-deflection; permission never implements a mechanic."
+          "reason": "immortality is not implemented; reject before execution."
         }
       ]
     },
@@ -10469,7 +10480,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, projectile-deflection; permission never implements a mechanic."
+          "reason": "instant-death is not implemented; reject before execution."
         }
       ]
     },
@@ -10942,7 +10953,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, projectile-deflection; permission never implements a mechanic."
+          "reason": "mind-read is not implemented; reject before execution."
         }
       ]
     },
@@ -11430,8 +11441,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -11927,8 +11939,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -12424,8 +12437,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -12933,8 +12947,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -13415,7 +13430,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, projectile-deflection; permission never implements a mechanic."
+          "reason": "phasing is not implemented; reject before execution."
         }
       ]
     },
@@ -13888,7 +13903,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, projectile-deflection; permission never implements a mechanic."
+          "reason": "piercing is not implemented; reject before execution."
         }
       ]
     },
@@ -14376,8 +14391,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14539,7 +14555,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, absolute-evasion; permission never implements a mechanic."
+          "reason": "absolute-evasion is not implemented; reject before execution."
         }
       ]
     },
@@ -14550,7 +14566,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, absolute-hit; permission never implements a mechanic."
+          "reason": "absolute-hit is not implemented; reject before execution."
         }
       ]
     },
@@ -14560,8 +14576,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14572,7 +14589,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, area; permission never implements a mechanic."
+          "reason": "area is not implemented; reject before execution."
         }
       ]
     },
@@ -14582,8 +14599,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "projectile-deflection is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Deflection cancels the original body payload. The returned projectile keeps launch power and payload, changes owner once and resumes next interval. On its next contact, target absorption converts damage after modifiers and before shield; the cancelled contact never heals."
         }
       ]
     },
@@ -14594,7 +14612,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, barrier; permission never implements a mechanic."
+          "reason": "barrier is not implemented; reject before execution."
         }
       ]
     },
@@ -14605,7 +14623,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, beam; permission never implements a mechanic."
+          "reason": "beam is not implemented; reject before execution."
         }
       ]
     },
@@ -14616,7 +14634,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, causality; permission never implements a mechanic."
+          "reason": "causality is not implemented; reject before execution."
         }
       ]
     },
@@ -14626,8 +14644,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14637,8 +14656,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14648,8 +14668,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14659,8 +14680,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14670,8 +14692,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "projectile-deflection is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Deflection cancels the original body payload. The returned projectile keeps launch power and damage, changes owner once and resumes next interval. Its drain is disabled for both owners; only later unreflected damage can generate drain."
         }
       ]
     },
@@ -14681,8 +14704,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14693,7 +14717,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, existence-erasure; permission never implements a mechanic."
+          "reason": "existence-erasure is not implemented; reject before execution."
         }
       ]
     },
@@ -14703,8 +14727,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14714,8 +14739,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14726,7 +14752,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, foresight; permission never implements a mechanic."
+          "reason": "foresight is not implemented; reject before execution."
         }
       ]
     },
@@ -14736,8 +14762,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14748,7 +14775,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, immortality; permission never implements a mechanic."
+          "reason": "immortality is not implemented; reject before execution."
         }
       ]
     },
@@ -14759,7 +14786,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, instant-death; permission never implements a mechanic."
+          "reason": "instant-death is not implemented; reject before execution."
         }
       ]
     },
@@ -14770,7 +14797,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, mind-read; permission never implements a mechanic."
+          "reason": "mind-read is not implemented; reject before execution."
         }
       ]
     },
@@ -14780,8 +14807,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14791,8 +14819,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14802,8 +14831,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14813,8 +14843,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14825,7 +14856,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, phasing; permission never implements a mechanic."
+          "reason": "phasing is not implemented; reject before execution."
         }
       ]
     },
@@ -14836,7 +14867,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, piercing; permission never implements a mechanic."
+          "reason": "piercing is not implemented; reject before execution."
         }
       ]
     },
@@ -14846,8 +14877,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14857,8 +14889,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14868,8 +14901,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14879,8 +14913,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14890,8 +14925,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14902,7 +14938,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, revival; permission never implements a mechanic."
+          "reason": "revival is not implemented; reject before execution."
         }
       ]
     },
@@ -14913,7 +14949,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, seal; permission never implements a mechanic."
+          "reason": "seal is not implemented; reject before execution."
         }
       ]
     },
@@ -14923,8 +14959,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14934,8 +14971,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14945,8 +14983,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14956,8 +14995,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -14968,7 +15008,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, teleport; permission never implements a mechanic."
+          "reason": "teleport is not implemented; reject before execution."
         }
       ]
     },
@@ -14979,7 +15019,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, time-stop; permission never implements a mechanic."
+          "reason": "time-stop is not implemented; reject before execution."
         }
       ]
     },
@@ -14990,7 +15030,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, universal-victory; permission never implements a mechanic."
+          "reason": "universal-victory is not implemented; reject before execution."
         }
       ]
     },
@@ -15000,8 +15040,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -15346,8 +15387,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -15843,8 +15885,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -16340,8 +16383,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -16822,7 +16866,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, projectile-deflection; permission never implements a mechanic."
+          "reason": "revival is not implemented; reject before execution."
         }
       ]
     },
@@ -17295,7 +17339,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, projectile-deflection; permission never implements a mechanic."
+          "reason": "seal is not implemented; reject before execution."
         }
       ]
     },
@@ -17783,8 +17827,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -18280,8 +18325,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -18777,8 +18823,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -19274,8 +19321,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },
@@ -19756,7 +19804,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for teleport, projectile-deflection; permission never implements a mechanic."
+          "reason": "teleport is not implemented; reject before execution."
         }
       ]
     },
@@ -20229,7 +20277,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, projectile-deflection; permission never implements a mechanic."
+          "reason": "time-stop is not implemented; reject before execution."
         }
       ]
     },
@@ -20702,7 +20750,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, projectile-deflection; permission never implements a mechanic."
+          "reason": "universal-victory is not implemented; reject before execution."
         }
       ]
     },
@@ -21190,8 +21238,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "projectile.deflect-once",
+          "summary": "Eligible body contacts use grouped reactions and consume the hit ledger. Deflection supersedes same-contact parry; other payloads resolve only on a later contact with frozen source values. Reaction limits and delayed observation apply."
         }
       ]
     },

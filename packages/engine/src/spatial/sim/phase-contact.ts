@@ -49,6 +49,7 @@ export function contactPhase(tx: StepTransaction) {
     nextLedger,
   );
   effects.push(...projectileStep.effects);
+  tx.projectileContacts = projectileStep.contacts;
   for (const attack of attacks) {
     const ownerActor = next.find((a) => actorId(a) === attack.actorId)!;
     if (

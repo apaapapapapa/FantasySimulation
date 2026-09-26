@@ -16,6 +16,7 @@ import type { SpatialWorld } from '../world/physics.ts';
 import type { ProjectileState } from '../rules/projectiles.ts';
 import type { ResourceBudget } from '../rules/resources.ts';
 import { attachedStageAlive } from '../rules/stages.ts';
+import type { ProjectileContacts } from './projectile-deflection.ts';
 import type { WorkMeter } from './work-meter.ts';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
@@ -44,6 +45,7 @@ export class StepTransaction {
   readonly before: ReturnType<typeof displayActor>[];
   readonly aiBoundary: boolean;
   readonly effects: PendingEffect[] = [];
+  projectileContacts: ProjectileContacts | undefined;
   readonly spawns: ProjectileDisplay[] = [];
   forcePlans = new Map<string, ReturnType<typeof beginForcedInterval>>();
   previousMovement = new Map<string, PreviousMovement>();

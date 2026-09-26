@@ -113,11 +113,13 @@ const uniqueStatements = (prefix: string, count: number) =>
   Array.from({ length: count }, (_, i) => `${prefix}${i};`).join('\n');
 // Each identifier statement contributes two nodes; these exercise real production limits.
 it.each([false, true])(
-  'scans past 250,000 nodes with cross-file clones=%s',
+  'scans past 500,000 nodes with cross-file clones=%s',
   (cloned) => {
     const f = project({
       'a.ts': uniqueStatements('a', 65000),
       'b.ts': uniqueStatements('b', 65000),
+      'c.ts': uniqueStatements('c', 65000),
+      'd.ts': uniqueStatements('d', 65000),
       'y.ts': calculation,
       'z.ts': cloned ? calculation : '',
     });
@@ -133,7 +135,7 @@ it.each([false, true])(
 );
 it.each([
   ['source', 1, 125001],
-  ['repository', 3, 85000],
+  ['repository', 5, 100001],
 ] as const)(
   'fails closed at the %s node limit',
   (scope, files, statements) => {

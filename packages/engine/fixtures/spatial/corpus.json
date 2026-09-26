@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "contract": {
-    "engineVersion": "spatial-v1.20",
-    "rulesVersion": "spatial-v1.20",
+    "engineVersion": "spatial-v1.21",
+    "rulesVersion": "spatial-v1.21",
     "manifestSchemaVersion": 3,
     "eventSchemaVersion": 1,
     "replaySchemaVersion": 1,
@@ -969,6 +969,46 @@
       "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
       "name": "captures actual before-hit and before-defeat wave attempts without committing their effects"
     },
+    "deflection-pairs": {
+      "file": "packages/engine/src/spatial/interference-matrix.test.ts",
+      "name": "executes every standard ordered deflection pair with explicit contact and ownership expectations"
+    },
+    "p6-deflection-01": {
+      "file": "packages/engine/src/spatial/projectile-deflection.test.ts",
+      "name": "returns a projectile once with unchanged launch power and records the contact turn"
+    },
+    "p6-deflection-02": {
+      "file": "packages/engine/src/spatial/projectile-deflection.test.ts",
+      "name": "reserves deflection instead of competing same-contact parry and truncates atomically"
+    },
+    "p6-deflection-03": {
+      "file": "packages/engine/src/spatial/projectile-deflection-boundaries.test.ts",
+      "name": "suppresses an explosive payload until the returned projectile contacts again"
+    },
+    "p6-deflection-04": {
+      "file": "packages/engine/src/spatial/projectile-deflection-boundaries.test.ts",
+      "name": "carries ancestry across intervals into counters and rolls back only the failing interval"
+    },
+    "p6-deflection-05": {
+      "file": "packages/engine/src/spatial/projectile-deflection-boundaries.test.ts",
+      "name": "validates saved ownership transitions and rejects a second deflection or forged direction"
+    },
+    "p6-deflection-06": {
+      "file": "packages/engine/src/spatial/deflection-observation.test.ts",
+      "name": "learns only delayed visible deflection cues and discounts subsequent projectiles without private fields"
+    },
+    "p6-deflection-07": {
+      "file": "apps/api/src/jobs/deflection-persistence.test.ts",
+      "name": "persists returned projectile ownership through a Worker SQLite and bidirectional replay seek"
+    },
+    "p6-deflection-08": {
+      "file": "apps/web/src/replay/deflection-display.test.ts",
+      "name": "renders the saved deflection turn owner velocity and polyline while seeking both ways"
+    },
+    "p6-deflection-09": {
+      "file": "packages/engine/src/spatial/projectile-deflection-boundaries.test.ts",
+      "name": "retains gravity and expiry while disabling homing after the contact hold"
+    },
     "p6-recovery-02": {
       "file": "packages/engine/src/spatial/recovery.test.ts",
       "name": "converts after taken multipliers before shared shield and keeps the single wave clamp"
@@ -1008,7 +1048,7 @@
       },
       "oracles": ["melee-golden"],
       "identity": {
-        "inputHash": "sha256:1f97e240ae1f4c60c81e55cea7c9fed92304ece2e8b7cd3af00aeeb365cf47e0",
+        "inputHash": "sha256:133c1c8ca36fa260f7b4eab19a19f5ac9cbda642a95f6c770d026f86d13e314a",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1016,9 +1056,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-engagement-v1",
+          "id": "standard-deflection-v1",
           "revision": 1,
-          "contentHash": "sha256:ddd31b12e74f5c3c1786095ba27e91b0d4ba461995be2a691965854bc6d29b1a"
+          "contentHash": "sha256:8f9c4e4d45c23ed08efe2ea8d08e9d1982ae21c581c4afd454a9c573ee438a78"
         },
         "participants": [
           {
@@ -1053,7 +1093,7 @@
       },
       "oracles": ["catalog-pillar-enumeration"],
       "identity": {
-        "inputHash": "sha256:06e8f6981f6a833e18c6b69510d96958917ecb81e888a50af29c33c13aa58d4c",
+        "inputHash": "sha256:10f27a8f2361bbb0afe394e6a86b15ce40321fcef3167cd1eb9ba7f87ad0966e",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -1061,9 +1101,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-engagement-v1",
+          "id": "standard-deflection-v1",
           "revision": 1,
-          "contentHash": "sha256:e86502fcae5fd6a57d147a0230898e2ac3425d088da6a4ebd510062fe61ade3d"
+          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
         },
         "participants": [
           {
@@ -1098,7 +1138,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:b211bcc3df973df282dd938f20aa6dce44f4f3821a84136bcc64310142c08e61",
+        "inputHash": "sha256:36f4760fb0440043a28d74d39da01f7cf73b262aa5f541678f4b3910c5f107da",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1106,9 +1146,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-engagement-v1",
+          "id": "standard-deflection-v1",
           "revision": 1,
-          "contentHash": "sha256:e86502fcae5fd6a57d147a0230898e2ac3425d088da6a4ebd510062fe61ade3d"
+          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
         },
         "participants": [
           {
@@ -1143,7 +1183,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:3411d833b53bb0a5c7c30507e87c82433df04bd7e690988e5b1a0c2c276b51b7",
+        "inputHash": "sha256:93fdea58ca80d376bfb97ea5538952e7a690346e7f5c00939776fd03671724ab",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1151,9 +1191,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-engagement-v1",
+          "id": "standard-deflection-v1",
           "revision": 1,
-          "contentHash": "sha256:e86502fcae5fd6a57d147a0230898e2ac3425d088da6a4ebd510062fe61ade3d"
+          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
         },
         "participants": [
           {
@@ -1188,7 +1228,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:67203293e011590a3ce369efe336ba8367dd21b97a5c944cef94168bac04790d",
+        "inputHash": "sha256:665fd787cd23200a3e3cbd5e26d6a7071fc987f4250fe84ec68dceafd1cb1a73",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1196,9 +1236,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-engagement-v1",
+          "id": "standard-deflection-v1",
           "revision": 1,
-          "contentHash": "sha256:e86502fcae5fd6a57d147a0230898e2ac3425d088da6a4ebd510062fe61ade3d"
+          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
         },
         "participants": [
           {
@@ -1233,7 +1273,7 @@
       },
       "oracles": [],
       "identity": {
-        "inputHash": "sha256:e94ff9322f74b8ebcc14407691a8cc263e9764b728c18590319e5c802ea3f857",
+        "inputHash": "sha256:dc24f33f686ed97447429ab7e6427b35315dca6e74dbbb271916740aab83c5e7",
         "seed": 42,
         "scenario": {
           "id": "pillars",
@@ -1241,9 +1281,9 @@
           "contentHash": "sha256:b8cd0cbb12024babf8a267771c5acab8f40bee983435b0c0af417d82a661f3b6"
         },
         "ruleset": {
-          "id": "standard-engagement-v1",
+          "id": "standard-deflection-v1",
           "revision": 1,
-          "contentHash": "sha256:e86502fcae5fd6a57d147a0230898e2ac3425d088da6a4ebd510062fe61ade3d"
+          "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
         },
         "participants": [
           {
@@ -1278,7 +1318,7 @@
       },
       "oracles": ["observed-ai-integration"],
       "identity": {
-        "inputHash": "sha256:b3375e5e8f773391921669bba6d19c80f30cba396513a6ccd35e405e168de844",
+        "inputHash": "sha256:2fee298d3b61a7546ed31c0110fc9e5369061ad07440d54641694b29a18fce6d",
         "seed": 42,
         "scenario": {
           "id": "flat",
@@ -1286,9 +1326,9 @@
           "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a"
         },
         "ruleset": {
-          "id": "standard-engagement-v1",
+          "id": "standard-deflection-v1",
           "revision": 1,
-          "contentHash": "sha256:9befb7cabf01912131c9991e9494abf7eeb191e6d38bd165dbea5abc667d07e9"
+          "contentHash": "sha256:b2a20760f6cc646beaf3f483aa9ca66459d99ca06c6fce740c86a232698483fa"
         },
         "participants": [
           {
@@ -1754,6 +1794,24 @@
         "p6-status.reaction-conflict",
         "p6-foundation-extra-17",
         "p6-foundation-extra-18"
+      ]
+    },
+    {
+      "id": "p6-deflection",
+      "title": "P6-01: contact replacement, delayed observation and saved ownership",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "deflection-pairs",
+        "p6-deflection-01",
+        "p6-deflection-02",
+        "p6-deflection-03",
+        "p6-deflection-04",
+        "p6-deflection-05",
+        "p6-deflection-06",
+        "p6-deflection-07",
+        "p6-deflection-08",
+        "p6-deflection-09"
       ]
     },
     {

@@ -1,107 +1,95 @@
-# Reactions (spatial-v1.18)
+# Reactions (spatial-v1.21)
 
-Refs #61 G-08; [approved design](../adr/0012-stages-and-reactions.md).
-`standard-reactions-v1` adds optional `Ability.reaction` and three triggers.
-Old definitions without reactions keep their event/resource/PRNG behavior. Published
-v1.17 IDs/hashes remain readable; old execution is rejected, never converted.
+Refs #61 G-08, #155 P6-01; [design](../adr/0012-stages-and-reactions.md),
+[P6 foundation](../adr/0016-p6-foundation.md). Omitted reactions retain existing
+results/events/PRNG. Published definitions remain readable; old execution is rejected.
 
-## Definition and clocks
+## Responses and eligibility
 
-- `before-hit`: direct self effects (shield, heal, status/dispel/water), or
-  `parry` with no payload and scope `all` / `damage`.
-- `after-damage`: non-restorative direct self effects, or a deferred enemy
-  `counter` using hitscan. Geometry, power, categories, costs and clocks are ordinary
-  ability data. Positive hostile post-shield rational damage is required, before
-  remaining-HP clipping or netting simultaneous healing. Costs/environment/self
-  damage cannot activate it; full shield or zero damage cannot activate it.
-- `before-defeat`: direct non-restorative effects on provisional HP0 owners after
-  all waves. Same-wave healing already occurred. It is an extension point, not revival.
+- `before-hit`: direct self effects (shield/heal/status/dispel/water), `parry`
+  (`all` or `damage`, empty payload), or `deflect` (empty payload).
+- `after-damage`: non-restorative self effects or deferred enemy hitscan `counter`.
+  Trigger on positive hostile post-shield rational damage, before HP clipping or
+  simultaneous healing. Costs/environment/self damage and full shields cannot trigger.
+- `before-defeat`: non-restorative direct effects on provisional HP0 after all waves.
+  This is not revival. P6-03 owns restoration.
 
-Cast is zero; explicit stages/authored movement and immediate self attacks are
-rejected. Counters have no authored motion, so their separate slot can coexist with
-the main action. After-damage/before-defeat healing is rejected until explicit P6
-restoration. Reflection, absorption, revival, piercing/replacement and other shapes
-are not accepted response definitions.
+Cast=0; no authored stages/motion. Categories and elements are ANDed; each list is
+ORed. Categories follow G-01 including legacy MP defaults. Elements match damage/water.
+Before-defeat has no contact filters. Conditions use the owner's delayed view.
+Old capabilities, provisional resources, cooldown and uses determine eligibility.
+Each ability activates at most once per owner/point/wave. Eligible costs reserve and
+pay together through ResourceBudget; shortage pays none. Exhausted uses disable it.
+Recovery/cooldown begin at activation; readiness is their maximum, separate from main.
 
-Optional category and element filters are ANDed; each list is ORed. Categories
-use G-01, including its legacy MP default. Element filters match damage or water
-contact. Before-defeat has no contact filters. Whole parry cancels every payload of
-each matching contact, including status, force and G-03 element reactions.
-Damage-only parry cancels matching damage components while retaining their original
-element contact and all nondamage payload. Its damage event records zero after
-modifiers/absorbed/toHp and the parry causes. An accepted contact consumes the G-07
-hit ledger even if parried or reduced to zero.
+Whole parry cancels every matching contact payload, including force/status/element
+reactions. Damage parry cancels matching damage components only; element contacts
+remain and zero-damage events retain causes. Accepted contacts consume hit ledgers.
+Counters keep paid activation/depth, never refund, and release no earlier than the
+next interval. Recheck life, silence/incapacity, condition, observed range/facing;
+shared hitscan checks actual geometry. Two aim draws occur only on release. Defeat
+cancels paid queues. No parallel main action slot or new resource implementation.
 
-At each owner/ability/point/wave there is at most one activation, regardless of the
-number of matching contacts. Eligibility uses old capabilities, current provisional
-resources, condition, cooldown and semantic uses. Conditions see only the owner's
-delayed view; incoming mechanics are not an observation. Every eligible reaction of
-one owner reserves together through G-04 ResourceBudget, then pays once; shortage
-pays none. Exhausted uses disable that ability. Recovery and cooldown start at the
-activation boundary; readiness is their maximum, independently of the main slot.
+## Projectile deflection
 
-A counter stores its paid activation ID and depth. Boundary transaction n can
-release in interval n; interval n releases no earlier than interval n+1. Release
-rechecks life, incapacity/silence, condition and observed range/facing. Shared hitscan
-checks muzzle, walls and the actual body; two aim draws occur only on release.
-One ledger entry per counter prevents repeat contact. No second payment, future
-hold or refund; defeat cancels a paid queue even when activation followed lethal
-damage. Failed range/capability also retains costs.
+`standard-deflection-v1` / `standard-tactics-deflection-v1` add P6-01. Deflect only
+initial projectile **body contacts**, never wall blast, melee/hitscan or periodic
+payloads. Eligibility consumes the original staged hit ledger; the replaced contact
+has no payload or explosion. Same-contact parry is suppressed before grouped costs.
+Other direct self responses retain normal grouped eligibility. Cancelled blast
+exposure is removed before settling other owners' costs; planning converges within
+owners+1 passes without priority by ID. Matching deflectors on one owner all pay,
+produce one turn, and multiply `powerBps` (default10000, range0..30000) exactly once,
+with one final floor/cap30000 independent of enumeration order.
 
-## Atomic waves and limits
+Use the defender's delivered observation of the original attacker (body centre),
+otherwise reverse incoming velocity. Coincident observed centre also reverses.
+Preserve incident speed, gravity and original expiry; disable homing. Transfer owner
+but preserve the launch snapshot, categories and payload; only the explicit power
+multiplier changes damage power before defense; other payloads stay unchanged.
+Hold at contact centre until the next interval, then
+move along recorded segments. A returned projectile never deflects again; parry and
+other normal defenses still apply. Its next collision can explode normally.
+Original attacker/source references persist separately from current ownership.
 
-The existing 20ms coordinator owns clones and commits. Startup initialization at
-zero precedes expiry, resource pulses and periodic HP, preserving the old boundary.
-Boundary and interval are separate transactions; no final extra boundary pulse.
-Geometry/accepted contacts and movement settle before reactions:
-before-hit responses join primary damage/healing/shield; after-damage responses
-follow; before-defeat follows every wave; statuses and verdict commit last.
-Each wave reuses G-02 exact attribution, shared shield and a single HP clamp.
-G-03 freezes old modifiers/cohorts across the whole transaction and plans the union
-of accepted contacts/grants/removals once. Remove beats strengthen, conflicting
-transforms are unresolved, transforms are not recursive, permanent protection holds.
+Deflection activations count toward normal work limits and carry ancestry into
+later contacts/reactions. Expiry on the turn boundary still expires; no extra life.
+Display-path overflow truncates rather than dropping segments. Events store contact,
+owner, incident/outgoing velocity, observed/reverse basis, power and activations.
+Replacement projectile deltas/checkpoints preserve these fields. ReplayState validates
+references, single ownership transition, causal IDs, speed/direction and power without
+engine imports. The event commits at boundary subtime0; its parent contact binds the
+recorded point/subtime. Both viewers show returned bullets in green, a recorded turn marker,
+velocity arrow and the saved polyline. No trajectory is inferred.
 
-Defaults/ceilings are 64 activations/transaction, 1024/match and ancestry depth8
-(primary0); callers may lower these. Pending counters retain ancestry across
-intervals. Empty waves add no ancestry. Queue ceiling is64/owner. Semantic
-uses/cooldowns differ from work limits: an eligible affordable activation exceeding
-a work limit produces truncated with resource, observed/limit and cause.
-Attempted reaction work survives failure; committed uses, resources, queue, status,
-force, hit ledger, PRNG, IDs and journal all roll back. A committed boundary survives
-a failed following interval. No partial wave records/checkpoints are yielded.
+## Atomic settlement and observation
 
-Stable actor/ability order serializes commutative groups, not mechanical precedence.
-Logical point order and wave index differ from ancestry depth. Event `wave` is the
-current effect wave; `reaction.wave` identifies the activation's trigger wave.
-Causal event IDs precede children; ordinary phase/subtime display ordering remains.
-Before-defeat ancestry and causes include only applications targeting that owner;
-an opponent's unrelated reaction wave cannot increase its depth.
-Undefined accepted G-03 interference reports unresolved with revisions and bounded
-point/step/actor/causes. Unexpected errors remain failures.
+The 20ms coordinator owns clones/rollback. Startup precedes expiry/resource/periodic
+HP. Boundary and interval are separate transactions; no extra final boundary pulse.
+Movement/contacts precede before-hit, primary damage/healing/shield, after-damage,
+before-defeat, status commit and verdict. G-02 exact attribution/shared shields/single
+HP clamp and G-03 old cohorts remain shared. Remove beats strengthen, conflicting
+transforms are unresolved, permanent protection holds, transforms are not recursive.
 
-## Knowledge and recorded replay
+Caps: 64 activations/transaction,1024/match,depth8,64 queued counters/owner; budgets
+may lower them. Empty waves add no depth; before-defeat follows only incoming causes.
+Exceeding work limits yields truncated(resource,observed,limit,cause). Attempted work
+survives rollback; resources/uses/queue/status/force/hits/PRNG/IDs/events do not.
+A committed boundary survives failed interval. Stable order serializes commutative
+sets, never decides precedence. `wave` and ancestry depth are separate.
 
-G-05 assesses own response, power/status utility, timing, shape, costs, uses and
-readiness outside the main-action lottery. Visible threats give a low-confidence
-parry estimate. An advisory HP/MP/stamina reserve influences action cost assessment
-and gait allocation; it never holds resources or guarantees activation. Automatic
-triggers still use the common eligibility/group payment rules. Enemy inputs are
-only delayed visible activation cues (`point/response`), never unused abilities,
-IDs, costs, exact resources, clocks or a queued future counter.
+Own reactions use definition, threat, cost/uses/readiness for an advisory reserve;
+they are not main-action candidates. Deflect considers observed projectiles only.
+Enemy knowledge contains delayed visible activation cues only, never unused abilities,
+IDs/costs/remaining uses/conditions or queued attacks. A delivered deflect cue is bounded
+memory until normal knowledge expiry and halves subsequent projectile success estimates;
+no guaranteed efficacy is inferred. Decision/knowledge events retain this uncertainty.
+Returned bullets use ordinary observed projectile threat/evasion paths.
 
-Optional ActorDisplay.reactions keeps the latest actual activation per owned
-ability: ID, point/wave/depth, actual clocks, paid queue state and released ray.
-Replacement deltas/checkpoints store it; decision hashes include it. ReplayState
-validates definitions, queue uniqueness, clocks and geometry without importing the
-engine. Old omitted fields remain readable. Worker/SQLite tests compare direct
-results/records and seek both directions.
-
-## Acceptance and scope
-
-`parry-v1`, `riposte-v1` and `reaction-duelist-v1` are additive data examples.
-Mapped tests cover whole/damage parry, old element cohorts across waves, shared
-shield/heal/defeat, filters/silence, cost groups, deferred release/cancellation,
-cross-interval depth, limits/rollback, private information, malformed replay,
-Worker persistence and deterministic saved records. Existing fixed recipe identities
-change only for engine/rules; expected results are not regenerated.
-P6-02 absorption/drain use the same waves; deflection/revival remain separate mechanisms.
+ActorDisplay.reactions stores actual activation/clocks/queue/ray; old omissions work.
+Source tests cover cost/filter/shape boundaries, power/force/status/explosion, ancestry
+rollback, all49 new ordered interference pairs,484 immutable legacy pairs, delayed
+knowledge, Worker/SQLite and replay seeks. New samples are mirror-guard-v1 and
+mirror-shooter-v1. Official league updates wait for the full first-group milestone.
+P6-02 absorption/drain share these waves: cancelled contacts cannot heal; returned
+damage uses target absorption and never drains for either owner (#155 §4).

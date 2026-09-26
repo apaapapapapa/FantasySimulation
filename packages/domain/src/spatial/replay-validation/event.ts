@@ -1,6 +1,11 @@
 import type { StreamRecord } from '../stream.ts';
 import type { ReplayCheckpoint } from '../replay.ts';
 import type { ReplayContext } from './context.ts';
+import {
+  validateDeflection,
+  validateDeflectionActivations,
+  validateDeflectionContact,
+} from './projectile.ts';
 import { recordedStage } from './stage.ts';
 import { validateForce } from './force.ts';
 import { validateRecovery } from './recovery.ts';
@@ -49,18 +54,69 @@ export function validateEvents(
           'event actor reference',
         );
     if (e.entityId !== null) requireReplay(entities.has(e.entityId), 'event entity reference');
+    if (e.sourceActorId || e.sourceProjectileId) {
+      const projectile = prior.state?.projectiles.find((p) => p.id === e.sourceProjectileId);
+      const deflection =
+        projectile?.deflection ??
+        events.find((p) => p.entityId === e.sourceProjectileId && p.kind === 'projectile-deflect')
+          ?.projectileDeflection;
+      requireReplay(
+        !!deflection &&
+          e.sourceActorId === deflection.originalOwnerId &&
+          e.actorId === deflection.ownerId &&
+          emittedId(deflection.eventId) < id &&
+          !!e.sourceProjectileId &&
+          entities.has(e.sourceProjectileId),
+        'event projectile provenance',
+      );
+    }
+    if (e.projectileDeflection) {
+      const d = e.projectileDeflection;
+      const before =
+        prior.state?.projectiles.find((p) => p.id === e.entityId) ??
+        (record.kind === 'interval'
+          ? record.projectiles.spawn.find((p) => p.id === e.entityId)
+          : undefined);
+      validateDeflection(context, d, maxStep);
+      validateDeflectionActivations(d, events, e.causes);
+      validateDeflectionContact(d, e, events);
+      requireReplay(
+        e.kind === 'projectile-deflect' &&
+          d.eventId === e.id &&
+          d.step === e.step &&
+          d.ownerId === e.actorId &&
+          d.originalOwnerId === e.targetId &&
+          !!e.entityId &&
+          !!before &&
+          !before.deflection &&
+          before.ownerId === d.originalOwnerId &&
+          d.step > before.launchStep,
+        'deflection event identity',
+      );
+      requireReplay(
+        record.kind === 'interval' &&
+          (record.projectiles.update.some(
+            (p) => p.id === e.entityId && p.deflection?.eventId === e.id,
+          ) ||
+            (before!.endStep === record.toStep &&
+              record.projectiles.remove.some(
+                (p) => p.id === e.entityId && p.reason === 'expired',
+              ))),
+        'deflection event transition',
+      );
+    } else requireReplay(e.kind !== 'projectile-deflect', 'missing deflection event');
     if (e.abilityId !== null)
       requireReplay(
         e.actorId === null
           ? context.manifest.revisions.some((r) => r.kind === 'ability' && r.id === e.abilityId)
           : context.actors
-              .find((a) => a.participant.actorId === e.actorId)!
+              .find((a) => a.participant.actorId === (e.sourceActorId ?? e.actorId))!
               .abilities.some((a) => a.id === e.abilityId),
         'event ability reference',
       );
     if (e.stage) {
       const ability = context.actors
-        .find((a) => a.participant.actorId === e.actorId)
+        .find((a) => a.participant.actorId === (e.sourceActorId ?? e.actorId))
         ?.abilities.find((a) => a.id === e.abilityId);
       recordedStage(ability, e.stage);
     }
@@ -68,7 +124,7 @@ export function validateEvents(
     validateRecovery(context, e, events);
     if (e.reaction) {
       const ability = context.actors
-        .find((a) => a.participant.actorId === e.actorId)
+        .find((a) => a.participant.actorId === (e.sourceActorId ?? e.actorId))
         ?.abilities.find((a) => a.id === e.abilityId);
       requireReplay(
         !!ability?.definition.reaction &&

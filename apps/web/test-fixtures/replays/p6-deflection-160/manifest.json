@@ -1,0 +1,448 @@
+{
+  "attemptId": "p6-fixture",
+  "checkpoints": [
+    {
+      "bytes": 177,
+      "checksum": "sha256:4dd9347629a1a317fd44c14aa9815518a1641752bb5fae417c4a75caeb34917a",
+      "file": "checkpoint-00000.json.gz",
+      "index": 0,
+      "nextRecord": 0,
+      "rawBytes": 203,
+      "step": 0
+    },
+    {
+      "bytes": 616,
+      "checksum": "sha256:0c3b4e2e53e696597ce6a3ec7fd1f3e2da43637cf942cb5f97ae44d142ab6805",
+      "file": "checkpoint-00001.json.gz",
+      "index": 1,
+      "nextRecord": 91,
+      "rawBytes": 1725,
+      "step": 90
+    }
+  ],
+  "chunks": [
+    {
+      "bytes": 5563,
+      "checkpoint": 0,
+      "checksum": "sha256:e50458bf964e45e01ce5279a058730fd10491c45dfaac924e97fbb4d3f33b55d",
+      "file": "chunk-00000.ndjson.gz",
+      "firstRecord": 0,
+      "fromStep": 0,
+      "index": 0,
+      "rawBytes": 131495,
+      "records": 91,
+      "toStep": 90
+    },
+    {
+      "bytes": 2733,
+      "checkpoint": 1,
+      "checksum": "sha256:cd21756200394df092aa4b051d082297edad2cba8472f0a55112b8907c82b2a9",
+      "file": "chunk-00001.ndjson.gz",
+      "firstRecord": 91,
+      "fromStep": 90,
+      "index": 1,
+      "rawBytes": 91499,
+      "records": 71,
+      "toStep": 160
+    }
+  ],
+  "end": {
+    "kind": "result",
+    "result": {
+      "eventHash": "sha256:a95e3a504d455eafc3e78366f238aa7a1dc9c5009e43b160ac6fd6675c2eb73e",
+      "outcome": { "kind": "draw", "reason": "time-limit" },
+      "physicsStateHash": "sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976",
+      "schemaVersion": 1,
+      "simulationHash": "sha256:908ee18ef0bee410888b0ab976836bc76fc70f0e119e4f1e916f9a4c0787dab5",
+      "stats": {
+        "candidates": 12,
+        "casts": 1052,
+        "events": 80,
+        "logBytes": 222994,
+        "pathNodes": 0,
+        "peakProjectiles": 1,
+        "reactionAttempts": 1
+      },
+      "steps": 160,
+      "trajectoryHash": "sha256:0a2a6b104d47b7cf3733655883bbd19c7e65f9989766fa5fdc81bf9a82c202b9",
+      "tsStateHash": "sha256:754b635d61af8b48e7d26c0a0f3c55cd1c94e5b55cab1fb3b02f5382c51b717a"
+    }
+  },
+  "eventHash": "sha256:a95e3a504d455eafc3e78366f238aa7a1dc9c5009e43b160ac6fd6675c2eb73e",
+  "id": "p6-deflection-160",
+  "input": {
+    "aiProfile": "observed-utility-v1",
+    "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
+    "engineVersion": "spatial-v1.21",
+    "eventSchemaVersion": 1,
+    "implementationDigest": "sha256:f57c23160950fe32400feb92d24416851068642648c1f3896da956193a95ecfc",
+    "participants": [
+      {
+        "actorId": "left",
+        "character": {
+          "contentHash": "sha256:a7fda55fe6c68d919e42352fbc582cbf032e934ea6882de6a95d1afd42b7eed0",
+          "id": "mirror-shooter-v1",
+          "revision": 1
+        },
+        "facing": { "x": 1, "y": 0, "z": 0 },
+        "position": { "x": -6000, "y": 902, "z": 0 },
+        "rngSeed": 2654435731,
+        "rngStream": 0
+      },
+      {
+        "actorId": "right",
+        "character": {
+          "contentHash": "sha256:fb7acf2383db932ab553e2c8a587844d861e4d14f7ddd33ae141d3afd9796101",
+          "id": "mirror-guard-v1",
+          "revision": 1
+        },
+        "facing": { "x": -1, "y": 0, "z": 0 },
+        "position": { "x": 6000, "y": 902, "z": 0 },
+        "rngSeed": 1013904216,
+        "rngStream": 1
+      }
+    ],
+    "physicsProfile": {
+      "actorCollision": "binary64-analytic-upright-capsule-sweep-v1",
+      "aiMs": 100,
+      "axis": "right-handed-Y-up",
+      "contactTimeEpsilon": 0.000001,
+      "creationOrder": "ascending-ASCII-id",
+      "floatEncoding": "IEEE754-binary64-big-endian-hex-negative-zero-normalized",
+      "gravityMmPerSecond2": -9807,
+      "id": "spatial-v1",
+      "inputUnits": "integer-mm-ms",
+      "maxMoveSegments": 8,
+      "maxSteps": 6000,
+      "physicsConversion": "TS-binary64-metres-to-Rapier-binary32-at-each-WASM-call",
+      "rapier": "0.20.0",
+      "simultaneousObstacleContact": "wall-first-within-epsilon",
+      "skinMm": 2,
+      "stepMs": 20,
+      "trigonometry": "quarter-sine-1-degree-linear-1e9-v1"
+    },
+    "physicsProfileHash": "sha256:fec78a239c989b1345919bad1e4188561054dffae03303ac338d739c3e40df98",
+    "prng": "xorshift32-v1",
+    "replaySchemaVersion": 1,
+    "revisions": [
+      {
+        "contentHash": "sha256:2a171a210f4c2e80fb6bc3139dd6796693b07adb6bf89f6b936c6fdff3471307",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": {
+            "explosionRadiusMm": 0,
+            "gravityScaleBps": 0,
+            "homingTurnMilliDegreesPerSecond": 0,
+            "kind": "projectile",
+            "lifetimeSteps": 100,
+            "maxHitsPerTarget": 1,
+            "observation": "launch-only",
+            "radiusMm": 80,
+            "speedMmPerSecond": 100000
+          },
+          "castSteps": 0,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 0,
+          "costs": { "hp": 0, "mp": 0, "uses": 1 },
+          "effects": [
+            {
+              "amount": 20,
+              "attackScaleBps": 0,
+              "defense": "none",
+              "element": "physical",
+              "kind": "damage"
+            }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "跳ね返し検証用の弾",
+          "originalText": "一定速の飛翔体を一発だけ放つ。",
+          "rangeMm": 30000,
+          "recoverySteps": 30,
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "deflection-probe-bolt-v1",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:05e56186c80adbbd59ff592ea1fbab6ad5fa35115e2f3f770aabb0c05227151f",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": { "kind": "direct" },
+          "castSteps": 0,
+          "categories": ["technique"],
+          "condition": { "kind": "always" },
+          "cooldownSteps": 60,
+          "costs": { "hp": 0, "mp": 5, "uses": 3 },
+          "effects": [],
+          "movementWhileCasting": "allow",
+          "name": "飛翔体の跳ね返し",
+          "originalText": "観測した攻撃者へ飛翔体を一度だけ跳ね返す。",
+          "rangeMm": 0,
+          "reaction": { "response": { "kind": "deflect" } },
+          "recoverySteps": 10,
+          "target": "self",
+          "trigger": "before-hit"
+        },
+        "id": "projectile-deflection-v1",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:fb7acf2383db932ab553e2c8a587844d861e4d14f7ddd33ae141d3afd9796101",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:05e56186c80adbbd59ff592ea1fbab6ad5fa35115e2f3f770aabb0c05227151f",
+              "id": "projectile-deflection-v1",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "跳ね返しの守り手",
+          "originalText": "P6-01 検証サンプル",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:d48bfc6217eede89c168a8cca3db8a354e424cdc5182e3a23e6c16675a7c0484",
+            "id": "mirror-guard-v1-policy",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 80,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "mirror-guard-v1",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:a7fda55fe6c68d919e42352fbc582cbf032e934ea6882de6a95d1afd42b7eed0",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:2a171a210f4c2e80fb6bc3139dd6796693b07adb6bf89f6b936c6fdff3471307",
+              "id": "deflection-probe-bolt-v1",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "跳ね返し検証の射手",
+          "originalText": "P6-01 検証サンプル",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:57fb7b67c72f3d1e93bd55b1135deffb4fa84f588cdd75454089ea9245b7892d",
+            "id": "mirror-shooter-v1-policy",
+            "revision": 1
+          },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 80,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "mirror-shooter-v1",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:d48bfc6217eede89c168a8cca3db8a354e424cdc5182e3a23e6c16675a7c0484",
+        "definition": {
+          "flightAltitudeMm": 6000,
+          "jumpWhenBlocked": false,
+          "movement": "hold",
+          "name": "mirror-guard-v1",
+          "originalText": "条件を満たす優先行動と、観測に基づく移動",
+          "preferredDistanceMm": 9000,
+          "priorities": []
+        },
+        "id": "mirror-guard-v1-policy",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:57fb7b67c72f3d1e93bd55b1135deffb4fa84f588cdd75454089ea9245b7892d",
+        "definition": {
+          "flightAltitudeMm": 6000,
+          "jumpWhenBlocked": false,
+          "movement": "hold",
+          "name": "mirror-shooter-v1",
+          "originalText": "条件を満たす優先行動と、観測に基づく移動",
+          "preferredDistanceMm": 9000,
+          "priorities": [{ "abilityId": "deflection-probe-bolt-v1", "when": { "kind": "always" } }]
+        },
+        "id": "mirror-shooter-v1-policy",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:d57ae94e3056a328077d3a62b4a70458c55665510fbe064144925aa709f3ae36",
+        "definition": {
+          "ai": {
+            "actionWeight": 100,
+            "appearancePriors": {
+              "cues": [
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "fire" }],
+                  "match": { "surface": "red" }
+                },
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "ice" }],
+                  "match": { "surface": "blue" }
+                }
+              ],
+              "defaultEfficacyBps": 7500
+            },
+            "damageQuantum": 10,
+            "dodgeWeight": 600,
+            "explorationWeight": 60,
+            "healthPrior": 200,
+            "horizonSteps": 50,
+            "initialKnowledge": "empty-match-v1",
+            "killWeight": 2400,
+            "knowledgeTtlSteps": 500,
+            "memorySamples": 32,
+            "observation": "visible-coarse-v1",
+            "profile": "observed-utility-v1",
+            "random": "actor-purpose-rejection-v1",
+            "riskWeight": 800,
+            "slots": "simultaneous-v1"
+          },
+          "aoeOcclusion": "five-samples-equal-linear-v1",
+          "bodyContact": "symmetric-stop",
+          "curveErrorMm": 1,
+          "fallDamagePerMeterPerSecond": 5,
+          "fallSafeSpeedMmPerSecond": 8000,
+          "gravityMmPerSecond2": -9807,
+          "maxSteps": 160,
+          "name": "標準3D・飛翔体の跳ね返し",
+          "rulesVersion": "spatial-v1.21",
+          "simultaneousConflict": "unresolved",
+          "stepMs": 20
+        },
+        "id": "standard-deflection-v1",
+        "kind": "ruleset",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+        "definition": {
+          "bounds": {
+            "max": { "x": 50000, "y": 50000, "z": 50000 },
+            "min": { "x": -50000, "y": -1000, "z": -50000 }
+          },
+          "name": "平地",
+          "navigation": { "edges": [], "nodes": [], "version": "support-graph-v1" },
+          "obstacles": [
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": 0, "y": -500, "z": 0 },
+              "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+              "id": "floor",
+              "kind": "box",
+              "slopeMilliDegrees": 0,
+              "yawMilliDegrees": 0
+            }
+          ],
+          "terrainKnowledge": "surveyed"
+        },
+        "id": "flat-surveyed-v1",
+        "kind": "scenario",
+        "revision": 1,
+        "schemaVersion": 1
+      }
+    ],
+    "ruleset": {
+      "contentHash": "sha256:d57ae94e3056a328077d3a62b4a70458c55665510fbe064144925aa709f3ae36",
+      "id": "standard-deflection-v1",
+      "revision": 1
+    },
+    "scenario": {
+      "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+      "id": "flat-surveyed-v1",
+      "revision": 1
+    },
+    "schemaVersion": 3,
+    "seed": 42,
+    "seedDerivation": "actor-stream-v1",
+    "wasmHash": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4"
+  },
+  "lastVerifiedStep": 160,
+  "profile": {
+    "codec": "gzip",
+    "id": "display-ndjson-gzip-v1",
+    "interpolation": "recorded-piecewise-linear",
+    "maxCheckpointSteps": 250,
+    "maxRawBytes": 256032768,
+    "maxStoredBytes": 16777216,
+    "stepMs": 20,
+    "targetChunkBytes": 131072,
+    "units": "metres-binary64"
+  },
+  "records": 162,
+  "resultId": "p6-deflection-result",
+  "schemaVersion": 1,
+  "simulationHash": "sha256:908ee18ef0bee410888b0ab976836bc76fc70f0e119e4f1e916f9a4c0787dab5",
+  "trajectoryHash": "sha256:0a2a6b104d47b7cf3733655883bbd19c7e65f9989766fa5fdc81bf9a82c202b9"
+}

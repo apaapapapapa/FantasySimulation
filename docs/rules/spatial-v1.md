@@ -25,7 +25,7 @@ Bounded acyclic exact revision closure character->abilities/equipment/policy,
 equipment->abilities,apply-status/transform->statuses. Unknown variants fail. Action/startup
 (self/cast0); direct self only, hostile effects require contact. Terrain box(yaw/slope)/pillar
 has independent movement/vision/attack masks; height-aware navigation validates body clearance.
-P6 future payloads stay rejected.
+Projectile deflection follows [reactions](reactions.md); unimplemented P6 payloads stay rejected.
 
 ## revisionとhash
 

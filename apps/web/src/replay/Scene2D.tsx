@@ -73,7 +73,7 @@ export function Scene2D({
           cx={p.position[0]}
           cy={p.position[2]}
           r={p.radius}
-          fill="#f0bd67"
+          fill={p.colour}
           stroke={overlays.collision ? '#e5f3ff' : 'none'}
           strokeWidth={0.05}
         />

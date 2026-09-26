@@ -6,7 +6,12 @@ import {
   type Definition,
   type Manifest,
 } from '@fantasy/domain/spatial';
-import { projectileCurve, explosionCoverage, type ProjectileState } from './rules/projectiles.ts';
+import {
+  projectileCurve,
+  projectileVelocityAt,
+  explosionCoverage,
+  type ProjectileState,
+} from './rules/projectiles.ts';
 import { at, initializePhysics, SpatialWorld, straight } from './world/physics.ts';
 import { traceAttack } from './rules/attacks.ts';
 import { emptyMemory, perceive } from './ai/perception.ts';
@@ -133,6 +138,10 @@ describe('projectiles, curved sweeps and explosions', () => {
       const t = (piece.from + piece.to) / 2;
       const exact = value.position.y - 45 * (0.02 * t) ** 2;
       expect(Math.abs(at(curve.trace, t).y - exact)).toBeLessThanOrEqual(0.001);
+      const velocity = projectileVelocityAt(curve, t);
+      expect(velocity.x).toBe(1000);
+      expect(velocity.y).toBeCloseTo(-90 * 0.02 * t, 10);
+      expect(velocity.z).toBe(0);
     }
     expect(() =>
       projectileCurve(value, emptyMemory(), rules, { ...DEFAULT_BUDGET, maxCurveSegments: 2 }),
@@ -175,6 +184,15 @@ describe('projectiles, curved sweeps and explosions', () => {
       DEFAULT_BUDGET,
     );
     expect(visible.next.velocity.z).toBeGreaterThan(0);
+    for (const piece of visible.trace)
+      for (const fraction of [0.25, 0.5, 0.75]) {
+        const velocity = projectileVelocityAt(
+          visible,
+          piece.from + (piece.to - piece.from) * fraction,
+        );
+        expect(Math.hypot(velocity.x, velocity.y, velocity.z)).toBeCloseTo(10, 10);
+      }
+    expect(projectileVelocityAt(visible, 1)).toEqual(visible.next.velocity);
     expect(dot(unit(value.velocity), unit(visible.next.velocity))).toBeGreaterThanOrEqual(
       cosDegrees(14.4) - 0.0001,
     );

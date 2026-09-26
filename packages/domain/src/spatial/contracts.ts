@@ -6,7 +6,7 @@ export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 export const MAX_BATTLE_STEPS = 6_000;
 export const MAX_FRAME_BYTES = 4_000_000;
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.20' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.21' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -158,7 +158,7 @@ export const ObservedPhaseSchema = z.enum(['idle', 'cast', 'active', 'recovery']
 export const ReactionPointSchema = z.enum(['before-hit', 'after-damage', 'before-defeat']);
 export const ObservedReactionSchema = z.strictObject({
   point: ReactionPointSchema,
-  response: z.enum(['parry', 'effects', 'counter']),
+  response: z.enum(['parry', 'effects', 'counter', 'deflect']),
 });
 export type ObservedReaction = z.infer<typeof ObservedReactionSchema>;
 export const ObservedStageSchema = z.strictObject({
@@ -528,6 +528,7 @@ export const ReactionSchema = z.strictObject({
     z.strictObject({ kind: z.literal('parry'), scope: z.enum(['all', 'damage']) }),
     z.strictObject({ kind: z.literal('effects') }),
     z.strictObject({ kind: z.literal('counter') }),
+    z.strictObject({ kind: z.literal('deflect'), powerBps: uint(30000).optional() }),
   ]),
   categories: categoryList(AbilityCategorySchema).optional(),
   elements: categoryList(ElementSchema).optional(),
@@ -563,8 +564,8 @@ export const AbilitySchema = z
     const response = reaction?.response;
     if (reactive !== !!reaction)
       ctx.addIssue({ code: 'custom', message: 'Reaction triggers require an explicit response' });
-    if (!ability.effects.length && response?.kind !== 'parry')
-      ctx.addIssue({ code: 'custom', message: 'Only parry may omit payload effects' });
+    if (!ability.effects.length && response?.kind !== 'parry' && response?.kind !== 'deflect')
+      ctx.addIssue({ code: 'custom', message: 'Only parry/deflect may omit payload effects' });
     if (reaction) {
       if (ability.castSteps !== 0 || ability.stages)
         ctx.addIssue({
@@ -588,12 +589,12 @@ export const AbilitySchema = z
             message: 'Defensive reactions require direct self targeting',
           });
         if (
-          response?.kind === 'parry' &&
+          (response?.kind === 'parry' || response?.kind === 'deflect') &&
           (ability.trigger !== 'before-hit' || ability.effects.length)
         )
           ctx.addIssue({
             code: 'custom',
-            message: 'Parry is a before-hit reducer without a payload',
+            message: 'Parry/deflect is a before-hit reducer without a payload',
           });
         if (
           ability.effects.some(
