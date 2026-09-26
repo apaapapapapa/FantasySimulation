@@ -336,10 +336,10 @@
       }
     },
     "latestVerification": {
-      "sourceSha": "a7b86698f3aad83778243acffe34c92b6cbaf999",
-      "mainCiRunId": 36219535434,
-      "artifactId": 10899350360,
-      "archiveDigest": "sha256:71651e7f502ce5e81398fa693d944eb89abf0f540bcf3d27e54f9123b7951b12",
+      "sourceSha": "7d2a3368f61ab81590bd31c6ce15ba339a7fbbf4",
+      "mainCiRunId": 36223668995,
+      "artifactId": 10899698284,
+      "archiveDigest": "sha256:4a71ff06d77353520a4891d506d58d6138bc71e37955c60794b6e38c53901c4d",
       "leagueCasesPassed": 6,
       "staticCasesPassed": 46,
       "flaky": 0,
@@ -530,7 +530,148 @@
     "originalAttempt": 1,
     "pullRequest": 161,
     "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36219874846",
+    "status": "failure",
+    "note": "Original simulation source, reservations and artifact checksums are preserved. Recovery runs no battle and uses new durable transport leases.",
+    "failure": {
+      "code": "ETIMEDOUT",
+      "signal": "SIGTERM",
+      "startedAt": "2026-09-26T05:08:20Z",
+      "completedAt": "2026-09-26T06:08:26Z",
+      "elapsedMs": 3606000,
+      "publicationStep": "skipped",
+      "note": "Artifact download and full finalization share the 60-minute child-process timeout. No R2 publication or new simulation occurred."
+    },
+    "measurementsArtifact": {
+      "id": 10899681737,
+      "archiveDigest": "sha256:72445e349693d90f799671b6bd9e7d3c8bcb1533940d6fd078cc2c4b5f230dec"
+    }
+  },
+  "cloudBeforeSecondRecovery": {
+    "schemaVersion": 1,
+    "observedAt": "2026-09-26T06:27:59.551Z",
+    "kind": "cloudflare-post-league-analytics",
+    "notice": "Adaptive analytics may lag and is not a billing invoice. Account totals include other workloads; deltas are not solely attributable to this run.",
+    "r2AccountOperationsMonthToDate": [
+      {
+        "dimensions": {
+          "actionType": "ListBuckets"
+        },
+        "sum": {
+          "requests": 47
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutObject"
+        },
+        "sum": {
+          "requests": 1835
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutBucket"
+        },
+        "sum": {
+          "requests": 2
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "PutBucketLifecycleConfiguration"
+        },
+        "sum": {
+          "requests": 541
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "ListMultipartUploads"
+        },
+        "sum": {
+          "requests": 10
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "GetObject"
+        },
+        "sum": {
+          "requests": 9678
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "HeadObject"
+        },
+        "sum": {
+          "requests": 300
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "GetBucketLifecycleConfiguration"
+        },
+        "sum": {
+          "requests": 1108
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "HeadBucket"
+        },
+        "sum": {
+          "requests": 989
+        }
+      },
+      {
+        "dimensions": {
+          "actionType": "ListObjects"
+        },
+        "sum": {
+          "requests": 45
+        }
+      }
+    ],
+    "r2ClassAMonthToDate": 2480,
+    "r2ClassBMonthToDate": 12075,
+    "unclassifiedOperations": [],
+    "r2AccountStorageDayMaxima": {
+      "payloadBytes": 256108867,
+      "metadataBytes": 307350
+    },
+    "r2TargetStorage": {
+      "metadataSize": 10031,
+      "objectCount": 105,
+      "payloadSize": 3159770
+    },
+    "workersAccountDay": {
+      "requests": 204,
+      "errors": 0
+    },
+    "workersReaderDay": {
+      "errors": 0,
+      "requests": 66
+    }
+  },
+  "observedAt": "2026-09-26T06:33:07.538896+00:00",
+  "recoveryRetry": {
+    "runId": 36223982956,
+    "attempt": 1,
+    "sourceSha": "7d2a3368f61ab81590bd31c6ce15ba339a7fbbf4",
+    "mainCiRunId": 36223668995,
+    "originalRunId": 36212301947,
+    "originalAttempt": 1,
+    "pullRequest": 162,
+    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36223982956",
+    "createdAt": "2026-09-26T06:30:55Z",
+    "validationStartedAt": "2026-09-26T06:31:26Z",
     "status": "running",
-    "note": "Original simulation source, reservations and artifact checksums are preserved. Recovery runs no battle and uses new durable transport leases."
+    "limits": {
+      "validationMinutes": 90,
+      "jobMinutes": 180,
+      "s3Minutes": 60
+    },
+    "note": "Reviewed timeout policy; original artifacts, source/execution and catalog equality remain mandatory. No new battle, reservation or refund."
   }
 }

@@ -3,7 +3,16 @@ import {
   leagueArtifact,
   leagueRecoverySource,
   assertRecoveryCatalog,
+  leagueArtifactTimeout,
 } from './league-artifact-policy.ts';
+
+it('bounds full recovery separately without extending artifact transfer deadlines', () => {
+  expect(leagueArtifactTimeout('recover')).toBe(5_400_000);
+  for (const operation of ['prepare', 'input', 'result', 'aggregate'])
+    expect(leagueArtifactTimeout(operation)).toBe(3_600_000);
+  for (const operation of [undefined, null, 5400000, '', 'Recover', 'run', 'publish'])
+    expect(() => leagueArtifactTimeout(operation)).toThrow('Unknown');
+});
 
 it('blocks recovery when the newly validated catalog differs from original completion evidence', () => {
   const hash = 'sha256:' + 'a'.repeat(64);
