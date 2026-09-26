@@ -58,7 +58,8 @@ afterEach(() => {
 });
 
 async function invoke(root: string, command: string) {
-  if (command === 'prepare') await writeFile(join(root, 'probe.json'), '{}');
+  if (command === 'prepare' || command === 'restore')
+    await writeFile(join(root, 'probe.json'), '{}');
   vi.stubEnv('GITHUB_STEP_SUMMARY', join(root, 'summary.md'));
   vi.stubEnv('GITHUB_OUTPUT', join(root, 'output.txt'));
   process.argv = ['node', 'league-cloud.ts', command, root, 'data/leagues/official-20-v1.json'];

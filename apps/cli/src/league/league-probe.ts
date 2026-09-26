@@ -195,7 +195,10 @@ export async function probeLeague(
 /** Bind the key-free probe to the exact source, definition and restored catalog before reserving. */
 export function requireLeagueProbeBinding(
   input: unknown,
-  current: Awaited<ReturnType<typeof probeLeague>>,
+  current: Pick<
+    Awaited<ReturnType<typeof probeLeague>>,
+    'sourceSha' | 'definitionHash' | 'catalogHash'
+  >,
 ) {
   if (
     !input ||
@@ -215,4 +218,46 @@ export function requireLeagueProbeBinding(
       'IDENTITY_MISMATCH',
       'League probe changed; run a new estimate before admission',
     );
+}
+
+/** Check authoritative R2 metadata before any durable usage reservation. */
+export async function requireLeagueRestoreBinding(
+  input: unknown,
+  definition: unknown,
+  sourceSha: string,
+  read: PublicationRead,
+) {
+  let pointer: ReturnType<typeof PublicCatalogCurrentSchema.parse> | null = null;
+  const json = async (key: string, limit: number) => {
+    const data = await read(key, limit);
+    if (data.length > limit)
+      throw new OperationError('DATA_INVALID', 'League restore metadata size');
+    return {
+      data,
+      value: operationInput(
+        () => JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data)),
+        'DATA_INVALID',
+      ),
+    };
+  };
+  try {
+    const { value } = await json('catalog/current.json', 4000000);
+    pointer = operationInput(() => PublicCatalogCurrentSchema.parse(value), 'DATA_INVALID');
+  } catch (error) {
+    if (!(error instanceof PublicReadFailure) || error.status !== 404) throw error;
+  }
+  requireLeagueProbeBinding(input, {
+    sourceSha,
+    definitionHash: await contentHash(await normalizeStoredLeagueDefinition(definition)),
+    catalogHash: pointer?.catalogHash ?? null,
+  });
+  if (pointer) {
+    const { data, value } = await json(
+      `catalog/${pointer.catalogHash.slice(7)}.json`,
+      pointer.bytes,
+    );
+    if (data.length !== pointer.bytes || sha256(data) !== pointer.catalogHash)
+      throw new OperationError('DATA_INVALID', 'League restore catalog checksum');
+    operationInput(() => PublicCatalogSchema.parse(value), 'DATA_INVALID');
+  }
 }

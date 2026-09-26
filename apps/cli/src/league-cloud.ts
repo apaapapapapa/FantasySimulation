@@ -129,6 +129,9 @@ async function main() {
             worker: publicHttp(required('PUBLICATION_WORKER_URL'), 7200000),
             ancestor: (data, deployed) => ancestorOf(data, deployed, repository),
           },
+      command === 'restore'
+        ? { probe: await cloudJson(join(root, 'probe.json')), definition: await definition() }
+        : undefined,
     );
     if (command === 'restore') await writeCloudJson(join(root, 'inventory.json'), inventory);
   }

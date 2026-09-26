@@ -107,11 +107,12 @@ jobs:
           path: apps/cli/.generated/league
       - name: Reserve request budget and restore verified retained data
         env:
+          DEFINITION: ${{ inputs.definition || env.OFFICIAL_LEAGUE_DEFINITION }}
           R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
           R2_BUCKET: fantasysimulation-replays
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: node --import tsx src/league-cloud.ts restore .generated/league
+        run: node --import tsx src/league-cloud.ts restore .generated/league "$DEFINITION"
       - name: Prepare bounded reservations without credentials
         env:
           DEFINITION: ${{ inputs.definition || env.OFFICIAL_LEAGUE_DEFINITION }}
