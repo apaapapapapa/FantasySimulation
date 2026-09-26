@@ -1,3 +1,4 @@
+import type { ProjectileContacts } from './projectile-deflection.ts';
 import type { ActorState } from '../state.ts';
 import type { BattleEvent } from '@fantasy/domain/spatial/execution';
 import {
@@ -55,6 +56,7 @@ export function commitReactiveEffects(
   effects: PendingEffect[],
   context: EffectContext,
   work: ReactionWork,
+  projectileContacts?: ProjectileContacts,
 ) {
   const { journal, step, activationStep, phase, budget } = context;
   if (!actors.some((a) => a.body.motion.actor.abilities.some((b) => b.definition.reaction))) {
@@ -83,7 +85,9 @@ export function commitReactiveEffects(
     return result;
   };
 
-  const before = activateReactions(actors, effects, 'before-hit', 0, admission);
+  const incoming = projectileContacts?.plan(effects, actors, context) ?? effects;
+  const before = activateReactions(actors, incoming, 'before-hit', 0, admission);
+  if (projectileContacts) effects = [...effects, ...projectileContacts.finish(before)];
   const primary = wave(beforeHitApplications(actors, effects, before, step));
   const positive = positiveDamageApplications(primary);
   const after = activateReactions(actors, positive, 'after-damage', 0, admission);

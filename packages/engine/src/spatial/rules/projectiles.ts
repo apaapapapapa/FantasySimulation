@@ -5,6 +5,7 @@ import type {
   DeepReadonly,
   Definition,
   ProjectileDisplay,
+  ProjectileDeflection,
   Stage,
   StageContact,
 } from '@fantasy/domain/spatial/execution';
@@ -21,6 +22,7 @@ export type ProjectileState = DamageSnapshot & {
   position: Vec3;
   velocity: Vec3;
   target: Vec3 | null;
+  deflection?: ProjectileDeflection;
   stage?: StageContact;
   hit?: DeepReadonly<Stage['hit']>;
 };
@@ -40,6 +42,7 @@ export function displayProjectile(p: ProjectileState): ProjectileDisplay {
     radiusMm: shape.radiusMm,
     launchStep: p.launchStep,
     endStep: p.launchStep + shape.lifetimeSteps,
+    ...(p.deflection ? { deflection: p.deflection } : {}),
     ...(p.stage ? { stage: p.stage } : {}),
   };
 }
@@ -53,8 +56,11 @@ export function projectileCurve(
   const shape = shapeOf(p),
     dt = 0.02,
     gravity = ((rules.gravityMmPerSecond2 / 1000) * shape.gravityScaleBps) / 10000;
-  const target =
-    shape.observation === 'launch-only' ? p.target : (memory.observation?.enemy?.position ?? null);
+  const target = p.deflection
+    ? null
+    : shape.observation === 'launch-only'
+      ? p.target
+      : (memory.observation?.enemy?.position ?? null);
   const angularSpeed = target
     ? ((shape.homingTurnMilliDegreesPerSecond / 1000) * Math.PI) / 180
     : 0;
@@ -67,6 +73,7 @@ export function projectileCurve(
   if (pieces > budget.maxCurveSegments) throw new SpatialBudgetError('curve-segments');
   const seconds = dt / pieces,
     trace: Trace = [];
+  const velocities: { from: number; to: number; start: Vec3; end: Vec3 }[] = [];
   let position = { ...p.position },
     velocity = { ...p.velocity };
   for (let i = 0; i < pieces; i++) {
@@ -84,9 +91,15 @@ export function projectileCurve(
     });
     trace.push({ start: position, end, from: i / pieces, to: (i + 1) / pieces });
     position = end;
-    velocity = add(turned, { x: 0, y: gravity * seconds, z: 0 });
+    const nextVelocity = add(turned, { x: 0, y: gravity * seconds, z: 0 });
+    velocities.push({ from: i / pieces, to: (i + 1) / pieces, start: velocity, end: nextVelocity });
+    velocity = nextVelocity;
   }
-  return { trace, next: { ...p, position, velocity, target: target ? { ...target } : null } };
+  return {
+    trace,
+    next: { ...p, position, velocity, target: target ? { ...target } : null },
+    velocities,
+  };
 }
 /** Exact sphere/capsule intersection, then five equal-weight visible samples with linear falloff. */
 export function explosionCoverage(
@@ -121,4 +134,23 @@ export function explosionCoverage(
     if (amount > 0 && !world.occluded(origin, point, 'attack')) coverage += amount;
   }
   return Math.max(0, Math.min(10000, Math.floor(coverage * 2000)));
+}
+
+export function projectileVelocityAt(curve: ReturnType<typeof projectileCurve>, time: number) {
+  const sample = curve.velocities.find((v) => time <= v.to)!;
+  return add(
+    sample.start,
+    mul(sub(sample.end, sample.start), (time - sample.from) / (sample.to - sample.from)),
+  );
+}
+
+export function projectileEventSource(p: ProjectileState) {
+  return {
+    entityId: p.id,
+    actorId: p.ownerId,
+    abilityId: p.ability.id,
+    ...(p.deflection
+      ? { sourceActorId: p.deflection.originalOwnerId, sourceProjectileId: p.id }
+      : {}),
+  };
 }

@@ -5,6 +5,7 @@ import {
   closureMechanics,
   EffectSchema,
   contentHash,
+  revisionHash,
   type MechanicId,
 } from '@fantasy/domain/spatial';
 import baseline from '../../fixtures/spatial/interference-baseline.json' with { type: 'json' };
@@ -16,6 +17,7 @@ import {
 } from '../../test-support/interference.ts';
 import { STATUS_CONFLICT_RULES } from '../../test-support/interference-diagnostics.ts';
 import { mechanicEligibility } from './mechanic-policy.ts';
+import { reference } from './prepare.ts';
 import { runBattle } from './run.ts';
 
 function validateCoverage(input: typeof coverage) {
@@ -39,6 +41,7 @@ function validateCoverage(input: typeof coverage) {
   }
   const fixtures = new Set([
     ...baseline.cases.map((c) => c.id),
+    ...deflectionPairs.map(([left, right]) => `${left}/${right}`),
     ...STATUS_CONFLICT_RULES,
     ...interferenceTable.mechanics.filter((m) => !m.implemented).map((m) => `reject.${m.id}`),
   ]);
@@ -107,7 +110,22 @@ it('preserves all 484 pre-P6 ordered-pair outcomes and event trajectory state ph
       const fixture = cases.get(`${left}/${right}`)!;
       expect(fixture, `${left}/${right}`).toBeDefined();
       const manifest = await interferencePairManifest(left, right);
-      const { implementationDigest: _, ...input } = manifest;
+      // Compare the immutable pre-P6 input under its original rules label without
+      // executing that old ruleset. Only the rules label/name/version differs in v1.21.
+      const old = manifest.revisions.find((r) => r.kind === 'ruleset')!;
+      if (old.kind !== 'ruleset') throw new Error('Missing fixture rules');
+      const historical = {
+        ...old,
+        id: 'standard-engagement-v1',
+        definition: { ...old.definition, name: '標準3D', rulesVersion: 'spatial-v1.20' },
+      };
+      historical.contentHash = await revisionHash(historical);
+      const { implementationDigest: _, ...input } = {
+        ...manifest,
+        engineVersion: 'spatial-v1.20',
+        ruleset: reference(historical),
+        revisions: manifest.revisions.map((r) => (r === old ? historical : r)),
+      };
       expect(await contentHash(input), fixture.id).toBe(fixture.inputHash);
       const uses = new Set(closureMechanics(manifest.revisions).map((use) => use.mechanic));
       expect(uses.has(left) && uses.has(right), fixture.id).toBe(true);
@@ -138,5 +156,50 @@ it('rejects every unimplemented or reserved matrix mechanic even with experiment
         owner: { id: owner.id, revision: owner.revision, contentHash: owner.contentHash },
       });
     }
+  }
+});
+
+const deflectionPairs = [
+  ...LEGACY_INTERFERENCE_MECHANICS.flatMap(
+    (other) =>
+      [
+        [other, 'projectile-deflection'],
+        ['projectile-deflection', other],
+      ] as const,
+  ),
+  ['projectile-deflection', 'projectile-deflection'] as const,
+];
+it('executes every standard ordered deflection pair with explicit contact and ownership expectations', async () => {
+  for (const [left, right] of deflectionPairs) {
+    const input = await interferencePairManifest(left, right);
+    const uses = new Set(closureMechanics(input.revisions).map((u) => u.mechanic));
+    expect(uses.has(left) && uses.has(right), `${left}/${right}`).toBe(true);
+    const result = await runBattle(input);
+    const events = result.records.flatMap((r) => ('events' in r ? r.events : []));
+    const deflections = events.filter((e) => e.kind === 'projectile-deflect');
+    const other = left === 'projectile-deflection' ? right : left;
+    const expected = ['contact', 'motion', 'stages', 'silence', 'reveal'].includes(other)
+      ? 0
+      : other === 'projectile-deflection'
+        ? 2
+        : 1;
+    expect(deflections, `${left}/${right}`).toHaveLength(expected);
+    for (const event of deflections) {
+      expect(event.projectileDeflection).toMatchObject({
+        ownerId: event.actorId,
+        originalOwnerId: event.targetId,
+        powerBps: 10000,
+      });
+      expect(
+        events.some(
+          (e) => e.kind === 'hit' && e.entityId === event.entityId && e.step < event.step,
+        ),
+        `${left}/${right}: no replaced impact`,
+      ).toBe(false);
+      expect(
+        events.filter((e) => e.kind === 'projectile-deflect' && e.entityId === event.entityId),
+      ).toHaveLength(1);
+    }
+    expect(result.result.outcome.kind, `${left}/${right}`).toBe('draw');
   }
 });

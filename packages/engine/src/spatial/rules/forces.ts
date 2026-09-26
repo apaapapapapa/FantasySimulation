@@ -33,7 +33,7 @@ export function queueForce(
   effect: Force,
   origin: Vec3,
   position: Vec3,
-  identity: Pick<ForceContribution, 'id' | 'actorId' | 'abilityId' | 'stage'>,
+  identity: Pick<ForceContribution, 'id' | 'actorId' | 'abilityId' | 'stage' | 'sourceActorId'>,
   contactStep: number,
   budget: Budget,
 ): ForceContribution {

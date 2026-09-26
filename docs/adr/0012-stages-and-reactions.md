@@ -14,7 +14,7 @@ interruption; finer timing needs versioning. Caps 64/transaction, 1024/match, de
 cross-interval ancestry; overflow rolls back fully. Existing geometry/record caps remain.
 Replay validates saved display without engine. Future shapes/P6 require their own acceptance.
 
-## P6 hooks (unimplemented)
+## P6 hooks (deflection implemented in P6-01)
 
 [Issue #155](https://github.com/apaapapapapa/FantasySimulation/issues/155), owner decision
 2026-09-26, withdraws numeric damage reflection and its example. Reflection means before-hit

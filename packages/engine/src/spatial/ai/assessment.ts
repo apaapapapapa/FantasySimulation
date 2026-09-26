@@ -233,6 +233,8 @@ function assessSingle(
   for (const effect of effects) {
     if (!stateValue.handled.has(effect)) matchEffect(effect, effectAssessments, undefined);
   }
+  if (d.attack.kind === 'projectile' && shapeEstimate(view, d.attack) < 1)
+    reasons.push('delayed observed projectile deflection; remaining uses and conditions unknown');
   if (totalPower > 0) {
     const expected = totalExpected;
     efficiency = Math.round((totalExpected / totalPower) * 10000);

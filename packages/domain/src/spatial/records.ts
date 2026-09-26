@@ -47,6 +47,7 @@ export const ForceContributionSchema = z
     id: IdSchema,
     actorId: IdSchema.nullable(),
     abilityId: IdSchema.nullable(),
+    sourceActorId: IdSchema.optional(),
     startAt: z.number().int().min(1).max(MAX_BATTLE_STEPS),
     endAt: z.number().int().min(2).max(6100),
     velocityMmPerSecond: z.strictObject({
@@ -65,6 +66,25 @@ export const ReactionContextSchema = z.strictObject({
   depth: z.number().int().min(1).max(8),
 });
 export type ReactionContext = z.infer<typeof ReactionContextSchema>;
+export const ProjectileDeflectionSchema = z.strictObject({
+  eventId: IdSchema,
+  originalOwnerId: IdSchema,
+  ownerId: IdSchema,
+  step,
+  subtimeMicros: z.number().int().min(0).max(1000000),
+  point: PhysicalVectorSchema,
+  position: PhysicalVectorSchema,
+  incomingVelocity: PhysicalVectorSchema,
+  velocity: PhysicalVectorSchema,
+  basis: z.enum(['observed-position', 'reverse-incoming']),
+  observedPosition: PhysicalVectorSchema.optional(),
+  powerBps: z.number().int().min(0).max(30000),
+  activations: z
+    .array(z.strictObject({ abilityId: IdSchema, context: ReactionContextSchema }))
+    .min(1)
+    .max(64),
+});
+export type ProjectileDeflection = z.infer<typeof ProjectileDeflectionSchema>;
 export const EventSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
@@ -87,6 +107,7 @@ export const EventSchema = z
       'fizzle',
       'projectile-spawn',
       'projectile-remove',
+      'projectile-deflect',
       'land',
       'terminal',
       'diagnostic',
@@ -140,6 +161,9 @@ export const EventSchema = z
     force: ForceContributionSchema.optional(),
     reaction: ReactionContextSchema.optional(),
     wave: z.number().int().min(0).max(8).optional(),
+    sourceActorId: IdSchema.optional(),
+    sourceProjectileId: IdSchema.optional(),
+    projectileDeflection: ProjectileDeflectionSchema.optional(),
   })
   .superRefine((event, ctx) => {
     if (event.kind === 'reaction' && (!event.reaction || !event.actorId || !event.abilityId))

@@ -38,6 +38,7 @@ export type EffectApplication = DamageSnapshot & {
   abilityId?: string | null;
   parentEventId?: string | null;
   scaleBps?: number;
+  powerBps?: number;
   dealtBps?: number;
   damageCancelled?: boolean;
 };
@@ -106,7 +107,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
         resistance,
       },
       Number(scale),
-      { dealtBps, receivedBps },
+      { dealtBps, receivedBps, powerBps: application.powerBps ?? 10000 },
     );
     damages.push({
       applicationId: application.id,
@@ -115,6 +116,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       ...(application.damageCancelled ? { afterModifiers: 0n } : {}),
       statusModified:
         !!application.damageCancelled ||
+        (application.powerBps ?? 10000) !== 10000 ||
         dealtBps !== 10000 ||
         receivedBps !== 10000 ||
         resistance !== (target.actor.character.stats.resistances[effect.element] ?? 0),

@@ -44,7 +44,7 @@ and validate this bounded closure. JSON object cycles are rejected before schema
 
 Abilities declare trigger/condition/target/cost/clocks/shape/effects. Triggers: action/battle-start;
 startup requires self/cast0; direct is self-only; enemy effects require melee/hitscan/projectile contact.
-Unknown triggers/effects/code are rejected. Reflection/revival/teleport remain P6.
+Unknown triggers/effects/code are rejected. Projectile deflection follows [reactions](reactions.md); revival/teleport remain P6.
 Terrain: box (yaw/slope) or pillar with independent movement/vision/attack flags.
 Ground/air nodes and walk/jump/fly edges carry elevation/width/headroom; body sweeps validate passage.
 

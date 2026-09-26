@@ -124,6 +124,7 @@ export type PerceptionMemory = DeepReadonly<{
   expired: string[];
   terrain: ObservedSurface[];
   statusChangedAt?: number;
+  deflections?: { targetId: string; sampledAt: number; availableAt: number; expiresAt: number }[];
   threatHistory?: ThreatExperience[];
   search?: SearchMemory;
 }>;

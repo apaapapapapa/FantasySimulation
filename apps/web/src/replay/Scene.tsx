@@ -143,13 +143,22 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
         {model.projectiles.map((p) => (
           <mesh key={p.id} position={p.position}>
             <sphereGeometry args={[p.radius, 12, 8]} />
-            <meshBasicMaterial color="#f0bd67" wireframe={overlays.collision} />
+            <meshBasicMaterial color={p.colour} wireframe={overlays.collision} />
           </mesh>
         ))}
         {model.effects.map((e) => (
           <mesh key={e.id} position={e.position}>
             <sphereGeometry args={[0.18, 8, 6]} />
-            <meshBasicMaterial color={e.kind === 'hit' ? '#ff849e' : '#f7d77f'} wireframe />
+            <meshBasicMaterial
+              color={
+                e.kind === 'projectile-deflect'
+                  ? '#72e0c1'
+                  : e.kind === 'hit'
+                    ? '#ff849e'
+                    : '#f7d77f'
+              }
+              wireframe
+            />
           </mesh>
         ))}
         <SceneOverlays model={model} overlays={overlays} />

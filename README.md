@@ -26,7 +26,7 @@ vp run dev
 `Ctrl+C`で停止します。`vp dev`は画面だけのため、両方の起動には`vp run dev`を使います。
 Nodeは[.node-version](.node-version)、pnpmと依存版は[package.json](package.json)が正本です。
 
-初回起動でDrizzle migrationとサンプル20体を登録します。
+初回起動でDrizzle migrationとサンプル22体を登録します。
 保存先は`data/fantasy.sqlite`と`data/replays`。設定は[.env.example](.env.example)、
 既存DBの移行前は[移行制約](docs/adr/0005-drizzle-kit.md)を確認してください。
 

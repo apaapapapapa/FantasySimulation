@@ -1,4 +1,4 @@
-import type { DamageSnapshot, ActorState, MotionState } from '../state.ts';
+import type { DamageSnapshot, ActorState, MotionState, AbilityRevision } from '../state.ts';
 import type {
   BattleEvent,
   DeepReadonly,
@@ -37,9 +37,16 @@ export type PendingEffect = DamageSnapshot & {
   abilityId: string | null;
   causes?: readonly string[];
   scaleBps?: number;
+  powerBps?: number;
   stage?: StageContact;
   reaction?: ReactionContext;
   damageCancelled?: boolean;
+  sourceAbility?: AbilityRevision;
+  sourceActorId?: string;
+  sourceProjectileId?: string;
+  ancestry?: ReactionContext;
+  projectileContact?: { id: string; direct: boolean; reflected: boolean };
+
   observation?: { self: MotionState; target: MotionState };
   incomingDirection?: Vec3;
 };
@@ -80,6 +87,9 @@ export function commitEffects(
       actorId: effect.actorId,
       targetId: effect.targetId,
       abilityId: effect.abilityId,
+      ...(effect.sourceActorId
+        ? { sourceActorId: effect.sourceActorId, sourceProjectileId: effect.sourceProjectileId! }
+        : {}),
       parentEventId: effect.parentEventId,
       causes: [...(effect.causes ?? [])],
       reason: effect.effect.kind,
@@ -174,6 +184,7 @@ export function commitEffects(
             id: app.id,
             actorId: app.actorId,
             abilityId: app.abilityId,
+            ...(app.sourceActorId ? { sourceActorId: app.sourceActorId } : {}),
             ...(app.stage ? { stage: app.stage } : {}),
           },
           step,

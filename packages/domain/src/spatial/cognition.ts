@@ -120,7 +120,7 @@ export type CandidateAssessment = z.infer<typeof CandidateAssessmentSchema>;
 export const ReactionEstimateSchema = z.strictObject({
   abilityId: IdSchema,
   point: ReactionPointSchema,
-  response: z.enum(['parry', 'effects', 'counter']),
+  response: z.enum(['parry', 'effects', 'counter', 'deflect']),
   readyAt: quantity,
   remainingUses: quantity.nullable(),
   eligible: z.boolean(),
@@ -146,6 +146,12 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
     perspective: z.literal('subjective'),
     learned: z.array(ExperienceSchema).max(32),
     expired: z.array(IdSchema).max(32),
+    deflections: z
+      .array(
+        z.strictObject({ targetId: IdSchema, sampledAt: tick, availableAt: tick, expiresAt: tick }),
+      )
+      .max(2)
+      .optional(),
     statusObservation: z
       .strictObject({
         targetId: IdSchema,

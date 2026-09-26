@@ -13,7 +13,15 @@ import { dot, length, mul, sub } from '../math.ts';
 const shapeHandlers: AttackHandlers<DecisionView, number> = {
   direct: () => 1,
   hitscan: () => 1,
-  projectile: () => 1,
+  projectile: (_shape, view) =>
+    view.memory.deflections?.some(
+      (d) =>
+        d.targetId === (view.memory.observation?.enemy ?? view.memory.lastSeen)?.id &&
+        d.availableAt <= view.step &&
+        d.expiresAt > view.step,
+    )
+      ? 0.5
+      : 1,
   melee: () => 1,
   arc: (shape, view) => bladeEstimate(view, shape),
   radial: (shape, view) => bladeEstimate(view, shape),

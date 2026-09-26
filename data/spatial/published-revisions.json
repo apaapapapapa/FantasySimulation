@@ -596,6 +596,60 @@
       "id": "experimental-p6-foundation-v1",
       "revision": 1,
       "contentHash": "sha256:4b644629aa0d1b662cb32c4f6be7ce7d0e3abffc7a455cedeca2a6395fc4029d"
+    },
+    {
+      "kind": "ability",
+      "id": "deflection-probe-bolt-v1",
+      "revision": 1,
+      "contentHash": "sha256:2a171a210f4c2e80fb6bc3139dd6796693b07adb6bf89f6b936c6fdff3471307"
+    },
+    {
+      "kind": "ability",
+      "id": "projectile-deflection-v1",
+      "revision": 1,
+      "contentHash": "sha256:05e56186c80adbbd59ff592ea1fbab6ad5fa35115e2f3f770aabb0c05227151f"
+    },
+    {
+      "kind": "character",
+      "id": "mirror-guard-v1",
+      "revision": 1,
+      "contentHash": "sha256:fb7acf2383db932ab553e2c8a587844d861e4d14f7ddd33ae141d3afd9796101"
+    },
+    {
+      "kind": "character",
+      "id": "mirror-shooter-v1",
+      "revision": 1,
+      "contentHash": "sha256:a7fda55fe6c68d919e42352fbc582cbf032e934ea6882de6a95d1afd42b7eed0"
+    },
+    {
+      "kind": "policy",
+      "id": "mirror-guard-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:d48bfc6217eede89c168a8cca3db8a354e424cdc5182e3a23e6c16675a7c0484"
+    },
+    {
+      "kind": "policy",
+      "id": "mirror-shooter-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:57fb7b67c72f3d1e93bd55b1135deffb4fa84f588cdd75454089ea9245b7892d"
+    },
+    {
+      "kind": "ruleset",
+      "id": "experimental-deflection-v1",
+      "revision": 1,
+      "contentHash": "sha256:2cb0c02416d687d1b04f7b9708e1a2a7ec90b29c5ece56d23a0807e653f3c904"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-deflection-v1",
+      "revision": 1,
+      "contentHash": "sha256:9892d24c6a92629d054151a2b4ef19b30ba2f27500564984ef4ddcc8f81946ec"
+    },
+    {
+      "kind": "ruleset",
+      "id": "standard-tactics-deflection-v1",
+      "revision": 1,
+      "contentHash": "sha256:a46b5750769277dbf6f65a285cc2ac6e43d464111be60f61f600fedfe070e5db"
     }
   ]
 }
