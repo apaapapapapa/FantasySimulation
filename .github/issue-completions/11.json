@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "issue": 11,
+  "issueBodySha256": "738a6e53e47d7612a34a4dfd74f9ae4c6a2ff883efde8d3e490ddadda5fa92b7",
+  "issueUpdatedAt": "2026-09-26T01:38:49Z",
+  "complete": true,
+  "summary": "有界な手動修正ループとread-only CI intakeを実装済み。残件の同一SHAによる実sandbox→実PR→現行CI/reviewをPR #152で実証し、元journalの予算・期限を維持したままcompletedまで観測。fixtureは未mergeでclose。共有Octokit/TS状態遷移・Linux検証方針も照合済み。最終PR #151に永続証跡を格納し、main CI後に本宣言で完了処理する。",
+  "remainingWork": [],
+  "pullRequests": [74, 75, 77, 83, 151],
+  "acceptance": [
+    {
+      "task": "repository、full baseline SHA、目的、変更可能path、必要check、review/delivery条件、試行/時間/外部呼出し/費用予算をinit時に固定する",
+      "evidence": "loop/contract.ts parseContract・taskIdとcontract.test.tsがrepository/full SHA/目的/許可path/check/review/予算の固定・再initの変更拒否を検証。実契約は .github/harness/evidence/issue-11-publication.json のjournal.contract。"
+    },
+    {
+      "task": "初期profileは最大3試行、改善なし2回で停止、全体1時間、外部課金予算0を提案値とする。変更は開始前に明示し、実行途中で自動緩和しない",
+      "evidence": "DEFAULT_BUDGETは3試行/改善なし2回/3600000ms/課金0。contract.test.ts・handoff.test.tsが上限とno-progress停止を検証。実証は試行1回、当初のdeadline不変、費用0。"
+    },
+    {
+      "task": "信頼済みcontrollerを修正checkoutの外で実行し、所有するclean worktreeとbranchを固定baselineから作る。元の作業treeは触らない",
+      "evidence": "workspace.ts prepare/ownedが外部controller・独立bare repo・baseline起点のclean owned branchを固定。workspace.test.tsで元tree不変と借用object非依存を検証。実sandbox run 36208186419も元checkoutのSHA/内容/cleanを確認。"
+    },
+    {
+      "task": "init / prepare / begin / apply / evaluateとstatus / nextActionを移植する。コマンドの終了成功と「修正完了」を混同しない",
+      "evidence": "loop/cli.tsとstate.tsに全command/phase/nextActionを実装。handoff.test.tsでevaluate成功のみ・timeoutのみの完了を拒否。実証journalはreview/handoff後もdelivery、実CI観測後にのみcompleted。"
+    },
+    {
+      "task": "begin時に試行回数・外部呼出し・費用枠を先に予約する。中断、再開、同じpatch再送でも消費済み予算を戻さない",
+      "evidence": "state.ts begin/collection-reservedが予算を事前予約。contract.test.ts・workspace.test.tsで中断/復旧/再送でも返金なし。実証のjournal begun=200 calls、collection-reserved=80、attempts=1を保持。"
+    },
+    {
+      "task": "baselineからの全diffを調べ、許可path以外、symlink/gitlink、mode変更、既存受入試験の書換えを拒否する",
+      "evidence": "workspace.ts scopeはbaselineからのraw full diffを調べ、pathAllowed・regular file mode・新規試験のみを許可。workspace.test.tsでprotected/symlink/mode/old-testの拒否を検証。160000 gitlinkもmode guardで拒否。"
+    },
+    {
+      "task": "controller、harness、CI、AGENTS/skill、toolchain/lockfile、migration、期待hash/予算/受入条件を保護する。これらの変更が必要なら通常のengineering PRへ振り分ける",
+      "evidence": "contract.ts pathAllowedとcontract.test.tsがscripts/.github/AGENTS/skill/package/lock/migrations/fixtures/identity等を保護。fantasy-loop skillは通常engineering PRへの切替を規定。本変更も通常PR #151で実施。"
+    },
+    {
+      "task": "engine修正でversion/digestの更新が必要な場合も、保護を迂回して自動stampしない。通常PRへ切り替える境界を明文化する",
+      "evidence": "contract.tsはengine implementation/identity/digest/expectedを拒否。fantasy-loop skillとAGENTSはversion/digest変更を通常PRへ送る。実証中の自動stampや期待値更新はなし。"
+    },
+    {
+      "task": "評価は固定コマンドと引数、環境変数のallowlist、時間/出力上限でread-only実行し、#5/#9の実証跡を使う",
+      "evidence": "evaluation.tsはvp run verifyを固定し、process.tsの上限と環境allowlist、read-only mountsを使用。source report/commandとcorpus/loadを実行した実sandbox証跡を .github/harness/evidence/issue-11-publication.json に保持。"
+    },
+    {
+      "task": "worktreeをOS sandboxと説明しない。秘密なしの隔離された実行環境を使い、信頼側のtoken・provider key・本番接続を評価processへ継承しない",
+      "evidence": "evaluation.tsのbubblewrap --unshare-all/--clearenv/ro-bind、秘密なしenvとhost非公開を実probeで確認。workspace.test.tsは隔離不可をblockedとして停止し無隔離fallbackがないことを検証。"
+    },
+    {
+      "task": "排他lock、atomic更新、revision確認、append-only journalを移植する。status参照やheartbeatでdeadlineを延長しない",
+      "evidence": "journal.tsは排他lock・fsync/rename・revision・hash鎖を検証。contract.test.tsのlock競合/履歴改変/期限不変試験が成功。実証journalのrevision 1〜10と固定期限を保持。"
+    },
+    {
+      "task": "同じtaskは同じjournal/worktreeを再利用し、セッションやartifactの再取得で試行budgetをリセットしない",
+      "evidence": "taskIdとinitializeが同じtaskのjournal再利用を強制。実sandbox artifact 10894309286からjournal/bare repo/worktreeを元パスへ復元しowned検査が成功。revision 8から10へ進め、試行/予約/deadlineをリセットせず完了。"
+    },
+    {
+      "task": "candidate更新で古いreviewを失効させる。#5で対象headの必要CI/check/reviewを再取得し、approval待ちやCI未実行は未完了にする",
+      "evidence": "state.ts beginでverified/regression/reviewを失効。handoff.ts verifyObservationとdelivery.tsが最新SHA/CI/check/review/全ページを評価。PR #152の現行CI run 36208720160を収集してのみcompletedへ遷移。"
+    },
+    {
+      "task": "optional reviewの待ち上限は15分。期限切れだけでreview完了にせず、実際の自己reviewと対象path・SHA・未解決件数のreceiptを要求する。必須の外部承認はfallbackできない",
+      "evidence": "contract.ts reviewWaitMsは最大900000。handoff.test.tsで待ち上限だけの成功と必須外部承認のself代替を拒否。実際の変更path/SHA/指摘0を束縛したreceipt、現行rulesetとCodex reviewを実証JSONへ記録。"
+    },
+    {
+      "task": "regressionは新規追加試験の本当のassertionがbaselineで失敗しcandidateで成功することを示す。setup/import errorを不具合再現としない",
+      "evidence": "regression.ts/regression-reporter.tsとregression.test.tsでhook/import/runtime failureを除外。実比較はbaseline assertion-failed(exit 1, AssertionError)→同じ新規試験のcandidate pass(exit 0)、hooksExecuted=false/unhandledErrors=0。"
+    },
+    {
+      "task": "失敗ログ・比較結果・review・試行理由を保持する。再利用する知見は元証跡への参照とし、今後の追加権限やコマンドとして実行しない",
+      "evidence": "実sandbox artifact 10894309286にraw失敗ログ/比較/review/journal/owned workspaceを保持（30日）。永続要約・hash・journal・source/比較/review/deliveryは .github/harness/evidence/issue-11-publication.json。証跡を実行権限として使わない。"
+    },
+    {
+      "task": "`.agents/skills/fantasy-loop/SKILL.md`に、対象選別、手動起動、再開、通常PRへの切替を記載する。未実装コマンドを有効な手順としない",
+      "evidence": ".agents/skills/fantasy-loop/SKILL.mdのcommandはcli.tsに対応し、対象選別・手動起動・同じ状態の再開・通常PRへの切替を記載。XStateは直列TS状態遷移の簡潔さを理由に保留。"
+    },
+    {
+      "task": "mainのCI失敗/timed_outを読取専用で収集し、boundedな修正候補と元run/attempt/SHA/失敗checkをartifactへ出力する",
+      "evidence": "loop/intake.tsとci-intake.ymlがmain failure/timed_outの候補を最大20件に制限し、run/attempt/SHA/job/sourceUrlをartifactへ出力。intake.test.tsで検証済み。"
+    },
+    {
+      "task": "`workflow_run`では信頼済みmainのcollectorだけを実行する。入力eventのrepo/workflow/event/branch/SHA/job全ページを検証し、forkや外部repoのコードをcheckout/実行しない",
+      "evidence": "ci-intake.ymlはref:main/persist-credentials:false。intake.tsはrepo id/name、workflow path/id/name、event/branch/SHA、jobs全ページと再読取を検証。fork/wrong-job/missing-page等のfixturesが成功。"
+    },
+    {
+      "task": "tokenはcontents/actions読取に限定し、provider/本番secretを渡さない。上流artifactはデータとしてschema検証し、スクリプトやcacheとして実行しない",
+      "evidence": "ci-intake.ymlのpermissionsはcontents/actions readのみ、secretはGITHUB_TOKENだけ。上流artifact/cacheをダウンロード実行せず、workflow.test.tsでも制約を検証。共有Octokit gatewayを再利用。"
+    },
+    {
+      "task": "自動受付は対象repositoryのmain push失敗に限定する。手動受付を設ける場合も対象baselineを明示する",
+      "evidence": "workflow条件とintake.ts runIdentityは対象repoのmain pushのみ許可。手動修正はfull baseline SHAを固定するContractによる明示init。実証baseline 138684336654dd58c90b8b43e7d3ff81490dc37f。"
+    },
+    {
+      "task": "repository・種類・source SHA・失敗識別子から安定IDを生成し、重複・順不同イベントを整理する。ループ自身のbranchや不完全/古い成功状態を修正候補にしない",
+      "evidence": "intake.tsのdigest([repository,ci,sha,check])によるstable ID、重複ID/順不同/loop branch/古い成功の除外をintake.test.tsで検証。"
+    },
+    {
+      "task": "PR headや最新CIが変わっていれば再確認する。過去に失敗した事実だけで現在も修正が必要と判断しない",
+      "evidence": "intake.test.tsのnew-main/rerun/success/moving-head、github-collect.tsの前後再取得、delivery.tsのtest-merge parents照合で更新済み状態を拒否。実証PRも最新main d621397上のtest merge/実CIを評価。"
+    },
+    {
+      "task": "intake artifact生成を「修正済み」としない。まず人/現在のagentが明示採用し、固定契約を開始する",
+      "evidence": "Intakeはstage:proposal/repaired:false。CLI/skillに明示adoptionを規定し、workflowからbegin/apply/evaluate/pushを実行しない。workflow.test.tsがこの境界を検証。"
+    },
+    {
+      "task": "許可範囲外、保護path、symlink、異なるrepo/branch、dirty tree、stale SHAを拒否する",
+      "evidence": "contract.test.tsとworkspace.test.tsで許可範囲/保護path/リンク/mode/既存試験/異repo・branch/dirty/staleを拒否。実sandboxでtracked sourceへの書込みも拒否。"
+    },
+    {
+      "task": "中断、再開、lock競合、同一patch再送、予算超過、改善なし、deadline経過でjournalと予算が整合する",
+      "evidence": "contract.test.ts・workspace.test.ts・handoff.test.tsに中断/再開/lock/revision/再送/予算/no-progress/deadline試験。実artifact復旧でもjournalと予算/期限を保持した証跡を添付。"
+    },
+    {
+      "task": "検証未実行・review不足・最新CI pending/失敗で完了にならない。自己reviewは必須外部承認の代わりにならない",
+      "evidence": "handoff.test.ts・delivery.test.ts・github-collect.test.tsが不足/失敗/保留/古いreviewを未完了にする。実証はsourceのみではdeliveryのままで、PR #152 CI/reviewの実収集とverifyObservation exit 0でcompleted。"
+    },
+    {
+      "task": "不正/重複/順不同/fork由来event、jobページ欠落、更新済みheadをfixtureで検証する",
+      "evidence": "intake.test.tsはfork/branch/event/workflow/missing-page/wrong-job/duplicate-job/moving-head/new-main/rerun/successおよび順不同を検証。共有collectorの全ページ・更新検知試験も維持。"
+    },
+    {
+      "task": "小さな回帰不具合について手動開始→基準失敗→候補合格→review→PRの証跡を残せる。元checkoutと本番状態は不変",
+      "evidence": "実sandbox run 36208186419→同一head 7e44fce0135134256a3d6d757dcb2c928b8b4133の実PR #152→CI run 36208720160/最新Codex review→既存verifyObservation exit 0。元checkout不変、fixtureOnly/repairedProduction:false。試験PRは未mergeでcloseし、実装PRと区別。"
+    },
+    {
+      "task": "report/journalの読書きとrunner管理についてLinuxの動作を検証し、未対応機能があれば勝手なfallbackで成功扱いにしない",
+      "evidence": "2026-09-23のユーザー指示と現行AGENTSに従いLinuxのみを検証。固定Node 24.19.0/pnpm 11.27.1/Vite+ 0.3.3、実Ubuntu22.04 sandboxとLinux CIでreport/journal/runnerを確認。非Linuxと隔離不可は明示拒否しfallbackしない。"
+    }
+  ]
+}

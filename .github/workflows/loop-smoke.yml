@@ -35,9 +35,9 @@ jobs:
       - name: Verify actual isolation and baseline assertion failure
         run: node scripts/harness/loop/smoke.ts
       - name: Verify the full repository with an isolated regression fixture
-        # One-time, manually adopted Issue #11 proof; objects were created through the connector.
-        run: node scripts/harness/loop/smoke.ts repository 138684336654dd58c90b8b43e7d3ff81490dc37f 7e44fce0135134256a3d6d757dcb2c928b8b4133
+        run: node scripts/harness/loop/smoke.ts repository
       - name: Retain the same owned workspace for manual observation
+        if: always()
         run: >-
           tar -czf .generated/harness/repository-loop-proof/resume.tar.gz
           --exclude=node_modules --exclude='*/worktree/.generated' --exclude='*/worktree/**/dist'
@@ -48,13 +48,13 @@ jobs:
           name: repair-loop-smoke-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             .generated/harness/loop-smoke/smoke.json
-            .generated/harness/loop-smoke/store/**/journal.json
-            .generated/harness/loop-smoke/store/**/evidence/**
+            .generated/harness/loop-smoke/store/*/journal.json
+            .generated/harness/loop-smoke/store/*/evidence/**
             .generated/harness/repository-loop-proof/smoke.json
             .generated/harness/repository-loop-proof/resume.tar.gz
-            .generated/harness/repository-loop-proof/store/**/journal.json
-            .generated/harness/repository-loop-proof/store/**/owner.json
-            .generated/harness/repository-loop-proof/store/**/evidence/**
+            .generated/harness/repository-loop-proof/store/*/journal.json
+            .generated/harness/repository-loop-proof/store/*/owner.json
+            .generated/harness/repository-loop-proof/store/*/evidence/**
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 30
