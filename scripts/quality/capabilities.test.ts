@@ -141,38 +141,37 @@ it.each([
 
 it('resolves aliases instead of treating an empty function name as implementation', () => {
   expect(inspect('const empty = () => {}; const work = empty;')).toHaveLength(5);
-  expect(inspect('const work = (n: number) => n + 1;')).toEqual([]);
-  expect(inspect('const work = (n: number) => { const result = n + 1; return result; };')).toEqual(
-    [],
-  );
-  expect(inspect('const work = (n: number) => void console.log(n);')).toEqual([]);
-  expect(inspect('const work = (n: number) => ({ value: n });')).toEqual([]);
-  expect(inspect('const work = (n: number) => [n];')).toEqual([]);
-  expect(inspect('const work = (n: number) => ({ value: console.log(n) });')).toEqual([]);
-  expect(inspect('const work = (n: number) => ({ [console.log(n)]: false });')).toEqual([]);
-  expect(inspect('const work = (n: number) => ({ value: n ? [] : {} });')).toEqual([]);
-  expect(inspect('const work = (n: number) => ({ value: `item${n}` });')).toEqual([]);
-  expect(inspect('const work = (n: number) => Number.isNaN(n);')).toEqual([]);
-  expect(inspect('const work = (record: { NaN: number }) => record.NaN;')).toEqual([]);
-  expect(inspect('const work = (NaN: number) => NaN;')).toEqual([]);
-  expect(inspect('const work = (Number: { NaN: number }) => Number.NaN;')).toEqual([]);
-  expect(inspect('const work = ({ Infinity }: { Infinity: number }) => Infinity;')).toEqual([]);
-  expect(
-    inspect('const work = (n: number) => { const Number = { NaN: n }; return Number.NaN; };'),
-  ).toEqual([]);
-  for (const body of [
-    '() => { if (true) performWork(); }',
-    '() => { if (false) return; else performWork(); }',
-    '() => { if (false) performWork(); performOtherWork(); }',
-    '() => { do { performWork(); } while (false); }',
-    '() => { for (performWork(); false;) {} }',
-    '() => { if ({ value: performWork() }) {} }',
-    '() => true && performWork()',
-    '() => false || performWork()',
-    '() => true ? performWork() : undefined',
-    '() => false ? undefined : performWork()',
-  ])
-    expect(inspect(`const work = ${body};`)).toEqual([]);
+});
+
+// Each independent native TypeScript project keeps its own normal test deadline.
+it.each([
+  '(n: number) => n + 1',
+  '(n: number) => { const result = n + 1; return result; }',
+  '(n: number) => void console.log(n)',
+  '(n: number) => ({ value: n })',
+  '(n: number) => [n]',
+  '(n: number) => ({ value: console.log(n) })',
+  '(n: number) => ({ [console.log(n)]: false })',
+  '(n: number) => ({ value: n ? [] : {} })',
+  '(n: number) => ({ value: `item${n}` })',
+  '(n: number) => Number.isNaN(n)',
+  '(record: { NaN: number }) => record.NaN',
+  '(NaN: number) => NaN',
+  '(Number: { NaN: number }) => Number.NaN',
+  '({ Infinity }: { Infinity: number }) => Infinity',
+  '(n: number) => { const Number = { NaN: n }; return Number.NaN; }',
+  '() => { if (true) performWork(); }',
+  '() => { if (false) return; else performWork(); }',
+  '() => { if (false) performWork(); performOtherWork(); }',
+  '() => { do { performWork(); } while (false); }',
+  '() => { for (performWork(); false;) {} }',
+  '() => { if ({ value: performWork() }) {} }',
+  '() => true && performWork()',
+  '() => false || performWork()',
+  '() => true ? performWork() : undefined',
+  '() => false ? undefined : performWork()',
+])('accepts an implemented handler %s', (body) => {
+  expect(inspect(`const work = ${body};`)).toEqual([]);
 });
 
 it('requires explicit, live delegation and rejects missing responsibilities/new schema kinds', () => {
