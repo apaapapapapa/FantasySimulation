@@ -1,58 +1,38 @@
-name: Refactor development environment
+name: Refactor pinned runtime
 on:
   push:
     branches: [refactor/verification-probe]
 permissions:
   contents: read
 jobs:
-  environment:
+  runtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Package tracked source history and installed pinned dependencies only
+      - name: Export actual Node binary without environment or credentials
         run: |
-          mkdir -p .generated/development-bin
-          cp -L "$(command -v node)" .generated/development-bin/node
-          cp -L "$(command -v vp)" .generated/development-bin/vp
-          git bundle create .generated/development-source.bundle --all
           node --input-type=module <<'NODE'
-          import {execFileSync} from 'node:child_process';
+          import {copyFileSync,chmodSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
           import {createHash} from 'node:crypto';
-          import {existsSync,readFileSync,readdirSync,writeFileSync} from 'node:fs';
-          const paths=['node_modules','.generated/development-bin','.generated/development-source.bundle'];
-          for(const group of ['apps','packages'])
-            for(const name of readdirSync(group)) {
-              const path=group+'/'+name+'/node_modules';
-              if(existsSync(path)) paths.push(path);
-            }
-          const heads={};
-          for(const name of ['content-authoring','prepared-ability-plans','reaction-phase-boundaries','capability-coverage'])
-            heads[name]=execFileSync('git',['rev-parse','refs/remotes/origin/refactor/'+name],{encoding:'utf8'}).trim();
-          const binaries={};
-          for(const name of ['node','vp'])
-            binaries[name]=createHash('sha256').update(readFileSync('.generated/development-bin/'+name)).digest('hex');
-          writeFileSync('.generated/development-bin/provenance.json',JSON.stringify({
-            sourceBundle: 'Public repository Git objects only; no Git credential/config files',
-            probeSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,
-            node:process.version,vp:execFileSync('vp',['--version'],{encoding:'utf8'}).trim(),
-            heads,binaries,
-            purpose:'Dependency/source transport for an offline clean checkout; not verification or review approval'
+          if(process.versions.node!=='24.19.0') throw Error('Unexpected pinned Node');
+          mkdirSync('.generated/pinned-node',{recursive:true});
+          copyFileSync(process.execPath,'.generated/pinned-node/node');
+          chmodSync('.generated/pinned-node/node',0o755);
+          writeFileSync('.generated/pinned-node/provenance.json',JSON.stringify({
+            version:process.version,probeSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,
+            sha256:createHash('sha256').update(readFileSync(process.execPath)).digest('hex'),
+            purpose:'Pinned runtime transport only; no verification approval'
           },null,2));
-          writeFileSync('.generated/development-paths',paths.join('\n')+'\n');
           NODE
-          tar -czf .generated/development-environment.tgz -T .generated/development-paths
-          test "$(stat -c%s .generated/development-environment.tgz)" -le 536870912
-          sha256sum .generated/development-environment.tgz
-          du -h .generated/development-environment.tgz
+          tar -czf .generated/refactor-node.tgz -C .generated/pinned-node .
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: refactor-development-environment
-          path: .generated/development-environment.tgz
+          name: refactor-pinned-node
+          path: .generated/refactor-node.tgz
           if-no-files-found: error
           compression-level: 0
           retention-days: 1
