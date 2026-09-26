@@ -1,5 +1,6 @@
 import type { StatusCohort, DecisionView } from '../state.ts';
-import { abilityEffects, type DeepReadonly, type Effect } from '@fantasy/domain/spatial/execution';
+import type { DeepReadonly, Effect } from '@fantasy/domain/spatial/execution';
+import { abilityPlan } from '../rules/ability-plan.ts';
 import { statusBenefit } from '../rules/status-observation.ts';
 import { planStatusEffects } from '../rules/status-reactions.ts';
 import { applyStatuses, UnresolvedRuleError } from '../rules/status.ts';
@@ -78,10 +79,10 @@ export function assessStatusEffects(
             target === 'enemy' ||
             adjustment.target !== 'damageDealt' ||
             view.self.actor.abilities.some(
-              ({ definition }) =>
+              (ability) =>
                 (!adjustment.category ||
-                  abilityCategories(definition).includes(adjustment.category)) &&
-                abilityEffects(definition).some(
+                  abilityCategories(ability.definition).includes(adjustment.category)) &&
+                abilityPlan(ability).effects.some(
                   (e) =>
                     e.kind === 'damage' &&
                     (!adjustment.element || e.element === adjustment.element),
