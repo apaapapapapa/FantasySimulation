@@ -18,9 +18,12 @@ import {
   PUBLICATION_CONTROL_BYTES,
   PUBLICATION_CONTROL_KEY,
 } from '../publication/publication-files.ts';
-import { localPublicationGraph } from '../publication/publication-graph.ts';
 import { restorePublication } from '../publication/publication-restore.ts';
-import { publishPublication, type PublishOptions } from '../publication/publication-remote.ts';
+import {
+  publishPublication,
+  type PublishOptions,
+  type PublicationStoreFactory,
+} from '../publication/publication-remote.ts';
 import { admitLeagueUsage } from './league-budget.ts';
 import { writeCloudJson } from './league-cloud-files.ts';
 
@@ -122,34 +125,39 @@ export async function transferCloudLeague(
     if (bytes > PUBLICATION_MAX_BYTES || inventory.size > PUBLICATION_MAX_FILES)
       throw new OperationError('BUDGET_EXCEEDED', 'League retained capacity exceeded');
     const receipts = [...inventory.keys()].filter((key) => key.endsWith('/receipt.json')).length;
-    const graph = options ? await localPublicationGraph(root) : null;
-    const additions = graph
-      ? [...graph.files.keys()].filter(
-          (key) => key !== 'catalog/current.json' && !inventory.has(key),
-        ).length + 1
-      : 0;
-    const budget = leagueTransferBudget(
-      graph?.files.size ?? inventory.size,
-      receipts,
-      additions,
-      !options,
-    );
-    const usage = await admitLeagueUsage(control, {
-      ...identity,
-      ...budget,
-      classB: budget.classB + budget.worker,
-    });
-    data = new PublicationS3(config, transport(budget.classA, budget.classB));
+    let budget: ReturnType<typeof leagueTransferBudget> | undefined;
+    let usage: LeagueUsage | undefined;
+    const start = async (graph?: Parameters<PublicationStoreFactory>[0]) => {
+      const additions = graph
+        ? [...graph.files.keys()].filter(
+            (key) => key !== 'catalog/current.json' && !inventory.has(key),
+          ).length + 1
+        : 0;
+      budget = leagueTransferBudget(
+        graph?.files.size ?? inventory.size,
+        receipts,
+        additions,
+        !options,
+      );
+      usage = await admitLeagueUsage(control, {
+        ...identity,
+        ...budget,
+        classB: budget.classB + budget.worker,
+      });
+      data = new PublicationS3(config, transport(budget.classA, budget.classB));
+      return data;
+    };
     const outcome = options
-      ? await publishPublication(root, data, {
+      ? await publishPublication(root, start, {
           ...options,
           maxBytes: PUBLICATION_MAX_BYTES - PUBLICATION_CONTROL_BYTES,
           maxWrites: PUBLICATION_MAX_FILES,
           maxTransferBytes: PUBLICATION_MAX_BYTES,
-          maxWorkerRequests: budget.worker,
+          maxWorkerRequests: 1000,
           concurrency: 16,
         })
-      : await restorePublication(root, data, PUBLICATION_MAX_BYTES, 16);
+      : await restorePublication(root, await start(), PUBLICATION_MAX_BYTES, 16);
+    if (!budget || !usage || !data) throw new Error('Publication transport was not started');
     await writeCloudJson(join(reportRoot, identity.id + '.json'), {
       outcome,
       reserved: budget,

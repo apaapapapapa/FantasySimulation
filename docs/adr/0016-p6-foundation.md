@@ -28,9 +28,8 @@ Saved validation/replay remains engine-free.
 ## Interference (00b)
 
 Canonical `packages/domain/src/spatial/interference.json`: versioned registry and every
-ordered pair, including self-pairs. Cover existing damage/heal/shield/status grant/remove/
-element reactions/parry/counter/force/stages/projectile/melee/hitscan/resources/motion/
-flight/silence/permanent/reveal and all P6 IDs (including barrier/area/beam/phasing).
+ordered pair including self-pairs. Cover every existing/P6 mechanic in #155 §2-B,
+including barrier/area/beam/phasing.
 Exhaustive visitors/tests bind accepted schema variants to registry. No wildcard/default
 independence/implicit symmetry; conditional cases need explicit predicates.
 
@@ -111,10 +110,9 @@ Keep old public bytes/ranks; list new revision separately. No milestone publicat
 caps, old/new records, Worker/SQLite/replay and participant/position/RNG/order symmetry.
 00c: deep closure/all admission paths, experimental isolation/labels, old publications,
 every probe branch/zero-work holds/corruption/manual races, unchanged scoring/seeds.
-[ADR 0010](0010-battle-version-compatibility.md) and [ADR 0013](0013-execution-identity.md)
-govern additive schemas/new IDs/restamps. Omitted
-additions preserve decisions/legacy fields/event/trajectory/TS/physics expectations;
-review identity/hash differences, use separate diagnostic oracles. Decision changes bump
-rules/engine; no old execution/conversion/oracle regeneration. Verify/clean-source/
-latest PR/Linux/main evidence apply. Markdown stays <=170,000 bytes; JSON is rule/fixture
-data, not hidden prose. #155 stays open. Spatial/clock ADR approvals remain separate.
+[Compatibility](0010-battle-version-compatibility.md)/[identity](0013-execution-identity.md)
+own additive schemas, new IDs, version changes and reviewed restamps. Preserve omitted-field
+decisions/legacy records and event/trajectory/TS/physics expectations; separately review
+new diagnostic oracles and identity/hash changes. Existing delivery gates apply. Markdown
+stays <=170,000 bytes; JSON is rule/fixture data. #155 stays open; spatial/clock approvals
+remain separate.
