@@ -93,8 +93,9 @@ Conditional, readback-verified leases precede transfers; never refund failures. 
 900k Class A/9M Class B (10k control reserve); automation Worker 90k/day (1k probe reserve).
 Budget restore from inventory and publication from verified files/receipts, including uncertain-PUT
 GETs and Worker reads; one SDK attempt. Missing ledger with an existing journal requires recovery,
-never a reset. Other traffic/base fees remain uncapped. #134 requires actual 7,600-slot
-Actions/publication/viewer/cost evidence.
+never a reset. Other traffic/base fees remain uncapped.
+[7,600-slot evidence](../measurements/p5-official-actions.json): publication/readback and
+viewer acceptance pending (Refs #134).
 
 ## Capacity (2026-09-25)
 
