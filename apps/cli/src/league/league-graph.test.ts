@@ -106,7 +106,10 @@ it('checks every catalog league identity before deduplicating retained snapshots
       probeLeague(fixture.plan.revision.definition, fixture.plan.source.sha, (key) =>
         readFile(join(target, key)),
       ),
-    ).rejects.toMatchObject({ code: 'DATA_INVALID', message: 'League probe catalog identity' });
+    ).rejects.toMatchObject({
+      code: 'DATA_INVALID',
+      message: 'League snapshot definition identity mismatch',
+    });
   });
 }, 30000);
 

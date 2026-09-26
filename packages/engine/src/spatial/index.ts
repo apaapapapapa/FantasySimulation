@@ -17,6 +17,8 @@ export {
   createLeagueRevision,
   validateLeagueRevision,
   normalizeLeagueDefinition,
+  normalizeStoredLeagueDefinition,
+  leagueDefinitionHash,
   leagueTrialSeed,
   leagueMatches,
   leagueCoordinates,

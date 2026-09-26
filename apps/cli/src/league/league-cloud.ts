@@ -26,7 +26,8 @@ import {
 import { commitPublication } from '../publication/publication-catalog.ts';
 import { buildLeagueWork, finishLeagueWork } from './league-work.ts';
 import { exportLeague } from './league-export.ts';
-import { LEAGUE_PROFILE } from './league-probe.ts';
+import { LEAGUE_PROFILE, probeLeague, requireLeagueProbeBinding } from './league-probe.ts';
+import { PublicReadFailure } from '../publication/publication-http.ts';
 import {
   cloudJson,
   writeCloudJson,
@@ -42,6 +43,7 @@ export async function prepareCloudLeague(
   publicRoot: string,
   preparedRoot: string,
   inventoryInput: unknown,
+  expectedProbe?: unknown,
 ) {
   const inventory = operationInput(
     () => LeagueCloudInventorySchema.parse(inventoryInput),
@@ -50,6 +52,17 @@ export async function prepareCloudLeague(
   const graph = (await optionalPublicationFile(join(publicRoot, 'catalog/current.json'), 4000000))
     ? await localPublicationGraph(publicRoot)
     : null;
+  const probe = await probeLeague(
+    definition,
+    source.sha,
+    async (key, limit) => {
+      const data = await optionalPublicationFile(join(publicRoot, key), limit);
+      if (!data) throw new PublicReadFailure(404);
+      return data;
+    },
+    'publish',
+  );
+  if (expectedProbe !== undefined) requireLeagueProbeBinding(expectedProbe, probe);
   const history = [...(graph?.latestWork?.records.values() ?? [])];
   const retained = new BattleBundles(publicRoot);
   const planned = await planLeague(

@@ -416,9 +416,10 @@ const unchanged = await measure('probe', () =>
   probeLeague(small, sourceSha, (k, l) => baseline.worker(k, l)),
 );
 assert.equal(unchanged.needed, false);
+assert.ok(unchanged.estimate);
 assert.equal(unchanged.estimate.compute, 0);
 caseRecord.skipped = ['restore', 'prepare', 'admit', 'compute', 'finish', 'publish'];
-type Estimate = Awaited<ReturnType<typeof probeLeague>>['estimate'];
+type Estimate = NonNullable<Awaited<ReturnType<typeof probeLeague>>['estimate']>;
 async function updated(
   name: string,
   store: MeasuredStore,
@@ -432,6 +433,7 @@ async function updated(
     probeLeague(large, sourceSha, (k, l) => store.worker(k, l)),
   );
   assert.equal(probe.needed, true);
+  assert.ok(probe.estimate);
   for (const [k, v] of Object.entries(expect.estimate))
     assert.equal(probe.estimate[k as keyof Estimate], v);
   const pipeline = await startPipeline(name, large, store, true);
@@ -471,6 +473,7 @@ async function updated(
   caseRecord.artifacts = artifact;
   const after = await probeLeague(large, sourceSha, (k, l) => store.worker(k, l));
   assert.equal(after.needed, false);
+  assert.ok(after.estimate);
   assert.equal(after.estimate.reused, 24);
 }
 await updated('add-character', new MeasuredStore(baseline), {
@@ -505,12 +508,16 @@ for (const fault of ['missing', 'corrupt'] as const) {
     data[0] = data[0]! ^ 0xff;
     broken.objects.set(corruptionKey, { ...v, data });
   }
-  const probe: Awaited<ReturnType<typeof probeLeague>> = await measure('unchanged-probe', () =>
-    probeLeague(small, sourceSha, (k, l) => broken.worker(k, l)),
+  const probe: Awaited<ReturnType<typeof probeLeague>> = await measure(
+    'unchanged-probe',
+    (): Promise<Awaited<ReturnType<typeof probeLeague>>> =>
+      probeLeague(small, sourceSha, (k, l) => broken.worker(k, l)),
   );
   assert.equal(probe.needed, false);
-  const changed: Awaited<ReturnType<typeof probeLeague>> = await measure('changed-probe', () =>
-    probeLeague(large, sourceSha, (k, l) => broken.worker(k, l)),
+  const changed: Awaited<ReturnType<typeof probeLeague>> = await measure(
+    'changed-probe',
+    (): Promise<Awaited<ReturnType<typeof probeLeague>>> =>
+      probeLeague(large, sourceSha, (k, l) => broken.worker(k, l)),
   );
   assert.equal(changed.needed, true);
   const failedPath = join(root, 'recording-' + fault, 'public');

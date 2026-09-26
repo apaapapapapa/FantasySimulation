@@ -42,10 +42,17 @@ async function main() {
     return cloudJson(join(repository, input), undefined, 'INPUT_INVALID');
   };
   if (command === 'probe') {
+    const mode = process.env.LEAGUE_MODE ?? 'dry-run';
+    if (
+      (mode !== 'schedule' && mode !== 'dry-run' && mode !== 'publish') ||
+      (mode === 'schedule' && input !== required('OFFICIAL_LEAGUE_DEFINITION'))
+    )
+      throw new OperationError('INPUT_INVALID', 'Invalid league mode or scheduled definition');
     const result = await probeLeague(
       await definition(),
       source.sha,
       publicHttp(required('PUBLICATION_WORKER_URL')),
+      mode,
     );
     await writeCloudJson(join(root, 'probe.json'), result);
     await appendFile(required('GITHUB_OUTPUT'), `needed=${result.needed}\n`);
@@ -58,6 +65,7 @@ async function main() {
       join(root, 'public'),
       join(root, 'prepared'),
       await cloudJson(join(root, 'inventory.json')),
+      await cloudJson(join(root, 'probe.json')),
     );
     await appendFile(
       required('GITHUB_STEP_SUMMARY'),

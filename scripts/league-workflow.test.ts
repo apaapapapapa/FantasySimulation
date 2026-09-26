@@ -14,6 +14,11 @@ it('runs once daily on tested main, skips unchanged inputs and keeps manual dry-
   expect(workflow).toContain('group: r2-publication\n  cancel-in-progress: false');
   expect(workflow).toContain('default: dry-run');
   expect(workflow).toContain(
+    "LEAGUE_MODE: ${{ github.event_name == 'schedule' && 'schedule' || inputs.mode }}",
+  );
+  expect(workflow).toContain('OFFICIAL_LEAGUE_DEFINITION: data/leagues/official-20-v1.json');
+  expect(workflow).toContain('name: league-probe-${{ github.run_id }}-${{ github.run_attempt }}');
+  expect(workflow).toContain(
     "needs.probe.outputs.needed == 'true' && (github.event_name == 'schedule' || inputs.mode == 'publish')",
   );
   const probe = workflow.split('\n  prepare:')[0]!;
