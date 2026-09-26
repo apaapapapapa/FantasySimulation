@@ -17,6 +17,7 @@ export { requireMechanics } from './mechanic-policy.ts';
 export {
   createLeagueRevision,
   validateLeagueRevision,
+  validateStoredLeagueRevision,
   normalizeLeagueDefinition,
   normalizeStoredLeagueDefinition,
   leagueDefinitionHash,
@@ -24,4 +25,9 @@ export {
   leagueMatches,
   leagueCoordinates,
 } from '../league/index.ts';
-export { aggregateLeague, scoreLeagueCounts, compareLeagueFractions } from '../league/scoring.ts';
+export {
+  aggregateLeague,
+  aggregateStoredLeague,
+  scoreLeagueCounts,
+  compareLeagueFractions,
+} from '../league/scoring.ts';

@@ -23,6 +23,7 @@ import {
   createLeagueRevision,
   leagueMatches,
   validateLeagueRevision,
+  validateStoredLeagueRevision,
 } from '@fantasy/engine/spatial';
 import { createBatchPlan, validateBatchPlan } from '../batch/batch-plan.ts';
 import type { BattleBundles } from '../batch/battle-bundle.ts';
@@ -189,9 +190,19 @@ export async function planLeague(
 }
 
 export async function validateLeaguePlan(input: unknown) {
-  const plan = parseJson(LeaguePlanSchema, input),
-    { id, ...body } = plan;
+  const plan = parseJson(LeaguePlanSchema, input);
   await validateLeagueRevision(plan.revision);
+  return checkedPlanIdentity(plan);
+}
+
+export async function validateStoredLeaguePlan(input: unknown) {
+  const plan = parseJson(LeaguePlanSchema, input);
+  await validateStoredLeagueRevision(plan.revision);
+  return checkedPlanIdentity(plan);
+}
+
+async function checkedPlanIdentity(plan: LeaguePlan) {
+  const { id, ...body } = plan;
   if (
     id !== (await contentHash(body)) ||
     plan.source.sha !== plan.revision.sourceSha ||
@@ -208,17 +219,7 @@ export async function validateLeaguePartition(
   input: unknown,
   batchInput: unknown,
 ) {
-  const partition = parseJson(LeaguePartitionSchema, input),
-    { id, ...body } = partition;
-  const ref = plan.partitions[partition.index];
-  if (
-    id !== (await contentHash(body)) ||
-    partition.leagueHash !== plan.revision.leagueHash ||
-    ref?.partitionId !== id ||
-    ref.batchPlanId !== partition.batchPlanId ||
-    ref.slots !== partition.slots.length
-  )
-    throw new OperationError('IDENTITY_MISMATCH', 'League partition identity mismatch');
+  const partition = await leaguePartitionIdentity(plan, input);
   const batch = await validateBatchPlan(batchInput, plan.source);
   if (batch.id !== partition.batchPlanId || batch.slots.length !== partition.slots.length)
     throw new OperationError('IDENTITY_MISMATCH', 'League batch identity mismatch');
@@ -248,4 +249,20 @@ export async function validateLeaguePartition(
       throw new OperationError('IDENTITY_MISMATCH', 'League partition manifest mismatch');
   }
   return { partition, batch };
+}
+
+/** Shared immutable partition binding; execution and saved-data checks add their own validation. */
+export async function leaguePartitionIdentity(plan: LeaguePlan, input: unknown) {
+  const partition = parseJson(LeaguePartitionSchema, input),
+    { id, ...body } = partition;
+  const ref = plan.partitions[partition.index];
+  if (
+    id !== (await contentHash(body)) ||
+    partition.leagueHash !== plan.revision.leagueHash ||
+    ref?.partitionId !== id ||
+    ref.batchPlanId !== partition.batchPlanId ||
+    ref.slots !== partition.slots.length
+  )
+    throw new OperationError('IDENTITY_MISMATCH', 'League partition identity mismatch');
+  return partition;
 }

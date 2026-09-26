@@ -12,7 +12,7 @@ import {
   type PublicLeagueDetail,
   type PublicCatalog,
 } from '@fantasy/domain/spatial';
-import { checkLeague, validateLeaguePartition, type LeagueCheckInput } from '@fantasy/api/tooling';
+import { checkStoredLeague, type checkLeague, type LeagueCheckInput } from '@fantasy/api/tooling';
 import { buildPublication } from '../publication/publication-export.ts';
 import { commitPublication } from '../publication/publication-catalog.ts';
 import { publicationJson, type PublicationFile } from '../publication/publication-files.ts';
@@ -38,14 +38,12 @@ export async function exportLeague(
     | LeagueWorkPublication
     | ((checked: Awaited<ReturnType<typeof checkLeague>>) => Promise<LeagueWorkPublication>),
 ) {
-  const checked = await checkLeague(input, completed),
+  const checked = await checkStoredLeague(input, partitions, completed),
     { plan, standings } = checked;
   const journal = typeof work === 'function' ? await work(checked) : work;
   const latestOutcomes = new Map(
     checked.attempts.map((attempt) => [attempt.slotId, attempt.outcome.kind] as const),
   );
-  if (partitions.length !== plan.partitions.length)
-    throw new OperationError('DATA_INVALID', 'Missing league partition definition');
   const files = new Map<string, PublicationFile>();
   const add = (file: PublicationFile) => {
     const prior = files.get(file.key);
@@ -59,13 +57,8 @@ export async function exportLeague(
     return ref;
   };
   const sets: PublicCatalog['sets'] = [];
-  const seen = new Set<number>();
   const pairs = new Map<string, PublicLeagueSlotPage['rows']>();
-  for (const entry of partitions) {
-    const { partition, batch } = await validateLeaguePartition(plan, entry.partition, entry.batch);
-    if (seen.has(partition.index))
-      throw new OperationError('DATA_INVALID', 'Duplicate league partition definition');
-    seen.add(partition.index);
+  for (const { partition, batch } of checked.partitions.values()) {
     const result = checked.results.find((r) => r.index.planId === batch.id);
     const source = result
       ? completed.find((c) => canonicalJson(c.result) === canonicalJson(result))

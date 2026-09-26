@@ -6,6 +6,7 @@ export type { WorkerMetrics } from './jobs/battle-worker.ts';
 export {
   planLeague,
   validateLeaguePlan,
+  validateStoredLeaguePlan,
   validateLeaguePartition,
   estimateLeague,
 } from './league/league-plan.ts';
@@ -15,6 +16,6 @@ export {
   validateProgressPage,
   verifyLeagueProgress,
 } from './league/league-progress.ts';
-export { checkLeague, type LeagueCheckInput } from './league/league-check.ts';
+export { checkLeague, checkStoredLeague, type LeagueCheckInput } from './league/league-check.ts';
 export { OperationError, operationInput, type OperationCode } from './operation-error.ts';
 export { operationCode } from './operation-code.ts';
