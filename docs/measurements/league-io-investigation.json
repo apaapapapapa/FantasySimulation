@@ -1,0 +1,2926 @@
+{
+  "schemaVersion": 1,
+  "kind": "isolated-league-io-investigation",
+  "environment": {
+    "sourceSha": "d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+    "sourceDirty": "",
+    "node": "v24.19.0",
+    "pnpm": "11.27.1",
+    "platform": "linux",
+    "arch": "x64",
+    "kernel": "6.18.44",
+    "cpu": "AMD EPYC 9V74 80-Core Processor",
+    "logicalCpus": 9,
+    "memoryBytes": 10451496960,
+    "concurrency": {
+      "publication": 16,
+      "workersPerPartition": 2
+    },
+    "cache": "Fresh local restore and partition directories per case; in-memory remote store; OS page cache not flushed; no remote latency/cache emulation."
+  },
+  "command": "PATH=/opt/codex/runtimes/codex-primary-runtime/dependencies/node/bin:$PATH node --import ./apps/cli/node_modules/tsx/dist/loader.mjs .generated/io-investigation/measure.ts",
+  "scopeNotes": [
+    "Application source is unchanged. Existing league fixture and real pipeline functions are used.",
+    "S3 and Worker values are measured interface calls/bytes against an isolated in-memory adapter, not actual R2 requests, billing or network latency. Control leases, SDK retries and inventory pagination are excluded.",
+    "Filesystem counts cover coordinator promise/FileHandle I/O beneath the isolated fixture root, not Worker thread/SQLite/stream writes. Publication and partition inventories separately capture output bytes.",
+    "Bundle method times overlap and must not be added to stage wall time. RSS is sampled every 20 ms for the Node process (includes Workers and in-memory adapter), not a verified per-stage high-water mark.",
+    "One repetition per scenario; timing is observation, not performance acceptance. 1 partition in measured scenarios; no cross-partition scaling claim."
+  ],
+  "cases": [
+    {
+      "name": "setup-complete-baseline",
+      "description": "12 real, small fixture battles; setup is recorded separately from comparisons",
+      "stages": [
+        {
+          "phase": "prepare",
+          "wallMs": 572.21,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 52824,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 8,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 289144832,
+          "status": "passed",
+          "result": {
+            "estimate": {
+              "planned": 12,
+              "reused": 0,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 12,
+              "newMatches": 12,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 48000,
+              "estimatedBytes": 31200000,
+              "estimatedFiles": 544,
+              "readRequests": 1088,
+              "writeRequests": 544
+            },
+            "inputHash": "sha256:819f7ba493d1bb04a75a4aace9cc5873e8f15952be214e242b43ecc7527e5de8",
+            "partitions": 1
+          }
+        },
+        {
+          "phase": "admit-lease-graph",
+          "wallMs": 29.68,
+          "local": {
+            "readBytes": 5788,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 5,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 289275904,
+          "status": "passed",
+          "result": {
+            "files": 5,
+            "bytes": 5788,
+            "objects": 0
+          }
+        },
+        {
+          "phase": "admit",
+          "wallMs": 16.51,
+          "local": {
+            "readBytes": 11576,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 5,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 4,
+            "head": 5,
+            "list": 1,
+            "put": 5,
+            "delete": 0,
+            "readBytes": 119,
+            "writeBytes": 5788,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 3,
+            "readBytes": 894,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 289538048,
+          "status": "passed",
+          "result": {
+            "status": "verified",
+            "catalogHash": "sha256:658aa4de26e74399378e8d584fd7190bf8f3cb3134c7df7429d81e26b80507b8",
+            "storedBytes": 0,
+            "projectedBytes": 5788,
+            "addedFiles": 4,
+            "reusedFiles": 0,
+            "writes": 5,
+            "transferBytes": 5788,
+            "workerRequests": 3,
+            "reservedS3Requests": 18,
+            "incompleteRows": 0
+          }
+        },
+        {
+          "phase": "run-0",
+          "wallMs": 3241.31,
+          "local": {
+            "readBytes": 796564,
+            "writeBytes": 338046,
+            "recordingReadBytes": 327822,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 134,
+            "uniqueWritePaths": 78,
+            "retainedHashPathsReadBytes": 297952,
+            "gzipReadBytes": 209090
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 36,
+              "receiptBytes": 267064,
+              "inclusiveMs": 325.98
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 487534592,
+          "status": "passed",
+          "result": {
+            "elapsedMs": 3230,
+            "complete": true,
+            "resultId": "sha256:704c46a866b4cf57d9ab4cbc532f15976a5c71a2b987b7553f64cd63c6473b2a"
+          }
+        },
+        {
+          "phase": "finish",
+          "wallMs": 1641.62,
+          "local": {
+            "readBytes": 1574828,
+            "writeBytes": 204462,
+            "recordingReadBytes": 1475334,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 56,
+            "uniqueWritePaths": 63,
+            "retainedHashPathsReadBytes": 1475334,
+            "gzipReadBytes": 268830
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 84,
+              "receiptBytes": 934724,
+              "inclusiveMs": 902.44
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 452091904,
+          "status": "passed",
+          "result": {
+            "catalogHash": "sha256:8e3e8afb09b6011574fcb0a5d708ccfaef6e64e44fbd65472151847876d11273",
+            "addedFiles": 61,
+            "reusedFiles": 1,
+            "bytes": 209778,
+            "snapshot": {
+              "hash": "sha256:8b00057e1d2a3f5a499759782701d691a0eda491ec3e707f049dc5216b7f820f",
+              "bytes": 3051
+            },
+            "status": "formal",
+            "planned": 12,
+            "resolved": 12,
+            "missingPartitions": []
+          }
+        },
+        {
+          "phase": "publish-lease-graph",
+          "wallMs": 258.89,
+          "local": {
+            "readBytes": 492286,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 66,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 119.08
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 454189056,
+          "status": "passed",
+          "result": {
+            "files": 66,
+            "bytes": 209778,
+            "objects": 12
+          }
+        },
+        {
+          "phase": "publish",
+          "wallMs": 245.42,
+          "local": {
+            "readBytes": 696395,
+            "writeBytes": 0,
+            "recordingReadBytes": 580460,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 66,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 580460,
+            "gzipReadBytes": 119480
+          },
+          "remote": {
+            "get": 9,
+            "head": 66,
+            "list": 1,
+            "put": 62,
+            "delete": 0,
+            "readBytes": 6309,
+            "writeBytes": 204109,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 148976
+          },
+          "worker": {
+            "get": 10,
+            "readBytes": 39206,
+            "recordingReadBytes": 12429
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 103.89
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 456286208,
+          "status": "passed",
+          "result": {
+            "status": "verified",
+            "catalogHash": "sha256:8e3e8afb09b6011574fcb0a5d708ccfaef6e64e44fbd65472151847876d11273",
+            "storedBytes": 5788,
+            "projectedBytes": 209778,
+            "addedFiles": 61,
+            "reusedFiles": 4,
+            "writes": 62,
+            "transferBytes": 204109,
+            "workerRequests": 10,
+            "reservedS3Requests": 193,
+            "incompleteRows": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "unchanged",
+      "description": "Same definitions/input, complete retained outcomes",
+      "stages": [
+        {
+          "phase": "probe",
+          "wallMs": 43.07,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 5,
+            "readBytes": 7575,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 456286208,
+          "status": "passed",
+          "result": {
+            "sourceSha": "d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+            "inputHash": "sha256:819f7ba493d1bb04a75a4aace9cc5873e8f15952be214e242b43ecc7527e5de8",
+            "requests": 5,
+            "bytes": 7575,
+            "estimate": {
+              "planned": 12,
+              "reused": 12,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 0,
+              "newMatches": 0,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 0,
+              "estimatedBytes": 24000000,
+              "estimatedFiles": 16,
+              "readRequests": 1088,
+              "writeRequests": 16
+            },
+            "needed": false,
+            "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
+            "retentionVerification": "Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission."
+          }
+        }
+      ],
+      "skipped": ["restore", "prepare", "admit", "compute", "finish", "publish"]
+    },
+    {
+      "name": "add-character",
+      "description": "3 to 4 characters: 12 reused slots, 12 new slots",
+      "stages": [
+        {
+          "phase": "probe",
+          "wallMs": 77.96,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 5,
+            "readBytes": 7575,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 456941568,
+          "status": "passed",
+          "result": {
+            "sourceSha": "d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+            "inputHash": "sha256:e98348ecd795820b0e855f520328e3737fcab6f20cd7af7c35aa00dcc737cb9c",
+            "requests": 5,
+            "bytes": 7575,
+            "estimate": {
+              "planned": 24,
+              "reused": 12,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 12,
+              "newMatches": 12,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 48000,
+              "estimatedBytes": 31200000,
+              "estimatedFiles": 544,
+              "readRequests": 2144,
+              "writeRequests": 544
+            },
+            "needed": true,
+            "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
+            "retentionVerification": "Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission."
+          }
+        },
+        {
+          "phase": "restore",
+          "wallMs": 423.25,
+          "local": {
+            "readBytes": 492286,
+            "writeBytes": 209778,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 66,
+            "uniqueWritePaths": 66,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 67,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 209897,
+            "writeBytes": 0,
+            "recordingReadBytes": 148976,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 126.76
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 458645504,
+          "status": "passed",
+          "result": {
+            "status": "restored",
+            "catalogHash": "sha256:8e3e8afb09b6011574fcb0a5d708ccfaef6e64e44fbd65472151847876d11273",
+            "files": 66,
+            "downloadBytes": 209897,
+            "reads": 67
+          }
+        },
+        {
+          "phase": "prepare",
+          "wallMs": 1651.7,
+          "local": {
+            "readBytes": 1566094,
+            "writeBytes": 236071,
+            "recordingReadBytes": 1504186,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 90,
+            "uniqueWritePaths": 68,
+            "retainedHashPathsReadBytes": 1474316,
+            "gzipReadBytes": 328570
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 96,
+              "receiptBytes": 934724,
+              "inclusiveMs": 884.29
+            },
+            "importRecorded": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 201.82
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 461922304,
+          "status": "passed",
+          "result": {
+            "estimate": {
+              "planned": 24,
+              "reused": 12,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 12,
+              "newMatches": 12,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 48000,
+              "estimatedBytes": 31409778,
+              "estimatedFiles": 610,
+              "readRequests": 2144,
+              "writeRequests": 544
+            },
+            "inputHash": "sha256:e98348ecd795820b0e855f520328e3737fcab6f20cd7af7c35aa00dcc737cb9c",
+            "partitions": 1
+          }
+        },
+        {
+          "phase": "admit-lease-graph",
+          "wallMs": 304.06,
+          "local": {
+            "readBytes": 504569,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 70,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 149.57
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 448311296,
+          "status": "passed",
+          "result": {
+            "files": 70,
+            "bytes": 222061,
+            "objects": 12
+          }
+        },
+        {
+          "phase": "admit",
+          "wallMs": 206.37,
+          "local": {
+            "readBytes": 516971,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 70,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 82,
+            "head": 70,
+            "list": 1,
+            "put": 5,
+            "delete": 0,
+            "readBytes": 226209,
+            "writeBytes": 12402,
+            "recordingReadBytes": 164420,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 10,
+            "readBytes": 39211,
+            "recordingReadBytes": 12429
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 105.39
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 448573440,
+          "status": "passed",
+          "result": {
+            "status": "verified",
+            "catalogHash": "sha256:6c4de0366c97fec74e218eac6ed6a0b3f97d10f428488b9c7b218be6f584f49a",
+            "storedBytes": 209778,
+            "projectedBytes": 222061,
+            "addedFiles": 4,
+            "reusedFiles": 65,
+            "writes": 5,
+            "transferBytes": 12402,
+            "workerRequests": 10,
+            "reservedS3Requests": 83,
+            "incompleteRows": 0
+          }
+        },
+        {
+          "phase": "baseline-artifact-validation",
+          "wallMs": 181.85,
+          "local": {
+            "readBytes": 504569,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 70,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 82.75
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 449097728,
+          "status": "passed",
+          "result": {
+            "files": 70,
+            "bytes": 222061,
+            "objects": 12
+          }
+        },
+        {
+          "phase": "input-artifact-0",
+          "wallMs": 3.85,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 449097728,
+          "status": "passed",
+          "result": {
+            "files": 49,
+            "bytes": 212789
+          }
+        },
+        {
+          "phase": "run-0",
+          "wallMs": 3205.18,
+          "local": {
+            "readBytes": 1834971,
+            "writeBytes": 534513,
+            "recordingReadBytes": 1339772,
+            "recordingWriteBytes": 297954,
+            "uniqueReadPaths": 266,
+            "uniqueWritePaths": 138,
+            "retainedHashPathsReadBytes": 982074,
+            "gzipReadBytes": 418194
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 108,
+              "receiptBytes": 934728,
+              "inclusiveMs": 1083.72
+            },
+            "importRecorded": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 427.29
+            },
+            "importConfirmed": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 286.24
+            }
+          },
+          "rssSampledPeakBytes": 487923712,
+          "status": "passed",
+          "result": {
+            "elapsedMs": 3199,
+            "complete": true,
+            "resultId": "sha256:c1282aac9dd731d691b858e4f884cc0dab648bab4699545f9d82d35b3414b080"
+          }
+        },
+        {
+          "phase": "result-artifact-0",
+          "wallMs": 12.38,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 450523136,
+          "status": "passed",
+          "result": {
+            "files": 97,
+            "bytes": 341092
+          }
+        },
+        {
+          "phase": "finish",
+          "wallMs": 4799.07,
+          "local": {
+            "readBytes": 3786160,
+            "writeBytes": 246164,
+            "recordingReadBytes": 3546590,
+            "recordingWriteBytes": 148978,
+            "uniqueReadPaths": 169,
+            "uniqueWritePaths": 67,
+            "retainedHashPathsReadBytes": 2071238,
+            "gzipReadBytes": 657158
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 192,
+              "receiptBytes": 2136526,
+              "inclusiveMs": 2979.94
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 451309568,
+          "status": "passed",
+          "result": {
+            "catalogHash": "sha256:2f45b43002e330ae3345d424e9aef16ea5850846670c7d647256f847e7acd781",
+            "addedFiles": 65,
+            "reusedFiles": 49,
+            "bytes": 467752,
+            "snapshot": {
+              "hash": "sha256:24db1dadc5fdaa8c7ce4b8968b8c9d8d8507d886995bc013a6c4ca77aaa9c856",
+              "bytes": 3749
+            },
+            "status": "formal",
+            "planned": 24,
+            "resolved": 24,
+            "missingPartitions": []
+          }
+        },
+        {
+          "phase": "publish-lease-graph",
+          "wallMs": 428.27,
+          "local": {
+            "readBytes": 1032772,
+            "writeBytes": 0,
+            "recordingReadBytes": 862974,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 135,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 179226
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 24,
+              "receiptBytes": 267066,
+              "inclusiveMs": 161.36
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 451309568,
+          "status": "passed",
+          "result": {
+            "files": 135,
+            "bytes": 467752,
+            "objects": 24
+          }
+        },
+        {
+          "phase": "publish",
+          "wallMs": 498.95,
+          "local": {
+            "readBytes": 1278582,
+            "writeBytes": 0,
+            "recordingReadBytes": 1011952,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 135,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 209098
+          },
+          "remote": {
+            "get": 86,
+            "head": 135,
+            "list": 1,
+            "put": 66,
+            "delete": 0,
+            "readBytes": 238492,
+            "writeBytes": 245810,
+            "recordingReadBytes": 164420,
+            "recordingWriteBytes": 148978
+          },
+          "worker": {
+            "get": 10,
+            "readBytes": 61287,
+            "recordingReadBytes": 12403
+          },
+          "bundles": {
+            "verify": {
+              "calls": 24,
+              "receiptBytes": 267066,
+              "inclusiveMs": 288.08
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 451309568,
+          "status": "passed",
+          "result": {
+            "status": "verified",
+            "catalogHash": "sha256:2f45b43002e330ae3345d424e9aef16ea5850846670c7d647256f847e7acd781",
+            "storedBytes": 222061,
+            "projectedBytes": 467752,
+            "addedFiles": 65,
+            "reusedFiles": 69,
+            "writes": 66,
+            "transferBytes": 245810,
+            "workerRequests": 10,
+            "reservedS3Requests": 270,
+            "incompleteRows": 0
+          }
+        }
+      ],
+      "artifacts": {
+        "baselinePublic": {
+          "files": 70,
+          "bytes": 222061,
+          "objects": 12
+        },
+        "input": [
+          {
+            "files": 49,
+            "bytes": 212789
+          }
+        ],
+        "result": [
+          {
+            "files": 97,
+            "bytes": 341092
+          }
+        ]
+      },
+      "totals": {
+        "coordinatorReadBytes": 11516974,
+        "coordinatorWriteBytes": 1226526,
+        "recordingReadBytes": 9991410,
+        "retainedHashPathsReadBytes": 7116532,
+        "logicalRemoteGets": 235,
+        "logicalRemoteHeads": 205,
+        "logicalRemotePuts": 71,
+        "logicalRemoteReadBytes": 674598,
+        "logicalRemoteWriteBytes": 258212,
+        "logicalWorkerGets": 25,
+        "logicalWorkerReadBytes": 108073,
+        "stageWallMs": 11792.89
+      },
+      "retainedReopenEquivalent": {
+        "receipt.json": 41,
+        "manifest.json": 49,
+        "eachGzip": 47,
+        "definition": "Sum of read bytes under every named objects/<retained-hash>/file path divided by baseline file size; excludes reads under temporary staging names. All 12 retained objects had these same ratios."
+      }
+    },
+    {
+      "name": "setup-partial-baseline",
+      "description": "12 complete retained slots plus 12 reserved attempts whose Worker never returned",
+      "stages": [
+        {
+          "phase": "restore",
+          "wallMs": 529.74,
+          "local": {
+            "readBytes": 492286,
+            "writeBytes": 209778,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 66,
+            "uniqueWritePaths": 66,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 67,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 209897,
+            "writeBytes": 0,
+            "recordingReadBytes": 148976,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 105.56
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 451309568,
+          "status": "passed",
+          "result": {
+            "status": "restored",
+            "catalogHash": "sha256:8e3e8afb09b6011574fcb0a5d708ccfaef6e64e44fbd65472151847876d11273",
+            "files": 66,
+            "downloadBytes": 209897,
+            "reads": 67
+          }
+        },
+        {
+          "phase": "prepare",
+          "wallMs": 1500.68,
+          "local": {
+            "readBytes": 1566094,
+            "writeBytes": 236191,
+            "recordingReadBytes": 1504186,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 90,
+            "uniqueWritePaths": 68,
+            "retainedHashPathsReadBytes": 1474316,
+            "gzipReadBytes": 328570
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 96,
+              "receiptBytes": 934724,
+              "inclusiveMs": 822.51
+            },
+            "importRecorded": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 413.41
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 451309568,
+          "status": "passed",
+          "result": {
+            "estimate": {
+              "planned": 24,
+              "reused": 12,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 12,
+              "newMatches": 12,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 48000,
+              "estimatedBytes": 31409778,
+              "estimatedFiles": 610,
+              "readRequests": 2144,
+              "writeRequests": 544
+            },
+            "inputHash": "sha256:e98348ecd795820b0e855f520328e3737fcab6f20cd7af7c35aa00dcc737cb9c",
+            "partitions": 1
+          }
+        },
+        {
+          "phase": "admit-lease-graph",
+          "wallMs": 279.99,
+          "local": {
+            "readBytes": 504647,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 70,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 101.63
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 381054976,
+          "status": "passed",
+          "result": {
+            "files": 70,
+            "bytes": 222139,
+            "objects": 12
+          }
+        },
+        {
+          "phase": "admit",
+          "wallMs": 335.86,
+          "local": {
+            "readBytes": 517127,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 70,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 82,
+            "head": 70,
+            "list": 1,
+            "put": 5,
+            "delete": 0,
+            "readBytes": 226209,
+            "writeBytes": 12480,
+            "recordingReadBytes": 164420,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 10,
+            "readBytes": 39214,
+            "recordingReadBytes": 12429
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 121.04
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 381054976,
+          "status": "passed",
+          "result": {
+            "status": "verified",
+            "catalogHash": "sha256:7d94b452fd5047d4397e0756554b921bb4873a773e8f5fd6822ab12111ec7a3f",
+            "storedBytes": 209778,
+            "projectedBytes": 222139,
+            "addedFiles": 4,
+            "reusedFiles": 65,
+            "writes": 5,
+            "transferBytes": 12480,
+            "workerRequests": 10,
+            "reservedS3Requests": 83,
+            "incompleteRows": 0
+          }
+        },
+        {
+          "phase": "finish",
+          "wallMs": 992.09,
+          "local": {
+            "readBytes": 754711,
+            "writeBytes": 77164,
+            "recordingReadBytes": 595904,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 72,
+            "uniqueWritePaths": 18,
+            "retainedHashPathsReadBytes": 595904,
+            "gzipReadBytes": 119480
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 24,
+              "receiptBytes": 267064,
+              "inclusiveMs": 248.72
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 381448192,
+          "status": "passed",
+          "result": {
+            "catalogHash": "sha256:6948fa063ee9735f250afd9b5e1bfcc722e850f6db3d9164e52e812497f80c64",
+            "addedFiles": 16,
+            "reusedFiles": 2,
+            "bytes": 298830,
+            "snapshot": {
+              "hash": "sha256:32ba51fb9bf3582cd4b2f60338a2e8b097636680c95a2b37e30c4e4a091cc4df",
+              "bytes": 3765
+            },
+            "status": "provisional",
+            "planned": 24,
+            "resolved": 0,
+            "missingPartitions": [0]
+          }
+        },
+        {
+          "phase": "publish-lease-graph",
+          "wallMs": 189.31,
+          "local": {
+            "readBytes": 581338,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 86,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 104.77
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 381448192,
+          "status": "passed",
+          "result": {
+            "files": 86,
+            "bytes": 298830,
+            "objects": 12
+          }
+        },
+        {
+          "phase": "publish",
+          "wallMs": 229,
+          "local": {
+            "readBytes": 658148,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 86,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 86,
+            "head": 86,
+            "list": 1,
+            "put": 17,
+            "delete": 0,
+            "readBytes": 238570,
+            "writeBytes": 76810,
+            "recordingReadBytes": 164420,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 10,
+            "readBytes": 47377,
+            "recordingReadBytes": 12429
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 122.76
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 381579264,
+          "status": "passed",
+          "result": {
+            "status": "verified",
+            "catalogHash": "sha256:6948fa063ee9735f250afd9b5e1bfcc722e850f6db3d9164e52e812497f80c64",
+            "storedBytes": 222139,
+            "projectedBytes": 298830,
+            "addedFiles": 16,
+            "reusedFiles": 69,
+            "writes": 17,
+            "transferBytes": 76810,
+            "workerRequests": 10,
+            "reservedS3Requests": 123,
+            "incompleteRows": 24
+          }
+        }
+      ]
+    },
+    {
+      "name": "retry-partial",
+      "description": "Retry only 12 missing slots of 24; retain 12 complete outcomes",
+      "stages": [
+        {
+          "phase": "probe",
+          "wallMs": 61.54,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 5,
+            "readBytes": 10675,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 381579264,
+          "status": "passed",
+          "result": {
+            "sourceSha": "d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+            "inputHash": "sha256:e98348ecd795820b0e855f520328e3737fcab6f20cd7af7c35aa00dcc737cb9c",
+            "requests": 5,
+            "bytes": 10675,
+            "estimate": {
+              "planned": 24,
+              "reused": 12,
+              "retries": 12,
+              "exhausted": 0,
+              "compute": 12,
+              "newMatches": 0,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 48000,
+              "estimatedBytes": 31200000,
+              "estimatedFiles": 544,
+              "readRequests": 2144,
+              "writeRequests": 544
+            },
+            "needed": true,
+            "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
+            "retentionVerification": "Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission."
+          }
+        },
+        {
+          "phase": "restore",
+          "wallMs": 551.3,
+          "local": {
+            "readBytes": 581338,
+            "writeBytes": 298830,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 86,
+            "uniqueWritePaths": 86,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 87,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 298949,
+            "writeBytes": 0,
+            "recordingReadBytes": 148976,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 153.73
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 381579264,
+          "status": "passed",
+          "result": {
+            "status": "restored",
+            "catalogHash": "sha256:6948fa063ee9735f250afd9b5e1bfcc722e850f6db3d9164e52e812497f80c64",
+            "files": 86,
+            "downloadBytes": 298949,
+            "reads": 87
+          }
+        },
+        {
+          "phase": "prepare",
+          "wallMs": 2053.85,
+          "local": {
+            "readBytes": 1655244,
+            "writeBytes": 239193,
+            "recordingReadBytes": 1504186,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 110,
+            "uniqueWritePaths": 68,
+            "retainedHashPathsReadBytes": 1474316,
+            "gzipReadBytes": 328570
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 96,
+              "receiptBytes": 934724,
+              "inclusiveMs": 1050.52
+            },
+            "importRecorded": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 387.64
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 382103552,
+          "status": "passed",
+          "result": {
+            "estimate": {
+              "planned": 24,
+              "reused": 12,
+              "retries": 12,
+              "exhausted": 0,
+              "compute": 12,
+              "newMatches": 0,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 48000,
+              "estimatedBytes": 31498830,
+              "estimatedFiles": 630,
+              "readRequests": 2144,
+              "writeRequests": 544
+            },
+            "inputHash": "sha256:e98348ecd795820b0e855f520328e3737fcab6f20cd7af7c35aa00dcc737cb9c",
+            "partitions": 1
+          }
+        },
+        {
+          "phase": "admit-lease-graph",
+          "wallMs": 381.73,
+          "local": {
+            "readBytes": 595735,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 90,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 119.8
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 382103552,
+          "status": "passed",
+          "result": {
+            "files": 90,
+            "bytes": 313227,
+            "objects": 12
+          }
+        },
+        {
+          "phase": "admit",
+          "wallMs": 401.83,
+          "local": {
+            "readBytes": 610251,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 90,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 102,
+            "head": 90,
+            "list": 1,
+            "put": 5,
+            "delete": 0,
+            "readBytes": 315359,
+            "writeBytes": 14516,
+            "recordingReadBytes": 164420,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 10,
+            "readBytes": 40023,
+            "recordingReadBytes": 12429
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 135.35
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 382103552,
+          "status": "passed",
+          "result": {
+            "status": "verified",
+            "catalogHash": "sha256:afd488eb58334c6e11f94f64a29a1e30c21ba01da9fae1fea1baf93682f8b7a9",
+            "storedBytes": 298830,
+            "projectedBytes": 313227,
+            "addedFiles": 4,
+            "reusedFiles": 85,
+            "writes": 5,
+            "transferBytes": 14516,
+            "workerRequests": 10,
+            "reservedS3Requests": 103,
+            "incompleteRows": 24
+          }
+        },
+        {
+          "phase": "baseline-artifact-validation",
+          "wallMs": 374.87,
+          "local": {
+            "readBytes": 595735,
+            "writeBytes": 0,
+            "recordingReadBytes": 431484,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 90,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 89610
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 163.78
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 382103552,
+          "status": "passed",
+          "result": {
+            "files": 90,
+            "bytes": 313227,
+            "objects": 12
+          }
+        },
+        {
+          "phase": "input-artifact-0",
+          "wallMs": 6.22,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 382103552,
+          "status": "passed",
+          "result": {
+            "files": 49,
+            "bytes": 213797
+          }
+        },
+        {
+          "phase": "run-0",
+          "wallMs": 2692.71,
+          "local": {
+            "readBytes": 1835979,
+            "writeBytes": 537538,
+            "recordingReadBytes": 1339772,
+            "recordingWriteBytes": 297954,
+            "uniqueReadPaths": 266,
+            "uniqueWritePaths": 138,
+            "retainedHashPathsReadBytes": 982074,
+            "gzipReadBytes": 418194
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 108,
+              "receiptBytes": 934728,
+              "inclusiveMs": 746.52
+            },
+            "importRecorded": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 311.06
+            },
+            "importConfirmed": {
+              "calls": 12,
+              "receiptBytes": 133532,
+              "inclusiveMs": 215.1
+            }
+          },
+          "rssSampledPeakBytes": 462372864,
+          "status": "passed",
+          "result": {
+            "elapsedMs": 2685,
+            "complete": true,
+            "resultId": "sha256:75bb0b8d25b7797188d4b7f83b5352a890ff1b141534d7239d7317aa253e40db"
+          }
+        },
+        {
+          "phase": "result-artifact-0",
+          "wallMs": 10.42,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 418099200,
+          "status": "passed",
+          "result": {
+            "files": 97,
+            "bytes": 342100
+          }
+        },
+        {
+          "phase": "finish",
+          "wallMs": 2077.04,
+          "local": {
+            "readBytes": 3890546,
+            "writeBytes": 238180,
+            "recordingReadBytes": 3546590,
+            "recordingWriteBytes": 148978,
+            "uniqueReadPaths": 189,
+            "uniqueWritePaths": 66,
+            "retainedHashPathsReadBytes": 2071238,
+            "gzipReadBytes": 657158
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 192,
+              "receiptBytes": 2136526,
+              "inclusiveMs": 1351.23
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 419934208,
+          "status": "passed",
+          "result": {
+            "catalogHash": "sha256:392b0d9eb6dd3a763bfdcfde91e4393ec80ec40f8afa719de11d41f519d58f6c",
+            "addedFiles": 64,
+            "reusedFiles": 50,
+            "bytes": 550934,
+            "snapshot": {
+              "hash": "sha256:b62b808f9f5144fa4c5b5a41792ffb567246c0fdd48ace3337bea4156e253964",
+              "bytes": 3749
+            },
+            "status": "formal",
+            "planned": 24,
+            "resolved": 24,
+            "missingPartitions": []
+          }
+        },
+        {
+          "phase": "publish-lease-graph",
+          "wallMs": 291.62,
+          "local": {
+            "readBytes": 1115954,
+            "writeBytes": 0,
+            "recordingReadBytes": 862974,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 154,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 179226
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 24,
+              "receiptBytes": 267066,
+              "inclusiveMs": 150.49
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 420065280,
+          "status": "passed",
+          "result": {
+            "files": 154,
+            "bytes": 550934,
+            "objects": 24
+          }
+        },
+        {
+          "phase": "publish",
+          "wallMs": 307.4,
+          "local": {
+            "readBytes": 1353780,
+            "writeBytes": 0,
+            "recordingReadBytes": 1011952,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 154,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 431484,
+            "gzipReadBytes": 209098
+          },
+          "remote": {
+            "get": 106,
+            "head": 154,
+            "list": 1,
+            "put": 65,
+            "delete": 0,
+            "readBytes": 329756,
+            "writeBytes": 237826,
+            "recordingReadBytes": 164420,
+            "recordingWriteBytes": 148978
+          },
+          "worker": {
+            "get": 10,
+            "readBytes": 61381,
+            "recordingReadBytes": 12399
+          },
+          "bundles": {
+            "verify": {
+              "calls": 24,
+              "receiptBytes": 267066,
+              "inclusiveMs": 154.79
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 420065280,
+          "status": "passed",
+          "result": {
+            "status": "verified",
+            "catalogHash": "sha256:392b0d9eb6dd3a763bfdcfde91e4393ec80ec40f8afa719de11d41f519d58f6c",
+            "storedBytes": 313227,
+            "projectedBytes": 550934,
+            "addedFiles": 64,
+            "reusedFiles": 89,
+            "writes": 65,
+            "transferBytes": 237826,
+            "workerRequests": 10,
+            "reservedS3Requests": 287,
+            "incompleteRows": 24
+          }
+        }
+      ],
+      "artifacts": {
+        "baselinePublic": {
+          "files": 90,
+          "bytes": 313227,
+          "objects": 12
+        },
+        "input": [
+          {
+            "files": 49,
+            "bytes": 213797
+          }
+        ],
+        "result": [
+          {
+            "files": 97,
+            "bytes": 342100
+          }
+        ]
+      },
+      "totals": {
+        "coordinatorReadBytes": 12234562,
+        "coordinatorWriteBytes": 1313741,
+        "recordingReadBytes": 9991410,
+        "retainedHashPathsReadBytes": 7116532,
+        "logicalRemoteGets": 295,
+        "logicalRemoteHeads": 244,
+        "logicalRemotePuts": 70,
+        "logicalRemoteReadBytes": 944064,
+        "logicalRemoteWriteBytes": 252342,
+        "logicalWorkerGets": 25,
+        "logicalWorkerReadBytes": 112079,
+        "stageWallMs": 9210.53
+      },
+      "retainedReopenEquivalent": {
+        "receipt.json": 41,
+        "manifest.json": 49,
+        "eachGzip": 47,
+        "definition": "Sum of read bytes under every named objects/<retained-hash>/file path divided by baseline file size; excludes reads under temporary staging names. All 12 retained objects had these same ratios."
+      }
+    },
+    {
+      "name": "recording-missing",
+      "description": "Corruption exists only in cloned isolated adapter; restore must reject before prepare or publication",
+      "stages": [
+        {
+          "phase": "unchanged-probe",
+          "wallMs": 17.09,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 5,
+            "readBytes": 7575,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 420065280,
+          "status": "passed",
+          "result": {
+            "sourceSha": "d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+            "inputHash": "sha256:819f7ba493d1bb04a75a4aace9cc5873e8f15952be214e242b43ecc7527e5de8",
+            "requests": 5,
+            "bytes": 7575,
+            "estimate": {
+              "planned": 12,
+              "reused": 12,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 0,
+              "newMatches": 0,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 0,
+              "estimatedBytes": 24000000,
+              "estimatedFiles": 16,
+              "readRequests": 1088,
+              "writeRequests": 16
+            },
+            "needed": false,
+            "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
+            "retentionVerification": "Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission."
+          }
+        },
+        {
+          "phase": "changed-probe",
+          "wallMs": 33.74,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 5,
+            "readBytes": 7575,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 420065280,
+          "status": "passed",
+          "result": {
+            "sourceSha": "d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+            "inputHash": "sha256:e98348ecd795820b0e855f520328e3737fcab6f20cd7af7c35aa00dcc737cb9c",
+            "requests": 5,
+            "bytes": 7575,
+            "estimate": {
+              "planned": 24,
+              "reused": 12,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 12,
+              "newMatches": 12,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 48000,
+              "estimatedBytes": 31200000,
+              "estimatedFiles": 544,
+              "readRequests": 2144,
+              "writeRequests": 544
+            },
+            "needed": true,
+            "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
+            "retentionVerification": "Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission."
+          }
+        },
+        {
+          "phase": "restore",
+          "wallMs": 30.39,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 171825,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 148800,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 51,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 52,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 171825,
+            "writeBytes": 0,
+            "recordingReadBytes": 148800,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 420065280,
+          "status": "rejected",
+          "error": "Retained publication is missing or oversized"
+        }
+      ],
+      "rejectedBefore": ["prepare", "admit", "compute", "finish", "publish"],
+      "cleanedPartialRestore": true,
+      "remotePointerUnchanged": true
+    },
+    {
+      "name": "recording-corrupt",
+      "description": "Corruption exists only in cloned isolated adapter; restore must reject before prepare or publication",
+      "stages": [
+        {
+          "phase": "unchanged-probe",
+          "wallMs": 17.33,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 5,
+            "readBytes": 7575,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 420065280,
+          "status": "passed",
+          "result": {
+            "sourceSha": "d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+            "inputHash": "sha256:819f7ba493d1bb04a75a4aace9cc5873e8f15952be214e242b43ecc7527e5de8",
+            "requests": 5,
+            "bytes": 7575,
+            "estimate": {
+              "planned": 12,
+              "reused": 12,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 0,
+              "newMatches": 0,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 0,
+              "estimatedBytes": 24000000,
+              "estimatedFiles": 16,
+              "readRequests": 1088,
+              "writeRequests": 16
+            },
+            "needed": false,
+            "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
+            "retentionVerification": "Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission."
+          }
+        },
+        {
+          "phase": "changed-probe",
+          "wallMs": 34.79,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 0,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 0,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 0,
+            "writeBytes": 0,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 5,
+            "readBytes": 7575,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 420065280,
+          "status": "passed",
+          "result": {
+            "sourceSha": "d6213977d0d4e3223000cfd61f9d9128fdf10d5a",
+            "inputHash": "sha256:e98348ecd795820b0e855f520328e3737fcab6f20cd7af7c35aa00dcc737cb9c",
+            "requests": 5,
+            "bytes": 7575,
+            "estimate": {
+              "planned": 24,
+              "reused": 12,
+              "retries": 0,
+              "exhausted": 0,
+              "compute": 12,
+              "newMatches": 12,
+              "partitions": 1,
+              "matchesPerPlan": 128,
+              "estimatedMs": 48000,
+              "estimatedBytes": 31200000,
+              "estimatedFiles": 544,
+              "readRequests": 2144,
+              "writeRequests": 544
+            },
+            "needed": true,
+            "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
+            "retentionVerification": "Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission."
+          }
+        },
+        {
+          "phase": "restore",
+          "wallMs": 44.71,
+          "local": {
+            "readBytes": 0,
+            "writeBytes": 172001,
+            "recordingReadBytes": 0,
+            "recordingWriteBytes": 148976,
+            "uniqueReadPaths": 0,
+            "uniqueWritePaths": 52,
+            "retainedHashPathsReadBytes": 0,
+            "gzipReadBytes": 0
+          },
+          "remote": {
+            "get": 52,
+            "head": 0,
+            "list": 0,
+            "put": 0,
+            "delete": 0,
+            "readBytes": 172001,
+            "writeBytes": 0,
+            "recordingReadBytes": 148976,
+            "recordingWriteBytes": 0
+          },
+          "worker": {
+            "get": 0,
+            "readBytes": 0,
+            "recordingReadBytes": 0
+          },
+          "bundles": {
+            "verify": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importRecorded": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            },
+            "importConfirmed": {
+              "calls": 0,
+              "receiptBytes": 0,
+              "inclusiveMs": 0
+            }
+          },
+          "rssSampledPeakBytes": 420065280,
+          "status": "rejected",
+          "error": "Retained artifact checksum/size mismatch"
+        }
+      ],
+      "rejectedBefore": ["prepare", "admit", "compute", "finish", "publish"],
+      "cleanedPartialRestore": true,
+      "remotePointerUnchanged": true
+    }
+  ],
+  "inputs": {
+    "small": {
+      "characters": 3,
+      "battlefields": 1,
+      "trials": 2,
+      "placements": 2,
+      "planned": 12
+    },
+    "large": {
+      "characters": 4,
+      "battlefields": 1,
+      "trials": 2,
+      "placements": 2,
+      "planned": 24
+    },
+    "masterSeed": 42,
+    "ruleset": {
+      "id": "standard-engagement-v1",
+      "revision": 1,
+      "contentHash": "sha256:c457a4c4068c0313790a4db11e3c4bdca324db1cde4aba8d2dcde566073920d8"
+    }
+  },
+  "baseline": {
+    "files": 66,
+    "bytes": 209778,
+    "receipts": 12,
+    "usedReadRequests": 10000,
+    "usedWriteRequests": 10000,
+    "recordingBytes": 148976,
+    "recordingFiles": 48
+  },
+  "completedAt": "2026-09-26T01:43:56.261Z",
+  "processMaxRssKb": 505560,
+  "driver": {
+    "archive": "FantasySimulation-league-io-evidence-d6213977.zip",
+    "path": ".generated/io-investigation/measure.ts",
+    "sha256": "9159e3a06bfbb15ad5283a3979841dcea6dfe1d39eebb32c4e58f5eee143ce2b",
+    "rawResultsSha256": "57c749608323bb72e01e8e57f37d640465e601744185efa1634d37371ef62451",
+    "reproduction": "On a fresh checkout of environment.sourceSha, install pinned dependencies with frozen lockfile, extract measure.ts to driver.path, then run command. The driver requires a fresh .generated/io-investigation/data directory and does not use production credentials."
+  },
+  "relatedPrStateAtObservation": {
+    "147": "merged",
+    "148": "merged",
+    "149": "open",
+    "150": "open"
+  },
+  "existingPilot": {
+    "path": "docs/measurements/p5-league-pilot-linux.json",
+    "sourceSha": "6890ef7b481310c6377f838b9cefaf478ba8ff90",
+    "matches": 60,
+    "computeMs": 63382,
+    "publicFiles": 926,
+    "publicBytes": 6678394,
+    "scope": "Existing local pilot; not rerun and not equivalent to official 7600-slot Actions/R2 acceptance."
+  }
+}
