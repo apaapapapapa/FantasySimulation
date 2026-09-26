@@ -6,7 +6,7 @@ import {
   publicHashName,
 } from '@fantasy/domain/spatial';
 import { publicFixtures } from '../publication-fixtures.ts';
-import type { BrowserContext } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 
 export async function serveFixture(
   context: BrowserContext,
@@ -74,3 +74,17 @@ export const event = complete.manifest.chunks
       }),
   )
   .find((event) => event.step > 0)!;
+
+/** Emulate a device without WebGL; 2D and 2D-only paths must not need it. */
+export const disableWebgl = (page: Page) =>
+  page.addInitScript(() => {
+    const getContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (
+      this: HTMLCanvasElement,
+      type: string,
+      ...args: unknown[]
+    ) {
+      if (type.startsWith('webgl')) return null;
+      return getContext.apply(this, [type, ...args] as Parameters<typeof getContext>);
+    } as typeof getContext;
+  });

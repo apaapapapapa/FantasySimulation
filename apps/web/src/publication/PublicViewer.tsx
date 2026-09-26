@@ -9,6 +9,10 @@ import { SelectedMatch } from './SelectedMatch.tsx';
 import { LeagueViewer } from './LeagueViewer.tsx';
 import { leagueLink } from './league-route.ts';
 import { usePublicData } from './use-public-data.ts';
+import { LocalReplays } from '../replay/LocalReplays.tsx';
+
+/** A separate route: files from this device never mix with published matches or rankings. */
+export const LOCAL_ROUTE = '#/local';
 
 export function PublicViewer({ root }: { root: string }) {
   return <LibraryViewer key={root} root={root} />;
@@ -19,8 +23,10 @@ function LibraryViewer({ root }: { root: string }) {
   const read = useCallback((signal: AbortSignal) => library.catalog(signal), [library]);
   const loaded = usePublicData(read);
   const catalog = loaded?.value;
+  const local = hash === LOCAL_ROUTE;
   const league =
-    hash.startsWith('#/leagues/') || ((!hash || hash === '#/') && !!catalog?.leagues?.length);
+    !local &&
+    (hash.startsWith('#/leagues/') || ((!hash || hash === '#/') && !!catalog?.leagues?.length));
   useEffect(() => {
     const change = () => setHash(window.location.hash);
     window.addEventListener('hashchange', change);
@@ -30,7 +36,7 @@ function LibraryViewer({ root }: { root: string }) {
     <main className="app-shell">
       <header>
         <p className="eyebrow">Fantasy Simulation · Replay Library</p>
-        <h1>{league ? 'リーグ結果' : '保存リプレイ一覧'}</h1>
+        <h1>{local ? 'ローカルファイルの観戦' : league ? 'リーグ結果' : '保存リプレイ一覧'}</h1>
         <p>保存された試合を選んで観戦できます。</p>
         {['localhost', '127.0.0.1', '[::1]'].includes(new URL(root).hostname) && (
           <p>ローカルのデータを表示しています。このURLは他の端末との共有には使えません。</p>
@@ -47,14 +53,18 @@ function LibraryViewer({ root }: { root: string }) {
             )}
           </nav>
         )}
+        <p>
+          <a href={LOCAL_ROUTE}>手元のリプレイファイルを開く（公開しない）</a>
+        </p>
       </header>
-      {loaded?.error && (
+      {loaded?.error && !local && (
         <p role="alert" className="message error">
           {loaded.error}
         </p>
       )}
-      {!loaded && <p role="status">公開一覧を読み込んでいます</p>}
+      {local ? <LocalReplays /> : !loaded && <p role="status">公開一覧を読み込んでいます</p>}
       {catalog &&
+        !local &&
         (league ? (
           <LeagueViewer library={library} catalog={catalog} hash={hash || '#/'} />
         ) : (
@@ -178,7 +188,13 @@ function MatchViewer({
       )}
       {route.slotId && page && !row && <p role="alert">指定した試合はこのページにありません</p>}
       {row && setHash && (
-        <SelectedMatch library={library} row={row} back={matchLink(setHash, route.page)} />
+        <SelectedMatch
+          library={library}
+          row={row}
+          back={matchLink(setHash, route.page)}
+          step={route.step}
+          stepLink={(step) => matchLink(setHash, route.page, row.slotId, step)}
+        />
       )}
     </>
   );

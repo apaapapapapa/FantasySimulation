@@ -1,7 +1,7 @@
 import { Line } from '@react-three/drei';
 import { Quaternion, Vector3 } from 'three';
 import { visionRing, type SceneModel } from './scene-model.ts';
-import type { Overlays } from './overlays.ts';
+import { ARROW_COLOURS, type Overlays } from './overlays.ts';
 
 function Sweep({ shape }: { shape: SceneModel['shapes'][number] }) {
   const start = new Vector3(...shape.points[0]),
@@ -59,6 +59,16 @@ export function SceneOverlays({ model, overlays }: { model: SceneModel; overlays
         model.paths.map((p) => <Line key={p.id} points={p.points} color="#8addc0" lineWidth={2} />)}
       {overlays.rays &&
         model.rays.map((p) => <Line key={p.id} points={p.points} color="#f3e59b" lineWidth={3} />)}
+      {overlays.motion &&
+        model.arrows.map((a) => (
+          <group key={a.id}>
+            <Line points={a.points} color={ARROW_COLOURS[a.kind]} lineWidth={3} />
+            <mesh position={a.points[1]}>
+              <sphereGeometry args={[0.08, 10, 6]} />
+              <meshBasicMaterial color={ARROW_COLOURS[a.kind]} />
+            </mesh>
+          </group>
+        ))}
       {overlays.hits &&
         model.events.map((e) => (
           <mesh key={e.id} position={e.position}>

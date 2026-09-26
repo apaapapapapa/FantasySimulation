@@ -12,7 +12,7 @@ async cancellation/retry/results and API errors. Separate Chromium/WebKit tests 
 They cover 1000-row paging, direct URLs, reload, 3D play/pause/speed/seek/cameras,
 partial endings, damaged/missing/oversize/double-gzip logs, late cancellation and
 WebGL log fallback. State/hash and reducer tests verify display; #9 owns combat.
-League: formal/provisional tables, pair selection, replay reload. Physical mobile unverified.
+League/pair replay. #82: no-WebGL 2D, emulated touch (no real phone), local files, step links.
 
 Owned temporary DB/artifacts/ports only; no existing servers, `.env` or credentials.
 Timeout/abort kills owned processes. DB/replays are excluded from uploads.

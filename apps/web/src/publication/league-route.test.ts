@@ -11,7 +11,13 @@ it('pins snapshot, participants, pair page and slot in a reloadable hash route',
     opponent: 'character-2',
     page: 6,
     slot: hash,
+    step: null,
   });
+  expect(readLeagueRoute(leagueLink(hash, 'a', 'b', 1, hash, 42))).toMatchObject({
+    slot: hash,
+    step: 42,
+  });
+  expect(() => leagueLink(hash, 'a', 'b', 1, null, 42)).toThrow('Invalid league route');
   expect(readLeagueRoute(leagueLink(hash))).toMatchObject({
     character: null,
     opponent: null,
@@ -22,6 +28,8 @@ it.each([
   '#/leagues/latest',
   leagueLink(hash) + '/characters/../bad',
   leagueLink(hash, 'a', 'b') + '?step=1',
+  leagueLink(hash, 'a', 'b') + '/steps/1',
+  leagueLink(hash, 'a', 'b', 0, hash) + '/steps/6001',
   leagueLink(hash, 'a', 'b').replace('/pages/0', '/pages/7'),
 ])('rejects malformed league link %s', (route) => {
   expect(readLeagueRoute(route)).toBeNull();
