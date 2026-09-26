@@ -1,11 +1,8 @@
 {
   "schemaVersion": 1,
   "kind": "official-league-actions",
-  "status": "publication-pending",
+  "status": "publication-recovery-running",
   "definition": "data/leagues/official-20-v1.json",
-  "sourceSha": "ffa49bc8bc0f6fb603834ee72cfc4f015757f273",
-  "mainCiRunId": 36211783934,
-  "viewerRunId": 36212063498,
   "dryRun": {
     "runId": 36212097198,
     "attempt": 1,
@@ -35,140 +32,6 @@
       "reuseVerification": "Published metadata only; admission verifies retained bundle checksums.",
       "sourceSha": "ffa49bc8bc0f6fb603834ee72cfc4f015757f273"
     }
-  },
-  "publication": {
-    "runId": 36212301947,
-    "attempt": 1,
-    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36212301947",
-    "phaseTransport": [
-      {
-        "phase": "league-36212301947-1-restore",
-        "control": {
-          "logicalRequests": 10,
-          "classARequests": 3,
-          "classBRequests": 7,
-          "maxAttempts": 1,
-          "successfulWrites": 2,
-          "readBytes": 1075,
-          "uploadedBytes": 584
-        },
-        "transport": {
-          "logicalRequests": 35,
-          "classARequests": 0,
-          "classBRequests": 35,
-          "maxAttempts": 1,
-          "successfulWrites": 0,
-          "readBytes": 170878,
-          "uploadedBytes": 0
-        }
-      },
-      {
-        "phase": "league-36212301947-1-admit",
-        "control": {
-          "logicalRequests": 8,
-          "classARequests": 3,
-          "classBRequests": 5,
-          "maxAttempts": 1,
-          "successfulWrites": 2,
-          "readBytes": 2444,
-          "uploadedBytes": 1193
-        },
-        "transport": {
-          "logicalRequests": 216,
-          "classARequests": 72,
-          "classBRequests": 144,
-          "maxAttempts": 1,
-          "successfulWrites": 71,
-          "readBytes": 173846,
-          "uploadedBytes": 2988143
-        }
-      },
-      {
-        "phase": "league-36212301947-1-publish",
-        "control": {
-          "logicalRequests": 8,
-          "classARequests": 3,
-          "classBRequests": 5,
-          "maxAttempts": 1,
-          "successfulWrites": 2,
-          "readBytes": 3991,
-          "uploadedBytes": 1817
-        },
-        "transport": {
-          "logicalRequests": 0,
-          "classARequests": 0,
-          "classBRequests": 0,
-          "maxAttempts": 1,
-          "successfulWrites": 0,
-          "readBytes": 0,
-          "uploadedBytes": 0
-        }
-      }
-    ],
-    "compute": {
-      "observedAt": "2026-09-26T03:20:01.627Z",
-      "computeWallMs": 2106000,
-      "totalJobMs": 8094000,
-      "maxConcurrentReportedJobs": 4,
-      "partitions": 60,
-      "successfulJobs": 60,
-      "note": "Job success is not a definitive battle outcome; resolved slots are counted from the validated snapshot.",
-      "resultArtifacts": {
-        "count": 60,
-        "archiveBytes": 593664465,
-        "note": "GitHub artifact ZIP sizes, not R2 stored bytes."
-      },
-      "partitionExecutionElapsedMs": {
-        "sum": 6037519,
-        "min": 15526,
-        "max": 382177,
-        "median": 74854.5,
-        "note": "Sum of recorded partition durations; not wall time or billed CPU time."
-      }
-    },
-    "validation": {
-      "startedAt": "2026-09-26T03:20:48Z",
-      "completedAt": "2026-09-26T04:09:11Z",
-      "elapsedMs": 2903000,
-      "conclusion": "success",
-      "note": "Local aggregation and artifact validation; R2 publication/readback is a later step."
-    },
-    "conclusion": "failure",
-    "completedAt": "2026-09-26T04:24:24Z",
-    "measurementsArtifact": {
-      "id": 10898270291,
-      "archiveDigest": "sha256:7fd336af3cc348fdfb2f866ccd0e2d6db146565387cea335ee2c0b83f3098c0c"
-    },
-    "completion": {
-      "addedFiles": 88055,
-      "bytes": 580388079,
-      "catalogHash": "sha256:f155cccd70a1aaf8affee161e2f8007940e73f55f4beffd61c62842dbcdd0532",
-      "elapsedMs": [
-        79613, 245741, 66960, 92382, 75562, 53986, 213072, 130400, 54267, 61532, 67432, 67485,
-        382177, 94872, 97669, 134485, 49036, 297090, 119471, 128374, 146447, 97571, 111630, 49048,
-        52649, 49837, 137927, 267250, 105565, 139892, 193955, 157444, 182481, 133913, 95733, 59346,
-        63400, 56995, 54375, 51244, 98714, 51804, 66732, 69421, 83017, 46389, 73619, 69103, 64576,
-        63427, 66181, 74147, 54749, 50296, 112114, 59266, 79489, 78785, 41856, 15526
-      ],
-      "missingPartitions": [],
-      "planned": 7600,
-      "receivedPartitions": 60,
-      "resolved": 7600,
-      "reusedFiles": 60,
-      "snapshot": {
-        "bytes": 16460,
-        "hash": "sha256:a3abcc329008555c1d477c4d33a7c401c7c2d38ec6ee0527fd8652cd656b69ed"
-      },
-      "status": "formal"
-    },
-    "failureAnalysis": {
-      "classification": "inferred stale local Git ancestry while Pages advanced",
-      "checkoutAt": "2026-09-26T03:18:11Z",
-      "failureAt": "2026-09-26T04:24:19Z",
-      "evidence": "All 7600 resolved formally; zero result transport requests. Pages advanced after checkout; ancestorOf rejected unknown deployed commits. Regression reproduced with a remote commit created after clone. The old catch omitted the specific exception, so attribution is inferred.",
-      "localExportBytesAreNotR2Usage": true
-    },
-    "elapsedMs": 6381000
   },
   "cloudBefore": {
     "schemaVersion": 1,
@@ -276,17 +139,16 @@
     }
   },
   "remainingEvidence": [
-    "Final outcome and validated snapshot for the current generation (run 36230476390); if failed, eligible recovery with PR #163 on verified main",
-    "Successful conditional current update and R2/Worker readback of the formal 7600-slot snapshot",
-    "Final measured storage, transfer, request and runtime totals, including failures and retained objects",
-    "Production viewer navigation, initial load and pricing estimate for the published official snapshot",
-    "Reviewed Issue #134 completion declaration after every acceptance item has evidence"
+    "Successful official publication and R2/Worker readback",
+    "Production ranking/fields/matrix/pair/recording route",
+    "Observed public data reads, storage and account usage",
+    "Final declaration and completion workflow"
   ],
   "notes": [
-    "The initial publication failed after successful result validation; this is not an Issue completion declaration.",
-    "The 6GB estimate includes a conservative workload profile; actual publication is measured separately.",
-    "Production credentials remain in the protected Actions Environment.",
-    "This checkpoint records a failed recovery and a newer in-progress generation. It does not declare production publication or Issue #134 complete, reset consumed leases, or authorize overwriting current."
+    "The initial publication and two earlier recoveries are preserved as historical failure evidence. Original source identities and consumed leases have not been reset.",
+    "The scheduled official run resolved all 7600 slots and finalized its catalog before its publication job was cancelled. Local export bytes are not R2 usage.",
+    "Current recovery uses the original 36230476390/1 artifacts and original execution identity. Current main only validates and publishes saved records; it does not load or execute an old engine.",
+    "Production credentials remain in the protected Actions Environment. Final R2/Worker and Pages acceptance, usage/cost observations, and Issue completion remain pending."
   ],
   "fixtureUi": {
     "sourceSha": "ffa49bc8bc0f6fb603834ee72cfc4f015757f273",
@@ -524,31 +386,6 @@
       "requests": 53
     }
   },
-  "recovery": {
-    "runId": 36219874846,
-    "attempt": 1,
-    "sourceSha": "a7b86698f3aad83778243acffe34c92b6cbaf999",
-    "mainCiRunId": 36219535434,
-    "originalRunId": 36212301947,
-    "originalAttempt": 1,
-    "pullRequest": 161,
-    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36219874846",
-    "status": "failure",
-    "note": "Original simulation source, reservations and artifact checksums are preserved. Recovery runs no battle and uses new durable transport leases.",
-    "failure": {
-      "code": "ETIMEDOUT",
-      "signal": "SIGTERM",
-      "startedAt": "2026-09-26T05:08:20Z",
-      "completedAt": "2026-09-26T06:08:26Z",
-      "elapsedMs": 3606000,
-      "publicationStep": "skipped",
-      "note": "Artifact download and full finalization share the 60-minute child-process timeout. No R2 publication or new simulation occurred."
-    },
-    "measurementsArtifact": {
-      "id": 10899681737,
-      "archiveDigest": "sha256:72445e349693d90f799671b6bd9e7d3c8bcb1533940d6fd078cc2c4b5f230dec"
-    }
-  },
   "cloudBeforeSecondRecovery": {
     "schemaVersion": 1,
     "observedAt": "2026-09-26T06:27:59.551Z",
@@ -657,8 +494,185 @@
       "requests": 66
     }
   },
-  "observedAt": "2026-09-26T10:18:25.580Z",
-  "recoveryRetry": {
+  "observedAt": "2026-09-26T13:59:44.034Z",
+  "publicationFix": {
+    "pullRequest": 163,
+    "headSha": "8afa51df6d0f99b53f45e3347dbfce43d6e53e6b",
+    "mergeSha": "81516a54ac23d4f82de10b431bc03e1348aaca18",
+    "prCiRunId": 36234546854,
+    "mainCiRunId": 36234937836,
+    "localCleanSource": "passed",
+    "tests": 1421,
+    "automaticReview": "completed without findings",
+    "limitsChanged": false,
+    "note": "Verify the entire graph once before durable data admission and transport startup; preserve byte validation, stage barriers, generation checks and readback. Does not change an already running workflow.",
+    "mainCiConclusion": "success",
+    "releaseConclusion": "success",
+    "mergeDelivery": "passed"
+  },
+  "initialSourceSha": "ffa49bc8bc0f6fb603834ee72cfc4f015757f273",
+  "initialMainCiRunId": 36211783934,
+  "initialViewerRunId": 36212063498,
+  "initialPublication": {
+    "runId": 36212301947,
+    "attempt": 1,
+    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36212301947",
+    "phaseTransport": [
+      {
+        "phase": "league-36212301947-1-restore",
+        "control": {
+          "logicalRequests": 10,
+          "classARequests": 3,
+          "classBRequests": 7,
+          "maxAttempts": 1,
+          "successfulWrites": 2,
+          "readBytes": 1075,
+          "uploadedBytes": 584
+        },
+        "transport": {
+          "logicalRequests": 35,
+          "classARequests": 0,
+          "classBRequests": 35,
+          "maxAttempts": 1,
+          "successfulWrites": 0,
+          "readBytes": 170878,
+          "uploadedBytes": 0
+        }
+      },
+      {
+        "phase": "league-36212301947-1-admit",
+        "control": {
+          "logicalRequests": 8,
+          "classARequests": 3,
+          "classBRequests": 5,
+          "maxAttempts": 1,
+          "successfulWrites": 2,
+          "readBytes": 2444,
+          "uploadedBytes": 1193
+        },
+        "transport": {
+          "logicalRequests": 216,
+          "classARequests": 72,
+          "classBRequests": 144,
+          "maxAttempts": 1,
+          "successfulWrites": 71,
+          "readBytes": 173846,
+          "uploadedBytes": 2988143
+        }
+      },
+      {
+        "phase": "league-36212301947-1-publish",
+        "control": {
+          "logicalRequests": 8,
+          "classARequests": 3,
+          "classBRequests": 5,
+          "maxAttempts": 1,
+          "successfulWrites": 2,
+          "readBytes": 3991,
+          "uploadedBytes": 1817
+        },
+        "transport": {
+          "logicalRequests": 0,
+          "classARequests": 0,
+          "classBRequests": 0,
+          "maxAttempts": 1,
+          "successfulWrites": 0,
+          "readBytes": 0,
+          "uploadedBytes": 0
+        }
+      }
+    ],
+    "compute": {
+      "observedAt": "2026-09-26T03:20:01.627Z",
+      "computeWallMs": 2106000,
+      "totalJobMs": 8094000,
+      "maxConcurrentReportedJobs": 4,
+      "partitions": 60,
+      "successfulJobs": 60,
+      "note": "Job success is not a definitive battle outcome; resolved slots are counted from the validated snapshot.",
+      "resultArtifacts": {
+        "count": 60,
+        "archiveBytes": 593664465,
+        "note": "GitHub artifact ZIP sizes, not R2 stored bytes."
+      },
+      "partitionExecutionElapsedMs": {
+        "sum": 6037519,
+        "min": 15526,
+        "max": 382177,
+        "median": 74854.5,
+        "note": "Sum of recorded partition durations; not wall time or billed CPU time."
+      }
+    },
+    "validation": {
+      "startedAt": "2026-09-26T03:20:48Z",
+      "completedAt": "2026-09-26T04:09:11Z",
+      "elapsedMs": 2903000,
+      "conclusion": "success",
+      "note": "Local aggregation and artifact validation; R2 publication/readback is a later step."
+    },
+    "conclusion": "failure",
+    "completedAt": "2026-09-26T04:24:24Z",
+    "measurementsArtifact": {
+      "id": 10898270291,
+      "archiveDigest": "sha256:7fd336af3cc348fdfb2f866ccd0e2d6db146565387cea335ee2c0b83f3098c0c"
+    },
+    "completion": {
+      "addedFiles": 88055,
+      "bytes": 580388079,
+      "catalogHash": "sha256:f155cccd70a1aaf8affee161e2f8007940e73f55f4beffd61c62842dbcdd0532",
+      "elapsedMs": [
+        79613, 245741, 66960, 92382, 75562, 53986, 213072, 130400, 54267, 61532, 67432, 67485,
+        382177, 94872, 97669, 134485, 49036, 297090, 119471, 128374, 146447, 97571, 111630, 49048,
+        52649, 49837, 137927, 267250, 105565, 139892, 193955, 157444, 182481, 133913, 95733, 59346,
+        63400, 56995, 54375, 51244, 98714, 51804, 66732, 69421, 83017, 46389, 73619, 69103, 64576,
+        63427, 66181, 74147, 54749, 50296, 112114, 59266, 79489, 78785, 41856, 15526
+      ],
+      "missingPartitions": [],
+      "planned": 7600,
+      "receivedPartitions": 60,
+      "resolved": 7600,
+      "reusedFiles": 60,
+      "snapshot": {
+        "bytes": 16460,
+        "hash": "sha256:a3abcc329008555c1d477c4d33a7c401c7c2d38ec6ee0527fd8652cd656b69ed"
+      },
+      "status": "formal"
+    },
+    "failureAnalysis": {
+      "classification": "inferred stale local Git ancestry while Pages advanced",
+      "checkoutAt": "2026-09-26T03:18:11Z",
+      "failureAt": "2026-09-26T04:24:19Z",
+      "evidence": "All 7600 resolved formally; zero result transport requests. Pages advanced after checkout; ancestorOf rejected unknown deployed commits. Regression reproduced with a remote commit created after clone. The old catch omitted the specific exception, so attribution is inferred.",
+      "localExportBytesAreNotR2Usage": true
+    },
+    "elapsedMs": 6381000
+  },
+  "initialRecovery": {
+    "runId": 36219874846,
+    "attempt": 1,
+    "sourceSha": "a7b86698f3aad83778243acffe34c92b6cbaf999",
+    "mainCiRunId": 36219535434,
+    "originalRunId": 36212301947,
+    "originalAttempt": 1,
+    "pullRequest": 161,
+    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36219874846",
+    "status": "failure",
+    "note": "Original simulation source, reservations and artifact checksums are preserved. Recovery runs no battle and uses new durable transport leases.",
+    "failure": {
+      "code": "ETIMEDOUT",
+      "signal": "SIGTERM",
+      "startedAt": "2026-09-26T05:08:20Z",
+      "completedAt": "2026-09-26T06:08:26Z",
+      "elapsedMs": 3606000,
+      "publicationStep": "skipped",
+      "note": "Artifact download and full finalization share the 60-minute child-process timeout. No R2 publication or new simulation occurred."
+    },
+    "measurementsArtifact": {
+      "id": 10899681737,
+      "archiveDigest": "sha256:72445e349693d90f799671b6bd9e7d3c8bcb1533940d6fd078cc2c4b5f230dec"
+    }
+  },
+  "secondRecovery": {
     "runId": 36223982956,
     "attempt": 1,
     "sourceSha": "7d2a3368f61ab81590bd31c6ce15ba339a7fbbf4",
@@ -729,44 +743,397 @@
       ]
     }
   },
-  "publicationFix": {
-    "pullRequest": 163,
-    "headSha": "8afa51df6d0f99b53f45e3347dbfce43d6e53e6b",
-    "mergeSha": "81516a54ac23d4f82de10b431bc03e1348aaca18",
-    "prCiRunId": 36234546854,
-    "mainCiRunId": 36234937836,
-    "localCleanSource": "passed",
-    "tests": 1421,
-    "automaticReview": "completed without findings",
-    "limitsChanged": false,
-    "note": "Verify the entire graph once before durable data admission and transport startup; preserve byte validation, stage barriers, generation checks and readback. Does not change an already running workflow.",
-    "mainCiConclusion": "success",
-    "releaseConclusion": "success",
-    "mergeDelivery": "passed"
-  },
-  "concurrentDailyRun": {
-    "observedAt": "2026-09-26T10:18:25.580Z",
+  "officialRun": {
     "runId": 36230476390,
     "attempt": 1,
-    "event": "schedule",
-    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36230476390",
     "sourceSha": "7d2a3368f61ab81590bd31c6ce15ba339a7fbbf4",
-    "status": "in_progress",
+    "status": "completed",
+    "observedAt": "2026-09-26T12:11:08Z",
     "compute": {
-      "partitions": 60,
-      "successfulJobs": 60,
-      "note": "Job success is not validated formal resolution or completed publication."
+      "runId": 36230476390,
+      "attempt": 1,
+      "sourceSha": "7d2a3368f61ab81590bd31c6ce15ba339a7fbbf4",
+      "computeJobs": 60,
+      "successfulComputeJobs": 60,
+      "computeStartedAt": "2026-09-26T09:25:14.000Z",
+      "computeCompletedAt": "2026-09-26T09:59:57.000Z",
+      "computeWallMs": 2083000,
+      "computeJobTotalMs": 8024000
     },
-    "publishJobId": 108383539408,
-    "validationStartedAt": "2026-09-26T10:02:13Z",
-    "currentGeneration": {
-      "observedAt": "2026-09-26T09:56:33.719Z",
-      "method": "Cloudflare R2 List Objects metadata; metadata alone is not a Worker readback or successful result publication.",
-      "currentLastModified": "2026-09-26T09:24:24.211Z",
-      "currentBytes": 119,
-      "newCatalogKey": "catalog/a18632dbc8db1fe3d9d7aa1d092ef15f18f1dc76a556717f2511b415dddd748e.json",
-      "newCatalogBytes": 332
+    "validation": {
+      "name": "Validate received partitions and preserve every missing denominator",
+      "status": "completed",
+      "conclusion": "success",
+      "number": 7,
+      "started_at": "2026-09-26T10:02:13Z",
+      "completed_at": "2026-09-26T11:31:19Z",
+      "elapsedMs": 5346000
     },
-    "recoveryConstraint": "This run admitted a newer generation after the earlier recovery failed. Do not force the original run 36212301947 over current. Wait for this run to finish; if it fails, recovery must satisfy the existing failed-run, original artifact/catalog, CI, ancestry, usage and current-generation checks."
-  }
+    "resultArtifacts": {
+      "count": 60,
+      "archiveBytes": 594333266,
+      "note": "GitHub ZIP bytes; not R2 stored bytes."
+    },
+    "baselineArtifact": {
+      "id": 10903340495,
+      "archiveBytes": 33039692,
+      "archiveDigest": "sha256:758b1b3e25079139ff080b189e5b5a9bddfaac9325846fe39d8aed83cf10915b",
+      "digestVerified": true
+    },
+    "remainingWork": [
+      "Publication and readback",
+      "Official Pages and measured overview payload",
+      "Completion workflow"
+    ],
+    "conclusion": "cancelled",
+    "publicationJob": {
+      "id": 108383539408,
+      "startedAt": "2026-09-26T10:00:01Z",
+      "completedAt": "2026-09-26T12:00:18Z",
+      "conclusion": "cancelled",
+      "publicationStep": {
+        "name": "Reserve publication budget and verify R2 and Worker readback",
+        "status": "completed",
+        "conclusion": "cancelled",
+        "number": 8,
+        "started_at": "2026-09-26T11:31:19Z",
+        "completed_at": "2026-09-26T12:00:14Z"
+      },
+      "uploadStep": {
+        "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 9,
+        "started_at": "2026-09-26T12:00:14Z",
+        "completed_at": "2026-09-26T12:00:15Z"
+      }
+    },
+    "measurementArtifact": {
+      "id": 10905153648,
+      "bytes": 1947,
+      "sha256": "cfb72070e10cc4b18c9637e5b71754d30641adbb0b373912adc0b44afec87f9e",
+      "verifiedArchive": true
+    },
+    "completion": {
+      "addedFiles": 88055,
+      "bytes": 585382597,
+      "catalogHash": "sha256:260bea3b74ff3bfd5544101fe7731144e5e067315bf045da659dea91308beaed",
+      "elapsedMs": [
+        84228, 244153, 65496, 81816, 61182, 56864, 231457, 130488, 74918, 67652, 82065, 63353,
+        368689, 73673, 119344, 135998, 59691, 271157, 117049, 132924, 147696, 99087, 111370, 49529,
+        51364, 29081, 148680, 200492, 104367, 141046, 178002, 159210, 149811, 107864, 78284, 50263,
+        66697, 56150, 53605, 62208, 59686, 49466, 66509, 69825, 67858, 56667, 60924, 68790, 65429,
+        75272, 62032, 74290, 64879, 98254, 114371, 55614, 87729, 51726, 50354, 13806
+      ],
+      "missingPartitions": [],
+      "planned": 7600,
+      "receivedPartitions": 60,
+      "resolved": 7600,
+      "reusedFiles": 60,
+      "snapshot": {
+        "bytes": 16460,
+        "hash": "sha256:0efa8ee2c1d782b040dde54c67cc5b05585d445bb3fabbc55b3d34f6431caac9"
+      },
+      "status": "formal"
+    },
+    "publication": {
+      "status": "not-published-as-of-readback",
+      "currentCatalogObservedAt": "2026-09-26T12:06:48.364Z",
+      "currentCatalog": "sha256:a18632dbc8db1fe3d9d7aa1d092ef15f18f1dc76a556717f2511b415dddd748e",
+      "note": "Production Pages still shows two retained sample matches. No publish transport report survived; do not infer zero partial writes or refund usage."
+    },
+    "priorObservation": {
+      "observedAt": "2026-09-26T10:18:25.580Z",
+      "runId": 36230476390,
+      "attempt": 1,
+      "event": "schedule",
+      "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36230476390",
+      "sourceSha": "7d2a3368f61ab81590bd31c6ce15ba339a7fbbf4",
+      "status": "in_progress",
+      "compute": {
+        "partitions": 60,
+        "successfulJobs": 60,
+        "note": "Job success is not validated formal resolution or completed publication."
+      },
+      "publishJobId": 108383539408,
+      "validationStartedAt": "2026-09-26T10:02:13Z",
+      "currentGeneration": {
+        "observedAt": "2026-09-26T09:56:33.719Z",
+        "method": "Cloudflare R2 List Objects metadata; metadata alone is not a Worker readback or successful result publication.",
+        "currentLastModified": "2026-09-26T09:24:24.211Z",
+        "currentBytes": 119,
+        "newCatalogKey": "catalog/a18632dbc8db1fe3d9d7aa1d092ef15f18f1dc76a556717f2511b415dddd748e.json",
+        "newCatalogBytes": 332
+      },
+      "recoveryConstraint": "This run admitted a newer generation after the earlier recovery failed. Do not force the original run 36212301947 over current. Wait for this run to finish; if it fails, recovery must satisfy the existing failed-run, original artifact/catalog, CI, ancestry, usage and current-generation checks."
+    }
+  },
+  "repairs": [
+    {
+      "pr": 165,
+      "mergeSha": "3e5cfaeb408e1e3c21ce996293a50085bdbf453a",
+      "mainCiRun": 36238198628,
+      "delivery": "pass",
+      "purpose": "Share checked finalization result without weakening graph validation"
+    },
+    {
+      "pr": 170,
+      "mergeSha": "9cda4542885be500e7ed0aeacf1573c36404670e",
+      "mainCiRun": 36240417698,
+      "delivery": "pass",
+      "purpose": "Opt-in main-thread public JSON measurement",
+      "pagesRun": 36240758946
+    },
+    {
+      "pr": 176,
+      "status": "merged-and-verified",
+      "purpose": "Recover finalized interrupted publication from exact immutable artifacts",
+      "mergeSha": "bacfb4d33bf5c74621355829eb761e3ac69ce9cc",
+      "mainCiRun": 36243820373,
+      "delivery": "pass",
+      "mergedExternally": true
+    },
+    {
+      "pr": 181,
+      "status": "merged-and-verified",
+      "headSha": "78c97588f0e4dce7649dd133296c24d9aa707ac6",
+      "mergeSha": "677c2adeb2e4a806249dca4bc1add183a5c217fd",
+      "prCiRun": 36245768747,
+      "mainCiRun": 36246073871,
+      "purpose": "Authenticate and publish saved league plans/results after installed engine changes without old engine execution",
+      "cleanSource": {
+        "sourceSha": "78c97588f0e4dce7649dd133296c24d9aa707ac6",
+        "candidateSha": "78c97588f0e4dce7649dd133296c24d9aa707ac6",
+        "baselineSha": null,
+        "testMergeSha": null,
+        "command": ["vp", "run", "verify"],
+        "platform": "linux",
+        "nodeVersion": "v24.19.0",
+        "startedAt": "2026-09-26T13:32:00.701Z",
+        "finishedAt": "2026-09-26T13:36:25.278Z",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "cleanBefore": true,
+        "cleanAfter": true
+      },
+      "reviewCompletedAt": "2026-09-26T13:41:13.141745Z",
+      "reviewFindings": "CLI check/export entry P2 fixed with real CLI regression; latest head review reports no major issues",
+      "prDelivery": "pass",
+      "delivery": "pass",
+      "pagesRun": 36246245102
+    }
+  ],
+  "publicationRecovery": {
+    "runId": 36246744147,
+    "attempt": 1,
+    "url": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36246744147",
+    "sourceSha": "63b49c60bba9af4007061b7eb1228c7b4fad8ac4",
+    "mainCiRunId": 36246533645,
+    "originalRunId": 36230476390,
+    "originalAttempt": 1,
+    "createdAt": "2026-09-26T13:55:05Z",
+    "status": "in_progress",
+    "expectedCatalogHash": "sha256:260bea3b74ff3bfd5544101fe7731144e5e067315bf045da659dea91308beaed",
+    "expectedSnapshot": {
+      "bytes": 16460,
+      "hash": "sha256:0efa8ee2c1d782b040dde54c67cc5b05585d445bb3fabbc55b3d34f6431caac9"
+    },
+    "note": "Original artifacts downloaded and hashes verified; finalization and publication/readback are still pending. This is not a production success or Issue completion claim."
+  },
+  "cloudBeforePublicationRecovery": {
+    "observedAt": "2026-09-26T13:45:39.045Z",
+    "response": {
+      "success": true,
+      "status": 200,
+      "result": {
+        "viewer": {
+          "accounts": [
+            {
+              "accountOperations": [
+                {
+                  "dimensions": {
+                    "actionType": "ListBuckets"
+                  },
+                  "sum": {
+                    "requests": 47
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "PutObject"
+                  },
+                  "sum": {
+                    "requests": 51861
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "PutBucket"
+                  },
+                  "sum": {
+                    "requests": 2
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "PutBucketLifecycleConfiguration"
+                  },
+                  "sum": {
+                    "requests": 541
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "ListMultipartUploads"
+                  },
+                  "sum": {
+                    "requests": 10
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "GetObject"
+                  },
+                  "sum": {
+                    "requests": 14610
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "HeadObject"
+                  },
+                  "sum": {
+                    "requests": 469
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "GetBucketLifecycleConfiguration"
+                  },
+                  "sum": {
+                    "requests": 1109
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "HeadBucket"
+                  },
+                  "sum": {
+                    "requests": 990
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "ListObjects"
+                  },
+                  "sum": {
+                    "requests": 244
+                  }
+                }
+              ],
+              "reader": [
+                {
+                  "sum": {
+                    "errors": 0,
+                    "requests": 121
+                  }
+                }
+              ],
+              "targetOperations": [
+                {
+                  "dimensions": {
+                    "actionType": "PutObject"
+                  },
+                  "sum": {
+                    "requests": 50122
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "PutBucket"
+                  },
+                  "sum": {
+                    "requests": 1
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "ListMultipartUploads"
+                  },
+                  "sum": {
+                    "requests": 2
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "GetObject"
+                  },
+                  "sum": {
+                    "requests": 5864
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "HeadObject"
+                  },
+                  "sum": {
+                    "requests": 345
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "GetBucketLifecycleConfiguration"
+                  },
+                  "sum": {
+                    "requests": 1
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "HeadBucket"
+                  },
+                  "sum": {
+                    "requests": 11
+                  }
+                },
+                {
+                  "dimensions": {
+                    "actionType": "ListObjects"
+                  },
+                  "sum": {
+                    "requests": 211
+                  }
+                }
+              ],
+              "targetStorage": [
+                {
+                  "dimensions": {
+                    "datetime": "2026-09-26T13:00:00Z"
+                  },
+                  "max": {
+                    "metadataSize": 4821455,
+                    "objectCount": 50224,
+                    "payloadSize": 323302182
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "sum": {
+                    "errors": 0,
+                    "requests": 487
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "errors": [],
+      "messages": []
+    }
+  },
+  "productionAcceptance": null,
+  "costAndUsage": null
 }
