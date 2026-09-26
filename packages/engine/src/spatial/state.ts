@@ -1,6 +1,7 @@
 /** Pure execution state types. Runtime behavior depends on these definitions, never the reverse. */
 import type {
   ActorDisplay,
+  BodyPhasing,
   AttackGeometry,
   Cognition,
   DeepReadonly,
@@ -56,6 +57,7 @@ export type MotionState = {
   facing: Vec3;
   grounded: boolean;
   posture?: PostureState;
+  phasing?: BodyPhasing | null;
   vision?: { rangeMm: number; fovMilliDegrees: number; enabled: boolean; visible: boolean };
 };
 
@@ -282,6 +284,7 @@ export type MeleeState = DamageSnapshot & {
 };
 
 export type DamageSnapshot = DamageSource & {
+  phaseSlopeY?: number;
   /** A redirected projectile cannot generate drain for either owner. */
   drainDisabled?: true;
   dealtByElement?: Readonly<

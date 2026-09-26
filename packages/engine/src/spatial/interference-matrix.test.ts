@@ -1,3 +1,4 @@
+import phasing from '../../fixtures/spatial/phasing-pairs.json' with { type: 'json' };
 import { expect, it } from 'vite-plus/test';
 import {
   interferenceTable,
@@ -29,13 +30,15 @@ function validateCoverage(input: typeof coverage) {
     if (
       typeof id !== 'string' ||
       tests[id]?.file !==
-        (kind === 'objects'
-          ? 'packages/engine/src/spatial/spatial-object-interference.test.ts'
-          : kind === 'teleport'
-            ? 'packages/engine/src/spatial/teleport-interference.test.ts'
-            : kind === 'recovery'
-              ? 'packages/engine/src/spatial/recovery-interference.test.ts'
-              : 'packages/engine/src/spatial/interference-matrix.test.ts')
+        (kind === 'phasing'
+          ? 'packages/engine/src/spatial/phasing-interference.test.ts'
+          : kind === 'objects'
+            ? 'packages/engine/src/spatial/spatial-object-interference.test.ts'
+            : kind === 'teleport'
+              ? 'packages/engine/src/spatial/teleport-interference.test.ts'
+              : kind === 'recovery'
+                ? 'packages/engine/src/spatial/recovery-interference.test.ts'
+                : 'packages/engine/src/spatial/interference-matrix.test.ts')
     )
       throw new Error(`Missing executed ${kind} corpus binding`);
   }
@@ -52,6 +55,7 @@ function validateCoverage(input: typeof coverage) {
     ...recovery.cases.map((c) => c.id),
     ...teleport.cases.map((c) => c.id),
     ...objects.cases.map((c) => c.id),
+    ...phasing.cases.map((c) => c.id),
     ...STATUS_CONFLICT_RULES,
     ...interferenceTable.mechanics.filter((m) => !m.implemented).map((m) => `reject.${m.id}`),
   ]);

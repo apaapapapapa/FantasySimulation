@@ -1,3 +1,4 @@
+import { bodyWorld } from '../rules/phasing.ts';
 import { spatialBudgets } from './spatial-commands.ts';
 import type { Relocation, StageContact } from '@fantasy/domain/spatial/execution';
 import type { AbilityRevision, ActorState } from '../state.ts';
@@ -113,7 +114,7 @@ export function activateRelocations(tx: StepTransaction) {
               p.z - body.radius < min.z ||
               p.z + body.radius > max.z
             ? 'arena'
-            : world.forQuery({ ownerId: command.ownerId }).overlaps(p, capsuleShape(body))
+            : bodyWorld(world, motion).overlaps(p, capsuleShape(body))
               ? 'obstacle'
               : actors.some(
                     (other) =>

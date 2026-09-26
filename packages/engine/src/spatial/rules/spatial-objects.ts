@@ -43,6 +43,7 @@ export function barrierObstacle(object: Extract<SpatialObject, { kind: 'barrier'
   return {
     ...objectGeometry(object.id, object.spec.shape, object.position),
     ownerId: object.ownerId,
+    material: 'energy',
     order: object.ownerSlot * 100000 + object.ordinal,
     blocks: {
       movement: object.spec.blocks.movement !== 'none',

@@ -1,3 +1,4 @@
+import { attackWorld } from '../rules/phasing.ts';
 import type { MovedActor } from '../world/movement.ts';
 import { objectGeometry } from '../world/object-geometry.ts';
 import { areaContact, beamContact } from '../rules/object-contact.ts';
@@ -22,7 +23,7 @@ export function contactSpatialObjects(tx: StepTransaction, moved: readonly Moved
     const owner = tx.next.actors.find((a) => actorId(a) === object.ownerId)!,
       target = opponentInDuel(moved, object.ownerId, (a) => a.state.actor.participant.actorId),
       targetId = target.state.actor.participant.actorId;
-    const world = tx.context.world.forQuery({ ownerId: object.ownerId });
+    const world = attackWorld(tx.context.world, object);
     tx.context.work.candidate();
     let contact: { time: number; point: typeof object.position } | null;
     if (object.kind === 'area') {

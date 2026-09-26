@@ -83,10 +83,12 @@ export function Scene2D({
             cy={a.position[2]}
             r={a.radius}
             fill={a.colour}
+            fillOpacity={a.phasing ? 0.4 : 1}
+            strokeDasharray={a.phasing?.pending ? '0.1 0.05' : undefined}
             stroke={overlays.collision ? '#e5f3ff' : 'none'}
             strokeWidth={0.05}
           >
-            <title>{a.id}</title>
+            <title>{`${a.id}${a.phasing ? (a.phasing.pending ? ` 透過解除待ち ${a.phasing.intervals}/50` : ' 透過中') : ''}`}</title>
           </circle>
           {overlays.collision && (
             <line

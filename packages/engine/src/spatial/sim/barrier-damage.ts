@@ -1,3 +1,4 @@
+import { attackWorld } from '../rules/phasing.ts';
 import type { StageContact, Stage } from '@fantasy/domain/spatial/execution';
 import type { AbilityRevision, DamageSnapshot } from '../state.ts';
 import type { AttackContact } from '../rules/attacks.ts';
@@ -6,7 +7,7 @@ import { barrierObstacle } from '../rules/spatial-objects.ts';
 import { closestObjectPoint } from '../world/object-geometry.ts';
 import { capsuleObstacleContact } from '../world/geometry.ts';
 import { CONTACT_TOLERANCE, type SpatialWorld } from '../world/physics.ts';
-import { length, sub } from '../math.ts';
+import { length, sub, unit } from '../math.ts';
 import type { StepTransaction } from './step-transaction.ts';
 
 type BarrierSource = DamageSnapshot & {
@@ -74,22 +75,13 @@ export function damageBarrierContact(
   explosionRadius = 0,
 ) {
   if (!tx.next.objects?.some((o) => o.active && o.kind === 'barrier')) return;
-  const world = tx.context.world.forQuery({ ownerId: source.ownerId });
+  const world = attackWorld(tx.context.world, source);
   if (explosionRadius <= 0) {
     for (const id of barrierBlockers(world, contact, radius)) request(tx, source, id, 10000);
     return;
   }
   // Strict interior never emits damage outward. Surface departure is handled by the ray adapter.
-  if (
-    world
-      .obstacles('attack')
-      .some(
-        (o) =>
-          capsuleObstacleContact(contact.center, { radius: 0, halfHeight: 0 }, o).distance <
-          -CONTACT_TOLERANCE,
-      )
-  )
-    return;
+  if (world.strictlyInside(contact.center, 'attack')) return;
   for (const target of tx.next.objects) {
     if (!target.active || target.kind !== 'barrier') continue;
     const obstacle = barrierObstacle(target);
@@ -97,10 +89,16 @@ export function damageBarrierContact(
     tx.context.work.candidate();
     const point = closestObjectPoint(obstacle, contact.center),
       distance = length(sub(point, contact.center));
+    if (!world.queryBlocks(obstacle, 'attack', unit(sub(contact.center, point)))) continue;
     const scale = Math.max(0, Math.floor((1 - distance / explosionRadius) * 10000));
     if (
       scale &&
-      !world.forQuery({ ignoreObjectId: target.id }).occluded(contact.center, point, 'attack')
+      !world
+        .forQuery({
+          ignoreObjectId: target.id,
+          ...(contact.obstacleIds ? { departingObjectIds: contact.obstacleIds } : {}),
+        })
+        .occluded(contact.center, point, 'attack')
     )
       request(tx, source, target.id, scale);
   }

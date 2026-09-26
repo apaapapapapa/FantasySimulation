@@ -37,7 +37,8 @@ export function statusBenefit(
     m.attack / 25 +
     m.defense / 25 +
     (m.speedBps - 10000) / 10000 +
-    Number(m.flight) -
+    Number(m.flight) +
+    (status.phasing ? 0.5 : 0) -
     Number(m.rooted) -
     Number(m.silenced ?? false);
   for (const a of status.adjustments ?? []) {

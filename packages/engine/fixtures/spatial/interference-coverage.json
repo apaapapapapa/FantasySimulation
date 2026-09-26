@@ -1146,8 +1146,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "apply-status/phasing"
         }
       ]
     },
@@ -1576,8 +1576,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "area/phasing"
         }
       ]
     },
@@ -2006,8 +2006,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "attribute-absorption/phasing"
         }
       ]
     },
@@ -2436,8 +2436,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "barrier/phasing"
         }
       ]
     },
@@ -2866,8 +2866,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "beam/phasing"
         }
       ]
     },
@@ -3726,8 +3726,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "contact/phasing"
         }
       ]
     },
@@ -4156,8 +4156,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "counter/phasing"
         }
       ]
     },
@@ -4586,8 +4586,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "damage/phasing"
         }
       ]
     },
@@ -5016,8 +5016,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "dispel/phasing"
         }
       ]
     },
@@ -5446,8 +5446,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "drain/phasing"
         }
       ]
     },
@@ -5900,8 +5900,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "elemental-reaction/phasing"
         }
       ]
     },
@@ -6760,8 +6760,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "flight/phasing"
         }
       ]
     },
@@ -7190,8 +7190,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "force/phasing"
         }
       ]
     },
@@ -8050,8 +8050,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "heal/phasing"
         }
       ]
     },
@@ -9770,8 +9770,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "motion/phasing"
         }
       ]
     },
@@ -10200,8 +10200,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "parry/phasing"
         }
       ]
     },
@@ -10630,8 +10630,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "periodic/phasing"
         }
       ]
     },
@@ -11068,8 +11068,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "permanent/phasing"
         }
       ]
     },
@@ -11239,7 +11239,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.absolute-evasion"
         }
       ]
     },
@@ -11249,7 +11249,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.absolute-hit"
         }
       ]
     },
@@ -11258,8 +11258,8 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/apply-status"
         }
       ]
     },
@@ -11268,8 +11268,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/area"
         }
       ]
     },
@@ -11278,8 +11278,8 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/attribute-absorption"
         }
       ]
     },
@@ -11288,8 +11288,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/barrier"
         }
       ]
     },
@@ -11298,8 +11298,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/beam"
         }
       ]
     },
@@ -11309,7 +11309,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -11318,8 +11318,8 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/contact"
         }
       ]
     },
@@ -11328,8 +11328,8 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/counter"
         }
       ]
     },
@@ -11338,8 +11338,8 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/damage"
         }
       ]
     },
@@ -11348,8 +11348,8 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/dispel"
         }
       ]
     },
@@ -11358,8 +11358,8 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/drain"
         }
       ]
     },
@@ -11368,8 +11368,8 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/elemental-reaction"
         }
       ]
     },
@@ -11379,7 +11379,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -11388,8 +11388,8 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/flight"
         }
       ]
     },
@@ -11398,8 +11398,8 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/force"
         }
       ]
     },
@@ -11409,7 +11409,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -11418,8 +11418,8 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/heal"
         }
       ]
     },
@@ -11429,7 +11429,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.immortality"
         }
       ]
     },
@@ -11439,7 +11439,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.instant-death"
         }
       ]
     },
@@ -11449,7 +11449,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.mind-read"
         }
       ]
     },
@@ -11458,8 +11458,8 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/motion"
         }
       ]
     },
@@ -11468,8 +11468,8 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/parry"
         }
       ]
     },
@@ -11478,8 +11478,8 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/periodic"
         }
       ]
     },
@@ -11488,8 +11488,8 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/permanent"
         }
       ]
     },
@@ -11498,8 +11498,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/phasing"
         }
       ]
     },
@@ -11509,7 +11509,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -11518,8 +11518,8 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/projectile"
         }
       ]
     },
@@ -11529,7 +11529,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.projectile-deflection"
         }
       ]
     },
@@ -11538,8 +11538,8 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/reaction-effects"
         }
       ]
     },
@@ -11548,8 +11548,8 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/resource"
         }
       ]
     },
@@ -11558,8 +11558,8 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/reveal"
         }
       ]
     },
@@ -11569,7 +11569,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.revival"
         }
       ]
     },
@@ -11579,7 +11579,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.seal"
         }
       ]
     },
@@ -11588,8 +11588,8 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/shield"
         }
       ]
     },
@@ -11598,8 +11598,8 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/silence"
         }
       ]
     },
@@ -11608,8 +11608,8 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/stages"
         }
       ]
     },
@@ -11618,8 +11618,8 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/status-adjustment"
         }
       ]
     },
@@ -11628,8 +11628,8 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/teleport"
         }
       ]
     },
@@ -11639,7 +11639,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.time-stop"
         }
       ]
     },
@@ -11649,7 +11649,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.phasing"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -11658,8 +11658,8 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "phasing/visibility"
         }
       ]
     },
@@ -12358,8 +12358,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "projectile/phasing"
         }
       ]
     },
@@ -13218,8 +13218,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "reaction-effects/phasing"
         }
       ]
     },
@@ -13648,8 +13648,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "resource/phasing"
         }
       ]
     },
@@ -14078,8 +14078,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "reveal/phasing"
         }
       ]
     },
@@ -15368,8 +15368,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "shield/phasing"
         }
       ]
     },
@@ -15798,8 +15798,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "silence/phasing"
         }
       ]
     },
@@ -16228,8 +16228,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "stages/phasing"
         }
       ]
     },
@@ -16658,8 +16658,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "status-adjustment/phasing"
         }
       ]
     },
@@ -17088,8 +17088,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "teleport/phasing"
         }
       ]
     },
@@ -18378,8 +18378,8 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.phasing"
+          "when": "otherwise",
+          "fixture": "visibility/phasing"
         }
       ]
     },
@@ -18556,6 +18556,7 @@
     },
     "recovery": "p6-recovery-14",
     "teleport": "p6-teleport-pairs",
-    "objects": "p6.spatial-object-pairs"
+    "objects": "p6.spatial-object-pairs",
+    "phasing": "p6.phasing-pairs"
   }
 }

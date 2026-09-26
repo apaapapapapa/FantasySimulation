@@ -12,6 +12,8 @@ import { canonicalJson, type MotionProjection } from '@fantasy/domain/spatial/ex
 export type { MotionProjection } from '@fantasy/domain/spatial/execution';
 import {
   capsuleOverlapsObstacle,
+  pointInsideObstacle,
+  outwardSurfaceRay,
   capsuleObstacleContact,
   faceNormal,
   planarContactTime,
@@ -254,8 +256,8 @@ export class SpatialWorld {
   allObstacles(): readonly Obstacle[] {
     return [...this.materials.values()];
   }
-  queryBlocks(obstacle: Obstacle, layer: Layer): boolean {
-    return blocksQuery(obstacle, layer, this.query);
+  queryBlocks(obstacle: Obstacle, layer: Layer, normal?: Vec3, overlap = false): boolean {
+    return blocksQuery(obstacle, layer, this.query, normal, overlap);
   }
   countCast() {
     if (++this.casts > this.castLimit) throw new SpatialBudgetError('casts');
@@ -397,6 +399,7 @@ export class SpatialWorld {
           for (const sign of [-1, 1]) {
             const local = { x: 0, y: 0, z: 0, [axis]: sign };
             const normal = obstacle.rotation ? rotate(local, obstacle.rotation) : local;
+            if (!blocksQuery(obstacle, layer, this.query, normal)) continue;
             const time = planarContactTime(obstacle, normal, start, velocity, body, skin);
             if (time !== undefined && time <= maxTime && (!best || time < best.time_of_impact))
               best = { time_of_impact: time, normal1: normal, obstacleId: obstacle.id };
@@ -432,6 +435,10 @@ export class SpatialWorld {
         );
         if (contact.normal) hit.normal1 = contact.normal;
       }
+      if (!blocksQuery(obstacle, layer, this.query, hit.normal1)) {
+        ignored.add(hit.collider.handle);
+        continue;
+      }
       if (layer !== 'movement')
         return {
           time_of_impact: hit.time_of_impact,
@@ -455,26 +462,41 @@ export class SpatialWorld {
     return best;
   }
 
-  raycast(start: Vec3, end: Vec3, layer: Layer) {
+  strictlyInside(position: Vec3, layer: Layer): boolean {
     this.count();
-    const hit = this.world.castRayAndGetNormal(
-      new RAPIER.Ray(start, sub(end, start)),
-      1,
-      true,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      (collider) => blocksQuery(this.materials.get(collider.handle)!, layer, this.query),
+    return [...this.materials.values()].some(
+      (o) => blocksQuery(o, layer, this.query, undefined, true) && pointInsideObstacle(position, o),
     );
-    return hit
-      ? {
-          time: hit.timeOfImpact,
-          point: lerp(start, end, hit.timeOfImpact),
-          normal: hit.normal,
-          obstacleId: this.materials.get(hit.collider.handle)!.id,
-        }
-      : undefined;
+  }
+  raycast(start: Vec3, end: Vec3, layer: Layer) {
+    const ignored = new Set<number>();
+    for (let pass = 0; pass <= this.materials.size; pass++) {
+      this.count();
+      const hit = this.world.castRayAndGetNormal(
+        new RAPIER.Ray(start, sub(end, start)),
+        1,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        (collider) =>
+          !ignored.has(collider.handle) &&
+          blocksQuery(this.materials.get(collider.handle)!, layer, this.query),
+      );
+      if (!hit) return undefined;
+      const obstacle = this.materials.get(hit.collider.handle)!,
+        point = lerp(start, end, hit.timeOfImpact),
+        normal = faceNormal(obstacle, point, hit.normal);
+      const departing =
+        layer === 'attack' &&
+        this.query.departingObjectIds?.includes(obstacle.id) &&
+        outwardSurfaceRay(start, sub(end, start), obstacle);
+      if (!departing && blocksQuery(obstacle, layer, this.query, normal))
+        return { time: hit.timeOfImpact, point, normal, obstacleId: obstacle.id };
+      ignored.add(hit.collider.handle);
+    }
+    return undefined;
   }
   occluded(start: Vec3, end: Vec3, layer: Layer): boolean {
     return this.raycast(start, end, layer) !== undefined;
@@ -485,14 +507,14 @@ export class SpatialWorld {
     if (body)
       return [...this.materials.values()].some(
         (obstacle) =>
-          blocksQuery(obstacle, layer, this.query) &&
+          blocksQuery(obstacle, layer, this.query, undefined, true) &&
           (layer === 'attack'
             ? capsuleObstacleContact(position, body, obstacle).distance <= CONTACT_TOLERANCE
             : capsuleOverlapsObstacle(position, body, obstacle)),
       );
     let blocked = false;
     this.world.intersectionsWithShape(position, IDENTITY, shape, (collider) => {
-      if (blocksQuery(this.materials.get(collider.handle)!, layer, this.query)) {
+      if (blocksQuery(this.materials.get(collider.handle)!, layer, this.query, undefined, true)) {
         const contact = shape.contactShape(
           position,
           IDENTITY,

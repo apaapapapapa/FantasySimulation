@@ -1,3 +1,5 @@
+import { damageBarrierContact } from './barrier-damage.ts';
+import { statusDamageSource } from '../rules/status-damage.ts';
 import { inObservedRange } from '../rules/attacks.ts';
 import { selfView } from '../ai/self-view.ts';
 import { blockedBySilence } from '../rules/categories.ts';
@@ -67,8 +69,26 @@ export function releasePhase(tx: StepTransaction) {
     applyStageMotion(actor, step);
   }
   effects.push(
-    ...releaseCounters(next, battle, journal, world, step, nextLedger, () => {
-      work.candidate();
-    }),
+    ...releaseCounters(
+      next,
+      battle,
+      journal,
+      world,
+      step,
+      nextLedger,
+      () => {
+        work.candidate();
+      },
+      (actor, ability, contact, cause) => {
+        const shape = ability.definition.attack;
+        if (shape.kind !== 'hitscan') throw new Error('Counter shape');
+        damageBarrierContact(
+          tx,
+          { ownerId: actorId(actor), ability, cause, ...statusDamageSource(actor, ability, step) },
+          contact,
+          shape.radiusMm / 1000,
+        );
+      },
+    ),
   );
 }

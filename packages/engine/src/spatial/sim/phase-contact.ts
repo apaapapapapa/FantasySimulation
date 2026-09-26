@@ -1,3 +1,4 @@
+import { attackWorld } from '../rules/phasing.ts';
 import { contactSpatialObjects } from './object-contact.ts';
 import { damageBarrierContact } from './barrier-damage.ts';
 import { opponentInDuel } from './duel.ts';
@@ -76,7 +77,7 @@ export function contactPhase(tx: StepTransaction) {
     const enemy = opponentInDuel(moved, attack.actorId, (a) => a.state.actor.participant.actorId);
     work.candidate();
     const result = contactAttack(shape, {
-      world: world.forQuery({ ownerId: attack.actorId }),
+      world: attackWorld(world, { ...attack, ownerId: attack.actorId }),
       source: owner.state,
       target: enemy.state,
       trace: owner.trace,

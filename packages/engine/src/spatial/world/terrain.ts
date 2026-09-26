@@ -27,6 +27,7 @@ export function terrainObstacles(scenario: DeepReadonly<Definition<'scenario'>>)
     obstacle.kind === 'pillar'
       ? {
           id: obstacle.id,
+          ...(obstacle.material ? { material: obstacle.material } : {}),
           kind: 'pillar',
           position: metres(obstacle.center),
           halfExtents: {
@@ -38,6 +39,7 @@ export function terrainObstacles(scenario: DeepReadonly<Definition<'scenario'>>)
         }
       : {
           id: obstacle.id,
+          ...(obstacle.material ? { material: obstacle.material } : {}),
           position: metres(obstacle.center),
           halfExtents: metres(obstacle.halfExtents),
           rotation: rotation(obstacle.yawMilliDegrees, obstacle.slopeMilliDegrees),

@@ -1,3 +1,4 @@
+import { updateBodyPhasing, clearRelocatedPhasing } from './phasing.ts';
 import { expireSpatialObjects, activateSpatialObjects } from './spatial-commands.ts';
 import { commitEffects } from './combat-effects.ts';
 import { ResourceBudget } from '../rules/resources.ts';
@@ -17,14 +18,27 @@ export function boundaryPhase(tx: StepTransaction) {
   const { step, journal } = tx;
   const actors = tx.previous.actors,
     next = tx.next.actors;
-  for (const actor of next)
-    actor.body.motion = advancePosture(
-      actor.body.motion,
-      undefined,
-      step,
-      world,
-      actors.map((a) => a.body.motion),
+  const spatial =
+    battle.statuses.some((s) => s.definition.phasing) ||
+    battle.actors.some((a) =>
+      a.abilities.some(
+        (b) =>
+          b.definition.relocation ||
+          b.definition.barrier ||
+          ['area', 'beam'].includes(b.definition.attack.kind),
+      ),
     );
+  const posture = () => {
+    for (const actor of next)
+      actor.body.motion = advancePosture(
+        actor.body.motion,
+        undefined,
+        step,
+        world,
+        actors.map((a) => a.body.motion),
+      );
+  };
+  if (!spatial) posture();
   if (step === 0) {
     const effects = tx.effects;
     for (const actor of next) {
@@ -165,6 +179,9 @@ export function boundaryPhase(tx: StepTransaction) {
       journal,
       'boundary',
     );
+  updateBodyPhasing(tx);
+  if (spatial) posture();
   activateSpatialObjects(tx);
   activateRelocations(tx);
+  clearRelocatedPhasing(tx);
 }

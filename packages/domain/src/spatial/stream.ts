@@ -1,3 +1,4 @@
+import { BodyPhasingSchema } from './phasing-display.ts';
 import { MAX_BATTLE_STEPS } from './contracts.ts';
 import { SpatialShapeSchema, SpatialSelectorsSchema } from './spatial-operations.ts';
 import { z } from 'zod';
@@ -96,6 +97,7 @@ export const ActionDisplaySchema = z.strictObject({
   stage: StageDisplaySchema.optional(),
 });
 export const ActorDisplaySchema = z.strictObject({
+  phasing: BodyPhasingSchema.nullable().optional(),
   id: IdSchema,
   position: PhysicalVectorSchema,
   velocity: PhysicalVectorSchema,

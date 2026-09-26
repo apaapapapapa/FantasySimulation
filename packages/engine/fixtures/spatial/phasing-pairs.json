@@ -1,0 +1,404 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "apply-status/phasing",
+      "left": "apply-status",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "area/phasing",
+      "left": "area",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "attribute-absorption/phasing",
+      "left": "attribute-absorption",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "barrier/phasing",
+      "left": "barrier",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "beam/phasing",
+      "left": "beam",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "contact/phasing",
+      "left": "contact",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "counter/phasing",
+      "left": "counter",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "damage/phasing",
+      "left": "damage",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "dispel/phasing",
+      "left": "dispel",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 0
+    },
+    {
+      "id": "drain/phasing",
+      "left": "drain",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "elemental-reaction/phasing",
+      "left": "elemental-reaction",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "flight/phasing",
+      "left": "flight",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "force/phasing",
+      "left": "force",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "heal/phasing",
+      "left": "heal",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "motion/phasing",
+      "left": "motion",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "parry/phasing",
+      "left": "parry",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "periodic/phasing",
+      "left": "periodic",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "permanent/phasing",
+      "left": "permanent",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/apply-status",
+      "left": "phasing",
+      "right": "apply-status",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/area",
+      "left": "phasing",
+      "right": "area",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/attribute-absorption",
+      "left": "phasing",
+      "right": "attribute-absorption",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/barrier",
+      "left": "phasing",
+      "right": "barrier",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/beam",
+      "left": "phasing",
+      "right": "beam",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/contact",
+      "left": "phasing",
+      "right": "contact",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/counter",
+      "left": "phasing",
+      "right": "counter",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/damage",
+      "left": "phasing",
+      "right": "damage",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/dispel",
+      "left": "phasing",
+      "right": "dispel",
+      "phasingCount": 1,
+      "activeAtEnd": 0
+    },
+    {
+      "id": "phasing/drain",
+      "left": "phasing",
+      "right": "drain",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/elemental-reaction",
+      "left": "phasing",
+      "right": "elemental-reaction",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/flight",
+      "left": "phasing",
+      "right": "flight",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/force",
+      "left": "phasing",
+      "right": "force",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/heal",
+      "left": "phasing",
+      "right": "heal",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/motion",
+      "left": "phasing",
+      "right": "motion",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/parry",
+      "left": "phasing",
+      "right": "parry",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/periodic",
+      "left": "phasing",
+      "right": "periodic",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/permanent",
+      "left": "phasing",
+      "right": "permanent",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/phasing",
+      "left": "phasing",
+      "right": "phasing",
+      "phasingCount": 2,
+      "activeAtEnd": 2
+    },
+    {
+      "id": "phasing/projectile",
+      "left": "phasing",
+      "right": "projectile",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/reaction-effects",
+      "left": "phasing",
+      "right": "reaction-effects",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/resource",
+      "left": "phasing",
+      "right": "resource",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/reveal",
+      "left": "phasing",
+      "right": "reveal",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/shield",
+      "left": "phasing",
+      "right": "shield",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/silence",
+      "left": "phasing",
+      "right": "silence",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/stages",
+      "left": "phasing",
+      "right": "stages",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/status-adjustment",
+      "left": "phasing",
+      "right": "status-adjustment",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/teleport",
+      "left": "phasing",
+      "right": "teleport",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "phasing/visibility",
+      "left": "phasing",
+      "right": "visibility",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "projectile/phasing",
+      "left": "projectile",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "reaction-effects/phasing",
+      "left": "reaction-effects",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "resource/phasing",
+      "left": "resource",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "reveal/phasing",
+      "left": "reveal",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "shield/phasing",
+      "left": "shield",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "silence/phasing",
+      "left": "silence",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "stages/phasing",
+      "left": "stages",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "status-adjustment/phasing",
+      "left": "status-adjustment",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "teleport/phasing",
+      "left": "teleport",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    },
+    {
+      "id": "visibility/phasing",
+      "left": "visibility",
+      "right": "phasing",
+      "phasingCount": 1,
+      "activeAtEnd": 1
+    }
+  ]
+}

@@ -1,7 +1,13 @@
 import { z } from 'zod';
 import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
 import { ExperimentalRulesSchema } from './mechanics.ts';
-import { BarrierSchema, AreaAttackSchema, BeamAttackSchema } from './spatial-operations.ts';
+import {
+  BarrierSchema,
+  AreaAttackSchema,
+  BeamAttackSchema,
+  PhasingSchema,
+  TerrainMaterialSchema,
+} from './spatial-operations.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
@@ -399,6 +405,7 @@ export const StatusReactionSchema = z.strictObject({
 });
 export type StatusReaction = z.infer<typeof StatusReactionSchema>;
 export const StatusSchema = z.strictObject({
+  phasing: PhasingSchema.optional(),
   name: z.string().min(1).max(100),
   originalText: z.string().max(20_000),
   stackKey: IdSchema,
@@ -450,6 +457,7 @@ export const AttackSchema = z.discriminatedUnion('kind', [
   BeamAttackSchema,
   z.strictObject({ kind: z.literal('direct') }),
   z.strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('arc'),
     reachMm: positive(20000),
     bladeRadiusMm: positive(5000),
@@ -462,20 +470,27 @@ export const AttackSchema = z.discriminatedUnion('kind', [
       .refine((n) => n !== 0, 'Nonzero arc sweep'),
   }),
   z.strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('radial'),
     reachMm: positive(20000),
     bladeRadiusMm: positive(5000),
     startAngleMilliDegrees: z.number().int().min(-180000).max(180000),
   }),
   z.strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('melee'),
     reachMm: positive(20_000),
     radiusMm: positive(5_000),
     activeSteps: positive(100),
     maxHitsPerTarget: positive(16),
   }),
-  z.strictObject({ kind: z.literal('hitscan'), radiusMm: uint(1_000) }),
   z.strictObject({
+    kind: z.literal('hitscan'),
+    radiusMm: uint(1_000),
+    phasing: PhasingSchema.optional(),
+  }),
+  z.strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('projectile'),
     speedMmPerSecond: positive(1_000_000),
     radiusMm: positive(5_000),
@@ -858,6 +873,7 @@ const BlocksSchema = z.strictObject({
 });
 export const TerrainSchema = z.discriminatedUnion('kind', [
   z.strictObject({
+    material: TerrainMaterialSchema.optional(),
     id: IdSchema,
     kind: z.literal('box'),
     center: Vec3Schema,
@@ -871,6 +887,7 @@ export const TerrainSchema = z.discriminatedUnion('kind', [
     blocks: BlocksSchema,
   }),
   z.strictObject({
+    material: TerrainMaterialSchema.optional(),
     id: IdSchema,
     kind: z.literal('pillar'),
     center: Vec3Schema,

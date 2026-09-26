@@ -77,6 +77,7 @@ export function closureMechanics(revisions: readonly Revision[]): MechanicUse[] 
       if (ability.relocation) add('teleport');
       if (ability.barrier) add('barrier');
       add(attackMechanics[ability.attack.kind]);
+      if ('phasing' in ability.attack && ability.attack.phasing) add('phasing');
       if (ability.reaction) add(responseMechanics[ability.reaction.response.kind]);
       if (ability.stages) {
         add('stages');
@@ -84,12 +85,16 @@ export function closureMechanics(revisions: readonly Revision[]): MechanicUse[] 
           effects(stage.effects);
           if (stage.relocation) add('teleport');
           if (stage.barrier) add('barrier');
-          if (stage.attack) add(attackMechanics[stage.attack.kind]);
+          if (stage.attack) {
+            add(attackMechanics[stage.attack.kind]);
+            if ('phasing' in stage.attack && stage.attack.phasing) add('phasing');
+          }
           if (stage.selfMotion) add(motionMechanics[stage.selfMotion.kind]);
         }
       }
     } else if (owner.kind === 'status') {
       const status = owner.definition;
+      if (status.phasing) add('phasing');
       if (status.adjustments?.some((a) => a.target === 'absorption')) add('attribute-absorption');
       if (status.categories?.includes('permanent')) add('permanent');
       if (status.modifiers.flight || status.flightStaminaPerSecond !== undefined) add('flight');

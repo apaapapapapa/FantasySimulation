@@ -93,6 +93,17 @@ export function buildSceneModel(
         : index === 0
           ? '#d4b780'
           : '#68b7db',
+      phasing: actor.phasing
+        ? {
+            materials: [
+              ...new Set(
+                [...actor.phasing.active, ...actor.phasing.retained].flatMap((c) => c.materials),
+              ),
+            ],
+            pending: actor.phasing.exitPending,
+            intervals: actor.phasing.extendedIntervals,
+          }
+        : null,
       locomotion: actor.locomotion ?? null,
       stamina:
         actor.resources.stamina === undefined

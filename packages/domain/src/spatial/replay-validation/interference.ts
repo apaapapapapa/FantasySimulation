@@ -11,7 +11,13 @@ export function validateInterferences(
 ) {
   if (outcome.kind === 'truncated' && outcome.details)
     requireReplay(
-      context.rules.interferenceDiagnostics === 'v1',
+      context.rules.interferenceDiagnostics === 'v1' ||
+        [
+          'spatial-commands',
+          'spatial-objects',
+          'spatial-phase-contributions',
+          'phase-exit-steps',
+        ].includes(outcome.resource),
       'truncation diagnostics permission',
     );
   if (outcome.kind !== 'unresolved' || !outcome.interferences) return;

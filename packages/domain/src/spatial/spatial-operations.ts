@@ -1,5 +1,18 @@
 import { z } from 'zod';
 
+export const TerrainMaterialSchema = z.enum(['generic', 'stone', 'wood', 'metal', 'earth']);
+export const SpatialMaterialSchema = z.enum([...TerrainMaterialSchema.options, 'energy']);
+export const PhasingSchema = z.strictObject({
+  materials: z
+    .array(SpatialMaterialSchema)
+    .min(1)
+    .max(6)
+    .refine((m) => new Set(m).size === m.length, 'Duplicate phase material'),
+  floor: z.boolean(),
+});
+export type Phasing = z.infer<typeof PhasingSchema>;
+export type SpatialMaterial = z.infer<typeof SpatialMaterialSchema>;
+
 const dimension = z.number().int().min(1).max(50000);
 const lifetime = z.number().int().min(1).max(6000);
 export const SpatialPlacementSchema = z
@@ -40,6 +53,7 @@ export const BarrierSchema = z
   );
 export const AreaAttackSchema = z
   .strictObject({
+    phasing: PhasingSchema.optional(),
     kind: z.literal('area'),
     placement: SpatialPlacementSchema,
     shape: SpatialShapeSchema,
@@ -49,6 +63,7 @@ export const AreaAttackSchema = z
   })
   .refine((a) => a.armDelaySteps < a.durationSteps, 'Area requires a pulse before expiry');
 export const BeamAttackSchema = z.strictObject({
+  phasing: PhasingSchema.optional(),
   kind: z.literal('beam'),
   radiusMm: z.number().int().min(0).max(1000),
 });

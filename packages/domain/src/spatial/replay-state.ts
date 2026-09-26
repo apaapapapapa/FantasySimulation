@@ -1,3 +1,4 @@
+import { validatePhasing, validatePhasingTransition } from './replay-validation/phasing.ts';
 import { validateSpatialObject, applySpatialObjects } from './replay-validation/spatial-object.ts';
 import { compareIds } from './canonical.ts';
 import { parseJson } from './contracts.ts';
@@ -100,6 +101,7 @@ export class ReplayState {
       if (!definition) return fail('unknown actor');
       validateReactions(this.context, actor, definition, step, nextEvent);
       validateForces(this.context, actor, step);
+      validatePhasing(this.context, actor, nextEvent);
       requireReplay(
         actor.resources.hp <= definition.character.stats.hp &&
           actor.resources.mp <= definition.character.stats.mp &&
@@ -143,6 +145,20 @@ export class ReplayState {
     nextEvent = this.value.nextEvent,
   ) {
     validateInterferences(this.context, outcome, step, nextEvent);
+    if (outcome.kind === 'truncated' && outcome.resource === 'phase-exit-steps')
+      requireReplay(
+        outcome.details?.observed === 51 &&
+          outcome.details.limit === 50 &&
+          state.actors.some(
+            (a) =>
+              a.phasing?.exitPending &&
+              a.phasing.extendedIntervals === 50 &&
+              [...a.phasing.active, ...a.phasing.retained].some((c) =>
+                c.causes.includes(outcome.details!.cause),
+              ),
+          ),
+        'phasing exit truncation binding',
+      );
     if (outcome.kind === 'win')
       requireReplay(
         state.actors.some((a) => a.id === outcome.winner && a.resources.hp > 0) &&
@@ -303,6 +319,7 @@ export class ReplayState {
           this.paths(record.paths, before, after, removed);
         }
       }
+      if (record.kind !== 'terminal') validatePhasingTransition(prior, state, record);
       validateEvents(this.context, this.value, record, entities);
     }
     this.validateState(

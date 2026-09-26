@@ -211,10 +211,10 @@
     },
     {
       "id": "phasing",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Explicit material/floor masks; body and frozen attack queries stay separate, with a bounded solid-clearance exit.",
       "generation": "p6"
     },
     {
@@ -646,7 +646,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -1119,7 +1119,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -1638,9 +1638,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -2139,9 +2140,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -2640,9 +2642,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -3141,9 +3144,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -3642,9 +3646,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -4127,7 +4132,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -4616,9 +4621,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -5117,9 +5123,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -5618,9 +5625,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -6119,9 +6127,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -6620,9 +6629,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -7157,9 +7167,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -7642,7 +7653,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -8131,9 +8142,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -8632,9 +8644,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -9117,7 +9130,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -9606,9 +9619,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -10091,7 +10105,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -10564,7 +10578,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -11037,7 +11051,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -11526,9 +11540,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -12027,9 +12042,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -12528,9 +12544,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13041,9 +13058,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13240,7 +13258,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -13251,7 +13269,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -13260,9 +13278,10 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13271,9 +13290,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13282,9 +13302,10 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13293,9 +13314,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13304,9 +13326,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13317,7 +13340,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -13326,9 +13349,10 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13337,9 +13361,10 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13348,9 +13373,10 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13359,9 +13385,10 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13370,9 +13397,10 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "phasing is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13381,9 +13409,10 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13394,7 +13423,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -13403,9 +13432,10 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13414,9 +13444,10 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13427,7 +13458,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -13436,9 +13467,10 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13449,7 +13481,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -13460,7 +13492,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -13471,7 +13503,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -13480,9 +13512,10 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13491,9 +13524,10 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13502,9 +13536,10 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13513,9 +13548,10 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13524,9 +13560,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13537,7 +13574,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -13546,9 +13583,10 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13559,7 +13597,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, projectile-deflection; permission never implements a mechanic."
+          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
         }
       ]
     },
@@ -13568,9 +13606,10 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13579,9 +13618,10 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13590,9 +13630,10 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13603,7 +13644,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, revival; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -13614,7 +13655,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, seal; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -13623,9 +13664,10 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13634,9 +13676,10 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13645,9 +13688,10 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13656,9 +13700,10 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13667,9 +13712,10 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing, teleport; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13680,7 +13726,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -13691,7 +13737,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -13700,9 +13746,10 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -13999,7 +14046,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -14488,9 +14535,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -14973,7 +15021,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
         }
       ]
     },
@@ -15462,9 +15510,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -15963,9 +16012,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -16464,9 +16514,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -16949,7 +17000,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -17422,7 +17473,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -17911,9 +17962,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -18412,9 +18464,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -18913,9 +18966,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -19414,9 +19468,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -19915,9 +19970,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },
@@ -20400,7 +20456,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20873,7 +20929,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -21362,9 +21418,10 @@
       "column": "phasing",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for phasing; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "phasing.material-query",
+          "summary": "Apply independent body/attack material masks, preserve arena and body contacts, and retry solid exit for at most 50 executed intervals."
         }
       ]
     },

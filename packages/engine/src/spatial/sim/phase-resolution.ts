@@ -1,3 +1,4 @@
+import { executedPhaseInterval } from './phasing.ts';
 import { commitBarrierDamage } from './barrier-damage.ts';
 import { cancelEndedObjects } from './spatial-commands.ts';
 import { recoverActorResources } from '../rules/resource-step.ts';
@@ -40,6 +41,7 @@ export function resolutionPhase(tx: StepTransaction) {
   finishStages(next, step + 1, journal);
   cancelEndedRelocations(tx);
   cancelEndedObjects(tx);
+  executedPhaseInterval(tx);
   for (const actor of next) {
     if (!actor.vitals.staminaClock) continue;
     const start = actors.find((a) => actorId(a) === actorId(actor))!;

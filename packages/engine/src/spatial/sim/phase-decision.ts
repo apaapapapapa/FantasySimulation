@@ -1,3 +1,4 @@
+import { bodyWorld } from '../rules/phasing.ts';
 import { terrainObstacles } from '../world/terrain.ts';
 import { opponentInDuel } from './duel.ts';
 import { displayActor } from './combat-state.ts';
@@ -149,7 +150,7 @@ export function decisionPhase(tx: StepTransaction) {
       try {
         const navigator = knownWorld
           ? new Navigator(
-              knownWorld,
+              bodyWorld(knownWorld, actor.body.motion),
               actor.body.motion.actor,
               {
                 ...battle.scenario,
@@ -159,8 +160,13 @@ export function decisionPhase(tx: StepTransaction) {
               battle.rules,
               true,
             )
-          : actor.body.motion.posture
-            ? new Navigator(world, actor.body.motion.actor, battle.scenario, battle.rules)
+          : actor.body.motion.posture || actor.body.motion.phasing
+            ? new Navigator(
+                bodyWorld(world, actor.body.motion),
+                actor.body.motion.actor,
+                battle.scenario,
+                battle.rules,
+              )
             : navigators.get(actorId(actor))!;
         actor.mind.decision = choosePolicy(
           view,

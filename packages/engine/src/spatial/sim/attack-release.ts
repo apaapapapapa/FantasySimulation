@@ -1,3 +1,4 @@
+import { attackWorld } from '../rules/phasing.ts';
 import { damageBarrierContact } from './barrier-damage.ts';
 import { queueSpatialObject } from './spatial-commands.ts';
 import { opponentInDuel } from './duel.ts';
@@ -61,7 +62,10 @@ function spatial<K extends Exclude<AttackVariant['kind'], 'direct'>>(
   actor.mind.random = aim.random;
   if (
     needsMuzzle &&
-    muzzleBlocked(world.forQuery({ ownerId: actorId(actor) }), actor.body.motion)
+    muzzleBlocked(
+      attackWorld(world, { ownerId: actorId(actor), ability }, actor.body.motion),
+      actor.body.motion,
+    )
   ) {
     tx.journal.emit({
       kind: 'fizzle',
@@ -86,7 +90,7 @@ function releaseRay(shape: AttackVariant<'hitscan'>, context: SpatialRelease) {
 
   work.candidate();
   const result = contactAttack(shape, {
-    world: world.forQuery({ ownerId: actorId(actor) }),
+    world: attackWorld(world, { ownerId: actorId(actor), ability }, actor.body.motion),
     source: actor.body.motion,
     target: enemy.body.motion,
     trace: straight(actor.body.motion.position, actor.body.motion.position),

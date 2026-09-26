@@ -1033,9 +1033,9 @@
       "file": "packages/engine/src/spatial/spatial-objects.test.ts",
       "name": "clips a moving beam at blockers and uses one shared hit ledger"
     },
-    "p6.spatial-object-budget": {
-      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
-      "name": "sums two barrier damage requests without changing interval geometry and rolls back cap plus one"
+    "p6.phasing-pairs": {
+      "file": "packages/engine/src/spatial/phasing-interference.test.ts",
+      "name": "executes all 57 phasing ordered pairs with independent masks and saved provenance"
     }
   },
   "entries": [
@@ -1830,12 +1830,14 @@
       "title": "P6-07: shared object lifetime, barriers, areas, beams and recorded replay",
       "state": "implemented",
       "owner": null,
-      "tests": [
-        "p6.spatial-object-pairs",
-        "p6.spatial-object-area",
-        "p6.spatial-object-beam",
-        "p6.spatial-object-budget"
-      ]
+      "tests": ["p6.spatial-object-pairs", "p6.spatial-object-area", "p6.spatial-object-beam"]
+    },
+    {
+      "id": "p6-phasing",
+      "title": "P6-08: material masks, preserved floors and bounded solid exit",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["p6.phasing-pairs"]
     }
   ]
 }

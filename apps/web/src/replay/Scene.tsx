@@ -170,7 +170,12 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
           <group key={a.id} position={a.position}>
             <mesh>
               <capsuleGeometry args={[a.radius, a.length, 6, 16]} />
-              <meshStandardMaterial color={a.colour} />
+              <meshStandardMaterial
+                color={a.colour}
+                transparent={!!a.phasing}
+                opacity={a.phasing ? 0.45 : 1}
+                wireframe={a.phasing?.pending ?? false}
+              />
             </mesh>
             {a.casting && (
               <mesh rotation={[Math.PI / 2, 0, 0]}>

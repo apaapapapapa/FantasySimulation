@@ -1,3 +1,4 @@
+import { attackWorld } from '../rules/phasing.ts';
 import type { AttackContact } from '../rules/attacks.ts';
 import { opponentInDuel } from './duel.ts';
 import type { ActorState, PreparedBattle } from '../state.ts';
@@ -45,7 +46,7 @@ export function stepProjectiles(
     const curve = projectileCurve(projectile, owner.mind.memory, battle.rules, budget);
     candidate();
     const { contact } = contactAttack(shape, {
-      world: world.forQuery({ ownerId: projectile.ownerId }),
+      world: attackWorld(world, projectile),
       source: owner.body.motion,
       target: enemy.state,
       trace: curve.trace,
@@ -85,11 +86,12 @@ export function stepProjectiles(
         if (shape.explosionRadiusMm > 0) {
           candidate();
           scaleBps = explosionCoverage(
-            world.forQuery({ ownerId: projectile.ownerId }),
+            attackWorld(world, projectile),
             contact.center,
             shape.explosionRadiusMm / 1000,
             target.state,
             at(target.trace, contact.time),
+            contact.obstacleIds,
           );
         } else if (contact.kind === 'body' && targetId === enemy.state.actor.participant.actorId)
           scaleBps = 10000;

@@ -40,7 +40,8 @@ export type SpatialInterferenceMechanic =
   | 'teleport'
   | 'barrier'
   | 'area'
-  | 'beam';
+  | 'beam'
+  | 'phasing';
 const damage = (amount: number): Effect => ({
   kind: 'damage',
   amount,
@@ -90,6 +91,14 @@ export async function interferencePairManifest(
     const status = initialStatus({ categories: ['debuff'], durationSteps: 20 });
     let reaction: Partial<Definition<'ability'>> | undefined;
     switch (mechanic) {
+      case 'phasing':
+        status.phasing = { materials: ['generic', 'stone', 'energy'], floor: false };
+        action.attack = {
+          kind: 'hitscan',
+          radiusMm: 0,
+          phasing: { materials: ['generic', 'stone', 'energy'], floor: false },
+        };
+        break;
       case 'barrier':
       case 'area':
       case 'beam': {
