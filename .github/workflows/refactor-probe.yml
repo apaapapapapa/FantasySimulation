@@ -1,75 +1,58 @@
-name: Refactor diagnostics
+name: Refactor development environment
 on:
   push:
     branches: [refactor/verification-probe]
 permissions:
   contents: read
 jobs:
-  diagnostics:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - pr: 147
-            sha: f48a2f0327dbee3b197b21bd8db106d255be9d53
-            base: 59ed6962d7c390be0d4724f325d3be8767fca15d
-          - pr: 148
-            sha: 6ce3bdc61dcbfc2babd37793ade825df983a0603
-            base: 59ed6962d7c390be0d4724f325d3be8767fca15d
-          - pr: 149
-            sha: 7e6c2718b1839f8b13a88fe59daea34a34afe695
-            base: 7a2621cd2472d5ccd1d9f9f3510b2063ec4f9a6c
-          - pr: 150
-            sha: 409a64a576965cc2ab89648ebcb1f078b00b6025
-            base: 7a2621cd2472d5ccd1d9f9f3510b2063ec4f9a6c
+  environment:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: ${{ matrix.sha }}
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
-      - name: Inspect candidate without modifying stored identity or fixtures
-        env:
-          CANDIDATE: ${{ matrix.sha }}
-          BASE: ${{ matrix.base }}
+      - name: Package tracked source history and installed pinned dependencies only
         run: |
-          mkdir -p .generated/refactor-diagnostics
+          mkdir -p .generated/development-bin
+          cp -L "$(command -v node)" .generated/development-bin/node
+          cp -L "$(command -v vp)" .generated/development-bin/vp
+          git bundle create .generated/development-source.bundle --all
           node --input-type=module <<'NODE'
-          import {execFileSync,spawnSync} from 'node:child_process';
-          import {writeFileSync} from 'node:fs';
-          import {engineIdentity} from './scripts/identity/identity.ts';
-          const root='.generated/refactor-diagnostics/';
-          const head=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
-          if(head!==process.env.CANDIDATE) throw Error('Wrong diagnostic candidate');
-          const commands=[];
-          const run=(name,args)=>{
-            const result=spawnSync('vp',args,{encoding:'utf8',timeout:240000,maxBuffer:16000000});
-            writeFileSync(root+name+'.log',(result.stdout??'')+(result.stderr??''));
-            commands.push({name,args,status:result.status,error:result.error?.message??null});
-            console.log(name+': '+result.status);
-            if(name!=='quality') console.log((result.stdout??'')+(result.stderr??''));
-            else console.log(((result.stdout??'')+(result.stderr??'')).split('\n').filter(l=>l.startsWith('quality:')).join('\n'));
-          };
-          const identity=engineIdentity(process.cwd()).implementation;
-          writeFileSync(root+'computed-identity.json',JSON.stringify({head,identity},null,2));
-          console.log('COMPUTED_IDENTITY='+JSON.stringify(identity));
-          const paths=execFileSync('git',['diff','--name-only','--diff-filter=ACMRT',process.env.BASE,head],{encoding:'utf8'}).split('\n').filter(p=>/\.tsx?$/.test(p)&&p!=='packages/engine/src/spatial/ai/assessment.ts');
-          if(paths.length) run('format',['fmt',...paths]);
-          const patch=execFileSync('git',['diff','--no-ext-diff','--',...paths],{encoding:'utf8',maxBuffer:16000000});
-          writeFileSync(root+'format.patch',patch);
-          console.log('FORMAT_PATCH_BEGIN\n'+patch+'FORMAT_PATCH_END');
-          run('typecheck',['run','typecheck']);
-          run('quality',['run','check:quality']);
-          writeFileSync(root+'receipt.json',JSON.stringify({head,probeSha:process.env.GITHUB_SHA,run:process.env.GITHUB_RUN_ID,commands,notice:'Diagnostic working-copy formatting only; no verification approval, restamp or fixture update'},null,2));
-          if(commands.some(c=>c.status!==0)) process.exitCode=1;
+          import {execFileSync} from 'node:child_process';
+          import {createHash} from 'node:crypto';
+          import {existsSync,readFileSync,readdirSync,writeFileSync} from 'node:fs';
+          const paths=['node_modules','.generated/development-bin','.generated/development-source.bundle'];
+          for(const group of ['apps','packages'])
+            for(const name of readdirSync(group)) {
+              const path=group+'/'+name+'/node_modules';
+              if(existsSync(path)) paths.push(path);
+            }
+          const heads={};
+          for(const name of ['content-authoring','prepared-ability-plans','reaction-phase-boundaries','capability-coverage'])
+            heads[name]=execFileSync('git',['rev-parse','refs/remotes/origin/refactor/'+name],{encoding:'utf8'}).trim();
+          const binaries={};
+          for(const name of ['node','vp'])
+            binaries[name]=createHash('sha256').update(readFileSync('.generated/development-bin/'+name)).digest('hex');
+          writeFileSync('.generated/development-bin/provenance.json',JSON.stringify({
+            sourceBundle: 'Public repository Git objects only; no Git credential/config files',
+            probeSha:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,
+            node:process.version,vp:execFileSync('vp',['--version'],{encoding:'utf8'}).trim(),
+            heads,binaries,
+            purpose:'Dependency/source transport for an offline clean checkout; not verification or review approval'
+          },null,2));
+          writeFileSync('.generated/development-paths',paths.join('\n')+'\n');
           NODE
+          tar -czf .generated/development-environment.tgz -T .generated/development-paths
+          test "$(stat -c%s .generated/development-environment.tgz)" -le 536870912
+          sha256sum .generated/development-environment.tgz
+          du -h .generated/development-environment.tgz
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: always()
         with:
-          name: refactor-diagnostics-${{ matrix.pr }}
-          path: .generated/refactor-diagnostics/
+          name: refactor-development-environment
+          path: .generated/development-environment.tgz
           if-no-files-found: error
-          retention-days: 7
+          compression-level: 0
+          retention-days: 1
