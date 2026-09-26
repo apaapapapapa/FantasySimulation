@@ -1,0 +1,25 @@
+name: Issue 8 source evidence
+on:
+  push:
+    branches: [ops/issue8-minor-evidence]
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: 9cda4542885be500e7ed0aeacf1573c36404670e
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Export exact public source for offline policy verification
+        run: |
+          mkdir -p "$RUNNER_TEMP/issue8-source"
+          git bundle create "$RUNNER_TEMP/issue8-source/source.bundle" HEAD
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: issue8-source
+          path: ${{ runner.temp }}/issue8-source/
+          retention-days: 1
