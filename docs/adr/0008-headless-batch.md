@@ -31,6 +31,8 @@ owns schemas, binding, privacy, transport and production evidence:
   S3 <=2M requests, <=900k Class A/2M Class B, one hour, one SDK attempt. Environment limits
   may lower defaults. Charge requests before admission, including failures. Parallel stage
   barriers await every admitted operation on error; deduplication still checks every reference.
+  League publication validates the local graph once, then reserves data usage and starts
+  transport from that graph. Writes recheck bytes; deadline exhaustion is a budget failure.
 - HEAD every immutable reference; recheck viewer/generation before current. Verify S3 and
   Worker catalog/set/sample-bundle readback. Uncertain PUTs recover only with identical bytes.
   Restore exclusively owns its new directory, reserves in-flight bytes and rechecks pointer;
