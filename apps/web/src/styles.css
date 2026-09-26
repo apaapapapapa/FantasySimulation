@@ -497,3 +497,44 @@ footer {
     flex-direction: column;
   }
 }
+svg.replay-canvas {
+  display: block;
+  width: 100%;
+}
+button,
+select,
+input[type='range'] {
+  touch-action: manipulation;
+}
+input[type='range'] {
+  padding: 8px 0;
+}
+.local-note {
+  border-color: #b18a4a;
+  background: #3a3020;
+}
+.share a {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .replay-canvas {
+    height: min(360px, 55vh);
+  }
+  .actions button,
+  .actions select {
+    min-height: 44px;
+  }
+  .actions label {
+    flex: 1 1 100%;
+  }
+  .actions label select {
+    width: 100%;
+  }
+}
+/* OrbitControls sets an inline value; the camera mode decides who owns touch gestures. */
+.replay-canvas canvas {
+  touch-action: pan-y !important;
+}
+.replay-canvas[data-camera='free'] canvas {
+  touch-action: none !important;
+}

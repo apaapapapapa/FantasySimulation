@@ -74,6 +74,7 @@ The 100-row replay list sorts/filters within its page. See [load bytes](../measu
 Loopback URLs are local. build.json carries source/formats; CSP permits self/data only.
 No API/DB/keys enter the build. Deploy/rollback requires successful main CI and ancestry;
 reader deployment uses separate cloud authorization.
-League overview loads summary only; battlefield/matchup tables load on selection. Hash links
-pin snapshot/participants/page/slot through recorded replay. Sorting changes display only;
+League overview loads summary; tables load on selection. Hash links pin snapshot/
+participants/page/slot/`/steps/N`. `#/local` plays replay files in-browser.
+Sorting changes display only;
 provisional scores retain every scheduled slot. Actions/measurement: #134.

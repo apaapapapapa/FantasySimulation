@@ -1,0 +1,660 @@
+{
+  "attemptId": "stages-attempt",
+  "checkpoints": [
+    {
+      "bytes": 176,
+      "checksum": "sha256:4ae142db1f24d25e656e9019f3cd0e27c8d0159f4f8682e1a667b68d8aef844b",
+      "file": "checkpoint-00000.json.gz",
+      "index": 0,
+      "nextRecord": 0,
+      "rawBytes": 203,
+      "step": 0
+    },
+    {
+      "bytes": 1184,
+      "checksum": "sha256:d2e486f14cb9d383362ba701defad9cbb545113450b02996dc8591a403fa41ac",
+      "file": "checkpoint-00001.json.gz",
+      "index": 1,
+      "nextRecord": 69,
+      "rawBytes": 5135,
+      "step": 68
+    },
+    {
+      "bytes": 2007,
+      "checksum": "sha256:9af7245d8f2931fe3ec30e50eb22ba227b084ad1270931e7eddadf46a639df3a",
+      "file": "checkpoint-00002.json.gz",
+      "index": 2,
+      "nextRecord": 117,
+      "rawBytes": 9931,
+      "step": 116
+    },
+    {
+      "bytes": 1752,
+      "checksum": "sha256:34cb630ec550ce0d93ac7b463a1151636b2145e8e107f981ee2d24937c930577",
+      "file": "checkpoint-00003.json.gz",
+      "index": 3,
+      "nextRecord": 162,
+      "rawBytes": 7870,
+      "step": 161
+    },
+    {
+      "bytes": 1224,
+      "checksum": "sha256:64b41a1da19f83e85050768133e0966c8ff3a6a03fc71007ae1da653902900ad",
+      "file": "checkpoint-00004.json.gz",
+      "index": 4,
+      "nextRecord": 213,
+      "rawBytes": 5626,
+      "step": 212
+    },
+    {
+      "bytes": 975,
+      "checksum": "sha256:4210e52e0427742ff1599efa3f76e6d5b99b4073a9af5468fa41aed6f02e94c2",
+      "file": "checkpoint-00005.json.gz",
+      "index": 5,
+      "nextRecord": 261,
+      "rawBytes": 4675,
+      "step": 260
+    }
+  ],
+  "chunks": [
+    {
+      "bytes": 8331,
+      "checkpoint": 0,
+      "checksum": "sha256:10c56a835ab26fbacd7dcada9266c14832b6132bee16ec5861cc371f95fb55b8",
+      "file": "chunk-00000.ndjson.gz",
+      "firstRecord": 0,
+      "fromStep": 0,
+      "index": 0,
+      "rawBytes": 131078,
+      "records": 69,
+      "toStep": 68
+    },
+    {
+      "bytes": 9548,
+      "checkpoint": 1,
+      "checksum": "sha256:115f50e2ab01eb84b376e117ff4451b3ff9c239d03c85f2cf4bceb3043d3d16c",
+      "file": "chunk-00001.ndjson.gz",
+      "firstRecord": 69,
+      "fromStep": 68,
+      "index": 1,
+      "rawBytes": 136855,
+      "records": 48,
+      "toStep": 116
+    },
+    {
+      "bytes": 9155,
+      "checkpoint": 2,
+      "checksum": "sha256:c7aec664fcd7713681b56383f07fec1571b8e5715d93115a5093e53026552487",
+      "file": "chunk-00002.ndjson.gz",
+      "firstRecord": 117,
+      "fromStep": 116,
+      "index": 2,
+      "rawBytes": 133078,
+      "records": 45,
+      "toStep": 161
+    },
+    {
+      "bytes": 8921,
+      "checkpoint": 3,
+      "checksum": "sha256:4dca7393807d70165af2550c24321b4ee8e6dbdba8cc14674f76d42f8ed89a82",
+      "file": "chunk-00003.ndjson.gz",
+      "firstRecord": 162,
+      "fromStep": 161,
+      "index": 3,
+      "rawBytes": 132272,
+      "records": 51,
+      "toStep": 212
+    },
+    {
+      "bytes": 8735,
+      "checkpoint": 4,
+      "checksum": "sha256:b158c675610580a907ae3a3f6f6eb10afe2dec342f9fc306b8a15d342bd5e40b",
+      "file": "chunk-00004.ndjson.gz",
+      "firstRecord": 213,
+      "fromStep": 212,
+      "index": 4,
+      "rawBytes": 132234,
+      "records": 48,
+      "toStep": 260
+    },
+    {
+      "bytes": 6853,
+      "checkpoint": 5,
+      "checksum": "sha256:ee0bb91a0821b3414c5000369a6713f85b0543abee756482d74b39a9fe5ff37c",
+      "file": "chunk-00005.ndjson.gz",
+      "firstRecord": 261,
+      "fromStep": 260,
+      "index": 5,
+      "rawBytes": 94687,
+      "records": 41,
+      "toStep": 300
+    }
+  ],
+  "end": {
+    "kind": "result",
+    "result": {
+      "eventHash": "sha256:57aa7711601fb5590f19dba23a62def7e9185feaea818ac04b83faca57c346b3",
+      "outcome": { "kind": "win", "winner": "left" },
+      "physicsStateHash": "sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976",
+      "schemaVersion": 1,
+      "simulationHash": "sha256:56d2e85d4469e55fc9908a3a27a5429ea6c974d512e1ba5d3de067c00e0fa69d",
+      "stats": {
+        "candidates": 146,
+        "casts": 5410,
+        "events": 387,
+        "logBytes": 760204,
+        "pathNodes": 0,
+        "peakProjectiles": 0
+      },
+      "steps": 300,
+      "trajectoryHash": "sha256:333e525e9778bb34d409e5fab516340d21a5710992e0c4712e9e9f4b7f41cb83",
+      "tsStateHash": "sha256:995db70fad99360e39e3220f45a21e600db4d0d4549c8d9691d0cf2ee253812a"
+    }
+  },
+  "eventHash": "sha256:57aa7711601fb5590f19dba23a62def7e9185feaea818ac04b83faca57c346b3",
+  "id": "stage-vanguard-staged-duelist-300",
+  "input": {
+    "aiProfile": "observed-utility-v1",
+    "angleTableHash": "sha256:a1e3bb8768f5a196f5ba4c9a8116eeceed66e9f55af65cff0baa0ac4b8f95bb8",
+    "engineVersion": "spatial-v1.20",
+    "eventSchemaVersion": 1,
+    "implementationDigest": "sha256:387e407a8b481b3f036f09901b43a6a17ee9820e8bc0e6454eca09ceb4295374",
+    "participants": [
+      {
+        "actorId": "left",
+        "character": {
+          "contentHash": "sha256:a3fb9906fc16ad1d20b5c898713d26448154704bd2d6b0c82cf5666c4dbc9c78",
+          "id": "stage-vanguard-v1",
+          "revision": 1
+        },
+        "facing": { "x": 1, "y": 0, "z": 0 },
+        "position": { "x": -6000, "y": 902, "z": 0 },
+        "rngSeed": 2654435731,
+        "rngStream": 0
+      },
+      {
+        "actorId": "right",
+        "character": {
+          "contentHash": "sha256:9f96acc56a9bfacd3479a2575a7fa00008a878ade3be6bcd2f7e012a93e5bf7c",
+          "id": "staged-duelist-v1",
+          "revision": 1
+        },
+        "facing": { "x": -1, "y": 0, "z": 0 },
+        "position": { "x": 6000, "y": 902, "z": 0 },
+        "rngSeed": 1013904216,
+        "rngStream": 1
+      }
+    ],
+    "physicsProfile": {
+      "actorCollision": "binary64-analytic-upright-capsule-sweep-v1",
+      "aiMs": 100,
+      "axis": "right-handed-Y-up",
+      "contactTimeEpsilon": 0.000001,
+      "creationOrder": "ascending-ASCII-id",
+      "floatEncoding": "IEEE754-binary64-big-endian-hex-negative-zero-normalized",
+      "gravityMmPerSecond2": -9807,
+      "id": "spatial-v1",
+      "inputUnits": "integer-mm-ms",
+      "maxMoveSegments": 8,
+      "maxSteps": 6000,
+      "physicsConversion": "TS-binary64-metres-to-Rapier-binary32-at-each-WASM-call",
+      "rapier": "0.20.0",
+      "simultaneousObstacleContact": "wall-first-within-epsilon",
+      "skinMm": 2,
+      "stepMs": 20,
+      "trigonometry": "quarter-sine-1-degree-linear-1e9-v1"
+    },
+    "physicsProfileHash": "sha256:fec78a239c989b1345919bad1e4188561054dffae03303ac338d739c3e40df98",
+    "prng": "xorshift32-v1",
+    "replaySchemaVersion": 1,
+    "revisions": [
+      {
+        "contentHash": "sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": {
+            "activeSteps": 8,
+            "kind": "melee",
+            "maxHitsPerTarget": 1,
+            "radiusMm": 200,
+            "reachMm": 1800
+          },
+          "castSteps": 2,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 30,
+          "costs": { "hp": 0, "mp": 0, "stamina": 6, "uses": 0 },
+          "effects": [
+            { "amount": 14, "attackScaleBps": 0, "element": "physical", "kind": "damage" },
+            {
+              "direction": "away",
+              "durationSteps": 3,
+              "kind": "force",
+              "profile": "linear-v1",
+              "speedMmPerSecond": 12000
+            }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "突進斬り",
+          "originalText": "突進斬り",
+          "rangeMm": 4000,
+          "recoverySteps": 10,
+          "stages": [
+            {
+              "attack": {
+                "activeSteps": 8,
+                "kind": "melee",
+                "maxHitsPerTarget": 1,
+                "radiusMm": 200,
+                "reachMm": 1800
+              },
+              "durationSteps": 8,
+              "effects": [
+                { "amount": 14, "attackScaleBps": 0, "element": "physical", "kind": "damage" },
+                {
+                  "direction": "away",
+                  "durationSteps": 3,
+                  "kind": "force",
+                  "profile": "linear-v1",
+                  "speedMmPerSecond": 12000
+                }
+              ],
+              "id": "dash-cut",
+              "offsetSteps": 0,
+              "selfMotion": {
+                "accelerationMmPerSecond2": 100000,
+                "kind": "dash",
+                "speedMmPerSecond": 8000
+              }
+            }
+          ],
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "dash-cut-v1",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:396d51406e90fb6d783f0b9037d39f6bcd7f8c034624096c90db34edf3934b7f",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": {
+            "activeSteps": 2,
+            "kind": "melee",
+            "maxHitsPerTarget": 1,
+            "radiusMm": 200,
+            "reachMm": 1800
+          },
+          "castSteps": 2,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 30,
+          "costs": { "hp": 0, "mp": 0, "stamina": 6, "uses": 0 },
+          "effects": [
+            { "amount": 10, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "返しの連撃",
+          "originalText": "返しの連撃",
+          "rangeMm": 2500,
+          "recoverySteps": 4,
+          "stages": [
+            {
+              "attack": {
+                "activeSteps": 2,
+                "kind": "melee",
+                "maxHitsPerTarget": 1,
+                "radiusMm": 200,
+                "reachMm": 1800
+              },
+              "durationSteps": 2,
+              "effects": [
+                { "amount": 10, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+              ],
+              "id": "cut",
+              "offsetSteps": 0
+            },
+            {
+              "attack": {
+                "activeSteps": 2,
+                "kind": "melee",
+                "maxHitsPerTarget": 1,
+                "radiusMm": 200,
+                "reachMm": 1800
+              },
+              "cost": { "stamina": 4 },
+              "durationSteps": 2,
+              "effects": [
+                { "amount": 15, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+              ],
+              "id": "return",
+              "offsetSteps": 3
+            }
+          ],
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "return-cut-v1",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18",
+        "definition": {
+          "aimErrorMilliDegrees": 0,
+          "attack": {
+            "bladeRadiusMm": 100,
+            "kind": "radial",
+            "reachMm": 2000,
+            "startAngleMilliDegrees": -90000
+          },
+          "castSteps": 3,
+          "condition": { "kind": "always" },
+          "cooldownSteps": 30,
+          "costs": { "hp": 0, "mp": 0, "stamina": 8, "uses": 0 },
+          "effects": [
+            { "amount": 18, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+          ],
+          "movementWhileCasting": "allow",
+          "name": "全周の薙ぎ払い",
+          "originalText": "全周の薙ぎ払い",
+          "rangeMm": 2400,
+          "recoverySteps": 8,
+          "stages": [
+            {
+              "attack": {
+                "bladeRadiusMm": 100,
+                "kind": "radial",
+                "reachMm": 2000,
+                "startAngleMilliDegrees": -90000
+              },
+              "durationSteps": 20,
+              "effects": [
+                { "amount": 18, "attackScaleBps": 0, "element": "physical", "kind": "damage" }
+              ],
+              "id": "sweep",
+              "offsetSteps": 0
+            }
+          ],
+          "target": "enemy",
+          "trigger": "action"
+        },
+        "id": "wide-sweep-v1",
+        "kind": "ability",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:a3fb9906fc16ad1d20b5c898713d26448154704bd2d6b0c82cf5666c4dbc9c78",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c",
+              "id": "dash-cut-v1",
+              "revision": 1
+            },
+            {
+              "contentHash": "sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18",
+              "id": "wide-sweep-v1",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "locomotion": {
+              "dodgeStamina": 8,
+              "exhaustedSpeedMmPerSecond": 500,
+              "jumpStamina": 12,
+              "run": { "speedMmPerSecond": 6000, "staminaPerMeter": 6 },
+              "stepStaminaPerMeter": 10,
+              "walk": { "speedMmPerSecond": 2000, "staminaPerMeter": 2 }
+            },
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "突進と薙ぎ払いの前衛",
+          "originalText": "突進と薙ぎ払いの前衛。能力・装備・方針はすべて公開revisionで固定する。",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:9d74211f70745ea4fac5dfe60724ef0496b42edd8fbe75c951e1959c976f1949",
+            "id": "stage-vanguard-v1-policy",
+            "revision": 1
+          },
+          "stamina": { "max": 100, "recoveryPerSecond": 3, "resumeAt": 20 },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "stage-vanguard-v1",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:9f96acc56a9bfacd3479a2575a7fa00008a878ade3be6bcd2f7e012a93e5bf7c",
+        "definition": {
+          "abilities": [
+            {
+              "contentHash": "sha256:396d51406e90fb6d783f0b9037d39f6bcd7f8c034624096c90db34edf3934b7f",
+              "id": "return-cut-v1",
+              "revision": 1
+            }
+          ],
+          "body": {
+            "aimOffset": { "x": 0, "y": 200, "z": 0 },
+            "eyeOffset": { "x": 0, "y": 650, "z": 0 },
+            "heightMm": 1800,
+            "muzzleOffset": { "x": 0, "y": 400, "z": 300 },
+            "radiusMm": 300
+          },
+          "equipment": [],
+          "movement": {
+            "accelerationMmPerSecond2": 12000,
+            "flySpeedMmPerSecond": 5000,
+            "jumpMmPerSecond": 5000,
+            "maxSlopeMilliDegrees": 45000,
+            "speedMmPerSecond": 4000,
+            "stepHeightMm": 300,
+            "turnMilliDegreesPerSecond": 360000
+          },
+          "name": "連撃の剣士",
+          "originalText": "連撃の剣士。能力・装備・方針はすべて公開revisionで固定する。",
+          "perception": {
+            "fovMilliDegrees": 180000,
+            "memorySteps": 250,
+            "rangeMm": 50000,
+            "reactionSteps": 5
+          },
+          "policy": {
+            "contentHash": "sha256:ab74889e695425c41c762e4f4671833734bf710e1e45882433ccba7456c88e31",
+            "id": "staged-duelist-v1-policy",
+            "revision": 1
+          },
+          "stamina": { "max": 30, "recoveryPerSecond": 5 },
+          "stats": {
+            "actionSpeedBps": 10000,
+            "attack": 20,
+            "defense": 5,
+            "hp": 100,
+            "mp": 100,
+            "resistances": { "arcane": 0, "fire": 0, "ice": 0, "lightning": 0, "physical": 0 },
+            "shield": 0
+          }
+        },
+        "id": "staged-duelist-v1",
+        "kind": "character",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:9d74211f70745ea4fac5dfe60724ef0496b42edd8fbe75c951e1959c976f1949",
+        "definition": {
+          "flightAltitudeMm": 6000,
+          "jumpWhenBlocked": true,
+          "movement": "approach",
+          "name": "突進と薙ぎ払いの前衛の方針",
+          "originalText": "条件を満たす優先行動と、観測に基づく移動",
+          "preferredDistanceMm": 1400,
+          "priorities": [
+            { "abilityId": "dash-cut-v1", "when": { "kind": "always" } },
+            { "abilityId": "wide-sweep-v1", "when": { "kind": "always" } }
+          ]
+        },
+        "id": "stage-vanguard-v1-policy",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:ab74889e695425c41c762e4f4671833734bf710e1e45882433ccba7456c88e31",
+        "definition": {
+          "flightAltitudeMm": 6000,
+          "jumpWhenBlocked": true,
+          "movement": "approach",
+          "name": "連撃の剣士の方針",
+          "originalText": "条件を満たす優先行動と、観測に基づく移動",
+          "preferredDistanceMm": 1200,
+          "priorities": [{ "abilityId": "return-cut-v1", "when": { "kind": "always" } }]
+        },
+        "id": "staged-duelist-v1-policy",
+        "kind": "policy",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:bb560dea01895e63adf2613a666e2263f4335fcc75313a4c1907d0281d543bf3",
+        "definition": {
+          "ai": {
+            "actionWeight": 100,
+            "appearancePriors": {
+              "cues": [
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "fire" }],
+                  "match": { "surface": "red" }
+                },
+                {
+                  "confidenceBps": 1000,
+                  "efficacy": [{ "bps": 6500, "element": "ice" }],
+                  "match": { "surface": "blue" }
+                }
+              ],
+              "defaultEfficacyBps": 7500
+            },
+            "damageQuantum": 10,
+            "dodgeWeight": 600,
+            "explorationWeight": 60,
+            "healthPrior": 200,
+            "horizonSteps": 50,
+            "initialKnowledge": "empty-match-v1",
+            "killWeight": 2400,
+            "knowledgeTtlSteps": 500,
+            "memorySamples": 32,
+            "observation": "visible-coarse-v1",
+            "profile": "observed-utility-v1",
+            "random": "actor-purpose-rejection-v1",
+            "riskWeight": 800,
+            "slots": "simultaneous-v1"
+          },
+          "aoeOcclusion": "five-samples-equal-linear-v1",
+          "bodyContact": "symmetric-stop",
+          "curveErrorMm": 1,
+          "fallDamagePerMeterPerSecond": 5,
+          "fallSafeSpeedMmPerSecond": 8000,
+          "gravityMmPerSecond2": -9807,
+          "maxSteps": 300,
+          "name": "標準3D",
+          "rulesVersion": "spatial-v1.20",
+          "simultaneousConflict": "unresolved",
+          "stepMs": 20
+        },
+        "id": "standard-engagement-v1",
+        "kind": "ruleset",
+        "revision": 1,
+        "schemaVersion": 1
+      },
+      {
+        "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+        "definition": {
+          "bounds": {
+            "max": { "x": 50000, "y": 50000, "z": 50000 },
+            "min": { "x": -50000, "y": -1000, "z": -50000 }
+          },
+          "name": "平地",
+          "navigation": { "edges": [], "nodes": [], "version": "support-graph-v1" },
+          "obstacles": [
+            {
+              "blocks": { "attack": true, "movement": true, "vision": true },
+              "center": { "x": 0, "y": -500, "z": 0 },
+              "halfExtents": { "x": 50000, "y": 500, "z": 50000 },
+              "id": "floor",
+              "kind": "box",
+              "slopeMilliDegrees": 0,
+              "yawMilliDegrees": 0
+            }
+          ],
+          "terrainKnowledge": "surveyed"
+        },
+        "id": "flat-surveyed-v1",
+        "kind": "scenario",
+        "revision": 1,
+        "schemaVersion": 1
+      }
+    ],
+    "ruleset": {
+      "contentHash": "sha256:bb560dea01895e63adf2613a666e2263f4335fcc75313a4c1907d0281d543bf3",
+      "id": "standard-engagement-v1",
+      "revision": 1
+    },
+    "scenario": {
+      "contentHash": "sha256:8b18902b5417aff16513a72ae4827958a6852c644464e76a94dfea0b9960754a",
+      "id": "flat-surveyed-v1",
+      "revision": 1
+    },
+    "schemaVersion": 3,
+    "seed": 42,
+    "seedDerivation": "actor-stream-v1",
+    "wasmHash": "sha256:4d621b86d803ce9922ac44c1829902f1b60fd02d3c8b364e05374938af15ead4"
+  },
+  "lastVerifiedStep": 300,
+  "profile": {
+    "codec": "gzip",
+    "id": "display-ndjson-gzip-v1",
+    "interpolation": "recorded-piecewise-linear",
+    "maxCheckpointSteps": 250,
+    "maxRawBytes": 256032768,
+    "maxStoredBytes": 16777216,
+    "stepMs": 20,
+    "targetChunkBytes": 131072,
+    "units": "metres-binary64"
+  },
+  "records": 302,
+  "resultId": "stages-result",
+  "schemaVersion": 1,
+  "simulationHash": "sha256:56d2e85d4469e55fc9908a3a27a5429ea6c974d512e1ba5d3de067c00e0fa69d",
+  "trajectoryHash": "sha256:333e525e9778bb34d409e5fab516340d21a5710992e0c4712e9e9f4b7f41cb83"
+}

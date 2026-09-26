@@ -1,27 +1,42 @@
 import { useEffect, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls } from '@react-three/drei';
+import { Vector3 } from 'three';
 import type { Point, SceneModel } from './scene-model.ts';
 import { Scene2D } from './Scene2D.tsx';
 import type { Overlays } from './overlays.ts';
 import { SceneOverlays } from './SceneOverlays.tsx';
 
 export type CameraMode = 'overview' | 'side' | 'follow' | 'free';
-type Props = { model: SceneModel; cameraMode: CameraMode; overlays: Overlays };
+/** One on-screen camera command (touch-friendly alternative to drag/pinch gestures). */
+export interface CameraNudge {
+  kind: 'left' | 'right' | 'in' | 'out';
+  seq: number;
+}
+type Props = {
+  model: SceneModel;
+  cameraMode: CameraMode;
+  overlays: Overlays;
+  nudge?: CameraNudge | null;
+};
+const TURN = Math.PI / 12;
 
 function Camera({
   mode,
   span,
   follow,
   centre,
+  nudge,
 }: {
   mode: CameraMode;
   span: number;
   follow: Point;
   centre: Point;
+  nudge: CameraNudge | null | undefined;
 }) {
-  const { camera, gl } = useThree();
+  const { camera, gl, controls } = useThree();
   const previous = useRef<CameraMode | null>(null);
+  const applied = useRef(nudge?.seq ?? 0);
   const [x, y, z] = follow;
   const [cx, cy, cz] = centre;
   useEffect(() => {
@@ -34,6 +49,21 @@ function Camera({
     camera.updateProjectionMatrix();
     previous.current = mode;
   }, [camera, mode, span, x, y, z, cx, cy, cz]);
+  useEffect(() => {
+    if (!nudge || nudge.seq === applied.current || mode !== 'free') return;
+    applied.current = nudge.seq;
+    const target = (controls as { target?: Vector3 } | null)?.target ?? new Vector3(...centre);
+    const offset = camera.position.clone().sub(target);
+    if (nudge.kind === 'left' || nudge.kind === 'right')
+      offset.applyAxisAngle(new Vector3(0, 1, 0), nudge.kind === 'left' ? -TURN : TURN);
+    else {
+      const length = offset.length() * (nudge.kind === 'in' ? 0.75 : 1 / 0.75);
+      offset.setLength(Math.min(span * 4, Math.max(1, length)));
+    }
+    camera.position.copy(target).add(offset);
+    camera.lookAt(target);
+    (controls as { update?: () => void } | null)?.update?.();
+  }, [camera, controls, nudge, mode, span, centre]);
   useFrame(() => {
     if (gl.info.render.calls > 0) gl.domElement.dataset.rendered = 'true';
   });
@@ -50,10 +80,11 @@ function Camera({
 }
 
 /** Every mesh comes from the saved manifest/state. Camera frames never advance combat. */
-export default function Scene({ model, cameraMode, overlays }: Props) {
+export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
   const { span, centre, follow } = model;
   return (
-    <div className="replay-canvas">
+    // Touch gestures belong to the camera only in free mode; otherwise the page scrolls.
+    <div className="replay-canvas" data-camera={cameraMode}>
       <Canvas
         camera={{ near: 0.05, far: 2000, position: [span, span, span] }}
         dpr={1}
@@ -71,7 +102,7 @@ export default function Scene({ model, cameraMode, overlays }: Props) {
         <color attach="background" args={['#0f1828']} />
         <ambientLight intensity={1.3} />
         <directionalLight position={[8, 20, 12]} intensity={2} />
-        <Camera mode={cameraMode} span={span} follow={follow} centre={centre} />
+        <Camera mode={cameraMode} span={span} follow={follow} centre={centre} nudge={nudge} />
         {model.obstacles.map((o) => (
           <mesh
             key={o.id}

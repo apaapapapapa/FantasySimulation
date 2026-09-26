@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures.ts';
-import { complete, event, files, match } from './fixtures.ts';
+import { complete, disableWebgl, event, files, match } from './fixtures.ts';
 
 // The fixture records are fixed display inputs. These assertions do not execute combat.
 test('static-selection', async ({ page }) => {
@@ -176,17 +176,7 @@ test('static-stale-navigation', async ({ page }) => {
 });
 
 test('static-webgl-fallback', async ({ page }) => {
-  await page.addInitScript(() => {
-    const getContext = HTMLCanvasElement.prototype.getContext;
-    HTMLCanvasElement.prototype.getContext = function (
-      this: HTMLCanvasElement,
-      type: string,
-      ...args: unknown[]
-    ) {
-      if (type.startsWith('webgl')) return null;
-      return getContext.apply(this, [type, ...args] as Parameters<typeof getContext>);
-    } as typeof getContext;
-  });
+  await disableWebgl(page);
   await page.goto(complete.url);
   await expect(page.getByText(/WebGL|3D表示を利用できません/)).toBeVisible();
   await expect(page.getByRole('img', { name: '保存ログの2D表示' })).toBeVisible();

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "issue": 82,
+  "issueBodySha256": "7ebe8ac57aab7a13fb85dfb61f9c7f069b8affd0b76dbb05851b414fa9b3cc2b",
+  "issueUpdatedAt": "2026-09-23T06:32:32Z",
+  "complete": true,
+  "summary": "観戦画面を拡張した。WebGLが無い端末では3Dのbundleを読まずに2Dの俯瞰図と時刻同期ログを表示し、3D/2D切替・2Dの拡大を付けた。スマホ幅のレイアウトと画面上のカメラボタンを追加し、タッチ操作は自由カメラ時だけカメラが受け取る。#/localとローカル版でmanifest.json+.gzまたは書き出したtarを#79の上限・checksum・形式判定でブラウザー内検証し、送信せず非公開・非公式と表示する。任意のIndexedDB保存はリポジトリ名付きの保存名で、開くときに再検証し、書出しと明示的な削除がある。試合・リーグのリンクに/steps/Nを追加し、表示時刻とリンクを表示する。#61の歩行/走行・スタミナ・多段技・技の移動・押し出しを表と2D/3Dの矢印で描く。設置型の範囲・照射はエンジン未実装のため描画対象がない。実機スマホ・実際のドラッグ/ピンチ・OS休止は未検証。",
+  "remainingWork": [],
+  "pullRequests": [146],
+  "acceptance": [
+    {
+      "task": "WebGLを無効にした状態で、2Dの俯瞰図とログを使い、先頭から決着まで確認できる",
+      "evidence": "PR #146: ReplayPanel probes WebGL (webgl.ts) before the lazy Scene import and renders Scene2D plus CurrentEvents/ReplayEvents; SceneBoundary still falls back after a late WebGL failure. E2E static-webgl-2d-to-end (Chromium/WebKit) disables WebGL, plays from step 0 at 4x to the recorded last step 240, sees the terminal event in the step log and the saved outcome, uses 2D zoom and the chunked event log, and asserts no Scene-*.js request. static-webgl-fallback keeps the 1-step and state-table check."
+    },
+    {
+      "task": "スマホの画面幅で、再生・seek・カメラを操作できる（Playwrightのmobile emulationで確認する。実機は任意）",
+      "evidence": "PR #146: max-width 760px layout, 44px action controls, on-screen camera buttons (left/right/in/out) and touch-action pan-y except free camera (none). E2E static-mobile-controls runs 390x844 hasTouch isMobile in Chromium and WebKit: no horizontal overflow, tap play/pause, range seek to 120, tap 1-step, tap camera buttons change the rendered 3D image while the step stays 121, touch-action switches with the camera mode, 2D zoom by tap. docs/measurements/replay-viewer.json states that physical iPhone/iPad/Android, real drag/pinch gestures and OS suspension are unverified."
+    },
+    {
+      "task": "ローカルファイルを読み込んで再生でき、自動でuploadされない。不正なファイルと過大なファイルを拒否する",
+      "evidence": "PR #146: local-source.ts checks File.size limits (manifest 4 MB, artifact 16 MiB, total manifest+stored limit) before reading, then parseSavedManifest, the exact manifest file set and every size/SHA-256; openReplay re-verifies on use through the Worker. local-source.test.ts plays the fixture to step 300 against a Node zlib sequential oracle and rejects missing/unknown/unlisted/changed/malformed/unsupported/duplicate/oversized input (oversize without reading bytes). E2E static-local-file rejects oversized, corrupted and incomplete selections, plays the #61 fixture, asserts no non-GET/body request and no other-origin request after selection, saves to IndexedDB (FantasySimulation/local-replays/v1), reloads, reopens, deletes, exports the unchanged-bytes tar and re-imports it. The viewer shows an unpublished/unofficial note on a separate #/local route."
+    },
+    {
+      "task": "時刻付きのリンクから、その時刻の場面を開ける",
+      "evidence": "PR #146: match-route/league-route accept an optional /steps/N (0..MAX_BATTLE_STEPS) after the match; SelectedMatch passes it to ReplayPanel, which opens at that step, shows the recorded time (N x 20 ms) and a copyable link for the displayed step. Unit tests cover links, bounds and malformed suffixes. E2E static-step-link opens /steps/120 (step 120, 2.40s), follows the generated /steps/121 link, reloads at 121, reports an out-of-range /steps/6000 and rejects /steps/6001."
+    },
+    {
+      "task": "#61で、#79の完了後に追加された要素を描画できる（#61の完了時点で確認する）",
+      "evidence": "PR #146: #61 is closed. New real ReplayWriter fixture stage-vanguard-staged-duelist-300 (e2e/generate-stage-fixture.ts, provenance recorded) contains stamina, walk/run, a two-stage return cut, dash stage motion, radial blades and active forced motion. scene-model/motion-labels render locomotion, stamina with maximum, stage N of M with state/shape, stage motion and forced velocity; a new overlay draws recorded-velocity arrows in 2D and 3D. stage-display.test.ts checks them against raw saved deltas; E2E static-local-file checks run/walk, stamina meter, 12.0 m/s push, 8 m/s dash, both arrows in 2D and stage 2/2. Placed areas and beams are not engine features (docs/rules/stages-motion.md), so nothing is claimed for them."
+    },
+    {
+      "task": "ChromiumとWebKitのE2E、`vp run verify`、Linux CIで確認する",
+      "evidence": "PR #146: pinned Node 24.19.0, pnpm 11.27.1, Vite+ 0.3.3. Local vp run verify passed (158 files, 1251 tests, corpus, load, quality, build). Local static UI suite passed 44 Chromium/WebKit cases with zero flaky/skipped; smoke passed 10. The four new cases are in UI_STATIC_CASES, so CI coverage requires both browsers; the static global timeout grew 180s to 300s for the eight added runs. Linux CI on the PR and final main CI/Release are required and linked by the completion workflow."
+    }
+  ]
+}

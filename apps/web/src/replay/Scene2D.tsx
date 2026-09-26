@@ -1,15 +1,31 @@
-import { visionRing, type SceneModel } from './scene-model.ts';
-import type { Overlays } from './overlays.ts';
+import { visionRing, type Point, type SceneModel } from './scene-model.ts';
+import { ARROW_COLOURS, type Overlays } from './overlays.ts';
 
 /** Top view of the same geometry consumed by the Three renderer; no WebGL required. */
-export function Scene2D({ model, overlays }: { model: SceneModel; overlays: Overlays }) {
+export function Scene2D({
+  model,
+  overlays,
+  zoom = 1,
+  focus = model.centre,
+}: {
+  model: SceneModel;
+  overlays: Overlays;
+  /** Display magnification around `focus`, kept inside the recorded arena. */
+  zoom?: number;
+  focus?: Point;
+}) {
   const { min, max } = model;
+  const width = (max[0] - min[0]) / zoom,
+    depth = (max[2] - min[2]) / zoom;
+  const x = Math.min(max[0] - width, Math.max(min[0], focus[0] - width / 2)),
+    z = Math.min(max[2] - depth, Math.max(min[2], focus[2] - depth / 2));
   return (
     <svg
       role="img"
       aria-label="保存ログの2D表示"
       className="replay-canvas"
-      viewBox={`${min[0]} ${min[2]} ${max[0] - min[0]} ${max[2] - min[2]}`}
+      data-zoom={zoom}
+      viewBox={`${x} ${z} ${width} ${depth}`}
     >
       <rect x={min[0]} y={min[2]} width={max[0] - min[0]} height={max[2] - min[2]} fill="#0f1828" />
       {model.obstacles.map((o) =>
@@ -128,6 +144,19 @@ export function Scene2D({ model, overlays }: { model: SceneModel; overlays: Over
             stroke="#8addc0"
             strokeWidth={0.05}
           />
+        ))}
+      {overlays.motion &&
+        model.arrows.map((a) => (
+          <g key={a.id} stroke={ARROW_COLOURS[a.kind]} fill={ARROW_COLOURS[a.kind]}>
+            <line
+              x1={a.points[0][0]}
+              y1={a.points[0][2]}
+              x2={a.points[1][0]}
+              y2={a.points[1][2]}
+              strokeWidth={0.07}
+            />
+            <circle cx={a.points[1][0]} cy={a.points[1][2]} r={0.1} />
+          </g>
         ))}
       {overlays.hits &&
         model.events.map((e) => (
