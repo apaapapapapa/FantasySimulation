@@ -15,7 +15,7 @@ export const DUPLICATION_POLICY = Object.freeze({
   minNodes: 40,
   minLines: 8,
   maxSourceNodes: 250000,
-  maxRepositoryNodes: 500000,
+  maxRepositoryNodes: 1000000,
   maxComparisons: 1000000,
 });
 interface Token {

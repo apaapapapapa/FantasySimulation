@@ -1177,7 +1177,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "apply-status/projectile-deflection"
         }
       ]
     },
@@ -2037,7 +2037,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "attribute-absorption/projectile-deflection"
         }
       ]
     },
@@ -3757,7 +3757,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "contact/projectile-deflection"
         }
       ]
     },
@@ -4187,7 +4187,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "counter/projectile-deflection"
         }
       ]
     },
@@ -4617,7 +4617,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "damage/projectile-deflection"
         }
       ]
     },
@@ -5047,7 +5047,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "dispel/projectile-deflection"
         }
       ]
     },
@@ -5477,7 +5477,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "drain/projectile-deflection"
         }
       ]
     },
@@ -5931,7 +5931,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "elemental-reaction/projectile-deflection"
         }
       ]
     },
@@ -6791,7 +6791,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "flight/projectile-deflection"
         }
       ]
     },
@@ -7221,7 +7221,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "force/projectile-deflection"
         }
       ]
     },
@@ -8081,7 +8081,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "heal/projectile-deflection"
         }
       ]
     },
@@ -9801,7 +9801,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "motion/projectile-deflection"
         }
       ]
     },
@@ -10231,7 +10231,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "parry/projectile-deflection"
         }
       ]
     },
@@ -10661,7 +10661,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "periodic/projectile-deflection"
         }
       ]
     },
@@ -11099,7 +11099,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "permanent/projectile-deflection"
         }
       ]
     },
@@ -12389,7 +12389,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile/projectile-deflection"
         }
       ]
     },
@@ -12529,7 +12529,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.absolute-evasion"
         }
       ]
     },
@@ -12539,7 +12539,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.absolute-hit"
         }
       ]
     },
@@ -12549,7 +12549,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/apply-status"
         }
       ]
     },
@@ -12559,7 +12559,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.area"
         }
       ]
     },
@@ -12569,7 +12569,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/attribute-absorption"
         }
       ]
     },
@@ -12579,7 +12579,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.barrier"
         }
       ]
     },
@@ -12589,7 +12589,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.beam"
         }
       ]
     },
@@ -12599,7 +12599,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -12609,7 +12609,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/contact"
         }
       ]
     },
@@ -12619,7 +12619,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/counter"
         }
       ]
     },
@@ -12629,7 +12629,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/damage"
         }
       ]
     },
@@ -12639,7 +12639,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/dispel"
         }
       ]
     },
@@ -12649,7 +12649,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/drain"
         }
       ]
     },
@@ -12659,7 +12659,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/elemental-reaction"
         }
       ]
     },
@@ -12669,7 +12669,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -12679,7 +12679,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/flight"
         }
       ]
     },
@@ -12689,7 +12689,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/force"
         }
       ]
     },
@@ -12699,7 +12699,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -12709,7 +12709,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/heal"
         }
       ]
     },
@@ -12719,7 +12719,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.immortality"
         }
       ]
     },
@@ -12729,7 +12729,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.instant-death"
         }
       ]
     },
@@ -12739,7 +12739,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.mind-read"
         }
       ]
     },
@@ -12749,7 +12749,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/motion"
         }
       ]
     },
@@ -12759,7 +12759,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/parry"
         }
       ]
     },
@@ -12769,7 +12769,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/periodic"
         }
       ]
     },
@@ -12779,7 +12779,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/permanent"
         }
       ]
     },
@@ -12789,7 +12789,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.phasing"
         }
       ]
     },
@@ -12799,7 +12799,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -12809,7 +12809,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/projectile"
         }
       ]
     },
@@ -12819,7 +12819,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/projectile-deflection"
         }
       ]
     },
@@ -12829,7 +12829,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/reaction-effects"
         }
       ]
     },
@@ -12839,7 +12839,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/resource"
         }
       ]
     },
@@ -12849,7 +12849,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/reveal"
         }
       ]
     },
@@ -12859,7 +12859,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.revival"
         }
       ]
     },
@@ -12869,7 +12869,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.seal"
         }
       ]
     },
@@ -12879,7 +12879,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/shield"
         }
       ]
     },
@@ -12889,7 +12889,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/silence"
         }
       ]
     },
@@ -12899,7 +12899,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/stages"
         }
       ]
     },
@@ -12909,7 +12909,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/status-adjustment"
         }
       ]
     },
@@ -12919,7 +12919,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.teleport"
         }
       ]
     },
@@ -12929,7 +12929,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.time-stop"
         }
       ]
     },
@@ -12939,7 +12939,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -12949,7 +12949,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "projectile-deflection/visibility"
         }
       ]
     },
@@ -13249,7 +13249,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reaction-effects/projectile-deflection"
         }
       ]
     },
@@ -13679,7 +13679,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "resource/projectile-deflection"
         }
       ]
     },
@@ -14109,7 +14109,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "reveal/projectile-deflection"
         }
       ]
     },
@@ -15399,7 +15399,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "shield/projectile-deflection"
         }
       ]
     },
@@ -15829,7 +15829,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "silence/projectile-deflection"
         }
       ]
     },
@@ -16259,7 +16259,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "stages/projectile-deflection"
         }
       ]
     },
@@ -16689,7 +16689,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "status-adjustment/projectile-deflection"
         }
       ]
     },
@@ -18409,7 +18409,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.projectile-deflection"
+          "fixture": "visibility/projectile-deflection"
         }
       ]
     },
@@ -18554,6 +18554,7 @@
       "status.permanent-conflict": "p6-status.permanent-conflict",
       "status.reaction-conflict": "p6-status.reaction-conflict"
     },
+    "deflection": "deflection-pairs",
     "recovery": "p6-recovery-14"
   }
 }

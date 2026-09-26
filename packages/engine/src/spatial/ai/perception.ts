@@ -225,6 +225,9 @@ export function perceive(
     lastSeen = previous.lastSeen,
     terrain = [...previous.terrain];
   let statusChangedAt = previous.statusChangedAt;
+  let deflections = previous.deflections
+    ? [...previous.deflections.filter((d) => d.expiresAt > step)]
+    : undefined;
   let threatHistory = previous.threatHistory ? [...previous.threatHistory] : undefined;
   for (const sample of pending)
     if (sample.availableAt <= step) {
@@ -236,6 +239,17 @@ export function perceive(
       const previouslyVisible = observation?.projectiles ?? [];
       observation = sample;
       if (sample.enemy) lastSeen = sample.enemy;
+      if (sample.enemy?.reaction?.response === 'deflect') {
+        deflections = [
+          ...(deflections ?? []).filter((d) => d.targetId !== sample.enemy!.id),
+          {
+            targetId: sample.enemy.id,
+            sampledAt: sample.sampledAt,
+            availableAt: sample.availableAt,
+            expiresAt: sample.sampledAt + rules.knowledgeTtlSteps,
+          },
+        ].slice(-2);
+      }
       terrain.push(...(sample.terrain ?? []));
       if (rules.reapplication)
         for (const p of sample.projectiles) {
@@ -406,6 +420,7 @@ export function perceive(
           ),
         }
       : {}),
+    ...(deflections ? { deflections } : {}),
     ...(statusChangedAt !== undefined && { statusChangedAt }),
     ...(threatHistory ? { threatHistory: threatHistory.filter((e) => e.expiresAt > step) } : {}),
     pendingExperience: previous.pendingExperience.filter(

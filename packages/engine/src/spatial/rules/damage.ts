@@ -6,7 +6,7 @@ export type DamageEffect = DeepReadonly<Extract<Effect, { kind: 'damage' }>>;
 
 export type DamageTarget = { defense: number; magicDefense?: number; resistance: number };
 /** G-03 supplies status-adjusted stats/resistance and these aggregate multipliers. */
-export type DamageModifiers = { dealtBps?: number; receivedBps?: number };
+export type DamageModifiers = { dealtBps?: number; receivedBps?: number; powerBps?: number };
 
 const bounded = (value: number, max: number) => {
   if (!Number.isSafeInteger(value)) throw new Error('Damage input must be a safe integer');
@@ -35,7 +35,8 @@ export function calculateDamage(
   coverageBps = 10000,
   modifiers: DamageModifiers = {},
 ) {
-  const basePower = damagePower(effect, source);
+  const basePower =
+    (damagePower(effect, source) * bounded(modifiers.powerBps ?? 10000, 30000)) / 10000n;
   const defense = damageDefense(effect);
   const defenseApplied =
     defense === 'none'

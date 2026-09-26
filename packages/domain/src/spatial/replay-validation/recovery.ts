@@ -42,6 +42,8 @@ export function validateRecovery(
       const ability = source?.abilities.find((a) => a.id === event.abilityId);
       requireReplay(
         !!source &&
+          !event.sourceActorId &&
+          !event.sourceProjectileId &&
           event.actorId !== event.targetId &&
           !!ability &&
           abilityEffects(ability.definition).some(
@@ -69,6 +71,8 @@ export function validateRecovery(
         event.actorId === cause.actorId &&
         event.targetId === cause.actorId &&
         event.abilityId === cause.abilityId &&
+        !event.sourceActorId &&
+        !event.sourceProjectileId &&
         event.amount === cause.damage.drain.healing &&
         event.amount > 0 &&
         event.step === cause.step &&

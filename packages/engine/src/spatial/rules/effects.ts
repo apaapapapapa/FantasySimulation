@@ -43,6 +43,7 @@ export type EffectApplication = DamageSnapshot & {
   abilityId?: string | null;
   parentEventId?: string | null;
   scaleBps?: number;
+  powerBps?: number;
   dealtBps?: number;
   damageCancelled?: boolean;
 };
@@ -113,7 +114,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
         resistance,
       },
       Number(scale),
-      { dealtBps, receivedBps },
+      { dealtBps, receivedBps, powerBps: application.powerBps ?? 10000 },
     );
     if (application.damageCancelled) amounts.afterModifiers = 0n;
     const converted =
@@ -135,6 +136,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       }),
       statusModified:
         !!application.damageCancelled ||
+        (application.powerBps ?? 10000) !== 10000 ||
         dealtBps !== 10000 ||
         receivedBps !== 10000 ||
         resistance !== (target.actor.character.stats.resistances[effect.element] ?? 0),

@@ -36,6 +36,7 @@ export function beforeHitApplications(
   const extra: PendingEffect[] = [];
   for (const reaction of reactions) {
     const response = reaction.response;
+    if (response.kind === 'deflect') continue;
     if (response.kind === 'parry') {
       for (const matched of reaction.matches) {
         const contact = effects.filter(
@@ -43,7 +44,9 @@ export function beforeHitApplications(
             app.actorId === matched.actorId &&
             app.targetId === matched.targetId &&
             app.abilityId === matched.abilityId &&
-            app.parentEventId === matched.parentEventId,
+            (app.parentEventId === matched.parentEventId ||
+              (!!app.projectileContact &&
+                app.projectileContact.id === matched.projectileContact?.id)),
         );
         for (const app of contact)
           if (response.scope === 'all') cancelled.add(app);

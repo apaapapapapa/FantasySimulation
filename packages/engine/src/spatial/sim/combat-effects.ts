@@ -1,4 +1,4 @@
-import type { DamageSnapshot, ActorState, MotionState } from '../state.ts';
+import type { DamageSnapshot, ActorState, MotionState, AbilityRevision } from '../state.ts';
 import type {
   BattleEvent,
   DeepReadonly,
@@ -37,9 +37,16 @@ export type PendingEffect = DamageSnapshot & {
   abilityId: string | null;
   causes?: readonly string[];
   scaleBps?: number;
+  powerBps?: number;
   stage?: StageContact;
   reaction?: ReactionContext;
   damageCancelled?: boolean;
+  sourceAbility?: AbilityRevision;
+  sourceActorId?: string;
+  sourceProjectileId?: string;
+  ancestry?: ReactionContext;
+  projectileContact?: { id: string; direct: boolean; reflected: boolean };
+
   observation?: { self: MotionState; target: MotionState };
   incomingDirection?: Vec3;
 };
@@ -80,6 +87,9 @@ export function commitEffects(
       actorId: effect.actorId,
       targetId: effect.targetId,
       abilityId: effect.abilityId,
+      ...(effect.sourceActorId
+        ? { sourceActorId: effect.sourceActorId, sourceProjectileId: effect.sourceProjectileId! }
+        : {}),
       parentEventId: effect.parentEventId,
       causes: [...(effect.causes ?? [])],
       reason: effect.effect.kind,
@@ -174,6 +184,7 @@ export function commitEffects(
             id: app.id,
             actorId: app.actorId,
             abilityId: app.abilityId,
+            ...(app.sourceActorId ? { sourceActorId: app.sourceActorId } : {}),
             ...(app.stage ? { stage: app.stage } : {}),
           },
           step,
@@ -183,7 +194,9 @@ export function commitEffects(
           ? 'coincident-zero-force'
           : 'contact-frozen-linear-force';
       }
-      const ability = observer?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
+      const ability =
+        app.sourceAbility ??
+        observer?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
       if (observer && ability && observer !== actor) {
         const geometry = app.observation ?? {
           self: observer.body.motion,
@@ -214,17 +227,23 @@ export function commitEffects(
                     ability: ref,
                     eventId: app.id,
                     element: app.effect.element,
-                    basePower: Number(
-                      (damagePower(app.effect, app) *
-                        BigInt(app.dealtByElement?.[app.effect.element] ?? 10000)) /
-                        10000n,
-                    ),
+                    // A returned enemy payload is not self-known launch power.
+                    basePower: app.sourceActorId
+                      ? 0
+                      : Number(
+                          (damagePower(app.effect, app) *
+                            BigInt(app.dealtByElement?.[app.effect.element] ?? 10000)) /
+                            10000n,
+                        ),
                     ...(app.effect.defense !== undefined && { defense: app.effect.defense }),
                     impact: detail.calculation?.afterModifiers ?? detail.afterResistance,
                     ...(detail.absorption && { absorbed: detail.absorption.converted }),
                     shield: BigInt(detail.absorbed.numerator) > 0n,
                     // A defended contact cannot establish permanent elemental efficacy.
-                    partial: !!app.damageCancelled || (app.scaleBps ?? 10000) !== 10000,
+                    partial:
+                      !!app.sourceActorId ||
+                      !!app.damageCancelled ||
+                      (app.scaleBps ?? 10000) !== 10000,
                     statuses: actor.statuses,
                     statusStep: step,
                   },

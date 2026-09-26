@@ -52,6 +52,9 @@ TS以外のファイルはこのAST検査の対象ではなく、既存のソー
 これは構文的な重複検出であり、変数名を変えたコピー、閾値より短い共通処理、意味的に
 同じ別実装までゼロである証明ではありません。そのため実装前の検索とレビューも必須です。
 検出を回避するための変数名・整形変更、テスト全除外、抑制コメント、閾値引き上げはしません。
-Limits: 250,000 nodes/file, 500,000/repository, 1,000,000 comparisons, recorded in policy evidence.
+Limits: 250,000 nodes/file, 1,000,000/repository, 1,000,000 comparisons, recorded in policy evidence.
 Invalid/incomplete analysis or exhausted limits stays `unknown` (exit 2); clones fail (exit 1).
 Policy changes require separate review and positive/negative/failure regression tests.
+P6-01 exceeded the former 500,000-node repository capacity. The separately reviewed capacity
+increase keeps detection thresholds, file coverage and the per-file/comparison caps unchanged.
+Regression tests place positive/negative cases beyond 500,000 nodes and exceed the new cap.

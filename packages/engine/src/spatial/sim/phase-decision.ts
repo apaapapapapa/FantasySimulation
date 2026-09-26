@@ -89,11 +89,17 @@ export function decisionPhase(tx: StepTransaction) {
         )
         .map((a) => a.id),
     );
+    const learnedDeflection = actor.mind.memory.deflections?.some((d) => d.availableAt === step);
     const seen = actor.mind.memory.observation?.enemy;
     const newStatuses = seen?.statuses;
     const changedStatuses =
       newStatuses !== undefined && JSON.stringify(newStatuses) !== JSON.stringify(previousStatuses);
-    if (actor.mind.memory.learned.length || actor.mind.memory.expired.length || changedStatuses)
+    if (
+      actor.mind.memory.learned.length ||
+      actor.mind.memory.expired.length ||
+      changedStatuses ||
+      learnedDeflection
+    )
       journal.emit({
         kind: 'knowledge',
         step,
@@ -112,6 +118,9 @@ export function decisionPhase(tx: StepTransaction) {
             }),
           })),
           expired: [...actor.mind.memory.expired],
+          ...(learnedDeflection
+            ? { deflections: actor.mind.memory.deflections!.map((d) => ({ ...d })) }
+            : {}),
           ...(changedStatuses &&
             seen && {
               statusObservation: {
