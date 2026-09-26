@@ -22,6 +22,7 @@ import { catalogManifest, sampleManifest } from '@fantasy/samples';
 import {
   array,
   CORPUS_OUTPUT,
+  CORPUS_TEST_CAPACITY,
   observedExitCode,
   OBSERVATION_FILE,
   saveCorpusEvidence,
@@ -178,7 +179,8 @@ export function parseCorpus(value: unknown): Corpus {
       throw new Error(`tests.${key}: a workspace .test.ts file is required`);
     tests.set(id(key, 'tests key'), { file, name: word(test.name, `tests.${key}.name`, 500) });
   }
-  if (!tests.size || tests.size > 512) throw new Error('tests: 1..512 required tests expected');
+  if (!tests.size || tests.size > CORPUS_TEST_CAPACITY)
+    throw new Error(`tests: 1..${CORPUS_TEST_CAPACITY} required tests expected`);
   unique(
     [...tests.values()].map((test) => `${test.file}\n${test.name}`),
     'tests',
