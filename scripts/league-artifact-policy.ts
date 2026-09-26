@@ -1,5 +1,13 @@
 import type { pagesSource } from './pages-policy.ts';
 
+/** Download plus full revalidation needs more time than artifact transfer alone. */
+export function leagueArtifactTimeout(operation: unknown) {
+  if (operation === 'recover') return 90 * 60 * 1000;
+  if (['prepare', 'input', 'result', 'aggregate'].some((value) => value === operation))
+    return 60 * 60 * 1000;
+  throw new Error('Unknown league artifact operation');
+}
+
 /** Recovery validates saved results only; it never admits or repeats a simulation. */
 export function leagueRecoverySource(
   run: Parameters<typeof pagesSource>[0] & { id: number; run_attempt: number },

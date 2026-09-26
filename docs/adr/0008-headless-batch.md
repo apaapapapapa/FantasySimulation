@@ -61,7 +61,7 @@ evidence, token approval, paid plans/invoices/alerts (not caps) and mobile/recov
 
 ## League publication v1 (Refs #134)
 
-Optional catalog.leagues (latest snapshot per ID)/leagueWork preserve old catalog bytes.
+Optional catalog.leagues (latest snapshot/ID)/leagueWork preserve old catalog bytes.
 Documents: revision/summary/character detail/<=100-slot pair pages/progress/journals.
 Overview loads details/slots on demand. A slot binds
 leagueHash/slot ID to setHash/pageHash/rowId and immutable replay. Empty sets require a journal.
@@ -78,12 +78,13 @@ history. Refund only verified never-admitted work. Retain R2 history; artifacts 
 manual dry-run is read-only. Current main CI gates start; finish rechecks CI/ancestry.
 Shared r2-publication concurrency; caps: 64 partitions, 4 jobs, 2 Workers/job,
 25-minute computation. Missing results retain denominators. Never rerun only failed jobs.
-Artifact IDs/hashes bind allowlisted inputs/results to their original run/attempt.
-[Recovery](../../.github/workflows/league-recovery.yml) accepts only failed main publications
-after successful workers, original CI/ancestry and artifact/catalog checks.
-Finalize original source/execution without simulation/new reservations; publish on tested main
-with fresh leases and generation checks. No refunds.
-For absent viewer commits, fetch the observed SHA from origin and check merge-base; keep HEAD fixed.
+IDs/hashes bind allowlisted artifacts to original run/attempt.
+[Recovery](../../.github/workflows/league-recovery.yml): failed main publications only;
+require successful workers, original CI/ancestry and artifact/catalog equality.
+Keep original source/execution, tested main, fresh leases and generation checks.
+No simulation/new reservation/refund. Run 36219874846 hit 60m; recovery 90m/job 180m.
+Other artifact subprocesses/S3 stay 60m. Fetch missing viewer SHAs from origin;
+Check merge-base; keep HEAD fixed.
 
 Private control/league-usage.json is excluded from Reader/prune and counts toward 8GB/500k.
 Conditional, readback-verified leases precede transfers; never refund failures. Monthly caps:

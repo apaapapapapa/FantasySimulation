@@ -45,8 +45,8 @@ runs:
         script: |
           const {execFileSync} = require('node:child_process');
           const env = {...process.env};
+          const {leagueArtifactTimeout, leagueRecoverySource} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/league-artifact-policy.ts`);
           if (env.LEAGUE_ARTIFACT_OPERATION === 'recover') {
-            const {leagueRecoverySource} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/league-artifact-policy.ts`);
             const {leagueSource} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/pages-policy.ts`);
             const repo = {owner: context.repo.owner, repo: context.repo.repo};
             if (`${repo.owner}/${repo.repo}` !== 'apaapapapapa/FantasySimulation' || context.ref !== 'refs/heads/main') throw new Error('Main-only recovery');
@@ -67,5 +67,5 @@ runs:
           }
           execFileSync('node', ['--import', 'tsx', '../../scripts/league-artifacts.ts'], {
             cwd: `${process.env.GITHUB_WORKSPACE}/apps/cli`, env,
-            stdio: 'inherit', timeout: 3600000
+            stdio: 'inherit', timeout: leagueArtifactTimeout(env.LEAGUE_ARTIFACT_OPERATION)
           });

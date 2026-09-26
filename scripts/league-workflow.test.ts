@@ -61,6 +61,12 @@ it('recovers saved results on tested main with fresh leases and no simulation or
   expect(recovery).toContain('league-phase: start');
   expect(recovery).toContain('league-phase: finish');
   expect(recovery).toContain('operation: recover');
+  expect(recovery).toContain('timeout-minutes: 180');
+  const artifacts = readFileSync(
+    new URL('../.github/actions/league-artifacts/action.yml', import.meta.url),
+    'utf8',
+  );
+  expect(artifacts).toContain('timeout: leagueArtifactTimeout(env.LEAGUE_ARTIFACT_OPERATION)');
   expect(recovery).not.toMatch(
     /league-cloud\.ts (?:prepare|run|admit)|schedule:|persist-credentials: true/,
   );
