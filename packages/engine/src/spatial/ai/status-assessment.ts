@@ -1,3 +1,4 @@
+import { effectiveStatuses } from '@fantasy/domain/spatial/execution';
 import type { StatusCohort, DecisionView } from '../state.ts';
 import type { DeepReadonly, Effect } from '@fantasy/domain/spatial/execution';
 import { abilityPlan } from '../rules/ability-plan.ts';
@@ -62,7 +63,7 @@ export function assessStatusEffects(
       : {};
   const activationStep = launchStep + 1;
   const benefit = (states: readonly StatusCohort[], withoutDamage = false) =>
-    states.reduce(
+    effectiveStatuses(states, activationStep).reduce(
       (sum, s) =>
         sum +
         statusBenefit(

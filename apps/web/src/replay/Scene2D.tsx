@@ -78,6 +78,18 @@ export function Scene2D({
       ))}
       {model.actors.map((a) => (
         <g key={a.id}>
+          {(a.sealing || a.revived) && (
+            <circle
+              cx={a.position[0]}
+              cy={a.position[2]}
+              r={a.radius * 1.8}
+              fill="none"
+              stroke={a.revived ? '#72e0c1' : '#d9a6ff'}
+              strokeWidth={0.05}
+            >
+              <title>{a.revived ? '蘇生' : '封印中'}</title>
+            </circle>
+          )}
           <circle
             cx={a.position[0]}
             cy={a.position[2]}

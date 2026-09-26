@@ -1,3 +1,4 @@
+import { sealDisplay } from './seal-display.ts';
 import type {
   AttackGeometry,
   BattleEvent,
@@ -80,6 +81,8 @@ export function buildSceneModel(
       length: Math.max(0, body.heightMm / 1000 - 2 * radius),
       name: definition.name,
       appearance: definition.appearance,
+      sealing: sealDisplay(context, actor, checkpoint.step).some((s) => s.sealing),
+      revived: events.some((e) => e.revival && e.actorId === actor.id),
       casting: actor.action?.phase === 'cast',
       vision: unknownVision
         ? null

@@ -92,6 +92,7 @@ export function decisionPhase(tx: StepTransaction) {
         )
         .map((a) => a.id),
     );
+    const learnedRevival = actor.mind.memory.revivals?.some((r) => r.availableAt === step);
     const learnedDeflection = actor.mind.memory.deflections?.some((d) => d.availableAt === step);
     const seen = actor.mind.memory.observation?.enemy;
     const newStatuses = seen?.statuses;
@@ -101,7 +102,8 @@ export function decisionPhase(tx: StepTransaction) {
       actor.mind.memory.learned.length ||
       actor.mind.memory.expired.length ||
       changedStatuses ||
-      learnedDeflection
+      learnedDeflection ||
+      learnedRevival
     )
       journal.emit({
         kind: 'knowledge',
@@ -121,6 +123,9 @@ export function decisionPhase(tx: StepTransaction) {
             }),
           })),
           expired: [...actor.mind.memory.expired],
+          ...(learnedRevival
+            ? { revivals: actor.mind.memory.revivals!.map((r) => ({ ...r })) }
+            : {}),
           ...(learnedDeflection
             ? { deflections: actor.mind.memory.deflections!.map((d) => ({ ...d })) }
             : {}),

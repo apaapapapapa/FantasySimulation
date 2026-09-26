@@ -11,8 +11,7 @@ results/events/PRNG. Published definitions remain readable; old execution is rej
 - `after-damage`: non-restorative self effects or deferred enemy hitscan `counter`.
   Trigger on positive hostile post-shield rational damage, before HP clipping or
   simultaneous healing. Costs/environment/self damage and full shields cannot trigger.
-- `before-defeat`: non-restorative direct effects on provisional HP0 after all waves.
-  This is not revival. P6-03 owns restoration.
+- `before-defeat`: non-restorative direct effects or explicit `revive` on provisional HP0 after all waves.
 
 Cast=0; no authored stages/motion. Categories and elements are ANDed; each list is
 ORed. Categories follow G-01 including legacy MP defaults. Elements match damage/water.
@@ -32,39 +31,40 @@ cancels paid queues. No parallel main action slot or new resource implementation
 
 ## Projectile deflection
 
-`standard-deflection-v1` / `standard-tactics-deflection-v1` add P6-01. Deflect only
-initial projectile **body contacts**, never wall blast, melee/hitscan or periodic
-payloads. Eligibility consumes the original staged hit ledger; the replaced contact
-has no payload or explosion. Same-contact parry is suppressed before grouped costs.
-Other direct self responses retain normal grouped eligibility. Cancelled blast
-exposure is removed before settling other owners' costs; planning converges within
-owners+1 passes without priority by ID. Matching deflectors on one owner all pay,
-produce one turn, and multiply `powerBps` (default10000, range0..30000) exactly once,
-with one final floor/cap30000 independent of enumeration order.
+P6-01 retains its [complete recorded deflection contract](https://github.com/apaapapapapa/FantasySimulation/blob/43c6ddd365094de9e73e3b008191f91beaecc4fe/docs/rules/reactions.md#projectile-deflection):
+one body-contact replacement per projectile, delayed observed aim, original launch snapshot,
+new ownership, no homing/re-deflection/drain, next-boundary flight and bounded saved paths.
 
-Use the defender's delivered observation of the original attacker (body centre),
-otherwise reverse incoming velocity. Coincident observed centre also reverses.
-Preserve incident speed, gravity and original expiry; disable homing. Transfer owner
-but preserve the launch snapshot, categories and payload; only the explicit power
-multiplier changes damage power before defense; other payloads stay unchanged.
-Hold at contact centre until the next interval, then
-move along recorded segments. A returned projectile never deflects again; parry and
-other normal defenses still apply. Its next collision can explode normally.
-Original attacker/source references persist separately from current ownership.
+## Revival and sealing (P6-03/04)
 
-Deflection activations count toward normal work limits and carry ancestry into
-later contacts/reactions. Expiry on the turn boundary still expires; no extra life.
-Display-path overflow truncates rather than dropping segments. Events store contact,
-owner, incident/outgoing velocity, observed/reverse basis, power and activations.
-Replacement projectile deltas/checkpoints preserve these fields. ReplayState validates
-references, single ownership transition, causal IDs, speed/direction and power without
-engine imports. Every activation must name the same parent body contact among its causes.
-The event commits at boundary subtime0; its parent contact binds the recorded point/subtime.
-An expiring turn requires removal at interval subtime1000000, after the contact hold.
-The saved path must hold the contact centre through fraction1; contact times use rounded
-microseconds, and boundary contacts require only the matching endpoint.
-Both viewers show returned bullets in green, a recorded turn marker,
-velocity arrow and the saved polyline. No trajectory is inferred.
+`revive` is direct self `before-defeat`, with finite uses, zero HP cost and only optional
+`dispel` effects. `health` is fixed positive `amount` or max-HP `bps` (1..10000): floor
+once, minimum1, clamp to maxHP. This explicit reset is independent of ordinary healing
+multipliers. One revival ability per loadout including equipment; at most4 uses/actor/match.
+Exhaustion disables eligibility, not truncated. Conditions, categories, posture, incapacity,
+cooldown, MP/stamina and grouped all-or-none reaction reservation remain shared.
+All HP/shield/recovery and non-restorative waves settle first; eligible owners pay together,
+then reset HP before verdict, including the last interval. No recursive heal/counter wave.
+Cohorts, movement, objects and paid action lifecycles survive; optional dispels commit normally.
+Events bind activation, before/after resources and cumulative use. ActorDisplay.revivals,
+replacement deltas and ReplayState validate counts/HP/causes without engine execution.
+
+Optional status `seals` selects abilityCategories, statusCategories and/or statusIds (union).
+Next-boundary membership blocks matching starts/releases/reactions; silence keeps its existing
+magic interpretation. Existing projectiles/detached objects retain snapshots; channels use
+normal capability checks. Matching states retain membership and original expiry/pulse origin,
+but contribute no modifiers, periodic effects or elemental responses. No missed-pulse catchup.
+Seals cannot suppress any seal, preventing cycles. Dispel/permanent protection stays unchanged.
+Suppressed flight falls normally; suppressed phasing invokes the accepted safe-exit contract.
+
+Own AI estimates defined restoration/cost/remaining uses and sealing selectors; sealed choices
+are logged. Enemy revival knowledge comes only from delayed visible activation, never remaining
+uses/costs/conditions. It discounts later kill estimates until knowledge expiry. Visible sealed
+statuses disappear from effective public effects, delivered through the existing observation delay.
+Both viewers show recorded revival and seal rings; HP/use counts and temporarily suppressed
+cohorts remain inspectable, including reverse/loop seeks. New samples: phoenix-duelist-v1,
+seal-mage-v1. Additive spatial-v1.22 identity restamp; existing corpus/140 published definitions
+remain unchanged. 124 ordered fixtures extend the matrix; first-group league publication is separate.
 
 ## Atomic settlement and observation
 
@@ -90,10 +90,5 @@ memory until normal knowledge expiry and halves subsequent projectile success es
 no guaranteed efficacy is inferred. Decision/knowledge events retain this uncertainty.
 Returned bullets use ordinary observed projectile threat/evasion paths.
 
-ActorDisplay.reactions stores actual activation/clocks/queue/ray; old omissions work.
-Source tests cover cost/filter/shape boundaries, power/force/status/explosion, ancestry
-rollback, all49 new ordered interference pairs,484 immutable legacy pairs, delayed
-knowledge, Worker/SQLite and replay seeks. New samples are mirror-guard-v1 and
-mirror-shooter-v1. Official league updates wait for the full first-group milestone.
 P6-02 absorption/drain share these waves: cancelled contacts cannot heal; returned
 damage uses target absorption and never drains for either owner (#155 §4).

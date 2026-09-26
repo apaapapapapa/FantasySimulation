@@ -179,6 +179,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
       'periodic',
       'phasing',
       'reactions',
+      'seals',
       'stackKey',
       'stacking',
       'visibility',

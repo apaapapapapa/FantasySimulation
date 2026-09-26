@@ -1,6 +1,7 @@
 import type { ReplayCheckpoint, ReplayContext } from '@fantasy/domain/spatial';
 import { motionSummary } from './motion-labels.ts';
 import { stageCount } from './scene-model.ts';
+import { sealDisplay } from './seal-display.ts';
 import { recoveryDisplay } from './recovery-display.ts';
 
 export function ReplayResources({
@@ -30,6 +31,7 @@ export function ReplayResources({
             shield: Math.max(definition.stats.shield, actor.resources.shield),
             stamina: definition.stamina?.max,
           };
+          const seals = sealDisplay(context, actor, checkpoint.step);
           return (
             <tr key={actor.id}>
               <th>
@@ -74,6 +76,7 @@ export function ReplayResources({
                 );
               })}
               <td>
+                {actor.revivals !== undefined && <p>蘇生: 使用 {actor.revivals}/4回</p>}
                 <ul aria-label={`${actor.id} 動作`}>
                   {motionSummary(
                     actor,
@@ -95,6 +98,8 @@ export function ReplayResources({
                         <li key={`${status.revision.id}:${i}`}>
                           {saved?.definition.name ?? status.revision.id} ×{status.stacks} / step{' '}
                           {status.startStep}–{status.endStep}
+                          {seals[i]?.sealing && ' / 封印中'}
+                          {seals[i]?.suppressed && ' / 封印により効果停止'}
                         </li>
                       );
                     })}

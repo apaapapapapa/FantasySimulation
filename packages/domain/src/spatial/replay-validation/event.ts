@@ -9,6 +9,7 @@ import {
 } from './projectile.ts';
 import { recordedStage } from './stage.ts';
 import { validateForce } from './force.ts';
+import { validateRevival } from './revival.ts';
 import { validateRecovery } from './recovery.ts';
 import { requireReplay, emittedId, phases, same } from './common.ts';
 export function validateEvents(
@@ -184,6 +185,7 @@ export function validateEvents(
       );
     }
     validateRecovery(context, e, events);
+    validateRevival(context, e, events);
     if (e.reaction) {
       const ability = context.actors
         .find((a) => a.participant.actorId === (e.sourceActorId ?? e.actorId))

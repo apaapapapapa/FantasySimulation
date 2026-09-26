@@ -1217,7 +1217,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "apply-status/revival"
         }
       ]
     },
@@ -1227,7 +1227,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "apply-status/seal"
         }
       ]
     },
@@ -1647,7 +1647,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "area/revival"
         }
       ]
     },
@@ -1657,7 +1657,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "area/seal"
         }
       ]
     },
@@ -2077,7 +2077,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "attribute-absorption/revival"
         }
       ]
     },
@@ -2087,7 +2087,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "attribute-absorption/seal"
         }
       ]
     },
@@ -2507,7 +2507,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "barrier/revival"
         }
       ]
     },
@@ -2517,7 +2517,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "barrier/seal"
         }
       ]
     },
@@ -2937,7 +2937,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "beam/revival"
         }
       ]
     },
@@ -2947,7 +2947,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "beam/seal"
         }
       ]
     },
@@ -3797,7 +3797,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "contact/revival"
         }
       ]
     },
@@ -3807,7 +3807,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "contact/seal"
         }
       ]
     },
@@ -4227,7 +4227,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "counter/revival"
         }
       ]
     },
@@ -4237,7 +4237,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "counter/seal"
         }
       ]
     },
@@ -4657,7 +4657,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "damage/revival"
         }
       ]
     },
@@ -4667,7 +4667,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "damage/seal"
         }
       ]
     },
@@ -5087,7 +5087,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "dispel/revival"
         }
       ]
     },
@@ -5097,7 +5097,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "dispel/seal"
         }
       ]
     },
@@ -5517,7 +5517,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "drain/revival"
         }
       ]
     },
@@ -5527,7 +5527,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "drain/seal"
         }
       ]
     },
@@ -5971,7 +5971,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "elemental-reaction/revival"
         }
       ]
     },
@@ -5981,7 +5981,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "elemental-reaction/seal"
         }
       ]
     },
@@ -6831,7 +6831,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "flight/revival"
         }
       ]
     },
@@ -6841,7 +6841,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "flight/seal"
         }
       ]
     },
@@ -7261,7 +7261,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "force/revival"
         }
       ]
     },
@@ -7271,7 +7271,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "force/seal"
         }
       ]
     },
@@ -8121,7 +8121,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "heal/revival"
         }
       ]
     },
@@ -8131,7 +8131,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "heal/seal"
         }
       ]
     },
@@ -9841,7 +9841,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "motion/revival"
         }
       ]
     },
@@ -9851,7 +9851,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "motion/seal"
         }
       ]
     },
@@ -10271,7 +10271,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "parry/revival"
         }
       ]
     },
@@ -10281,7 +10281,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "parry/seal"
         }
       ]
     },
@@ -10701,7 +10701,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "periodic/revival"
         }
       ]
     },
@@ -10711,7 +10711,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "periodic/seal"
         }
       ]
     },
@@ -11139,7 +11139,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "permanent/revival"
         }
       ]
     },
@@ -11149,7 +11149,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "permanent/seal"
         }
       ]
     },
@@ -11569,7 +11569,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "phasing/revival"
         }
       ]
     },
@@ -11579,7 +11579,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "phasing/seal"
         }
       ]
     },
@@ -12429,7 +12429,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "projectile/revival"
         }
       ]
     },
@@ -12439,7 +12439,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "projectile/seal"
         }
       ]
     },
@@ -12859,7 +12859,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "projectile-deflection/revival"
         }
       ]
     },
@@ -12869,7 +12869,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "projectile-deflection/seal"
         }
       ]
     },
@@ -13289,7 +13289,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reaction-effects/revival"
         }
       ]
     },
@@ -13299,7 +13299,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reaction-effects/seal"
         }
       ]
     },
@@ -13719,7 +13719,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "resource/revival"
         }
       ]
     },
@@ -13729,7 +13729,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "resource/seal"
         }
       ]
     },
@@ -14149,7 +14149,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reveal/revival"
         }
       ]
     },
@@ -14159,7 +14159,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reveal/seal"
         }
       ]
     },
@@ -14249,7 +14249,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.absolute-evasion"
         }
       ]
     },
@@ -14259,7 +14259,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.absolute-hit"
         }
       ]
     },
@@ -14269,7 +14269,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/apply-status"
         }
       ]
     },
@@ -14279,7 +14279,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/area"
         }
       ]
     },
@@ -14289,7 +14289,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/attribute-absorption"
         }
       ]
     },
@@ -14299,7 +14299,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/barrier"
         }
       ]
     },
@@ -14309,7 +14309,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/beam"
         }
       ]
     },
@@ -14319,7 +14319,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -14329,7 +14329,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/contact"
         }
       ]
     },
@@ -14339,7 +14339,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/counter"
         }
       ]
     },
@@ -14349,7 +14349,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/damage"
         }
       ]
     },
@@ -14359,7 +14359,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/dispel"
         }
       ]
     },
@@ -14369,7 +14369,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/drain"
         }
       ]
     },
@@ -14379,7 +14379,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/elemental-reaction"
         }
       ]
     },
@@ -14389,7 +14389,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -14399,7 +14399,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/flight"
         }
       ]
     },
@@ -14409,7 +14409,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/force"
         }
       ]
     },
@@ -14419,7 +14419,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -14429,7 +14429,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/heal"
         }
       ]
     },
@@ -14439,7 +14439,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.immortality"
         }
       ]
     },
@@ -14449,7 +14449,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.instant-death"
         }
       ]
     },
@@ -14459,7 +14459,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.mind-read"
         }
       ]
     },
@@ -14469,7 +14469,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/motion"
         }
       ]
     },
@@ -14479,7 +14479,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/parry"
         }
       ]
     },
@@ -14489,7 +14489,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/periodic"
         }
       ]
     },
@@ -14499,7 +14499,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/permanent"
         }
       ]
     },
@@ -14509,7 +14509,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/phasing"
         }
       ]
     },
@@ -14519,7 +14519,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -14529,7 +14529,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/projectile"
         }
       ]
     },
@@ -14539,7 +14539,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/projectile-deflection"
         }
       ]
     },
@@ -14549,7 +14549,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/reaction-effects"
         }
       ]
     },
@@ -14559,7 +14559,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/resource"
         }
       ]
     },
@@ -14569,7 +14569,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/reveal"
         }
       ]
     },
@@ -14579,7 +14579,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/revival"
         }
       ]
     },
@@ -14589,7 +14589,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/seal"
         }
       ]
     },
@@ -14599,7 +14599,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/shield"
         }
       ]
     },
@@ -14609,7 +14609,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/silence"
         }
       ]
     },
@@ -14619,7 +14619,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/stages"
         }
       ]
     },
@@ -14629,7 +14629,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/status-adjustment"
         }
       ]
     },
@@ -14639,7 +14639,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/teleport"
         }
       ]
     },
@@ -14649,7 +14649,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.time-stop"
         }
       ]
     },
@@ -14659,7 +14659,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -14669,7 +14669,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "revival/visibility"
         }
       ]
     },
@@ -14679,7 +14679,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.absolute-evasion"
         }
       ]
     },
@@ -14689,7 +14689,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.absolute-hit"
         }
       ]
     },
@@ -14699,7 +14699,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/apply-status"
         }
       ]
     },
@@ -14709,7 +14709,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/area"
         }
       ]
     },
@@ -14719,7 +14719,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/attribute-absorption"
         }
       ]
     },
@@ -14729,7 +14729,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/barrier"
         }
       ]
     },
@@ -14739,7 +14739,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/beam"
         }
       ]
     },
@@ -14749,7 +14749,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -14759,7 +14759,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/contact"
         }
       ]
     },
@@ -14769,7 +14769,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/counter"
         }
       ]
     },
@@ -14779,7 +14779,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/damage"
         }
       ]
     },
@@ -14789,7 +14789,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/dispel"
         }
       ]
     },
@@ -14799,7 +14799,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/drain"
         }
       ]
     },
@@ -14809,7 +14809,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/elemental-reaction"
         }
       ]
     },
@@ -14819,7 +14819,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -14829,7 +14829,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/flight"
         }
       ]
     },
@@ -14839,7 +14839,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/force"
         }
       ]
     },
@@ -14849,7 +14849,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -14859,7 +14859,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/heal"
         }
       ]
     },
@@ -14869,7 +14869,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.immortality"
         }
       ]
     },
@@ -14879,7 +14879,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.instant-death"
         }
       ]
     },
@@ -14889,7 +14889,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.mind-read"
         }
       ]
     },
@@ -14899,7 +14899,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/motion"
         }
       ]
     },
@@ -14909,7 +14909,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/parry"
         }
       ]
     },
@@ -14919,7 +14919,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/periodic"
         }
       ]
     },
@@ -14929,7 +14929,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/permanent"
         }
       ]
     },
@@ -14939,7 +14939,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/phasing"
         }
       ]
     },
@@ -14949,7 +14949,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -14959,7 +14959,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/projectile"
         }
       ]
     },
@@ -14969,7 +14969,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/projectile-deflection"
         }
       ]
     },
@@ -14979,7 +14979,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/reaction-effects"
         }
       ]
     },
@@ -14989,7 +14989,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/resource"
         }
       ]
     },
@@ -14999,7 +14999,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/reveal"
         }
       ]
     },
@@ -15009,7 +15009,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/revival"
         }
       ]
     },
@@ -15019,7 +15019,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/seal"
         }
       ]
     },
@@ -15029,7 +15029,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/shield"
         }
       ]
     },
@@ -15039,7 +15039,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/silence"
         }
       ]
     },
@@ -15049,7 +15049,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/stages"
         }
       ]
     },
@@ -15059,7 +15059,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/status-adjustment"
         }
       ]
     },
@@ -15069,7 +15069,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/teleport"
         }
       ]
     },
@@ -15079,7 +15079,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.time-stop"
         }
       ]
     },
@@ -15089,7 +15089,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -15099,7 +15099,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "seal/visibility"
         }
       ]
     },
@@ -15439,7 +15439,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "shield/revival"
         }
       ]
     },
@@ -15449,7 +15449,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "shield/seal"
         }
       ]
     },
@@ -15869,7 +15869,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "silence/revival"
         }
       ]
     },
@@ -15879,7 +15879,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "silence/seal"
         }
       ]
     },
@@ -16299,7 +16299,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "stages/revival"
         }
       ]
     },
@@ -16309,7 +16309,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "stages/seal"
         }
       ]
     },
@@ -16729,7 +16729,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "status-adjustment/revival"
         }
       ]
     },
@@ -16739,7 +16739,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "status-adjustment/seal"
         }
       ]
     },
@@ -17159,7 +17159,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "teleport/revival"
         }
       ]
     },
@@ -17169,7 +17169,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "teleport/seal"
         }
       ]
     },
@@ -18449,7 +18449,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.revival"
+          "fixture": "visibility/revival"
         }
       ]
     },
@@ -18459,7 +18459,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.seal"
+          "fixture": "visibility/seal"
         }
       ]
     },
@@ -18558,6 +18558,7 @@
     "teleport": "p6-teleport-pairs",
     "objects": "p6.spatial-object-pairs",
     "phasing": "p6.phasing-pairs",
-    "deflection": "deflection-pairs"
+    "deflection": "deflection-pairs",
+    "revivalSealing": "p6-revival-seal-pairs"
   }
 }

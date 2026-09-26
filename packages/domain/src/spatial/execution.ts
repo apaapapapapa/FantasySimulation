@@ -6,6 +6,7 @@ export * from './random.ts';
 export * from './stream.ts';
 export * from './cognition.ts';
 export * from './status-references.ts';
+export * from './status-sealing.ts';
 export * from './numeric.ts';
 export * from './record-hashes.ts';
 export * from './revision-graph.ts';

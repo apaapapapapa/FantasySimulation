@@ -9,7 +9,7 @@ import { hitscan, inObservedRange, launchDirection } from '../rules/attacks.ts';
 import { bodyPoint } from '../world/visibility.ts';
 import { conditionMatches } from '../rules/conditions.ts';
 import { selfView } from '../ai/self-view.ts';
-import { blockedBySilence } from '../rules/categories.ts';
+import { blockedBySilence, blockedBySeal } from '../rules/categories.ts';
 import { postureAllows } from '../rules/posture.ts';
 import { reactionPayload } from './reactions.ts';
 import { add, mul } from '../math.ts';
@@ -47,6 +47,7 @@ export function releaseCounters(
         enemy.vitals.resources.hp > 0 &&
         !view.incapacitated &&
         postureAllows(actor.body.motion, definition) &&
+        !blockedBySeal(view, definition) &&
         !(view.silenced && blockedBySilence(definition)) &&
         conditionMatches(definition.condition, view) &&
         inObservedRange(definition, view);

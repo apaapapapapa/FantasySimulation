@@ -14,6 +14,7 @@ export type RevisionGraphCode =
   | 'duplicate-revision'
   | 'revision-limit'
   | 'revision-cycle'
+  | 'multiple-revivals'
   | 'duplicate-ability'
   | 'missing-policy-ability';
 export class RevisionGraphError extends Error {
@@ -144,6 +145,11 @@ export function characterLoadout(ref: RevisionRef, lookup: RevisionLookup) {
       throw new RevisionGraphError('duplicate-ability', `Duplicate actor ability: ${ability.id}`);
     ids.add(ability.id);
   }
+  if (abilities.filter((a) => a.definition.reaction?.response.kind === 'revive').length > 1)
+    throw new RevisionGraphError(
+      'multiple-revivals',
+      'Only one revival ability per character including equipment',
+    );
   return { character, equipment, abilities, policy: get('policy', character.policy).definition };
 }
 export function validatePolicyAbilities(loadout: ReturnType<typeof characterLoadout>) {

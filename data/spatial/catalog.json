@@ -789,6 +789,88 @@
   },
   {
     "kind": "ability",
+    "id": "phoenix-revival-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:776f6f996e52b62777bd41c6c4a6662c3f5049f6bc6a21a8d71bac41e60a6035",
+    "definition": {
+      "name": "不死鳥の再起",
+      "originalText": "HP0の全解決後に最大HPの半分へ再起。1試合2回。",
+      "trigger": "before-defeat",
+      "reaction": {
+        "response": {
+          "kind": "revive",
+          "health": {
+            "kind": "max-hp",
+            "bps": 5000
+          }
+        }
+      },
+      "categories": ["special"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 5,
+        "uses": 2
+      },
+      "castSteps": 0,
+      "recoverySteps": 1,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": []
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "phoenix-strike-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:921359e79a907b85e4bf372da2378f127d768e65ff1bb9750362a0b699f8a97b",
+    "definition": {
+      "name": "不死鳥の一撃",
+      "originalText": "双方の蘇生を検証する40の即着弾。",
+      "trigger": "action",
+      "categories": ["physical"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 1,
+      "recoverySteps": 15,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 40,
+          "attackScaleBps": 0,
+          "element": "fire",
+          "defense": "none"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "projectile-deflection-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -997,6 +1079,55 @@
           "amount": 12,
           "attackScaleBps": 5000,
           "element": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "sealing-bolt-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:1dc5f75885c01d1e6b421a2d8f4393e55465e09fd5ba0de6229840925b073f3e",
+    "definition": {
+      "name": "封印の閃光",
+      "originalText": "即着弾で特殊封印を付与し、10のダメージ。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 1,
+        "uses": 0
+      },
+      "castSteps": 1,
+      "recoverySteps": 10,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "suppress-special-v1",
+            "revision": 1,
+            "contentHash": "sha256:4bd5aefceaa2fe377134afec2bed9bf777a03e8f9f4073f672bcbf3f75d23246"
+          }
+        },
+        {
+          "kind": "damage",
+          "amount": 10,
+          "attackScaleBps": 0,
+          "element": "arcane",
+          "defense": "none"
         }
       ]
     }
@@ -3227,6 +3358,84 @@
   },
   {
     "kind": "character",
+    "id": "phoenix-duelist-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:51c95707a73b4a5f5899f77bdf63c6dd8ab36c22bbe5ea23bc4184d5bb841210",
+    "definition": {
+      "name": "再起の剣士",
+      "originalText": "再起の剣士",
+      "stats": {
+        "hp": 40,
+        "mp": 30,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "phoenix-strike-v1",
+          "revision": 1,
+          "contentHash": "sha256:921359e79a907b85e4bf372da2378f127d768e65ff1bb9750362a0b699f8a97b"
+        },
+        {
+          "id": "phoenix-revival-v1",
+          "revision": 1,
+          "contentHash": "sha256:776f6f996e52b62777bd41c6c4a6662c3f5049f6bc6a21a8d71bac41e60a6035"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "phoenix-duelist-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:f020114ee1a0007b1ec4a9347f09ff752ac66546991a0e80f45070f038e2c79d"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "posture-archer-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -3585,6 +3794,79 @@
         "id": "reaction-duelist-v1-policy",
         "revision": 1,
         "contentHash": "sha256:6ff8744b894b44831eb9edea8bdd4828f39395abafa416151d33b858819805cb"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "seal-mage-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:644a9814851ccfef359e4beb47979c50c281bc86559316d370e3d77d755b91e9",
+    "definition": {
+      "name": "封印術師",
+      "originalText": "封印術師",
+      "stats": {
+        "hp": 40,
+        "mp": 30,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "sealing-bolt-v1",
+          "revision": 1,
+          "contentHash": "sha256:1dc5f75885c01d1e6b421a2d8f4393e55465e09fd5ba0de6229840925b073f3e"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "seal-mage-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:7b753b078361e46c480adfe9f5c1180a5bb7e3cdef976b4d15ddd877fc85dfc4"
       }
     }
   },
@@ -4670,6 +4952,29 @@
   },
   {
     "kind": "policy",
+    "id": "phoenix-duelist-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:f020114ee1a0007b1ec4a9347f09ff752ac66546991a0e80f45070f038e2c79d",
+    "definition": {
+      "name": "再起の剣士方針",
+      "originalText": "再起の剣士方針",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "phoenix-strike-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 10000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": false
+    }
+  },
+  {
+    "kind": "policy",
     "id": "posture-archer-v1-policy",
     "revision": 1,
     "schemaVersion": 1,
@@ -4751,6 +5056,29 @@
       "preferredDistanceMm": 1200,
       "flightAltitudeMm": 6000,
       "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "seal-mage-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:7b753b078361e46c480adfe9f5c1180a5bb7e3cdef976b4d15ddd877fc85dfc4",
+    "definition": {
+      "name": "封印術師方針",
+      "originalText": "封印術師方針",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "sealing-bolt-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 10000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": false
     }
   },
   {
@@ -8979,6 +9307,35 @@
         "defense": 0,
         "speedBps": 10000,
         "flight": true,
+        "rooted": false
+      },
+      "periodic": []
+    }
+  },
+  {
+    "kind": "status",
+    "id": "suppress-special-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:4bd5aefceaa2fe377134afec2bed9bf777a03e8f9f4073f672bcbf3f75d23246",
+    "definition": {
+      "seals": {
+        "abilityCategories": ["special"],
+        "statusCategories": ["buff", "permanent"]
+      },
+      "name": "特殊封印",
+      "originalText": "特殊分類の技と反応、buffとpermanentの状態効果を100区間停止。期限は進む。",
+      "stackKey": "special-seal",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 100,
+      "categories": ["debuff"],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
         "rooted": false
       },
       "periodic": []

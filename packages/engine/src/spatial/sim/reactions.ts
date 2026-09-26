@@ -1,3 +1,4 @@
+import { commitRevivals } from './revival.ts';
 import type { ProjectileContacts } from './projectile-deflection.ts';
 import type { ActorState } from '../state.ts';
 import type { BattleEvent } from '@fantasy/domain/spatial/execution';
@@ -106,6 +107,7 @@ export function commitReactiveEffects(
   );
   const defeatEffects = reactionApplications(defeated, step);
   if (defeatEffects.length) wave(defeatEffects, afterEffects.length ? 2 : 1);
+  commitRevivals(defeated, context);
   commitTransactionStatuses(actors, all, context);
   cancelDeadCounters(actors, journal, activationStep, phase);
 }

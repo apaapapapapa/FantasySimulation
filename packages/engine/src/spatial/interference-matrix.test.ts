@@ -1,3 +1,4 @@
+import revivalSealing from '../../fixtures/spatial/revival-seal-pairs.json' with { type: 'json' };
 import phasing from '../../fixtures/spatial/phasing-pairs.json' with { type: 'json' };
 import { expect, it } from 'vite-plus/test';
 import {
@@ -33,15 +34,17 @@ function validateCoverage(input: typeof coverage) {
     if (
       typeof id !== 'string' ||
       tests[id]?.file !==
-        (kind === 'phasing'
-          ? 'packages/engine/src/spatial/phasing-interference.test.ts'
-          : kind === 'objects'
-            ? 'packages/engine/src/spatial/spatial-object-interference.test.ts'
-            : kind === 'teleport'
-              ? 'packages/engine/src/spatial/teleport-interference.test.ts'
-              : kind === 'recovery'
-                ? 'packages/engine/src/spatial/recovery-interference.test.ts'
-                : 'packages/engine/src/spatial/interference-matrix.test.ts')
+        (kind === 'revivalSealing'
+          ? 'packages/engine/src/spatial/revival-seal-interference.test.ts'
+          : kind === 'phasing'
+            ? 'packages/engine/src/spatial/phasing-interference.test.ts'
+            : kind === 'objects'
+              ? 'packages/engine/src/spatial/spatial-object-interference.test.ts'
+              : kind === 'teleport'
+                ? 'packages/engine/src/spatial/teleport-interference.test.ts'
+                : kind === 'recovery'
+                  ? 'packages/engine/src/spatial/recovery-interference.test.ts'
+                  : 'packages/engine/src/spatial/interference-matrix.test.ts')
     )
       throw new Error(`Missing executed ${kind} corpus binding`);
   }
@@ -55,6 +58,7 @@ function validateCoverage(input: typeof coverage) {
   }
   const fixtures = new Set([
     ...baseline.cases.map((c) => c.id),
+    ...revivalSealing.pairs.map(([left, right]) => `${left}/${right}`),
     ...deflectionPairs.map(([left, right]) => `${left}/${right}`),
     ...recovery.cases.map((c) => c.id),
     ...teleport.cases.map((c) => c.id),

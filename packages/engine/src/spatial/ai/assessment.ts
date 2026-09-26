@@ -338,6 +338,10 @@ function assessSingle(
         Math.min(1, expected / Math.max(1, rules.healthPrior * healthFraction)) *
         (0.1 + 0.9 * certainty),
     );
+    if (view.memory.revivals?.some((r) => r.targetId === target?.id && r.expiresAt > view.step)) {
+      kill = Math.floor(kill / 2);
+      reasons.push('observed revival; remaining uses unknown');
+    }
     exploration +=
       (rules.explorationWeight * (1 - certainty) * (1 - burnRisk) * weights.explorationBps) / 10000;
     utility +=

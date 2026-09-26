@@ -6,7 +6,7 @@ import { capsuleShape } from '../world/physics.ts';
 import { bodyCapsule, metres } from '../world/terrain.ts';
 import { capsulesOverlap, relocationDestination } from '../rules/relocation.ts';
 import { selfView } from '../ai/self-view.ts';
-import { blockedBySilence } from '../rules/categories.ts';
+import { blockedBySilence, blockedBySeal } from '../rules/categories.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 
 export function cancelEndedRelocations(tx: StepTransaction) {
@@ -88,6 +88,7 @@ export function activateRelocations(tx: StepTransaction) {
       actor.actions.action.stages?.interruptedAt === undefined &&
       actor.vitals.resources.hp > 0 &&
       !view.incapacitated &&
+      !blockedBySeal(view, command.ability.definition) &&
       !(view.silenced && blockedBySilence(command.ability.definition));
     const min = metres(battle.scenario.bounds.min),
       max = metres(battle.scenario.bounds.max),

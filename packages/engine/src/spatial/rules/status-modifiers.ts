@@ -1,3 +1,4 @@
+import { effectiveStatuses } from '@fantasy/domain/spatial/execution';
 import type { StatusCohort } from '../state.ts';
 import type {
   AbilityCategory,
@@ -20,8 +21,7 @@ export function statusAdjustmentTotals(
 ) {
   let addition = 0,
     multiplier = initialBps;
-  for (const cohort of statuses) {
-    if (cohort.startStep > step || step >= cohort.endStep) continue;
+  for (const cohort of effectiveStatuses(statuses, step)) {
     for (const adjustment of cohort.revision.definition.adjustments ?? []) {
       if (
         adjustment.target !== target ||

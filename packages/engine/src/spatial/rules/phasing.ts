@@ -1,3 +1,4 @@
+import { effectiveStatuses } from '@fantasy/domain/spatial/execution';
 import type { PhaseContribution } from '@fantasy/domain/spatial/execution';
 import type { ActorState } from '../state.ts';
 export { combinedPhase, bodyWorld, attackWorld } from '../world/phasing.ts';
@@ -7,7 +8,7 @@ export function activePhaseContributions(
   sealed: boolean,
 ): PhaseContribution[] {
   if (sealed) return [];
-  return actor.statuses.flatMap((status) => {
+  return effectiveStatuses(actor.statuses, step).flatMap((status) => {
     const spec = status.revision.definition.phasing;
     if (!spec || status.startStep > step || step >= status.endStep) return [];
     return [

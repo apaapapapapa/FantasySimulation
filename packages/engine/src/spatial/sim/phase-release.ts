@@ -2,7 +2,7 @@ import { damageBarrierContact } from './barrier-damage.ts';
 import { statusDamageSource } from '../rules/status-damage.ts';
 import { inObservedRange } from '../rules/attacks.ts';
 import { selfView } from '../ai/self-view.ts';
-import { blockedBySilence } from '../rules/categories.ts';
+import { blockedBySilence, blockedBySeal } from '../rules/categories.ts';
 import { conditionMatches } from '../rules/conditions.ts';
 import { isDodgeDecision } from '../ai/policy.ts';
 import { releaseStage } from '../rules/stages.ts';
@@ -37,6 +37,7 @@ export function releasePhase(tx: StepTransaction) {
         (!inObservedRange(definition, releaseView) ||
           releaseView.incapacitated ||
           !conditionMatches(definition.condition, releaseView) ||
+          blockedBySeal(releaseView, definition) ||
           (releaseView.silenced && blockedBySilence(definition))))
     ) {
       journal.emit({
