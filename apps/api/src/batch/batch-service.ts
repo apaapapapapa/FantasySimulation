@@ -1,3 +1,4 @@
+import { measureAsync, measureSync, sampleDatabase } from '../measurements.ts';
 import { ARTIFACT_RESERVATION_BYTES } from '@fantasy/domain/spatial';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -44,7 +45,8 @@ export async function executeBatch(
   const estimated = slots.length * plan.estimatedBytesPerMatch;
   if (estimated > plan.maxOutputBytes) throw new Error('Shard estimate exceeds output budget');
   await mkdir(join(root, '.work'), { recursive: true });
-  const store = openStore(join(root, '.work', 'database.sqlite'));
+  const databasePath = join(root, '.work', 'database.sqlite');
+  const store = measureSync('db.open', () => openStore(databasePath));
   let runtime: BattleService | undefined;
   const started = performance.now(),
     results: BatchIndex['slots'] = [];
@@ -55,10 +57,12 @@ export async function executeBatch(
     if (Number(store.db.pragma(`max_page_count = ${pages}`, { simple: true })) > pages)
       throw new Error('Batch database exceeds the 64 MiB metadata limit');
     await store.loadPinnedRevisions(plan.revisions);
-    runtime = await BattleService.open(store, join(root, '.work', 'replays'), {
-      workers,
-      storageBytes: plan.maxWorkBytes,
-    });
+    runtime = await measureAsync('worker.poolOpen', () =>
+      BattleService.open(store, join(root, '.work', 'replays'), {
+        workers,
+        storageBytes: plan.maxWorkBytes,
+      }),
+    );
     const bundles = new BattleBundles(root, plan.maxOutputBytes);
     await bundles.recoverStaging();
     await bundles.publishJson('plans', plan.id, plan);
@@ -113,7 +117,9 @@ export async function executeBatch(
           entry.reason = done.error ?? done.state;
         } else {
           // Consumer backpressure serializes publication while Workers remain bounded.
-          entry.receipt = await bundles.publish(runtime, done.resultId, source);
+          entry.receipt = await measureAsync('save.publish', () =>
+            bundles.publish(runtime!, done.resultId!, source),
+          );
           const kind = entry.receipt.result.outcome.kind;
           entry.state = kind === 'win' || kind === 'draw' ? 'complete' : kind;
           entry.reason =
@@ -123,7 +129,9 @@ export async function executeBatch(
         entry.state = 'failed';
         entry.reason = (error instanceof Error ? error.message : String(error)).slice(0, 1000);
       }
-      store.db.pragma('wal_checkpoint(TRUNCATE)');
+      sampleDatabase(databasePath);
+      measureSync('db.walCheckpoint', () => store.db.pragma('wal_checkpoint(TRUNCATE)'));
+      sampleDatabase(databasePath);
     }
     // Preserve cached/held rows even when admission was stopped before the first pull.
     // The generator marks the remaining noncached slots pending without submitting them.

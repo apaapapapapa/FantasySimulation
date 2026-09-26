@@ -29,6 +29,7 @@ defaults:
   run:
     working-directory: apps/cli
 env:
+  FANTASY_MEASUREMENTS_DIR: ${{ github.workspace }}/apps/cli/.generated/league-timing
   OFFICIAL_LEAGUE_DEFINITION: data/leagues/official-20-v1.json
   PUBLICATION_VIEWER_URL: https://apaapapapapa.github.io/FantasySimulation/
   PUBLICATION_WORKER_URL: https://fantasysimulation-replay-reader.tokyojp.workers.dev/
@@ -76,6 +77,10 @@ jobs:
           if-no-files-found: ignore
           include-hidden-files: true
           retention-days: 7
+      - uses: ./.github/actions/league-measurements
+        if: always()
+        with:
+          suffix: probe
   prepare:
     needs: probe
     if: needs.probe.outputs.needed == 'true' && (github.event_name == 'schedule' || inputs.mode == 'publish')
@@ -137,7 +142,13 @@ jobs:
           if-no-files-found: ignore
           include-hidden-files: true
           retention-days: 7
+      - uses: ./.github/actions/league-measurements
+        if: always()
+        with:
+          suffix: prepare
   compute:
+    env:
+      LEAGUE_PARTITION: ${{ matrix.index }}
     needs: prepare
     strategy:
       fail-fast: false
@@ -174,6 +185,10 @@ jobs:
           if-no-files-found: ignore
           include-hidden-files: true
           retention-days: 7
+      - uses: ./.github/actions/league-measurements
+        if: always()
+        with:
+          suffix: compute-${{ matrix.index }}
   publish:
     needs: [probe, prepare, compute]
     if: always() && !cancelled() && needs.prepare.result == 'success'
@@ -220,3 +235,8 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
           retention-days: 7
+      - uses: ./.github/actions/league-measurements
+        if: always()
+        with:
+          suffix: publish
+          collect-actions: 'true'

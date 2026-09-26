@@ -190,3 +190,32 @@ it.each(['before-admission', 'in-flight'] as const)(
     );
   },
 );
+
+it('measures concurrent GET bodies once, separates PUT/HEAD and retains failed calls without secrets', async () => {
+  const { Measurements } = await import('@fantasy/api/testing');
+  const m = new Measurements(),
+    { store, send } = fixture();
+  send.mockResolvedValue({
+    ETag: '"ok"',
+    Body: { transformToWebStream: () => new Blob(['abcd']).stream() },
+    ContentLength: 4,
+  } as never);
+  await m.run(async () => {
+    await Promise.all([
+      store.read('catalog/current.json', 4),
+      store.read('catalog/current.json', 4),
+    ]);
+    await store.head('catalog/current.json');
+    await store.put('catalog/current.json', Buffer.from('{}'), null);
+    send.mockRejectedValueOnce({ $metadata: { httpStatusCode: 503 }, message: 'fixture-secret' });
+    await expect(store.put('catalog/current.json', Buffer.from('{}'), null)).rejects.toThrow(
+      'HTTP 503',
+    );
+  });
+  const report = m.report();
+  expect(report.stages['r2.GET']).toMatchObject({ count: 2, bytes: 8, failures: 0 });
+  expect(report.stages['r2.PUT']).toMatchObject({ count: 2, bytes: 2, failures: 1 });
+  expect(report.stages['r2.HEAD']).toMatchObject({ count: 1 });
+  expect(report.incompleteSpans).toBe(0);
+  expect(JSON.stringify(report)).not.toContain('fixture-secret');
+});

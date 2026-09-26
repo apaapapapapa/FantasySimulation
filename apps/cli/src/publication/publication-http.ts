@@ -1,3 +1,4 @@
+import { measureAsync } from '@fantasy/api/tooling';
 import { execFileSync } from 'node:child_process';
 import { OperationError } from '@fantasy/api/tooling';
 
@@ -70,55 +71,59 @@ export function publicHttp(root: string, deadlineMs = 300000) {
   const deadline = AbortSignal.timeout(deadlineMs);
   let requests = 0,
     total = 0;
-  return async (key: string, limit: number) => {
-    if (++requests > 1002)
-      throw new OperationError('BUDGET_EXCEEDED', 'Public read-back request limit');
-    const url = new URL(key, base);
-    if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname))
-      throw new OperationError('INPUT_INVALID', 'Invalid public read-back path');
-    const response = await fetch(url, {
-      signal: AbortSignal.any([deadline, AbortSignal.timeout(300000)]),
-      redirect: 'error',
-      credentials: 'omit',
-      headers: {
-        accept: key.endsWith('.gz') ? 'application/gzip' : 'application/json',
-        'cache-control': 'no-cache',
-      },
-    }).catch(() => {
-      throw new OperationError('REMOTE_UNAVAILABLE', 'Public read-back transport failed');
-    });
-    if (
-      !response.ok ||
-      !response.headers
-        .get('content-type')
-        ?.startsWith(key.endsWith('.gz') ? 'application/gzip' : 'application/json') ||
-      (key.endsWith('.gz') && response.headers.has('content-encoding'))
-    ) {
-      await response.body?.cancel();
-      throw new PublicReadFailure(response.status);
-    }
-    const reader = response.body?.getReader();
-    if (!reader) throw new OperationError('DATA_INVALID', 'Public read-back body missing');
-    const parts: Uint8Array[] = [];
-    let size = 0;
-    try {
-      for (let part = await reader.read(); !part.done; part = await reader.read()) {
-        size += part.value.length;
-        total += part.value.length;
-        if (size > limit)
-          throw new OperationError('DATA_INVALID', 'Public read-back object exceeds declared size');
-        if (total > 256_000_000)
-          throw new OperationError('BUDGET_EXCEEDED', 'Public read-back byte budget');
-        parts.push(part.value);
+  return async (key: string, limit: number) =>
+    measureAsync('public.GET', async () => {
+      if (++requests > 1002)
+        throw new OperationError('BUDGET_EXCEEDED', 'Public read-back request limit');
+      const url = new URL(key, base);
+      if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname))
+        throw new OperationError('INPUT_INVALID', 'Invalid public read-back path');
+      const response = await fetch(url, {
+        signal: AbortSignal.any([deadline, AbortSignal.timeout(300000)]),
+        redirect: 'error',
+        credentials: 'omit',
+        headers: {
+          accept: key.endsWith('.gz') ? 'application/gzip' : 'application/json',
+          'cache-control': 'no-cache',
+        },
+      }).catch(() => {
+        throw new OperationError('REMOTE_UNAVAILABLE', 'Public read-back transport failed');
+      });
+      if (
+        !response.ok ||
+        !response.headers
+          .get('content-type')
+          ?.startsWith(key.endsWith('.gz') ? 'application/gzip' : 'application/json') ||
+        (key.endsWith('.gz') && response.headers.has('content-encoding'))
+      ) {
+        await response.body?.cancel();
+        throw new PublicReadFailure(response.status);
       }
-    } catch (error) {
-      await reader.cancel().catch(() => {});
-      throw error instanceof OperationError
-        ? error
-        : new OperationError('REMOTE_UNAVAILABLE', 'Public read-back stream failed');
-    } finally {
-      reader.releaseLock();
-    }
-    return Buffer.concat(parts);
-  };
+      const reader = response.body?.getReader();
+      if (!reader) throw new OperationError('DATA_INVALID', 'Public read-back body missing');
+      const parts: Uint8Array[] = [];
+      let size = 0;
+      try {
+        for (let part = await reader.read(); !part.done; part = await reader.read()) {
+          size += part.value.length;
+          total += part.value.length;
+          if (size > limit)
+            throw new OperationError(
+              'DATA_INVALID',
+              'Public read-back object exceeds declared size',
+            );
+          if (total > 256_000_000)
+            throw new OperationError('BUDGET_EXCEEDED', 'Public read-back byte budget');
+          parts.push(part.value);
+        }
+      } catch (error) {
+        await reader.cancel().catch(() => {});
+        throw error instanceof OperationError
+          ? error
+          : new OperationError('REMOTE_UNAVAILABLE', 'Public read-back stream failed');
+      } finally {
+        reader.releaseLock();
+      }
+      return Buffer.concat(parts);
+    });
 }

@@ -1,3 +1,4 @@
+import { measuredCommand } from '@fantasy/api/tooling';
 import { parseArgs } from 'node:util';
 import { mkdir, readdir } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
@@ -191,7 +192,7 @@ async function main() {
       'Usage: league plan definition.json plan-dir [--estimate-only --profile profile.json --history dir --retained bundles] | reserve plan-dir partition reservation.json --execution-id ID [--history dir --retained bundles] | run plan-dir partition output-dir --execution-id ID --reservation file [--retained bundles --workers 1 --deadline 1500000] | check plan-dir results-dir | export plan-dir results-dir public-dir',
     );
 }
-await main().catch((error: unknown) => {
+await measuredCommand('league-' + (process.argv[2] ?? 'unknown'), main).catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });

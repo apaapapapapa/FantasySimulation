@@ -1,3 +1,5 @@
+import { currentMeasurements } from '@fantasy/api/tooling';
+
 export function publicationConcurrency(value = 1) {
   if (!Number.isInteger(value) || value < 1 || value > 16)
     throw new Error('Invalid publication concurrency');
@@ -13,9 +15,12 @@ export async function publicationPool<T>(
   publicationConcurrency(concurrency);
   let next = 0;
   const failures: unknown[] = [];
+  const measured = currentMeasurements(),
+    queuedAt = performance.now();
   await Promise.all(
     Array.from({ length: Math.min(items.length, concurrency) }, async () => {
       while (!failures.length && next < items.length) {
+        measured?.queue('transfer', performance.now() - queuedAt, items.length - next);
         const item = items[next++]!;
         try {
           await perform(item);

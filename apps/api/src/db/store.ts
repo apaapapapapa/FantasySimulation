@@ -1,3 +1,4 @@
+import { measureSync } from '../measurements.ts';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -65,13 +66,15 @@ export class Store {
     this.db.close();
   }
   transaction<T>(work: () => T): T {
-    return this.orm.transaction(
-      () => {
-        const value = work();
-        if (value instanceof Promise) throw new Error('Database transactions cannot await');
-        return value;
-      },
-      { behavior: 'immediate' },
+    return measureSync('db.transaction', () =>
+      this.orm.transaction(
+        () => {
+          const value = work();
+          if (value instanceof Promise) throw new Error('Database transactions cannot await');
+          return value;
+        },
+        { behavior: 'immediate' },
+      ),
     );
   }
   getRevision(kind: DefinitionKind, id: string, revision?: number): Revision | undefined {
