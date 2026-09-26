@@ -40,6 +40,7 @@ export class ReactionBudget {
         throw new SpatialBudgetError(
           resource,
           `observed=${observed}, limit=${limit}, cause=${cause}`,
+          { observed, limit, cause },
         );
   }
 }
@@ -223,6 +224,7 @@ export function activateReactions(
         throw new SpatialBudgetError(
           'reaction-queue',
           `observed=${queued}, limit=64, cause=${event.id}`,
+          { observed: queued, limit: 64, cause: event.id },
         );
       activated.push({ actor, ability, response, display, matches: plan.matches });
     }

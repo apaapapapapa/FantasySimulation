@@ -4,6 +4,7 @@ import {
   DEFAULT_BUDGET,
   compareIds,
   statusTransformationRefs,
+  type Interference,
 } from '@fantasy/domain/spatial/execution';
 import { SpatialBudgetError } from '../world/physics.ts';
 import { permanentStatus } from './categories.ts';
@@ -48,10 +49,19 @@ export type StatusChange = {
 export class UnresolvedRuleError extends Error {
   readonly ruleId: string;
   readonly revisions: string[];
-  constructor(ruleId: string, revisions: string[], reason: string) {
+  interferences?: Interference[];
+  actorId?: string;
+  readonly detail?: { causes: readonly string[]; statuses: readonly StatusRevision[] };
+  constructor(
+    ruleId: string,
+    revisions: string[],
+    reason: string,
+    detail?: UnresolvedRuleError['detail'],
+  ) {
     super(reason);
     this.ruleId = ruleId;
     this.revisions = [...new Set(revisions)].sort(compareIds);
+    if (detail) this.detail = detail;
   }
 }
 const sameRevision = (a: StatusRevision, b: StatusRevision) =>
@@ -126,6 +136,10 @@ export function applyStatuses(
         'status.simultaneous-conflict',
         group.map((a) => a.revision.id),
         'Different simultaneous definitions share a stack key',
+        {
+          causes: group.flatMap((a) => a.causes ?? [a.cause]),
+          statuses: group.map((a) => a.revision),
+        },
       );
     const old = statuses.filter((s) => s.revision.definition.stackKey === key);
     if (
@@ -135,6 +149,10 @@ export function applyStatuses(
         'status.permanent-conflict',
         [revision.id, ...old.map((s) => s.revision.id)],
         'A permanent status cannot be replaced by a different revision',
+        {
+          causes: [...group.flatMap((a) => a.causes ?? [a.cause]), ...old.flatMap((s) => s.causes)],
+          statuses: [revision, ...old.map((s) => s.revision)],
+        },
       );
     const causes = [...new Set(group.flatMap((a) => a.causes ?? [a.cause]))].sort(compareIds);
     const flightCosts = group.map(
@@ -155,6 +173,10 @@ export function applyStatuses(
         'status.existing-conflict',
         [revision.id, ...old.map((s) => s.revision.id)],
         'Different definitions share a stack key without replacement',
+        {
+          causes: [...group.flatMap((a) => a.causes ?? [a.cause]), ...old.flatMap((s) => s.causes)],
+          statuses: [revision, ...old.map((s) => s.revision)],
+        },
       );
     if (
       (definition.stacking === 'refresh' ||

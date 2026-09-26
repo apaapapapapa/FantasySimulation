@@ -9,11 +9,13 @@ import {
   type LeagueFileRef,
   type LeagueProgress,
   type PublicCatalog,
+  rulesetClass,
 } from '@fantasy/domain/spatial';
 import {
   createLeagueRevision,
   leagueMatches,
   normalizeStoredLeagueDefinition,
+  normalizeLeagueDefinition,
   rulesExecutionEligibility,
   requireExecutable,
   implementation,
@@ -49,6 +51,12 @@ export async function probeLeague(
   const definition = await normalizeStoredLeagueDefinition(input);
   const definitionHash = await contentHash(definition);
   const rules = requireRevision(revisionIndex(definition.revisions), 'ruleset', definition.ruleset);
+  const leagueClass = rulesetClass(rules.definition);
+  if (mode === 'schedule' && leagueClass === 'experimental')
+    throw new OperationError(
+      'INPUT_INVALID',
+      'Experimental leagues require manual dry-run/publish',
+    );
   const eligibility = rulesExecutionEligibility(rules.definition);
   const currentIdentity = {
     engineVersion: CURRENT_ENGINE_VERSION,
@@ -94,6 +102,11 @@ export async function probeLeague(
   const previous = ref
     ? await leagueMetadata(ref, async (entry, schema) => saved(schema, await leagueJson(entry)))
     : null;
+  if (previous && previous.leagueClass !== leagueClass)
+    throw new OperationError(
+      'IDENTITY_MISMATCH',
+      'League class change requires a separate league ID',
+    );
   const previousIdentity = previous
     ? {
         engineVersion: previous.revision.engineVersion,
@@ -125,6 +138,7 @@ export async function probeLeague(
     }
   }
   const comparison = {
+    leagueClass,
     sourceSha,
     mode,
     definitionHash,
@@ -227,6 +241,7 @@ export async function requireLeagueRestoreBinding(
   sourceSha: string,
   read: PublicationRead,
 ) {
+  const executable = await normalizeLeagueDefinition(definition);
   let pointer: ReturnType<typeof PublicCatalogCurrentSchema.parse> | null = null;
   const json = async (key: string, limit: number) => {
     const data = await read(key, limit);
@@ -248,7 +263,7 @@ export async function requireLeagueRestoreBinding(
   }
   requireLeagueProbeBinding(input, {
     sourceSha,
-    definitionHash: await contentHash(await normalizeStoredLeagueDefinition(definition)),
+    definitionHash: await contentHash(executable),
     catalogHash: pointer?.catalogHash ?? null,
   });
   if (pointer) {

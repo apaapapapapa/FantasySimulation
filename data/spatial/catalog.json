@@ -3414,6 +3414,95 @@
   },
   {
     "kind": "ruleset",
+    "id": "experimental-p6-foundation-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:4b644629aa0d1b662cb32c4f6be7ce7d0e3abffc7a455cedeca2a6395fc4029d",
+    "definition": {
+      "name": "P6共通基盤・実験",
+      "rulesVersion": "spatial-v1.20",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1",
+        "minimumCandidateWeightBps": 500,
+        "relativeImpactBps": [2500, 7500, 12500],
+        "reapplication": "self-observed-v1",
+        "groundEvasion": "posture-jump-v1",
+        "cover": "observed-threat-v1",
+        "search": {
+          "maxWaitSteps": 500,
+          "cellsPerSide": 5,
+          "revisitSteps": 500,
+          "lowSightMm": 100,
+          "goalTimeoutSteps": 150
+        }
+      },
+      "experimental": {
+        "mechanics": [
+          "absolute-evasion",
+          "absolute-hit",
+          "immortality",
+          "instant-death",
+          "mind-read",
+          "time-stop"
+        ]
+      },
+      "interferenceDiagnostics": "v1",
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved"
+    }
+  },
+  {
+    "kind": "ruleset",
     "id": "standard-engagement-v1",
     "revision": 1,
     "schemaVersion": 1,

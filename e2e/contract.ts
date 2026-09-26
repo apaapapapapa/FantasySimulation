@@ -14,6 +14,7 @@ export const UI_CASES = [
 export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
 export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics', 'ui:static-replay'] as const;
 export const UI_STATIC_CASES = [
+  'static-experimental-league-labels',
   'static-league-overview',
   'static-league-pair-replay',
   'static-league-provisional',
@@ -65,6 +66,7 @@ export const UI_STATIC_PARTS = {
   'static-webkit-2': {
     browser: 'webkit',
     cases: [
+      'static-experimental-league-labels',
       'static-webgl-2d-to-end',
       'static-repeat-playback',
       'static-selection-reused',

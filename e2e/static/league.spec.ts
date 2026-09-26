@@ -3,6 +3,26 @@ import { leagueFiles, leagueGenerations, leagueRows } from '../league-fixtures.t
 import { leagueLink } from '../../apps/web/src/publication/league-route.ts';
 import { serveFixture } from './fixtures.ts';
 import type { PublicReadObservation } from '../../apps/web/src/replay/public-source.ts';
+import { experimentalLeagueFiles } from '../experimental-league-fixtures.ts';
+
+test('static-experimental-league-labels', async ({ page, context }, info) => {
+  await serveFixture(context, await experimentalLeagueFiles());
+  await page.goto('/FantasySimulation/');
+  await page.getByRole('link', { name: 'experimental-league（実験）', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: '実験基盤リーグ（実験）', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('実験リーグの順位表', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '相性表', exact: true }).click();
+  await page.getByRole('link', { name: 'character-0 対 character-1 の試合', exact: true }).click();
+  await expect(
+    page.getByRole('heading', { name: '実験基盤リーグ（実験）', exact: true }),
+  ).toBeVisible();
+  await info.attach('experimental-league', {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: 'image/png',
+  });
+});
 
 test('static-league-overview', async ({ page, context }, info) => {
   const loaded: { key: string; bytes: number }[] = [];
@@ -19,28 +39,43 @@ test('static-league-overview', async ({ page, context }, info) => {
   await expect(table.getByRole('row')).toHaveCount(4);
   await expect(page.getByRole('heading', { name: '正式ランキング' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'リーグ概要' })).toContainText('24 / 24枠が確定');
-  expect(loaded).toHaveLength(3);
+  expect(loaded).toHaveLength(4);
   expect(
     loaded.every(
       (v) =>
         v.key.startsWith('catalog/') ||
-        v.key === `leagues/${leagueGenerations[1]!.hash.slice(7)}.json`,
+        v.key === `leagues/${leagueGenerations[1]!.hash.slice(7)}.json` ||
+        v.key === `leagues/${leagueGenerations[1]!.snapshot.definition.hash.slice(7)}.json`,
     ),
   ).toBe(true);
-  expect(loaded.reduce((sum, f) => sum + f.bytes, 0)).toBeLessThan(6000);
   expect(observations).toEqual([]);
   const initial = [...loaded];
   loaded.length = 0;
   await page.goto('/FantasySimulation/?publication-metrics=1');
   await expect(table.getByRole('row')).toHaveCount(4);
   expect(loaded).toEqual(initial);
-  expect(observations.filter((entry) => entry.event === 'request')).toHaveLength(3);
+  expect(observations.filter((entry) => entry.event === 'request')).toHaveLength(4);
   expect(observations.filter((entry) => entry.event === 'failed')).toEqual([]);
   expect(
     observations
       .filter((entry) => entry.event === 'response')
       .map((entry) => ({ key: entry.key, bytes: entry.decodedBytes })),
   ).toEqual(initial);
+  // Authenticate classification with the pinned definition; retain the original overview budget.
+  expect(
+    loaded
+      .filter(
+        (v) => v.key !== `leagues/${leagueGenerations[1]!.snapshot.definition.hash.slice(7)}.json`,
+      )
+      .reduce((sum, f) => sum + f.bytes, 0),
+  ).toBeLessThan(6000);
+  expect(
+    loaded
+      .filter(
+        (v) => v.key === `leagues/${leagueGenerations[1]!.snapshot.definition.hash.slice(7)}.json`,
+      )
+      .map((v) => v.bytes),
+  ).toEqual([leagueGenerations[1]!.snapshot.definition.bytes]);
   await info.attach('league-initial-load', {
     body: Buffer.from(
       JSON.stringify({
