@@ -2,8 +2,8 @@
 
 Refs #134, #1. Daily differential publication/manual dispatch approved 2026-09-25.
 Run only the successful main-CI SHA; calculation has no production keys.
-[ADR 0016](0016-p6-foundation.md) approves milestone updates; daily behavior changes
-with implementation.
+[ADR 0016](0016-p6-foundation.md): daily probes hold old rules and identity-only changes;
+manual publication requires a definition milestone.
 
 Pin revision closure, rational weights, two placements, trials/master seed, scoring
 version and initial/retry budgets. Reject unknown fields, duplicate IDs, unsupported

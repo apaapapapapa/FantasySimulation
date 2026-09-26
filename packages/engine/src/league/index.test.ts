@@ -6,8 +6,52 @@ import {
   createLeagueRevision,
   leagueTrialSeed,
   normalizeLeagueDefinition,
+  normalizeStoredLeagueDefinition,
+  leagueDefinitionHash,
   validateLeagueRevision,
 } from './index.ts';
+import { revisionHash } from '@fantasy/domain/spatial';
+
+it('compares validated historical definitions without current-engine eligibility or identity', async () => {
+  const input = await leagueFixture();
+  const before = await leagueDefinitionHash(input);
+  const reordered = {
+    ...input,
+    characters: [...input.characters].reverse(),
+    revisions: [...input.revisions].reverse(),
+  };
+  expect(await leagueDefinitionHash(reordered)).toBe(before);
+  for (const edit of [
+    { ...input, masterSeed: input.masterSeed + 1 },
+    { ...input, id: 'next-milestone' },
+    { ...input, trials: input.trials + 1 },
+    {
+      ...input,
+      retryBudget: { ...input.retryBudget, maxEvents: input.retryBudget.maxEvents! + 1 },
+    },
+  ])
+    expect(await leagueDefinitionHash(edit)).not.toBe(before);
+  const old = {
+    ...input,
+    ruleset: {
+      id: observedRules.id,
+      revision: observedRules.revision,
+      contentHash: observedRules.contentHash,
+    },
+    revisions: [...input.revisions, observedRules],
+  };
+  expect((await normalizeStoredLeagueDefinition(old)).ruleset).toEqual(old.ruleset);
+  await expect(createLeagueRevision(old, leagueSource)).rejects.toMatchObject({
+    code: 'unsupported-rules',
+  });
+  const extra = structuredClone(input.revisions.find((r) => r.kind === 'character')!);
+  extra.id = 'unused-with-missing-policy';
+  extra.definition.policy = { ...extra.definition.policy, id: 'missing-unused-policy' };
+  extra.contentHash = await revisionHash(extra);
+  await expect(
+    leagueDefinitionHash({ ...input, revisions: [...input.revisions, extra] }),
+  ).rejects.toMatchObject({ code: 'missing-revision' });
+});
 
 it('normalizes participant, scenario, revision and JSON key order without changing slots or manifests', async () => {
   const input = await leagueFixture();

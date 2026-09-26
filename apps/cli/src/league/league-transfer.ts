@@ -26,6 +26,8 @@ import {
 } from '../publication/publication-remote.ts';
 import { admitLeagueUsage } from './league-budget.ts';
 import { writeCloudJson } from './league-cloud-files.ts';
+import { requireLeagueRestoreBinding } from './league-probe.ts';
+import { PublicReadFailure } from '../publication/publication-http.ts';
 
 export function leagueTransferBudget(
   files: number,
@@ -60,10 +62,25 @@ export async function transferCloudLeague(
   reportRoot: string,
   identity: Pick<LeagueUsageLease, 'id' | 'day' | 'sourceSha'>,
   options?: Pick<PublishOptions, 'viewer' | 'worker' | 'ancestor'>,
+  restoreBinding?: { probe: unknown; definition: unknown },
 ) {
   const control = new PublicationS3(config, transport(601, 20));
   let data: PublicationS3 | undefined;
   try {
+    if (restoreBinding) {
+      if (options)
+        throw new OperationError('INPUT_INVALID', 'Restore binding requires restoration');
+      await requireLeagueRestoreBinding(
+        restoreBinding.probe,
+        restoreBinding.definition,
+        identity.sourceSha,
+        async (key, limit) => {
+          const value = await control.read(key, limit);
+          if (!value) throw new PublicReadFailure(404);
+          return value.data;
+        },
+      );
+    }
     let inventory: Map<string, number> | undefined;
     if (!(await control.readControl())) {
       // A missing ledger is bootstrap only, never permission to reset an existing league.

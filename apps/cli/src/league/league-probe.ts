@@ -2,12 +2,23 @@ import {
   PublicCatalogCurrentSchema,
   PublicCatalogSchema,
   PublicLeagueWorkSchema,
-  PublicLeagueSnapshotSchema,
+  CURRENT_ENGINE_VERSION,
+  contentHash,
+  revisionIndex,
+  requireRevision,
   type LeagueFileRef,
   type LeagueProgress,
   type PublicCatalog,
 } from '@fantasy/domain/spatial';
-import { createLeagueRevision, leagueMatches } from '@fantasy/engine/spatial';
+import {
+  createLeagueRevision,
+  leagueMatches,
+  normalizeStoredLeagueDefinition,
+  rulesExecutionEligibility,
+  requireExecutable,
+  implementation,
+} from '@fantasy/engine/spatial';
+import { leagueMetadata } from './league-metadata.ts';
 import { validateProgressPage, estimateLeague } from '@fantasy/api/tooling';
 import { sha256 } from '@fantasy/api/artifacts';
 import type { PublicationRead } from '../publication/publication-graph.ts';
@@ -28,7 +39,22 @@ export const LEAGUE_PROFILE = {
 };
 
 /** Cheap checksum-bound metadata probe; actual admission re-verifies every retained bundle. */
-export async function probeLeague(input: unknown, sourceSha: string, read: PublicationRead) {
+export type LeagueProbeMode = 'schedule' | 'dry-run' | 'publish';
+export async function probeLeague(
+  input: unknown,
+  sourceSha: string,
+  read: PublicationRead,
+  mode: LeagueProbeMode = 'dry-run',
+) {
+  const definition = await normalizeStoredLeagueDefinition(input);
+  const definitionHash = await contentHash(definition);
+  const rules = requireRevision(revisionIndex(definition.revisions), 'ruleset', definition.ruleset);
+  const eligibility = rulesExecutionEligibility(rules.definition);
+  const currentIdentity = {
+    engineVersion: CURRENT_ENGINE_VERSION,
+    implementationDigest: implementation.digest,
+  };
+  let catalogHash: string | null = null;
   let requests = 0,
     bytes = 0;
   const json = async (key: string, ref?: LeagueFileRef): Promise<unknown> => {
@@ -52,6 +78,7 @@ export async function probeLeague(input: unknown, sourceSha: string, read: Publi
   let catalog: PublicCatalog | undefined;
   try {
     const pointer = saved(PublicCatalogCurrentSchema, await json('catalog/current.json'));
+    catalogHash = pointer.catalogHash;
     catalog = saved(
       PublicCatalogSchema,
       await json(`catalog/${pointer.catalogHash.slice(7)}.json`, {
@@ -63,6 +90,26 @@ export async function probeLeague(input: unknown, sourceSha: string, read: Publi
     if (requests !== 1 || !(error instanceof PublicReadFailure) || error.status !== 404)
       throw error;
   }
+  const ref = catalog?.leagues?.find((entry) => entry.id === definition.id);
+  const previous = ref
+    ? await leagueMetadata(ref, async (entry, schema) => saved(schema, await leagueJson(entry)))
+    : null;
+  const previousIdentity = previous
+    ? {
+        engineVersion: previous.revision.engineVersion,
+        implementationDigest: previous.revision.implementationDigest,
+      }
+    : null;
+  const sameDefinition = previous?.definitionHash === definitionHash;
+  const changedIdentity =
+    !!previousIdentity &&
+    (previousIdentity.engineVersion !== currentIdentity.engineVersion ||
+      previousIdentity.implementationDigest !== currentIdentity.implementationDigest);
+  const hold = !eligibility.executable
+    ? 'rules-milestone-required'
+    : sameDefinition && changedIdentity
+      ? 'engine-milestone-required'
+      : null;
   const records = new Map<string, LeagueProgress>();
   if (catalog?.leagueWork) {
     const work = saved(PublicLeagueWorkSchema, await leagueJson(catalog.leagueWork));
@@ -77,7 +124,36 @@ export async function probeLeague(input: unknown, sourceSha: string, read: Publi
       }
     }
   }
-  const revision = await createLeagueRevision(input, sourceSha);
+  const comparison = {
+    sourceSha,
+    mode,
+    definitionHash,
+    catalogHash,
+    previousDefinitionHash: previous?.definitionHash ?? null,
+    currentIdentity,
+    previousIdentity,
+    rulesVersion: rules.definition.rulesVersion,
+  };
+  if (mode === 'publish') {
+    requireExecutable(eligibility);
+    if (hold)
+      throw new OperationError(
+        'IDENTITY_MISMATCH',
+        'Engine milestone requires a new league definition',
+      );
+  }
+  if (hold && (mode === 'schedule' || !eligibility.executable))
+    return {
+      ...comparison,
+      reason: hold,
+      needed: false,
+      estimate: null,
+      inputHash: null,
+      requests,
+      bytes,
+    };
+  const revision = await createLeagueRevision(definition, sourceSha);
+
   let reused = 0,
     retries = 0,
     exhausted = 0;
@@ -87,27 +163,101 @@ export async function probeLeague(input: unknown, sourceSha: string, read: Publi
     else if (attempts.length >= 2) exhausted++;
     else if (attempts.length) retries++;
   }
-  const ref = catalog?.leagues?.find((entry) => entry.id === revision.definition.id);
-  const snapshot = ref ? saved(PublicLeagueSnapshotSchema, await leagueJson(ref)) : undefined;
-  if (ref && (snapshot?.leagueHash !== ref.leagueHash || snapshot.inputHash !== ref.inputHash))
-    throw new OperationError('DATA_INVALID', 'League probe catalog identity');
   const estimate = estimateLeague(revision.definition, LEAGUE_PROFILE, {
     reused,
     retries,
     exhausted,
   });
   return {
-    sourceSha,
+    ...comparison,
+    reason:
+      hold ??
+      (!previous
+        ? 'initial-publication'
+        : !sameDefinition
+          ? 'definition-changed'
+          : 'current-definition'),
     inputHash: revision.inputHash,
     requests,
     bytes,
     estimate,
     needed:
-      estimate.compute > 0 ||
-      snapshot?.inputHash !== revision.inputHash ||
-      snapshot.standings.resolved !== reused,
+      !hold &&
+      (estimate.compute > 0 ||
+        previous?.snapshot.inputHash !== revision.inputHash ||
+        previous.snapshot.standings.resolved !== reused),
     reuseVerification: 'Published metadata only; admission verifies retained bundle checksums.',
     retentionVerification:
       'Estimate excludes retained storage; R2 inventory and cumulative usage are checked before admission.',
   };
+}
+
+/** Bind the key-free probe to the exact source, definition and restored catalog before reserving. */
+export function requireLeagueProbeBinding(
+  input: unknown,
+  current: Pick<
+    Awaited<ReturnType<typeof probeLeague>>,
+    'sourceSha' | 'definitionHash' | 'catalogHash'
+  >,
+) {
+  if (
+    !input ||
+    typeof input !== 'object' ||
+    !('sourceSha' in input) ||
+    input.sourceSha !== current.sourceSha ||
+    !('definitionHash' in input) ||
+    input.definitionHash !== current.definitionHash ||
+    !('catalogHash' in input) ||
+    input.catalogHash !== current.catalogHash ||
+    !('needed' in input) ||
+    input.needed !== true ||
+    !('mode' in input) ||
+    !['schedule', 'publish'].includes(String(input.mode))
+  )
+    throw new OperationError(
+      'IDENTITY_MISMATCH',
+      'League probe changed; run a new estimate before admission',
+    );
+}
+
+/** Check authoritative R2 metadata before any durable usage reservation. */
+export async function requireLeagueRestoreBinding(
+  input: unknown,
+  definition: unknown,
+  sourceSha: string,
+  read: PublicationRead,
+) {
+  let pointer: ReturnType<typeof PublicCatalogCurrentSchema.parse> | null = null;
+  const json = async (key: string, limit: number) => {
+    const data = await read(key, limit);
+    if (data.length > limit)
+      throw new OperationError('DATA_INVALID', 'League restore metadata size');
+    return {
+      data,
+      value: operationInput(
+        () => JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data)),
+        'DATA_INVALID',
+      ),
+    };
+  };
+  try {
+    const { value } = await json('catalog/current.json', 4000000);
+    pointer = operationInput(() => PublicCatalogCurrentSchema.parse(value), 'DATA_INVALID');
+  } catch (error) {
+    if (!(error instanceof PublicReadFailure) || error.status !== 404) throw error;
+  }
+  requireLeagueProbeBinding(input, {
+    sourceSha,
+    definitionHash: await contentHash(await normalizeStoredLeagueDefinition(definition)),
+    catalogHash: pointer?.catalogHash ?? null,
+  });
+  if (pointer) {
+    const { data, value } = await json(
+      `catalog/${pointer.catalogHash.slice(7)}.json`,
+      pointer.bytes,
+    );
+    if (data.length !== pointer.bytes || sha256(data) !== pointer.catalogHash)
+      throw new OperationError('DATA_INVALID', 'League restore catalog checksum');
+    operationInput(() => PublicCatalogSchema.parse(value), 'DATA_INVALID');
+  }
 }
