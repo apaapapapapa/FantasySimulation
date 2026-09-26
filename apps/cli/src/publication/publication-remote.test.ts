@@ -7,6 +7,7 @@ import { publicationFixture } from '../../test-support/publication.ts';
 import { exportPublication } from './publication-export.ts';
 import { localPublicationGraph } from './publication-graph.ts';
 import { PUBLICATION_CONTROL_KEY } from './publication-files.ts';
+import { leagueFailure, leagueFailureSummary } from '../league/league-diagnostics.ts';
 import {
   publishPublication,
   prunePublication,
@@ -70,6 +71,27 @@ async function setup() {
   };
   return { root, directory, fixture, store, options };
 }
+it.each([Buffer.from('{REMOTE_PRIVATE_SENTINEL'), Buffer.from([0xff])])(
+  'reports malformed remote pointer as saved data without changing publication state',
+  async (data) => {
+    const { directory, store, options } = await setup();
+    store.objects.set('catalog/current.json', { data, etag: 'fixture' });
+    const error = await publishPublication(directory, store, options).catch(
+      (error: unknown) => error,
+    );
+    const report = leagueFailure(error, { command: 'publish' });
+    expect(report).toMatchObject({
+      code: 'DATA_INVALID',
+      publicationState: 'not-committed',
+      retry: 'no',
+    });
+    expect(JSON.stringify(report) + leagueFailureSummary(report)).not.toContain(
+      'REMOTE_PRIVATE_SENTINEL',
+    );
+    expect(store.writes).toEqual([]);
+    expect((await store.read('catalog/current.json'))?.data).toEqual(data);
+  },
+);
 it.each([1, 4])(
   'publishes with concurrency %s before current, verifies all sizes, and repeats without writes',
   async (concurrency) => {

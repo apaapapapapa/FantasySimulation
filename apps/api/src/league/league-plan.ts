@@ -1,3 +1,4 @@
+import { OperationError } from '../operation-error.ts';
 import {
   contentHash,
   leagueSlotCount,
@@ -42,7 +43,7 @@ export function estimateLeague(
     counts.reused + counts.exhausted > planned ||
     counts.retries > planned - counts.reused - counts.exhausted
   )
-    throw new Error('Invalid league estimate counts');
+    throw new OperationError('INPUT_INVALID', 'Invalid league estimate counts');
   const compute = planned - counts.reused - counts.exhausted;
   const matchesPerPlan = Math.min(
     options.matchesPerPlan,
@@ -50,7 +51,10 @@ export function estimateLeague(
     Math.floor((WORK_BYTES - 40 * 1024 ** 2) / options.estimatedBytesPerMatch),
   );
   if (matchesPerPlan < 1 || Math.ceil(planned / matchesPerPlan) > 512)
-    throw new Error('League cannot fit bounded plans; revise the measured estimate');
+    throw new OperationError(
+      'BUDGET_EXCEEDED',
+      'League cannot fit bounded plans; revise the measured estimate',
+    );
   const partitions = Math.ceil(planned / matchesPerPlan);
   const estimatedBytes =
     options.retainedBytes +
@@ -68,7 +72,10 @@ export function estimateLeague(
     readRequests + options.usedReadRequests > options.maxReadRequests ||
     writeRequests + options.usedWriteRequests > options.maxWriteRequests
   )
-    throw new Error('League estimate exceeds storage, file or request budget');
+    throw new OperationError(
+      'BUDGET_EXCEEDED',
+      'League estimate exceeds storage, file or request budget',
+    );
   return {
     planned,
     ...counts,
@@ -192,7 +199,7 @@ export async function validateLeaguePlan(input: unknown) {
       leagueSlotCount(plan.revision.definition) ||
     new Set(plan.partitions.map((p) => p.partitionId)).size !== plan.partitions.length
   )
-    throw new Error('League plan identity or coverage mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'League plan identity or coverage mismatch');
   return plan;
 }
 
@@ -211,10 +218,10 @@ export async function validateLeaguePartition(
     ref.batchPlanId !== partition.batchPlanId ||
     ref.slots !== partition.slots.length
   )
-    throw new Error('League partition identity mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'League partition identity mismatch');
   const batch = await validateBatchPlan(batchInput, plan.source);
   if (batch.id !== partition.batchPlanId || batch.slots.length !== partition.slots.length)
-    throw new Error('League batch identity mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'League batch identity mismatch');
   const offset = plan.partitions.slice(0, partition.index).reduce((sum, p) => sum + p.slots, 0);
   const expected = new Map<
     string,
@@ -229,7 +236,7 @@ export async function validateLeaguePartition(
   }
   const actualSlots = new Map(partition.slots.map((slot) => [slot.id, slot]));
   if (actualSlots.size !== expected.size)
-    throw new Error('League partition slot coverage mismatch');
+    throw new OperationError('IDENTITY_MISMATCH', 'League partition slot coverage mismatch');
   for (const slot of batch.slots) {
     const entry = expected.get('sha256:' + slot.key);
     if (
@@ -238,7 +245,7 @@ export async function validateLeaguePartition(
       slot.simulationHash !== entry.slot.simulationHash ||
       canonicalJson(slot.spec) !== canonicalJson(entry.spec)
     )
-      throw new Error('League partition manifest mismatch');
+      throw new OperationError('IDENTITY_MISMATCH', 'League partition manifest mismatch');
   }
   return { partition, batch };
 }

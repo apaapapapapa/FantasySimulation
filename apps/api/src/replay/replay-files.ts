@@ -8,6 +8,7 @@ import { pipeline } from 'node:stream/promises';
 import { createGzip, gunzip } from 'node:zlib';
 import { promisify } from 'node:util';
 import { ArtifactRefSchema, type ReplayManifest } from '@fantasy/domain/spatial';
+import { OperationError, operationInput } from '../operation-error.ts';
 
 export const sha256 = (bytes: Uint8Array | string) =>
   `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
@@ -57,7 +58,11 @@ export async function syncDirectory(path: string) {
   }
 }
 /** Bound the actual read, including concurrent growth; never follow artifact symlinks. */
-export async function readBoundedFile(path: string, limit: number): Promise<Buffer> {
+export async function readBoundedFile(
+  path: string,
+  limit: number,
+  code: 'INPUT_INVALID' | 'DATA_INVALID' = 'DATA_INVALID',
+): Promise<Buffer> {
   const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
     const info = await file.stat();
@@ -66,8 +71,9 @@ export async function readBoundedFile(path: string, limit: number): Promise<Buff
     // cannot redirect the already-open handle or pass the identity comparison.
     const entry = await lstat(path);
     if (entry.isSymbolicLink() || entry.dev !== info.dev || entry.ino !== info.ino)
-      throw new Error('Artifact entry changed or is a symlink');
-    if (!info.isFile() || info.size > limit) throw new Error('Artifact size/type limit');
+      throw new OperationError(code, 'Artifact entry changed or is a symlink');
+    if (!info.isFile() || info.size > limit)
+      throw new OperationError(code, 'Artifact size/type limit');
     const bytes = Buffer.alloc(Math.min(info.size + 1, limit + 1));
     let size = 0;
     while (size < bytes.length) {
@@ -75,7 +81,7 @@ export async function readBoundedFile(path: string, limit: number): Promise<Buff
       if (!read.bytesRead) break;
       size += read.bytesRead;
     }
-    if (size !== info.size) throw new Error('Artifact changed while reading');
+    if (size !== info.size) throw new OperationError(code, 'Artifact changed while reading');
     return bytes.subarray(0, size);
   } finally {
     await file.close();
@@ -84,18 +90,35 @@ export async function readBoundedFile(path: string, limit: number): Promise<Buff
 type ArtifactRef = ReplayManifest['chunks'][number] | ReplayManifest['checkpoints'][number];
 const decodeGzip = promisify(gunzip);
 export async function readCompressed(directory: string, input: ArtifactRef) {
-  const ref = ArtifactRefSchema.parse({
-    file: input.file,
-    bytes: input.bytes,
-    rawBytes: input.rawBytes,
-    checksum: input.checksum,
-  });
+  const ref = operationInput(
+    () =>
+      ArtifactRefSchema.parse({
+        file: input.file,
+        bytes: input.bytes,
+        rawBytes: input.rawBytes,
+        checksum: input.checksum,
+      }),
+    'DATA_INVALID',
+  );
   const bytes = await readBoundedFile(join(directory, ref.file), ref.bytes);
   if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
-    throw new Error('Artifact checksum/size mismatch');
-  const raw = await decodeGzip(bytes, { maxOutputLength: ref.rawBytes });
-  if (raw.length !== ref.rawBytes) throw new Error('Expanded artifact size mismatch');
-  return new TextDecoder('utf-8', { fatal: true }).decode(raw);
+    throw new OperationError('DATA_INVALID', 'Artifact checksum/size mismatch');
+  const raw = await decodeGzip(bytes, { maxOutputLength: ref.rawBytes }).catch((error: unknown) => {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      typeof error.code === 'string' &&
+      ['Z_DATA_ERROR', 'Z_BUF_ERROR', 'ERR_BUFFER_TOO_LARGE'].includes(error.code)
+    )
+      throw new OperationError('DATA_INVALID', 'Invalid compressed artifact');
+    throw error;
+  });
+  if (raw.length !== ref.rawBytes)
+    throw new OperationError('DATA_INVALID', 'Expanded artifact size mismatch');
+  return operationInput(
+    () => new TextDecoder('utf-8', { fatal: true }).decode(raw),
+    'DATA_INVALID',
+  );
 }
 export async function writeCompressed(directory: string, file: string, raw: string) {
   const rawBytes = Buffer.byteLength(raw);

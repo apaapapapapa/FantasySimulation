@@ -1,6 +1,8 @@
 import { canonicalJson } from '../canonical.ts';
+/** A rejected saved recording, distinct from unexpected validator/programming failures. */
+export class ReplayValidationError extends Error {}
 export const fail = (message: string): never => {
-  throw new Error(`Invalid replay: ${message}`);
+  throw new ReplayValidationError(`Invalid replay: ${message}`);
 };
 export const requireReplay = (condition: boolean, message: string) => {
   if (!condition) fail(message);
