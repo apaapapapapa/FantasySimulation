@@ -62,6 +62,15 @@ it.each([
   '() => {}',
   '() => undefined',
   '() => false',
+  '() => Infinity',
+  '() => NaN',
+  '() => Number.NaN',
+  '() => Number.POSITIVE_INFINITY',
+  '() => Number["NEGATIVE_INFINITY"]',
+  '() => Math.PI',
+  '() => globalThis.Number.MAX_SAFE_INTEGER',
+  '() => globalThis["Infinity"]',
+  '() => { const value = Number.NaN; const result = { value }; return result; }',
   '() => void 0',
   '() => ({})',
   '() => []',
@@ -97,6 +106,14 @@ it('resolves aliases instead of treating an empty function name as implementatio
   expect(inspect('const work = (n: number) => ({ [console.log(n)]: false });')).toEqual([]);
   expect(inspect('const work = (n: number) => ({ value: n ? [] : {} });')).toEqual([]);
   expect(inspect('const work = (n: number) => ({ value: `item${n}` });')).toEqual([]);
+  expect(inspect('const work = (n: number) => Number.isNaN(n);')).toEqual([]);
+  expect(inspect('const work = (record: { NaN: number }) => record.NaN;')).toEqual([]);
+  expect(inspect('const work = (NaN: number) => NaN;')).toEqual([]);
+  expect(inspect('const work = (Number: { NaN: number }) => Number.NaN;')).toEqual([]);
+  expect(inspect('const work = ({ Infinity }: { Infinity: number }) => Infinity;')).toEqual([]);
+  expect(
+    inspect('const work = (n: number) => { const Number = { NaN: n }; return Number.NaN; };'),
+  ).toEqual([]);
 });
 
 it('requires explicit, live delegation and rejects missing responsibilities/new schema kinds', () => {

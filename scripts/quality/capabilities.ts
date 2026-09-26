@@ -18,6 +18,8 @@ import {
   isConditionalExpression,
   isTemplateExpression,
   isPropertyAssignment,
+  isPropertyAccessExpression,
+  isElementAccessExpression,
   isParenthesizedExpression,
   isAsExpression,
   isSatisfiesExpression,
@@ -71,11 +73,44 @@ function target(file: SourceFile, owner: CapabilityOwner): Node | undefined {
   }
   return expression(file, node);
 }
+const builtInConstants = new Set([
+  'undefined',
+  'NaN',
+  'Infinity',
+  ...[
+    'EPSILON',
+    'MAX_VALUE',
+    'MIN_VALUE',
+    'MAX_SAFE_INTEGER',
+    'MIN_SAFE_INTEGER',
+    'NEGATIVE_INFINITY',
+    'POSITIVE_INFINITY',
+    'NaN',
+  ].map((name) => `Number.${name}`),
+  ...['E', 'LN10', 'LN2', 'LOG10E', 'LOG2E', 'PI', 'SQRT1_2', 'SQRT2'].map(
+    (name) => `Math.${name}`,
+  ),
+]);
+function builtInConstant(node: Node, locals: ReadonlyMap<string, boolean>): boolean {
+  const parts: string[] = [];
+  while (isPropertyAccessExpression(node) || isElementAccessExpression(node)) {
+    if (isPropertyAccessExpression(node)) parts.unshift(node.name.text);
+    else {
+      if (!isStringLiteral(node.argumentExpression)) return false;
+      parts.unshift(node.argumentExpression.text);
+    }
+    node = node.expression;
+  }
+  if (!isIdentifier(node) || locals.has(node.text)) return false;
+  if (node.text !== 'globalThis') parts.unshift(node.text);
+  return builtInConstants.has(parts.join('.'));
+}
 function constant(
   node: Node | undefined,
   locals: ReadonlyMap<string, boolean> = new Map(),
 ): boolean {
   if (!node) return true;
+  if (builtInConstant(node, locals)) return true;
   if (isParenthesizedExpression(node) || isAsExpression(node) || isSatisfiesExpression(node))
     return constant(node.expression, locals);
   if (isPrefixUnaryExpression(node)) return constant(node.operand, locals);
@@ -115,7 +150,7 @@ function constant(
     node.kind === SyntaxKind.StringLiteral ||
     node.kind === SyntaxKind.NoSubstitutionTemplateLiteral ||
     node.kind === SyntaxKind.OmittedExpression ||
-    (isIdentifier(node) && (node.text === 'undefined' || locals.get(node.text) === true))
+    (isIdentifier(node) && locals.get(node.text) === true)
   );
 }
 function hasImplementation(node: Node | undefined): boolean {
@@ -126,8 +161,12 @@ function hasImplementation(node: Node | undefined): boolean {
     return false;
   const body = node.body;
   if (!body) return false;
-  if (!isBlock(body)) return !constant(body);
   const locals = new Map<string, boolean>();
+  for (const parameter of node.parameters)
+    walk(parameter.name, (binding) => {
+      if (isIdentifier(binding)) locals.set(binding.text, false);
+    });
+  if (!isBlock(body)) return !constant(body, locals);
   let substantive = false;
   for (const statement of body.statements) {
     if (isVariableStatement(statement)) {
