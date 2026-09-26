@@ -30,13 +30,15 @@ it('discovers independent files deterministically and rejects symlink sources', 
 it('rejects a file or symlink substituted between discovery and opening', () => {
   const root = mkdtempSync(join(tmpdir(), 'fantasy-content-race-'));
   const path = join(root, 'input.json'),
-    saved = join(root, 'saved.json');
+    saved = join(root, 'saved.json'),
+    replacement = join(root, 'replacement.json');
   try {
-    writeFileSync(path, '{"id":"original"}');
+    writeFileSync(path, '{"id":"original"}', { flag: 'wx' });
+    writeFileSync(replacement, '{"id":"replaced"}', { flag: 'wx' });
     const discovered = lstatSync(path);
     expect(readContentFile(path, discovered).toString()).toBe('{"id":"original"}');
     renameSync(path, saved);
-    writeFileSync(path, '{"id":"replaced"}');
+    renameSync(replacement, path);
     expect(() => readContentFile(path, discovered)).toThrow('Content source changed before read');
     unlinkSync(path);
     symlinkSync(saved, path);
