@@ -24,6 +24,7 @@ export const UI_STATIC_CASES = [
   'static-list-cost-and-states',
   'static-selection-invalid-link',
   'static-replay-controls',
+  'static-repeat-playback',
   'static-partials',
   'static-errors',
   'static-stale-navigation',
