@@ -23,6 +23,7 @@ import { ManifestBuilder } from '../spatial/manifest-builder.ts';
 import { implementation } from '../spatial/prepare.ts';
 import { requireExecutableRules } from '../spatial/execution-policy.ts';
 import { fraction } from '../spatial/rules/effects.ts';
+import { requireMechanics } from '../spatial/mechanic-policy.ts';
 
 /** A new league input version; battle/actor-stream-v1 semantics are unchanged. */
 export async function leagueTrialSeed(masterSeed: number, trial: number): Promise<number> {
@@ -80,6 +81,7 @@ export async function normalizeLeagueDefinition(input: unknown): Promise<LeagueD
   const definition = await normalizeStoredLeagueDefinition(input);
   const rules = requireRevision(revisionIndex(definition.revisions), 'ruleset', definition.ruleset);
   requireExecutableRules(rules.definition);
+  requireMechanics(rules, definition.revisions);
   return definition;
 }
 

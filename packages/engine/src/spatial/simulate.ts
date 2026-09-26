@@ -40,15 +40,21 @@ const verdict = (actors: ActorState[]): Outcome | null => {
       ? { kind: 'win', winner: actorId(alive[0]!) }
       : null;
 };
-function outcomeFromError(error: unknown): Outcome {
+function outcomeFromError(error: unknown, diagnostics: boolean): Outcome {
   if (error instanceof SpatialBudgetError)
-    return { kind: 'truncated', resource: error.resource, reason: error.message };
+    return {
+      kind: 'truncated',
+      resource: error.resource,
+      reason: error.message,
+      ...(diagnostics && error.details ? { details: error.details } : {}),
+    };
   if (error instanceof UnresolvedRuleError)
     return {
       kind: 'unresolved',
       ruleId: error.ruleId,
       revisions: error.revisions,
       reason: error.message,
+      ...(error.interferences ? { interferences: error.interferences } : {}),
     };
   throw error;
 }
@@ -110,7 +116,7 @@ export function* simulate(
         outcome = verdict(actors);
         if (outcome) break;
       } catch (error) {
-        outcome = outcomeFromError(error);
+        outcome = outcomeFromError(error, !!battle.rules.interferenceDiagnostics);
         break;
       }
       try {
@@ -130,36 +136,26 @@ export function* simulate(
         yield structuredClone(record);
         outcome = verdict(actors);
       } catch (error) {
-        outcome = outcomeFromError(error);
+        outcome = outcomeFromError(error, !!battle.rules.interferenceDiagnostics);
       }
     }
     outcome ??= { kind: 'draw', reason: 'time-limit' };
-    const terminal = new Journal(sequence, 0, {
-      ...budget,
-      maxEvents: Number.MAX_SAFE_INTEGER,
-      maxBytes: 32768,
-      maxFrameBytes: 32768,
-    });
-    terminal.emit({
-      kind: 'terminal',
-      step,
-      phase: 'terminal',
-      ruleId: `battle.${outcome.kind}`,
-      reason:
-        outcome.kind === 'unresolved' || outcome.kind === 'truncated'
-          ? outcome.reason
-          : outcome.kind === 'draw'
-            ? outcome.reason
-            : outcome.winner,
-    });
-    const record: StreamRecord = {
-      kind: 'terminal',
-      schemaVersion: 1,
-      step,
-      outcome,
-      events: terminal.events,
-    };
-    const terminalBytes = recordBytes(record);
+    let record = terminalRecord(sequence, step, outcome, budget);
+    let terminalBytes = recordBytes(record);
+    if (
+      outcome.kind === 'unresolved' &&
+      outcome.interferences &&
+      controlBytes + terminalBytes > 32768
+    ) {
+      outcome = {
+        kind: 'truncated',
+        resource: 'interference-bytes',
+        reason: 'Interference exceeds terminal control reserve',
+        details: { observed: controlBytes + terminalBytes, limit: 32768, cause: outcome.ruleId },
+      };
+      record = terminalRecord(sequence, step, outcome, budget);
+      terminalBytes = recordBytes(record);
+    }
     if (controlBytes + terminalBytes > 32768) throw new Error('Control envelope exceeded');
     yield structuredClone(record);
     return {
@@ -203,4 +199,26 @@ export function* simulate(
   } finally {
     world.free();
   }
+}
+
+function terminalRecord(
+  sequence: number,
+  step: number,
+  outcome: Outcome,
+  budget: Budget,
+): StreamRecord {
+  const terminal = new Journal(sequence, 0, {
+    ...budget,
+    maxEvents: Number.MAX_SAFE_INTEGER,
+    maxBytes: 32768,
+    maxFrameBytes: 32768,
+  });
+  terminal.emit({
+    kind: 'terminal',
+    step,
+    phase: 'terminal',
+    ruleId: `battle.${outcome.kind}`,
+    reason: outcome.kind === 'win' ? outcome.winner : outcome.reason,
+  });
+  return { kind: 'terminal', schemaVersion: 1, step, outcome, events: terminal.events };
 }

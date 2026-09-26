@@ -5,6 +5,7 @@ import {
   PublicLeagueSlotPageSchema,
   canonicalJson,
   compareIds,
+  leagueDefinitionClass,
   type LeaguePlan,
   type LeagueFileRef,
   type PublicLeagueSlotPage,
@@ -122,8 +123,13 @@ export async function exportLeague(
     return { ...summary, detail: addJson(detail) };
   });
   const { definition, ...identity } = plan.revision;
+  const classification =
+    leagueDefinitionClass(definition) === 'experimental'
+      ? { leagueClass: 'experimental' as const }
+      : {};
   const snapshot = PublicLeagueSnapshotSchema.parse({
     ...identity,
+    ...classification,
     id: definition.id,
     name: definition.name,
     trials: definition.trials,
@@ -141,6 +147,7 @@ export async function exportLeague(
   const written = await commitPublication(directory, [...files.values()], sets, {
     league: {
       ...ref,
+      ...classification,
       id: snapshot.id,
       leagueHash: snapshot.leagueHash,
       inputHash: snapshot.inputHash,

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
+import { ExperimentalRulesSchema } from './mechanics.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
@@ -859,6 +860,8 @@ export const RulesetSchema = z.strictObject({
   // Stored historical revisions remain readable; prepareBattle admits only the current rules.
   rulesVersion: IdSchema,
   ai: AiRulesSchema.optional(),
+  experimental: ExperimentalRulesSchema.optional(),
+  interferenceDiagnostics: z.literal('v1').optional(),
   stepMs: z.literal(20),
   maxSteps: positive(MAX_BATTLE_STEPS),
   gravityMmPerSecond2: z.number().int().min(-30_000).max(0),

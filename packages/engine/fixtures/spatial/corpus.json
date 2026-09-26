@@ -892,6 +892,82 @@
     "tactical-storage": {
       "file": "apps/api/src/jobs/ai-delivery.test.ts",
       "name": "observed AI delivery through persisted Workers persists tactical samples through API and reproduces posture and search records headlessly"
+    },
+    "p6-foundation-01": {
+      "file": "packages/engine/src/spatial/interference-matrix.test.ts",
+      "name": "binds every explicit ordered cell to an executed behavior, diagnostic or rejection fixture"
+    },
+    "p6-foundation-02": {
+      "file": "packages/engine/src/spatial/interference-matrix.test.ts",
+      "name": "preserves all 484 pre-P6 ordered-pair outcomes and event trajectory state physics hashes"
+    },
+    "p6-foundation-03": {
+      "file": "packages/engine/src/spatial/interference-matrix.test.ts",
+      "name": "rejects every unimplemented or reserved matrix mechanic even with experimental permission"
+    },
+    "p6-foundation-04": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "records 32 real simultaneous causes and truncates at 33 without retaining partial costs or events"
+    },
+    "p6-foundation-05": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "rejects dangling diagnostic events, wrong owners, revisions and attempted boundaries atomically"
+    },
+    "p6-foundation-06": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "admits exact diagnostic count limits and truncates whole contexts rather than slicing causes"
+    },
+    "p6-foundation-07": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "keeps diagnosis and combat under reversed participant revision and position-stream correspondence"
+    },
+    "p6-foundation-08": {
+      "file": "packages/engine/src/spatial/mechanic-policy.test.ts",
+      "name": "requires canonical explicit experimental permissions without implementing unrecognized payloads"
+    },
+    "p6-foundation-09": {
+      "file": "packages/engine/src/spatial/mechanic-policy.test.ts",
+      "name": "fails promotion of a new standard mechanic with unresolved accepted pairs"
+    },
+    "p6-foundation-10": {
+      "file": "packages/engine/src/spatial/mechanic-policy.test.ts",
+      "name": "inventories accepted mechanic-bearing schema fields and visits dormant and transformed closure owners"
+    },
+    "p6-foundation-11": {
+      "file": "apps/api/src/jobs/interference-persistence.test.ts",
+      "name": "rejects forbidden mechanics before submission retry reservations and Worker allocation"
+    },
+    "p6-foundation-12": {
+      "file": "apps/api/src/jobs/interference-persistence.test.ts",
+      "name": "round-trips structured interference through a real Worker SQLite result and engine-free replay seek"
+    },
+    "p6-foundation-13": {
+      "file": "apps/cli/src/league/league-experimental.test.ts",
+      "name": "keeps experimental leagues manual and separate from standard IDs scores and publication metadata"
+    },
+    "p6-status.simultaneous-conflict": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "records the complete bounded causal set and preserves rollback for status.simultaneous-conflict"
+    },
+    "p6-status.existing-conflict": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "records the complete bounded causal set and preserves rollback for status.existing-conflict"
+    },
+    "p6-status.permanent-conflict": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "records the complete bounded causal set and preserves rollback for status.permanent-conflict"
+    },
+    "p6-status.reaction-conflict": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "records the complete bounded causal set and preserves rollback for status.reaction-conflict"
+    },
+    "p6-foundation-extra-17": {
+      "file": "packages/engine/src/spatial/mechanic-policy.test.ts",
+      "name": "checks experimental eligibility in dormant equipment-granted stages before execution"
+    },
+    "p6-foundation-extra-18": {
+      "file": "packages/engine/src/spatial/interference-diagnostics.test.ts",
+      "name": "captures actual before-hit and before-defeat wave attempts without committing their effects"
     }
   },
   "entries": [
@@ -1623,6 +1699,33 @@
         "reapplication-contact",
         "reapplication-transaction",
         "tactical-storage"
+      ]
+    },
+    {
+      "id": "p6-foundation",
+      "title": "P6-00: ordered interference, causal rollback, bounded diagnostics and experimental admission",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "p6-foundation-01",
+        "p6-foundation-02",
+        "p6-foundation-03",
+        "p6-foundation-04",
+        "p6-foundation-05",
+        "p6-foundation-06",
+        "p6-foundation-07",
+        "p6-foundation-08",
+        "p6-foundation-09",
+        "p6-foundation-10",
+        "p6-foundation-11",
+        "p6-foundation-12",
+        "p6-foundation-13",
+        "p6-status.simultaneous-conflict",
+        "p6-status.existing-conflict",
+        "p6-status.permanent-conflict",
+        "p6-status.reaction-conflict",
+        "p6-foundation-extra-17",
+        "p6-foundation-extra-18"
       ]
     }
   ]

@@ -2,6 +2,8 @@ import {
   PublicLeagueDetailSchema,
   PublicLeagueSlotPageSchema,
   PublicLeagueSnapshotSchema,
+  LeagueRevisionSchema,
+  assertLeagueMetadata,
   canonicalJson,
   contentHash,
   type PublicCatalog,
@@ -14,8 +16,17 @@ import { ReplayLoadError } from '../replay/artifacts.ts';
 import type { PublicLibrary } from '../replay/public-source.ts';
 
 const damaged = () => new ReplayLoadError('damaged', 'League reference identity mismatch');
-export async function leagueSnapshot(library: PublicLibrary, hash: string, signal?: AbortSignal) {
+export async function leagueSnapshot(
+  library: PublicLibrary,
+  hash: string,
+  signal?: AbortSignal,
+  ref?: NonNullable<PublicCatalog['leagues']>[number],
+) {
   const snapshot = await library.leagueDocument({ hash }, PublicLeagueSnapshotSchema, signal);
+  const revision = await library.leagueDocument(snapshot.definition, LeagueRevisionSchema, signal);
+  await assertLeagueMetadata(snapshot, revision, ref).catch(() => {
+    throw damaged();
+  });
   if (
     snapshot.standings.rows.length !== snapshot.characters.length ||
     new Set(snapshot.characters.map((c) => c.id)).size !== snapshot.characters.length ||

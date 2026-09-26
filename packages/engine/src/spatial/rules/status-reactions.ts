@@ -177,6 +177,18 @@ export function planStatusReactions(
         'status.reaction-conflict',
         [revision.id, ...transforms.map((t) => t.id)],
         'Simultaneous reactions disagree about the resulting status',
+        {
+          causes: [...causes, ...cohorts.flatMap((s) => s.causes)],
+          statuses: [
+            revision,
+            ...definitions.filter((r) =>
+              transforms.some(
+                (t) =>
+                  t.id === r.id && t.revision === r.revision && t.contentHash === r.contentHash,
+              ),
+            ),
+          ],
+        },
       );
     if (remove || destination) dispels.push(revision);
     if (destination) {
