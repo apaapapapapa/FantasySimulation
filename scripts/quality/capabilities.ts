@@ -10,6 +10,13 @@ import {
   isIdentifier,
   isStringLiteral,
   isObjectLiteralExpression,
+  isArrayLiteralExpression,
+  isSpreadElement,
+  isSpreadAssignment,
+  isShorthandPropertyAssignment,
+  isComputedPropertyName,
+  isConditionalExpression,
+  isTemplateExpression,
   isPropertyAssignment,
   isParenthesizedExpression,
   isAsExpression,
@@ -74,12 +81,40 @@ function constant(
   if (isPrefixUnaryExpression(node)) return constant(node.operand, locals);
   if (isVoidExpression(node)) return constant(node.expression, locals);
   if (isBinaryExpression(node)) return constant(node.left, locals) && constant(node.right, locals);
+  if (isConditionalExpression(node))
+    return (
+      constant(node.condition, locals) &&
+      constant(node.whenTrue, locals) &&
+      constant(node.whenFalse, locals)
+    );
+  if (isTemplateExpression(node))
+    return node.templateSpans.every((span) => constant(span.expression, locals));
+  if (isSpreadElement(node) || isSpreadAssignment(node)) return constant(node.expression, locals);
+  if (isArrayLiteralExpression(node))
+    return node.elements.every((entry) => constant(entry, locals));
+  if (isObjectLiteralExpression(node))
+    return node.properties.every((property) => {
+      if (isSpreadAssignment(property)) return constant(property.expression, locals);
+      if (isShorthandPropertyAssignment(property))
+        return (
+          constant(property.name, locals) && constant(property.objectAssignmentInitializer, locals)
+        );
+      return (
+        isPropertyAssignment(property) &&
+        (!isComputedPropertyName(property.name) || constant(property.name.expression, locals)) &&
+        constant(property.initializer, locals)
+      );
+    });
   return (
     node.kind === SyntaxKind.NullKeyword ||
     node.kind === SyntaxKind.TrueKeyword ||
     node.kind === SyntaxKind.FalseKeyword ||
     node.kind === SyntaxKind.NumericLiteral ||
+    node.kind === SyntaxKind.BigIntLiteral ||
+    node.kind === SyntaxKind.RegularExpressionLiteral ||
     node.kind === SyntaxKind.StringLiteral ||
+    node.kind === SyntaxKind.NoSubstitutionTemplateLiteral ||
+    node.kind === SyntaxKind.OmittedExpression ||
     (isIdentifier(node) && (node.text === 'undefined' || locals.get(node.text) === true))
   );
 }

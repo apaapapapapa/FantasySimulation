@@ -63,6 +63,17 @@ it.each([
   '() => undefined',
   '() => false',
   '() => void 0',
+  '() => ({})',
+  '() => []',
+  '() => ({ nested: [0, { value: false }] })',
+  '() => { const result = {}; return result; }',
+  '() => { const result = []; return result; }',
+  '() => { const value = false; const result = { value, list: [value] }; return result; }',
+  '() => ({ ...{ value: false }, ["fixed"]: [...[0], ,] })',
+  '() => `constant`',
+  '() => ({ value: 1n, pattern: /fixed/ })',
+  '() => ({ value: true ? [] : {} })',
+  '() => ({ value: `fixed${1}` })',
   '() => { const result = void 0; return result; }',
   '() => { return; }',
   '() => { const result = false; return result; }',
@@ -80,6 +91,12 @@ it('resolves aliases instead of treating an empty function name as implementatio
     [],
   );
   expect(inspect('const work = (n: number) => void console.log(n);')).toEqual([]);
+  expect(inspect('const work = (n: number) => ({ value: n });')).toEqual([]);
+  expect(inspect('const work = (n: number) => [n];')).toEqual([]);
+  expect(inspect('const work = (n: number) => ({ value: console.log(n) });')).toEqual([]);
+  expect(inspect('const work = (n: number) => ({ [console.log(n)]: false });')).toEqual([]);
+  expect(inspect('const work = (n: number) => ({ value: n ? [] : {} });')).toEqual([]);
+  expect(inspect('const work = (n: number) => ({ value: `item${n}` });')).toEqual([]);
 });
 
 it('requires explicit, live delegation and rejects missing responsibilities/new schema kinds', () => {
