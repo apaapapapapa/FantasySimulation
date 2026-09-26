@@ -4,7 +4,7 @@ standard-motion-v1 supersedes standard-stages-v1.
 [Full implemented contract/examples](https://github.com/apaapapapapa/FantasySimulation/blob/63b49c60bba9af4007061b7eb1228c7b4fad8ac4/docs/rules/stages-motion.md)
 remains authoritative for every geometry/projection/resource/validation detail summarized
 here; no rule changes. [reactions.md](reactions.md) owns G-08; [ADR0017](../adr/0017-p6-spatial-mechanics.md)
-proposes future teleport/barrier/area/beam/phasing, not executable admission.
+defines accepted teleport/barrier/area/beam/phasing design awaiting implementation.
 
 ## Scheduler and ledger
 

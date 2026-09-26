@@ -1,6 +1,6 @@
 # ADR 0017: P6 spatial mechanics
 
-**Proposed; owner approval required before implementation.** Refs #155 §7/Q-9/Q-10,
+**Accepted by the owner in ChatGPT, 2026-09-26.** Refs #155 §7/Q-9/Q-10,
 #1, #61, #45, #10. Baseline main `63b49c60bba9af4007061b7eb1228c7b4fad8ac4`;
 P6-00 (#164/#166/#178) is merged. This is P6-05 only: no executable/schema/DB/rules,
 identity, fixture expectations or production changes. Group 1 can progress independently.
@@ -14,7 +14,7 @@ accepted standard interference is defined. Still exactly two actors; spatial obj
 have owners and geometry, never turns, minds, actor RNG streams or victory eligibility.
 Unimplemented payloads remain rejected even with experimental permission.
 
-| Approval point | Proposed rule                                                               |
+| Approval point | Accepted rule                                                               |
 | -------------- | --------------------------------------------------------------------------- |
 | Q-9 target     | Fixed relative offset from self or delivered visible enemy; no randomness.  |
 | Teleport       | Release n -> boundary n+1; whole-body clearance, no path/fallback search.   |
@@ -225,7 +225,7 @@ materializing inside terrain. Record extension separately from the expired/seale
 
 ## Bounded work, interference and records
 
-Proposed new budgets (omitted uses defaults): active+pending spatial objects64/match,
+New budgets (omitted uses defaults): active+pending spatial objects64/match,
 allowed1..256; pending commands64/boundary, allowed1..256. Count barriers/areas/beams together,
 including simultaneous emissions before choosing any result. Lifetime and hit counts above
 are rule semantics; object/command/cast/candidate/curve/frame budgets only bound work.
@@ -295,5 +295,6 @@ conversion. Proposed DTO spelling can be refined during schema review, not these
 These are planned tests, not implemented evidence. Each feature needs new-ID sample battles,
 all prepare/job/league admission paths including dormant closure, matrix coverage, strict
 schema/exhaustive switches, AI/privacy/replay/renderer tests, corpus and load gates.
-P6-05 runs quality/verify, committed clean-source and Linux PR CI; owner design approval
-precedes merge/implementation. #155 stays open; its spatial approval checkbox waits for approval.
+P6-05 runs quality/verify, committed clean-source and Linux PR/main CI. Owner approval of
+PR #182 head `fa1b7850b5aabed2ea12d18cc949be012943110e` precedes implementation.
+#155 stays open for the remaining P6 work; its spatial design approval is satisfied.

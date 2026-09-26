@@ -25,6 +25,6 @@ interval. No explosion there/re-deflection; exclude melee/hitscan/explosions/per
 Absorption converts post-modifier/pre-shield damage to same-wave healing, total <=100%.
 Drain uses actual HP lost; explicit revival follows healing/all waves, finite <=4/actor/match.
 Reaction caps/rollback apply. [ADR0016](0016-p6-foundation.md) defines the approved foundation.
-[ADR0017](0017-p6-spatial-mechanics.md) proposes Group2 spatial contracts, pending approval.
+[ADR0017](0017-p6-spatial-mechanics.md) defines the accepted Group2 spatial contracts.
 Implementation follows #155 §2-C and the delivery skill; original
 design approval is not implementation approval. Preserve coordinator/domain/log ownership.

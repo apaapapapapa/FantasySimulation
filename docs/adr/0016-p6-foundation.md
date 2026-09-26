@@ -3,7 +3,7 @@
 **Accepted in ChatGPT, 2026-09-26.** Refs #155,#1; implemented #164/#166/#178.
 [Full accepted contract](https://github.com/apaapapapapa/FantasySimulation/blob/63b49c60bba9af4007061b7eb1228c7b4fad8ac4/docs/adr/0016-p6-foundation.md)
 remains authoritative for all predicates/limits/tests summarized below; no rules change.
-[ADR0017](0017-p6-spatial-mechanics.md) proposes Group2, not implementation approval.
+[ADR0017](0017-p6-spatial-mechanics.md) defines the accepted Group2 design; implementation follows.
 
 ## Admission and leagues (00c)
 

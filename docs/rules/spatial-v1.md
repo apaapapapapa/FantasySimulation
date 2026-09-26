@@ -3,8 +3,8 @@
 Strict domain schemas own executable input. This is a compact contract/index;
 [the complete pre-P6 spatial specification](https://github.com/apaapapapapa/FantasySimulation/blob/63b49c60bba9af4007061b7eb1228c7b4fad8ac4/docs/rules/spatial-v1.md)
 retains the authoritative formulas, rounding, numeric examples and boundary cases summarized
-here. This compaction changes no rule. Later accepted ADRs prevail; proposed
-[ADR0017](../adr/0017-p6-spatial-mechanics.md) is not executable behavior.
+here. This compaction changes no rule. Later accepted ADRs prevail;
+[ADR0017](../adr/0017-p6-spatial-mechanics.md) defines future behavior awaiting implementation.
 
 ## 単位と上限
 
@@ -162,4 +162,4 @@ not win-rate or persistence performance claims. Preserve independent expected ou
 
 [reactions.md](reactions.md) owns spatial-v1.18; [ADR0016](../adr/0016-p6-foundation.md)
 owns P6 admission/diagnostics and official milestones. Published revisions stay readable,
-old execution rejected. P6-05 proposal does not enable any new mechanic.
+old execution rejected. P6-05 design approval does not enable any new mechanic.
