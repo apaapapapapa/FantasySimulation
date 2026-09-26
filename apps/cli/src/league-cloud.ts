@@ -1,3 +1,4 @@
+import { measuredCommand } from '@fantasy/api/tooling';
 import { appendFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -136,7 +137,9 @@ async function main() {
     if (command === 'restore') await writeCloudJson(join(root, 'inventory.json'), inventory);
   }
 }
-await main().catch(async (error: unknown) => {
-  process.exitCode = 1;
-  await reportLeagueFailure(error, failureContext, reportRoot, process.env.GITHUB_STEP_SUMMARY);
-});
+await measuredCommand('cloud-' + (process.argv[2] ?? 'unknown'), main).catch(
+  async (error: unknown) => {
+    process.exitCode = 1;
+    await reportLeagueFailure(error, failureContext, reportRoot, process.env.GITHUB_STEP_SUMMARY);
+  },
+);

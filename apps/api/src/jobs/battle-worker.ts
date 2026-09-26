@@ -18,7 +18,12 @@ import {
 } from '@fantasy/engine/spatial/execution';
 import { measureWasmInitialization } from './wasm-metrics.ts';
 
-export type WorkerTask = { manifest: unknown; budget: Budget; port: MessagePort };
+export type WorkerTask = {
+  manifest: unknown;
+  budget: Budget;
+  port: MessagePort;
+  measuredAt?: number;
+};
 export type WorkerMetrics = {
   threadId: number;
   cold: boolean;
@@ -33,7 +38,11 @@ export type WorkerMetrics = {
   arrayBuffers: number;
   wasmLinearBytes: number;
 };
-export type WorkerResult = { result: BattleResult; metrics: WorkerMetrics };
+export type WorkerResult = {
+  result: BattleResult;
+  metrics: WorkerMetrics;
+  observation?: Record<string, number>;
+};
 let initialized = false;
 let wasmBytes: (() => number) | undefined;
 
@@ -41,6 +50,11 @@ let wasmBytes: (() => number) | undefined;
 export default async function battleWorker(task: WorkerTask): Promise<WorkerResult> {
   const started = performance.now(),
     cold = !initialized;
+  const cpu = task.measuredAt === undefined ? undefined : process.threadCpuUsage();
+  const dispatchWaitMs =
+    task.measuredAt === undefined ? 0 : performance.timeOrigin + started - task.measuredAt;
+  let recordingMs = 0,
+    hashMs = 0;
   wasmBytes ??= await measureWasmInitialization(initializePhysics);
   const battle = await prepareBattle(task.manifest);
   initialized = true;
@@ -93,6 +107,17 @@ export default async function battleWorker(task: WorkerTask): Promise<WorkerResu
         sampleMemory();
         return {
           result,
+          ...(cpu
+            ? {
+                observation: {
+                  dispatchWaitMs,
+                  recordingMs,
+                  hashMs,
+                  cpuUserMs: process.threadCpuUsage(cpu).user / 1000,
+                  cpuSystemMs: process.threadCpuUsage(cpu).system / 1000,
+                },
+              }
+            : {}),
           metrics: {
             threadId,
             cold,
@@ -109,14 +134,18 @@ export default async function battleWorker(task: WorkerTask): Promise<WorkerResu
           },
         };
       }
+      const recordingStart = cpu ? performance.now() : 0;
       const record = next.value,
         line = canonicalJson(record) + '\n';
       const size = Buffer.byteLength(line);
       if (size > MAX_RECORD_BYTES) throw new Error('Worker record exceeds transfer limit');
+      if (cpu) recordingMs += performance.now() - recordingStart;
       if (bytes + size > 131072) await flush();
+      const hashing = cpu ? performance.now() : 0;
       if ('events' in record)
         for (const event of record.events) events.update(eventHashLine(event));
       trajectory.update(trajectoryHashLine(record));
+      if (cpu) hashMs += performance.now() - hashing;
       lines.push(line);
       bytes += size;
       if (bytes >= 131072) await flush();

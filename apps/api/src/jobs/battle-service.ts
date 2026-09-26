@@ -1,3 +1,4 @@
+import { currentMeasurements, measureAsync, measureSync } from '../measurements.ts';
 import { stagedWork } from './staged-work.ts';
 import { canCancelJob } from './job-transitions.ts';
 import { ARTIFACT_RESERVATION_BYTES } from '@fantasy/domain/spatial';
@@ -291,6 +292,12 @@ export class BattleService {
       step = 0;
     let pendingTerminal: Extract<StreamRecord, { kind: 'terminal' }> | undefined;
     const started = performance.now();
+    const measurement = currentMeasurements();
+    let observed: Record<string, number | boolean> | undefined;
+    let measuredOutcome = 'failed';
+    let storedBytes: number | undefined;
+    let scenario = 'unknown';
+    let participants: string[] = [];
     const timeout = setTimeout(() => {
       const error = new Error('Worker wall-clock timeout');
       try {
@@ -313,6 +320,8 @@ export class BattleService {
     );
     try {
       const spec = this.store.requireExecutableSpec(claim.job.simulationHash);
+      scenario = spec.manifest.scenario.id;
+      participants = spec.manifest.participants.map((p) => p.character.id);
       writer = await ReplayWriter.create(this.owner.root, {
         id,
         attemptId: claim.attempt.id,
@@ -329,25 +338,28 @@ export class BattleService {
               pendingTerminal = record;
               continue;
             }
-            await writer!.append(record);
+            await measureAsync('record.append', () => writer!.append(record));
             step = record.kind === 'interval' ? record.toStep : record.step;
           }
         },
         controller.signal,
       );
+      observed = { ...output.metrics, ...output.observation };
       if (controller.signal.aborted) throw controller.signal.reason;
       const result = parseJson(ResultSchema, output.result);
       if (!pendingTerminal) throw new Error('Worker did not supply a terminal record');
-      await writer.append(pendingTerminal);
+      await measureAsync('record.append', () => writer!.append(pendingTerminal!));
       terminal = true;
-      const manifest = await writer.finish({ kind: 'result', result }, resultId);
-      if (controller.signal.aborted) throw controller.signal.reason;
-      const committed = this.jobs.complete(
-        claim,
-        resultId,
-        result,
-        this.artifacts.metadata(manifest),
+      const manifest = await measureAsync('record.finish', () =>
+        writer!.finish({ kind: 'result', result }, resultId),
       );
+      if (controller.signal.aborted) throw controller.signal.reason;
+      const metadata = this.artifacts.metadata(manifest);
+      const committed = measureSync('db.commit', () =>
+        this.jobs.complete(claim, resultId, result, metadata),
+      );
+      measuredOutcome = committed.accepted ? result.outcome.kind : 'rejected';
+      storedBytes = metadata.bytes;
       if (!committed.accepted) await this.artifacts.discard(id);
       this.jobs.progress(claim, step, { ...output.metrics, totalMs: performance.now() - started });
     } catch (error) {
@@ -381,6 +393,16 @@ export class BattleService {
     } finally {
       clearTimeout(timeout);
       clearInterval(heartbeat);
+      measurement?.match({
+        simulationHash: claim.job.simulationHash,
+        attemptId: claim.attempt.id,
+        scenario,
+        participants,
+        outcome: measuredOutcome,
+        wallMs: performance.now() - started,
+        ...(observed ? { worker: observed } : {}),
+        ...(storedBytes === undefined ? {} : { storedBytes }),
+      });
     }
   }
   cancel(id: string) {

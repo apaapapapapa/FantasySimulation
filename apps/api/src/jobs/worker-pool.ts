@@ -1,3 +1,4 @@
+import { currentMeasurements, measureSync } from '../measurements.ts';
 import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -56,10 +57,12 @@ export class BattlePool {
         const text = new TextDecoder('utf-8', { fatal: true }).decode(input);
         if (!text.endsWith('\n')) throw new Error('Incomplete worker batch');
         await accept(
-          text
-            .slice(0, -1)
-            .split('\n')
-            .map((line): unknown => JSON.parse(line)),
+          measureSync('json.worker', () =>
+            text
+              .slice(0, -1)
+              .split('\n')
+              .map((line): unknown => JSON.parse(line)),
+          ),
         );
         receiving = false;
         port1.postMessage('accepted');
@@ -70,7 +73,14 @@ export class BattlePool {
     });
     try {
       const result: WorkerResult = await this.pool.run(
-        { manifest, budget, port: port2 },
+        {
+          manifest,
+          budget,
+          port: port2,
+          ...(currentMeasurements()
+            ? { measuredAt: performance.timeOrigin + performance.now() }
+            : {}),
+        },
         {
           transferList: [port2],
           signal: AbortSignal.any([signal, controller.signal]),

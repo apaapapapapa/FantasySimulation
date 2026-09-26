@@ -1,3 +1,4 @@
+import { measureSync } from '../measurements.ts';
 import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, rename, rm } from 'node:fs/promises';
@@ -66,13 +67,15 @@ export class ReplayWriter {
     try {
       // Validate before changing hashes or pending bytes. ReplayState is atomic on failure.
       const parsed = parseJson(StreamRecordSchema, input),
-        line = `${canonicalJson(parsed)}\n`;
+        line = measureSync('record.serialize', () => `${canonicalJson(parsed)}\n`);
       if (this.rawBytes + Buffer.byteLength(line) > MAX_RECORD_BYTES) await this.flush();
-      const record = this.replay.apply(parsed);
+      const record = measureSync('validate.streaming', () => this.replay.apply(parsed));
       this.lines.push(line);
       this.rawBytes += Buffer.byteLength(line);
-      for (const event of recordEvents(record)) this.events.update(eventHashLine(event));
-      this.trajectory.update(trajectoryHashLine(record));
+      measureSync('hash.recordStream', () => {
+        for (const event of recordEvents(record)) this.events.update(eventHashLine(event));
+        this.trajectory.update(trajectoryHashLine(record));
+      });
       if (
         this.rawBytes >= RECORDING_PROFILE.targetChunkBytes ||
         this.replay.step - this.checkpoint.step >= RECORDING_PROFILE.maxCheckpointSteps
