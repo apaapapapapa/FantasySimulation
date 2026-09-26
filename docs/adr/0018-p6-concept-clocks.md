@@ -18,17 +18,21 @@ Budget/cast/reaction/event counters also never pause. Do not add a second schedu
 Use integer subject clocks/deadlines; compare only within their domain, without per-tick
 rewriting. No-stop progression remains identical; thaw never produces catch-up bursts.
 
-| Domain | Owner and covered progress | Proposed first time-stop profile |
-| --- | --- | --- |
-| Global | Match bound, record step/sequence, stop expiry, detached spatial-object lifetime/pulses, work limits | Always advances |
-| Motion | Actor translation/velocity integration/gravity/forces, posture/dodge movement | Frozen target: delta=0; preserve state, do not accumulate skipped gravity |
-| Cognition | Actor perception sampling/delivery delay, decision readiness, knowledge ageing | Frozen target neither samples nor delivers nor decides |
-| Action | Actor cast/stage/recovery/cooldown, reaction readiness and paid counter release | Frozen target does not advance or emit |
-| Status/resource | Target's status lifetime/pulses, regeneration and status-resource updates | Frozen target does not expire, pulse or regenerate |
-| Projectile | Detached projectile movement/lifetime/homing update, controlled by current projectile owner | Frozen owner's projectiles do not advance or collide |
+- **Global**: Match bound, record step/sequence, stop expiry, detached spatial-object
+  lifetime/pulses, work limits. Always advances.
+- **Motion**: Actor translation/velocity integration/gravity/forces, posture/dodge movement. Frozen
+  target: delta=0; preserve state, do not accumulate skipped gravity.
+- **Cognition**: Actor perception sampling/delivery delay, decision readiness, knowledge ageing.
+  Frozen target neither samples nor delivers nor decides.
+- **Action**: Actor cast/stage/recovery/cooldown, reaction readiness and paid counter release.
+  Frozen target does not advance or emit.
+- **Status/resource**: Target's status lifetime/pulses, regeneration and status-resource updates.
+  Frozen target does not expire, pulse or regenerate.
+- **Projectile**: Detached projectile movement/lifetime/homing update, controlled by current
+  projectile owner. Frozen owner's projectiles do not advance or collide.
 
 P6-10 first admits this fixed profile, not arbitrary user-authored masks. Current owner after
-deflection determines projectile freezing; original launch power/provenance is unchanged.
+ deflection determines projectile freezing; original launch power/provenance is unchanged.
 Contacted/deferred projectiles stay consumed; thaw cannot hit a second time or reset ledgers.
 Frozen actors keep their capsule as collision geometry. Other actors and unfrozen shots can
 contact it. Actor-attached melee/beams do not emit while their owner's action/motion is frozen.
@@ -179,15 +183,20 @@ revival activates only if HP is still0 after protection, never spends a use on H
 Put rules in domain `interference.json` with independent executed fixtures for EVERY accepted
 ordered/self/conditional pair. This proposal is not coverage; reserved cells stay unimplemented:
 
-| Interaction | Proposed rule |
-| --- | --- |
-| defeat / finite immortality | Eligible opening protection floors HP1 and consumes once; otherwise HP0 |
-| defeat / revive | HP0 enters ordinary before-defeat, with grouped finite payment; no revival bypass |
-| defeat / heal, absorb, drain | Defeat survives same-wave healing; no synthetic damage/recovery/drain |
-| defeat / parry, deflect, barrier | Whole contact cancellation/interception wins; damage-only does not; deflected defeat returns |
-| immortality / damage, status damage | Same final floor and finite ledger, not a heal; preserve real damage triggers |
-| immortality / seal, dispel, expiry | Opening effective state and next-boundary status rules; spent counts never reset |
-| concept / time-stop | Contact capture then release snapshot, one wave and no retroactive before-hit |
+- **defeat / finite immortality**: Eligible opening protection floors HP1 and consumes once;
+  otherwise HP0.
+- **defeat / revive**: HP0 enters ordinary before-defeat, with grouped finite payment; no revival
+  bypass.
+- **defeat / heal, absorb, drain**: Defeat survives same-wave healing; no synthetic
+  damage/recovery/drain.
+- **defeat / parry, deflect, barrier**: Whole contact cancellation/interception wins; damage-only
+  does not; deflected defeat returns.
+- **immortality / damage, status damage**: Same final floor and finite ledger, not a heal; preserve
+  real damage triggers.
+- **immortality / seal, dispel, expiry**: Opening effective state and next-boundary status rules;
+  spent counts never reset.
+- **concept / time-stop**: Contact capture then release snapshot, one wave and no retroactive
+  before-hit.
 
 Undefined experimental collisions need ADR0016 unresolved fixtures, never implicit precedence.
 Unimplemented variants remain rejected even with permission: P6-09 enables neither time-stop
@@ -220,26 +229,42 @@ corpus/standard no-concept digests; never derive expectations or automatic resta
 
 The following are REQUIRED future tests, not a report of executed or passing tests:
 
-| ID | Independently expected behavior |
-| --- | --- |
-| C1 | No-stop domain progression equals legacy; ID/slot/position/RNG permutations do not choose winners |
-| C2 | Frozen motion/action/status/projectile/cognition stay fixed; world time/object pulses advance; no catch-up |
-| C3 | Seal alone ages statuses; seal+freeze pauses only status time; global expiry and phase-exit cap terminate |
-| C4 | Simultaneous valid stops both fizzle; resistance removes only its request; nesting/refresh cannot extend |
-| C5 | All queued contacts use launch power and one release-state defense snapshot; shield shared once |
-| C6 | Stop before-hit unavailable; normal after-damage/revival works on release; causes/ledgers never replay |
-| C7 | Timeout and early terminal flush release all targets; mutual defeat/revival resolved before verdict; no extra pulse |
-| D1 | Pure defeat ignores shield/ordinary resistance; explicit effective immunity prevents it, no damage/drain |
-| D2 | Starting HP10, numeric damage3+defeat+heal5 => HP0 absent guard; pure defeat+revive7 => HP7 |
-| D3 | Starting HP10, damage20+defeat with guard => HP1, one charge, no revive, at most9 drainable HP |
-| D4 | Same-opening wound/status predicates; new same-wave wound cannot qualify; returned defeat hits original source |
-| I1 | Two simultaneous lethal contacts consume one protection; next lethal wave consumes next; fifth cannot protect |
-| I2 | Expiry/refresh/dispel/regrant/seal/revival cannot reset spent counts; new same-wave guard is not retroactive |
-| X1 | Missing flags/dormant unsupported variants/conflicting immortal revisions rejected before job/league reservation |
-| X2 | Every accepted ordered matrix cell has an independent executed fixture; missing-cell/fixture negative controls |
-| X3 | Pending contact256/257, operations4096/4097 and byte/reaction budgets: exact succeeds, +1 atomic truncated |
-| X4 | Repeat all hashes; rollback clocks/IDs/RNG/resources/queue/world; saved old/new data, Worker/SQLite, both viewers |
-| X5 | Delayed AI privacy, pending display versus cognition, forward/reverse/loop seek and partial record rejection |
+- **C1**: No-stop domain progression equals legacy; ID/slot/position/RNG permutations do not choose
+  winners.
+- **C2**: Frozen motion/action/status/projectile/cognition stay fixed; world time/object pulses
+  advance; no catch-up.
+- **C3**: Seal alone ages statuses; seal+freeze pauses only status time; global expiry and
+  phase-exit cap terminate.
+- **C4**: Simultaneous valid stops both fizzle; resistance removes only its request; nesting/refresh
+  cannot extend.
+- **C5**: All queued contacts use launch power and one release-state defense snapshot; shield shared
+  once.
+- **C6**: Stop before-hit unavailable; normal after-damage/revival works on release; causes/ledgers
+  never replay.
+- **C7**: Timeout and early terminal flush release all targets; mutual defeat/revival resolved
+  before verdict; no extra pulse.
+- **D1**: Pure defeat ignores shield/ordinary resistance; explicit effective immunity prevents it,
+  no damage/drain.
+- **D2**: Starting HP10, numeric damage3+defeat+heal5 => HP0 absent guard; pure defeat+revive7 =>
+  HP7.
+- **D3**: Starting HP10, damage20+defeat with guard => HP1, one charge, no revive, at most9
+  drainable HP.
+- **D4**: Same-opening wound/status predicates; new same-wave wound cannot qualify; returned defeat
+  hits original source.
+- **I1**: Two simultaneous lethal contacts consume one protection; next lethal wave consumes next;
+  fifth cannot protect.
+- **I2**: Expiry/refresh/dispel/regrant/seal/revival cannot reset spent counts; new same-wave guard
+  is not retroactive.
+- **X1**: Missing flags/dormant unsupported variants/conflicting immortal revisions rejected before
+  job/league reservation.
+- **X2**: Every accepted ordered matrix cell has an independent executed fixture;
+  missing-cell/fixture negative controls.
+- **X3**: Pending contact256/257, operations4096/4097 and byte/reaction budgets: exact succeeds, +1
+  atomic truncated.
+- **X4**: Repeat all hashes; rollback clocks/IDs/RNG/resources/queue/world; saved old/new data,
+  Worker/SQLite, both viewers.
+- **X5**: Delayed AI privacy, pending display versus cognition, forward/reverse/loop seek and
+  partial record rejection.
 
 P6-09a stays Proposed until owner approval. P6-09b delivers defeat/immortality end-to-end
 (admission, resolution, AI, records/viewers, matrix and C1/D1-4/I1-2/X1-2/X4-5 tests).
