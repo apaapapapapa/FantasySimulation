@@ -1,4 +1,4 @@
-import { OperationError } from '@fantasy/api/tooling';
+import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { join } from 'node:path';
 import {
   PublicCatalogCurrentSchema,
@@ -66,7 +66,13 @@ export async function transferCloudLeague(
       // A missing ledger is bootstrap only, never permission to reset an existing league.
       const pointer = await control.read('catalog/current.json', 4000000);
       if (pointer) {
-        const current = PublicCatalogCurrentSchema.parse(JSON.parse(pointer.data.toString('utf8')));
+        const current = operationInput(
+          () =>
+            PublicCatalogCurrentSchema.parse(
+              JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(pointer.data)),
+            ),
+          'DATA_INVALID',
+        );
         const catalog = await control.read(
           `catalog/${current.catalogHash.slice(7)}.json`,
           current.bytes,
@@ -80,7 +86,15 @@ export async function transferCloudLeague(
             'DATA_INVALID',
             'Cannot bootstrap usage from an unverified catalog',
           );
-        if (PublicCatalogSchema.parse(JSON.parse(catalog.data.toString('utf8'))).leagueWork)
+        if (
+          operationInput(
+            () =>
+              PublicCatalogSchema.parse(
+                JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(catalog.data)),
+              ),
+            'DATA_INVALID',
+          ).leagueWork
+        )
           throw new OperationError(
             'DATA_INVALID',
             'Existing league usage ledger is missing; manual recovery required',

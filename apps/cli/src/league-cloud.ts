@@ -1,7 +1,7 @@
 import { appendFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { executionSource, OperationError } from '@fantasy/api/tooling';
+import { executionSource, OperationError, operationInput } from '@fantasy/api/tooling';
 import { probeLeague } from './league/league-probe.ts';
 import { prepareCloudLeague, runCloudLeague, finishCloudLeague } from './league/league-cloud.ts';
 import { cloudJson, writeCloudJson } from './league/league-cloud-files.ts';
@@ -110,8 +110,14 @@ async function main() {
       command === 'restore'
         ? undefined
         : {
-            viewer: async () =>
-              JSON.parse((await viewer('build.json', 4096)).toString('utf8')) as unknown,
+            viewer: async () => {
+              const bytes = await viewer('build.json', 4096);
+              return operationInput(
+                () =>
+                  JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown,
+                'DATA_INVALID',
+              );
+            },
             worker: publicHttp(required('PUBLICATION_WORKER_URL'), 7200000),
             ancestor: (data, deployed) => ancestorOf(data, deployed, repository),
           },

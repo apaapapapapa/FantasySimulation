@@ -155,6 +155,25 @@ it.each(['{', '{}'])(
   },
 );
 
+it.each([`{${secret}`, Buffer.from([0xff])])(
+  'classifies malformed remote viewer JSON through the CLI',
+  async (data) => {
+    operations.transfer.mockImplementation(
+      async (...args: Parameters<typeof import('./league-transfer.ts').transferCloudLeague>) =>
+        args[4]!.viewer(),
+    );
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(data, { headers: { 'content-type': 'application/json' } }),
+    );
+    await withReplayDirectory(async (root) => {
+      expect(await invoke(root, 'publish')).toBe(1);
+      const report = await readFile(join(root, 'reports/failure-publish.json'), 'utf8');
+      expect(JSON.parse(report)).toMatchObject({ code: 'DATA_INVALID', phase: 'publication' });
+      expect(report + (await readFile(join(root, 'summary.md'), 'utf8'))).not.toContain(secret);
+    });
+  },
+);
+
 it.each(['json', 'size'])('classifies invalid committed definition %s as input', async (kind) => {
   const files = await import('./league-cloud-files.ts'),
     readJson = files.cloudJson;

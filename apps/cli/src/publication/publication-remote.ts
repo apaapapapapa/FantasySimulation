@@ -1,4 +1,4 @@
-import { OperationError } from '@fantasy/api/tooling';
+import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { ViewerBuildSchema } from '@fantasy/domain';
 import {
   PublicCatalogCurrentSchema,
@@ -114,7 +114,13 @@ export async function publishPublication(
     const pointer = graph.files.get('catalog/current.json')!;
     const previous = await store.read(pointer.key, 4_000_000);
     const remoteCurrent = previous
-      ? PublicCatalogCurrentSchema.parse(JSON.parse(previous.data.toString('utf8')))
+      ? operationInput(
+          () =>
+            PublicCatalogCurrentSchema.parse(
+              JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(previous.data)),
+            ),
+          'DATA_INVALID',
+        )
       : null;
     const unchanged = previous !== null && sha256(previous.data) === pointer.checksum;
     if (unchanged) phase = 'committed-unverified';
@@ -128,7 +134,13 @@ export async function publishPublication(
         checksum: remoteCurrent.catalogHash,
       });
       priorSets = new Set(
-        PublicCatalogSchema.parse(JSON.parse(old.data.toString('utf8'))).sets.map((s) => s.setHash),
+        operationInput(
+          () =>
+            PublicCatalogSchema.parse(
+              JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(old.data)),
+            ),
+          'DATA_INVALID',
+        ).sets.map((s) => s.setHash),
       );
     }
     const inventory = await store.inventory();
