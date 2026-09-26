@@ -4,22 +4,57 @@ on:
     branches: [ops/issue8-minor-evidence]
 permissions:
   contents: read
+  actions: read
+  pull-requests: read
+  checks: read
+  statuses: read
 jobs:
   source:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: 9cda4542885be500e7ed0aeacf1573c36404670e
+          ref: f57a4d02d308086611789f4e09b17490eba4b3f9
           fetch-depth: 0
           persist-credentials: false
-      - name: Export exact public source for offline policy verification
-        run: |
-          mkdir -p "$RUNNER_TEMP/issue8-source"
-          git bundle create "$RUNNER_TEMP/issue8-source/source.bundle" HEAD
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
         with:
-          name: issue8-source
-          path: ${{ runner.temp }}/issue8-source/
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
+      - name: Verify clean candidate with the existing source harness
+        id: source
+        run: >-
+          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH
+          vp run harness source .generated/harness/issue8-source
+      - name: Assess source evidence
+        if: always() && steps.source.outcome != 'skipped'
+        run: vp run harness report .generated/harness/issue8-source/report.json source-clean source-verify
+      - name: Collect actual PR and GitHub evidence using the existing read-only harness
+        if: always()
+        run: vp run harness github-snapshot apaapapapapa/FantasySimulation 175 .generated/harness/issue8-pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Export pinned formatter diff if verification failed
+        if: failure()
+        run: |
+          vp fmt scripts/security/toolchain.ts scripts/security/toolchain.test.ts scripts/security/renovate-file.test.ts
+          mkdir -p .generated/harness/issue8-format
+          git diff > .generated/harness/issue8-format/format.patch
+      - name: Export exact public source and public issue body
+        if: always()
+        run: |
+          mkdir -p .generated/harness/issue8-export
+          git bundle create .generated/harness/issue8-export/source.bundle HEAD
+          gh api repos/apaapapapapa/FantasySimulation/issues/8 > .generated/harness/issue8-export/issue8.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: issue8-evidence
+          path: .generated/harness/issue8-*/
           retention-days: 1
+          include-hidden-files: true
