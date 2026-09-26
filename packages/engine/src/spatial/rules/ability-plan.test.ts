@@ -1,6 +1,6 @@
 import { expect, it } from 'vite-plus/test';
 import { sampleManifest } from '@fantasy/samples';
-import { abilityEffects, RevisionSchema } from '@fantasy/domain/spatial';
+import { abilityEffects, RevisionSchema, AbilitySchema } from '@fantasy/domain/spatial';
 import { prepareBattle } from '../prepare.ts';
 import { abilityPlan, prepareAbility, authoredStages } from './ability-plan.ts';
 
@@ -27,17 +27,24 @@ it('normalizes a single attack without authoring stages or changing its saved de
 
 it('preserves authored clocks, cost presence and first-stage effect multiplicity', async () => {
   const source = await singleAbility();
+  const attack = source.definition.attack;
   const first = {
     id: 'first',
     offsetSteps: 0,
-    durationSteps: 1,
-    attack: source.definition.attack,
+    durationSteps: attack.kind === 'melee' ? attack.activeSteps : 1,
+    attack,
     effects: source.definition.effects,
   };
   source.definition.stages = [
     first,
-    { ...first, id: 'second', offsetSteps: 7, cost: { hp: 0, mp: 0 } },
+    {
+      ...first,
+      id: 'second',
+      offsetSteps: first.durationSteps + 7,
+      cost: { hp: 0, mp: 0 },
+    },
   ];
+  expect(AbilitySchema.safeParse(source.definition).success).toBe(true);
   const prepared = prepareAbility(source);
   expect(prepared.execution.kind).toBe('staged');
   expect(authoredStages(prepared)).toEqual(source.definition.stages);
@@ -61,17 +68,23 @@ it('does not reuse an execution plan after projecting a different stage definiti
 
 it('separates startup/reaction plans and keeps prepared metadata out of saved manifests', async () => {
   const source = await singleAbility();
-  expect(prepareAbility({
-    ...source,
-    definition: { ...source.definition, trigger: 'battle-start' },
-  }).execution.kind).toBe('startup');
+  const startup = AbilitySchema.parse({
+    ...source.definition,
+    trigger: 'battle-start',
+    castSteps: 0,
+    target: 'self',
+    attack: { kind: 'direct' },
+    effects: [{ kind: 'heal', amount: 7 }],
+  });
+  expect(prepareAbility({ ...source, definition: startup }).execution.kind).toBe('startup');
   const reaction = prepareAbility({
     ...source,
-    definition: {
-      ...source.definition,
+    definition: AbilitySchema.parse({
+      ...startup,
       trigger: 'before-hit',
+      effects: [],
       reaction: { response: { kind: 'parry', scope: 'all' } },
-    },
+    }),
   });
   expect(reaction.execution.kind).toBe('reaction');
   const manifest = await sampleManifest();
