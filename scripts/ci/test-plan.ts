@@ -62,9 +62,9 @@ export const TEST_WEIGHTS: Readonly<Record<string, number>> = {
   'apps/cli/src/league/league-history.test.ts': 3,
   'scripts/harness/corpus.test.ts': 2,
 };
+const weight = (file: string, weights = TEST_WEIGHTS) => weights[file] ?? 1;
 /** Deterministic heaviest-first assignment of the inventory to the least loaded shard. */
 export function shardFiles(files: readonly string[], shards: number): string[][] {
-  const weight = (file: string) => TEST_WEIGHTS[file] ?? 1;
   const assigned = Array.from({ length: shards }, (): string[] => []);
   const load = Array.from({ length: shards }, () => 0);
   for (const file of [...files].sort((a, b) => weight(b) - weight(a) || (a < b ? -1 : 1))) {
@@ -73,4 +73,19 @@ export function shardFiles(files: readonly string[], shards: number): string[][]
     load[index]! += weight(file);
   }
   return assigned;
+}
+/**
+ * Known heavy files first, everything else in the given order. CI never caches test results, and
+ * without them Vitest starts files largest first, so a short but slow file (the real-Worker corpus)
+ * could start last and alone set its shard's wall time.
+ */
+export function heaviestFirst<T>(
+  items: readonly T[],
+  file: (item: T) => string,
+  weights = TEST_WEIGHTS,
+): T[] {
+  return items
+    .map((item, index) => ({ item, index, weight: weight(file(item), weights) }))
+    .sort((a, b) => b.weight - a.weight || a.index - b.index)
+    .map(({ item }) => item);
 }

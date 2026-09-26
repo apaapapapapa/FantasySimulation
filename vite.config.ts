@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite-plus';
 import { TEST_INCLUDE, TEST_EXCLUDE } from './scripts/ci/test-plan.ts';
+import { WeightedSequencer } from './scripts/ci/test-sequencer.ts';
 
 export default defineConfig({
   lint: {
@@ -19,5 +20,7 @@ export default defineConfig({
     include: TEST_INCLUDE,
     // These use node:test and are required by security:test in the same verify command.
     exclude: TEST_EXCLUDE,
+    // Start the known slowest files first instead of the largest (see heaviestFirst).
+    sequence: { sequencer: WeightedSequencer },
   },
 });
