@@ -117,6 +117,55 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
             <meshStandardMaterial color={o.colour} roughness={0.9} />
           </mesh>
         ))}
+        {model.objects.map((o) => (
+          <group key={o.id}>
+            {o.shape && (
+              <mesh
+                position={o.position}
+                rotation={
+                  o.shape.kind === 'box'
+                    ? [0, (o.shape.yawMilliDegrees * Math.PI) / 180000, 0]
+                    : [0, 0, 0]
+                }
+              >
+                {o.shape.kind === 'box' ? (
+                  <boxGeometry
+                    args={[
+                      o.shape.sizeMm.x / 1000,
+                      o.shape.sizeMm.y / 1000,
+                      o.shape.sizeMm.z / 1000,
+                    ]}
+                  />
+                ) : o.shape.kind === 'sphere' ? (
+                  <sphereGeometry args={[o.shape.radiusMm / 1000, 24, 16]} />
+                ) : (
+                  <cylinderGeometry
+                    args={[
+                      o.shape.radiusMm / 1000,
+                      o.shape.radiusMm / 1000,
+                      o.shape.heightMm / 1000,
+                      24,
+                    ]}
+                  />
+                )}
+                <meshStandardMaterial
+                  color={o.colour}
+                  transparent
+                  opacity={0.3}
+                  depthWrite={false}
+                />
+              </mesh>
+            )}
+            {o.beams.map((b) => (
+              <Line
+                key={b.id}
+                points={b.points}
+                color={o.colour}
+                lineWidth={Math.max(2, b.radius * 30)}
+              />
+            ))}
+          </group>
+        ))}
         {model.actors.map((a) => (
           <group key={a.id} position={a.position}>
             <mesh>

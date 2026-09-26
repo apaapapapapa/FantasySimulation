@@ -7,7 +7,8 @@ export type SpatialQuery = { ownerId?: string; ignoreObjectId?: string };
 export type BlockSelector = 'none' | 'owner' | 'enemy' | 'both';
 export type Obstacle = {
   id: string;
-  kind?: 'pillar';
+  kind?: 'pillar' | 'sphere';
+  order?: number;
   position: Vec3;
   halfExtents: Vec3;
   rotation?: { x: number; y: number; z: number; w: number };

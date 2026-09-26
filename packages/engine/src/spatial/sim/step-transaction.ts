@@ -19,6 +19,8 @@ import { attachedStageAlive } from '../rules/stages.ts';
 import type { WorkMeter } from './work-meter.ts';
 import type { Obstacle } from '../geometry-types.ts';
 import type { PendingRelocation } from '../state.ts';
+import { displaySpatialObject, type SpatialObject } from '../rules/spatial-objects.ts';
+import { canonicalJson, type SpatialObjectChanges } from '@fantasy/domain/spatial/execution';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
 export type SimulationState = {
@@ -28,6 +30,7 @@ export type SimulationState = {
   ledger: HitLedger;
   serial: number;
   relocations?: PendingRelocation[];
+  objects?: SpatialObject[];
 };
 type StepContext = {
   battle: PreparedBattle;
@@ -47,6 +50,8 @@ export class StepTransaction {
   readonly before: ReturnType<typeof displayActor>[];
   readonly aiBoundary: boolean;
   readonly effects: PendingEffect[] = [];
+  readonly barrierDamage = new Map<string, number>();
+  readonly objectRemovals = new Map<string, SpatialObjectChanges['remove'][number]['reason']>();
   readonly spawns: ProjectileDisplay[] = [];
   forcePlans = new Map<string, ReturnType<typeof beginForcedInterval>>();
   previousMovement = new Map<string, PreviousMovement>();
@@ -74,6 +79,7 @@ export class StepTransaction {
       projectiles: [...previous.projectiles],
       ledger: previous.ledger.clone(),
       serial: previous.serial,
+      ...(previous.objects ? { objects: previous.objects.map((o) => ({ ...o })) } : {}),
       ...(previous.relocations ? { relocations: [...previous.relocations] } : {}),
     };
     this.journal = new Journal(sequence, bytes, context.budget);
@@ -99,11 +105,31 @@ export class StepTransaction {
     this.candidateWorld?.free();
     this.candidateWorld = undefined;
   }
+  objectChanges(): SpatialObjectChanges | undefined {
+    const previous = (this.previous.objects ?? [])
+        .filter((o) => o.active)
+        .map(displaySpatialObject),
+      next = (this.next.objects ?? []).filter((o) => o.active).map(displaySpatialObject);
+    if (!previous.length && !next.length) return undefined;
+    const changes: SpatialObjectChanges = {
+      spawn: next.filter((o) => !previous.some((p) => p.id === o.id)),
+      update: next.filter((o) =>
+        previous.some((p) => p.id === o.id && canonicalJson(p) !== canonicalJson(o)),
+      ),
+      remove: previous
+        .filter((o) => !next.some((p) => p.id === o.id))
+        .map((o) => ({ id: o.id, reason: this.objectRemovals.get(o.id) ?? 'expired' })),
+    };
+    return changes.spawn.length + changes.update.length + changes.remove.length
+      ? changes
+      : undefined;
+  }
   boundaryRecord(): Extract<StreamRecord, { kind: 'boundary' }> {
     return {
       kind: 'boundary',
       schemaVersion: 1,
       step: this.step,
+      ...(this.objectChanges() ? { objects: this.objectChanges()! } : {}),
       changes: displayChanges(
         this.before,
         this.next.actors.map((actor) => displayActor(actor, this.step)),
@@ -115,6 +141,7 @@ export class StepTransaction {
     return {
       kind: 'interval',
       schemaVersion: 1,
+      ...(this.objectChanges() ? { objects: this.objectChanges()! } : {}),
       fromStep: this.step,
       toStep: this.step + 1,
       paths: this.paths,
@@ -132,6 +159,7 @@ export class StepTransaction {
         ...this.next.actors.flatMap((actor) =>
           actor.actions.action?.stages ? [actor.actions.action.id] : [],
         ),
+        ...(this.next.objects ?? []).map((o) => o.actionId),
         ...this.next.projectiles.flatMap((projectile) =>
           projectile.stage ? [projectile.stage.actionId] : [],
         ),

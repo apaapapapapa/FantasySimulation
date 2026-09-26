@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { assertJson, canonicalJson, deepFreeze } from './canonical.ts';
 import { ExperimentalRulesSchema } from './mechanics.ts';
+import { BarrierSchema, AreaAttackSchema, BeamAttackSchema } from './spatial-operations.ts';
 
 export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
@@ -162,7 +163,17 @@ export const ObservedReactionSchema = z.strictObject({
 });
 export type ObservedReaction = z.infer<typeof ObservedReactionSchema>;
 export const ObservedStageSchema = z.strictObject({
-  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'arc', 'radial', 'hold']),
+  shape: z.enum([
+    'direct',
+    'melee',
+    'hitscan',
+    'projectile',
+    'arc',
+    'radial',
+    'area',
+    'beam',
+    'hold',
+  ]),
   state: z.enum(['active', 'waiting', 'interrupted']),
   motion: z.enum(['dash', 'retreat', 'leap', 'forced']).optional(),
 });
@@ -435,6 +446,8 @@ export const StatusSchema = z.strictObject({
     .max(8),
 });
 export const AttackSchema = z.discriminatedUnion('kind', [
+  AreaAttackSchema,
+  BeamAttackSchema,
   z.strictObject({ kind: z.literal('direct') }),
   z.strictObject({
     kind: z.literal('arc'),
@@ -507,6 +520,7 @@ export const StageSchema = z.strictObject({
   interruptOnDamage: z.boolean().optional(),
   hit: StageHitSchema.optional(),
   relocation: RelocationSchema.optional(),
+  barrier: BarrierSchema.optional(),
   selfMotion: z
     .strictObject({
       kind: z.enum(['dash', 'retreat', 'leap']),
@@ -567,6 +581,7 @@ export const AbilitySchema = z
     effects: z.array(EffectSchema).max(16),
     stages: z.array(StageSchema).min(1).max(16).optional(),
     relocation: RelocationSchema.optional(),
+    barrier: BarrierSchema.optional(),
   })
   .superRefine((ability, ctx) => {
     const reaction = ability.reaction;
@@ -574,7 +589,12 @@ export const AbilitySchema = z
     const response = reaction?.response;
     if (reactive !== !!reaction)
       ctx.addIssue({ code: 'custom', message: 'Reaction triggers require an explicit response' });
-    if (!ability.effects.length && response?.kind !== 'parry' && !ability.relocation)
+    if (
+      !ability.effects.length &&
+      response?.kind !== 'parry' &&
+      !ability.relocation &&
+      !ability.barrier
+    )
       ctx.addIssue({ code: 'custom', message: 'Only parry may omit payload effects' });
     if (reaction) {
       if (ability.castSteps !== 0 || ability.stages)
@@ -622,6 +642,40 @@ export const AbilitySchema = z
     }
     const plans = ability.stages ?? [{ attack: ability.attack, effects: ability.effects }];
     const relocations = ability.stages ?? [ability];
+    for (const plan of relocations) {
+      if (
+        plan.barrier &&
+        (ability.trigger !== 'action' ||
+          ability.target !== 'self' ||
+          plan.attack?.kind !== 'direct' ||
+          plan.effects.length ||
+          plan.relocation)
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Barrier requires an action-only direct self stage without another payload',
+        });
+      if (
+        plan.barrier?.attachment === 'follow' &&
+        (!('durationSteps' in plan) ||
+          plan.durationSteps < 2 ||
+          plan.barrier.durationSteps > plan.durationSteps - 1)
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Following barrier must fit the remaining authored stage window',
+        });
+      if (
+        (plan.attack?.kind === 'area' || plan.attack?.kind === 'beam') &&
+        (!ability.stages || ability.trigger !== 'action' || ability.target !== 'enemy')
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Area and beam require an enemy action with authored stages',
+        });
+      if (plan.attack?.kind === 'area' && plan.attack.placement.maxDistanceMm > ability.rangeMm)
+        ctx.addIssue({ code: 'custom', message: 'Area placement exceeds ability range' });
+    }
     if (relocations.some((p) => p.relocation)) {
       if (
         ability.trigger !== 'action' ||
@@ -661,6 +715,7 @@ export const AbilitySchema = z
         first.offsetSteps !== 0 ||
         canonicalJson(first.attack) !== canonicalJson(ability.attack) ||
         canonicalJson(first.relocation ?? null) !== canonicalJson(ability.relocation ?? null) ||
+        canonicalJson(first.barrier ?? null) !== canonicalJson(ability.barrier ?? null) ||
         canonicalJson(first.effects) !== canonicalJson(ability.effects)
       )
         ctx.addIssue({
@@ -680,7 +735,9 @@ export const AbilitySchema = z
             message: 'Stage windows must be ordered, disjoint and end within 6000 steps',
           });
         if (
-          (!stage.relocation && (stage.attack === null) !== (stage.effects.length === 0)) ||
+          (!stage.relocation &&
+            !stage.barrier &&
+            (stage.attack === null) !== (stage.effects.length === 0)) ||
           (stage.attack?.kind === 'melee' && stage.attack.activeSteps !== stage.durationSteps)
         )
           ctx.addIssue({

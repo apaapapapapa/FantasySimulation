@@ -904,8 +904,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "apply-status/area"
         }
       ]
     },
@@ -924,8 +924,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "apply-status/barrier"
         }
       ]
     },
@@ -934,8 +934,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "apply-status/beam"
         }
       ]
     },
@@ -1317,7 +1317,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.absolute-evasion"
         }
       ]
     },
@@ -1327,7 +1327,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.absolute-hit"
         }
       ]
     },
@@ -1336,8 +1336,8 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/apply-status"
         }
       ]
     },
@@ -1346,8 +1346,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/area"
         }
       ]
     },
@@ -1356,8 +1356,8 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/attribute-absorption"
         }
       ]
     },
@@ -1366,8 +1366,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/barrier"
         }
       ]
     },
@@ -1376,8 +1376,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/beam"
         }
       ]
     },
@@ -1387,7 +1387,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -1396,8 +1396,8 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/contact"
         }
       ]
     },
@@ -1406,8 +1406,8 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/counter"
         }
       ]
     },
@@ -1416,8 +1416,8 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/damage"
         }
       ]
     },
@@ -1426,8 +1426,8 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/dispel"
         }
       ]
     },
@@ -1436,8 +1436,8 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/drain"
         }
       ]
     },
@@ -1446,8 +1446,8 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/elemental-reaction"
         }
       ]
     },
@@ -1457,7 +1457,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -1466,8 +1466,8 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/flight"
         }
       ]
     },
@@ -1476,8 +1476,8 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/force"
         }
       ]
     },
@@ -1487,7 +1487,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -1496,8 +1496,8 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/heal"
         }
       ]
     },
@@ -1507,7 +1507,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.immortality"
         }
       ]
     },
@@ -1517,7 +1517,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.instant-death"
         }
       ]
     },
@@ -1527,7 +1527,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.mind-read"
         }
       ]
     },
@@ -1536,8 +1536,8 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/motion"
         }
       ]
     },
@@ -1546,8 +1546,8 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/parry"
         }
       ]
     },
@@ -1556,8 +1556,8 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/periodic"
         }
       ]
     },
@@ -1566,8 +1566,8 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/permanent"
         }
       ]
     },
@@ -1577,7 +1577,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.phasing"
         }
       ]
     },
@@ -1587,7 +1587,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -1596,8 +1596,8 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/projectile"
         }
       ]
     },
@@ -1607,7 +1607,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.projectile-deflection"
         }
       ]
     },
@@ -1616,8 +1616,8 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/reaction-effects"
         }
       ]
     },
@@ -1626,8 +1626,8 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/resource"
         }
       ]
     },
@@ -1636,8 +1636,8 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/reveal"
         }
       ]
     },
@@ -1647,7 +1647,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.revival"
         }
       ]
     },
@@ -1657,7 +1657,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.seal"
         }
       ]
     },
@@ -1666,8 +1666,8 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/shield"
         }
       ]
     },
@@ -1676,8 +1676,8 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/silence"
         }
       ]
     },
@@ -1686,8 +1686,8 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/stages"
         }
       ]
     },
@@ -1696,8 +1696,8 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/status-adjustment"
         }
       ]
     },
@@ -1706,8 +1706,8 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/teleport"
         }
       ]
     },
@@ -1717,7 +1717,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.time-stop"
         }
       ]
     },
@@ -1727,7 +1727,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.area"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -1736,8 +1736,8 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "area/visibility"
         }
       ]
     },
@@ -1776,8 +1776,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "attribute-absorption/area"
         }
       ]
     },
@@ -1796,8 +1796,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "attribute-absorption/barrier"
         }
       ]
     },
@@ -1806,8 +1806,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "attribute-absorption/beam"
         }
       ]
     },
@@ -2177,7 +2177,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.absolute-evasion"
         }
       ]
     },
@@ -2187,7 +2187,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.absolute-hit"
         }
       ]
     },
@@ -2196,8 +2196,8 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/apply-status"
         }
       ]
     },
@@ -2206,8 +2206,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/area"
         }
       ]
     },
@@ -2216,8 +2216,8 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/attribute-absorption"
         }
       ]
     },
@@ -2226,8 +2226,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/barrier"
         }
       ]
     },
@@ -2236,8 +2236,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/beam"
         }
       ]
     },
@@ -2247,7 +2247,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -2256,8 +2256,8 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/contact"
         }
       ]
     },
@@ -2266,8 +2266,8 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/counter"
         }
       ]
     },
@@ -2276,8 +2276,8 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/damage"
         }
       ]
     },
@@ -2286,8 +2286,8 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/dispel"
         }
       ]
     },
@@ -2296,8 +2296,8 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/drain"
         }
       ]
     },
@@ -2306,8 +2306,8 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/elemental-reaction"
         }
       ]
     },
@@ -2317,7 +2317,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -2326,8 +2326,8 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/flight"
         }
       ]
     },
@@ -2336,8 +2336,8 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/force"
         }
       ]
     },
@@ -2347,7 +2347,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -2356,8 +2356,8 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/heal"
         }
       ]
     },
@@ -2367,7 +2367,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.immortality"
         }
       ]
     },
@@ -2377,7 +2377,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.instant-death"
         }
       ]
     },
@@ -2387,7 +2387,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.mind-read"
         }
       ]
     },
@@ -2396,8 +2396,8 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/motion"
         }
       ]
     },
@@ -2406,8 +2406,8 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/parry"
         }
       ]
     },
@@ -2416,8 +2416,8 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/periodic"
         }
       ]
     },
@@ -2426,8 +2426,8 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/permanent"
         }
       ]
     },
@@ -2437,7 +2437,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.phasing"
         }
       ]
     },
@@ -2447,7 +2447,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -2456,8 +2456,8 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/projectile"
         }
       ]
     },
@@ -2467,7 +2467,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.projectile-deflection"
         }
       ]
     },
@@ -2476,8 +2476,8 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/reaction-effects"
         }
       ]
     },
@@ -2486,8 +2486,8 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/resource"
         }
       ]
     },
@@ -2496,8 +2496,8 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/reveal"
         }
       ]
     },
@@ -2507,7 +2507,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.revival"
         }
       ]
     },
@@ -2517,7 +2517,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.seal"
         }
       ]
     },
@@ -2526,8 +2526,8 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/shield"
         }
       ]
     },
@@ -2536,8 +2536,8 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/silence"
         }
       ]
     },
@@ -2546,8 +2546,8 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/stages"
         }
       ]
     },
@@ -2556,8 +2556,8 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/status-adjustment"
         }
       ]
     },
@@ -2566,8 +2566,8 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/teleport"
         }
       ]
     },
@@ -2577,7 +2577,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.time-stop"
         }
       ]
     },
@@ -2587,7 +2587,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.barrier"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -2596,8 +2596,8 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "barrier/visibility"
         }
       ]
     },
@@ -2607,7 +2607,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.absolute-evasion"
         }
       ]
     },
@@ -2617,7 +2617,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.absolute-hit"
         }
       ]
     },
@@ -2626,8 +2626,8 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/apply-status"
         }
       ]
     },
@@ -2636,8 +2636,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/area"
         }
       ]
     },
@@ -2646,8 +2646,8 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/attribute-absorption"
         }
       ]
     },
@@ -2656,8 +2656,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/barrier"
         }
       ]
     },
@@ -2666,8 +2666,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/beam"
         }
       ]
     },
@@ -2677,7 +2677,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -2686,8 +2686,8 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/contact"
         }
       ]
     },
@@ -2696,8 +2696,8 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/counter"
         }
       ]
     },
@@ -2706,8 +2706,8 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/damage"
         }
       ]
     },
@@ -2716,8 +2716,8 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/dispel"
         }
       ]
     },
@@ -2726,8 +2726,8 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/drain"
         }
       ]
     },
@@ -2736,8 +2736,8 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/elemental-reaction"
         }
       ]
     },
@@ -2747,7 +2747,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -2756,8 +2756,8 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/flight"
         }
       ]
     },
@@ -2766,8 +2766,8 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/force"
         }
       ]
     },
@@ -2777,7 +2777,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -2786,8 +2786,8 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/heal"
         }
       ]
     },
@@ -2797,7 +2797,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.immortality"
         }
       ]
     },
@@ -2807,7 +2807,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.instant-death"
         }
       ]
     },
@@ -2817,7 +2817,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.mind-read"
         }
       ]
     },
@@ -2826,8 +2826,8 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/motion"
         }
       ]
     },
@@ -2836,8 +2836,8 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/parry"
         }
       ]
     },
@@ -2846,8 +2846,8 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/periodic"
         }
       ]
     },
@@ -2856,8 +2856,8 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/permanent"
         }
       ]
     },
@@ -2867,7 +2867,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.phasing"
         }
       ]
     },
@@ -2877,7 +2877,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -2886,8 +2886,8 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/projectile"
         }
       ]
     },
@@ -2897,7 +2897,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.projectile-deflection"
         }
       ]
     },
@@ -2906,8 +2906,8 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/reaction-effects"
         }
       ]
     },
@@ -2916,8 +2916,8 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/resource"
         }
       ]
     },
@@ -2926,8 +2926,8 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/reveal"
         }
       ]
     },
@@ -2937,7 +2937,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.revival"
         }
       ]
     },
@@ -2947,7 +2947,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.seal"
         }
       ]
     },
@@ -2956,8 +2956,8 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/shield"
         }
       ]
     },
@@ -2966,8 +2966,8 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/silence"
         }
       ]
     },
@@ -2976,8 +2976,8 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/stages"
         }
       ]
     },
@@ -2986,8 +2986,8 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/status-adjustment"
         }
       ]
     },
@@ -2996,8 +2996,8 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/teleport"
         }
       ]
     },
@@ -3007,7 +3007,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.time-stop"
         }
       ]
     },
@@ -3017,7 +3017,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.beam"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -3026,8 +3026,8 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "beam/visibility"
         }
       ]
     },
@@ -3496,8 +3496,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "contact/area"
         }
       ]
     },
@@ -3516,8 +3516,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "contact/barrier"
         }
       ]
     },
@@ -3526,8 +3526,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "contact/beam"
         }
       ]
     },
@@ -3926,8 +3926,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "counter/area"
         }
       ]
     },
@@ -3946,8 +3946,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "counter/barrier"
         }
       ]
     },
@@ -3956,8 +3956,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "counter/beam"
         }
       ]
     },
@@ -4356,8 +4356,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "damage/area"
         }
       ]
     },
@@ -4376,8 +4376,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "damage/barrier"
         }
       ]
     },
@@ -4386,8 +4386,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "damage/beam"
         }
       ]
     },
@@ -4786,8 +4786,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "dispel/area"
         }
       ]
     },
@@ -4806,8 +4806,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "dispel/barrier"
         }
       ]
     },
@@ -4816,8 +4816,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "dispel/beam"
         }
       ]
     },
@@ -5216,8 +5216,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "drain/area"
         }
       ]
     },
@@ -5236,8 +5236,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "drain/barrier"
         }
       ]
     },
@@ -5246,8 +5246,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "drain/beam"
         }
       ]
     },
@@ -5654,8 +5654,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "elemental-reaction/area"
         }
       ]
     },
@@ -5674,8 +5674,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "elemental-reaction/barrier"
         }
       ]
     },
@@ -5684,8 +5684,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "elemental-reaction/beam"
         }
       ]
     },
@@ -6530,8 +6530,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "flight/area"
         }
       ]
     },
@@ -6550,8 +6550,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "flight/barrier"
         }
       ]
     },
@@ -6560,8 +6560,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "flight/beam"
         }
       ]
     },
@@ -6960,8 +6960,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "force/area"
         }
       ]
     },
@@ -6980,8 +6980,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "force/barrier"
         }
       ]
     },
@@ -6990,8 +6990,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "force/beam"
         }
       ]
     },
@@ -7820,8 +7820,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "heal/area"
         }
       ]
     },
@@ -7840,8 +7840,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "heal/barrier"
         }
       ]
     },
@@ -7850,8 +7850,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "heal/beam"
         }
       ]
     },
@@ -9540,8 +9540,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "motion/area"
         }
       ]
     },
@@ -9560,8 +9560,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "motion/barrier"
         }
       ]
     },
@@ -9570,8 +9570,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "motion/beam"
         }
       ]
     },
@@ -9970,8 +9970,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "parry/area"
         }
       ]
     },
@@ -9990,8 +9990,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "parry/barrier"
         }
       ]
     },
@@ -10000,8 +10000,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "parry/beam"
         }
       ]
     },
@@ -10400,8 +10400,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "periodic/area"
         }
       ]
     },
@@ -10420,8 +10420,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "periodic/barrier"
         }
       ]
     },
@@ -10430,8 +10430,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "periodic/beam"
         }
       ]
     },
@@ -10834,8 +10834,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "permanent/area"
         }
       ]
     },
@@ -10854,8 +10854,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "permanent/barrier"
         }
       ]
     },
@@ -10864,8 +10864,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "permanent/beam"
         }
       ]
     },
@@ -12128,8 +12128,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "projectile/area"
         }
       ]
     },
@@ -12148,8 +12148,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "projectile/barrier"
         }
       ]
     },
@@ -12158,8 +12158,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "projectile/beam"
         }
       ]
     },
@@ -12988,8 +12988,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "reaction-effects/area"
         }
       ]
     },
@@ -13008,8 +13008,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "reaction-effects/barrier"
         }
       ]
     },
@@ -13018,8 +13018,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "reaction-effects/beam"
         }
       ]
     },
@@ -13418,8 +13418,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "resource/area"
         }
       ]
     },
@@ -13438,8 +13438,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "resource/barrier"
         }
       ]
     },
@@ -13448,8 +13448,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "resource/beam"
         }
       ]
     },
@@ -13848,8 +13848,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "reveal/area"
         }
       ]
     },
@@ -13868,8 +13868,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "reveal/barrier"
         }
       ]
     },
@@ -13878,8 +13878,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "reveal/beam"
         }
       ]
     },
@@ -15138,8 +15138,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "shield/area"
         }
       ]
     },
@@ -15158,8 +15158,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "shield/barrier"
         }
       ]
     },
@@ -15168,8 +15168,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "shield/beam"
         }
       ]
     },
@@ -15568,8 +15568,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "silence/area"
         }
       ]
     },
@@ -15588,8 +15588,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "silence/barrier"
         }
       ]
     },
@@ -15598,8 +15598,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "silence/beam"
         }
       ]
     },
@@ -15998,8 +15998,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "stages/area"
         }
       ]
     },
@@ -16018,8 +16018,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "stages/barrier"
         }
       ]
     },
@@ -16028,8 +16028,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "stages/beam"
         }
       ]
     },
@@ -16428,8 +16428,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "status-adjustment/area"
         }
       ]
     },
@@ -16448,8 +16448,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "status-adjustment/barrier"
         }
       ]
     },
@@ -16458,8 +16458,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "status-adjustment/beam"
         }
       ]
     },
@@ -16858,8 +16858,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "teleport/area"
         }
       ]
     },
@@ -16878,8 +16878,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "teleport/barrier"
         }
       ]
     },
@@ -16888,8 +16888,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "teleport/beam"
         }
       ]
     },
@@ -18148,8 +18148,8 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.area"
+          "when": "otherwise",
+          "fixture": "visibility/area"
         }
       ]
     },
@@ -18168,8 +18168,8 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.barrier"
+          "when": "otherwise",
+          "fixture": "visibility/barrier"
         }
       ]
     },
@@ -18178,8 +18178,8 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "fixture": "reject.beam"
+          "when": "otherwise",
+          "fixture": "visibility/beam"
         }
       ]
     },
@@ -18555,6 +18555,7 @@
       "status.reaction-conflict": "p6-status.reaction-conflict"
     },
     "recovery": "p6-recovery-14",
-    "teleport": "p6-teleport-pairs"
+    "teleport": "p6-teleport-pairs",
+    "objects": "p6.spatial-object-pairs"
   }
 }

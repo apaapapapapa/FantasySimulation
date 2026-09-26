@@ -7,7 +7,7 @@ here. This compaction changes no rule. Later accepted ADRs prevail;
 [ADR0017](../adr/0017-p6-spatial-mechanics.md) owns spatial operations; `relocation` implements
 P6-06 teleport. It freezes a visible relative anchor, activates next boundary after full-body
 clearance, rejects conflicting endpoints together and records a jump without interpolation.
-Barriers, areas, beams and phasing still await implementation.
+P6-07 adds boundary-owned barriers/areas and staged beams; phasing awaits P6-08.
 
 ## 単位と上限
 

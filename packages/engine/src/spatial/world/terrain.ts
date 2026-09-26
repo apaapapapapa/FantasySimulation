@@ -13,7 +13,7 @@ export const bodyCapsule = (body: Definition<'character'>['body']): Capsule => (
   radius: body.radiusMm / 1000,
   halfHeight: (body.heightMm / 2 - body.radiusMm) / 1000,
 });
-function rotation(yaw: number, slope: number) {
+export function rotation(yaw: number, slope: number) {
   const sy = sinDegrees(yaw / 2000),
     cy = cosDegrees(yaw / 2000),
     sz = sinDegrees(slope / 2000),

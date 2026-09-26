@@ -1,3 +1,4 @@
+import { validateSpatialObject, applySpatialObjects } from './replay-validation/spatial-object.ts';
 import { compareIds } from './canonical.ts';
 import { parseJson } from './contracts.ts';
 import type { Outcome } from './records.ts';
@@ -124,6 +125,11 @@ export class ReplayState {
       validateAction(actor, definition, step);
     }
     const ids = new Set(state.actors.map((a) => a.id));
+    for (const object of state.objects ?? []) {
+      requireReplay(!ids.has(object.id), 'duplicate entity');
+      ids.add(object.id);
+      validateSpatialObject(this.context, object, step);
+    }
     for (const p of state.projectiles) {
       requireReplay(!ids.has(p.id), 'duplicate entity');
       ids.add(p.id);
@@ -193,7 +199,9 @@ export class ReplayState {
       boundaryApplied = prior.boundaryApplied;
     if (record.kind === 'initial') {
       requireReplay(
-        prior.state === null && record.state.projectiles.length === 0,
+        prior.state === null &&
+          record.state.projectiles.length === 0 &&
+          !record.state.objects?.length,
         'duplicate/nonempty initial',
       );
       state = record.state;
@@ -222,7 +230,9 @@ export class ReplayState {
     } else {
       if (!prior.state) return fail('missing initial');
       state = structuredClone(prior.state);
-      const entities = new Set([...state.actors, ...state.projectiles].map((e) => e.id));
+      const entities = new Set(
+        [...state.actors, ...state.projectiles, ...(state.objects ?? [])].map((e) => e.id),
+      );
       if (record.kind === 'terminal') {
         requireReplay(record.step === step, 'terminal step');
         this.validateOutcome(record.outcome, state, step);
@@ -245,6 +255,8 @@ export class ReplayState {
           step = record.toStep;
           boundaryApplied = false;
         }
+        if (record.objects)
+          applySpatialObjects(this.context, prior, state, record.objects, record, entities);
         const changed = new Set<string>();
         for (const delta of record.changes) {
           const index = state.actors.findIndex((a) => a.id === delta.id);
@@ -300,6 +312,7 @@ export class ReplayState {
     );
     state.actors.sort((a, b) => compareIds(a.id, b.id));
     state.projectiles.sort((a, b) => compareIds(a.id, b.id));
+    state.objects?.sort((a, b) => compareIds(a.id, b.id));
     this.value = {
       schemaVersion: 1,
       simulationHash: prior.simulationHash,

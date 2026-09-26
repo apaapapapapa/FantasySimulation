@@ -1,3 +1,4 @@
+import { spatialBudgets } from './spatial-commands.ts';
 import type { Relocation, StageContact } from '@fantasy/domain/spatial/execution';
 import type { AbilityRevision, ActorState } from '../state.ts';
 import { length, sub } from '../math.ts';
@@ -65,6 +66,7 @@ export function queueRelocation(
     maxDistanceMm: spec.maxDistanceMm,
     ...(stage ? { stage } : {}),
   });
+  spatialBudgets(tx, cause);
   const limit = tx.context.budget.maxSpatialCommands ?? 64;
   if (pending.length > limit)
     throw new SpatialBudgetError('spatial-commands', undefined, {

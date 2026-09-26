@@ -36,6 +36,7 @@ function compilePlan(source: DeepReadonly<Definition<'ability'>>): AbilityPlan {
         attack: source.attack,
         effects: source.effects,
         ...(source.relocation ? { relocation: source.relocation } : {}),
+        ...(source.barrier ? { barrier: source.barrier } : {}),
       },
     ],
     effects: abilityEffects(source),

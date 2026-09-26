@@ -66,6 +66,18 @@ type ContactOperations = {
   };
 };
 const contactHandlers: ContactOperations = {
+  area: {
+    attached: false,
+    contact: () => {
+      throw new Error('Area requires object contact scheduler');
+    },
+  },
+  beam: {
+    attached: false,
+    contact: () => {
+      throw new Error('Beam requires object contact scheduler');
+    },
+  },
   direct: {
     attached: false,
     contact: () => ({ contact: null, blocking: null, geometry: null, activeSteps: 1, maxHits: 0 }),

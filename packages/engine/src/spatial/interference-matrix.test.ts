@@ -11,6 +11,7 @@ import baseline from '../../fixtures/spatial/interference-baseline.json' with { 
 import coverage from '../../fixtures/spatial/interference-coverage.json' with { type: 'json' };
 import corpus from '../../fixtures/spatial/corpus.json' with { type: 'json' };
 import recovery from '../../fixtures/spatial/recovery-pairs.json' with { type: 'json' };
+import objects from '../../fixtures/spatial/spatial-object-pairs.json' with { type: 'json' };
 import teleport from '../../fixtures/spatial/teleport-pairs.json' with { type: 'json' };
 import {
   LEGACY_INTERFERENCE_MECHANICS,
@@ -28,11 +29,13 @@ function validateCoverage(input: typeof coverage) {
     if (
       typeof id !== 'string' ||
       tests[id]?.file !==
-        (kind === 'teleport'
-          ? 'packages/engine/src/spatial/teleport-interference.test.ts'
-          : kind === 'recovery'
-            ? 'packages/engine/src/spatial/recovery-interference.test.ts'
-            : 'packages/engine/src/spatial/interference-matrix.test.ts')
+        (kind === 'objects'
+          ? 'packages/engine/src/spatial/spatial-object-interference.test.ts'
+          : kind === 'teleport'
+            ? 'packages/engine/src/spatial/teleport-interference.test.ts'
+            : kind === 'recovery'
+              ? 'packages/engine/src/spatial/recovery-interference.test.ts'
+              : 'packages/engine/src/spatial/interference-matrix.test.ts')
     )
       throw new Error(`Missing executed ${kind} corpus binding`);
   }
@@ -48,6 +51,7 @@ function validateCoverage(input: typeof coverage) {
     ...baseline.cases.map((c) => c.id),
     ...recovery.cases.map((c) => c.id),
     ...teleport.cases.map((c) => c.id),
+    ...objects.cases.map((c) => c.id),
     ...STATUS_CONFLICT_RULES,
     ...interferenceTable.mechanics.filter((m) => !m.implemented).map((m) => `reject.${m.id}`),
   ]);

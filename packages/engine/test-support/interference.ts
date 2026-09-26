@@ -1,3 +1,4 @@
+import { objectAbility } from './object-manifest.ts';
 import type { Definition, Effect, Manifest } from '@fantasy/domain/spatial';
 import { combatManifest } from './fixtures.ts';
 import { initialStatus, withInitialStatus } from './ai.ts';
@@ -34,7 +35,12 @@ export type RecoveryInterferenceMechanic =
   | LegacyInterferenceMechanic
   | 'attribute-absorption'
   | 'drain';
-export type SpatialInterferenceMechanic = RecoveryInterferenceMechanic | 'teleport';
+export type SpatialInterferenceMechanic =
+  | RecoveryInterferenceMechanic
+  | 'teleport'
+  | 'barrier'
+  | 'area'
+  | 'beam';
 const damage = (amount: number): Effect => ({
   kind: 'damage',
   amount,
@@ -84,6 +90,23 @@ export async function interferencePairManifest(
     const status = initialStatus({ categories: ['debuff'], durationSteps: 20 });
     let reaction: Partial<Definition<'ability'>> | undefined;
     switch (mechanic) {
+      case 'barrier':
+      case 'area':
+      case 'beam': {
+        Object.assign(action, objectAbility(mechanic));
+        action.categories = ['magic'];
+        action.costs = { hp: 0, mp: 0, uses: 1 };
+        if (action.barrier) {
+          action.barrier.placement.direction = 'right';
+          action.stages![0]!.barrier = structuredClone(action.barrier);
+        }
+        if (action.attack.kind === 'area') {
+          action.attack.placement.distanceMm = 1500;
+          action.attack.armDelaySteps = 0;
+          action.stages![0]!.attack = structuredClone(action.attack);
+        }
+        break;
+      }
       case 'teleport':
         action.target = 'self';
         action.attack = { kind: 'direct' };

@@ -319,6 +319,7 @@ export function releaseStage(
           attack: stage.attack,
           effects: stage.effects,
           relocation: stage.relocation,
+          barrier: stage.barrier,
         },
       }
     : null;

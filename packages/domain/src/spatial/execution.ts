@@ -15,3 +15,4 @@ export * from './mechanics.ts';
 export * from './interference.ts';
 export * from './mechanic-uses.ts';
 export * from './interference-records.ts';
+export * from './spatial-operations.ts';

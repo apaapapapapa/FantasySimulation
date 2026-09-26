@@ -1,0 +1,959 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "apply-status/area",
+      "left": "apply-status",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "apply-status/barrier",
+      "left": "apply-status",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "apply-status/beam",
+      "left": "apply-status",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "area/apply-status",
+      "left": "area",
+      "right": "apply-status",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/area",
+      "left": "area",
+      "right": "area",
+      "objects": ["area", "area"]
+    },
+    {
+      "id": "area/attribute-absorption",
+      "left": "area",
+      "right": "attribute-absorption",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/barrier",
+      "left": "area",
+      "right": "barrier",
+      "objects": ["area", "barrier"]
+    },
+    {
+      "id": "area/beam",
+      "left": "area",
+      "right": "beam",
+      "objects": ["area", "beam"]
+    },
+    {
+      "id": "area/contact",
+      "left": "area",
+      "right": "contact",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/counter",
+      "left": "area",
+      "right": "counter",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/damage",
+      "left": "area",
+      "right": "damage",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/dispel",
+      "left": "area",
+      "right": "dispel",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/drain",
+      "left": "area",
+      "right": "drain",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/elemental-reaction",
+      "left": "area",
+      "right": "elemental-reaction",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/flight",
+      "left": "area",
+      "right": "flight",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/force",
+      "left": "area",
+      "right": "force",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/heal",
+      "left": "area",
+      "right": "heal",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/motion",
+      "left": "area",
+      "right": "motion",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/parry",
+      "left": "area",
+      "right": "parry",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/periodic",
+      "left": "area",
+      "right": "periodic",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/permanent",
+      "left": "area",
+      "right": "permanent",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/projectile",
+      "left": "area",
+      "right": "projectile",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/reaction-effects",
+      "left": "area",
+      "right": "reaction-effects",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/resource",
+      "left": "area",
+      "right": "resource",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/reveal",
+      "left": "area",
+      "right": "reveal",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/shield",
+      "left": "area",
+      "right": "shield",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/silence",
+      "left": "area",
+      "right": "silence",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/stages",
+      "left": "area",
+      "right": "stages",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/status-adjustment",
+      "left": "area",
+      "right": "status-adjustment",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/teleport",
+      "left": "area",
+      "right": "teleport",
+      "objects": ["area"]
+    },
+    {
+      "id": "area/visibility",
+      "left": "area",
+      "right": "visibility",
+      "objects": ["area"]
+    },
+    {
+      "id": "attribute-absorption/area",
+      "left": "attribute-absorption",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "attribute-absorption/barrier",
+      "left": "attribute-absorption",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "attribute-absorption/beam",
+      "left": "attribute-absorption",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "barrier/apply-status",
+      "left": "barrier",
+      "right": "apply-status",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/area",
+      "left": "barrier",
+      "right": "area",
+      "objects": ["barrier", "area"]
+    },
+    {
+      "id": "barrier/attribute-absorption",
+      "left": "barrier",
+      "right": "attribute-absorption",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/barrier",
+      "left": "barrier",
+      "right": "barrier",
+      "objects": ["barrier", "barrier"]
+    },
+    {
+      "id": "barrier/beam",
+      "left": "barrier",
+      "right": "beam",
+      "objects": ["barrier", "beam"]
+    },
+    {
+      "id": "barrier/contact",
+      "left": "barrier",
+      "right": "contact",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/counter",
+      "left": "barrier",
+      "right": "counter",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/damage",
+      "left": "barrier",
+      "right": "damage",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/dispel",
+      "left": "barrier",
+      "right": "dispel",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/drain",
+      "left": "barrier",
+      "right": "drain",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/elemental-reaction",
+      "left": "barrier",
+      "right": "elemental-reaction",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/flight",
+      "left": "barrier",
+      "right": "flight",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/force",
+      "left": "barrier",
+      "right": "force",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/heal",
+      "left": "barrier",
+      "right": "heal",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/motion",
+      "left": "barrier",
+      "right": "motion",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/parry",
+      "left": "barrier",
+      "right": "parry",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/periodic",
+      "left": "barrier",
+      "right": "periodic",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/permanent",
+      "left": "barrier",
+      "right": "permanent",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/projectile",
+      "left": "barrier",
+      "right": "projectile",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/reaction-effects",
+      "left": "barrier",
+      "right": "reaction-effects",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/resource",
+      "left": "barrier",
+      "right": "resource",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/reveal",
+      "left": "barrier",
+      "right": "reveal",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/shield",
+      "left": "barrier",
+      "right": "shield",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/silence",
+      "left": "barrier",
+      "right": "silence",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/stages",
+      "left": "barrier",
+      "right": "stages",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/status-adjustment",
+      "left": "barrier",
+      "right": "status-adjustment",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/teleport",
+      "left": "barrier",
+      "right": "teleport",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "barrier/visibility",
+      "left": "barrier",
+      "right": "visibility",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "beam/apply-status",
+      "left": "beam",
+      "right": "apply-status",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/area",
+      "left": "beam",
+      "right": "area",
+      "objects": ["beam", "area"]
+    },
+    {
+      "id": "beam/attribute-absorption",
+      "left": "beam",
+      "right": "attribute-absorption",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/barrier",
+      "left": "beam",
+      "right": "barrier",
+      "objects": ["beam", "barrier"]
+    },
+    {
+      "id": "beam/beam",
+      "left": "beam",
+      "right": "beam",
+      "objects": ["beam", "beam"]
+    },
+    {
+      "id": "beam/contact",
+      "left": "beam",
+      "right": "contact",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/counter",
+      "left": "beam",
+      "right": "counter",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/damage",
+      "left": "beam",
+      "right": "damage",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/dispel",
+      "left": "beam",
+      "right": "dispel",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/drain",
+      "left": "beam",
+      "right": "drain",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/elemental-reaction",
+      "left": "beam",
+      "right": "elemental-reaction",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/flight",
+      "left": "beam",
+      "right": "flight",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/force",
+      "left": "beam",
+      "right": "force",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/heal",
+      "left": "beam",
+      "right": "heal",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/motion",
+      "left": "beam",
+      "right": "motion",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/parry",
+      "left": "beam",
+      "right": "parry",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/periodic",
+      "left": "beam",
+      "right": "periodic",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/permanent",
+      "left": "beam",
+      "right": "permanent",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/projectile",
+      "left": "beam",
+      "right": "projectile",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/reaction-effects",
+      "left": "beam",
+      "right": "reaction-effects",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/resource",
+      "left": "beam",
+      "right": "resource",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/reveal",
+      "left": "beam",
+      "right": "reveal",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/shield",
+      "left": "beam",
+      "right": "shield",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/silence",
+      "left": "beam",
+      "right": "silence",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/stages",
+      "left": "beam",
+      "right": "stages",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/status-adjustment",
+      "left": "beam",
+      "right": "status-adjustment",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/teleport",
+      "left": "beam",
+      "right": "teleport",
+      "objects": ["beam"]
+    },
+    {
+      "id": "beam/visibility",
+      "left": "beam",
+      "right": "visibility",
+      "objects": ["beam"]
+    },
+    {
+      "id": "contact/area",
+      "left": "contact",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "contact/barrier",
+      "left": "contact",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "contact/beam",
+      "left": "contact",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "counter/area",
+      "left": "counter",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "counter/barrier",
+      "left": "counter",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "counter/beam",
+      "left": "counter",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "damage/area",
+      "left": "damage",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "damage/barrier",
+      "left": "damage",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "damage/beam",
+      "left": "damage",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "dispel/area",
+      "left": "dispel",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "dispel/barrier",
+      "left": "dispel",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "dispel/beam",
+      "left": "dispel",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "drain/area",
+      "left": "drain",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "drain/barrier",
+      "left": "drain",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "drain/beam",
+      "left": "drain",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "elemental-reaction/area",
+      "left": "elemental-reaction",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "elemental-reaction/barrier",
+      "left": "elemental-reaction",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "elemental-reaction/beam",
+      "left": "elemental-reaction",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "flight/area",
+      "left": "flight",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "flight/barrier",
+      "left": "flight",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "flight/beam",
+      "left": "flight",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "force/area",
+      "left": "force",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "force/barrier",
+      "left": "force",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "force/beam",
+      "left": "force",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "heal/area",
+      "left": "heal",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "heal/barrier",
+      "left": "heal",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "heal/beam",
+      "left": "heal",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "motion/area",
+      "left": "motion",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "motion/barrier",
+      "left": "motion",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "motion/beam",
+      "left": "motion",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "parry/area",
+      "left": "parry",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "parry/barrier",
+      "left": "parry",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "parry/beam",
+      "left": "parry",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "periodic/area",
+      "left": "periodic",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "periodic/barrier",
+      "left": "periodic",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "periodic/beam",
+      "left": "periodic",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "permanent/area",
+      "left": "permanent",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "permanent/barrier",
+      "left": "permanent",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "permanent/beam",
+      "left": "permanent",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "projectile/area",
+      "left": "projectile",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "projectile/barrier",
+      "left": "projectile",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "projectile/beam",
+      "left": "projectile",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "reaction-effects/area",
+      "left": "reaction-effects",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "reaction-effects/barrier",
+      "left": "reaction-effects",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "reaction-effects/beam",
+      "left": "reaction-effects",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "resource/area",
+      "left": "resource",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "resource/barrier",
+      "left": "resource",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "resource/beam",
+      "left": "resource",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "reveal/area",
+      "left": "reveal",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "reveal/barrier",
+      "left": "reveal",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "reveal/beam",
+      "left": "reveal",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "shield/area",
+      "left": "shield",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "shield/barrier",
+      "left": "shield",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "shield/beam",
+      "left": "shield",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "silence/area",
+      "left": "silence",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "silence/barrier",
+      "left": "silence",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "silence/beam",
+      "left": "silence",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "stages/area",
+      "left": "stages",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "stages/barrier",
+      "left": "stages",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "stages/beam",
+      "left": "stages",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "status-adjustment/area",
+      "left": "status-adjustment",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "status-adjustment/barrier",
+      "left": "status-adjustment",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "status-adjustment/beam",
+      "left": "status-adjustment",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "teleport/area",
+      "left": "teleport",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "teleport/barrier",
+      "left": "teleport",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "teleport/beam",
+      "left": "teleport",
+      "right": "beam",
+      "objects": ["beam"]
+    },
+    {
+      "id": "visibility/area",
+      "left": "visibility",
+      "right": "area",
+      "objects": ["area"]
+    },
+    {
+      "id": "visibility/barrier",
+      "left": "visibility",
+      "right": "barrier",
+      "objects": ["barrier"]
+    },
+    {
+      "id": "visibility/beam",
+      "left": "visibility",
+      "right": "beam",
+      "objects": ["beam"]
+    }
+  ]
+}

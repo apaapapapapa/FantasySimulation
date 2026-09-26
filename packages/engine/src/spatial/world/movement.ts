@@ -151,7 +151,7 @@ function stepTrace(
 
 /** All desired paths are computed from the same boundary state before either actor is committed. */
 export function moveActors(
-  world: SpatialWorld,
+  rootWorld: SpatialWorld,
   states: readonly MotionState[],
   intents: ReadonlyMap<string, MotionIntent>,
   rules: DeepReadonly<Definition<'ruleset'>>,
@@ -163,6 +163,7 @@ export function moveActors(
   )
     throw new Error('Movement requires at most two distinct actors');
   const plans = states.map((state) => {
+    const world = rootWorld.forQuery({ ownerId: state.actor.participant.actorId });
     const intent = intents.get(state.actor.participant.actorId);
     if (!intent) throw new Error('Missing simultaneous movement intent');
     const movement = state.actor.character.movement;
@@ -258,6 +259,7 @@ export function moveActors(
     }
   }
   return plans.map((plan) => {
+    const world = rootWorld.forQuery({ ownerId: plan.state.actor.participant.actorId });
     if (plan.trace.length > maxSegments) throw new SpatialBudgetError('movement-segments');
     const { state, intent, trace } = plan,
       position = at(trace, 1);

@@ -153,6 +153,21 @@ function assessSingle(
     confidencePower = 0;
   const evidence: string[] = [],
     reasons: string[] = [];
+  if (d.barrier) {
+    const destination = relocationDestination(
+      d.barrier.placement,
+      view.self,
+      view.memory.observation?.enemy,
+    );
+    const possible =
+      !!destination &&
+      length(sub(destination, view.self.position)) <= d.barrier.placement.maxDistanceMm / 1000;
+    if (possible)
+      utility +=
+        rules.actionWeight * (0.3 + (view.memory.observation?.projectiles.length ? 0.7 : 0));
+    confidence = 2500;
+    reasons.push('own barrier placement and delayed visible threats; occupancy remains uncertain');
+  }
   if (d.relocation) {
     const destination = relocationDestination(
       d.relocation,
@@ -413,6 +428,7 @@ function assessStages(
               attack: stage.attack,
               effects: stage.effects,
               relocation: stage.relocation,
+              barrier: stage.barrier,
             },
           },
           { cast: (clock?.launchAt ?? 8000) + stage.offsetSteps, duration },

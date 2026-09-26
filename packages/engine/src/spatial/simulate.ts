@@ -1,3 +1,4 @@
+import type { SpatialObject } from './rules/spatial-objects.ts';
 import type { ActorState, MeleeState, PreparedBattle } from './state.ts';
 import {
   BudgetSchema,
@@ -82,6 +83,7 @@ export function* simulate(
   let projectiles: ProjectileState[] = [];
   let ledger = new HitLedger();
   let relocations: PendingRelocation[] | undefined;
+  let objects: SpatialObject[] | undefined;
   const work = new WorkMeter(budget);
   try {
     actors = [...battle.actors]
@@ -113,6 +115,7 @@ export function* simulate(
         ledger,
         serial,
         ...(relocations ? { relocations } : {}),
+        ...(objects ? { objects } : {}),
       });
       let transaction: StepTransaction | undefined;
       // Boundary and interval are independent atomic commits. Work already attempted is retained.
@@ -121,7 +124,8 @@ export function* simulate(
         transaction = tx;
         boundaryPhase(tx);
         const record = tx.boundaryRecord();
-        const publish = record.changes.length > 0 || tx.journal.events.length > 0;
+        const publish =
+          record.changes.length > 0 || tx.journal.events.length > 0 || !!record.objects;
         if (publish) {
           const committed = tx.journal.finish(record);
           actors = tx.next.actors;
@@ -129,7 +133,7 @@ export function* simulate(
           sequence += tx.journal.events.length;
           melees = melees.filter((m) => attachedStageAlive(m, actors, step));
         } else actors = tx.next.actors;
-        relocations = tx.next.relocations;
+        ({ relocations, objects, ledger, serial } = tx.next);
         const oldWorld = world;
         world = tx.commitWorld(world);
         context.world = world;
@@ -161,7 +165,7 @@ export function* simulate(
         const record = tx.intervalRecord();
         const committed = tx.journal.finish(record);
         tx.finishInterval();
-        ({ actors, melees, projectiles, ledger, serial, relocations } = tx.next);
+        ({ actors, melees, projectiles, ledger, serial, relocations, objects } = tx.next);
         step++;
         bytes += committed.bytes;
         sequence += tx.journal.events.length;
@@ -207,6 +211,18 @@ export function* simulate(
           },
         })),
         serial,
+        ...(objects?.length
+          ? {
+              objects: objects.map(({ ability, ...o }) => ({
+                ...o,
+                ability: {
+                  id: ability.id,
+                  revision: ability.revision,
+                  contentHash: ability.contentHash,
+                },
+              })),
+            }
+          : {}),
         ...(relocations?.length
           ? {
               relocations: relocations.map(({ ability, ...command }) => ({

@@ -214,6 +214,15 @@ export function firstContact(
   return undefined;
 }
 export const capsuleShape = (body: Capsule) => new RAPIER.Capsule(body.halfHeight, body.radius);
+export type PhysicsShape = RAPIER.Shape;
+export function obstacleShape(obstacle: Obstacle): PhysicsShape {
+  const h = obstacle.halfExtents;
+  return obstacle.kind === 'sphere'
+    ? new RAPIER.Ball(h.x)
+    : obstacle.kind === 'pillar'
+      ? new RAPIER.Cylinder(h.y, h.x)
+      : new RAPIER.Cuboid(h.x, h.y, h.z);
+}
 export const ballShape = (radius: number) => new RAPIER.Ball(radius);
 
 export class SpatialWorld {
@@ -242,6 +251,12 @@ export class SpatialWorld {
       blocksQuery(obstacle, layer, this.query),
     );
   }
+  allObstacles(): readonly Obstacle[] {
+    return [...this.materials.values()];
+  }
+  queryBlocks(obstacle: Obstacle, layer: Layer): boolean {
+    return blocksQuery(obstacle, layer, this.query);
+  }
   countCast() {
     if (++this.casts > this.castLimit) throw new SpatialBudgetError('casts');
   }
@@ -256,7 +271,12 @@ export class SpatialWorld {
     this.geometryKey =
       shared && !shared.rebuild
         ? shared.source.geometryKey
-        : canonicalJson([...obstacles].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)));
+        : canonicalJson(
+            [...obstacles].sort(
+              (a, b) =>
+                (a.order ?? -1) - (b.order ?? -1) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+            ),
+          );
     if (shared && !shared.rebuild) {
       this.world = shared.source.world;
       this.materials = shared.source.materials;
@@ -268,18 +288,20 @@ export class SpatialWorld {
     this.world = new RAPIER.World(ZERO);
     this.world.timestep = 0.02;
     try {
-      for (const obstacle of [...obstacles].sort((a, b) =>
-        a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+      for (const obstacle of [...obstacles].sort(
+        (a, b) => (a.order ?? -1) - (b.order ?? -1) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
       )) {
         if (shared) this.countCast();
         const desc = (
-          obstacle.kind === 'pillar'
-            ? RAPIER.ColliderDesc.cylinder(obstacle.halfExtents.y, obstacle.halfExtents.x)
-            : RAPIER.ColliderDesc.cuboid(
-                obstacle.halfExtents.x,
-                obstacle.halfExtents.y,
-                obstacle.halfExtents.z,
-              )
+          obstacle.kind === 'sphere'
+            ? RAPIER.ColliderDesc.ball(obstacle.halfExtents.x)
+            : obstacle.kind === 'pillar'
+              ? RAPIER.ColliderDesc.cylinder(obstacle.halfExtents.y, obstacle.halfExtents.x)
+              : RAPIER.ColliderDesc.cuboid(
+                  obstacle.halfExtents.x,
+                  obstacle.halfExtents.y,
+                  obstacle.halfExtents.z,
+                )
         ).setTranslation(obstacle.position.x, obstacle.position.y, obstacle.position.z);
         if (obstacle.rotation) desc.setRotation(obstacle.rotation);
         const collider = this.world.createCollider(desc);
@@ -324,8 +346,11 @@ export class SpatialWorld {
   /** A caller owns the candidate until its entire transaction commits. */
   rebuild(obstacles: Obstacle[]): SpatialWorld {
     if (
-      canonicalJson([...obstacles].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) ===
-      this.geometryKey
+      canonicalJson(
+        [...obstacles].sort(
+          (a, b) => (a.order ?? -1) - (b.order ?? -1) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+        ),
+      ) === this.geometryKey
     )
       return this;
     return new SpatialWorld(obstacles, this.castLimit, { source: this, rebuild: true });
@@ -356,7 +381,7 @@ export class SpatialWorld {
     const body = capsuleDimensions(shape);
     if (layer === 'movement' && body && shapeExtent) {
       for (const obstacle of this.materials.values()) {
-        if (!blocksQuery(obstacle, layer, this.query) || obstacle.kind === 'pillar') continue;
+        if (!blocksQuery(obstacle, layer, this.query) || obstacle.kind !== undefined) continue;
         const radius = obstacle.rotation ? length(obstacle.halfExtents) : 0;
         const half = radius ? { x: radius, y: radius, z: radius } : obstacle.halfExtents;
         if (

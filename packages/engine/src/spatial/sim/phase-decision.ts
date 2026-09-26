@@ -1,3 +1,4 @@
+import { terrainObstacles } from '../world/terrain.ts';
 import { opponentInDuel } from './duel.ts';
 import { displayActor } from './combat-state.ts';
 import { canMaintainFlight, resourceReady } from '../rules/locomotion.ts';
@@ -134,9 +135,16 @@ export function decisionPhase(tx: StepTransaction) {
       );
     if (aiBoundary || actor.body.intent.flight !== flight) {
       const knownWorld =
-        battle.scenario.terrainKnowledge === 'surveyed'
+        battle.scenario.terrainKnowledge === 'surveyed' &&
+        !tx.next.objects?.length &&
+        !actor.mind.memory.terrain.length
           ? null
-          : knownTerrainWorld(actor.mind.memory.terrain);
+          : knownTerrainWorld(
+              actor.mind.memory.terrain,
+              battle.scenario.terrainKnowledge === 'surveyed'
+                ? terrainObstacles(battle.scenario)
+                : [],
+            );
       if (knownWorld) knownWorld.castLimit = Math.max(0, world.castLimit - world.casts);
       try {
         const navigator = knownWorld

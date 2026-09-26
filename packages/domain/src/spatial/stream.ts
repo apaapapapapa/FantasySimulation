@@ -1,4 +1,5 @@
 import { MAX_BATTLE_STEPS } from './contracts.ts';
+import { SpatialShapeSchema, SpatialSelectorsSchema } from './spatial-operations.ts';
 import { z } from 'zod';
 import { IdSchema, RefSchema, StageContactSchema, PostureSchema, BodySchema } from './contracts.ts';
 import {
@@ -54,7 +55,17 @@ export const StageDisplaySchema = z.strictObject({
   startAt: count,
   endAt: count,
   state: z.enum(['preparing', 'active', 'waiting', 'complete', 'interrupted']),
-  shape: z.enum(['direct', 'melee', 'hitscan', 'projectile', 'arc', 'radial', 'hold']),
+  shape: z.enum([
+    'direct',
+    'melee',
+    'hitscan',
+    'projectile',
+    'arc',
+    'radial',
+    'area',
+    'beam',
+    'hold',
+  ]),
   geometry: AttackGeometrySchema.optional(),
   motion: z
     .strictObject({
@@ -164,9 +175,70 @@ export const PathSchema = z.strictObject({
   segments: z.array(SegmentSchema).min(1).max(256),
 });
 export type DisplayPath = z.infer<typeof PathSchema>;
+export const SpatialObjectDisplaySchema = z
+  .strictObject({
+    id: IdSchema,
+    kind: z.enum(['barrier', 'area', 'beam']),
+    ownerId: IdSchema,
+    abilityId: IdSchema,
+    cause: IdSchema,
+    launchStep: step,
+    activeFrom: step,
+    endStep: z.number().int().min(1).max(12000),
+    position: PhysicalVectorSchema,
+    attachment: z.enum(['fixed', 'follow']),
+    stage: StageContactSchema.optional(),
+    shape: SpatialShapeSchema.optional(),
+    direction: PhysicalVectorSchema.optional(),
+    radiusMm: z.number().int().min(0).max(1000).optional(),
+    geometry: AttackGeometrySchema.optional(),
+    durability: z.number().int().min(0).max(1000000).optional(),
+    maxDurability: z.number().int().min(1).max(1000000).optional(),
+    blocks: SpatialSelectorsSchema.optional(),
+  })
+  .superRefine((o, ctx) => {
+    if (
+      o.activeFrom >= o.endStep ||
+      o.launchStep > o.activeFrom ||
+      (o.kind === 'beam'
+        ? !o.direction ||
+          o.radiusMm === undefined ||
+          o.shape !== undefined ||
+          o.attachment !== 'follow'
+        : !o.shape ||
+          o.direction !== undefined ||
+          o.radiusMm !== undefined ||
+          o.geometry !== undefined)
+    )
+      ctx.addIssue({ code: 'custom', message: 'Invalid spatial object geometry/window' });
+    if (
+      o.kind === 'barrier'
+        ? o.durability === undefined ||
+          o.maxDurability === undefined ||
+          o.durability > o.maxDurability ||
+          !o.blocks
+        : o.durability !== undefined || o.maxDurability !== undefined || o.blocks !== undefined
+    )
+      ctx.addIssue({ code: 'custom', message: 'Invalid spatial object durability' });
+  });
+export type SpatialObjectDisplay = z.infer<typeof SpatialObjectDisplaySchema>;
+export const SpatialObjectChangesSchema = z.strictObject({
+  spawn: z.array(SpatialObjectDisplaySchema).max(256),
+  update: z.array(SpatialObjectDisplaySchema).max(256),
+  remove: z
+    .array(
+      z.strictObject({
+        id: IdSchema,
+        reason: z.enum(['expired', 'broken', 'source-interrupted', 'battle-ended']),
+      }),
+    )
+    .max(256),
+});
+export type SpatialObjectChanges = z.infer<typeof SpatialObjectChangesSchema>;
 export const DisplayStateSchema = z.strictObject({
   actors: z.array(ActorDisplaySchema).length(2),
   projectiles: z.array(ProjectileDisplaySchema).max(256),
+  objects: z.array(SpatialObjectDisplaySchema).max(256).optional(),
 });
 export type DisplayState = z.infer<typeof DisplayStateSchema>;
 export const StreamRecordSchema = z.discriminatedUnion('kind', [
@@ -180,6 +252,7 @@ export const StreamRecordSchema = z.discriminatedUnion('kind', [
     kind: z.literal('boundary'),
     schemaVersion: z.literal(1),
     step,
+    objects: SpatialObjectChangesSchema.optional(),
     changes: z.array(ActorDeltaSchema).max(2),
     events: z.array(EventSchema).max(50000),
   }),
@@ -191,6 +264,7 @@ export const StreamRecordSchema = z.discriminatedUnion('kind', [
       toStep: step,
       paths: z.array(PathSchema).max(258),
       projectiles: ProjectileChangesSchema,
+      objects: SpatialObjectChangesSchema.optional(),
       changes: z.array(ActorDeltaSchema).max(2),
       events: z.array(EventSchema).max(50000),
     })

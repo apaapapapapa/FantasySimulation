@@ -1,3 +1,4 @@
+import { expireSpatialObjects, activateSpatialObjects } from './spatial-commands.ts';
 import { commitEffects } from './combat-effects.ts';
 import { ResourceBudget } from '../rules/resources.ts';
 import { applyStatusResourcePulses } from '../rules/status-resources.ts';
@@ -11,6 +12,7 @@ import { type StepTransaction, actorId } from './step-transaction.ts';
 import { effectsOf } from './step-effects.ts';
 import { activateRelocations } from './relocation.ts';
 export function boundaryPhase(tx: StepTransaction) {
+  expireSpatialObjects(tx);
   const { battle, budget, world, work } = tx.context;
   const { step, journal } = tx;
   const actors = tx.previous.actors,
@@ -163,5 +165,6 @@ export function boundaryPhase(tx: StepTransaction) {
       journal,
       'boundary',
     );
+  activateSpatialObjects(tx);
   activateRelocations(tx);
 }

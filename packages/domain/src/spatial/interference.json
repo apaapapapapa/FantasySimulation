@@ -27,10 +27,10 @@
     },
     {
       "id": "area",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Boundary-owned objects share geometry, source snapshots and the contact ledger under ADR 0017.",
       "generation": "p6"
     },
     {
@@ -43,18 +43,18 @@
     },
     {
       "id": "barrier",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Boundary-owned objects share geometry, source snapshots and the contact ledger under ADR 0017.",
       "generation": "p6"
     },
     {
       "id": "beam",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Boundary-owned objects share geometry, source snapshots and the contact ledger under ADR 0017.",
       "generation": "p6"
     },
     {
@@ -393,7 +393,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, area; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -415,7 +415,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -426,7 +426,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-evasion, beam; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -866,7 +866,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, area; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -888,7 +888,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -899,7 +899,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for absolute-hit, beam; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -1350,9 +1350,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1373,9 +1374,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1384,9 +1386,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1834,7 +1837,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -1845,7 +1848,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -1854,9 +1857,10 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1865,9 +1869,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1876,9 +1881,10 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1887,9 +1893,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area, barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1898,9 +1905,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area, beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1911,7 +1919,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -1920,9 +1928,10 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1931,9 +1940,10 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1942,9 +1952,10 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1953,9 +1964,10 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1964,9 +1976,10 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1975,9 +1988,10 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -1988,7 +2002,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -1997,9 +2011,10 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2008,9 +2023,10 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2021,7 +2037,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -2030,9 +2046,10 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2043,7 +2060,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -2054,7 +2071,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -2065,7 +2082,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -2074,9 +2091,10 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2085,9 +2103,10 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2096,9 +2115,10 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2107,9 +2127,10 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2120,7 +2141,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for phasing; permission never implements a mechanic."
         }
       ]
     },
@@ -2131,7 +2152,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -2140,9 +2161,10 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2153,7 +2175,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, projectile-deflection; permission never implements a mechanic."
+          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
         }
       ]
     },
@@ -2162,9 +2184,10 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2173,9 +2196,10 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2184,9 +2208,10 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2197,7 +2222,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, revival; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -2208,7 +2233,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, seal; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -2217,9 +2242,10 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2228,9 +2254,10 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2239,9 +2266,10 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2250,9 +2278,10 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2261,9 +2290,10 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area, teleport; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2274,7 +2304,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -2285,7 +2315,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for area, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -2294,9 +2324,10 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2339,9 +2370,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2362,9 +2394,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2373,9 +2406,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2805,7 +2839,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -2816,7 +2850,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -2825,9 +2859,10 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2836,9 +2871,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier, area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2847,9 +2883,10 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2858,9 +2895,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2869,9 +2907,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier, beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2882,7 +2921,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -2891,9 +2930,10 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2902,9 +2942,10 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2913,9 +2954,10 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2924,9 +2966,10 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2935,9 +2978,10 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2946,9 +2990,10 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2959,7 +3004,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -2968,9 +3013,10 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2979,9 +3025,10 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -2992,7 +3039,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -3001,9 +3048,10 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3014,7 +3062,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -3025,7 +3073,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -3036,7 +3084,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -3045,9 +3093,10 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3056,9 +3105,10 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3067,9 +3117,10 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3078,9 +3129,10 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3091,7 +3143,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for phasing; permission never implements a mechanic."
         }
       ]
     },
@@ -3102,7 +3154,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -3111,9 +3163,10 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3124,7 +3177,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, projectile-deflection; permission never implements a mechanic."
+          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
         }
       ]
     },
@@ -3133,9 +3186,10 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3144,9 +3198,10 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3155,9 +3210,10 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3168,7 +3224,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, revival; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -3179,7 +3235,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, seal; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -3188,9 +3244,10 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3199,9 +3256,10 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3210,9 +3268,10 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3221,9 +3280,10 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3232,9 +3292,10 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier, teleport; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3245,7 +3306,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -3256,7 +3317,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for barrier, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -3265,9 +3326,10 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3278,7 +3340,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, absolute-evasion; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-evasion; permission never implements a mechanic."
         }
       ]
     },
@@ -3289,7 +3351,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, absolute-hit; permission never implements a mechanic."
+          "reason": "No executable payload for absolute-hit; permission never implements a mechanic."
         }
       ]
     },
@@ -3298,9 +3360,10 @@
       "column": "apply-status",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3309,9 +3372,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam, area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3320,9 +3384,10 @@
       "column": "attribute-absorption",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3331,9 +3396,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam, barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3342,9 +3408,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3355,7 +3422,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, causality; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -3364,9 +3431,10 @@
       "column": "contact",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3375,9 +3443,10 @@
       "column": "counter",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3386,9 +3455,10 @@
       "column": "damage",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3397,9 +3467,10 @@
       "column": "dispel",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3408,9 +3479,10 @@
       "column": "drain",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3419,9 +3491,10 @@
       "column": "elemental-reaction",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3432,7 +3505,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, existence-erasure; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -3441,9 +3514,10 @@
       "column": "flight",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3452,9 +3526,10 @@
       "column": "force",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3465,7 +3540,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, foresight; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -3474,9 +3549,10 @@
       "column": "heal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3487,7 +3563,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, immortality; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -3498,7 +3574,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, instant-death; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -3509,7 +3585,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, mind-read; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -3518,9 +3594,10 @@
       "column": "motion",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3529,9 +3606,10 @@
       "column": "parry",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3540,9 +3618,10 @@
       "column": "periodic",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3551,9 +3630,10 @@
       "column": "permanent",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3564,7 +3644,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, phasing; permission never implements a mechanic."
+          "reason": "No executable payload for phasing; permission never implements a mechanic."
         }
       ]
     },
@@ -3575,7 +3655,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, piercing; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -3584,9 +3664,10 @@
       "column": "projectile",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3597,7 +3678,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, projectile-deflection; permission never implements a mechanic."
+          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
         }
       ]
     },
@@ -3606,9 +3687,10 @@
       "column": "reaction-effects",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3617,9 +3699,10 @@
       "column": "resource",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3628,9 +3711,10 @@
       "column": "reveal",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3641,7 +3725,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, revival; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -3652,7 +3736,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, seal; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -3661,9 +3745,10 @@
       "column": "shield",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3672,9 +3757,10 @@
       "column": "silence",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3683,9 +3769,10 @@
       "column": "stages",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3694,9 +3781,10 @@
       "column": "status-adjustment",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3705,9 +3793,10 @@
       "column": "teleport",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam, teleport; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3718,7 +3807,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, time-stop; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -3729,7 +3818,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for beam, universal-victory; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -3738,9 +3827,10 @@
       "column": "visibility",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -3784,7 +3874,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, area; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -3806,7 +3896,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -3817,7 +3907,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for causality, beam; permission never implements a mechanic."
+          "reason": "No executable payload for causality; permission never implements a mechanic."
         }
       ]
     },
@@ -4256,9 +4346,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4279,9 +4370,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4290,9 +4382,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4754,9 +4847,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4777,9 +4871,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -4788,9 +4883,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5252,9 +5348,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5275,9 +5372,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5286,9 +5384,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5750,9 +5849,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5773,9 +5873,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -5784,9 +5885,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6248,9 +6350,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "area is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6271,9 +6374,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "barrier is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6282,9 +6386,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "beam is not implemented; permissions do not admit its payload."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6758,9 +6863,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6781,9 +6887,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -6792,9 +6899,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -7281,7 +7389,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, area; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -7303,7 +7411,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -7314,7 +7422,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for existence-erasure, beam; permission never implements a mechanic."
+          "reason": "No executable payload for existence-erasure; permission never implements a mechanic."
         }
       ]
     },
@@ -7753,9 +7861,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -7776,9 +7885,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -7787,9 +7897,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -8251,9 +8362,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -8274,9 +8386,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -8285,9 +8398,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -8750,7 +8864,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, area; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -8772,7 +8886,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -8783,7 +8897,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for foresight, beam; permission never implements a mechanic."
+          "reason": "No executable payload for foresight; permission never implements a mechanic."
         }
       ]
     },
@@ -9222,9 +9336,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -9245,9 +9360,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -9256,9 +9372,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -9721,7 +9838,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, area; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -9743,7 +9860,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -9754,7 +9871,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for immortality, beam; permission never implements a mechanic."
+          "reason": "No executable payload for immortality; permission never implements a mechanic."
         }
       ]
     },
@@ -10194,7 +10311,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, area; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -10216,7 +10333,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -10227,7 +10344,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for instant-death, beam; permission never implements a mechanic."
+          "reason": "No executable payload for instant-death; permission never implements a mechanic."
         }
       ]
     },
@@ -10667,7 +10784,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, area; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -10689,7 +10806,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -10700,7 +10817,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for mind-read, beam; permission never implements a mechanic."
+          "reason": "No executable payload for mind-read; permission never implements a mechanic."
         }
       ]
     },
@@ -11139,9 +11256,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11162,9 +11280,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11173,9 +11292,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11637,9 +11757,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11660,9 +11781,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -11671,9 +11793,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12135,9 +12258,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12158,9 +12282,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12169,9 +12294,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12639,9 +12765,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12662,9 +12789,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -12673,9 +12801,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -13144,7 +13273,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, area; permission never implements a mechanic."
+          "reason": "No executable payload for phasing; permission never implements a mechanic."
         }
       ]
     },
@@ -13166,7 +13295,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for phasing; permission never implements a mechanic."
         }
       ]
     },
@@ -13177,7 +13306,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for phasing, beam; permission never implements a mechanic."
+          "reason": "No executable payload for phasing; permission never implements a mechanic."
         }
       ]
     },
@@ -13617,7 +13746,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, area; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -13639,7 +13768,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -13650,7 +13779,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for piercing, beam; permission never implements a mechanic."
+          "reason": "No executable payload for piercing; permission never implements a mechanic."
         }
       ]
     },
@@ -14089,9 +14218,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -14112,9 +14242,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -14123,9 +14254,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -14588,7 +14720,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, area; permission never implements a mechanic."
+          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
         }
       ]
     },
@@ -14610,7 +14742,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
         }
       ]
     },
@@ -14621,7 +14753,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for projectile-deflection, beam; permission never implements a mechanic."
+          "reason": "No executable payload for projectile-deflection; permission never implements a mechanic."
         }
       ]
     },
@@ -15060,9 +15192,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15083,9 +15216,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15094,9 +15228,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15558,9 +15693,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15581,9 +15717,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -15592,9 +15729,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -16056,9 +16194,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -16079,9 +16218,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -16090,9 +16230,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -16555,7 +16696,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, area; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -16577,7 +16718,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -16588,7 +16729,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for revival, beam; permission never implements a mechanic."
+          "reason": "No executable payload for revival; permission never implements a mechanic."
         }
       ]
     },
@@ -17028,7 +17169,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, area; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -17050,7 +17191,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -17061,7 +17202,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for seal, beam; permission never implements a mechanic."
+          "reason": "No executable payload for seal; permission never implements a mechanic."
         }
       ]
     },
@@ -17500,9 +17641,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -17523,9 +17665,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -17534,9 +17677,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -17998,9 +18142,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18021,9 +18166,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18032,9 +18178,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18496,9 +18643,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18519,9 +18667,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18530,9 +18679,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -18994,9 +19144,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19017,9 +19168,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19028,9 +19180,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19492,9 +19645,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19515,9 +19669,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19526,9 +19681,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport, beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -19991,7 +20147,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, area; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20013,7 +20169,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20024,7 +20180,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for time-stop, beam; permission never implements a mechanic."
+          "reason": "No executable payload for time-stop; permission never implements a mechanic."
         }
       ]
     },
@@ -20464,7 +20620,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, area; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -20486,7 +20642,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, barrier; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -20497,7 +20653,7 @@
         {
           "when": "always",
           "state": "rejected",
-          "reason": "No executable payload for universal-victory, beam; permission never implements a mechanic."
+          "reason": "No executable payload for universal-victory; permission never implements a mechanic."
         }
       ]
     },
@@ -20936,9 +21092,10 @@
       "column": "area",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for area; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -20959,9 +21116,10 @@
       "column": "barrier",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for barrier; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },
@@ -20970,9 +21128,10 @@
       "column": "beam",
       "cases": [
         {
-          "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for beam; permission never implements a mechanic."
+          "when": "otherwise",
+          "state": "defined",
+          "ruleId": "spatial.objects",
+          "summary": "Freeze interval geometry; activate and remove at boundaries, aggregate barrier damage and share body hit/reaction ledgers."
         }
       ]
     },

@@ -1020,6 +1020,22 @@
     "p6-teleport-view": {
       "file": "apps/web/src/replay/teleport-display.test.ts",
       "name": "renders recorded teleport endpoints without a swept bridge in both seek directions"
+    },
+    "p6.spatial-object-pairs": {
+      "file": "packages/engine/src/spatial/spatial-object-interference.test.ts",
+      "name": "executes all 159 object ordered pairs with recorded activation windows and contacts"
+    },
+    "p6.spatial-object-area": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "sweeps an area crossing and retains detached ledger occupancy between pulses"
+    },
+    "p6.spatial-object-beam": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "clips a moving beam at blockers and uses one shared hit ledger"
+    },
+    "p6.spatial-object-budget": {
+      "file": "packages/engine/src/spatial/spatial-objects.test.ts",
+      "name": "sums two barrier damage requests without changing interval geometry and rolls back cap plus one"
     }
   },
   "entries": [
@@ -1807,6 +1823,18 @@
         "p6-world-rollback",
         "p6-teleport-worker",
         "p6-teleport-view"
+      ]
+    },
+    {
+      "id": "p6-spatial-objects",
+      "title": "P6-07: shared object lifetime, barriers, areas, beams and recorded replay",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "p6.spatial-object-pairs",
+        "p6.spatial-object-area",
+        "p6.spatial-object-beam",
+        "p6.spatial-object-budget"
       ]
     }
   ]

@@ -3,6 +3,8 @@ import { matchAttack, matchEffect, type AttackHandlers, type EffectHandlers } fr
 
 it('dispatches narrowed variants with caller context and requires complete registrations', () => {
   const attacks: AttackHandlers<number, number> = {
+    area: (shape, n) => shape.durationSteps + n,
+    beam: (shape, n) => shape.radiusMm + n,
     direct: (_shape, n) => n,
     arc: (shape, n) => shape.reachMm + n,
     radial: (shape, n) => shape.bladeRadiusMm + n,

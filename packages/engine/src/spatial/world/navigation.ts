@@ -44,7 +44,7 @@ export class Navigator {
     rules: DeepReadonly<Definition<'ruleset'>>,
     exploring = false,
   ) {
-    this.world = world;
+    this.world = world.forQuery({ ownerId: actor.participant.actorId });
     this.actor = actor;
     this.scenario = scenario;
     this.rules = rules;

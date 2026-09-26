@@ -1,3 +1,5 @@
+import { damageBarrierContact } from './barrier-damage.ts';
+import { queueSpatialObject } from './spatial-commands.ts';
 import { opponentInDuel } from './duel.ts';
 import {
   matchAttack,
@@ -57,7 +59,10 @@ function spatial<K extends Exclude<AttackVariant['kind'], 'direct'>>(
     actor.mind.random,
   );
   actor.mind.random = aim.random;
-  if (needsMuzzle && muzzleBlocked(world, actor.body.motion)) {
+  if (
+    needsMuzzle &&
+    muzzleBlocked(world.forQuery({ ownerId: actorId(actor) }), actor.body.motion)
+  ) {
     tx.journal.emit({
       kind: 'fizzle',
       step,
@@ -81,7 +86,7 @@ function releaseRay(shape: AttackVariant<'hitscan'>, context: SpatialRelease) {
 
   work.candidate();
   const result = contactAttack(shape, {
-    world,
+    world: world.forQuery({ ownerId: actorId(actor) }),
     source: actor.body.motion,
     target: enemy.body.motion,
     trace: straight(actor.body.motion.position, actor.body.motion.position),
@@ -113,6 +118,19 @@ function releaseRay(shape: AttackVariant<'hitscan'>, context: SpatialRelease) {
       reason: contact.kind,
       ...(staged ? { stage: staged.contact } : {}),
     });
+    if (contact.kind === 'wall')
+      damageBarrierContact(
+        tx,
+        {
+          ownerId: actorId(actor),
+          ability,
+          cause: hit.id,
+          ...statusDamageSource(actor, ability, step),
+          ...(staged ? { stage: staged.contact, ...(staged.hit ? { hit: staged.hit } : {}) } : {}),
+        },
+        contact,
+        shape.radiusMm / 1000,
+      );
     if (contact.kind === 'body')
       effects.push(
         ...effectsOf(actor, ability, actorId(enemy), hit.id, step, staged?.contact).map(
@@ -183,6 +201,20 @@ function releaseProjectile(shape: AttackVariant<'projectile'>, context: SpatialR
   spawns.push(displayProjectile(projectile));
 }
 const releaseHandlers: AttackHandlers<ReleaseContext, void> = {
+  area: (_shape, { tx, actor, ability, staged, launch }) =>
+    queueSpatialObject(tx, actor, ability, launch.id, staged?.contact, staged?.hit),
+  beam: (shape, context) =>
+    spatial(shape, context, false, (_shape, { tx, actor, ability, staged, launch, aim }) =>
+      queueSpatialObject(
+        tx,
+        actor,
+        ability,
+        launch.id,
+        staged?.contact,
+        staged?.hit,
+        aim.direction,
+      ),
+    ),
   direct: (_shape, { tx, actor, ability, staged, launch }) => {
     if (staged) tx.next.ledger.contact(staged.contact, staged.hit, actorId(actor), tx.step);
     tx.effects.push(
@@ -196,6 +228,17 @@ const releaseHandlers: AttackHandlers<ReleaseContext, void> = {
   projectile: (shape, context) => spatial(shape, context, true, releaseProjectile),
 };
 export function releaseAttack(context: ReleaseContext) {
+  if (context.ability.definition.barrier) {
+    queueSpatialObject(
+      context.tx,
+      context.actor,
+      context.ability,
+      context.launch.id,
+      context.staged?.contact,
+      context.staged?.hit,
+    );
+    return;
+  }
   const relocation = context.ability.definition.relocation;
   if (relocation) {
     queueRelocation(

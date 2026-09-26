@@ -1,3 +1,4 @@
+import type { AttackContact } from '../rules/attacks.ts';
 import { opponentInDuel } from './duel.ts';
 import type { ActorState, PreparedBattle } from '../state.ts';
 import type { Budget, DisplayPath, ProjectileChanges } from '@fantasy/domain/spatial/execution';
@@ -23,6 +24,7 @@ export function stepProjectiles(
   step: number,
   candidate: () => void,
   ledger: HitLedger,
+  objectContact?: (projectile: ProjectileState, contact: AttackContact, cause: string) => void,
 ) {
   const alive: ProjectileState[] = [],
     paths: DisplayPath[] = [],
@@ -43,7 +45,7 @@ export function stepProjectiles(
     const curve = projectileCurve(projectile, owner.mind.memory, battle.rules, budget);
     candidate();
     const { contact } = contactAttack(shape, {
-      world,
+      world: world.forQuery({ ownerId: projectile.ownerId }),
       source: owner.body.motion,
       target: enemy.state,
       trace: curve.trace,
@@ -76,13 +78,14 @@ export function stepProjectiles(
         ruleId: 'projectile.first-contact',
         reason: contact.kind,
       });
+      objectContact?.(projectile, contact, impact.id);
       for (const target of moved) {
         const targetId = target.state.actor.participant.actorId;
         let scaleBps = 0;
         if (shape.explosionRadiusMm > 0) {
           candidate();
           scaleBps = explosionCoverage(
-            world,
+            world.forQuery({ ownerId: projectile.ownerId }),
             contact.center,
             shape.explosionRadiusMm / 1000,
             target.state,

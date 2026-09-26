@@ -668,6 +668,60 @@
       "id": "spatial-blink-retreat-v1-policy",
       "revision": 1,
       "contentHash": "sha256:686b3b28cf806bbc077e956c0dadc6b9af2da41ff018adca71e36e3ad95dbd67"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-area-v1",
+      "revision": 1,
+      "contentHash": "sha256:2bc11d09b79ad01f39eb7bb2a5e781c743d727bbaf8229c22e8a48cbb6305edd"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-barrier-v1",
+      "revision": 1,
+      "contentHash": "sha256:84e6bf7208e50d53ed18b1a2460ea2f7c7b420eadbaaa671ac91fc86788ed753"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-beam-v1",
+      "revision": 1,
+      "contentHash": "sha256:341fe27a18970c970300ea60d1031fc3b2df2ed8bfb4dd405545939557aad492"
+    },
+    {
+      "kind": "character",
+      "id": "area-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:1f4eb1e94eba729e8ff5d10e15d2f3087e596c3a77fdda42134ab3ca10a8511c"
+    },
+    {
+      "kind": "character",
+      "id": "barrier-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:08e5be48d431d79edf7a69dba8809f40810bf997bfb737722d5fdb2fa4d6304f"
+    },
+    {
+      "kind": "character",
+      "id": "beam-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:304c721d324fe0324e9f8c53e1becffc4d97241a84dce6d5444599de4ab9a66f"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-area-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:126fa60e313b858a4ccaafaa4dc5b68954f5b56b2f12fba5de7040c972392724"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-barrier-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:13f6c0145bb829f4010c99a3ce61f1056029adfe02a4f19fdaee1a488ebce5b6"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-beam-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:cdb5dab23b4f032b675540f0343d791f414df81caeb88c8ff65e652feee5abd3"
     }
   ]
 }

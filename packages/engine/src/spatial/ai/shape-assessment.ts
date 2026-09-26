@@ -11,6 +11,8 @@ import { bladePose } from '../rules/blades.ts';
 import { dot, length, mul, sub } from '../math.ts';
 
 const shapeHandlers: AttackHandlers<DecisionView, number> = {
+  area: () => 0.65,
+  beam: () => 0.8,
   direct: () => 1,
   hitscan: () => 1,
   projectile: () => 1,

@@ -1,3 +1,5 @@
+import { contactSpatialObjects } from './object-contact.ts';
+import { damageBarrierContact } from './barrier-damage.ts';
 import { opponentInDuel } from './duel.ts';
 import type { MeleeState } from '../state.ts';
 import { contactAttack, isAttachedAttack } from '../rules/attack-contact.ts';
@@ -47,6 +49,17 @@ export function contactPhase(tx: StepTransaction) {
       work.candidate();
     },
     nextLedger,
+    (projectile, contact, cause) => {
+      const shape = projectile.ability.definition.attack;
+      if (shape.kind !== 'projectile') throw new Error('Invalid projectile');
+      damageBarrierContact(
+        tx,
+        { ...projectile, cause },
+        contact,
+        shape.radiusMm / 1000,
+        shape.explosionRadiusMm / 1000,
+      );
+    },
   );
   effects.push(...projectileStep.effects);
   for (const attack of attacks) {
@@ -63,7 +76,7 @@ export function contactPhase(tx: StepTransaction) {
     const enemy = opponentInDuel(moved, attack.actorId, (a) => a.state.actor.participant.actorId);
     work.candidate();
     const result = contactAttack(shape, {
-      world,
+      world: world.forQuery({ ownerId: attack.actorId }),
       source: owner.state,
       target: enemy.state,
       trace: owner.trace,
@@ -112,6 +125,17 @@ export function contactPhase(tx: StepTransaction) {
         reason: admission?.reason ?? contact.kind,
         ...(attack.stage ? { stage: attack.stage } : {}),
       });
+      if (contact.kind === 'wall')
+        damageBarrierContact(
+          tx,
+          { ...attack, ownerId: attack.actorId, cause: hit.id },
+          contact,
+          shape.kind === 'melee' || shape.kind === 'beam'
+            ? shape.radiusMm / 1000
+            : shape.kind === 'arc' || shape.kind === 'radial'
+              ? shape.bladeRadiusMm / 1000
+              : 0,
+        );
       if (contact.kind === 'body' && admission?.accepted !== false) {
         attack.hits++;
         for (const effect of attack.ability.definition.effects)
@@ -154,6 +178,7 @@ export function contactPhase(tx: StepTransaction) {
     )
       surviving.push(attack);
   }
+  contactSpatialObjects(tx, moved);
   for (const actor of next) {
     const movement = moved.find((m) => m.state.actor.participant.actorId === actorId(actor))!;
     actor.body.motion = movement.state;

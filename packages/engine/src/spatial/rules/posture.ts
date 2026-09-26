@@ -71,7 +71,7 @@ export function advancePosture(
     const position = posturePosition(self, body),
       shape = capsuleShape(bodyCapsule(body));
     const blocked =
-      world.overlaps(position, shape) ||
+      world.forQuery({ ownerId: self.actor.participant.actorId }).overlaps(position, shape) ||
       others.some(
         (other) =>
           other.actor.participant.actorId !== self.actor.participant.actorId &&

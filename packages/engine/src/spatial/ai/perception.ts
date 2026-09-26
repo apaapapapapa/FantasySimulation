@@ -73,7 +73,9 @@ function observeTerrain(world: SpatialWorld, self: MotionState, step: number): O
           Math.min(6, (self.vision?.rangeMm ?? self.actor.character.perception.rangeMm) / 1000),
         ),
       ),
-      hit = world.raycast(eye, end, 'movement');
+      hit = world
+        .forQuery({ ownerId: self.actor.participant.actorId })
+        .raycast(eye, end, 'movement');
     if (hit && canSee(world, self, sub(hit.point, mul(direction, 0.005))))
       surfaces.push({
         pointMm: roundedVector(hit.point, 1000),
@@ -339,7 +341,10 @@ export function perceive(
           ...(p.element ? { element: p.element } : {}),
           ...(p.attackCueId ? { attackCueId: p.attackCueId } : {}),
         })),
-      terrain: terrainMode === 'observed' ? observeTerrain(world, self, step) : [],
+      terrain:
+        terrainMode === 'observed' || world.allObstacles().some((o) => o.ownerId)
+          ? observeTerrain(world, self, step)
+          : [],
     });
     sampledAt = step;
   }
