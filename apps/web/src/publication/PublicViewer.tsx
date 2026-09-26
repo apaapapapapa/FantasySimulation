@@ -56,6 +56,7 @@ function LibraryViewer({ root }: { root: string }) {
             {catalog.leagues?.map((ref) => (
               <a key={ref.id} href={leagueLink(ref.hash)}>
                 {ref.id}
+                {ref.leagueClass === 'experimental' ? '（実験）' : ''}
               </a>
             ))}
             {catalog.sets[0] && (

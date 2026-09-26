@@ -76,6 +76,7 @@ export function LeagueTable({ snapshot, hash }: { snapshot: PublicLeagueSnapshot
   });
   return (
     <section className="panel league-results" aria-label="リーグ順位表">
+      {snapshot.leagueClass === 'experimental' && <p>実験リーグの順位表</p>}
       <h2>{formal ? '正式ランキング' : '暫定ランキング'}</h2>
       <p>
         {formal

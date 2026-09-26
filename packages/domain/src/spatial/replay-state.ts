@@ -17,6 +17,7 @@ import { validateForces } from './replay-validation/force.ts';
 import { validateAction } from './replay-validation/action.ts';
 import { validateProjectile } from './replay-validation/projectile.ts';
 import { validateEvents } from './replay-validation/event.ts';
+import { validateInterferences } from './replay-validation/interference.ts';
 
 /** Atomic display restoration. This is not an engine resume snapshot or combat re-simulation. */
 export class ReplayState {
@@ -75,7 +76,8 @@ export class ReplayState {
           v.nextRecord === 1 && v.nextEvent === 0 && same(v.state, last.state),
           'initial checkpoint',
         );
-      if (last.kind === 'terminal') this.validateOutcome(last.outcome, v.state, v.step);
+      if (last.kind === 'terminal')
+        this.validateOutcome(last.outcome, v.state, v.step, v.nextEvent - last.events.length);
     }
   }
   checkpoint(): ReplayCheckpoint {
@@ -128,7 +130,13 @@ export class ReplayState {
       validateProjectile(this.context, p, step);
     }
   }
-  private validateOutcome(outcome: Outcome, state: DisplayState, step: number) {
+  private validateOutcome(
+    outcome: Outcome,
+    state: DisplayState,
+    step: number,
+    nextEvent = this.value.nextEvent,
+  ) {
+    validateInterferences(this.context, outcome, step, nextEvent);
     if (outcome.kind === 'win')
       requireReplay(
         state.actors.some((a) => a.id === outcome.winner && a.resources.hp > 0) &&

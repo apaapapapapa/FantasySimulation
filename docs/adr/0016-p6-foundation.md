@@ -1,8 +1,8 @@
 # ADR 0016: P6 foundation
 
 **Accepted by owner in ChatGPT, 2026-09-26.** Refs #155, #1.
-Documents only; no mechanics/publication.
-#155 supersedes older P6 hooks; #158 owns P5 publication evidence.
+P6-00 adds infrastructure only; later mechanics and production publication remain separate.
+#158 owns P5 publication evidence.
 
 ## Admission and leagues (00c)
 
@@ -40,12 +40,11 @@ independence/implicit symmetry; conditional cases need explicit predicates.
 | unresolved  | Rule ID; actual diagnostic regression         |
 | rejected    | Admission reason; rejection fixture           |
 
-Separate engine-fixture JSON maps cells to tests, outside execution identity. Validate
-complete/unique cells/IDs/reasons and executed assertions via existing test/corpus receipts,
-not file existence or matrix-generated expectations. Reserved mechanics remain rejected.
-Negative controls: missing cell/
-fixture, unclassified variant. Reverse cells may share fixtures. Reuse current coordinator/
-resolvers. Rejected pairs fail closure admission; unresolved stops on actual interaction.
+`interference-coverage.json` binds cells to corpus test receipts outside execution identity.
+`interference-baseline.json` fixes 484 pre-change pair outcomes/hashes; never regenerate
+from the candidate. Validate complete cells/IDs/reasons and executed assertions.
+Negative controls: missing cell/fixture, unclassified variant. Reserved mechanics reject.
+Reuse current resolvers; reject prohibited closure pairs, stop unresolved on interaction.
 Existing-existing unresolved semantics stay. Standard P6 requires defined/independent
 behavior for every accepted existing/standard pairing; rejected subcases fail admission.
 No winner by registration/ID/enumeration order.
@@ -110,9 +109,8 @@ Keep old public bytes/ranks; list new revision separately. No milestone publicat
 caps, old/new records, Worker/SQLite/replay and participant/position/RNG/order symmetry.
 00c: deep closure/all admission paths, experimental isolation/labels, old publications,
 every probe branch/zero-work holds/corruption/manual races, unchanged scoring/seeds.
-[Compatibility](0010-battle-version-compatibility.md)/[identity](0013-execution-identity.md)
-own additive schemas, new IDs, version changes and reviewed restamps. Preserve omitted-field
-decisions/legacy records and event/trajectory/TS/physics expectations; separately review
-new diagnostic oracles and identity/hash changes. Existing delivery gates apply. Markdown
-stays <=170,000 bytes; JSON is rule/fixture data. #155 stays open; spatial/clock approvals
-remain separate.
+[Compatibility](0010-battle-version-compatibility.md)/[identity](0013-execution-identity.md):
+00b/c use an explicitly reviewed additive restamp at spatial-v1.20; legacy decisions and
+event/trajectory/TS/physics expectations stay fixed. New diagnostic terminal hashes differ.
+`experimental-p6-foundation-v1` adds a new rules ID; no published revision changes.
+Delivery gates and Markdown <=170,000 bytes remain. #155 stays open.

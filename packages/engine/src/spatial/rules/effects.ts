@@ -12,7 +12,7 @@ import {
 import { calculateDamage, damageDefense, hasDamageFormula, type DamageEffect } from './damage.ts';
 import { adjustedStatusValue, damageStatusBps, statusResistance } from './status-modifiers.ts';
 import { planStatusEffects, reactionDamageBps } from './status-reactions.ts';
-import { applyStatuses, effectiveStats, type StatusLimits } from './status.ts';
+import { applyStatuses, effectiveStats, UnresolvedRuleError, type StatusLimits } from './status.ts';
 export type Fraction = { numerator: string; denominator: string };
 export function fraction(n: bigint, d: bigint): Fraction {
   if (n < 0n || d <= 0n) throw new Error('Invalid nonnegative fraction');
@@ -158,83 +158,90 @@ export function resolveEffects(
   return [...targets]
     .sort((a, b) => compareIds(a.actor.participant.actorId, b.actor.participant.actorId))
     .map((target) => {
-      const incoming = applications.filter((a) => a.targetId === target.actor.participant.actorId);
-      const stats = effectiveStats(target.actor, target.statuses, step);
-      const reactions = deferStatuses
-        ? null
-        : planStatusEffects(target.statuses, incoming, statuses, step);
-      const damages: DamageEntry[] = [];
-      const totals = { heal: 0n, shield: BigInt(target.resources.shield) };
-      const healing: { applicationId: string; amount: number }[] = [];
-      for (const application of incoming) {
-        const effect = application.effect,
-          scale = BigInt(application.scaleBps ?? 10000);
-        if (scale < 0n || scale > 10000n) throw new Error('Invalid effect coverage');
-        matchEffect(effect, effectHandlers, {
-          target,
-          application,
-          stats,
-          step,
-          scale,
-          damages,
+      try {
+        const incoming = applications.filter(
+          (a) => a.targetId === target.actor.participant.actorId,
+        );
+        const stats = effectiveStats(target.actor, target.statuses, step);
+        const reactions = deferStatuses
+          ? null
+          : planStatusEffects(target.statuses, incoming, statuses, step);
+        const damages: DamageEntry[] = [];
+        const totals = { heal: 0n, shield: BigInt(target.resources.shield) };
+        const healing: { applicationId: string; amount: number }[] = [];
+        for (const application of incoming) {
+          const effect = application.effect,
+            scale = BigInt(application.scaleBps ?? 10000);
+          if (scale < 0n || scale > 10000n) throw new Error('Invalid effect coverage');
+          matchEffect(effect, effectHandlers, {
+            target,
+            application,
+            stats,
+            step,
+            scale,
+            damages,
+            healing,
+            totals,
+          });
+        }
+        const { heal, shield } = totals;
+        const total = damages.reduce((n, d) => n + d.afterModifiers, 0n),
+          absorbed = total < shield ? total : shield;
+        const hpDamage = total - absorbed,
+          unclamped = BigInt(target.resources.hp) + heal - hpDamage,
+          maxHp = BigInt(target.actor.character.stats.hp);
+        const resources = {
+          ...target.resources,
+          hp: checked(unclamped < 0n ? 0n : unclamped > maxHp ? maxHp : unclamped),
+          mp: target.resources.mp,
+          shield: checked(shield - absorbed),
+        };
+        const details: DamageDetail[] = damages
+          .sort((a, b) => compareIds(a.applicationId, b.applicationId))
+          .map((damage) => ({
+            applicationId: damage.applicationId,
+            defenseApplied: damage.defenseApplied,
+            afterDefense: checked(damage.afterDefense),
+            afterResistance: checked(damage.afterResistance),
+            ...((hasDamageFormula(damage.effect) || damage.statusModified) && {
+              calculation: {
+                element: damage.effect.element,
+                component:
+                  damage.effect.element === 'physical'
+                    ? ('physical' as const)
+                    : ('elemental' as const),
+                defense: damageDefense(damage.effect),
+                basePower: checked(damage.basePower),
+                afterModifiers: checked(damage.afterModifiers),
+              },
+            }),
+            absorbed: total ? fraction(absorbed * damage.afterModifiers, total) : fraction(0n, 1n),
+            toHp: total ? fraction(hpDamage * damage.afterModifiers, total) : fraction(0n, 1n),
+          }));
+        const result = reactions
+          ? applyStatuses(
+              reactions.statuses,
+              reactions.applications,
+              reactions.dispels,
+              activationStep,
+              limits,
+            )
+          : { statuses: target.statuses, changes: [] };
+        return {
+          actorId: target.actor.participant.actorId,
+          resources,
+          statuses: result.statuses,
+          changes: [...(reactions?.changes ?? []), ...result.changes],
+          reactions: reactions?.traces ?? [],
+          damage: details,
           healing,
-          totals,
-        });
+          healed: checked(heal),
+          hpDamage: checked(hpDamage),
+          shieldAbsorbed: checked(absorbed),
+        };
+      } catch (error) {
+        if (error instanceof UnresolvedRuleError) error.actorId = target.actor.participant.actorId;
+        throw error;
       }
-      const { heal, shield } = totals;
-      const total = damages.reduce((n, d) => n + d.afterModifiers, 0n),
-        absorbed = total < shield ? total : shield;
-      const hpDamage = total - absorbed,
-        unclamped = BigInt(target.resources.hp) + heal - hpDamage,
-        maxHp = BigInt(target.actor.character.stats.hp);
-      const resources = {
-        ...target.resources,
-        hp: checked(unclamped < 0n ? 0n : unclamped > maxHp ? maxHp : unclamped),
-        mp: target.resources.mp,
-        shield: checked(shield - absorbed),
-      };
-      const details: DamageDetail[] = damages
-        .sort((a, b) => compareIds(a.applicationId, b.applicationId))
-        .map((damage) => ({
-          applicationId: damage.applicationId,
-          defenseApplied: damage.defenseApplied,
-          afterDefense: checked(damage.afterDefense),
-          afterResistance: checked(damage.afterResistance),
-          ...((hasDamageFormula(damage.effect) || damage.statusModified) && {
-            calculation: {
-              element: damage.effect.element,
-              component:
-                damage.effect.element === 'physical'
-                  ? ('physical' as const)
-                  : ('elemental' as const),
-              defense: damageDefense(damage.effect),
-              basePower: checked(damage.basePower),
-              afterModifiers: checked(damage.afterModifiers),
-            },
-          }),
-          absorbed: total ? fraction(absorbed * damage.afterModifiers, total) : fraction(0n, 1n),
-          toHp: total ? fraction(hpDamage * damage.afterModifiers, total) : fraction(0n, 1n),
-        }));
-      const result = reactions
-        ? applyStatuses(
-            reactions.statuses,
-            reactions.applications,
-            reactions.dispels,
-            activationStep,
-            limits,
-          )
-        : { statuses: target.statuses, changes: [] };
-      return {
-        actorId: target.actor.participant.actorId,
-        resources,
-        statuses: result.statuses,
-        changes: [...(reactions?.changes ?? []), ...result.changes],
-        reactions: reactions?.traces ?? [],
-        damage: details,
-        healing,
-        healed: checked(heal),
-        hpDamage: checked(hpDamage),
-        shieldAbsorbed: checked(absorbed),
-      };
     });
 }

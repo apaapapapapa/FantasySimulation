@@ -2,10 +2,12 @@ import {
   DEFAULT_BUDGET,
   revisionReference,
   type LeagueDefinition,
+  type Manifest,
+  type MechanicId,
   type LeagueEstimateInput,
 } from '@fantasy/domain/spatial';
 import { sampleManifest } from './sample.ts';
-import { createLeagueRevision, leagueMatches } from '@fantasy/engine/spatial';
+import { createLeagueRevision, leagueMatches, sealRevision } from '@fantasy/engine/spatial';
 
 export const leagueSource = '1'.repeat(40);
 export async function leagueFixture(characters = 3, scenarios = 2): Promise<LeagueDefinition> {
@@ -63,3 +65,19 @@ export const leagueEstimate: LeagueEstimateInput = {
   usedReadRequests: 0,
   usedWriteRequests: 0,
 };
+
+/** Adds a separately identified rules revision; existing published rules stay untouched. */
+export async function experimentalRules<
+  T extends Pick<Manifest | LeagueDefinition, 'ruleset' | 'revisions'>,
+>(input: T, mechanics: MechanicId[] = ['instant-death']): Promise<T> {
+  const old = input.revisions.find((r) => r.kind === 'ruleset' && r.id === input.ruleset.id)!;
+  if (old.kind !== 'ruleset') throw new Error('Rules fixture');
+  const rules = await sealRevision('ruleset', 'experimental-fixture', 1, {
+    ...old.definition,
+    experimental: { mechanics },
+  });
+  input.revisions = input.revisions.filter((r) => r !== old);
+  input.revisions.push(rules);
+  input.ruleset = revisionReference(rules);
+  return input;
+}

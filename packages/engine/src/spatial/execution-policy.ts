@@ -2,6 +2,8 @@ import {
   CURRENT_ENGINE_VERSION,
   type Definition,
   type StoredManifest,
+  type MechanicId,
+  type MechanicUse,
 } from '@fantasy/domain/spatial/execution';
 import implementation from './implementation.json' with { type: 'json' };
 
@@ -10,15 +12,26 @@ export type EngineInputCode =
   | 'unsupported-ai'
   | 'unsupported-identity'
   | 'unsupported-rules'
+  | 'unsupported-mechanic'
   | 'revision-content'
   | 'actor-seed'
   | 'spawn-bounds';
 export class EngineInputError extends Error {
   readonly code: EngineInputCode;
-  constructor(code: EngineInputCode, message: string) {
+  readonly mechanic?: MechanicId;
+  readonly owner?: MechanicUse['owner'];
+  constructor(
+    code: EngineInputCode,
+    message: string,
+    context?: { mechanic: MechanicId; owner: MechanicUse['owner'] },
+  ) {
     super(message);
     this.name = 'EngineInputError';
     this.code = code;
+    if (context) {
+      this.mechanic = context.mechanic;
+      this.owner = context.owner;
+    }
   }
 }
 export type ExecutionEligibility =

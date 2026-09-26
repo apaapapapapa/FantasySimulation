@@ -204,6 +204,7 @@ export class JobStore {
           throw new StoreError('conflict', 'Idempotency key belongs to another request');
         return existing;
       }
+      this.store.requireExecutableSpec(input.simulationHash);
       const cached = input.cachedResult;
       if (
         cached &&
