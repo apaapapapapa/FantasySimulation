@@ -18,7 +18,17 @@ export function PublicViewer({ root }: { root: string }) {
   return <LibraryViewer key={root} root={root} />;
 }
 function LibraryViewer({ root }: { root: string }) {
-  const library = useMemo(() => publicLibrary(root), [root]);
+  const library = useMemo(
+    () =>
+      publicLibrary(
+        root,
+        fetch,
+        new URLSearchParams(window.location.search).get('publication-metrics') === '1'
+          ? (value) => console.info('FANTASY_PUBLICATION_READ ' + JSON.stringify(value))
+          : undefined,
+      ),
+    [root],
+  );
   const [hash, setHash] = useState(window.location.hash);
   const read = useCallback((signal: AbortSignal) => library.catalog(signal), [library]);
   const loaded = usePublicData(read);

@@ -7,25 +7,9 @@ The unauthenticated API binds loopback only.
 
 ## API (prefix /api)
 
-```text
-GET /health: Drizzle health
-GET /characters: latest; limit <=100, cursor
-GET /characters/{id}?revision=1: default latest
-GET /rulesets, /scenarios
-GET /revisions/{kind}/{id}/{revision}: immutable
-POST /drafts: {kind,definitionId,base,definition}
-GET /drafts/{id}
-PATCH /drafts/{id}: {expectedVersion,definition}
-POST /drafts/{id}/validate or /publish: {expectedVersion}
-POST /battle-jobs: {spec,budget?}; 202 or cached 200
-GET /battle-jobs/:id: state/attempt/progress/diagnostics/metrics
-POST /battle-jobs/:id/cancel: commit cancellation before stopping worker
-POST /battle-jobs/:id/retry: {expectedAttempts,budget}
-GET /battle-results/:id: verified; missing/corrupt/quarantined: 503
-POST /battle-results/:id/replay-recovery: {budget}
-GET /replays/:id: manifest
-GET /replays/:id/files/:file: allowlisted gzip; no Content-Encoding
-```
+Health, catalog/revisions, drafts, battle jobs/results and replay files: exact methods,
+paths and validators live in [HTTP routes](../../apps/api/src/http/app.ts) and
+[job routes](../../apps/api/src/http/job-routes.ts).
 
 Draft base: {id,revision,contentHash}, or null for new IDs. Stale edits, duplicate
 publication and changed bases return 409. Incomplete drafts are allowed; publication
@@ -85,3 +69,8 @@ reader deployment needs separate cloud authorization.
 League overview loads summary; tables load on selection. Hash links pin snapshot/
 participants/page/slot/`/steps/N`. `#/local` plays replay files in-browser.
 Sorting is display-only; provisional scores keep every scheduled slot. Actions: #134.
+For a read measurement, opt in with `?publication-metrics=1` before the hash.
+Console `FANTASY_PUBLICATION_READ` records count each attempted main-thread public
+read and bounded response body bytes/time. It adds no requests or persistent storage.
+Bytes exclude headers, app assets, compression on the wire and cancelled partial bodies;
+replay Worker reads are outside this scope. A response record alone is not validation success.

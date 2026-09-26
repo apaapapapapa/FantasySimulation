@@ -1,7 +1,7 @@
-import { expect, it } from 'vite-plus/test';
+import { expect, it, vi } from 'vite-plus/test';
 import { PublicMatchPageSchema, ReplayManifestSchema } from '@fantasy/domain/spatial';
 import { publicFixtures } from '../../../../e2e/publication-fixtures.ts';
-import { publicLibrary } from './public-source.ts';
+import { publicLibrary, type PublicReadObservation } from './public-source.ts';
 import { openReplay } from './open-replay.ts';
 import { seekStep } from './seek-step.ts';
 import { selectionFiles, selectionGenerations } from '../../../../e2e/selection-fixtures.ts';
@@ -12,7 +12,11 @@ const pages = [...files]
   .filter(([key]) => key.startsWith('sets/') && !key.endsWith('/set.json'))
   .map(([, value]) => PublicMatchPageSchema.parse(JSON.parse(value.toString())));
 const row = pages.flatMap((page) => page.rows).find((row) => row.state === 'complete')!;
-function served(change?: (key: string) => Response | undefined, fixtureFiles = files) {
+function served(
+  change?: (key: string) => Response | undefined,
+  fixtureFiles = files,
+  observe?: (value: PublicReadObservation) => void,
+) {
   const requests: string[] = [];
   const request: typeof fetch = async (input, init) => {
     const url = input instanceof Request ? input.url : input.toString();
@@ -32,8 +36,46 @@ function served(change?: (key: string) => Response | undefined, fixtureFiles = f
         })
       : new Response(null, { status: 404 });
   };
-  return { library: publicLibrary(root, request), requests };
+  return { library: publicLibrary(root, request, observe), requests };
 }
+
+it('observes attempted reads and bounded body bytes without changing checksum rejection', async () => {
+  const observations: PublicReadObservation[] = [];
+  const { library, requests } = served(
+    (key) =>
+      key !== 'catalog/current.json'
+        ? new Response('{}', { headers: { 'content-type': 'application/json' } })
+        : undefined,
+    files,
+    (value) => observations.push(value),
+  );
+  await expect(library.catalog()).rejects.toThrow(/checksum/);
+  expect(requests).toHaveLength(2);
+  expect(observations.map((value) => [value.requestId, value.event])).toEqual([
+    [1, 'request'],
+    [1, 'response'],
+    [2, 'request'],
+    [2, 'response'],
+    [2, 'failed'],
+  ]);
+  expect(observations[3]!.decodedBytes).toBe(2);
+  expect(observations.every((value) => value.elapsedMs >= 0)).toBe(true);
+});
+
+it('isolates observer failures and does not count cancellation before a request', async () => {
+  const observe = vi.fn(() => {
+    throw new Error('measurement sink failed');
+  });
+  const { library, requests } = served(undefined, files, observe);
+  const controller = new AbortController();
+  controller.abort();
+  await expect(library.catalog(controller.signal)).rejects.toThrow();
+  expect(observe).not.toHaveBeenCalled();
+  expect(requests).toEqual([]);
+  await expect(library.catalog()).resolves.toBeDefined();
+  expect(requests).toHaveLength(2);
+  expect(observe).toHaveBeenCalledTimes(4);
+});
 
 it('loads only catalog/set/one page before selection, then verifies and seeks the saved recording', async () => {
   const { library, requests } = served();
