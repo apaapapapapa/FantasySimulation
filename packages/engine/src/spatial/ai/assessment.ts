@@ -39,6 +39,19 @@ export function efficacy(
   );
   const revealed = evidence.filter((e) => e.kind === 'reveal').at(-1);
   const statusPrior = observedDamagePrior(view, element);
+  const absorbed = evidence
+    .filter(
+      (e) =>
+        e.kind === 'absorption' &&
+        canonicalJson(e.observedStatuses ?? []) === canonicalJson(target?.statuses ?? []),
+    )
+    .at(-1);
+  if (absorbed)
+    return {
+      bps: absorbed.absorptionBand === 'strong' ? 0 : 2500,
+      confidence: 2500,
+      evidence: [absorbed.eventId],
+    };
   if (revealed?.range)
     return {
       bps: Math.min(
@@ -171,6 +184,21 @@ function assessSingle(
       totalExpected += expected;
       confidencePower += base * known.confidence;
       evidence.push(...known.evidence);
+      if (effect.drainBps) {
+        const recovery = Math.min(
+          30000,
+          adjustedStatusValue(10000, 'hpRecovery', view.ownStatuses ?? [], view.step),
+        );
+        const gain =
+          (Math.min(expected, rules.healthPrior) * effect.drainBps * recovery) / 100000000;
+        utility +=
+          (((rules.riskWeight *
+            Math.min(gain, view.self.actor.character.stats.hp - view.resources.hp)) /
+            Math.max(1, view.resources.hp)) *
+            weights.survivalBps) /
+          10000;
+        reasons.push('own drain; estimated HP loss, target shield and HP unknown');
+      }
     },
     water: (_effect) => {
       if (d.target !== 'self' || !view.waterExtinguishable) return;

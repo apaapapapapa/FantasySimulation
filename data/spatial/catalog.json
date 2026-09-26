@@ -167,6 +167,96 @@
   },
   {
     "kind": "ability",
+    "id": "drain-ember-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c",
+    "definition": {
+      "name": "吸命の火弾",
+      "originalText": "火属性の飛翔体。実際のHP損失の50%で回復する。",
+      "trigger": "action",
+      "categories": ["magic"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 5,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "projectile",
+        "speedMmPerSecond": 30000,
+        "radiusMm": 80,
+        "lifetimeSteps": 100,
+        "gravityScaleBps": 0,
+        "homingTurnMilliDegreesPerSecond": 0,
+        "observation": "launch-only",
+        "explosionRadiusMm": 0,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 30,
+          "attackScaleBps": 0,
+          "element": "fire",
+          "defense": "none",
+          "drainBps": 5000
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "fire-absorption-trait-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:f2c2fd1282229ea23860d3aa3b36d531e22c59d01f7ae3a645f075f65548ea57",
+    "definition": {
+      "name": "火炎吸収",
+      "originalText": "戦闘開始時に火炎吸収体質を付与する。",
+      "trigger": "battle-start",
+      "categories": ["magic"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 1
+      },
+      "castSteps": 0,
+      "recoverySteps": 20,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "id": "fire-absorption-v1",
+            "revision": 1,
+            "contentHash": "sha256:094bd0795795ae523fc5fa66500211fe06344dbe6d79cc128bf76df259686b89"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "fireball",
     "revision": 1,
     "schemaVersion": 1,
@@ -1231,6 +1321,157 @@
         "id": "archer-policy",
         "revision": 1,
         "contentHash": "sha256:84929035bc77b8b535df55c8c8f5524bcd1cbb906a17fd7dbc2056d4b1a81843"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "ember-absorber-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:5f3b4c152aefa20a28b2434f6bfbd9b9bd87ab60e4aa22fdf081003932a5baf7",
+    "definition": {
+      "name": "火炎吸収の術師",
+      "originalText": "P6-02検証用。公式20体とは別のサンプル。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "drain-ember-v1",
+          "revision": 1,
+          "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
+        },
+        {
+          "id": "fire-absorption-trait-v1",
+          "revision": 1,
+          "contentHash": "sha256:f2c2fd1282229ea23860d3aa3b36d531e22c59d01f7ae3a645f075f65548ea57"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "drain-ember-policy-v1",
+        "revision": 1,
+        "contentHash": "sha256:d6045d670497a55f19f41ba35eac5dfb4a3269c340d0a3661f856713a6bb25f2"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "ember-drainer-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:d1891ab5818d35d9f4c1fd2d47a7aabec4ee5fff866f03d3b0c3c894bacf1349",
+    "definition": {
+      "name": "吸命の術師",
+      "originalText": "P6-02検証用。公式20体とは別のサンプル。",
+      "stats": {
+        "hp": 100,
+        "mp": 100,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "drain-ember-v1",
+          "revision": 1,
+          "contentHash": "sha256:7d4b52285657c64885686f1fdf517543e7cf9e5d64f3ef2bc5ceb50d1a56973c"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "drain-ember-policy-v1",
+        "revision": 1,
+        "contentHash": "sha256:d6045d670497a55f19f41ba35eac5dfb4a3269c340d0a3661f856713a6bb25f2"
       }
     }
   },
@@ -2912,6 +3153,29 @@
       "preferredDistanceMm": 8000,
       "flightAltitudeMm": 6000,
       "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "drain-ember-policy-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:d6045d670497a55f19f41ba35eac5dfb4a3269c340d0a3661f856713a6bb25f2",
+    "definition": {
+      "name": "吸命火弾",
+      "originalText": "",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "drain-ember-v1"
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 10000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": false
     }
   },
   {
@@ -6435,6 +6699,39 @@
           "element": "fire"
         }
       ]
+    }
+  },
+  {
+    "kind": "status",
+    "id": "fire-absorption-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:094bd0795795ae523fc5fa66500211fe06344dbe6d79cc128bf76df259686b89",
+    "definition": {
+      "name": "火炎吸収体質",
+      "originalText": "火属性のダメージを100%吸収する常時効果。",
+      "stackKey": "absorb-fire",
+      "stacking": "refresh",
+      "maxStacks": 1,
+      "durationSteps": 6000,
+      "categories": ["permanent"],
+      "adjustments": [
+        {
+          "target": "absorption",
+          "operation": "add",
+          "amount": 10000,
+          "element": "fire"
+        }
+      ],
+      "visibility": "hidden",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": []
     }
   },
   {

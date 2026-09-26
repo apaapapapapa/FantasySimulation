@@ -107,6 +107,7 @@ export function observeImpact(
     basePower: number;
     defense?: Experience['defense'];
     impact: number;
+    absorbed?: number;
     shield: boolean;
     partial: boolean;
     statuses?: readonly StatusCohort[];
@@ -121,6 +122,7 @@ export function observeImpact(
   )
     return null;
   const uncertain = detail.partial,
+    absorption = (detail.absorbed ?? 0) > 0,
     shield = detail.shield,
     low = Math.floor(detail.impact / rules.damageQuantum) * rules.damageQuantum;
   const observedStatuses = publicStatuses(detail.statuses ?? [], detail.statusStep ?? step);
@@ -133,7 +135,12 @@ export function observeImpact(
     },
     targetId: target.actor.participant.actorId,
     element: detail.element,
-    kind: uncertain ? 'uncertain' : shield ? 'shield' : 'impact',
+    kind: absorption ? 'absorption' : uncertain ? 'uncertain' : shield ? 'shield' : 'impact',
+    ...(absorption && {
+      absorptionBand: (detail.absorbed! * 2 >= detail.impact ? 'strong' : 'weak') as
+        | 'strong'
+        | 'weak',
+    }),
     sampledAt: step,
     availableAt: step + self.actor.character.perception.reactionSteps,
     expiresAt: step + rules.knowledgeTtlSteps,
@@ -141,10 +148,10 @@ export function observeImpact(
     ...(detail.defense !== undefined && { defense: detail.defense }),
     distanceBand: Math.min(200, Math.floor(length(sub(self.position, target.position)) / 2)),
     range:
-      uncertain || shield || rules.relativeImpactBps
+      absorption || uncertain || shield || rules.relativeImpactBps
         ? null
         : { low, high: low + rules.damageQuantum },
-    ...(!uncertain && !shield && rules.relativeImpactBps
+    ...(!absorption && !uncertain && !shield && rules.relativeImpactBps
       ? {
           impactBand: (['minimal', 'weak', 'normal', 'strong'] as const)[
             detail.basePower <= 0

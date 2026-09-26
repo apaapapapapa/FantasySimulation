@@ -94,6 +94,8 @@ export function publicStatuses(statuses: readonly StatusCohort[], step: number):
               : ('neutral' as const),
         ...(definition.adjustments?.length && {
           adjustments: definition.adjustments.flatMap((a) => {
+            // Absorption is learned only from a visible converted contact, never an unused trait.
+            if (a.target === 'absorption') return [];
             const delta = a.amount - (a.operation === 'multiply' ? 10000 : 0);
             return delta
               ? [
