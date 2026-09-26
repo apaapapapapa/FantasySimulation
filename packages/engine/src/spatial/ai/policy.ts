@@ -23,6 +23,7 @@ import { chooseCover, type TacticalTerrain } from './cover.ts';
 import { initialDecisionRandom, weightedChoice, recordDecisionWeights } from './decision-random.ts';
 import { canMaintainFlight, gaitProfile, resourceReady } from '../rules/locomotion.ts';
 import { chooseGait } from './choose-gait.ts';
+import { abilityPlan } from '../rules/ability-plan.ts';
 
 export const isDodgeDecision = (decision: Decision) =>
   decision.dodge ?? decision.cognition?.selection === 'dodge';
@@ -289,7 +290,7 @@ export function choosePolicy(
         (actor.abilities.some((a) =>
           [
             a.definition.condition,
-            ...(a.definition.stages?.flatMap((s) => [s.startCondition, s.interruptWhen]) ?? []),
+            ...abilityPlan(a).stages.flatMap((s) => [s.startCondition, s.interruptWhen]),
           ].some((c) => c && usesObservedConditions(c)),
         ) ||
           actor.policy.priorities.some((p) => usesObservedConditions(p.when))) && {
