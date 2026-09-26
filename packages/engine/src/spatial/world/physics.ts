@@ -1,7 +1,14 @@
-import type { Trace, Capsule, Obstacle, Layer } from '../geometry-types.ts';
+import {
+  blocksQuery,
+  type Trace,
+  type Capsule,
+  type Obstacle,
+  type Layer,
+  type SpatialQuery,
+} from '../geometry-types.ts';
 export type { Segment, Trace, Capsule, Obstacle, Layer } from '../geometry-types.ts';
 import RAPIER from '@dimforge/rapier3d-compat';
-import type { MotionProjection } from '@fantasy/domain/spatial/execution';
+import { canonicalJson, type MotionProjection } from '@fantasy/domain/spatial/execution';
 export type { MotionProjection } from '@fantasy/domain/spatial/execution';
 import {
   capsuleOverlapsObstacle,
@@ -211,64 +218,120 @@ export const ballShape = (radius: number) => new RAPIER.Ball(radius);
 
 export class SpatialWorld {
   readonly world: RAPIER.World;
-  private readonly materials = new Map<number, Obstacle>();
-  private readonly bounds = new Map<Layer, { center: Vec3; radius: Vec3 }>();
-  casts = 0;
+  private readonly materials: Map<number, Obstacle>;
+  private readonly bounds: Map<Layer, { center: Vec3; radius: Vec3 }>;
+  private readonly meter: { casts: number; limit: number };
+  private readonly query: SpatialQuery;
+  private readonly ownsWorld: boolean;
+  private readonly geometryKey: string;
+  get casts() {
+    return this.meter.casts;
+  }
+  set casts(value: number) {
+    this.meter.casts = value;
+  }
+  get castLimit() {
+    return this.meter.limit;
+  }
+  set castLimit(value: number) {
+    this.meter.limit = value;
+  }
   /** Stable authored obstacle order; adapters share the world's layer and work budget. */
   obstacles(layer: Layer): readonly Obstacle[] {
-    return [...this.materials.values()].filter((obstacle) => obstacle.blocks[layer]);
+    return [...this.materials.values()].filter((obstacle) =>
+      blocksQuery(obstacle, layer, this.query),
+    );
   }
   countCast() {
     if (++this.casts > this.castLimit) throw new SpatialBudgetError('casts');
   }
-  castLimit: number;
-  constructor(obstacles: Obstacle[], castLimit = 1_000_000) {
-    this.castLimit = castLimit;
+  constructor(
+    obstacles: Obstacle[],
+    castLimit = 1_000_000,
+    shared?: { source: SpatialWorld; query?: SpatialQuery; rebuild?: boolean },
+  ) {
+    this.meter = shared?.source.meter ?? { casts: 0, limit: castLimit };
+    this.query = shared?.query ?? {};
+    this.ownsWorld = !shared || !!shared.rebuild;
+    this.geometryKey =
+      shared && !shared.rebuild
+        ? shared.source.geometryKey
+        : canonicalJson([...obstacles].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)));
+    if (shared && !shared.rebuild) {
+      this.world = shared.source.world;
+      this.materials = shared.source.materials;
+      this.bounds = shared.source.bounds;
+      return;
+    }
+    this.materials = new Map();
+    this.bounds = new Map();
     this.world = new RAPIER.World(ZERO);
     this.world.timestep = 0.02;
-    for (const obstacle of [...obstacles].sort((a, b) =>
-      a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
-    )) {
-      const desc = (
-        obstacle.kind === 'pillar'
-          ? RAPIER.ColliderDesc.cylinder(obstacle.halfExtents.y, obstacle.halfExtents.x)
-          : RAPIER.ColliderDesc.cuboid(
-              obstacle.halfExtents.x,
-              obstacle.halfExtents.y,
-              obstacle.halfExtents.z,
-            )
-      ).setTranslation(obstacle.position.x, obstacle.position.y, obstacle.position.z);
-      if (obstacle.rotation) desc.setRotation(obstacle.rotation);
-      const collider = this.world.createCollider(desc);
-      this.materials.set(collider.handle, obstacle);
-    }
-    this.world.step(); // Populate the query acceleration structure once for static terrain.
-    for (const layer of ['movement', 'vision', 'attack'] as const) {
-      const relevant = obstacles.filter((o) => o.blocks[layer]);
-      if (!relevant.length) continue;
-      const lower = { x: Infinity, y: Infinity, z: Infinity },
-        upper = { x: -Infinity, y: -Infinity, z: -Infinity };
-      for (const obstacle of relevant) {
-        const radius = obstacle.rotation
-          ? {
-              x: length(obstacle.halfExtents),
-              y: length(obstacle.halfExtents),
-              z: length(obstacle.halfExtents),
-            }
-          : obstacle.halfExtents;
-        for (const axis of ['x', 'y', 'z'] as const) {
-          lower[axis] = Math.min(lower[axis], obstacle.position[axis] - radius[axis]);
-          upper[axis] = Math.max(upper[axis], obstacle.position[axis] + radius[axis]);
-        }
+    try {
+      for (const obstacle of [...obstacles].sort((a, b) =>
+        a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+      )) {
+        if (shared) this.countCast();
+        const desc = (
+          obstacle.kind === 'pillar'
+            ? RAPIER.ColliderDesc.cylinder(obstacle.halfExtents.y, obstacle.halfExtents.x)
+            : RAPIER.ColliderDesc.cuboid(
+                obstacle.halfExtents.x,
+                obstacle.halfExtents.y,
+                obstacle.halfExtents.z,
+              )
+        ).setTranslation(obstacle.position.x, obstacle.position.y, obstacle.position.z);
+        if (obstacle.rotation) desc.setRotation(obstacle.rotation);
+        const collider = this.world.createCollider(desc);
+        this.materials.set(collider.handle, obstacle);
       }
-      this.bounds.set(layer, {
-        center: mul(add(lower, upper), 0.5),
-        radius: mul(sub(upper, lower), 0.5),
-      });
+      this.world.step(); // Populate the query acceleration structure once for static terrain.
+      for (const layer of ['movement', 'vision', 'attack'] as const) {
+        const relevant = obstacles.filter((o) => o.blocks[layer]);
+        if (!relevant.length) continue;
+        const lower = { x: Infinity, y: Infinity, z: Infinity },
+          upper = { x: -Infinity, y: -Infinity, z: -Infinity };
+        for (const obstacle of relevant) {
+          const radius = obstacle.rotation
+            ? {
+                x: length(obstacle.halfExtents),
+                y: length(obstacle.halfExtents),
+                z: length(obstacle.halfExtents),
+              }
+            : obstacle.halfExtents;
+          for (const axis of ['x', 'y', 'z'] as const) {
+            lower[axis] = Math.min(lower[axis], obstacle.position[axis] - radius[axis]);
+            upper[axis] = Math.max(upper[axis], obstacle.position[axis] + radius[axis]);
+          }
+        }
+        this.bounds.set(layer, {
+          center: mul(add(lower, upper), 0.5),
+          radius: mul(sub(upper, lower), 0.5),
+        });
+      }
+    } catch (error) {
+      this.world.free();
+      throw error;
     }
   }
+  /** Immutable query views share geometry and the attempted-work meter, never filter state. */
+  forQuery(query: SpatialQuery): SpatialWorld {
+    return new SpatialWorld([], this.castLimit, {
+      source: this,
+      query: { ...this.query, ...query },
+    });
+  }
+  /** A caller owns the candidate until its entire transaction commits. */
+  rebuild(obstacles: Obstacle[]): SpatialWorld {
+    if (
+      canonicalJson([...obstacles].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) ===
+      this.geometryKey
+    )
+      return this;
+    return new SpatialWorld(obstacles, this.castLimit, { source: this, rebuild: true });
+  }
   free() {
-    this.world.free();
+    if (this.ownsWorld) this.world.free();
   }
   private count() {
     this.countCast();
@@ -293,7 +356,7 @@ export class SpatialWorld {
     const body = capsuleDimensions(shape);
     if (layer === 'movement' && body && shapeExtent) {
       for (const obstacle of this.materials.values()) {
-        if (!obstacle.blocks[layer] || obstacle.kind === 'pillar') continue;
+        if (!blocksQuery(obstacle, layer, this.query) || obstacle.kind === 'pillar') continue;
         const radius = obstacle.rotation ? length(obstacle.halfExtents) : 0;
         const half = radius ? { x: radius, y: radius, z: radius } : obstacle.halfExtents;
         if (
@@ -331,7 +394,7 @@ export class SpatialWorld {
         undefined,
         (collider) =>
           !ignored.has(collider.handle) &&
-          this.materials.get(collider.handle)?.blocks[layer] === true,
+          blocksQuery(this.materials.get(collider.handle)!, layer, this.query),
       );
       if (!hit) return best;
       const obstacle = this.materials.get(hit.collider.handle)!;
@@ -377,7 +440,7 @@ export class SpatialWorld {
       undefined,
       undefined,
       undefined,
-      (collider) => this.materials.get(collider.handle)?.blocks[layer] === true,
+      (collider) => blocksQuery(this.materials.get(collider.handle)!, layer, this.query),
     );
     return hit
       ? {
@@ -397,14 +460,14 @@ export class SpatialWorld {
     if (body)
       return [...this.materials.values()].some(
         (obstacle) =>
-          obstacle.blocks[layer] &&
+          blocksQuery(obstacle, layer, this.query) &&
           (layer === 'attack'
             ? capsuleObstacleContact(position, body, obstacle).distance <= CONTACT_TOLERANCE
             : capsuleOverlapsObstacle(position, body, obstacle)),
       );
     let blocked = false;
     this.world.intersectionsWithShape(position, IDENTITY, shape, (collider) => {
-      if (this.materials.get(collider.handle)?.blocks[layer]) {
+      if (blocksQuery(this.materials.get(collider.handle)!, layer, this.query)) {
         const contact = shape.contactShape(
           position,
           IDENTITY,

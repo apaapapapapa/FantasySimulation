@@ -69,7 +69,8 @@ export function chooseMovementSlot(
   const blocks =
     view.stageOwnsMotion ||
     (!!ability &&
-      ((ability.definition.castSteps === 0 && !!abilityPlan(ability).stages[0]?.selfMotion) ||
+      (abilityPlan(ability).stages.some((s) => s.relocation) ||
+        (ability.definition.castSteps === 0 && !!abilityPlan(ability).stages[0]?.selfMotion) ||
         (ability.definition.castSteps > 0 && ability.definition.movementWhileCasting === 'stop')));
   const rate = flight ? view.flightStaminaPerSecond : 0;
   const maintained = canMaintainFlight(resources, rate, resourceReady(view));

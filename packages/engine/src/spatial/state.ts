@@ -207,6 +207,16 @@ export type StageRuntime = {
 };
 
 export type AbilityRevision = DeepReadonly<Extract<Revision, { kind: 'ability' }>>;
+export type PendingRelocation = {
+  ownerId: string;
+  actionId: string;
+  ability: AbilityRevision;
+  cause: string;
+  at: number;
+  destination: Vec3;
+  maxDistanceMm: number;
+  stage?: StageContact;
+};
 
 export type ActionState = {
   id: string;

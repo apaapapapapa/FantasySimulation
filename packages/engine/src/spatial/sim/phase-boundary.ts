@@ -9,6 +9,7 @@ import { commitReactiveEffects } from './reactions.ts';
 import { advancePosture } from '../rules/posture.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 import { effectsOf } from './step-effects.ts';
+import { activateRelocations } from './relocation.ts';
 export function boundaryPhase(tx: StepTransaction) {
   const { battle, budget, world, work } = tx.context;
   const { step, journal } = tx;
@@ -162,4 +163,5 @@ export function boundaryPhase(tx: StepTransaction) {
       journal,
       'boundary',
     );
+  activateRelocations(tx);
 }

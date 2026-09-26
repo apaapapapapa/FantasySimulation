@@ -72,12 +72,14 @@ export function closureMechanics(revisions: readonly Revision[]): MechanicUse[] 
     if (owner.kind === 'ability') {
       const ability = owner.definition;
       effects(ability.effects);
+      if (ability.relocation) add('teleport');
       add(attackMechanics[ability.attack.kind]);
       if (ability.reaction) add(responseMechanics[ability.reaction.response.kind]);
       if (ability.stages) {
         add('stages');
         for (const stage of ability.stages) {
           effects(stage.effects);
+          if (stage.relocation) add('teleport');
           if (stage.attack) add(attackMechanics[stage.attack.kind]);
           if (stage.selfMotion) add(motionMechanics[stage.selfMotion.kind]);
         }

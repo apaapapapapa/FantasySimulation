@@ -17,6 +17,7 @@ import { seenAttack } from '../ai/threat-memory.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 import { effectsOf } from './step-effects.ts';
 import { contactAttack } from '../rules/attack-contact.ts';
+import { queueRelocation } from './relocation.ts';
 
 type ReleaseContext = {
   tx: StepTransaction;
@@ -195,5 +196,17 @@ const releaseHandlers: AttackHandlers<ReleaseContext, void> = {
   projectile: (shape, context) => spatial(shape, context, true, releaseProjectile),
 };
 export function releaseAttack(context: ReleaseContext) {
+  const relocation = context.ability.definition.relocation;
+  if (relocation) {
+    queueRelocation(
+      context.tx,
+      context.actor,
+      context.ability,
+      context.launch.id,
+      relocation,
+      context.staged?.contact,
+    );
+    return;
+  }
   matchAttack(context.ability.definition.attack, releaseHandlers, context);
 }

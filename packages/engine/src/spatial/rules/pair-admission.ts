@@ -34,6 +34,8 @@ export function admitPair(
   const definition = ability.definition;
   if (
     !actor.body.intent.canMove ||
+    !!definition.relocation ||
+    definition.stages?.some((s) => s.relocation) ||
     ownsStageMotion(actor.actions.action, step) ||
     (definition.castSteps === 0 && !!definition.stages?.[0]?.selfMotion) ||
     (definition.castSteps > 0 && definition.movementWhileCasting === 'stop')

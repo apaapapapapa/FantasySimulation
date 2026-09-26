@@ -1,0 +1,349 @@
+{
+  "schemaVersion": 1,
+  "basis": "Authored one metre right displacement at the next boundary; both independent owner-relative displacements in the self pair. Existing waves do not create a teleport contact payload.",
+  "cases": [
+    {
+      "id": "apply-status/teleport",
+      "left": "apply-status",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "attribute-absorption/teleport",
+      "left": "attribute-absorption",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "contact/teleport",
+      "left": "contact",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "counter/teleport",
+      "left": "counter",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "damage/teleport",
+      "left": "damage",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "dispel/teleport",
+      "left": "dispel",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "drain/teleport",
+      "left": "drain",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "elemental-reaction/teleport",
+      "left": "elemental-reaction",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "flight/teleport",
+      "left": "flight",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "force/teleport",
+      "left": "force",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "heal/teleport",
+      "left": "heal",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "motion/teleport",
+      "left": "motion",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "parry/teleport",
+      "left": "parry",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "periodic/teleport",
+      "left": "periodic",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "permanent/teleport",
+      "left": "permanent",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "projectile/teleport",
+      "left": "projectile",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "reaction-effects/teleport",
+      "left": "reaction-effects",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "resource/teleport",
+      "left": "resource",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "reveal/teleport",
+      "left": "reveal",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "shield/teleport",
+      "left": "shield",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "silence/teleport",
+      "left": "silence",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "stages/teleport",
+      "left": "stages",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "status-adjustment/teleport",
+      "left": "status-adjustment",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/apply-status",
+      "left": "teleport",
+      "right": "apply-status",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/attribute-absorption",
+      "left": "teleport",
+      "right": "attribute-absorption",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/contact",
+      "left": "teleport",
+      "right": "contact",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/counter",
+      "left": "teleport",
+      "right": "counter",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/damage",
+      "left": "teleport",
+      "right": "damage",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/dispel",
+      "left": "teleport",
+      "right": "dispel",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/drain",
+      "left": "teleport",
+      "right": "drain",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/elemental-reaction",
+      "left": "teleport",
+      "right": "elemental-reaction",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/flight",
+      "left": "teleport",
+      "right": "flight",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/force",
+      "left": "teleport",
+      "right": "force",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/heal",
+      "left": "teleport",
+      "right": "heal",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/motion",
+      "left": "teleport",
+      "right": "motion",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/parry",
+      "left": "teleport",
+      "right": "parry",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/periodic",
+      "left": "teleport",
+      "right": "periodic",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/permanent",
+      "left": "teleport",
+      "right": "permanent",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/projectile",
+      "left": "teleport",
+      "right": "projectile",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/reaction-effects",
+      "left": "teleport",
+      "right": "reaction-effects",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/resource",
+      "left": "teleport",
+      "right": "resource",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/reveal",
+      "left": "teleport",
+      "right": "reveal",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/shield",
+      "left": "teleport",
+      "right": "shield",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/silence",
+      "left": "teleport",
+      "right": "silence",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/stages",
+      "left": "teleport",
+      "right": "stages",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/status-adjustment",
+      "left": "teleport",
+      "right": "status-adjustment",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/teleport",
+      "left": "teleport",
+      "right": "teleport",
+      "teleportCount": 2,
+      "distanceMm": 1000
+    },
+    {
+      "id": "teleport/visibility",
+      "left": "teleport",
+      "right": "visibility",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    },
+    {
+      "id": "visibility/teleport",
+      "left": "visibility",
+      "right": "teleport",
+      "teleportCount": 1,
+      "distanceMm": 1000
+    }
+  ]
+}

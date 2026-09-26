@@ -996,6 +996,30 @@
     "p6-recovery-16": {
       "file": "apps/web/src/replay/recovery-display.test.ts",
       "name": "renders conversion and causal drain for their recorded recipients without inferring HP loss"
+    },
+    "p6-teleport-pairs": {
+      "file": "packages/engine/src/spatial/teleport-interference.test.ts",
+      "name": "executes all 49 teleport ordered pairs with a one metre boundary displacement"
+    },
+    "p6-teleport-wall": {
+      "file": "packages/engine/src/spatial/teleport.test.ts",
+      "name": "crosses an opaque wall path using full recorded jumps and restores both seek directions"
+    },
+    "p6-teleport-budget": {
+      "file": "packages/engine/src/spatial/teleport.test.ts",
+      "name": "rolls back simultaneous pending commands at the exact cap and never activates a final-boundary command"
+    },
+    "p6-world-rollback": {
+      "file": "packages/engine/src/spatial/spatial-world.test.ts",
+      "name": "rolls back candidate geometry, actors, RNG and IDs on a journal failure while retaining work"
+    },
+    "p6-teleport-worker": {
+      "file": "apps/api/src/jobs/teleport-persistence.test.ts",
+      "name": "preserves discrete teleport boundaries through Worker SQLite and reverse replay seek"
+    },
+    "p6-teleport-view": {
+      "file": "apps/web/src/replay/teleport-display.test.ts",
+      "name": "renders recorded teleport endpoints without a swept bridge in both seek directions"
     }
   },
   "entries": [
@@ -1769,6 +1793,20 @@
         "p6-recovery-14",
         "p6-recovery-15",
         "p6-recovery-16"
+      ]
+    },
+    {
+      "id": "p6-teleport",
+      "title": "P6-06: whole-body boundary relocation, frozen anchors, atomic world and replay",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "p6-teleport-pairs",
+        "p6-teleport-wall",
+        "p6-teleport-budget",
+        "p6-world-rollback",
+        "p6-teleport-worker",
+        "p6-teleport-view"
       ]
     }
   ]

@@ -4,7 +4,7 @@ import type { ReplayContext } from './context.ts';
 import { recordedStage } from './stage.ts';
 import { validateForce } from './force.ts';
 import { validateRecovery } from './recovery.ts';
-import { requireReplay, emittedId, phases } from './common.ts';
+import { requireReplay, emittedId, phases, same } from './common.ts';
 export function validateEvents(
   context: ReplayContext,
   prior: ReplayCheckpoint,
@@ -65,6 +65,66 @@ export function validateEvents(
       recordedStage(ability, e.stage);
     }
     if (e.force) validateForce(context, e.force);
+    if (e.teleport) {
+      const actor = prior.state?.actors.find((a) => a.id === e.actorId);
+      const delta = record.kind === 'boundary' && record.changes.find((a) => a.id === e.actorId);
+      const ability = context.actors
+        .find((a) => a.participant.actorId === e.actorId)
+        ?.abilities.find((a) => a.id === e.abilityId);
+      const spec = e.stage
+        ? ability?.definition.stages?.[e.stage.stageIndex]?.relocation
+        : ability?.definition.relocation;
+      const definition = context.actors.find((a) => a.participant.actorId === e.actorId)?.character;
+      const oldBody = actor?.posture?.body ?? definition?.body;
+      const newBody = (delta && delta.posture?.body) || oldBody;
+      const from =
+        actor && oldBody && newBody
+          ? {
+              ...actor.position,
+              y: actor.position.y + (newBody.heightMm - oldBody.heightMm) / 2000,
+            }
+          : null;
+      const launch =
+        prior.lastRecord?.kind === 'interval'
+          ? prior.lastRecord.events.find((event) => event.id === e.parentEventId)
+          : undefined;
+      requireReplay(
+        !!spec &&
+          !!actor &&
+          !!delta &&
+          e.step > 0 &&
+          e.parentEventId !== null &&
+          same(e.teleport.from, from) &&
+          launch?.kind === 'launch' &&
+          launch.actorId === e.actorId &&
+          launch.abilityId === e.abilityId &&
+          launch.step === e.step - 1 &&
+          same(e.teleport.to, delta.position ?? actor.position) &&
+          events.filter((other) => other.teleport && other.actorId === e.actorId).length === 1,
+        'teleport boundary displacement',
+      );
+      const a = e.teleport.from,
+        b = e.teleport.to;
+      requireReplay(
+        Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z) <= spec!.maxDistanceMm / 1000 + 1e-9,
+        'teleport range',
+      );
+      const arena = context.manifest.revisions.find(
+        (r) => r.kind === 'scenario' && r.id === context.manifest.scenario.id,
+      );
+      requireReplay(
+        arena?.kind === 'scenario' &&
+          !!newBody &&
+          (['x', 'y', 'z'] as const).every((axis) => {
+            const extent = (axis === 'y' ? newBody!.heightMm / 2 : newBody!.radiusMm) / 1000;
+            return (
+              b[axis] - extent >= arena.definition.bounds.min[axis] / 1000 &&
+              b[axis] + extent <= arena.definition.bounds.max[axis] / 1000
+            );
+          }),
+        'teleport arena containment',
+      );
+    }
     validateRecovery(context, e, events);
     if (e.reaction) {
       const ability = context.actors

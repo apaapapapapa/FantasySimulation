@@ -632,6 +632,42 @@
       "id": "fire-absorption-v1",
       "revision": 1,
       "contentHash": "sha256:094bd0795795ae523fc5fa66500211fe06344dbe6d79cc128bf76df259686b89"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-blink-flank-v1",
+      "revision": 1,
+      "contentHash": "sha256:3e72e38247bf86e9d388d8015b59c877b14352ee0a9fc2f3d61a95240d51f173"
+    },
+    {
+      "kind": "ability",
+      "id": "spatial-blink-retreat-v1",
+      "revision": 1,
+      "contentHash": "sha256:f2b61f9ac4b6c6c87bba2f510f52f39a814c2c33e8390b53cebace67371f221b"
+    },
+    {
+      "kind": "character",
+      "id": "blink-flank-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:06957cd97669c8b963152e7bb3696eebbd5664cf93b6a0933fb27d1f9fef618f"
+    },
+    {
+      "kind": "character",
+      "id": "blink-retreat-mage-v1",
+      "revision": 1,
+      "contentHash": "sha256:6486539be7f38602e046cb890a80f5bffe62235b50f6680080a18e0e5042ec46"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-blink-flank-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:b836a4905912071cd33651ee229d0fb4566d0aaf99f968f2547126ac39d8d37a"
+    },
+    {
+      "kind": "policy",
+      "id": "spatial-blink-retreat-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:686b3b28cf806bbc077e956c0dadc6b9af2da41ff018adca71e36e3ad95dbd67"
     }
   ]
 }

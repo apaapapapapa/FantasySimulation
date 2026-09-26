@@ -4,6 +4,7 @@ import { selfView } from '../ai/self-view.ts';
 import { checkStageInterruption, finishStages, interruptDamagedStages } from '../rules/stages.ts';
 import { commitReactiveEffects } from './reactions.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
+import { cancelEndedRelocations } from './relocation.ts';
 export function resolutionPhase(tx: StepTransaction) {
   const { battle, budget, world, work } = tx.context;
   const { step, journal, effects } = tx;
@@ -34,6 +35,7 @@ export function resolutionPhase(tx: StepTransaction) {
       'resolution',
     );
   finishStages(next, step + 1, journal);
+  cancelEndedRelocations(tx);
   for (const actor of next) {
     if (!actor.vitals.staminaClock) continue;
     const start = actors.find((a) => actorId(a) === actorId(actor))!;

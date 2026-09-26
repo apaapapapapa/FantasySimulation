@@ -34,6 +34,7 @@ export type RecoveryInterferenceMechanic =
   | LegacyInterferenceMechanic
   | 'attribute-absorption'
   | 'drain';
+export type SpatialInterferenceMechanic = RecoveryInterferenceMechanic | 'teleport';
 const damage = (amount: number): Effect => ({
   kind: 'damage',
   amount,
@@ -44,8 +45,8 @@ const damage = (amount: number): Effect => ({
 
 /** Real two-sided contacts plus startup cohorts; no expected values or table lookup. */
 export async function interferencePairManifest(
-  left: RecoveryInterferenceMechanic,
-  right: RecoveryInterferenceMechanic,
+  left: SpatialInterferenceMechanic,
+  right: SpatialInterferenceMechanic,
 ): Promise<Manifest> {
   const input = await combatManifest(10, {
     ability: {
@@ -83,6 +84,17 @@ export async function interferencePairManifest(
     const status = initialStatus({ categories: ['debuff'], durationSteps: 20 });
     let reaction: Partial<Definition<'ability'>> | undefined;
     switch (mechanic) {
+      case 'teleport':
+        action.target = 'self';
+        action.attack = { kind: 'direct' };
+        action.effects = [];
+        action.relocation = {
+          anchor: 'self',
+          direction: 'right',
+          distanceMm: 1000,
+          maxDistanceMm: 1000,
+        };
+        break;
       case 'attribute-absorption':
         status.adjustments = [
           { target: 'absorption', operation: 'add', element: 'fire', amount: 10000 },

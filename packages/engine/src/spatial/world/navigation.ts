@@ -34,6 +34,9 @@ export class Navigator {
   private readonly scenario: DeepReadonly<Definition<'scenario'>>;
   private readonly rules: DeepReadonly<Definition<'ruleset'>>;
   private readonly exploring: boolean;
+  invalidate() {
+    this.cache.clear();
+  }
   constructor(
     world: SpatialWorld,
     actor: ResolvedActor,

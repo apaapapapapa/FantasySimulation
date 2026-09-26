@@ -4,7 +4,10 @@ Strict domain schemas own executable input. This is a compact contract/index;
 [the complete pre-P6 spatial specification](https://github.com/apaapapapapa/FantasySimulation/blob/63b49c60bba9af4007061b7eb1228c7b4fad8ac4/docs/rules/spatial-v1.md)
 retains the authoritative formulas, rounding, numeric examples and boundary cases summarized
 here. This compaction changes no rule. Later accepted ADRs prevail;
-[ADR0017](../adr/0017-p6-spatial-mechanics.md) defines future behavior awaiting implementation.
+[ADR0017](../adr/0017-p6-spatial-mechanics.md) owns spatial operations; `relocation` implements
+P6-06 teleport. It freezes a visible relative anchor, activates next boundary after full-body
+clearance, rejects conflicting endpoints together and records a jump without interpolation.
+Barriers, areas, beams and phasing still await implementation.
 
 ## 単位と上限
 

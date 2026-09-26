@@ -1277,7 +1277,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "apply-status/teleport"
         }
       ]
     },
@@ -2137,7 +2137,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "attribute-absorption/teleport"
         }
       ]
     },
@@ -3857,7 +3857,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "contact/teleport"
         }
       ]
     },
@@ -4287,7 +4287,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "counter/teleport"
         }
       ]
     },
@@ -4717,7 +4717,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "damage/teleport"
         }
       ]
     },
@@ -5147,7 +5147,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "dispel/teleport"
         }
       ]
     },
@@ -5577,7 +5577,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "drain/teleport"
         }
       ]
     },
@@ -6031,7 +6031,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "elemental-reaction/teleport"
         }
       ]
     },
@@ -6891,7 +6891,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "flight/teleport"
         }
       ]
     },
@@ -7321,7 +7321,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "force/teleport"
         }
       ]
     },
@@ -8181,7 +8181,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "heal/teleport"
         }
       ]
     },
@@ -9901,7 +9901,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "motion/teleport"
         }
       ]
     },
@@ -10331,7 +10331,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "parry/teleport"
         }
       ]
     },
@@ -10761,7 +10761,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "periodic/teleport"
         }
       ]
     },
@@ -11199,7 +11199,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "permanent/teleport"
         }
       ]
     },
@@ -12489,7 +12489,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "projectile/teleport"
         }
       ]
     },
@@ -13349,7 +13349,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reaction-effects/teleport"
         }
       ]
     },
@@ -13779,7 +13779,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "resource/teleport"
         }
       ]
     },
@@ -14209,7 +14209,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reveal/teleport"
         }
       ]
     },
@@ -15499,7 +15499,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "shield/teleport"
         }
       ]
     },
@@ -15929,7 +15929,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "silence/teleport"
         }
       ]
     },
@@ -16359,7 +16359,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "stages/teleport"
         }
       ]
     },
@@ -16789,7 +16789,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "status-adjustment/teleport"
         }
       ]
     },
@@ -16829,7 +16829,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.absolute-evasion"
         }
       ]
     },
@@ -16839,7 +16839,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.absolute-hit"
         }
       ]
     },
@@ -16849,7 +16849,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/apply-status"
         }
       ]
     },
@@ -16859,7 +16859,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.area"
         }
       ]
     },
@@ -16869,7 +16869,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/attribute-absorption"
         }
       ]
     },
@@ -16879,7 +16879,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.barrier"
         }
       ]
     },
@@ -16889,7 +16889,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.beam"
         }
       ]
     },
@@ -16899,7 +16899,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -16909,7 +16909,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/contact"
         }
       ]
     },
@@ -16919,7 +16919,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/counter"
         }
       ]
     },
@@ -16929,7 +16929,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/damage"
         }
       ]
     },
@@ -16939,7 +16939,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/dispel"
         }
       ]
     },
@@ -16949,7 +16949,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/drain"
         }
       ]
     },
@@ -16959,7 +16959,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/elemental-reaction"
         }
       ]
     },
@@ -16969,7 +16969,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -16979,7 +16979,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/flight"
         }
       ]
     },
@@ -16989,7 +16989,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/force"
         }
       ]
     },
@@ -16999,7 +16999,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -17009,7 +17009,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/heal"
         }
       ]
     },
@@ -17019,7 +17019,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.immortality"
         }
       ]
     },
@@ -17029,7 +17029,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.instant-death"
         }
       ]
     },
@@ -17039,7 +17039,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.mind-read"
         }
       ]
     },
@@ -17049,7 +17049,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/motion"
         }
       ]
     },
@@ -17059,7 +17059,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/parry"
         }
       ]
     },
@@ -17069,7 +17069,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/periodic"
         }
       ]
     },
@@ -17079,7 +17079,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/permanent"
         }
       ]
     },
@@ -17089,7 +17089,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.phasing"
         }
       ]
     },
@@ -17099,7 +17099,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -17109,7 +17109,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/projectile"
         }
       ]
     },
@@ -17119,7 +17119,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.projectile-deflection"
         }
       ]
     },
@@ -17129,7 +17129,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/reaction-effects"
         }
       ]
     },
@@ -17139,7 +17139,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/resource"
         }
       ]
     },
@@ -17149,7 +17149,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/reveal"
         }
       ]
     },
@@ -17159,7 +17159,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.revival"
         }
       ]
     },
@@ -17169,7 +17169,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.seal"
         }
       ]
     },
@@ -17179,7 +17179,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/shield"
         }
       ]
     },
@@ -17189,7 +17189,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/silence"
         }
       ]
     },
@@ -17199,7 +17199,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/stages"
         }
       ]
     },
@@ -17209,7 +17209,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/status-adjustment"
         }
       ]
     },
@@ -17219,7 +17219,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/teleport"
         }
       ]
     },
@@ -17229,7 +17229,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.time-stop"
         }
       ]
     },
@@ -17239,7 +17239,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -17249,7 +17249,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "teleport/visibility"
         }
       ]
     },
@@ -18509,7 +18509,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.teleport"
+          "fixture": "visibility/teleport"
         }
       ]
     },
@@ -18554,6 +18554,7 @@
       "status.permanent-conflict": "p6-status.permanent-conflict",
       "status.reaction-conflict": "p6-status.reaction-conflict"
     },
-    "recovery": "p6-recovery-14"
+    "recovery": "p6-recovery-14",
+    "teleport": "p6-teleport-pairs"
   }
 }

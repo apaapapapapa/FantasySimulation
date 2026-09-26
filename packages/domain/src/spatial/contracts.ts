@@ -480,6 +480,15 @@ export const StageHitSchema = z.strictObject({
   minIntervalSteps: positive(MAX_BATTLE_STEPS),
   requireSeparation: z.boolean(),
 });
+export const RelocationSchema = z
+  .strictObject({
+    anchor: z.enum(['self', 'observed-enemy']),
+    direction: z.enum(['front', 'back', 'left', 'right']),
+    distanceMm: positive(200000),
+    maxDistanceMm: positive(200000),
+  })
+  .refine((r) => r.distanceMm <= r.maxDistanceMm, 'Relocation distance exceeds maximum');
+export type Relocation = z.infer<typeof RelocationSchema>;
 export const StageSchema = z.strictObject({
   id: IdSchema,
   offsetSteps: uint(MAX_BATTLE_STEPS),
@@ -497,6 +506,7 @@ export const StageSchema = z.strictObject({
   interruptWhen: ConditionSchema.optional(),
   interruptOnDamage: z.boolean().optional(),
   hit: StageHitSchema.optional(),
+  relocation: RelocationSchema.optional(),
   selfMotion: z
     .strictObject({
       kind: z.enum(['dash', 'retreat', 'leap']),
@@ -556,6 +566,7 @@ export const AbilitySchema = z
     attack: AttackSchema,
     effects: z.array(EffectSchema).max(16),
     stages: z.array(StageSchema).min(1).max(16).optional(),
+    relocation: RelocationSchema.optional(),
   })
   .superRefine((ability, ctx) => {
     const reaction = ability.reaction;
@@ -563,7 +574,7 @@ export const AbilitySchema = z
     const response = reaction?.response;
     if (reactive !== !!reaction)
       ctx.addIssue({ code: 'custom', message: 'Reaction triggers require an explicit response' });
-    if (!ability.effects.length && response?.kind !== 'parry')
+    if (!ability.effects.length && response?.kind !== 'parry' && !ability.relocation)
       ctx.addIssue({ code: 'custom', message: 'Only parry may omit payload effects' });
     if (reaction) {
       if (ability.castSteps !== 0 || ability.stages)
@@ -610,6 +621,22 @@ export const AbilitySchema = z
         ctx.addIssue({ code: 'custom', message: 'Before-defeat has no contact filter' });
     }
     const plans = ability.stages ?? [{ attack: ability.attack, effects: ability.effects }];
+    const relocations = ability.stages ?? [ability];
+    if (relocations.some((p) => p.relocation)) {
+      if (
+        ability.trigger !== 'action' ||
+        ability.target !== 'self' ||
+        relocations.filter((p) => p.relocation).length > 1 ||
+        relocations.some(
+          (p) => p.relocation && (p.attack?.kind !== 'direct' || p.effects.length),
+        ) ||
+        ability.stages?.some((s) => s.selfMotion)
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'One direct self relocation, without payload or authored motion, is action-only',
+        });
+    }
     if (!ability.stages && (ability.attack.kind === 'arc' || ability.attack.kind === 'radial'))
       ctx.addIssue({
         code: 'custom',
@@ -633,6 +660,7 @@ export const AbilitySchema = z
         ability.trigger !== 'action' ||
         first.offsetSteps !== 0 ||
         canonicalJson(first.attack) !== canonicalJson(ability.attack) ||
+        canonicalJson(first.relocation ?? null) !== canonicalJson(ability.relocation ?? null) ||
         canonicalJson(first.effects) !== canonicalJson(ability.effects)
       )
         ctx.addIssue({
@@ -652,7 +680,7 @@ export const AbilitySchema = z
             message: 'Stage windows must be ordered, disjoint and end within 6000 steps',
           });
         if (
-          (stage.attack === null) !== (stage.effects.length === 0) ||
+          (!stage.relocation && (stage.attack === null) !== (stage.effects.length === 0)) ||
           (stage.attack?.kind === 'melee' && stage.attack.activeSteps !== stage.durationSteps)
         )
           ctx.addIssue({
@@ -985,6 +1013,8 @@ export const BudgetSchema = z.strictObject({
   maxStatusTypes: positive(256),
   maxStatusCauses: positive(65_536),
   maxForces: positive(256).optional(),
+  maxSpatialCommands: positive(256).optional(),
+  maxSpatialObjects: positive(256).optional(),
   maxReactionsPerTransaction: positive(64).optional(),
   maxReactionsPerMatch: positive(1024).optional(),
   maxReactionDepth: positive(8).optional(),

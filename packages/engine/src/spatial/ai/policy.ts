@@ -117,7 +117,7 @@ export function choosePolicy(
       excluded.push({ abilityId: ability.id, reason });
       continue;
     }
-    const assessment = assessAbility(assessmentView, ability);
+    const assessment = assessAbility(assessmentView, ability, clear);
     if (assessment.weight) candidates.push(assessment);
     else excluded.push({ abilityId: ability.id, reason: 'no estimated benefit' });
   }

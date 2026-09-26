@@ -98,6 +98,7 @@ export const EventSchema = z
       'stage-interrupt',
       'force',
       'reaction',
+      'teleport',
     ]),
     actorId: IdSchema.nullable(),
     targetId: IdSchema.nullable(),
@@ -151,9 +152,18 @@ export const EventSchema = z
     stage: StageContactSchema.optional(),
     force: ForceContributionSchema.optional(),
     reaction: ReactionContextSchema.optional(),
+    teleport: z.strictObject({ from: PhysicalVectorSchema, to: PhysicalVectorSchema }).optional(),
     wave: z.number().int().min(0).max(8).optional(),
   })
   .superRefine((event, ctx) => {
+    if (
+      (event.kind === 'teleport') !== !!event.teleport ||
+      (event.teleport && (event.phase !== 'boundary' || !event.actorId || !event.abilityId))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Teleport requires a boundary owner and displacement',
+      });
     if (event.kind === 'reaction' && (!event.reaction || !event.actorId || !event.abilityId))
       ctx.addIssue({
         code: 'custom',

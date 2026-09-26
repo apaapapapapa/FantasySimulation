@@ -315,10 +315,10 @@
     },
     {
       "id": "teleport",
-      "implemented": false,
-      "standardReady": false,
+      "implemented": true,
+      "standardReady": true,
       "class": "standard",
-      "summary": "Planned P6 mechanic; no executable payload is admitted yet.",
+      "summary": "Boundary relocation from a release-frozen delivered anchor; full capsule clearance and simultaneous endpoint rejection (ADR 0017).",
       "generation": "p6"
     },
     {
@@ -1787,8 +1787,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -2757,8 +2758,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -4673,8 +4675,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -5170,8 +5173,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -5667,8 +5671,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -6164,8 +6169,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -6661,8 +6667,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -7194,8 +7201,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -8164,8 +8172,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -8661,8 +8670,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -9631,8 +9641,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -11547,8 +11558,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -12044,8 +12056,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -12541,8 +12554,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -13050,8 +13064,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -14493,8 +14508,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -15463,8 +15479,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -15960,8 +15977,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -16457,8 +16475,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -17900,8 +17919,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -18397,8 +18417,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -18894,8 +18915,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19391,8 +19413,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19458,8 +19481,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19480,8 +19504,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19524,8 +19549,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19535,8 +19561,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19546,8 +19573,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19557,8 +19585,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19568,8 +19597,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "teleport is not implemented; permissions do not admit its payload."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19579,8 +19609,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19601,8 +19632,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19612,8 +19644,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19634,8 +19667,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19678,8 +19712,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19689,8 +19724,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19700,8 +19736,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19711,8 +19748,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19744,8 +19782,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19766,8 +19805,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19777,8 +19817,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19788,8 +19829,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19821,8 +19863,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19832,8 +19875,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19843,8 +19887,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19854,8 +19899,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19865,8 +19911,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -19898,8 +19945,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
@@ -21307,8 +21355,9 @@
       "cases": [
         {
           "when": "always",
-          "state": "rejected",
-          "reason": "No executable payload for teleport; permission never implements a mechanic."
+          "state": "defined",
+          "ruleId": "teleport.activation",
+          "summary": "Ordinary payment, expiry and reaction waves precede next-boundary relocation. It has no contact payload or reactions. Freeze the delivered target, preserve force/velocity and reject occupied or conflicting endpoints together; attached geometry restarts without a swept bridge."
         }
       ]
     },
