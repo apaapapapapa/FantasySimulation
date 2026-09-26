@@ -168,3 +168,25 @@ it.each([
 ])('rejects an out-of-policy transport budget before any request', (budget) => {
   expect(() => fixture(budget)).toThrow('budget');
 });
+
+it.each(['before-admission', 'in-flight'] as const)(
+  'classifies the transport deadline as budget exhaustion %s',
+  async (phase) => {
+    const controller = new AbortController();
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(controller.signal);
+    const { store, send } = fixture({ maxAttempts: 1 });
+    if (phase === 'before-admission') controller.abort();
+    send.mockImplementation(async () => {
+      controller.abort();
+      throw new Error('PRIVATE_TRANSPORT_SENTINEL');
+    });
+    await expect(store.put('catalog/current.json', Buffer.from('{}'), null)).rejects.toMatchObject({
+      code: 'BUDGET_EXCEEDED',
+    });
+    expect(send).toHaveBeenCalledTimes(phase === 'before-admission' ? 0 : 1);
+    expect(store.metrics().logicalRequests).toBe(phase === 'before-admission' ? 0 : 1);
+    await expect(store.head('catalog/current.json')).rejects.not.toThrow(
+      'PRIVATE_TRANSPORT_SENTINEL',
+    );
+  },
+);
