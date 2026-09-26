@@ -107,6 +107,25 @@ export function validateDeflectionContact(
     'deflection contact',
   );
 }
+export function validateDeflectionPath(
+  d: ProjectileDeflection,
+  event: BattleEvent,
+  record: StreamRecord,
+) {
+  const end =
+    record.kind === 'interval'
+      ? record.paths.find((p) => p.entityId === event.entityId)?.segments.at(-1)
+      : undefined;
+  requireReplay(
+    !!end &&
+      end.to === 1 &&
+      canonicalJson(end.end) === canonicalJson(d.position) &&
+      (d.subtimeMicros === 1000000 ||
+        (Math.round(end.from * 1000000) === d.subtimeMicros &&
+          canonicalJson(end.start) === canonicalJson(d.position))),
+    'deflection hold path',
+  );
+}
 export function validateProjectile(
   context: ReplayContext,
   p: ProjectileDisplay,

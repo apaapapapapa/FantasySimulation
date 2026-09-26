@@ -61,6 +61,8 @@ references, single ownership transition, causal IDs, speed/direction and power w
 engine imports. Every activation must name the same parent body contact among its causes.
 The event commits at boundary subtime0; its parent contact binds the recorded point/subtime.
 An expiring turn requires removal at interval subtime1000000, after the contact hold.
+The saved path must hold the contact centre through fraction1; contact times use rounded
+microseconds, and boundary contacts require only the matching endpoint.
 Both viewers show returned bullets in green, a recorded turn marker,
 velocity arrow and the saved polyline. No trajectory is inferred.
 

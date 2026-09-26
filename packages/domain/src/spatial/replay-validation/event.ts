@@ -5,6 +5,7 @@ import {
   validateDeflection,
   validateDeflectionActivations,
   validateDeflectionContact,
+  validateDeflectionPath,
 } from './projectile.ts';
 import { recordedStage } from './stage.ts';
 import { validateForce } from './force.ts';
@@ -104,6 +105,7 @@ export function validateEvents(
               ))),
         'deflection event transition',
       );
+      validateDeflectionPath(d, e, record);
     } else requireReplay(e.kind !== 'projectile-deflect', 'missing deflection event');
     if (e.abilityId !== null)
       requireReplay(

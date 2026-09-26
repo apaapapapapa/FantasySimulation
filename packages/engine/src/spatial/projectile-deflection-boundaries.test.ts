@@ -148,6 +148,9 @@ it('validates saved ownership transitions and rejects a second deflection or for
     'contact-time',
     'coherent-point',
     'missing-contact',
+    'missing-hold',
+    'late-hold',
+    'moving-hold',
   ] as const) {
     const replay = new ReplayState(context, checkpoints[index - 1]!);
     const record = structuredClone(output.records[index]!);
@@ -170,9 +173,40 @@ it('validates saved ownership transitions and rejects a second deflection or for
       else event.projectileDeflection.point = { ...event.point! };
       update.deflection = structuredClone(event.projectileDeflection);
     }
+    const segments = record.paths.find((p) => p.entityId === update.id)!.segments;
+    if (kind === 'missing-hold') {
+      segments.pop();
+      segments.at(-1)!.to = 1;
+    }
+    if (kind === 'late-hold') {
+      segments.at(-1)!.from = (segments.at(-1)!.from + 1) / 2;
+      segments.at(-2)!.to = segments.at(-1)!.from;
+    }
+    if (kind === 'moving-hold') {
+      segments.at(-1)!.start = { ...segments.at(-1)!.start, x: update.position.x + 1 };
+      segments.at(-2)!.end = { ...segments.at(-1)!.start };
+    }
     expect(() => replay.apply(record)).toThrow(
-      ['owner', 'speed', 'event'].includes(kind) ? undefined : 'deflection contact',
+      kind.endsWith('-hold')
+        ? 'deflection hold path'
+        : ['owner', 'speed', 'event'].includes(kind)
+          ? undefined
+          : 'deflection contact',
     );
+  }
+  for (const fraction of [0.99999975, 1]) {
+    const record = structuredClone(output.records[index]!);
+    if (record.kind !== 'interval') throw new Error('Expected deflection interval');
+    const event = record.events.find((e) => e.projectileDeflection)!;
+    const update = record.projectiles.update.find((p) => p.deflection)!;
+    event.projectileDeflection = { ...event.projectileDeflection!, subtimeMicros: 1000000 };
+    update.deflection = structuredClone(event.projectileDeflection);
+    record.events.find((e) => e.id === event.parentEventId)!.subtimeMicros = 1000000;
+    const segments = record.paths.find((p) => p.entityId === update.id)!.segments;
+    segments.at(-2)!.to = fraction;
+    segments.at(-1)!.from = fraction;
+    if (fraction === 1) segments.pop();
+    expect(() => new ReplayState(context, checkpoints[index - 1]!).apply(record)).not.toThrow();
   }
   const after = checkpoints[index]!;
   const next = structuredClone(output.records[index + 1]!);
@@ -318,6 +352,15 @@ it('retains gravity and expiry while disabling homing after the contact hold', a
       earlyRemoval,
     ),
   ).toThrow('deflection event transition');
+  const missingHold = structuredClone(finalContact);
+  const segments = missingHold.paths.find((p) => p.entityId === turn.entityId)!.segments;
+  segments.pop();
+  segments.at(-1)!.to = 1;
+  expect(() =>
+    new ReplayState(context, checkpoints[last.records.indexOf(finalContact) - 1]!).apply(
+      missingHold,
+    ),
+  ).toThrow('deflection hold path');
 });
 
 it('keeps the staged projectile hit ledger and participant enumeration deterministic', async () => {
