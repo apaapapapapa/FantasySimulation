@@ -160,11 +160,20 @@ describe('delivery evidence', () => {
       }
     }
   });
-  it('separates collection, review coverage and PR completion', () => {
-    const value = fixture();
-    assert.equal(assessDelivery(value, 'pr').exitCode, 2);
-    assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
-    assert.equal(assessDelivery(value, 'merge', receipt(value)).exitCode, 2);
+  it('manual delivery requires a review receipt even for Renovate PRs', () => {
+    for (const login of ['owner', 'renovate[bot]']) {
+      const value = fixture();
+      change(value.pull, 'user', { login });
+      change(value.pullAfter, 'user', { login });
+      const result = assessDelivery(value, 'pr');
+      assert.equal(result.exitCode, 2);
+      assert.equal(
+        result.report.checks.find((check) => check.id === 'review-coverage')?.status,
+        'unknown',
+      );
+      assert.equal(assessDelivery(value, 'pr', receipt(value)).exitCode, 0);
+      assert.equal(assessDelivery(value, 'merge', receipt(value)).exitCode, 2);
+    }
   });
   it('requires main push CI for the real merge and does not infer release from tags', () => {
     const value = fixture(true);
