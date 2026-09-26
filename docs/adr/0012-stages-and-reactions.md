@@ -18,11 +18,12 @@ Replay validates saved display without engine. Future shapes/P6 require their ow
 
 [Issue #155](https://github.com/apaapapapapa/FantasySimulation/issues/155), owner decision
 2026-09-26, withdraws numeric damage reflection and its example. Reflection means before-hit
-projectile deflection only: aim at delayed observed attacker or reverse incoming direction;
+projectile deflection only: aim at the delayed observed attacker if visible; otherwise
+reverse the incoming direction;
 transfer ownership, preserve launch power/speed/gravity/lifetime, no homing, resume next
 interval. No explosion there/re-deflection; exclude melee/hitscan/explosions/periodic damage.
 Absorption converts post-modifier/pre-shield damage to same-wave healing, total <=100%.
 Drain uses actual HP lost; explicit revival follows healing/all waves, finite <=4/actor/match.
-Reaction caps/rollback apply. [ADR0016](0016-p6-foundation.md) proposes the foundation;
-its approval is pending. Implementation follows #155 §2-C and the delivery skill; original
+Reaction caps/rollback apply. [ADR0016](0016-p6-foundation.md) defines the approved foundation.
+Implementation follows #155 §2-C and the delivery skill; original
 design approval is not implementation approval. Preserve coordinator/domain/log ownership.

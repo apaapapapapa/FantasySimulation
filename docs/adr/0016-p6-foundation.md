@@ -1,6 +1,6 @@
 # ADR 0016: P6 foundation
 
-**Proposed: owner approval required before P6-00b/c implementation.** Refs #155, #1.
+**Accepted by owner in ChatGPT, 2026-09-26.** Refs #155, #1.
 Documents only; no mechanics/publication.
 #155 supersedes older P6 hooks; #158 owns P5 publication evidence.
 
