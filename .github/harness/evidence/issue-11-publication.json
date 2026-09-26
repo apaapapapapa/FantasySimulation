@@ -1,0 +1,462 @@
+{
+  "schemaVersion": 1,
+  "issue": 11,
+  "fixtureOnly": true,
+  "repairedProduction": false,
+  "baselineSha": "138684336654dd58c90b8b43e7d3ff81490dc37f",
+  "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+  "controllerSha": "7d69c09238eec74991f885524efb2a76acd843c9",
+  "isolation": {
+    "run": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36208186419",
+    "attempt": 1,
+    "artifactId": 10894309286,
+    "artifactSha256": "32ff4b7acd5417559794592a3cc9ecb275c8aaa160a98bfba5699332c055957d",
+    "probe": {
+      "exitCode": 0,
+      "signal": null,
+      "bounded": false,
+      "output": ""
+    },
+    "originalCheckoutPreserved": true
+  },
+  "source": {
+    "report": {
+      "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+      "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+      "baselineSha": null,
+      "testMergeSha": null,
+      "schemaVersion": 1,
+      "producer": "source-runner",
+      "startedAt": "2026-09-26T01:23:27.717Z",
+      "finishedAt": "2026-09-26T01:28:01.462Z",
+      "checks": [
+        {
+          "id": "source-clean",
+          "required": true,
+          "status": "pass",
+          "reason": "Clean, unchanged source tree",
+          "evidence": [
+            {
+              "uri": ".generated/harness/loop-attempt-1/command.json",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        },
+        {
+          "id": "source-verify",
+          "required": true,
+          "status": "pass",
+          "reason": "vp run verify exit=0; bounded=false",
+          "evidence": [
+            {
+              "uri": ".generated/harness/loop-attempt-1/verify.log",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            },
+            {
+              "uri": ".generated/harness/loop-attempt-1/command.json",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        }
+      ]
+    },
+    "command": {
+      "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+      "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+      "baselineSha": null,
+      "testMergeSha": null,
+      "command": ["vp", "run", "verify"],
+      "platform": "linux",
+      "nodeVersion": "v24.19.0",
+      "startedAt": "2026-09-26T01:23:27.717Z",
+      "finishedAt": "2026-09-26T01:28:01.462Z",
+      "exitCode": 0,
+      "signal": null,
+      "bounded": false,
+      "cleanBefore": true,
+      "cleanAfter": true
+    },
+    "logSha256": "024bcaccdb21feb708b200e71c79960b3f6daf3b541ce3621c91878af423e2d8"
+  },
+  "regression": {
+    "baselineSha": "138684336654dd58c90b8b43e7d3ff81490dc37f",
+    "baselineOverlaySha": "12def76fd765285e3988f6175d753622bc91989c",
+    "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+    "file": "apps/api/src/loop-proof-value.test.ts",
+    "name": "returns one",
+    "testHash": "968deb564e94bd92ee078b813d348cffa06d22603d47b8256e1e23ed70b55a16",
+    "results": [
+      {
+        "label": "baseline",
+        "outcome": "assertion-failed",
+        "exitCode": 1,
+        "signal": null,
+        "bounded": false,
+        "execution": {
+          "schemaVersion": 1,
+          "hooksExecuted": false,
+          "unhandledErrors": 0,
+          "tests": [
+            {
+              "file": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/apps/api/src/loop-proof-value.test.ts",
+              "name": "returns one",
+              "state": "failed",
+              "errors": ["AssertionError"]
+            }
+          ]
+        },
+        "logSha256": "8bca264b4f3d37eeb31c5322239d538e969fadb20975ce910d44095af606c8ea",
+        "output": "note: You are running `vp test` as a Vite+ built-in command. If you meant to run the test npm script, use `vpr test` instead.\nFANTASY_REGRESSION_EXECUTION={\"schemaVersion\":1,\"hooksExecuted\":false,\"unhandledErrors\":0,\"tests\":[{\"file\":\"/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/apps/api/src/loop-proof-value.test.ts\",\"name\":\"returns one\",\"state\":\"failed\",\"errors\":[\"AssertionError\"]}]}\nJSON report written to /home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/.generated/loop-regression/vitest.json\n",
+        "assertions": [
+          {
+            "name": "returns one",
+            "status": "failed",
+            "failureMessages": [
+              "AssertionError: expected +0 to be 1 // Object.is equality\n    at /home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/apps/api/src/loop-proof-value.test.ts:4:17\n    at file:///home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner/dist/chunk-artifact.js:302:11\n    at file:///home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner/dist/chunk-artifact.js:1903:26\n    at file:///home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner/dist/chunk-artifact.js:2326:20\n    at new Promise (<anonymous>)\n    at runWithCancel (file:///home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner/dist/chunk-artifact.js:2323:10)\n    at file:///home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner/dist/chunk-artifact.js:2305:20\n    at new Promise (<anonymous>)\n    at runWithTimeout (file:///home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner/dist/chunk-artifact.js:2272:10)\n    at file:///home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/baseline-1/node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner/dist/chunk-artifact.js:2956:64"
+            ]
+          }
+        ]
+      },
+      {
+        "label": "candidate",
+        "outcome": "pass",
+        "exitCode": 0,
+        "signal": null,
+        "bounded": false,
+        "execution": {
+          "schemaVersion": 1,
+          "hooksExecuted": false,
+          "unhandledErrors": 0,
+          "tests": [
+            {
+              "file": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/worktree/apps/api/src/loop-proof-value.test.ts",
+              "name": "returns one",
+              "state": "passed",
+              "errors": []
+            }
+          ]
+        },
+        "logSha256": "69ef0608b9c406a795c4277badd3c0b779c06baf3d33fd4cecc2cea2f4686491",
+        "output": "note: You are running `vp test` as a Vite+ built-in command. If you meant to run the test npm script, use `vpr test` instead.\nFANTASY_REGRESSION_EXECUTION={\"schemaVersion\":1,\"hooksExecuted\":false,\"unhandledErrors\":0,\"tests\":[{\"file\":\"/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/worktree/apps/api/src/loop-proof-value.test.ts\",\"name\":\"returns one\",\"state\":\"passed\",\"errors\":[]}]}\nJSON report written to /home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/worktree/.generated/loop-regression/vitest.json\n",
+        "assertions": [
+          {
+            "name": "returns one",
+            "status": "passed",
+            "failureMessages": []
+          }
+        ]
+      }
+    ]
+  },
+  "handoff": {
+    "repository": "apaapapapapa/FantasySimulation",
+    "branch": "loop/0093b0cbf771c3c675b430b5cda662b3",
+    "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+    "base": "main",
+    "workspace": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/worktree",
+    "changedPaths": ["apps/api/src/loop-proof-value.test.ts", "apps/api/src/loop-proof-value.ts"],
+    "goal": "Full repository integration sample returns one",
+    "target": "pr",
+    "repairComplete": false,
+    "nextAction": "Manually publish exactly this branch/SHA and open a PR; then observe actual current CI/review. No automatic push, merge or deployment."
+  },
+  "restoredJournalSha256": "e11ce29ede3ae52557190ae86efe2a892de4559683fee766f55c0b457d43f63b",
+  "journal": {
+    "schemaVersion": 1,
+    "revision": 10,
+    "contract": {
+      "schemaVersion": 1,
+      "repository": "apaapapapapa/FantasySimulation",
+      "baselineSha": "138684336654dd58c90b8b43e7d3ff81490dc37f",
+      "goal": "Full repository integration sample returns one",
+      "allowedPaths": ["apps/api/src/loop-proof-value.test.ts", "apps/api/src/loop-proof-value.ts"],
+      "requiredChecks": ["source-clean", "source-verify"],
+      "budget": {
+        "attempts": 3,
+        "noProgress": 2,
+        "durationMs": 3600000,
+        "externalCalls": 200,
+        "costMicros": 0
+      },
+      "review": "self",
+      "reviewWaitMs": 0,
+      "target": "pr"
+    },
+    "contractHash": "96a6e31e09f0427d19a3848b72691955888261ab0f74741c97d68c0f6fd7e03b",
+    "events": [
+      {
+        "sequence": 1,
+        "at": "2026-09-26T01:23:23.911Z",
+        "type": "initialized",
+        "data": {},
+        "previous": "96a6e31e09f0427d19a3848b72691955888261ab0f74741c97d68c0f6fd7e03b",
+        "hash": "6ae612929f3142a7527a505ea574b29c8035af789f7ce0309afc22aa24a61393"
+      },
+      {
+        "sequence": 2,
+        "at": "2026-09-26T01:23:27.377Z",
+        "type": "prepared",
+        "data": {
+          "workspace": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/worktree"
+        },
+        "previous": "6ae612929f3142a7527a505ea574b29c8035af789f7ce0309afc22aa24a61393",
+        "hash": "3c498bb2ca6bf36da61104b1a9880037ab794ec0df9b6c68ac201a591f1385b1"
+      },
+      {
+        "sequence": 3,
+        "at": "2026-09-26T01:23:27.528Z",
+        "type": "begun",
+        "data": {
+          "hypothesis": "The deliberately injected sample constant should be one",
+          "externalCalls": 200,
+          "costMicros": 0
+        },
+        "previous": "3c498bb2ca6bf36da61104b1a9880037ab794ec0df9b6c68ac201a591f1385b1",
+        "hash": "0a57bb7b18e489a009d58f5b6f2b317624191d7d46442c2be802d1b513597e95"
+      },
+      {
+        "sequence": 4,
+        "at": "2026-09-26T01:23:27.574Z",
+        "type": "applying",
+        "data": {
+          "baseSha": "138684336654dd58c90b8b43e7d3ff81490dc37f",
+          "patchHash": "ca23f5631bf6c1a746fc8b1140786da4c1f0c9a524594983ff2bad1cd50025a8"
+        },
+        "previous": "0a57bb7b18e489a009d58f5b6f2b317624191d7d46442c2be802d1b513597e95",
+        "hash": "a11069742bf2783895de0b686cae07f5980559cda597144d3de622eb0960d950"
+      },
+      {
+        "sequence": 5,
+        "at": "2026-09-26T01:23:27.613Z",
+        "type": "applied",
+        "data": {
+          "patchHash": "ca23f5631bf6c1a746fc8b1140786da4c1f0c9a524594983ff2bad1cd50025a8",
+          "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+          "changes": [
+            {
+              "path": "apps/api/src/loop-proof-value.test.ts",
+              "status": "A"
+            },
+            {
+              "path": "apps/api/src/loop-proof-value.ts",
+              "status": "M"
+            }
+          ],
+          "evidence": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/evidence/patch-1.diff"
+        },
+        "previous": "a11069742bf2783895de0b686cae07f5980559cda597144d3de622eb0960d950",
+        "hash": "ee10e5a8abf35a428207bac449b162dfcd2469a4015256fdd45fe010fffb94e9"
+      },
+      {
+        "sequence": 6,
+        "at": "2026-09-26T01:28:01.498Z",
+        "type": "evaluated",
+        "data": {
+          "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+          "outcome": "pass",
+          "passed": 1,
+          "evidence": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/evidence/evaluation-1.json"
+        },
+        "previous": "ee10e5a8abf35a428207bac449b162dfcd2469a4015256fdd45fe010fffb94e9",
+        "hash": "157fb344915df6586c0d986c1f42f570d46f5d3207b5db440d33566e8465e7f1"
+      },
+      {
+        "sequence": 7,
+        "at": "2026-09-26T01:28:17.909Z",
+        "type": "regression",
+        "data": {
+          "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+          "evidence": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/evidence/regression-1/comparison.json"
+        },
+        "previous": "157fb344915df6586c0d986c1f42f570d46f5d3207b5db440d33566e8465e7f1",
+        "hash": "4a75bf1ac6632bdd38bfe3dd36b465b8a95cee4023615ef5d1b3472d607325b0"
+      },
+      {
+        "sequence": 8,
+        "at": "2026-09-26T01:28:17.945Z",
+        "type": "reviewed",
+        "data": {
+          "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+          "method": "self",
+          "unresolvedFindings": 0,
+          "evidence": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/evidence/review-57930b73-4c53-477c-9fbd-d791b0738f0a.json"
+        },
+        "previous": "4a75bf1ac6632bdd38bfe3dd36b465b8a95cee4023615ef5d1b3472d607325b0",
+        "hash": "e13af68de2ab26734a9b4e6cc058c133ad8d546887da1911a3ff48a3bc6ebed4"
+      },
+      {
+        "sequence": 9,
+        "at": "2026-09-26T01:35:08.776Z",
+        "type": "collection-reserved",
+        "data": {
+          "calls": 80,
+          "number": 152
+        },
+        "previous": "e13af68de2ab26734a9b4e6cc058c133ad8d546887da1911a3ff48a3bc6ebed4",
+        "hash": "fc06ed33e7ef519680ce66ba5d9a7bb058e6283a423070cac1d57aab726d2ac4"
+      },
+      {
+        "sequence": 10,
+        "at": "2026-09-26T01:37:45.136Z",
+        "type": "observed",
+        "data": {
+          "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+          "complete": true,
+          "evidence": "/home/runner/work/FantasySimulation/FantasySimulation/.generated/harness/repository-loop-proof/store/0093b0cbf771c3c675b430b5cda662b3/evidence/delivery-9.json"
+        },
+        "previous": "fc06ed33e7ef519680ce66ba5d9a7bb058e6283a423070cac1d57aab726d2ac4",
+        "hash": "593cde75deea966ce5c7dbca856c7a658203a79ab9d1ace0677672e1572c1101"
+      }
+    ]
+  },
+  "observation": {
+    "pullRequest": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+    "ciRun": "https://github.com/apaapapapapa/FantasySimulation/actions/runs/36208720160",
+    "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+    "testMergeSha": "a6ccf13e6643ec78396a6cea8a9f9fc3ce36a372",
+    "startedAt": "2026-09-26T01:37:10.817Z",
+    "finishedAt": "2026-09-26T01:37:20.493Z",
+    "stateAtObservation": "open",
+    "mergedAtObservation": false,
+    "snapshotSha256": "d888989e03dc71101ac38d373c5fead49cd9427377b23be98d157cb8a4e1cc50",
+    "review": {
+      "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+      "conversationDigest": "1f7e881c5d070b16f03a7d766ebf19d2dcb89c5b190025dd71c27fe8a813f7d5",
+      "reviewedPaths": [
+        "apps/api/src/loop-proof-value.test.ts",
+        "apps/api/src/loop-proof-value.ts"
+      ],
+      "completedAt": "2026-09-26T01:37:44.972Z",
+      "method": "self",
+      "summary": "Reviewed both fixture files, actual baseline AssertionError and candidate pass, exact source/handoff/PR SHA, complete current CI logs, and the completed Codex review with no findings. No product entrypoint imports the fixture; it will remain unmerged.",
+      "unresolvedFindings": 0,
+      "squashTitle": "test(harness): demonstrate exact-SHA manual repair publication (#152)",
+      "squashBody": "Refs #11"
+    },
+    "report": {
+      "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+      "candidateSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133",
+      "baselineSha": null,
+      "testMergeSha": null,
+      "schemaVersion": 1,
+      "producer": "github-delivery",
+      "startedAt": "2026-09-26T01:37:10.817Z",
+      "finishedAt": "2026-09-26T01:37:20.493Z",
+      "checks": [
+        {
+          "id": "collection",
+          "required": true,
+          "status": "pass",
+          "reason": "All requested pages collected",
+          "evidence": [
+            {
+              "uri": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        },
+        {
+          "id": "snapshot-stable",
+          "required": true,
+          "status": "pass",
+          "reason": "PR head/base/merge/update identity must remain unchanged",
+          "evidence": [
+            {
+              "uri": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        },
+        {
+          "id": "issue-completion-policy",
+          "required": true,
+          "status": "pass",
+          "reason": "PR title/body and explicit squash title/body must use non-closing references; completion follows main CI",
+          "evidence": [
+            {
+              "uri": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        },
+        {
+          "id": "pr-ci",
+          "required": true,
+          "status": "pass",
+          "reason": "Latest CI and Linux planned receipts match the evaluated revision",
+          "evidence": [
+            {
+              "uri": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        },
+        {
+          "id": "review-threads",
+          "required": true,
+          "status": "pass",
+          "reason": "All inline review threads resolved",
+          "evidence": [
+            {
+              "uri": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        },
+        {
+          "id": "review-approval",
+          "required": true,
+          "status": "pass",
+          "reason": "Repository-required external approval is never replaced by self review",
+          "evidence": [
+            {
+              "uri": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        },
+        {
+          "id": "review-coverage",
+          "required": true,
+          "status": "pass",
+          "reason": "A candidate- and conversation-bound review receipt must cover every changed path",
+          "evidence": [
+            {
+              "uri": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        },
+        {
+          "id": "additional-checks",
+          "required": true,
+          "status": "pass",
+          "reason": "Other observed pending, failed or unexpected skipped statuses/checks must not be ignored",
+          "evidence": [
+            {
+              "uri": "https://github.com/apaapapapapa/FantasySimulation/pull/152",
+              "sourceSha": "7e44fce0135134256a3d6d757dcb2c928b8b4133"
+            }
+          ]
+        }
+      ]
+    },
+    "independentReview": {
+      "url": "https://github.com/apaapapapapa/FantasySimulation/pull/152#issuecomment-5841981961",
+      "status": "completed with no findings",
+      "kind": "automated Code Review; not human approval"
+    }
+  },
+  "disposition": {
+    "state": "closed",
+    "merged": false,
+    "closedAt": "2026-09-26T01:38:47Z",
+    "reason": "Disposable acceptance fixture; never merge into product main"
+  },
+  "limitations": [
+    "The demonstration repairs an intentionally injected fixture, not a production defect.",
+    "Windows is explicitly unsupported; current user direction and CI require Linux only.",
+    "Raw logs and the preserved workspaces are retained in the linked Actions artifact for 30 days.",
+    "No unattended repair, merge, deployment, provider API or additional workflow write permission was introduced."
+  ]
+}
