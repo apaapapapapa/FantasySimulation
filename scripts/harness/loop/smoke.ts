@@ -1,4 +1,4 @@
-/** Real isolation/regression smoke; its disposable sample is never published or merged. */
+/** Real isolation/regression smoke; publication proofs remain disposable, never merged. */
 import assert from 'node:assert/strict';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,9 +18,13 @@ import { regression } from './regression.ts';
 import { handoff, review } from './handoff.ts';
 import { status } from './state.ts';
 import { git } from '../source.ts';
+import { sha } from '../report.ts';
 
 const repositoryProof = process.argv[2] === 'repository';
-assert(process.argv.length === 2 || (process.argv.length === 3 && repositoryProof));
+const published = process.argv.length === 5 && repositoryProof;
+assert(process.argv.length === 2 || (process.argv.length === 3 && repositoryProof) || published);
+const frozenBaseline = published ? sha(process.argv[3]) : null;
+const frozenCandidate = published ? sha(process.argv[4]) : null;
 const output = join(
   controllerRoot,
   `.generated/harness/${repositoryProof ? 'repository-loop-proof' : 'loop-smoke'}`,
@@ -42,12 +46,21 @@ const repo = testRepository({
 });
 const repository = repositoryProof ? 'apaapapapapa/FantasySimulation' : 'owner/repo';
 if (repositoryProof) {
-  const baseline = git(controllerRoot, ['rev-parse', 'HEAD']);
-  repo.git('fetch', controllerRoot, baseline);
+  const baseline = frozenBaseline ?? git(controllerRoot, ['rev-parse', 'HEAD']);
+  if (published) {
+    repo.git('fetch', `https://github.com/${repository}.git`, baseline, frozenCandidate!);
+    assert.equal(repo.git('show', '-s', '--format=%P', frozenCandidate!).trim(), baseline);
+    assert.equal(
+      repo.git('show', '-s', '--format=%B', frozenCandidate!).trim(),
+      'fix: manual repair attempt 1',
+    );
+  } else repo.git('fetch', controllerRoot, baseline);
   repo.git('reset', '--hard', baseline);
-  writeFileSync(join(repo.root, 'apps/api/src/loop-proof-value.ts'), 'export const value = 0;\n');
-  repo.git('add', 'apps/api/src/loop-proof-value.ts');
-  repo.git('commit', '-m', 'test: add an isolated repair proof fixture');
+  if (!published) {
+    writeFileSync(join(repo.root, 'apps/api/src/loop-proof-value.ts'), 'export const value = 0;\n');
+    repo.git('add', 'apps/api/src/loop-proof-value.ts');
+    repo.git('commit', '-m', 'test: add an isolated repair proof fixture');
+  }
 }
 repo.git('remote', 'add', 'origin', `https://github.com/${repository}.git`);
 copyDependencies(controllerRoot, repo.root);
@@ -56,6 +69,7 @@ const file = repositoryProof ? 'apps/api/src/loop-proof-value.ts' : 'src/value.t
 const testFile = repositoryProof ? 'apps/api/src/loop-proof-value.test.ts' : 'src/value.test.ts';
 const testName = 'returns one';
 const original = readFileSync(join(repo.root, file), 'utf8');
+assert.equal(original, 'export const value = 0;\n');
 const candidateText = 'export const value = 1;\n';
 const testText = `import { it, expect } from 'vite-plus/test';
 import { value } from './${repositoryProof ? 'loop-proof-value' : 'value'}.ts';
@@ -96,6 +110,7 @@ const evidence: Record<string, unknown> = {
   repositoryProof,
   sourceMainSha: repositoryProof ? git(controllerRoot, ['rev-parse', 'origin/main']) : null,
   sourceControllerSha: git(controllerRoot, ['rev-parse', 'HEAD']),
+  frozenCandidate,
   repairedProduction: false,
   baselineSha,
   journal,
@@ -122,12 +137,49 @@ try {
   assert.equal(probe.exitCode, 0, 'Real namespace/read-only isolation must work; no fallback');
   await beginAttempt(journal, {
     hypothesis: 'The deliberately injected sample constant should be one',
-    externalCalls: 0,
+    externalCalls: published ? 200 : 0,
     costMicros: 0,
   });
   const patch = join(output, 'sample.diff');
   writeFileSync(patch, diff(file, original, candidateText) + diff(testFile, null, testText));
-  const candidate = await applyPatch(journal, { patch, attempt: 1, baseSha: baselineSha });
+  // Reproduce a connector-created Git object, without replacing any journal SHA after testing.
+  // Only author/committer metadata is supplied; applyPatch still owns patch/scope validation.
+  const keys = [
+    'GIT_AUTHOR_NAME',
+    'GIT_AUTHOR_EMAIL',
+    'GIT_AUTHOR_DATE',
+    'GIT_COMMITTER_NAME',
+    'GIT_COMMITTER_EMAIL',
+    'GIT_COMMITTER_DATE',
+  ];
+  const previous = keys.map((key) => process.env[key]);
+  const metadata = frozenCandidate
+    ? repo
+        .git('show', '-s', '--format=%an%x00%ae%x00%aI%x00%cn%x00%ce%x00%cI', frozenCandidate)
+        .trimEnd()
+        .split('\0')
+    : null;
+  let candidate;
+  try {
+    if (metadata) {
+      assert.equal(metadata.length, keys.length);
+      keys.forEach((key, i) => {
+        process.env[key] = metadata[i];
+      });
+    }
+    candidate = await applyPatch(journal, { patch, attempt: 1, baseSha: baselineSha });
+  } finally {
+    keys.forEach((key, i) => {
+      if (previous[i] === undefined) delete process.env[key];
+      else process.env[key] = previous[i];
+    });
+  }
+  if (frozenCandidate)
+    assert.equal(
+      candidate.candidateSha,
+      frozenCandidate,
+      'Exact Git object must match before evaluation',
+    );
   const evaluated = await evaluate(journal);
   evidence.evaluation = evaluated;
   assert.equal(evaluated.phase, 'review');
