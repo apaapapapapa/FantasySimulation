@@ -44,7 +44,7 @@ await test('Node and package-manager versions require exact compatible pins', ()
   );
 });
 
-await test('Renovate config has no automatic merge path', () => {
+await test('Renovate rejects blanket and nested automatic merge paths', () => {
   const config = renovateConfig();
   assert.equal(renovateOutcome(config).status, 'pass');
   for (const changed of [
@@ -110,11 +110,79 @@ await test('package and nested overrides cannot restore PR creation approval', (
     {
       ...config,
       packageRules: [
-        ...array(config.packageRules),
         { matchPackageNames: ['*'], automerge: false, dependencyDashboardApproval: true },
+        ...array(config.packageRules),
       ],
     },
   ]) {
     assert.throws(() => renovateOutcome(changed), /NESTED_PR_CREATION_APPROVAL_FORBIDDEN/);
+  }
+});
+
+await test('only the final stable minor rule may enable automerge', () => {
+  const config = renovateConfig();
+  const rules = array(config.packageRules).map(object);
+  const minor = object(rules.at(-1));
+  assert.equal(minor.automerge, true);
+  assert.deepEqual(minor.matchUpdateTypes, ['minor']);
+  assert.equal(minor.matchCurrentVersion, '!/^0/');
+  for (const updateType of [
+    'major',
+    'patch',
+    'pin',
+    'pinDigest',
+    'digest',
+    'lockFileMaintenance',
+  ]) {
+    const changed = [...rules.slice(0, -1), { ...minor, matchUpdateTypes: [updateType] }];
+    assert.throws(() => renovateOutcome({ ...config, packageRules: changed }), /AUTOMERGE_SCOPE/);
+  }
+  for (const changed of [
+    { ...minor, matchUpdateTypes: ['minor', 'patch'] },
+    { ...minor, matchCurrentVersion: '*' },
+    { ...minor, matchPackageNames: [] },
+    { ...minor, matchPackageNames: array(minor.matchPackageNames).slice(1) },
+    { ...minor, groupName: 'unsafe mixed updates' },
+    { ...minor, extends: [':automergeAll'] },
+  ]) {
+    assert.throws(
+      () => renovateOutcome({ ...config, packageRules: [...rules.slice(0, -1), changed] }),
+      /AUTOMERGE_SCOPE/,
+    );
+  }
+  assert.throws(
+    () => renovateOutcome({ ...config, packageRules: [minor, ...rules.slice(0, -1)] }),
+    /AUTOMERGE_RULE_MUST_BE_LAST/,
+  );
+  assert.throws(
+    () => renovateOutcome({ ...config, packageRules: [...rules, minor] }),
+    /SINGLE_MINOR_AUTOMERGE/,
+  );
+});
+
+await test('minor automerge cannot bypass tests, current base or PR review protection', () => {
+  const config = renovateConfig();
+  for (const unsafe of [
+    { ignoreTests: true },
+    { internalChecksAsSuccess: true },
+    { automergeType: 'branch' },
+    { automergeStrategy: 'merge-commit' },
+    { rebaseWhen: 'never' },
+    { separateMinorPatch: false },
+    { requiredStatusChecks: null },
+    { statusCheckNames: { artifactError: null } },
+  ]) {
+    assert.throws(() => renovateOutcome({ ...config, ...unsafe }), /AUTOMERGE/);
+  }
+  for (const unsafe of [
+    { ignoreTests: true },
+    { platformAutomerge: true },
+    { internalChecksAsSuccess: true },
+    { automergeType: 'branch' },
+    { rebaseWhen: 'never' },
+    { statusCheckNames: { minimumReleaseAge: null } },
+    { separateMinorPatch: false },
+  ]) {
+    assert.throws(() => renovateOutcome({ ...config, minor: unsafe }), /AUTOMERGE/);
   }
 });

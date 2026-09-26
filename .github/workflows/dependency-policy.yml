@@ -60,7 +60,7 @@ jobs:
         with:
           node-version-file: .node-version
           run-install: false
-      - name: Version coupling and no-automerge regression tests
+      - name: Version coupling and guarded automerge regression tests
         run: node --test scripts/security/toolchain.test.ts scripts/security/renovate-file.test.ts
       - name: Check actual repository pins and bot policy
         run: node scripts/security/toolchain.ts
