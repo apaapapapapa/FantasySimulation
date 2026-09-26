@@ -11,11 +11,11 @@ permissions:
 jobs:
   source:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: c31c0b508af230a2839c117de75d0f9f34823e75
+          ref: c2a070ee0f459c7e24158dc1745e53639bcd04d2
           fetch-depth: 0
           persist-credentials: false
       - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
@@ -24,26 +24,16 @@ jobs:
           run-install: false
           cache: false
       - run: vp install --frozen-lockfile
-      - name: Verify clean candidate with the existing source harness
-        id: source
-        run: >-
-          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH
-          vp run harness source .generated/harness/issue8-source
-      - name: Assess source evidence
-        if: always() && steps.source.outcome != 'skipped'
-        run: vp run harness report .generated/harness/issue8-source/report.json source-clean source-verify
-      - name: Collect actual PR and GitHub evidence using the existing read-only harness
-        if: always()
-        run: vp run harness github-snapshot apaapapapapa/FantasySimulation 175 .generated/harness/issue8-pr
+      - name: Wait for the exact main CI with a finite budget
+        run: timeout 420s gh run watch 36242920989 --interval 15 --exit-status
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Export pinned formatter diff if verification failed
-        if: failure()
-        run: |
-          vp fmt scripts/security/toolchain.ts scripts/security/toolchain.test.ts scripts/security/renovate-file.test.ts scripts/harness/delivery.test.ts
-          mkdir -p .generated/harness/issue8-format
-          git diff > .generated/harness/issue8-format/format.patch
-      - name: Export exact public source and public issue body
+      - name: Collect actual PR and main evidence using the existing read-only harness
+        if: always()
+        run: vp run harness github-snapshot apaapapapapa/FantasySimulation 175 .generated/harness/issue8-main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Export exact public main source and public issue body
         if: always()
         run: |
           mkdir -p .generated/harness/issue8-export
@@ -54,7 +44,7 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         if: always()
         with:
-          name: issue8-evidence
+          name: issue8-main-evidence
           path: .generated/harness/issue8-*/
           retention-days: 1
           include-hidden-files: true
