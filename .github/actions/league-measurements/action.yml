@@ -1,0 +1,35 @@
+name: League timing observations
+description: Preserve diagnostic sidecars independently of immutable league artifacts
+inputs:
+  suffix:
+    required: true
+    description: Job and optional partition identity
+  collect-actions:
+    default: 'false'
+    description: Collect paginated current-attempt job and step timestamps
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      if: inputs.collect-actions == 'true'
+      continue-on-error: true
+      with:
+        script: |
+          const {mkdir, writeFile} = require('node:fs/promises');
+          const {leagueTiming} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/league-timing.ts`);
+          const request = {...context.repo, run_id: Number(process.env.GITHUB_RUN_ID), attempt_number: Number(process.env.GITHUB_RUN_ATTEMPT)};
+          const {data: run} = await github.rest.actions.getWorkflowRunAttempt(request);
+          const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {...request, per_page: 100});
+          const report = leagueTiming(run, jobs, new Date().toISOString());
+          await mkdir(process.env.FANTASY_MEASUREMENTS_DIR, {recursive:true});
+          await writeFile(`${process.env.FANTASY_MEASUREMENTS_DIR}/actions.json`, JSON.stringify(report) + '\n');
+          await core.summary.addHeading('League timing observations').addRaw(`Created to observation: ${report.observedWallMs} ms. Created to R2/Worker readback: ${report.createdToR2WorkerReadbackMs ?? 'unmeasured'} ms. Fresh-browser Pages acceptance and separate runner/Environment/concurrency waits remain unmeasured. Inclusive process spans and overlapping jobs must not be added to wall time.`).write();
+    - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      if: always()
+      continue-on-error: true
+      with:
+        name: league-timing-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.suffix }}
+        path: ${{ env.FANTASY_MEASUREMENTS_DIR }}/*.json
+        if-no-files-found: warn
+        include-hidden-files: true
+        retention-days: 7

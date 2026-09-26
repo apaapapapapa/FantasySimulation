@@ -1,3 +1,4 @@
+import { currentMeasurements, measureSync, startMeasurement } from '../measurements.ts';
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -61,50 +62,65 @@ export async function readReplayChunk(directory: string, manifest: ReplayManifes
   const ref = manifest.chunks[index];
   if (!ref) throw new Error('Unknown replay chunk');
   const raw = await readCompressed(directory, ref);
-  return operationInput(() => replayChunkRecords(raw, ref), 'DATA_INVALID');
+  return measureSync('json.records', () =>
+    operationInput(() => replayChunkRecords(raw, ref), 'DATA_INVALID'),
+  );
 }
 const readCheckpoint = async (directory: string, manifest: ReplayManifest, index: number) => {
   const raw = await readCompressed(directory, manifest.checkpoints[index]!);
-  return operationInput(() => JSON.parse(raw) as unknown, 'DATA_INVALID');
+  return measureSync('json.checkpoint', () =>
+    operationInput(() => JSON.parse(raw) as unknown, 'DATA_INVALID'),
+  );
 };
 /** Full verification precedes writing, untrusted import/publication and legacy receipt adoption. */
 export async function verifyReplayDirectory(directory: string, manifest: ReplayManifest) {
-  const context = await replayContext(manifest.input, manifest.simulationHash);
-  const replay = new ReplayState(context),
-    events = createHash('sha256'),
-    trajectory = createHash('sha256');
-  for (const [i, ref] of manifest.chunks.entries()) {
-    const checkpoint = await readCheckpoint(directory, manifest, i);
-    if (canonicalJson(checkpoint) !== canonicalJson(replay.checkpoint()))
-      throw new OperationError('DATA_INVALID', 'Checkpoint does not match the verified prefix');
-    const records = await readReplayChunk(directory, manifest, i);
-    for (const input of records) {
-      const record = operationInput(() => replay.apply(input), 'DATA_INVALID');
-      if ('events' in record)
-        for (const event of record.events) events.update(eventHashLine(event));
-      trajectory.update(trajectoryHashLine(record));
+  const measured = currentMeasurements(),
+    end = startMeasurement('validate.replay');
+  let succeeded = false;
+  try {
+    const context = await replayContext(manifest.input, manifest.simulationHash);
+    const replay = new ReplayState(context),
+      events = createHash('sha256'),
+      trajectory = createHash('sha256');
+    for (const [i, ref] of manifest.chunks.entries()) {
+      const checkpoint = await readCheckpoint(directory, manifest, i);
+      if (canonicalJson(checkpoint) !== canonicalJson(replay.checkpoint()))
+        throw new OperationError('DATA_INVALID', 'Checkpoint does not match the verified prefix');
+      const records = await readReplayChunk(directory, manifest, i);
+      for (const input of records) {
+        const record = operationInput(() => replay.apply(input), 'DATA_INVALID');
+        measureSync('hash.replayStream', () => {
+          if ('events' in record)
+            for (const event of record.events) events.update(eventHashLine(event));
+          trajectory.update(trajectoryHashLine(record));
+        });
+      }
+      if (replay.step !== ref.toStep)
+        throw new OperationError('DATA_INVALID', 'Replay chunk step range');
     }
-    if (replay.step !== ref.toStep)
-      throw new OperationError('DATA_INVALID', 'Replay chunk step range');
-  }
-  const checkpoint = replay.checkpoint();
-  if (
-    checkpoint.nextRecord !== manifest.records ||
-    (checkpoint.state === null ? null : checkpoint.step) !== manifest.lastVerifiedStep ||
-    `sha256:${events.digest('hex')}` !== manifest.eventHash ||
-    `sha256:${trajectory.digest('hex')}` !== manifest.trajectoryHash
-  )
-    throw new OperationError('DATA_INVALID', 'Replay content digest/range mismatch');
-  if (manifest.end.kind === 'result') {
+    const checkpoint = replay.checkpoint();
     if (
-      checkpoint.lastRecord?.kind !== 'terminal' ||
-      canonicalJson(checkpoint.lastRecord.outcome) !== canonicalJson(manifest.end.result.outcome)
+      checkpoint.nextRecord !== manifest.records ||
+      (checkpoint.state === null ? null : checkpoint.step) !== manifest.lastVerifiedStep ||
+      `sha256:${events.digest('hex')}` !== manifest.eventHash ||
+      `sha256:${trajectory.digest('hex')}` !== manifest.trajectoryHash
     )
-      throw new OperationError('DATA_INVALID', 'Replay terminal/result mismatch');
-  } else if (replay.ended)
-    throw new OperationError('DATA_INVALID', 'Diagnostic cannot replace a recorded result');
-  verifiedManifests.set(manifest, sha256(canonicalJson(manifest)));
-  return checkpoint;
+      throw new OperationError('DATA_INVALID', 'Replay content digest/range mismatch');
+    if (manifest.end.kind === 'result') {
+      if (
+        checkpoint.lastRecord?.kind !== 'terminal' ||
+        canonicalJson(checkpoint.lastRecord.outcome) !== canonicalJson(manifest.end.result.outcome)
+      )
+        throw new OperationError('DATA_INVALID', 'Replay terminal/result mismatch');
+    } else if (replay.ended)
+      throw new OperationError('DATA_INVALID', 'Diagnostic cannot replace a recorded result');
+    verifiedManifests.set(manifest, sha256(canonicalJson(manifest)));
+    succeeded = true;
+    return checkpoint;
+  } finally {
+    end(succeeded);
+    measured?.validation(manifest.id, succeeded);
+  }
 }
 export async function verifyReplay(root: string, id: string) {
   const manifest = await readReplayManifest(root, id);

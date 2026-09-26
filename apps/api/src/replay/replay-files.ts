@@ -1,3 +1,9 @@
+import {
+  currentMeasurements,
+  measureAsync,
+  measureSync,
+  startMeasurement,
+} from '../measurements.ts';
 import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { createHash, randomUUID } from 'node:crypto';
 import { constants, createWriteStream } from 'node:fs';
@@ -11,17 +17,26 @@ import { ArtifactRefSchema, type ReplayManifest } from '@fantasy/domain/spatial'
 import { OperationError, operationInput } from '../operation-error.ts';
 
 export const sha256 = (bytes: Uint8Array | string) =>
-  `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
+  measureSync('hash.bytes', () => `sha256:${createHash('sha256').update(bytes).digest('hex')}`);
 export const GENERATED_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 export async function writeDurableFile(path: string, bytes: string | Uint8Array) {
-  const file = await open(path, 'wx');
-  try {
-    await file.writeFile(bytes);
-    await file.sync();
-  } finally {
-    await file.close();
-  }
+  return measureAsync('save.file', async () => {
+    const file = await open(path, 'wx');
+    try {
+      const written = startMeasurement('save.write');
+      try {
+        await file.writeFile(bytes);
+        written(true, typeof bytes === 'string' ? Buffer.byteLength(bytes) : bytes.byteLength);
+      } catch (error) {
+        written(false);
+        throw error;
+      }
+      await measureAsync('save.fsync', () => file.sync());
+    } finally {
+      await file.close();
+    }
+  });
 }
 /** Atomic, create-only file publication; a stopped writer never exposes a partial pointer/index. */
 export async function publishImmutableFile(path: string, bytes: string | Uint8Array) {
@@ -40,22 +55,24 @@ export const replayDirectory = (root: string, id: string) => {
 };
 /** POSIX publication durability includes directory entries, not just file contents. */
 export async function syncDirectory(path: string) {
-  let handle;
-  try {
-    handle = await open(path, 'r');
-    await handle.sync();
-  } catch (error) {
-    // Node/libuv on Windows may not expose directory FlushFileBuffers. File sync,
-    // atomic rename and mandatory read-time verification still apply; see ADR 0006.
-    const code = (error as NodeJS.ErrnoException).code;
-    if (
-      process.platform !== 'win32' ||
-      !['EPERM', 'EISDIR', 'EINVAL', 'ENOTSUP', 'EBADF'].includes(code ?? '')
-    )
-      throw error;
-  } finally {
-    await handle?.close();
-  }
+  return measureAsync('save.directorySync', async () => {
+    let handle: Awaited<ReturnType<typeof open>> | undefined;
+    try {
+      handle = await open(path, 'r');
+      await measureAsync('save.fsync', () => handle!.sync());
+    } catch (error) {
+      // Node/libuv on Windows may not expose directory FlushFileBuffers. File sync,
+      // atomic rename and mandatory read-time verification still apply; see ADR 0006.
+      const code = (error as NodeJS.ErrnoException).code;
+      if (
+        process.platform !== 'win32' ||
+        !['EPERM', 'EISDIR', 'EINVAL', 'ENOTSUP', 'EBADF'].includes(code ?? '')
+      )
+        throw error;
+    } finally {
+      await handle?.close();
+    }
+  });
 }
 /** Bound the actual read, including concurrent growth; never follow artifact symlinks. */
 export async function readBoundedFile(
@@ -63,29 +80,31 @@ export async function readBoundedFile(
   limit: number,
   code: 'INPUT_INVALID' | 'DATA_INVALID' = 'DATA_INVALID',
 ): Promise<Buffer> {
-  const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
-  try {
-    const info = await file.stat();
-    // Inspect the entry after opening, then read only through that same handle.
-    // This also covers platforms without O_NOFOLLOW: a substituted symlink/entry
-    // cannot redirect the already-open handle or pass the identity comparison.
-    const entry = await lstat(path);
-    if (entry.isSymbolicLink() || entry.dev !== info.dev || entry.ino !== info.ino)
-      throw new OperationError(code, 'Artifact entry changed or is a symlink');
-    if (!info.isFile() || info.size > limit)
-      throw new OperationError(code, 'Artifact size/type limit');
-    const bytes = Buffer.alloc(Math.min(info.size + 1, limit + 1));
-    let size = 0;
-    while (size < bytes.length) {
-      const read = await file.read(bytes, size, bytes.length - size, null);
-      if (!read.bytesRead) break;
-      size += read.bytesRead;
+  return measureAsync('save.read', async () => {
+    const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+    try {
+      const info = await file.stat();
+      // Inspect the entry after opening, then read only through that same handle.
+      // This also covers platforms without O_NOFOLLOW: a substituted symlink/entry
+      // cannot redirect the already-open handle or pass the identity comparison.
+      const entry = await lstat(path);
+      if (entry.isSymbolicLink() || entry.dev !== info.dev || entry.ino !== info.ino)
+        throw new OperationError(code, 'Artifact entry changed or is a symlink');
+      if (!info.isFile() || info.size > limit)
+        throw new OperationError(code, 'Artifact size/type limit');
+      const bytes = Buffer.alloc(Math.min(info.size + 1, limit + 1));
+      let size = 0;
+      while (size < bytes.length) {
+        const read = await file.read(bytes, size, bytes.length - size, null);
+        if (!read.bytesRead) break;
+        size += read.bytesRead;
+      }
+      if (size !== info.size) throw new OperationError(code, 'Artifact changed while reading');
+      return bytes.subarray(0, size);
+    } finally {
+      await file.close();
     }
-    if (size !== info.size) throw new OperationError(code, 'Artifact changed while reading');
-    return bytes.subarray(0, size);
-  } finally {
-    await file.close();
-  }
+  });
 }
 type ArtifactRef = ReplayManifest['chunks'][number] | ReplayManifest['checkpoints'][number];
 const decodeGzip = promisify(gunzip);
@@ -103,7 +122,9 @@ export async function readCompressed(directory: string, input: ArtifactRef) {
   const bytes = await readBoundedFile(join(directory, ref.file), ref.bytes);
   if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
     throw new OperationError('DATA_INVALID', 'Artifact checksum/size mismatch');
-  const raw = await decodeGzip(bytes, { maxOutputLength: ref.rawBytes }).catch((error: unknown) => {
+  const raw = await measureAsync('decompress', () =>
+    decodeGzip(bytes, { maxOutputLength: ref.rawBytes }),
+  ).catch((error: unknown) => {
     if (
       error instanceof Error &&
       'code' in error &&
@@ -124,19 +145,27 @@ export async function writeCompressed(directory: string, file: string, raw: stri
   const rawBytes = Buffer.byteLength(raw);
   if (rawBytes > MAX_RECORD_BYTES) throw new Error('Record/checkpoint byte limit');
   const path = join(directory, file);
-  await pipeline(
-    Readable.from([raw]),
-    createGzip({ level: 6 }),
-    createWriteStream(path, { flags: 'wx' }),
-  );
+  const compressed = startMeasurement('record.compressWrite');
+  try {
+    await pipeline(
+      Readable.from([raw]),
+      createGzip({ level: 6 }),
+      createWriteStream(path, { flags: 'wx' }),
+    );
+    compressed();
+  } catch (error) {
+    compressed(false);
+    throw error;
+  }
   // FlushFileBuffers requires write access on Windows; reopening must not truncate.
   const handle = await open(path, 'r+');
   try {
-    await handle.sync();
+    await measureAsync('save.fsync', () => handle.sync());
   } finally {
     await handle.close();
   }
   const bytes = (await stat(path)).size;
+  currentMeasurements()?.addBytes('record.compressWrite', bytes);
   const stored = await readBoundedFile(path, 16 * 1024 * 1024);
   return { file, bytes, rawBytes, checksum: sha256(stored) };
 }

@@ -1,3 +1,4 @@
+import { measureAsync } from '@fantasy/api/tooling';
 import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { join } from 'node:path';
 import {
@@ -189,50 +190,54 @@ export async function finishCloudLeague(
   source: ExecutionSource,
   executionId: string,
 ) {
-  const prepared = await preparedLeague(preparedRoot);
-  await validateStoredLeaguePlan(prepared.plan);
-  if (
-    prepared.executionId !== executionId ||
-    canonicalJson(prepared.plan.source) !== canonicalJson(source)
-  )
-    throw new OperationError('IDENTITY_MISMATCH', 'Cloud finalizer identity mismatch');
-  const graph = await localPublicationGraph(publicRoot);
-  if (!graph.latestWork || graph.catalog.leagueWork?.hash !== prepared.work.hash)
-    throw new OperationError('IDENTITY_MISMATCH', 'Cloud reservation journal mismatch');
-  const inputs: LeagueCloudInput[] = [],
-    completed: LeagueCheckInput[] = [];
-  for (let index = 0; index < prepared.inputs.length; index++) {
-    const input = await cloudInput(preparedRoot, prepared, index);
-    assertCloudSource(input, source, executionId);
-    inputs.push(input);
-    const path = join(resultRoot, String(index), 'result.json');
-    if (!(await optionalPublicationFile(path, 16000000))) continue;
-    const result = LeaguePartitionResultSchema.parse(await cloudJson(path));
-    completed.push({
-      partition: input.partition,
-      batch: input.batch,
-      reservation: input.reservation,
-      result,
-      bundles: new BattleBundles(join(resultRoot, String(index), 'bundles')),
+  return measureAsync('aggregate.final', async () => {
+    const prepared = await preparedLeague(preparedRoot);
+    await validateStoredLeaguePlan(prepared.plan);
+    if (
+      prepared.executionId !== executionId ||
+      canonicalJson(prepared.plan.source) !== canonicalJson(source)
+    )
+      throw new OperationError('IDENTITY_MISMATCH', 'Cloud finalizer identity mismatch');
+    const graph = await localPublicationGraph(publicRoot);
+    if (!graph.latestWork || graph.catalog.leagueWork?.hash !== prepared.work.hash)
+      throw new OperationError('IDENTITY_MISMATCH', 'Cloud reservation journal mismatch');
+    const inputs: LeagueCloudInput[] = [],
+      completed: LeagueCheckInput[] = [];
+    for (let index = 0; index < prepared.inputs.length; index++) {
+      const input = await cloudInput(preparedRoot, prepared, index);
+      assertCloudSource(input, source, executionId);
+      inputs.push(input);
+      const path = join(resultRoot, String(index), 'result.json');
+      if (!(await optionalPublicationFile(path, 16000000))) continue;
+      const result = LeaguePartitionResultSchema.parse(await cloudJson(path));
+      completed.push({
+        partition: input.partition,
+        batch: input.batch,
+        reservation: input.reservation,
+        result,
+        bundles: new BattleBundles(join(resultRoot, String(index), 'bundles')),
+      });
+    }
+    const reserved = {
+      ref: prepared.work,
+      work: graph.latestWork.work,
+      records: [...graph.latestWork.records.values()],
+    };
+    const exported = await exportLeague(prepared.plan, inputs, completed, publicRoot, (checked) =>
+      finishCheckedLeagueWork(
+        checked,
+        inputs.map((input) => input.reservation),
+        reserved,
+        new BattleBundles(publicRoot),
+      ),
+    );
+    await writeCloudJson(join(preparedRoot, 'completion.json'), {
+      ...exported,
+      receivedPartitions: completed.length,
+      elapsedMs: completed.map(
+        (entry) => LeaguePartitionResultSchema.parse(entry.result).elapsedMs,
+      ),
     });
-  }
-  const reserved = {
-    ref: prepared.work,
-    work: graph.latestWork.work,
-    records: [...graph.latestWork.records.values()],
-  };
-  const exported = await exportLeague(prepared.plan, inputs, completed, publicRoot, (checked) =>
-    finishCheckedLeagueWork(
-      checked,
-      inputs.map((input) => input.reservation),
-      reserved,
-      new BattleBundles(publicRoot),
-    ),
-  );
-  await writeCloudJson(join(preparedRoot, 'completion.json'), {
-    ...exported,
-    receivedPartitions: completed.length,
-    elapsedMs: completed.map((entry) => LeaguePartitionResultSchema.parse(entry.result).elapsedMs),
+    return exported;
   });
-  return exported;
 }

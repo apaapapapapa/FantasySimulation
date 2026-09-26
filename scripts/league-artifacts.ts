@@ -1,3 +1,4 @@
+import { measuredCommand, measureAsync, currentMeasurements } from '@fantasy/api/tooling';
 import artifact from '@actions/artifact';
 import { appendFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -40,11 +41,14 @@ async function main() {
       `${key}=${typeof value === 'string' ? value : JSON.stringify(value)}\n`,
     );
   const upload = async (name: string, path: string, kind: 'baseline' | 'input' | 'result') => {
-    const selection = await leagueArtifactFiles(path, kind);
-    const result = await artifact.uploadArtifact(name, selection.files, path, {
-      retentionDays: 7,
-      compressionLevel: 0,
-    });
+    const selection = await measureAsync('artifact.select', () => leagueArtifactFiles(path, kind));
+    const result = await measureAsync('artifact.upload', () =>
+      artifact.uploadArtifact(name, selection.files, path, {
+        retentionDays: 7,
+        compressionLevel: 0,
+      }),
+    );
+    currentMeasurements()?.addBytes('artifact.upload', selection.bytes);
     if (!result.id) throw new Error('Actions upload did not return an immutable ID');
     console.log(
       JSON.stringify({
@@ -59,11 +63,13 @@ async function main() {
   };
   const download = async (ref: { id: number; digest: string }, path: string) => {
     await newCloudDirectory(path);
-    const result = await artifact.downloadArtifact(ref.id, {
-      path,
-      expectedHash: ref.digest,
-      ...find,
-    });
+    const result = await measureAsync('artifact.download', () =>
+      artifact.downloadArtifact(ref.id, {
+        path,
+        expectedHash: ref.digest,
+        ...find,
+      }),
+    );
     if (result.digestMismatch || !result.downloadPath)
       throw new Error('Actions artifact digest mismatch');
   };
@@ -145,4 +151,4 @@ async function main() {
     }
   } else throw new Error('Invalid league artifact operation');
 }
-await main();
+await measuredCommand('artifact-' + (process.env.LEAGUE_ARTIFACT_OPERATION ?? 'unknown'), main);

@@ -15,6 +15,7 @@ import {
   PUBLICATION_CONTROL_BYTES,
 } from './publication-files.ts';
 import type { PublicationStore } from './publication-remote.ts';
+import { startMeasurement } from '@fantasy/api/tooling';
 
 export interface R2Config {
   accountId: string;
@@ -200,6 +201,9 @@ export class PublicationS3 implements PublicationStore {
     await this.putObject(PUBLICATION_CONTROL_KEY, data, previousEtag, true);
   }
   private async readObject(key: string, limit: number, control = false) {
+    const end = startMeasurement('r2.GET');
+    let readBytes = 0;
+    let succeeded = false;
     try {
       const value = await this.client.send(
         new GetObjectCommand(this.input(key, control)),
@@ -214,6 +218,7 @@ export class PublicationS3 implements PublicationStore {
         for (let part = await reader.read(); !part.done; part = await reader.read()) {
           bytes += part.value.byteLength;
           this.transferred += part.value.byteLength;
+          readBytes += part.value.byteLength;
           if (this.transferred > PUBLICATION_MAX_BYTES)
             throw new OperationError('BUDGET_EXCEEDED', 'S3 total read byte budget');
           if (bytes > limit) throw new OperationError('DATA_INVALID', 'S3 object byte limit');
@@ -225,45 +230,60 @@ export class PublicationS3 implements PublicationStore {
       } finally {
         reader.releaseLock();
       }
+      succeeded = true;
       return { data: Buffer.concat(parts), etag: value.ETag };
     } catch (error) {
       if (this.status(error) === 404) return null;
       this.failure(error);
+    } finally {
+      end(succeeded, readBytes);
     }
   }
   async head(key: string) {
+    const end = startMeasurement('r2.HEAD');
+    let succeeded = false;
     try {
-      return (
+      const bytes =
         (await this.client.send(new HeadObjectCommand(this.input(key)), this.options('B')))
-          .ContentLength ?? null
-      );
+          .ContentLength ?? null;
+      succeeded = true;
+      return bytes;
     } catch (error) {
       if (this.status(error) === 404) return null;
       this.failure(error);
+    } finally {
+      end(succeeded);
     }
   }
   put(key: string, data: Buffer, previousEtag: string | null) {
     return this.putObject(key, data, previousEtag);
   }
   private async putObject(key: string, data: Buffer, previousEtag: string | null, control = false) {
-    await this.client
-      .send(
-        new PutObjectCommand({
-          ...this.input(key, control),
-          Body: data,
-          ContentType: key.endsWith('.gz') ? 'application/gzip' : 'application/json',
-          CacheControl: control
-            ? 'private, no-store'
-            : key === 'catalog/current.json'
-              ? 'public, max-age=30, no-transform'
-              : 'public, max-age=31536000, immutable, no-transform',
-          ...(previousEtag === null ? { IfNoneMatch: '*' } : { IfMatch: previousEtag }),
-        }),
-        this.options('A'),
-      )
-      .catch((e) => this.failure(e));
-    this.writes++;
-    this.uploaded += data.length;
+    const end = startMeasurement('r2.PUT');
+    let succeeded = false;
+    try {
+      await this.client
+        .send(
+          new PutObjectCommand({
+            ...this.input(key, control),
+            Body: data,
+            ContentType: key.endsWith('.gz') ? 'application/gzip' : 'application/json',
+            CacheControl: control
+              ? 'private, no-store'
+              : key === 'catalog/current.json'
+                ? 'public, max-age=30, no-transform'
+                : 'public, max-age=31536000, immutable, no-transform',
+            ...(previousEtag === null ? { IfNoneMatch: '*' } : { IfMatch: previousEtag }),
+          }),
+          this.options('A'),
+        )
+        .catch((e) => this.failure(e));
+      this.writes++;
+      this.uploaded += data.length;
+      succeeded = true;
+    } finally {
+      end(succeeded, succeeded ? data.length : 0);
+    }
   }
   async remove(key: string) {
     if (key === 'catalog/current.json') throw new Error('Cannot delete the publication pointer');
