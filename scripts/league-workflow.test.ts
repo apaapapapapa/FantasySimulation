@@ -31,6 +31,8 @@ it('admits workers only after durable publication and isolates secrets from simu
   const compute = workflow.split('\n  compute:')[1]!.split('\n  publish:')[0]!;
   expect(compute).not.toMatch(/secrets\.|R2_|environment:/);
   expect(compute).toContain('max-parallel: 4');
+  // Finalization (~51m for 7,600 slots) precedes a publication transport of up to 180m.
+  expect(workflow.split('\n  publish:')[1]).toContain('timeout-minutes: 300');
   expect(compute).toContain('fail-fast: false');
   expect(workflow.indexOf('league-cloud.ts admit')).toBeLessThan(
     workflow.indexOf('operation: prepare'),
@@ -67,7 +69,8 @@ it('recovers saved results on tested main with fresh leases and no simulation or
   expect(recovery).toContain('league-phase: start');
   expect(recovery).toContain('league-phase: finish');
   expect(recovery).toContain('operation: recover');
-  expect(recovery).toContain('timeout-minutes: 180');
+  // Artifact recovery (90m) plus a publication transport of up to 180m and read-back.
+  expect(recovery).toContain('timeout-minutes: 300');
   const artifacts = readFileSync(
     new URL('../.github/actions/league-artifacts/action.yml', import.meta.url),
     'utf8',

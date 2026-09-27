@@ -163,7 +163,7 @@ it.each([
 it.each([
   { maxRequests: 2000001 },
   { maxClassARequests: 900001 },
-  { deadlineMs: 3600001 },
+  { deadlineMs: 10800001 },
   { maxClassBRequests: 0 },
 ])('rejects an out-of-policy transport budget before any request', (budget) => {
   expect(() => fixture(budget)).toThrow('budget');

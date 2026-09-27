@@ -45,11 +45,21 @@ export function leagueTransferBudget(
   const worker = restore ? 0 : 1000;
   return { classA, classB, worker };
 }
-const transport = (classA: number, classB: number): S3PublicationBudget => ({
+/**
+ * A full league publication writes ~88k small immutable objects and HEAD-verifies each, which
+ * takes about two hours at measured R2 rates (#189); restore keeps the one-hour bound.
+ */
+export const LEAGUE_RESTORE_DEADLINE_MS = 3_600_000;
+export const LEAGUE_PUBLISH_DEADLINE_MS = 10_800_000;
+export const leagueTransport = (
+  classA: number,
+  classB: number,
+  deadlineMs = LEAGUE_RESTORE_DEADLINE_MS,
+): S3PublicationBudget => ({
   maxRequests: classA + classB,
   maxClassARequests: classA,
   maxClassBRequests: classB,
-  deadlineMs: 3600000,
+  deadlineMs,
   maxAttempts: 1,
 });
 export const leagueUsageTotals = (usage: LeagueUsage) => ({
@@ -69,7 +79,9 @@ export async function transferCloudLeague(
 ) {
   const tuning = transferTuning({ readConcurrency: 32, headConcurrency: 32, ...tuningInput });
   let control: PublicationS3 | undefined;
-  const controller = () => (control ??= new PublicationS3(config, transport(601, 20), 1));
+  const deadline = options ? LEAGUE_PUBLISH_DEADLINE_MS : LEAGUE_RESTORE_DEADLINE_MS;
+  const controller = () =>
+    (control ??= new PublicationS3(config, leagueTransport(601, 20, deadline), 1));
   let data: PublicationS3 | undefined;
   try {
     if (restoreBinding) {
@@ -173,7 +185,11 @@ export async function transferCloudLeague(
         ...budget,
         classB: budget.classB + budget.worker,
       });
-      data = new PublicationS3(config, transport(budget.classA, budget.classB), tuning.sockets);
+      data = new PublicationS3(
+        config,
+        leagueTransport(budget.classA, budget.classB, deadline),
+        tuning.sockets,
+      );
       // The lease readback authenticates the new control size without a second full LIST.
       listed.set(PUBLICATION_CONTROL_KEY, Buffer.byteLength(canonicalJson(usage)));
       return { store: data, inventory: listed };

@@ -86,7 +86,7 @@ IDs/hashes bind allowlisted artifacts to original run/attempt.
 timed-out publication after successful finalization (verified ordered steps);
 require successful workers, original CI/ancestry and artifact/catalog equality.
 Keep original source/execution, tested main, fresh leases and generation checks.
-No simulation/new reservation/refund. Recovery 90m/job 180m; other artifact processes/S3 60m.
+No simulation/new reservation/refund. Recovery 90m; league jobs 300m, publish S3 180m, read-back 240m; other 60m.
 Fetch missing viewer SHAs for merge-base without moving HEAD.
 
 Private control/league-usage.json is excluded from Reader/prune and counts toward 8GB/500k.

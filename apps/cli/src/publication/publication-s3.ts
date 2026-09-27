@@ -73,7 +73,7 @@ export class PublicationS3 implements PublicationStore {
       ['maxRequests', 2_000_000],
       ['maxClassARequests', 900_000],
       ['maxClassBRequests', 2_000_000],
-      ['deadlineMs', 3_600_000],
+      ['deadlineMs', 10_800_000],
     ] as const) {
       const value = this.budget[key];
       if (!Number.isInteger(value) || value < 1 || value > maximum)

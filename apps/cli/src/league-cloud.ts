@@ -7,6 +7,9 @@ import { probeLeague } from './league/league-probe.ts';
 import { prepareCloudLeague, runCloudLeague, finishCloudLeague } from './league/league-cloud.ts';
 import { cloudJson, writeCloudJson } from './league/league-cloud-files.ts';
 import { transferCloudLeague } from './league/league-transfer.ts';
+
+// Read-back follows a publication transport of up to three hours (LEAGUE_PUBLISH_DEADLINE_MS).
+const LEAGUE_READBACK_DEADLINE_MS = 14_400_000;
 import { publicHttp, ancestorOf } from './publication/publication-http.ts';
 
 import { reportLeagueFailure, type LeagueFailureContext } from './league/league-diagnostics.ts';
@@ -101,7 +104,7 @@ async function main() {
     );
     await appendFile(required('GITHUB_STEP_SUMMARY'), `League result: ${JSON.stringify(result)}\n`);
   } else {
-    const viewer = publicHttp(required('PUBLICATION_VIEWER_URL'), 7200000);
+    const viewer = publicHttp(required('PUBLICATION_VIEWER_URL'), LEAGUE_READBACK_DEADLINE_MS);
     const inventory = await transferCloudLeague(
       {
         accountId: required('R2_ACCOUNT_ID'),
@@ -127,7 +130,7 @@ async function main() {
                 'DATA_INVALID',
               );
             },
-            worker: publicHttp(required('PUBLICATION_WORKER_URL'), 7200000),
+            worker: publicHttp(required('PUBLICATION_WORKER_URL'), LEAGUE_READBACK_DEADLINE_MS),
             ancestor: (data, deployed) => ancestorOf(data, deployed, repository),
           },
       command === 'restore'

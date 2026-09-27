@@ -193,7 +193,7 @@ jobs:
     needs: [probe, prepare, compute]
     if: always() && !cancelled() && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 300
     environment: r2-publication
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
