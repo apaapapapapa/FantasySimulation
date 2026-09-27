@@ -1,6 +1,10 @@
 import { OperationError, operationInput } from '@fantasy/api/tooling';
-import { ViewerBuildSchema } from '@fantasy/domain';
+import { ReaderBuildSchema, ViewerBuildSchema } from '@fantasy/domain';
 import {
+  PackIndexSchema,
+  packKey,
+  PACK_INDEX_BYTES,
+  type PackRange,
   PublicCatalogCurrentSchema,
   PublicCatalogSchema,
   publicHashName,
@@ -47,7 +51,9 @@ export type PublicationStoreFactory = (
 export interface PublishOptions extends TransferTuning {
   viewer(): Promise<unknown>;
   ancestor(source: string, viewer: string): boolean;
-  worker(key: string, limit: number): Promise<Buffer>;
+  worker: ((key: string, limit: number, range?: PackRange) => Promise<Buffer>) & {
+    readerBuild?(): unknown;
+  };
   maxBytes?: number;
   maxWrites?: number;
   maxTransferBytes?: number;
@@ -70,6 +76,8 @@ export interface PublishReport {
   workerRequests: number;
   reservedS3Requests: number;
   incompleteRows: number;
+  viewerSourceSha?: string;
+  readerSourceSha?: string;
 }
 function limit(value: number | undefined, fallback: number, upper: number) {
   const n = value ?? fallback;
@@ -78,15 +86,17 @@ function limit(value: number | undefined, fallback: number, upper: number) {
   return n;
 }
 const rank = (key: string) =>
-  key.startsWith('objects/')
+  key.startsWith('objects/') || key.startsWith('packs/')
     ? 0
-    : key.startsWith('sets/')
-      ? key.endsWith('/set.json')
-        ? 2
-        : 1
-      : key.startsWith('leagues/')
-        ? 3
-        : 4;
+    : key.startsWith('pack-indexes/')
+      ? 1
+      : key.startsWith('sets/')
+        ? key.endsWith('/set.json')
+          ? 2
+          : 1
+        : key.startsWith('leagues/')
+          ? 3
+          : 4;
 function exactBytes(file: PublicationFile, value: RemoteObject | null) {
   if (!value || value.data.length !== file.bytes || sha256(value.data) !== file.checksum)
     throw new OperationError('DATA_INVALID', 'Immutable publication collision');
@@ -149,8 +159,15 @@ export async function publishPublication(
     );
     const session = typeof destination === 'function' ? await destination(graph) : destination;
     const store = 'store' in session ? session.store : session;
+    let viewerSourceSha = '';
     const compatible = async () => {
       const viewer = ViewerBuildSchema.parse(await options.viewer());
+      if (viewer.publicationSchema < graph.current.schemaVersion)
+        throw new OperationError(
+          'IDENTITY_MISMATCH',
+          'Published viewer does not support packed replays',
+        );
+      viewerSourceSha = viewer.sourceSha;
       for (const source of graph.sources)
         if (!options.ancestor(source, viewer.sourceSha))
           throw new OperationError(
@@ -227,6 +244,35 @@ export async function publishPublication(
       'r2.receipts',
       64,
     );
+    // Retained orphan packs participate in the same immutable canonical-result check.
+    for (const key of inventory.keys())
+      if (key.startsWith('pack-indexes/') && !graph.files.has(key)) {
+        const indexObject = await transfer.run(PACK_INDEX_BYTES, () =>
+          store.read(key, PACK_INDEX_BYTES),
+        );
+        if (
+          !indexObject ||
+          sha256(indexObject.data).slice(7) + '.json' !== key.slice('pack-indexes/'.length)
+        )
+          throw new OperationError('DATA_INVALID', 'Remote pack index checksum mismatch');
+        const index = PackIndexSchema.parse(JSON.parse(indexObject.data.toString('utf8')));
+        await transfer.run(index.packBytes, async () => {
+          const value = await store.read(packKey(index.packHash), index.packBytes);
+          if (
+            !value ||
+            value.data.length !== index.packBytes ||
+            sha256(value.data) !== index.packHash
+          )
+            throw new OperationError('DATA_INVALID', 'Remote orphan pack checksum mismatch');
+          for (const entry of index.entries)
+            if (entry.key.endsWith('/receipt.json')) {
+              const data = value.data.subarray(entry.offset, entry.offset + entry.bytes);
+              if (sha256(data) !== entry.checksum)
+                throw new OperationError('DATA_INVALID', 'Remote packed receipt checksum mismatch');
+              receiptIdentity(entry.key, data, resultHashes);
+            }
+        });
+      }
     const additions: PublicationFile[] = [];
     await publicationPool(
       [...graph.files.values()],
@@ -268,6 +314,13 @@ export async function publishPublication(
     if (sample)
       for (const key of graph.files.keys())
         if (key.startsWith(`objects/${publicHashName(sample)}/`)) selected.add(key);
+    const sampleIndex = [...graph.files.values()].find((file) =>
+      file.key.startsWith('pack-indexes/'),
+    );
+    const packedSample = sampleIndex
+      ? PackIndexSchema.parse(JSON.parse((await publicationBytes(sampleIndex)).toString('utf8')))
+      : null;
+    if (sampleIndex) selected.add(sampleIndex.key);
     const storedBytes = [...inventory.values()].reduce((sum, n) => sum + n, 0);
     const transferBytes =
       additions.reduce((sum, f) => sum + f.bytes, 0) + (unchanged ? 0 : pointer.bytes);
@@ -279,7 +332,8 @@ export async function publishPublication(
       reusedFiles: graph.files.size - 1 - additions.length,
       writes: additions.length + (unchanged ? 0 : 1),
       transferBytes,
-      workerRequests: selected.size,
+      workerRequests: selected.size + (packedSample ? 2 : 0),
+      ...(graph.current.schemaVersion === 2 ? { viewerSourceSha } : {}),
       // Remaining normal requests: PUT + uncertain-response GET per addition, two generation
       // reads, pointer GET/HEAD, and optional pointer PUT + recovery GET. No full-graph HEAD.
       // Inventory/collisions are already charged; counted retries draw on the lease headroom.
@@ -293,7 +347,7 @@ export async function publishPublication(
       report.transferBytes > maxTransfer ||
       report.reservedS3Requests > store.remainingRequests() ||
       inventory.size + additions.length + (previous ? 0 : 1) > PUBLICATION_MAX_FILES ||
-      selected.size > maxWorker
+      report.workerRequests > maxWorker
     )
       throw new OperationError(
         'BUDGET_EXCEEDED',
@@ -302,6 +356,20 @@ export async function publishPublication(
     // Empty inventories queue no remote I/O, so the queue alone cannot observe cancellation.
     options.signal?.throwIfAborted();
     if (options.dryRun) return { status: 'planned' as const, ...report };
+    const verifyReader = async () => {
+      if (packedSample) {
+        const entry = packedSample.entries[0]!;
+        const data = await options.worker(packKey(packedSample.packHash), entry.bytes, {
+          offset: entry.offset,
+          bytes: entry.bytes,
+          total: packedSample.packBytes,
+        });
+        if (data.length !== entry.bytes || sha256(data) !== entry.checksum)
+          throw new OperationError('DATA_INVALID', 'Reader pack capability check failed');
+        const reader = ReaderBuildSchema.parse(options.worker.readerBuild?.());
+        report.readerSourceSha = reader.sourceSha;
+      }
+    };
     const sameGeneration = async () => {
       const now = await store.read(pointer.key, 4_000_000);
       if (
@@ -347,7 +415,10 @@ export async function publishPublication(
       'r2.head',
       64,
     );
+    // Prove actual dual-reader capability before exposing any v2 pointer.
+    await verifyReader();
     await compatible();
+    if (graph.current.schemaVersion === 2) report.viewerSourceSha = viewerSourceSha;
     await sameGeneration();
     options.signal?.throwIfAborted();
     if (!unchanged) {
@@ -374,6 +445,7 @@ export async function publishPublication(
           throw new OperationError('DATA_INVALID', 'Worker read-back checksum mismatch');
       });
     });
+    await verifyReader();
     return { status: 'verified' as const, ...report };
   } catch (error) {
     throw new PublicationFailure(phase, error);

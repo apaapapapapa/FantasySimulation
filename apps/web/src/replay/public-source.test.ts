@@ -84,7 +84,7 @@ it('loads only catalog/set/one page before selection, then verifies and seeks th
     (ref) =>
       ref.setHash === 'sha256:71eea377f98a8600756ebafdb13cb3cc4fa2df88bdf9ee9b79e5018a4fbfa60a',
   )!;
-  const set = await library.set(ref);
+  const set = await library.set(ref, catalog.schemaVersion);
   const page = await library.page(ref.setHash, set, 1);
   expect(set.totalRows).toBe(1000);
   expect(page.rows).toHaveLength(100);

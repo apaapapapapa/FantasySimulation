@@ -178,7 +178,11 @@ export async function transferCloudLeague(
       bytes = [...inventory.values()].reduce((sum, n) => sum + n, 0);
       if (bytes > PUBLICATION_MAX_BYTES || inventory.size > PUBLICATION_MAX_FILES)
         throw new OperationError('BUDGET_EXCEEDED', 'League retained capacity exceeded');
-      receipts = [...inventory.keys()].filter((key) => key.endsWith('/receipt.json')).length;
+      receipts = [...inventory.keys()].reduce(
+        (n, key) =>
+          n + (key.endsWith('/receipt.json') ? 1 : key.startsWith('pack-indexes/') ? 2 : 0),
+        0,
+      );
 
       const additions = graph
         ? [...graph.files.keys()].filter(

@@ -30,6 +30,7 @@ async function main() {
   const { positionals, values } = parseArgs({
     allowPositionals: true,
     options: {
+      packs: { type: 'boolean' },
       'dry-run': { type: 'boolean' },
       'require-complete-input': { type: 'boolean' },
       'league-transfer': { type: 'boolean' },
@@ -39,6 +40,7 @@ async function main() {
   const [command, input, output, ...files] = positionals;
   if (
     !input ||
+    (values.packs && command !== 'publish') ||
     (values['require-complete-input'] && command !== 'publish') ||
     (values['league-transfer'] && command === 'prune') ||
     !(
@@ -54,7 +56,7 @@ async function main() {
     )
   )
     throw new Error(
-      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] [--require-complete-input] | upload public-dir [--dry-run] | restore new-public-dir | prune public-dir [--confirm]. publish/upload/restore accept --league-transfer.',
+      'Usage: publication publish plan.json public-dir index.json bundle-root [index.json bundle-root ...] [--dry-run] [--require-complete-input] [--packs] | upload public-dir [--dry-run] | restore new-public-dir | prune public-dir [--confirm]. publish/upload/restore accept --league-transfer.',
     );
   const root = resolve(command === 'publish' ? output! : input),
     lock = root + '.remote-lock';
@@ -69,7 +71,13 @@ async function main() {
           index: await readJson(files[i]!, 2_000_000),
           bundles: new BattleBundles(resolve(files[i + 1]!)),
         });
-      const exported = await exportPublication(await readJson(input, 8_000_000), indexes, root);
+      const exported = await exportPublication(
+        await readJson(input, 8_000_000),
+        indexes,
+        root,
+        undefined,
+        values.packs ?? false,
+      );
       console.log(canonicalJson({ phase: 'export', complete: exported.complete }));
       if (values['require-complete-input'] && !exported.complete)
         throw new Error('The current publication input must be complete');

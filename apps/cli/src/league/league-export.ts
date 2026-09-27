@@ -41,12 +41,21 @@ export async function exportLeague(
   completed: readonly LeagueCheckInput[],
   directory: string,
   work?: LeagueWorkBuilder,
-  options: { verificationWorkers?: number; signal?: AbortSignal } = {},
+  options: { verificationWorkers?: number; signal?: AbortSignal; packs?: boolean } = {},
 ) {
   return withReplayVerificationPool(
     options.verificationWorkers ?? 1,
     (pool) =>
-      buildLeaguePublication(input, partitions, completed, directory, work, pool, options.signal),
+      buildLeaguePublication(
+        input,
+        partitions,
+        completed,
+        directory,
+        work,
+        pool,
+        options.signal,
+        options.packs ?? false,
+      ),
     options.signal,
   );
 }
@@ -59,6 +68,7 @@ async function buildLeaguePublication(
   work: LeagueWorkBuilder | undefined,
   pool: ReplayVerificationPool | undefined,
   signal: AbortSignal | undefined,
+  packs: boolean,
 ) {
   const checked = await checkStoredLeague(input, partitions, completed, pool, signal),
     { plan, standings } = checked;
@@ -94,6 +104,7 @@ async function buildLeaguePublication(
       directory,
       pool,
       signal,
+      packs,
     );
     built.files.forEach(add);
     sets.push(built.setRef);
@@ -168,6 +179,7 @@ async function buildLeaguePublication(
   const ref = addJson(snapshot);
   journal?.files.forEach(add);
   const written = await commitPublication(directory, [...files.values()], sets, {
+    schemaVersion: packs ? 2 : 1,
     league: {
       ...ref,
       ...classification,
@@ -180,6 +192,8 @@ async function buildLeaguePublication(
   });
   return {
     ...written,
+    physicalFiles: files.size + 2,
+    objectTargetMet: files.size + 3 <= 1000,
     snapshot: ref,
     status: standings.status,
     planned: standings.planned,

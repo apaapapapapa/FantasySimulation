@@ -1,5 +1,13 @@
 import {
   assertPublicPageBinding,
+  parsePackIndex,
+  packKey,
+  packIndexKey,
+  assertPackArtifact,
+  assertPackedFiles,
+  assertPackResponse,
+  type PackRange,
+  type PackIndex,
   assertPublicReplayBinding,
   BundleReceiptSchema,
   canonicalJson,
@@ -51,6 +59,7 @@ export function publicLibrary(
     limit: number,
     signal?: AbortSignal,
     expected?: { checksum: string; bytes?: number },
+    range?: PackRange,
   ) {
     let requestId = 0;
     const startedAt = performance.now();
@@ -77,9 +86,20 @@ export function publicLibrary(
         signal: signal ?? null,
         credentials: 'omit',
         redirect: 'error',
-        headers: { accept: key.endsWith('.gz') ? 'application/gzip' : 'application/json' },
+        headers: {
+          accept: range
+            ? 'application/octet-stream'
+            : key.endsWith('.gz')
+              ? 'application/gzip'
+              : 'application/json',
+          ...(range ? { Range: `bytes=${range.offset}-${range.offset + range.bytes - 1}` } : {}),
+        },
       });
-      const type = key.endsWith('.gz') ? 'application/gzip' : 'application/json';
+      const type = range
+        ? 'application/octet-stream'
+        : key.endsWith('.gz')
+          ? 'application/gzip'
+          : 'application/json';
       if (!response.ok) {
         // Cloudflare's platform limit may occur before the Worker runs. If CORS hides it,
         // fetch rejects and it remains an unavailable response rather than a guessed 1027.
@@ -95,6 +115,14 @@ export function publicLibrary(
           limit ? 'limit' : response.status === 404 ? 'gone' : 'unavailable',
           `Public data response ${response.status}: ${key}`,
         );
+      }
+      if (range) {
+        try {
+          assertPackResponse(response.status, response.headers, range);
+        } catch (error) {
+          await response.body?.cancel();
+          throw toLoadError(error, 'damaged', signal);
+        }
       }
       if (
         !(response.headers.get('content-type') ?? '').startsWith(type) ||
@@ -133,18 +161,30 @@ export function publicLibrary(
   }
   async function catalog(signal?: AbortSignal) {
     const current = await json('catalog/current.json', PublicCatalogCurrentSchema, signal);
-    return json(
+    const catalog = await json(
       `catalog/${publicHashName(current.catalogHash)}.json`,
       PublicCatalogSchema,
       signal,
       { checksum: current.catalogHash, bytes: current.bytes },
     );
+    if (catalog.schemaVersion !== current.schemaVersion)
+      throw new ReplayLoadError('damaged', 'Public catalog version mismatch');
+    return catalog;
   }
-  async function set(ref: PublicCatalog['sets'][number], signal?: AbortSignal) {
-    return json(`sets/${publicHashName(ref.setHash)}/set.json`, PublicReplaySetSchema, signal, {
-      checksum: ref.setHash,
-      bytes: ref.bytes,
-    });
+  async function set(
+    ref: PublicCatalog['sets'][number],
+    catalogVersion: PublicCatalog['schemaVersion'],
+    signal?: AbortSignal,
+  ) {
+    const set = await json(
+      `sets/${publicHashName(ref.setHash)}/set.json`,
+      PublicReplaySetSchema,
+      signal,
+      { checksum: ref.setHash, bytes: ref.bytes },
+    );
+    if (set.schemaVersion > catalogVersion)
+      throw new ReplayLoadError('damaged', 'Public catalog cannot reference newer set version');
+    return set;
   }
   async function page(setHash: string, set: PublicReplaySet, index: number, signal?: AbortSignal) {
     const ref = set.pages[index];
@@ -164,30 +204,99 @@ export function publicLibrary(
     if (!ref) throw new ReplayLoadError('damaged', 'This match has no published replay');
     const prefix = `objects/${publicHashName(ref.objectHash)}/`;
     let allowed: readonly ArtifactRef[] = [];
+    let indexes: PackIndex[] | undefined;
+    const read = async (
+      name: string,
+      limit: number,
+      signal?: AbortSignal,
+      expected?: { bytes?: number; checksum: string; rawBytes?: number },
+    ) => {
+      if (!('packs' in ref)) return bytes(prefix + name, limit, signal, expected);
+      if (!indexes) {
+        const loaded: PackIndex[] = [];
+        for (const indexRef of ref.packs) {
+          const index = parsePackIndex(
+            await bytes(packIndexKey(indexRef.hash), indexRef.bytes, signal, {
+              checksum: indexRef.hash,
+              bytes: indexRef.bytes,
+            }),
+          );
+          if (!index.entries.some((entry) => entry.key.startsWith(prefix)))
+            throw new ReplayLoadError('damaged', 'Unrelated pack index');
+          loaded.push(index);
+        }
+        const keys = loaded.flatMap((index) => index.entries.map((entry) => entry.key));
+        if (new Set(keys).size !== keys.length)
+          throw new ReplayLoadError('damaged', 'Duplicate packed replay entry');
+        indexes = loaded;
+      }
+      const found = indexes.flatMap((index) =>
+        index.entries
+          .filter((entry) => entry.key === prefix + name)
+          .map((entry) => ({ index, entry })),
+      );
+      if (found.length !== 1) throw new ReplayLoadError('damaged', 'Missing packed replay entry');
+      const { index, entry } = found[0]!;
+      if (entry.bytes > limit)
+        throw new ReplayLoadError('damaged', 'Packed replay entry exceeds its bound');
+      if (expected)
+        assertPackArtifact(entry, { ...expected, bytes: expected.bytes ?? entry.bytes });
+      return bytes(packKey(index.packHash), entry.bytes, signal, entry, {
+        offset: entry.offset,
+        bytes: entry.bytes,
+        total: index.packBytes,
+      });
+    };
     return {
       ...(request === fetch ? { location: { mode: 'public' as const, root: base.href, row } } : {}),
       async manifest(signal) {
-        const receipt = await json(`${prefix}receipt.json`, BundleReceiptSchema, signal, {
-          checksum: ref.receiptChecksum,
-          bytes: ref.receiptBytes,
-        });
+        const receipt = BundleReceiptSchema.parse(
+          JSON.parse(
+            strictText(
+              await read('receipt.json', ref.receiptBytes, signal, {
+                checksum: ref.receiptChecksum,
+                bytes: ref.receiptBytes,
+              }),
+              'Public receipt',
+            ),
+          ),
+        );
         const { objectHash, ...body } = receipt;
         if (objectHash !== ref.objectHash || (await contentHash(body)) !== objectHash)
           throw new ReplayLoadError('damaged', 'Public receipt identity mismatch');
         // The manifest byte size is not a public reference field; it is bounded before hashing.
-        const raw = await bytes(`${prefix}manifest.json`, MAX_REPLAY_MANIFEST_BYTES, signal);
+        const raw = await read('manifest.json', MAX_REPLAY_MANIFEST_BYTES, signal);
         if ((await hashBytes(raw)) !== ref.manifestChecksum)
           throw new ReplayLoadError('damaged', 'Public manifest checksum mismatch');
         const value: unknown = JSON.parse(strictText(raw, 'Public manifest'));
         const manifest = parseSavedManifest(value);
         assertPublicReplayBinding(row, receipt, manifest);
         allowed = [...manifest.chunks, ...manifest.checkpoints];
+        if (indexes)
+          assertPackedFiles(
+            indexes
+              .flatMap((index) => index.entries)
+              .filter((entry) => entry.key.startsWith(prefix)),
+            [
+              {
+                key: prefix + 'receipt.json',
+                bytes: ref.receiptBytes,
+                checksum: ref.receiptChecksum,
+              },
+              {
+                key: prefix + 'manifest.json',
+                bytes: raw.byteLength,
+                checksum: ref.manifestChecksum,
+              },
+              ...allowed.map((artifact) => ({ ...artifact, key: prefix + artifact.file })),
+            ],
+          );
         return manifest;
       },
       async file(artifact, signal) {
         if (!allowed.some((ref) => canonicalJson(ref) === canonicalJson(artifact)))
           throw new ReplayLoadError('damaged', 'Artifact is not in the verified manifest');
-        return bytes(prefix + artifact.file, artifact.bytes, signal, artifact);
+        return read(artifact.file, artifact.bytes, signal, artifact);
       },
     };
   }

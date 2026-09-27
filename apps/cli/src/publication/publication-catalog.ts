@@ -30,6 +30,7 @@ export async function commitPublication(
     league?: NonNullable<PublicCatalog['leagues']>[number];
     leagueWork?: PublicCatalog['leagueWork'];
     signal?: AbortSignal;
+    schemaVersion?: 1 | 2;
   } = {},
 ) {
   options.signal?.throwIfAborted();
@@ -64,6 +65,8 @@ export async function commitPublication(
           ),
         'DATA_INVALID',
       );
+      if (prior.schemaVersion !== pointer.schemaVersion)
+        throw new OperationError('DATA_INVALID', 'Existing catalog version mismatch');
       priorHash = pointer.catalogHash;
       priorFile = { key, bytes: data.length, checksum: priorHash, data };
     }
@@ -89,7 +92,7 @@ export async function commitPublication(
     }
     const leagueWork = options.leagueWork ?? prior?.leagueWork;
     const catalog = PublicCatalogSchema.parse({
-      schemaVersion: 1,
+      schemaVersion: prior?.schemaVersion === 2 || options.schemaVersion === 2 ? 2 : 1,
       previousCatalogHash: priorHash,
       sets: [...sets.values()].sort((a, b) => compareIds(a.setHash, b.setHash)),
       ...(leagues.size
@@ -108,7 +111,7 @@ export async function commitPublication(
     const current = publicationJson(
       'catalog/current.json',
       PublicCatalogCurrentSchema.parse({
-        schemaVersion: 1,
+        schemaVersion: catalog.schemaVersion,
         catalogHash: catalogFile.checksum,
         bytes: catalogFile.bytes,
       }),

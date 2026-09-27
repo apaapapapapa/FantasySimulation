@@ -1,7 +1,9 @@
+import { PackArchive, replayRead, type ReplayLocation } from '../replay/pack-reader.ts';
 import { randomUUID } from 'node:crypto';
 import { mkdir, rename, rm, opendir, lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
+  assertPackedFiles,
   BundleReceiptSchema,
   BundleReceiptBodySchema,
   ReplayManifestSchema,
@@ -31,6 +33,7 @@ import type { BattleService } from '../jobs/battle-service.ts';
 const hashName = (hash: string) => HashSchema.parse(hash).slice(7);
 export class BattleBundles {
   private bytes: number | null = null;
+  private readonly packs: PackArchive;
   private verification:
     | {
         seen: Set<string>;
@@ -43,7 +46,9 @@ export class BattleBundles {
   constructor(
     readonly root: string,
     readonly maxBytes = 16 * 1024 ** 3,
-  ) {}
+  ) {
+    this.packs = new PackArchive(root);
+  }
   /** No caller can seed successful hashes; every new scope starts with full validation. */
   verificationSession(
     options: { publicData?: boolean; pool?: ReplayVerifier; signal?: AbortSignal } = {},
@@ -80,14 +85,26 @@ export class BattleBundles {
   private objectPath(hash: string) {
     return join(this.root, 'objects', hashName(hash));
   }
+  async location(objectHash: string): Promise<ReplayLocation> {
+    const directory = this.objectPath(objectHash);
+    try {
+      if (!(await lstat(directory)).isDirectory())
+        throw new OperationError('DATA_INVALID', 'Invalid bundle directory');
+      return directory;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      return this.packs.location(objectHash);
+    }
+  }
+  async read(objectHash: string, file: string, limit: number) {
+    return replayRead(await this.location(objectHash))(file, limit);
+  }
   async verify(objectHash: string): Promise<BundleReceipt> {
     const scope = this.verification;
     if (scope?.closed) throw new Error('Replay verification session is closed');
     scope?.signal?.throwIfAborted();
-    const directory = this.objectPath(objectHash);
-    if (!(await lstat(directory)).isDirectory())
-      throw new OperationError('DATA_INVALID', 'Invalid bundle directory');
-    const receiptBytes = await readBoundedFile(join(directory, 'receipt.json'), 65536);
+    const directory = await this.location(objectHash);
+    const receiptBytes = await replayRead(directory)('receipt.json', 65536);
     const receipt = operationInput(() => {
       const input: unknown = JSON.parse(
         new TextDecoder('utf-8', { fatal: true }).decode(receiptBytes),
@@ -99,6 +116,28 @@ export class BattleBundles {
     if (recorded !== objectHash || recorded !== (await contentHash(body)))
       throw new OperationError('DATA_INVALID', 'Bundle receipt hash mismatch');
     const { manifest, manifestBytes } = await this.readManifest(receipt);
+    if (typeof directory !== 'string') {
+      const prefix = `objects/${hashName(objectHash)}/`;
+      assertPackedFiles(
+        directory.entries.map((value) => value.entry),
+        [
+          {
+            key: prefix + 'receipt.json',
+            bytes: receiptBytes.length,
+            checksum: sha256(receiptBytes),
+          },
+          {
+            key: prefix + 'manifest.json',
+            bytes: manifestBytes.length,
+            checksum: receipt.manifestChecksum,
+          },
+          ...[...manifest.chunks, ...manifest.checkpoints].map((ref) => ({
+            ...ref,
+            key: prefix + ref.file,
+          })),
+        ],
+      );
+    }
     const bytes =
       manifestBytes.length +
       [...manifest.chunks, ...manifest.checkpoints].reduce((n, ref) => n + ref.bytes, 0);
@@ -138,8 +177,9 @@ export class BattleBundles {
   }
   private async readManifest(receipt: BundleReceipt) {
     if (this.verification?.closed) throw new Error('Replay verification session is closed');
-    const manifestBytes = await readBoundedFile(
-      join(this.objectPath(receipt.objectHash), 'manifest.json'),
+    const manifestBytes = await this.read(
+      receipt.objectHash,
+      'manifest.json',
       MAX_REPLAY_MANIFEST_BYTES,
     );
     if (sha256(manifestBytes) !== receipt.manifestChecksum)
@@ -299,11 +339,8 @@ export class BattleBundles {
     const receipt = await source.verify(objectHash);
     if (definitive && !['win', 'draw'].includes(receipt.result.outcome.kind))
       throw new OperationError('DATA_INVALID', 'Only definitive bundles can be reused');
-    const directory = source.objectPath(objectHash);
-    const manifestBytes = await readBoundedFile(
-      join(directory, 'manifest.json'),
-      MAX_REPLAY_MANIFEST_BYTES,
-    );
+    const directory = await source.location(objectHash);
+    const manifestBytes = await replayRead(directory)('manifest.json', MAX_REPLAY_MANIFEST_BYTES);
     const manifest = operationInput(
       () =>
         parseJson(
@@ -312,10 +349,24 @@ export class BattleBundles {
         ),
       'DATA_INVALID',
     );
-    if (sha256(canonicalJson(manifest)) !== receipt.manifestChecksum)
+    if (sha256(manifestBytes) !== receipt.manifestChecksum)
       throw new OperationError('DATA_INVALID', 'Retained manifest changed during import');
-    return this.publishObject(receipt, manifest, (ref) =>
-      readBoundedFile(join(directory, ref.file), ref.bytes),
+    const receiptBytes = await replayRead(directory)('receipt.json', 65536);
+    const recorded = operationInput(
+      () =>
+        BundleReceiptSchema.parse(
+          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(receiptBytes)),
+        ),
+      'DATA_INVALID',
+    );
+    if (canonicalJson(recorded) !== canonicalJson(receipt))
+      throw new OperationError('DATA_INVALID', 'Retained receipt changed during import');
+    return this.publishObject(
+      receipt,
+      manifest,
+      (ref) => replayRead(directory)(ref.file, ref.bytes),
+      undefined,
+      { receipt: receiptBytes, manifest: manifestBytes },
     );
   }
   private async publishObject(
@@ -325,6 +376,7 @@ export class BattleBundles {
       ref: ReplayManifest['chunks'][number] | ReplayManifest['checkpoints'][number],
     ) => Promise<Buffer>,
     pool?: ReplayVerifier,
+    originalJson?: { receipt: Buffer; manifest: Buffer },
   ) {
     const original = await this.cached(receipt.simulationHash);
     if (original && ['win', 'draw'].includes(receipt.result.outcome.kind)) {
@@ -333,6 +385,8 @@ export class BattleBundles {
       return original;
     }
     const receiptText = canonicalJson(receipt);
+    const receiptBytes = originalJson?.receipt ?? Buffer.from(receiptText);
+    const manifestBytes = originalJson?.manifest ?? Buffer.from(canonicalJson(manifest));
     // A crash after object rename but before pointer publication must not double-count its bytes.
     try {
       const existing = await this.verify(receipt.objectHash);
@@ -343,7 +397,7 @@ export class BattleBundles {
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
-    const bytes = receipt.bytes + Buffer.byteLength(receiptText);
+    const bytes = receipt.bytes + receiptBytes.length;
     await this.capacity(bytes + 100, 2_000_000);
     const staging = join(this.root, `.bundle-staging-${randomUUID()}`);
     await mkdir(staging);
@@ -354,8 +408,8 @@ export class BattleBundles {
           throw new OperationError('DATA_INVALID', 'Replay changed during export');
         await writeDurableFile(join(staging, ref.file), bytes);
       }
-      await writeDurableFile(join(staging, 'manifest.json'), canonicalJson(manifest));
-      await writeDurableFile(join(staging, 'receipt.json'), receiptText);
+      await writeDurableFile(join(staging, 'manifest.json'), manifestBytes);
+      await writeDurableFile(join(staging, 'receipt.json'), receiptBytes);
       if (pool) await pool.verify(staging, manifest, false);
       else await verifyReplayDirectory(staging, manifest);
       await syncDirectory(staging);

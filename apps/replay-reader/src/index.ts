@@ -1,9 +1,15 @@
 import type { R2Bucket } from '@cloudflare/workers-types';
-import { PublicKeySchema } from '@fantasy/domain/spatial';
+import {
+  PACK_MAX_BYTES,
+  PublicKeySchema,
+  parsePackRange,
+  packContentRange,
+} from '@fantasy/domain/spatial';
 
 export interface ReaderEnv {
   REPLAYS: Pick<R2Bucket, 'get' | 'head'>;
 }
+declare const __READER_SOURCE_SHA__: string;
 const origin = 'https://apaapapapapa.github.io';
 
 /** Public, read-only transport. Validation is independent of CORS and never lists R2. */
@@ -11,7 +17,11 @@ export async function readReplay(request: Request, env: ReaderEnv): Promise<Resp
   const headers = new Headers({
     'X-Content-Type-Options': 'nosniff',
     Vary: 'Origin',
-    'Access-Control-Expose-Headers': 'ETag, Content-Encoding',
+    'X-Replay-Publication': '2',
+    'X-Replay-Source':
+      typeof __READER_SOURCE_SHA__ === 'string' ? __READER_SOURCE_SHA__ : 'development',
+    'Access-Control-Expose-Headers':
+      'ETag, Content-Encoding, Content-Range, Content-Length, Accept-Ranges, X-Replay-Publication, X-Replay-Source',
     'Cache-Control': 'no-store',
   });
   const suppliedOrigin = request.headers.get('origin');
@@ -19,6 +29,7 @@ export async function readReplay(request: Request, env: ReaderEnv): Promise<Resp
   const error = (status: number, code: string) => {
     headers.delete('Content-Length');
     headers.delete('ETag');
+    headers.delete('Content-Range');
     headers.set('Cache-Control', 'no-store');
     headers.set('Content-Type', 'application/json');
     return new Response(request.method === 'HEAD' ? null : JSON.stringify({ error: code }), {
@@ -38,16 +49,53 @@ export async function readReplay(request: Request, env: ReaderEnv): Promise<Resp
     if (!['GET', 'HEAD'].includes(request.headers.get('access-control-request-method') ?? 'GET'))
       return error(405, 'read-only');
     headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    headers.set('Access-Control-Allow-Headers', 'Range');
     headers.set('Access-Control-Max-Age', '86400');
     return new Response(null, { status: 204, headers });
   }
+  const packed = key.data.startsWith('packs/');
+  const range =
+    packed && request.method === 'GET' ? parsePackRange(request.headers.get('range')) : null;
+  if (packed && request.method === 'GET' && !range) return error(416, 'invalid-pack-range');
   try {
     const object =
       request.method === 'HEAD'
         ? await env.REPLAYS.head(key.data)
-        : await env.REPLAYS.get(key.data);
+        : await env.REPLAYS.get(
+            key.data,
+            range ? { range: { offset: range.offset, length: range.bytes } } : undefined,
+          );
     if (!object) return error(404, 'not-published');
-    headers.set('Content-Type', key.data.endsWith('.gz') ? 'application/gzip' : 'application/json');
+    if (packed) {
+      headers.set('Accept-Ranges', 'bytes');
+      if (!Number.isSafeInteger(object.size) || object.size < 1 || object.size > PACK_MAX_BYTES)
+        return error(503, 'invalid-pack-size');
+      if (range) {
+        if (range.offset + range.bytes > object.size) {
+          if ('body' in object) await (object.body as ReadableStream).cancel();
+          return error(416, 'invalid-pack-range');
+        }
+        const actual = 'range' in object ? object.range : undefined;
+        if (
+          !actual ||
+          !('offset' in actual) ||
+          actual.offset !== range.offset ||
+          actual.length !== range.bytes
+        ) {
+          if ('body' in object) await (object.body as ReadableStream).cancel();
+          return error(503, 'invalid-storage-range');
+        }
+        headers.set('Content-Range', packContentRange({ ...range, total: object.size }));
+      }
+    }
+    headers.set(
+      'Content-Type',
+      packed
+        ? 'application/octet-stream'
+        : key.data.endsWith('.gz')
+          ? 'application/gzip'
+          : 'application/json',
+    );
     headers.set(
       'Cache-Control',
       key.data === 'catalog/current.json'
@@ -55,11 +103,21 @@ export async function readReplay(request: Request, env: ReaderEnv): Promise<Resp
         : 'public, max-age=31536000, immutable, no-transform',
     );
     headers.set('ETag', object.httpEtag);
-    headers.set('Content-Length', String(object.size));
+    headers.set('Content-Length', String(range?.bytes ?? object.size));
     // Workers streams implement the web stream contract, with additional CF type extensions.
     const body = 'body' in object ? (object.body as unknown as ReadableStream<Uint8Array>) : null;
-    return new Response(body, { headers });
+    return new Response(body, { status: range ? 206 : 200, headers });
   } catch {
+    // R2 may reject an unsatisfiable offset before returning object metadata.
+    if (range) {
+      try {
+        const metadata = await env.REPLAYS.head(key.data);
+        if (metadata && range.offset + range.bytes > metadata.size)
+          return error(416, 'invalid-pack-range');
+      } catch {
+        /* Preserve the fixed storage error below. */
+      }
+    }
     return error(503, 'storage-unavailable');
   }
 }

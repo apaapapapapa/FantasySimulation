@@ -41,6 +41,7 @@ async function main() {
   const { positionals, values } = parseArgs({
     allowPositionals: true,
     options: {
+      packs: { type: 'boolean' },
       profile: { type: 'string' },
       history: { type: 'string' },
       retained: { type: 'string' },
@@ -52,6 +53,7 @@ async function main() {
     },
   });
   const [command, input, output, ...rest] = positionals;
+  if (values.packs && command !== 'export') throw new Error('--packs requires league export');
   const retained = values.retained ? new BattleBundles(resolve(values.retained)) : undefined;
   if (command === 'plan' && input && output && !rest.length) {
     const options = LeagueEstimateInputSchema.parse(
@@ -174,7 +176,11 @@ async function main() {
     if (command === 'export') {
       const { exportLeague } = await import('./league/league-export.ts');
       console.log(
-        canonicalJson(await exportLeague(plan, partitions, completed, resolve(rest[0]!))),
+        canonicalJson(
+          await exportLeague(plan, partitions, completed, resolve(rest[0]!), undefined, {
+            packs: values.packs ?? false,
+          }),
+        ),
       );
       return;
     }
@@ -189,7 +195,7 @@ async function main() {
     );
   } else
     throw new Error(
-      'Usage: league plan definition.json plan-dir [--estimate-only --profile profile.json --history dir --retained bundles] | reserve plan-dir partition reservation.json --execution-id ID [--history dir --retained bundles] | run plan-dir partition output-dir --execution-id ID --reservation file [--retained bundles --workers 1 --deadline 1500000] | check plan-dir results-dir | export plan-dir results-dir public-dir',
+      'Usage: league plan definition.json plan-dir [--estimate-only --profile profile.json --history dir --retained bundles] | reserve plan-dir partition reservation.json --execution-id ID [--history dir --retained bundles] | run plan-dir partition output-dir --execution-id ID --reservation file [--retained bundles --workers 1 --deadline 1500000] | check plan-dir results-dir | export plan-dir results-dir public-dir [--packs]',
     );
 }
 await measuredCommand('league-' + (process.argv[2] ?? 'unknown'), main).catch((error: unknown) => {

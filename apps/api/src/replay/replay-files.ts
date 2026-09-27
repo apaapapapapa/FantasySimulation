@@ -108,7 +108,11 @@ export async function readBoundedFile(
 }
 type ArtifactRef = ReplayManifest['chunks'][number] | ReplayManifest['checkpoints'][number];
 const decodeGzip = promisify(gunzip);
-export async function readCompressed(directory: string, input: ArtifactRef) {
+export async function readCompressed(
+  directory: string,
+  input: ArtifactRef,
+  read = (file: string, limit: number) => readBoundedFile(join(directory, file), limit),
+) {
   const ref = operationInput(
     () =>
       ArtifactRefSchema.parse({
@@ -119,7 +123,7 @@ export async function readCompressed(directory: string, input: ArtifactRef) {
       }),
     'DATA_INVALID',
   );
-  const bytes = await readBoundedFile(join(directory, ref.file), ref.bytes);
+  const bytes = await read(ref.file, ref.bytes);
   if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
     throw new OperationError('DATA_INVALID', 'Artifact checksum/size mismatch');
   const raw = await measureAsync('decompress', () =>

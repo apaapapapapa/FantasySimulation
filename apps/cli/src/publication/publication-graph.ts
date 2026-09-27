@@ -1,3 +1,4 @@
+import { packGraphReader } from './publication-pack-graph.ts';
 import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { dirname, join } from 'node:path';
 import {
@@ -14,6 +15,7 @@ import {
   compareIds,
   publicHashName,
   type PublicReplaySet,
+  type PublicReplayRef,
   type PublicMatchPage,
   type PublicCatalog,
   type BundleReceipt,
@@ -101,22 +103,35 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     add({ key, bytes: bytes.length, checksum: sha256(bytes) });
     return value;
   }
+  const packs = packGraphReader(read, add, results);
+  const logicalFiles = new Map<string, PublicationFile>();
   const bundles = new Map<string, Promise<{ receipt: BundleReceipt; manifest: ReplayManifest }>>();
-  function bundle(objectHash: string) {
-    let promise = bundles.get(objectHash);
+  function bundle(ref: PublicReplayRef) {
+    const objectHash = ref.objectHash,
+      identity = canonicalJson(ref);
+    let promise = bundles.get(identity);
     if (!promise) {
       promise = (async () => {
+        const packed = await packs.source(ref);
+        const load = packed?.read ?? read;
+        const addLogical = (file: PublicationFile) => {
+          const old = logicalFiles.get(file.key);
+          if (old && (old.checksum !== file.checksum || old.bytes !== file.bytes))
+            throw new OperationError('DATA_INVALID', 'Conflicting replay storage reference');
+          logicalFiles.set(file.key, file);
+          if (!packed) add(file);
+        };
         const objectPrefix = `objects/${publicHashName(objectHash)}/`;
-        const receiptData = await read(objectPrefix + 'receipt.json', 65536);
+        const receiptData = await load(objectPrefix + 'receipt.json', 65536);
         const receipt = receiptIdentity(objectPrefix + 'receipt.json', receiptData, results);
         receipts.set(receipt.objectHash, receipt);
         assertPublicData(receipt);
-        add({
+        addLogical({
           key: objectPrefix + 'receipt.json',
           bytes: receiptData.length,
           checksum: sha256(receiptData),
         });
-        const manifestBytes = await read(objectPrefix + 'manifest.json', MAX_REPLAY_MANIFEST_BYTES);
+        const manifestBytes = await load(objectPrefix + 'manifest.json', MAX_REPLAY_MANIFEST_BYTES);
         if (sha256(manifestBytes) !== receipt.manifestChecksum)
           throw new OperationError('DATA_INVALID', 'Manifest checksum mismatch');
         const manifest = operationInput(
@@ -127,39 +142,43 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
           'DATA_INVALID',
         );
         assertPublicData(manifest);
-        add({
+        addLogical({
           key: objectPrefix + 'manifest.json',
           bytes: manifestBytes.length,
           checksum: receipt.manifestChecksum,
         });
-        await source.prefetch?.(
-          [...manifest.chunks, ...manifest.checkpoints].map((ref) => ({
-            key: objectPrefix + ref.file,
-            bytes: ref.bytes,
-            checksum: ref.checksum,
-          })),
-        );
+        if (!packed)
+          await source.prefetch?.(
+            [...manifest.chunks, ...manifest.checkpoints].map((ref) => ({
+              key: objectPrefix + ref.file,
+              bytes: ref.bytes,
+              checksum: ref.checksum,
+            })),
+          );
         for (const artifact of [...manifest.chunks, ...manifest.checkpoints]) {
           const file = {
             key: objectPrefix + artifact.file,
             bytes: artifact.bytes,
             checksum: artifact.checksum,
           };
-          if (!files.has(file.key)) {
-            const data = await read(file.key, file.bytes);
+          if (packed || !files.has(file.key)) {
+            const data = packed
+              ? await packed.read(file.key, file.bytes, artifact)
+              : await read(file.key, file.bytes);
             if (data.length !== file.bytes || sha256(data) !== file.checksum)
               throw new OperationError('DATA_INVALID', 'Retained artifact checksum/size mismatch');
           }
-          add(file);
+          addLogical(file);
         }
         objects.add(receipt.objectHash);
         return { receipt, manifest };
       })();
-      bundles.set(objectHash, promise);
+      bundles.set(identity, promise);
     }
     return promise;
   }
   const current = await json('catalog/current.json', PublicCatalogCurrentSchema);
+  let schemaVersion = current.schemaVersion;
   let hash: string | null = current.catalogHash,
     expectedBytes: number | undefined = current.bytes;
   const generations = new Set<string>();
@@ -182,6 +201,12 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     );
     assertPublicData(generation);
     add({ key, bytes: bytes.length, checksum: hash });
+    if (
+      (!catalog && current.schemaVersion !== generation.schemaVersion) ||
+      (catalog && generation.schemaVersion > schemaVersion)
+    )
+      throw new OperationError('DATA_INVALID', 'Catalog version mismatch');
+    schemaVersion = generation.schemaVersion;
     catalog ??= generation;
     catalogs.push(generation);
     for (const ref of generation.leagues ?? []) {
@@ -208,11 +233,15 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     for (const ref of generation.sets) {
       const prefix = `sets/${publicHashName(ref.setHash)}/`;
       if (sets.has(ref.setHash)) {
+        if (sets.get(ref.setHash)!.schemaVersion > generation.schemaVersion)
+          throw new OperationError('DATA_INVALID', 'Catalog cannot reference newer set version');
         if (files.get(prefix + 'set.json')?.bytes !== ref.bytes)
           throw new OperationError('DATA_INVALID', 'Retained set size mismatch');
         continue;
       }
       const set = await json(prefix + 'set.json', PublicReplaySetSchema, ref.bytes, ref.setHash);
+      if (set.schemaVersion > generation.schemaVersion)
+        throw new OperationError('DATA_INVALID', 'Catalog cannot reference newer set version');
       sources.add(set.source.sha);
       sets.set(ref.setHash, set);
       const counts = { complete: 0, failed: 0, unresolved: 0, truncated: 0, pending: 0 };
@@ -243,11 +272,11 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
         }
         await publicationPool(
           page.rows,
-          concurrency,
+          page.schemaVersion === 2 ? 1 : concurrency,
           async (row) => {
             if (!row.replay) return;
-            const { receipt, manifest } = await bundle(row.replay.objectHash);
-            const reference = files.get(
+            const { receipt, manifest } = await bundle(row.replay);
+            const reference = logicalFiles.get(
               `objects/${publicHashName(row.replay.objectHash)}/receipt.json`,
             )!;
             if (
@@ -342,6 +371,7 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     }
     latestWork = catalog?.leagueWork ? workStates.get(catalog.leagueWork.hash)! : null;
   }
+  packs.finish();
   // I/O completion order must not leak into downstream traversal or publication output.
   return {
     current,

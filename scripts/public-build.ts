@@ -16,7 +16,7 @@ export function publicBuild(dataRoot: string, sourceSha: string, base = '/Fantas
   const metadata = ViewerBuildSchema.parse({
     schemaVersion: 1,
     sourceSha,
-    publicationSchema: 1,
+    publicationSchema: 2,
     replay: SUPPORTED_REPLAY_FORMAT,
   });
   const csp = [

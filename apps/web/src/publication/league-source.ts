@@ -116,7 +116,7 @@ export async function leaguePairMatches(
     if (!ref) throw damaged();
     let set = sets.get(ref.setHash);
     if (!set) {
-      set = await library.set(ref, signal);
+      set = await library.set(ref, catalog.schemaVersion, signal);
       sets.set(ref.setHash, set);
     }
     const key = `${ref.setHash}/${planned.pageHash}`;

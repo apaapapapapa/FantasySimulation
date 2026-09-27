@@ -79,3 +79,89 @@ it('returns uncached, CORS-visible missing/storage errors without internal excep
   expect(failed.headers.get('cache-control')).toBe('no-store');
   expect(await failed.json()).toEqual({ error: 'storage-unavailable' });
 });
+it('serves only a bounded exact pack range and reports whole-object metadata for HEAD', async () => {
+  const fixture = bucket(),
+    key = `packs/${'a'.repeat(64)}.bin`;
+  const get = vi.fn(async () => ({
+    size: 10,
+    httpEtag: '"pack"',
+    range: { offset: 2, length: 4 },
+    body: new Blob([fixture.bytes]).stream(),
+  }));
+  fixture.env.REPLAYS.get = get as unknown as ReaderEnv['REPLAYS']['get'];
+  const response = await readReplay(
+    new Request(`https://reader.example/${key}`, {
+      headers: { Range: 'bytes=2-5', Origin: 'https://apaapapapapa.github.io' },
+    }),
+    fixture.env,
+  );
+  expect(response.status).toBe(206);
+  expect(await response.arrayBuffer()).toEqual(fixture.bytes.buffer);
+  expect(get).toHaveBeenCalledExactlyOnceWith(key, { range: { offset: 2, length: 4 } });
+  expect(response.headers.get('content-range')).toBe('bytes 2-5/10');
+  expect(response.headers.get('content-length')).toBe('4');
+  expect(response.headers.get('content-type')).toBe('application/octet-stream');
+  expect(response.headers.get('accept-ranges')).toBe('bytes');
+  expect(response.headers.get('content-encoding')).toBeNull();
+  expect((await readReplay(request(key, 'HEAD'), fixture.env)).status).toBe(200);
+  const preflight = await readReplay(request(key, 'OPTIONS'), fixture.env);
+  expect(preflight.headers.get('access-control-allow-headers')).toBe('Range');
+  expect(preflight.headers.get('access-control-expose-headers')).toContain('Content-Range');
+});
+it.each([
+  null,
+  'bytes=1-',
+  'bytes=-1',
+  'bytes=0-1,2-3',
+  'bytes=0-16777216',
+  'bytes=9007199254740992-9007199254740993',
+])('rejects pack range %s before storage', async (range) => {
+  const fixture = bucket();
+  const response = await readReplay(
+    new Request(`https://reader.example/packs/${'a'.repeat(64)}.bin`, {
+      headers: range ? { Range: range } : {},
+    }),
+    fixture.env,
+  );
+  expect(response.status).toBe(416);
+  expect(fixture.get).not.toHaveBeenCalled();
+});
+it.each([undefined, { offset: 0, length: 2 }, { offset: 2, length: 1 }])(
+  'rejects a missing, shifted or truncated R2 range',
+  async (range) => {
+    const fixture = bucket();
+    fixture.env.REPLAYS.get = (async () => ({
+      size: 4,
+      httpEtag: '"pack"',
+      range,
+      body: new Blob([fixture.bytes]).stream(),
+    })) as unknown as ReaderEnv['REPLAYS']['get'];
+    expect(
+      (
+        await readReplay(
+          new Request(`https://reader.example/packs/${'a'.repeat(64)}.bin`, {
+            headers: { Range: 'bytes=2-3' },
+          }),
+          fixture.env,
+        )
+      ).status,
+    ).toBe(503);
+  },
+);
+it('returns 416 even when storage rejects an unsatisfiable offset before returning metadata', async () => {
+  const fixture = bucket();
+  fixture.env.REPLAYS.get = async () => {
+    throw new Error('R2 range is unsatisfiable');
+  };
+  expect(
+    (
+      await readReplay(
+        new Request(`https://reader.example/packs/${'a'.repeat(64)}.bin`, {
+          headers: { Range: 'bytes=7-8' },
+        }),
+        fixture.env,
+      )
+    ).status,
+  ).toBe(416);
+  expect(fixture.head).toHaveBeenCalledTimes(1);
+});
