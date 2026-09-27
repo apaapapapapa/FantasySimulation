@@ -538,3 +538,86 @@ input[type='range'] {
 .replay-canvas[data-camera='free'] canvas {
   touch-action: none !important;
 }
+/* Dimraeth-like replay stage: dot-art upscaling, gilded frame, night vignette, name plates. */
+.replay-stage {
+  position: relative;
+  isolation: isolate;
+  background: #070a0c;
+  border: 2px solid #6d5634;
+  box-shadow:
+    0 0 0 1px #1b140c,
+    inset 0 0 0 1px #c9a45c;
+}
+.replay-stage canvas {
+  image-rendering: pixelated;
+}
+.replay-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 30;
+  background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgb(4 5 8 / 0.72) 100%);
+}
+.fighter-plate {
+  /* Bottom-centred just above the sprite's head; --lift clears a neighbouring plate. */
+  transform: translate(-50%, calc(-100% - var(--lift, 0px)));
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  font-family: Georgia, 'Times New Roman', 'Noto Serif JP', serif;
+  font-size: 12px;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  white-space: nowrap;
+  color: #f4e6c4;
+  text-shadow:
+    1px 0 #120c08,
+    -1px 0 #120c08,
+    0 1px #120c08,
+    0 -1px #120c08;
+  user-select: none;
+}
+.fighter-plate[data-side='left'] span {
+  color: #ffe0a3;
+}
+.fighter-plate[data-side='right'] span {
+  color: #cfeaff;
+}
+.fighter-plate i {
+  display: block;
+  width: 46px;
+  height: 5px;
+  background: #1a1210;
+  border: 1px solid #0b0706;
+  box-shadow: 0 0 0 1px #8a6a3a;
+}
+.fighter-plate b {
+  display: block;
+  height: 100%;
+  background: linear-gradient(#e2574c, #a8272a);
+}
+@media (max-width: 760px) {
+  .fighter-plate {
+    font-size: 10px;
+  }
+  .fighter-plate i {
+    width: 36px;
+    height: 4px;
+  }
+}
+svg.replay-map {
+  background: #070a0c;
+  border: 2px solid #6d5634;
+  box-shadow:
+    0 0 0 1px #1b140c,
+    inset 0 0 0 1px #c9a45c;
+}
+.map-plate {
+  font-family: Georgia, 'Times New Roman', 'Noto Serif JP', serif;
+  fill: #f4e6c4;
+  stroke: #120c08;
+  stroke-width: 0.12px;
+  paint-order: stroke;
+}
