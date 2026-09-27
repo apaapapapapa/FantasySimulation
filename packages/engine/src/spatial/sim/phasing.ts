@@ -1,3 +1,4 @@
+import { domainSnapshotStep } from '../rules/subject-clocks.ts';
 import { boundedInterferences } from './interference.ts';
 import { canonicalJson, type PhaseContribution } from '@fantasy/domain/spatial/execution';
 import { activePhaseContributions, combinedPhase } from '../rules/phasing.ts';
@@ -22,7 +23,7 @@ export function updateBodyPhasing(tx: StepTransaction) {
     const previous = actor.body.motion.phasing;
     const active = activePhaseContributions(
       actor,
-      tx.step,
+      domainSnapshotStep(actor, tx.step),
       selfView(actor, tx.step, tx.context.battle.rules.ai, tx.context.battle.statuses).silenced,
     );
     if (!active.length && !previous) continue;

@@ -229,6 +229,8 @@ export async function withInitialStatus(
     costs: { hp: 0, mp: 0, uses: 1 },
     effects: [{ kind: 'apply-status', status: reference(status) }],
   };
+  delete startup.accuracy;
+  delete startup.timeStop;
   delete startup.stages;
   delete startup.relocation;
   delete startup.barrier;

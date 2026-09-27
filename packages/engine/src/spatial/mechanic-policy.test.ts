@@ -144,6 +144,8 @@ it('fails promotion of a new standard mechanic with unresolved accepted pairs', 
 it('inventories accepted mechanic-bearing schema fields and visits dormant and transformed closure owners', async () => {
   expect(Object.keys(AbilitySchema.shape).sort()).toEqual(
     [
+      'accuracy',
+      'timeStop',
       'aimErrorMilliDegrees',
       'attack',
       'barrier',
@@ -169,6 +171,10 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
     [
       'adjustments',
       'burning',
+      'immortality',
+      'defeatImmunity',
+      'stopImmunity',
+      'evasion',
       'categories',
       'durationSteps',
       'flightStaminaPerSecond',

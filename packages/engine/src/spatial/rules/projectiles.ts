@@ -14,6 +14,7 @@ import { ballShape, SpatialBudgetError, type SpatialWorld } from '../world/physi
 import { bodyCapsule } from '../world/terrain.ts';
 
 export type ProjectileState = DamageSnapshot & {
+  clock?: { age: number; at: number; paused: number };
   id: string;
   ownerId: string;
   ability: AbilityRevision;
@@ -41,7 +42,27 @@ export function displayProjectile(p: ProjectileState): ProjectileDisplay {
     velocity: { ...p.velocity },
     radiusMm: shape.radiusMm,
     launchStep: p.launchStep,
-    endStep: p.launchStep + shape.lifetimeSteps,
+    endStep: p.clock
+      ? p.clock.at + shape.lifetimeSteps - p.clock.age
+      : p.launchStep + shape.lifetimeSteps,
+    ...(p.clock
+      ? {
+          clock: {
+            projectionAsOfGlobalStep: p.clock.at,
+            subjectStep: p.clock.age,
+            pausedSteps: p.clock.paused,
+            deadlines: [
+              {
+                key: 'projectile.end',
+                domain: 'projectile' as const,
+                at: shape.lifetimeSteps,
+                remainingSteps: shape.lifetimeSteps - p.clock.age,
+                projectedStep: p.clock.at + shape.lifetimeSteps - p.clock.age,
+              },
+            ],
+          },
+        }
+      : {}),
     ...(p.deflection ? { deflection: p.deflection } : {}),
     ...(p.stage ? { stage: p.stage } : {}),
   };

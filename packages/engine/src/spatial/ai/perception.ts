@@ -1,6 +1,8 @@
+import { observedAge } from '../rules/subject-clocks.ts';
+import type { ActorClock } from '../state.ts';
 import { observeSpatial } from './spatial-observation.ts';
 import type { SpatialObject } from '../rules/spatial-objects.ts';
-import { bodyPoint, canSee } from '../world/visibility.ts';
+import { bodyPoint, canSee, canObserveActor } from '../world/visibility.ts';
 import type {
   MotionState,
   StatusCohort,
@@ -122,12 +124,9 @@ export function observeImpact(
   },
   step: number,
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
+  visible = canObserveActor(world, self, target),
 ): Experience | null {
-  if (
-    target.vision?.visible === false ||
-    !canSee(world, self, bodyPoint(target, target.actor.character.body.aimOffset))
-  )
-    return null;
+  if (!visible) return null;
   const uncertain = detail.partial,
     absorption = (detail.absorbed ?? 0) > 0,
     shield = detail.shield,
@@ -178,16 +177,13 @@ export function observeReveal(
   world: SpatialWorld,
   self: MotionState,
   target: MotionState,
-  effect: DeepReadonly<Extract<Effect, { kind: 'reveal' }>>,
+  effect: DeepReadonly<Extract<Effect, { kind: 'reveal'; field: 'resistance' }>>,
   ability: RevisionRef,
   eventId: string,
   step: number,
+  visible = canObserveActor(world, self, target),
 ): Experience | null {
-  if (
-    target.vision?.visible === false ||
-    effect.powerBps <= (target.actor.character.perception.revealWardBps ?? 0) ||
-    !canSee(world, self, bodyPoint(target, target.actor.character.body.aimOffset))
-  )
+  if (!visible || effect.powerBps <= (target.actor.character.perception.revealWardBps ?? 0))
     return null;
   const value = target.actor.character.stats.resistances[effect.element] ?? 0;
   const low = Math.floor(value / effect.precisionBps) * effect.precisionBps;
@@ -216,6 +212,8 @@ export function perceive(
   step: number,
   previous: PerceptionMemory,
   visibleState?: {
+    conceptCue?: ObservedActor['conceptCue'];
+    statusStep?: number;
     resources: ResourceState;
     action: NonNullable<ObservedActor['action']>;
     statuses?: readonly StatusCohort[];
@@ -226,6 +224,7 @@ export function perceive(
   rules: DeepReadonly<NonNullable<Definition<'ruleset'>['ai']>> = AI_RULES,
   bounds?: DeepReadonly<Definition<'scenario'>['bounds']>,
   objects: readonly SpatialObject[] = [],
+  clock?: ActorClock,
 ): PerceptionMemory {
   const interval = self.actor.character.perception.reactionSteps;
   let pending = [...previous.pending],
@@ -233,6 +232,7 @@ export function perceive(
     lastSeen = previous.lastSeen,
     terrain = [...previous.terrain];
   let statusChangedAt = previous.statusChangedAt;
+  let concepts = previous.concepts?.filter((cue) => cue.expiresAt > step);
   let deflections = previous.deflections
     ? [...previous.deflections.filter((d) => d.expiresAt > step)]
     : undefined;
@@ -248,29 +248,40 @@ export function perceive(
       )
         statusChangedAt = sample.sampledAt;
       const previouslyVisible = observation?.projectiles ?? [];
-      observation = sample;
-      if (sample.enemy) lastSeen = sample.enemy;
-      if (sample.enemy?.reaction?.response === 'deflect') {
-        deflections = [
-          ...(deflections ?? []).filter((d) => d.targetId !== sample.enemy!.id),
+      observation =
+        clock && sample.enemy
+          ? { ...sample, enemy: { ...sample.enemy, availableAt: sample.availableAt } }
+          : sample;
+      if (observation?.enemy) lastSeen = observation.enemy;
+      if (sample.enemy?.conceptCue)
+        concepts = [
+          ...(concepts ?? []).filter(
+            (cue) => cue.targetId !== sample.enemy!.id || cue.kind !== sample.enemy!.conceptCue,
+          ),
           {
+            kind: sample.enemy.conceptCue,
             targetId: sample.enemy.id,
             sampledAt: sample.sampledAt,
             availableAt: sample.availableAt,
-            expiresAt: sample.sampledAt + rules.knowledgeTtlSteps,
+            expiresAt: step + rules.knowledgeTtlSteps - observedAge(clock, sample.sampledAt, step),
           },
+        ].slice(-12);
+      const response = sample.enemy?.reaction?.response;
+      if (sample.enemy && (response === 'deflect' || response === 'revive')) {
+        const cue = {
+          targetId: sample.enemy.id,
+          sampledAt: sample.sampledAt,
+          availableAt: sample.availableAt,
+          expiresAt: step + rules.knowledgeTtlSteps - observedAge(clock, sample.sampledAt, step),
+        };
+        const previousCues = response === 'deflect' ? deflections : revivals;
+        const cues = [
+          ...(previousCues ?? []).filter((prior) => prior.targetId !== cue.targetId),
+          cue,
         ].slice(-2);
+        if (response === 'deflect') deflections = cues;
+        else revivals = cues;
       }
-      if (sample.enemy?.reaction?.response === 'revive')
-        revivals = [
-          ...(revivals ?? []).filter((r) => r.targetId !== sample.enemy!.id),
-          {
-            targetId: sample.enemy.id,
-            sampledAt: sample.sampledAt,
-            availableAt: sample.availableAt,
-            expiresAt: sample.sampledAt + rules.knowledgeTtlSteps,
-          },
-        ].slice(-2);
       terrain.push(...(sample.terrain ?? []));
       if (rules.reapplication)
         for (const p of sample.projectiles) {
@@ -289,7 +300,8 @@ export function perceive(
               element: p.element,
               sampledAt: sample.sampledAt,
               availableAt: sample.availableAt,
-              expiresAt: sample.sampledAt + rules.knowledgeTtlSteps,
+              expiresAt:
+                step + rules.knowledgeTtlSteps - observedAge(clock, sample.sampledAt, step),
             },
           ].slice(-32);
         }
@@ -299,7 +311,10 @@ export function perceive(
   if (sampledAt < 0 || step - sampledAt >= interval) {
     const point = bodyPoint(enemy, enemy.actor.character.body.aimOffset);
     const visible = enemy.vision?.visible !== false && canSee(world, self, point);
-    const observedStatuses = publicStatuses(visibleState?.statuses ?? [], step);
+    const observedStatuses = publicStatuses(
+      visibleState?.statuses ?? [],
+      visibleState?.statusStep ?? step,
+    );
     const statusKnown =
       observedStatuses.length > 0 ||
       lastSeen?.statuses !== undefined ||
@@ -324,6 +339,7 @@ export function perceive(
               ? wounds(visibleState.resources.hp, enemy.actor.character.stats.hp)
               : 'unknown',
             action: visibleState?.action ?? 'idle',
+            ...(visibleState?.conceptCue ? { conceptCue: visibleState.conceptCue } : {}),
             ...(enemy.posture ? { posture: enemy.posture.current } : {}),
             ...(visibleState?.stage
               ? {
@@ -390,7 +406,7 @@ export function perceive(
   if (
     !observation?.enemy &&
     lastSeen &&
-    step - lastSeen.step > self.actor.character.perception.memorySteps
+    observedAge(clock, lastSeen.step, step) > self.actor.character.perception.memorySteps
   )
     lastSeen = null;
   const delivered = previous.pendingExperience.filter(
@@ -403,11 +419,21 @@ export function perceive(
       (e) => e.kind === 'reveal' || statusChangedAt === undefined || e.sampledAt > statusChangedAt,
     )
     .slice(-rules.memorySamples);
+  const learnedReadings = previous.pendingReadings?.filter(
+    (reading) => reading.availableAt <= step && reading.expiresAt > step,
+  );
+  const readings =
+    previous.readings || learnedReadings
+      ? [
+          ...(previous.readings ?? []).filter((reading) => reading.expiresAt > step),
+          ...(learnedReadings ?? []),
+        ].slice(-32)
+      : undefined;
   const learned = delivered.filter((e) => knowledge.includes(e));
   const expired = previous.knowledge.filter((e) => !knowledge.includes(e)).map((e) => e.eventId);
   const surfaces = new Map<string, DeepReadonly<ObservedSurface>>();
   for (const sample of terrain.filter(
-    (s) => step - s.sampledAt <= self.actor.character.perception.memorySteps,
+    (s) => observedAge(clock, s.sampledAt, step) <= self.actor.character.perception.memorySteps,
   ))
     surfaces.set(JSON.stringify([sample.pointMm, sample.normalBps]), sample);
   terrain = [...surfaces.values()].slice(-64);
@@ -447,11 +473,22 @@ export function perceive(
                 })
               );
             },
+            clock,
           ),
         }
       : {}),
     ...(deflections ? { deflections } : {}),
     ...(revivals ? { revivals } : {}),
+    ...(concepts ? { concepts } : {}),
+    ...(readings
+      ? {
+          readings,
+          learnedReadings: learnedReadings ?? [],
+          pendingReadings: (previous.pendingReadings ?? []).filter(
+            (reading) => reading.availableAt > step && reading.expiresAt > step,
+          ),
+        }
+      : {}),
     ...(statusChangedAt !== undefined && { statusChangedAt }),
     ...(threatHistory ? { threatHistory: threatHistory.filter((e) => e.expiresAt > step) } : {}),
     pendingExperience: previous.pendingExperience.filter(

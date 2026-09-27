@@ -288,24 +288,27 @@ export function activateSpatialObjects(tx: StepTransaction) {
         o.kind === 'barrier' ? barrierObstacle(o) : objectGeometry(o.id, o.spec.shape, o.position);
     const reason = tx.next.actors.some((a) => a.vitals.resources.hp === 0)
       ? 'battle-ended'
-      : length(sub(o.position, owner.body.motion.position)) > o.spec.placement.maxDistanceMm / 1000
-        ? 'range'
-        : !shapeFits(obstacle, min, max)
-          ? 'arena'
-          : o.kind === 'barrier' &&
-              (occupied.some((other) => objectsOverlap(world, obstacle, other)) ||
-                tx.next.actors.some(
-                  (a) =>
-                    blocksQuery(obstacle, 'movement', { ownerId: actorId(a) }) &&
-                    objectTouchesBody(
-                      world,
-                      obstacle,
-                      a.body.motion.position,
-                      bodyCapsule(a.body.motion.actor.character.body),
-                    ),
-                ))
-            ? 'occupied'
-            : null;
+      : owner.clock?.frozen
+        ? 'source-frozen'
+        : length(sub(o.position, owner.body.motion.position)) >
+            o.spec.placement.maxDistanceMm / 1000
+          ? 'range'
+          : !shapeFits(obstacle, min, max)
+            ? 'arena'
+            : o.kind === 'barrier' &&
+                (occupied.some((other) => objectsOverlap(world, obstacle, other)) ||
+                  tx.next.actors.some(
+                    (a) =>
+                      blocksQuery(obstacle, 'movement', { ownerId: actorId(a) }) &&
+                      objectTouchesBody(
+                        world,
+                        obstacle,
+                        a.body.motion.position,
+                        bodyCapsule(a.body.motion.actor.character.body),
+                      ),
+                  ))
+              ? 'occupied'
+              : null;
     return [{ object: o, obstacle, reason }];
   });
   for (let i = 0; i < proposals.length; i++)

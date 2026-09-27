@@ -167,6 +167,17 @@ export function moveActors(
     const world = bodyWorld(rootWorld, state);
     const intent = intents.get(state.actor.participant.actorId);
     if (!intent) throw new Error('Missing simultaneous movement intent');
+    if (state.frozen)
+      return {
+        state,
+        intent,
+        velocity: state.velocity,
+        trace: straight(state.position, state.position),
+        stepped: false,
+        contactTime: undefined as number | undefined,
+        projections: undefined,
+        forcedGravity: undefined,
+      };
     const movement = state.actor.character.movement;
     const ground =
       state.grounded && !intent.flight ? support(world, state, state.position) : undefined;
@@ -260,6 +271,16 @@ export function moveActors(
     }
   }
   return plans.map((plan) => {
+    if (plan.state.frozen)
+      return {
+        state: plan.state,
+        trace: straight(plan.state.position, plan.state.position),
+        landed: false,
+        fallDamage: 0,
+        contactTime: plan.contactTime,
+        stepped: false,
+        jumped: false,
+      };
     const world = bodyWorld(rootWorld, plan.state);
     if (plan.trace.length > maxSegments) throw new SpatialBudgetError('movement-segments');
     const { state, intent, trace } = plan,

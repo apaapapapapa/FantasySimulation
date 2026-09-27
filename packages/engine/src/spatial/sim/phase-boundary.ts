@@ -1,3 +1,6 @@
+import { activateStops, releaseStop } from './time-stop-control.ts';
+import { stopEffectHooks } from './time-stop-effects.ts';
+import { frozen } from '../rules/subject-clocks.ts';
 import { updateBodyPhasing, clearRelocatedPhasing } from './phasing.ts';
 import { expireSpatialObjects, activateSpatialObjects } from './spatial-commands.ts';
 import { commitEffects } from './combat-effects.ts';
@@ -14,6 +17,8 @@ import { effectsOf } from './step-effects.ts';
 import { activateRelocations } from './relocation.ts';
 export function boundaryPhase(tx: StepTransaction) {
   expireSpatialObjects(tx);
+  if (tx.next.stop?.active && tx.next.stop.active.until <= tx.step)
+    tx.effects.push(...releaseStop(tx, tx.step, 'duration elapsed', 'boundary'));
   const { battle, budget, world, work } = tx.context;
   const { step, journal } = tx;
   const actors = tx.previous.actors,
@@ -34,13 +39,14 @@ export function boundaryPhase(tx: StepTransaction) {
     );
   const posture = () => {
     for (const actor of next)
-      actor.body.motion = advancePosture(
-        actor.body.motion,
-        undefined,
-        step,
-        world,
-        actors.map((a) => a.body.motion),
-      );
+      if (!frozen(actor))
+        actor.body.motion = advancePosture(
+          actor.body.motion,
+          undefined,
+          step,
+          world,
+          actors.map((a) => a.body.motion),
+        );
   };
   if (!spatial) posture();
   if (step === 0) {
@@ -117,6 +123,7 @@ export function boundaryPhase(tx: StepTransaction) {
   }
   const periodic = tx.effects;
   for (const actor of next) {
+    if (frozen(actor)) continue;
     const boundary = statusBoundary(actor.statuses, step);
     actor.statuses = boundary.statuses;
     for (const removed of boundary.removed)
@@ -170,6 +177,15 @@ export function boundaryPhase(tx: StepTransaction) {
         phase: 'boundary',
         budget,
         world,
+        ...stopEffectHooks(tx, {
+          battle,
+          journal,
+          step,
+          activationStep: step,
+          phase: 'boundary',
+          budget,
+          world,
+        }),
         aliveAtStart: new Set(actors.filter((a) => a.vitals.resources.hp > 0).map(actorId)),
       },
       work.reactions,
@@ -188,4 +204,5 @@ export function boundaryPhase(tx: StepTransaction) {
   activateSpatialObjects(tx);
   activateRelocations(tx);
   clearRelocatedPhasing(tx);
+  activateStops(tx);
 }

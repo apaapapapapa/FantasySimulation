@@ -99,6 +99,7 @@ export function reactionCandidates(
   point: ReactionContext['point'],
   context: EffectContext,
 ) {
+  if (actor.clock?.frozen) return [];
   const { battle, step, activationStep } = context;
   const view = selfView(actor, step, battle.rules.ai, battle.statuses);
   let eligible = actor.body.motion.actor.abilities

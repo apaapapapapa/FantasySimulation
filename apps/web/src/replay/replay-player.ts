@@ -1,3 +1,4 @@
+import { advanceDeferred, advanceStopReplay } from '@fantasy/domain/spatial';
 import {
   canonicalJson,
   compareIds,
@@ -51,6 +52,7 @@ function advance(before: ReplayCheckpoint, record: StreamRecord): ReplayCheckpoi
           ...p,
           ...updates.get(p.id),
           ownerId: updates.get(p.id)?.ownerId ?? p.ownerId,
+          endStep: updates.get(p.id)?.endStep ?? p.endStep,
         }));
     }
     let objects = state!.objects;
@@ -63,8 +65,15 @@ function advance(before: ReplayCheckpoint, record: StreamRecord): ReplayCheckpoi
     }
     state = { actors, projectiles, ...(objects ? { objects } : {}) };
   }
+  const deferred = advanceDeferred(before.deferred, 'events' in record ? record.events : []);
+  const stop = advanceStopReplay(before.stop, 'events' in record ? record.events : []);
+  const requiredFeatures =
+    record.kind === 'initial' ? record.requiredFeatures : before.requiredFeatures;
   return {
     ...before,
+    ...(deferred ? { deferred } : {}),
+    ...(stop ? { stop } : {}),
+    ...(requiredFeatures ? { requiredFeatures } : {}),
     state: orderedState(state!),
     step: recordStep(record),
     nextRecord: before.nextRecord + 1,

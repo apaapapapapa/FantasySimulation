@@ -22,6 +22,7 @@ it('dispatches narrowed variants with caller context and requires complete regis
   const incomplete: EffectHandlers<undefined, number> = { damage: (effect) => effect.amount };
   void incomplete;
   const effects: EffectHandlers<number, number> = {
+    defeat: (_effect, n) => n,
     damage: (effect, n) => effect.amount + n,
     heal: (effect, n) => effect.amount + n,
     shield: (effect, n) => effect.amount + n,

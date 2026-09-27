@@ -1,3 +1,4 @@
+import { frozen, domainSnapshotStep, subjectStep } from '../rules/subject-clocks.ts';
 import { bodyWorld } from '../rules/phasing.ts';
 import { terrainObstacles } from '../world/terrain.ts';
 import { opponentInDuel } from './duel.ts';
@@ -18,12 +19,13 @@ import { type StepTransaction, actorId } from './step-transaction.ts';
 export function decisionPhase(tx: StepTransaction) {
   const { battle, budget, world, work } = tx.context;
   const { navigators } = tx.context;
-  const { step, journal, aiBoundary } = tx;
+  const { step, journal } = tx;
   const actors = tx.previous.actors,
     next = tx.next.actors,
     projectiles = tx.previous.projectiles;
   const forcePlans = new Map(
     next.map((actor) => {
+      if (frozen(actor)) return [actorId(actor), null] as const;
       delete actor.body.intent.forced;
       delete actor.body.intent.authored;
       return [
@@ -40,13 +42,16 @@ export function decisionPhase(tx: StepTransaction) {
   );
   // Observe and choose before either participant pays or declares anything.
   for (const actor of next) {
+    if (frozen(actor)) continue;
+    const aiBoundary =
+      subjectStep(actor, step) % (battle.manifest.physicsProfile.aiMs / battle.rules.stepMs) === 0;
     const enemy = opponentInDuel(actors, actorId(actor), actorId);
     const previousStatuses = actor.mind.memory.observation?.enemy?.statuses;
     actor.body.motion = statusVision(actor.body.motion, actor.statuses, step);
     actor.mind.memory = perceive(
       world,
       actor.body.motion,
-      statusVision(enemy.body.motion, enemy.statuses, step),
+      statusVision(enemy.body.motion, enemy.statuses, domainSnapshotStep(enemy, step)),
       projectiles.map((p) => ({
         ...p,
         radiusMm:
@@ -64,7 +69,13 @@ export function decisionPhase(tx: StepTransaction) {
       actor.mind.memory,
       {
         resources: enemy.vitals.resources,
+        ...(enemy.vitals.conceptCue &&
+        step >= enemy.vitals.conceptCue.at &&
+        step - enemy.vitals.conceptCue.at < 10
+          ? { conceptCue: enemy.vitals.conceptCue.kind }
+          : {}),
         statuses: enemy.statuses,
+        ...(enemy.clock ? { statusStep: domainSnapshotStep(enemy, step) } : {}),
         action: displayActor(enemy, step).action?.phase ?? 'idle',
         stage: visibleStageCue(enemy, step),
         reaction: visibleReactionCue(enemy, step),
@@ -73,6 +84,7 @@ export function decisionPhase(tx: StepTransaction) {
       battle.rules.ai,
       battle.scenario.bounds,
       tx.next.objects ?? [],
+      actor.clock,
     );
     if (actor.actions.action && actor.actions.action.recoveryUntil <= step)
       actor.actions.action = null;
@@ -93,6 +105,7 @@ export function decisionPhase(tx: StepTransaction) {
         .map((a) => a.id),
     );
     const learnedRevival = actor.mind.memory.revivals?.some((r) => r.availableAt === step);
+    const learnedConcept = actor.mind.memory.concepts?.some((cue) => cue.availableAt === step);
     const learnedDeflection = actor.mind.memory.deflections?.some((d) => d.availableAt === step);
     const seen = actor.mind.memory.observation?.enemy;
     const newStatuses = seen?.statuses;
@@ -103,7 +116,9 @@ export function decisionPhase(tx: StepTransaction) {
       actor.mind.memory.expired.length ||
       changedStatuses ||
       learnedDeflection ||
-      learnedRevival
+      learnedRevival ||
+      learnedConcept ||
+      actor.mind.memory.learnedReadings?.length
     )
       journal.emit({
         kind: 'knowledge',
@@ -123,6 +138,20 @@ export function decisionPhase(tx: StepTransaction) {
             }),
           })),
           expired: [...actor.mind.memory.expired],
+          ...(actor.mind.memory.learnedReadings?.length
+            ? {
+                readings: actor.mind.memory.learnedReadings.map((reading) => ({
+                  ...reading,
+                  ability: { ...reading.ability },
+                  ...(reading.field === 'health'
+                    ? { range: { ...reading.range } }
+                    : { action: reading.action ? { ...reading.action } : null }),
+                })),
+              }
+            : {}),
+          ...(learnedConcept
+            ? { concepts: actor.mind.memory.concepts!.map((cue) => ({ ...cue })) }
+            : {}),
           ...(learnedRevival
             ? { revivals: actor.mind.memory.revivals!.map((r) => ({ ...r })) }
             : {}),

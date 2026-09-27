@@ -1,11 +1,13 @@
 import type { Definition, Effect, Revision } from './contracts.ts';
 import type { MechanicId } from './mechanics.ts';
+import type { DeepReadonly } from './canonical.ts';
 
 export type MechanicUse = {
   mechanic: MechanicId;
   owner: Pick<Revision, 'kind' | 'id' | 'revision' | 'contentHash'>;
 };
 export const effectMechanics = {
+  defeat: 'instant-death',
   damage: 'damage',
   heal: 'heal',
   shield: 'shield',
@@ -56,25 +58,28 @@ export const motionMechanics = {
 >;
 
 /** Visit the resolved revision closure, including dormant branches and transformed/granted states. */
-export function closureMechanics(revisions: readonly Revision[]): MechanicUse[] {
+export function closureMechanics(revisions: readonly DeepReadonly<Revision>[]): MechanicUse[] {
   const uses: MechanicUse[] = [];
   for (const owner of revisions) {
     const found = new Set<MechanicId>();
     const add = (mechanic: MechanicId) => {
       found.add(mechanic);
     };
-    const effects = (values: readonly Effect[]) => {
+    const effects = (values: readonly DeepReadonly<Effect>[]) => {
       for (const effect of values) {
         const mechanic = effectMechanics[effect.kind];
         if (!mechanic) throw new Error('Unclassified effect variant');
         add(mechanic);
         if (effect.kind === 'damage' && effect.drainBps !== undefined) add('drain');
+        if (effect.kind === 'reveal' && effect.field !== 'resistance') add('mind-read');
         if (effect.kind === 'apply-status' && effect.flightStaminaPerSecond !== undefined)
           add('flight');
       }
     };
     if (owner.kind === 'ability') {
       const ability = owner.definition;
+      if (ability.timeStop) add('time-stop');
+      if (ability.accuracy) add('absolute-hit');
       effects(ability.effects);
       if (ability.relocation) add('teleport');
       if (ability.barrier) add('barrier');
@@ -96,6 +101,10 @@ export function closureMechanics(revisions: readonly Revision[]): MechanicUse[] 
       }
     } else if (owner.kind === 'status') {
       const status = owner.definition;
+      if (status.evasion) add('absolute-evasion');
+      if (status.stopImmunity !== undefined) add('time-stop');
+      if (status.immortality) add('immortality');
+      if (status.defeatImmunity !== undefined) add('instant-death');
       if (status.phasing) add('phasing');
       if (status.seals) add('seal');
       if (status.adjustments?.some((a) => a.target === 'absorption')) add('attribute-absorption');

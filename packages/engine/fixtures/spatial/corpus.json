@@ -1196,6 +1196,222 @@
     "p6-seal-worker": {
       "file": "apps/api/src/jobs/revival-seal-persistence.test.ts",
       "name": "persists revival and sealed reactions through Worker SQLite seek and rewind, sealed=true"
+    },
+    "concept-ordered-pairs": {
+      "file": "packages/engine/src/spatial/concept-interference.test.ts",
+      "name": "executes all 420 ordered concept pairs with bounded clocks protection evasion and reading expectations"
+    },
+    "concept-allocation": {
+      "file": "packages/engine/src/spatial/concept-allocation.test.ts",
+      "name": "executes the fourteen independently authored guard/drain cases and both participant orders"
+    },
+    "concept-settlement": {
+      "file": "packages/engine/src/spatial/concepts.test.ts",
+      "name": "resolves defeat before finite protection and revival with engine-free replay"
+    },
+    "concept-identity": {
+      "file": "packages/engine/src/spatial/concepts.test.ts",
+      "name": "preserves concept determinism and rejects forged protection use and HP records"
+    },
+    "concept-persistence": {
+      "file": "apps/api/src/jobs/concept-persistence.test.ts",
+      "name": "preserves defeat and cumulative immortal protection across Worker SQLite rewind and seek"
+    },
+    "concept-display": {
+      "file": "apps/web/src/replay/concept-display.test.ts",
+      "name": "renders recorded defeat and immortal protection in both scene models and removes them on rewind"
+    },
+    "concept-stop-duration": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "freezes exactly 12 intervals and settles captured hits once at thaw"
+    },
+    "concept-stop-one": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "freezes exactly 1 intervals and settles captured hits once at thaw"
+    },
+    "concept-stop-opposing": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "rejects two individually valid opposing stops without a priority winner"
+    },
+    "concept-stop-immunity": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "an immune invalid stop cannot cancel the other valid opposing request"
+    },
+    "concept-stop-terminal": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "performs one release-only transaction at the global time limit and validates clock corruption"
+    },
+    "concept-stop-probe": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "probes prospective defeat before committing and combines buffered drain in the same opening wave"
+    },
+    "concept-stop-spatial": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "completes a same-boundary paid teleport before rechecking the queued stop range"
+    },
+    "concept-clock-stamps": {
+      "file": "packages/engine/src/spatial/subject-clocks.test.ts",
+      "name": "retains recipient deadlines and historical stamps across forty frozen global intervals"
+    },
+    "concept-clock-status": {
+      "file": "packages/engine/src/spatial/subject-clocks.test.ts",
+      "name": "pauses status pulses and delayed readings without catch-up or live resampling"
+    },
+    "concept-clock-shot": {
+      "file": "packages/engine/src/spatial/subject-clocks.test.ts",
+      "name": "holds a current-owner projectile position velocity homing and age, then resumes remaining life"
+    },
+    "concept-clock-reserve": {
+      "file": "packages/engine/src/spatial/subject-clocks.test.ts",
+      "name": "reserves full durations without refund, rejects nesting and stops at four uses or 300 intervals"
+    },
+    "concept-clock-cast": {
+      "file": "packages/engine/src/spatial/time-stop-domains.test.ts",
+      "name": "resumes a paid cast with exactly its remaining subject duration and no duplicate cost"
+    },
+    "concept-clock-motion": {
+      "file": "packages/engine/src/spatial/time-stop-domains.test.ts",
+      "name": "holds motion hover costs regeneration and fractional carries while preserving attached contact separation"
+    },
+    "concept-clock-control": {
+      "file": "packages/engine/src/spatial/time-stop-domains.test.ts",
+      "name": "tests effective immunity only at activation and keeps global control through later seal incapacity and dispel"
+    },
+    "concept-phasing-safety": {
+      "file": "packages/engine/src/spatial/phasing.test.ts",
+      "name": "retains the counter across regrant and sealing and resets only at full solid clearance"
+    },
+    "concept-stop-rollback": {
+      "file": "packages/engine/src/spatial/time-stop-limits.test.ts",
+      "name": "rolls back a failed release transaction to the committed frozen queue and retries unchanged"
+    },
+    "concept-stop-contacts": {
+      "file": "packages/engine/src/spatial/time-stop-limits.test.ts",
+      "name": "accepts the exact cumulative contacts cap and rolls back the next simultaneous set"
+    },
+    "concept-stop-operations": {
+      "file": "packages/engine/src/spatial/time-stop-limits.test.ts",
+      "name": "accepts the exact cumulative operations cap and rolls back the next simultaneous set"
+    },
+    "concept-stop-bytes": {
+      "file": "packages/engine/src/spatial/time-stop-limits.test.ts",
+      "name": "preflights exactly 65536 canonical UTF-8 bytes before any capture mutation"
+    },
+    "concept-stop-byte-overflow": {
+      "file": "packages/engine/src/spatial/time-stop-limits.test.ts",
+      "name": "preflights exactly 65537 canonical UTF-8 bytes before any capture mutation"
+    },
+    "concept-stop-cumulative": {
+      "file": "packages/engine/src/spatial/time-stop-limits.test.ts",
+      "name": "keeps cumulative captures after release and rejects 200 released plus 100 new contacts atomically"
+    },
+    "concept-stop-invalid": {
+      "file": "packages/engine/src/spatial/time-stop-limits.test.ts",
+      "name": "rejects missing checkpoint descriptors, feature declarations, duplicate settlement and control releases"
+    },
+    "concept-stop-geometry": {
+      "file": "packages/engine/src/spatial/time-stop-settlement.test.ts",
+      "name": "uses one opening shield and preserves captured force direction visibility and power after relocation"
+    },
+    "concept-read": {
+      "file": "packages/engine/src/spatial/perception-concepts.test.ts",
+      "name": "delivers bounded health and declared-action readings after delay and rejects forged timing"
+    },
+    "concept-read-private": {
+      "file": "packages/engine/src/spatial/perception-concepts.test.ts",
+      "name": "does not reveal warded concealed or occluded private state and samples only a bounded current bucket"
+    },
+    "concept-evasion": {
+      "file": "packages/engine/src/spatial/perception-concepts.test.ts",
+      "name": "limits evasion to matching hostile contacts and preserves paid reaction costs"
+    },
+    "concept-aim": {
+      "file": "packages/engine/src/spatial/perception-concepts.test.ts",
+      "name": "zeroes authored aim error but preserves wall obstruction and whole-contact evasion"
+    },
+    "concept-lifecycle-one": {
+      "file": "packages/engine/src/spatial/concept-lifecycle.test.ts",
+      "name": "never refills a 1-use immortal guard after expiry regrant seal or explicit revival"
+    },
+    "concept-lifecycle-four": {
+      "file": "packages/engine/src/spatial/concept-lifecycle.test.ts",
+      "name": "never refills a 4-use immortal guard after expiry regrant seal or explicit revival"
+    },
+    "concept-closure": {
+      "file": "packages/engine/src/spatial/concept-lifecycle.test.ts",
+      "name": "rejects conflicting immortal identities reachable through an opposing dormant grant before reservation"
+    },
+    "concept-manual-league": {
+      "file": "packages/engine/src/spatial/concept-samples.test.ts",
+      "name": "admits all 42 manual experimental slots with seven samples under one separate ruleset"
+    },
+    "concept-predicate": {
+      "file": "packages/engine/src/spatial/concepts.test.ts",
+      "name": "samples defeat predicates before same-wave damage or newly applied statuses"
+    },
+    "concept-return": {
+      "file": "packages/engine/src/spatial/concepts.test.ts",
+      "name": "returns a defeated projectile payload once without numeric damage or drain"
+    },
+    "concept-multiple": {
+      "file": "packages/engine/src/spatial/concepts.test.ts",
+      "name": "exhausts finite protection without truncation and does not spend it twice in one wave"
+    },
+    "concept-admission": {
+      "file": "packages/engine/src/spatial/concepts.test.ts",
+      "name": "rejects unpermitted dormant concepts and invalid defeat and immortality forms"
+    },
+    "concept-stop-persistence": {
+      "file": "apps/api/src/jobs/concept-persistence.test.ts",
+      "name": "round-trips frozen clocks and pending contacts through Worker SQLite checkpoints and rewind"
+    },
+    "concept-stop-player": {
+      "file": "apps/web/src/replay/concept-display.test.ts",
+      "name": "seeks fixed stopped recordings forward backward and across a loop without advancing pending HP"
+    },
+    "concept-global-area": {
+      "file": "packages/engine/src/spatial/time-stop-domains.test.ts",
+      "name": "keeps area object lifetime global while the current owner is frozen"
+    },
+    "concept-global-beam": {
+      "file": "packages/engine/src/spatial/time-stop-domains.test.ts",
+      "name": "keeps beam object lifetime global while the current owner is frozen"
+    },
+    "concept-global-barrier": {
+      "file": "packages/engine/src/spatial/time-stop-domains.test.ts",
+      "name": "keeps barrier object lifetime global while the current owner is frozen"
+    },
+    "concept-stop-revive-false": {
+      "file": "packages/engine/src/spatial/time-stop-settlement.test.ts",
+      "name": "releases at a newly lethal reaction cost without retroactive before-hit and then revives=false"
+    },
+    "concept-stop-revive-true": {
+      "file": "packages/engine/src/spatial/time-stop-settlement.test.ts",
+      "name": "releases at a newly lethal reaction cost without retroactive before-hit and then revives=true"
+    },
+    "concept-status-predicate": {
+      "file": "packages/engine/src/spatial/concepts.test.ts",
+      "name": "requires the opening status and does not accept a same-wave newly granted prerequisite"
+    },
+    "concept-attached-thaw": {
+      "file": "packages/engine/src/spatial/time-stop-domains.test.ts",
+      "name": "preserves every remaining attached melee interval through a committed thaw boundary"
+    },
+    "concept-clock-future": {
+      "file": "packages/engine/src/spatial/subject-clocks.test.ts",
+      "name": "records slow action deadlines beyond the battle horizon without extending global time"
+    },
+    "concept-stop-range-forward": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "rechecks stop range from muzzle 500 at distance 20250"
+    },
+    "concept-stop-range-backward": {
+      "file": "packages/engine/src/spatial/time-stop.test.ts",
+      "name": "rechecks stop range from muzzle -500 at distance 19750"
+    },
+    "concept-clock-force-binding": {
+      "file": "packages/engine/src/spatial/subject-clocks.test.ts",
+      "name": "binds every force deadline to a recorded pending or active force"
     }
   },
   "entries": [
@@ -2059,6 +2275,68 @@
         "p6-revival-seal-display",
         "p6-revival-worker",
         "p6-seal-worker"
+      ]
+    },
+    {
+      "id": "p6-concepts",
+      "title": "P6 experimental defeat, finite immortality, subject clocks, evasion, aiming and bounded reading",
+      "state": "implemented",
+      "owner": null,
+      "tests": [
+        "concept-ordered-pairs",
+        "concept-allocation",
+        "concept-settlement",
+        "concept-identity",
+        "concept-persistence",
+        "concept-display",
+        "concept-stop-duration",
+        "concept-stop-one",
+        "concept-stop-opposing",
+        "concept-stop-immunity",
+        "concept-stop-terminal",
+        "concept-stop-probe",
+        "concept-stop-spatial",
+        "concept-clock-stamps",
+        "concept-clock-status",
+        "concept-clock-shot",
+        "concept-clock-reserve",
+        "concept-clock-cast",
+        "concept-clock-motion",
+        "concept-clock-control",
+        "concept-phasing-safety",
+        "concept-stop-rollback",
+        "concept-stop-contacts",
+        "concept-stop-operations",
+        "concept-stop-bytes",
+        "concept-stop-byte-overflow",
+        "concept-stop-cumulative",
+        "concept-stop-invalid",
+        "concept-stop-geometry",
+        "concept-read",
+        "concept-read-private",
+        "concept-evasion",
+        "concept-aim",
+        "concept-lifecycle-one",
+        "concept-lifecycle-four",
+        "concept-closure",
+        "concept-manual-league",
+        "concept-predicate",
+        "concept-return",
+        "concept-multiple",
+        "concept-admission",
+        "concept-stop-persistence",
+        "concept-stop-player",
+        "concept-global-area",
+        "concept-global-beam",
+        "concept-global-barrier",
+        "concept-stop-revive-false",
+        "concept-stop-revive-true",
+        "concept-status-predicate",
+        "concept-attached-thaw",
+        "concept-clock-future",
+        "concept-stop-range-forward",
+        "concept-stop-range-backward",
+        "concept-clock-force-binding"
       ]
     }
   ]

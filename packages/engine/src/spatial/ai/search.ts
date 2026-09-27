@@ -1,3 +1,5 @@
+import { observedAge } from '../rules/subject-clocks.ts';
+import type { ActorClock } from '../state.ts';
 import type { MotionState, Observation, DecisionView, SearchMemory } from '../state.ts';
 export type { DirectionCue, SearchMemory } from '../state.ts';
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
@@ -15,6 +17,7 @@ export function surveySearch(
   prior: DeepReadonly<SearchMemory> | undefined,
   observation: Observation | null,
   sees: (point: Vec3) => boolean,
+  clock?: ActorClock,
 ): SearchMemory {
   const n = rules.cellsPerSide;
   const width = (bounds.max.x - bounds.min.x) / 1000 / n;
@@ -39,7 +42,7 @@ export function surveySearch(
     for (const index of sample.cells) state.cells[index]!.confirmedAt = sample.sampledAt;
   state.pending = state.pending.filter((s) => s.availableAt > step);
   const reaction = self.actor.character.perception.reactionSteps;
-  if (step % reaction === 0) {
+  if ((step - (clock?.pausedSteps ?? 0)) % reaction === 0) {
     const cells: number[] = [];
     for (const [i, cell] of state.cells.entries()) {
       // Centre plus inset corners: a high ray over a low wall cannot confirm this cell.
@@ -73,7 +76,9 @@ export function surveySearch(
     });
     state.lastContactAt = Math.max(state.lastContactAt, observation!.sampledAt);
   }
-  state.cues = state.cues.filter((c) => step - c.sampledAt <= rules.revisitSteps).slice(-8);
+  state.cues = state.cues
+    .filter((c) => observedAge(clock, c.sampledAt, step) <= rules.revisitSteps)
+    .slice(-8);
   for (const cue of state.cues)
     if (cue.availableAt <= step) state.lastContactAt = Math.max(state.lastContactAt, cue.sampledAt);
   return state;
@@ -85,21 +90,22 @@ export function chooseSearch(view: DecisionView, state: number | undefined) {
   if (!rules || !previous || view.memory.observation?.enemy) return null;
   const memory = structuredClone(previous) as SearchMemory,
     step = view.step;
+  const age = (stamp: number) => observedAge(view.clock, stamp, step);
   const lastSeen = view.memory.lastSeen;
   const cue = memory.cues
-    .filter((c) => c.availableAt <= step && step - c.sampledAt <= rules.revisitSteps)
+    .filter((c) => c.availableAt <= step && age(c.sampledAt) <= rules.revisitSteps)
     .at(-1);
   const aggression = view.self.actor.policy.evaluation?.searchAggressionBps ?? 5000;
   const wait = Math.floor((rules.maxWaitSteps * (10000 - aggression)) / 10000);
-  const forced = step - memory.lastContactAt >= rules.maxWaitSteps;
+  const forced = age(memory.lastContactAt) >= rules.maxWaitSteps;
   const clueAt = Math.max(lastSeen?.step ?? -1, cue?.sampledAt ?? -1);
   if (memory.goal && clueAt > Math.max(memory.investigatedAt, memory.goal.evidenceAt))
     delete memory.goal;
-  if (clueAt < 0 && step - memory.lastContactAt < wait) return null;
+  if (clueAt < 0 && age(memory.lastContactAt) < wait) return null;
   const dist = (goal: Vec3) => length({ ...sub(goal, view.self.position), y: 0 });
   if (
     memory.goal &&
-    (dist(memory.goal.position) < 0.6 || step - memory.goal.since >= rules.goalTimeoutSteps)
+    (dist(memory.goal.position) < 0.6 || age(memory.goal.since) >= rules.goalTimeoutSteps)
   ) {
     memory.investigatedAt = Math.max(memory.investigatedAt, memory.goal.evidenceAt);
     delete memory.goal;
@@ -120,18 +126,18 @@ export function chooseSearch(view: DecisionView, state: number | undefined) {
   }
   if (!memory.goal) {
     const weights = memory.cells.map((cell, index) => {
-      const age = cell.confirmedAt === null ? rules.revisitSteps * 2 : step - cell.confirmedAt;
+      const elapsed = cell.confirmedAt === null ? rules.revisitSteps * 2 : age(cell.confirmedAt);
       const recent =
-        cell.attemptedAt !== undefined && step - cell.attemptedAt < rules.goalTimeoutSteps;
+        cell.attemptedAt !== undefined && age(cell.attemptedAt) < rules.goalTimeoutSteps;
       const distance = dist(cell.position);
       return {
         key: `cell.${index}`,
         weight:
-          recent || distance < 0.6 || age < rules.revisitSteps
+          recent || distance < 0.6 || elapsed < rules.revisitSteps
             ? 0
             : Math.max(
                 1,
-                Math.min(1_000_000, Math.floor((Math.min(age, 8000) * 100) / (1 + distance))),
+                Math.min(1_000_000, Math.floor((Math.min(elapsed, 8000) * 100) / (1 + distance))),
               ),
       };
     });
@@ -141,7 +147,7 @@ export function chooseSearch(view: DecisionView, state: number | undefined) {
         c.weight =
           dist(memory.cells[i]!.position) < 0.6
             ? 0
-            : Math.max(1, step - (memory.cells[i]!.confirmedAt ?? 0) + 1);
+            : Math.max(1, age(memory.cells[i]!.confirmedAt ?? 0) + 1);
     const before = state ?? initialSearchRandom(view.self.actor.participant.rngSeed);
     const choice = weightedChoice(
       weights.map((c) => c.weight),

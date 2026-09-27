@@ -142,7 +142,7 @@ export function validateProjectile(
     p.id.startsWith('projectile.') &&
       attack?.kind === 'projectile' &&
       p.radiusMm === attack.radiusMm &&
-      p.endStep === p.launchStep + attack.lifetimeSteps &&
+      p.endStep === p.launchStep + attack.lifetimeSteps + (p.clock?.pausedSteps ?? 0) &&
       p.launchStep <= step &&
       p.endStep > step,
     'projectile reference/time',

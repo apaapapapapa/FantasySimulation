@@ -46,7 +46,13 @@ import {
 } from './capability-contract.ts';
 
 export const capabilityIds = () => [
-  ...EffectSchema.options.map((schema) => `effect:${schema.shape.kind.value}`),
+  ...new Set(
+    EffectSchema.options.flatMap((schema) =>
+      'shape' in schema
+        ? [`effect:${schema.shape.kind.value}`]
+        : schema.options.map((variant) => `effect:${variant.shape.kind.value}`),
+    ),
+  ),
   ...AttackSchema.options.map((schema) => `attack:${schema.shape.kind.value}`),
 ];
 function declaration(file: SourceFile, name: string): Node | undefined {

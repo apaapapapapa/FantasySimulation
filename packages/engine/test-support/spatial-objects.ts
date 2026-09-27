@@ -34,14 +34,20 @@ export async function relocationManifest(edit: Partial<Definition<'ability'>> = 
 
 /** A paid/released state for independently authored boundary proposals; no expected values. */
 export async function spatialTransaction(
-  options: { budget?: Partial<Budget>; ability?: Partial<Definition<'ability'>> } = {},
+  options: {
+    budget?: Partial<Budget>;
+    ability?: Partial<Definition<'ability'>>;
+    manifest?: import('@fantasy/domain/spatial').Manifest;
+  } = {},
 ) {
-  const battle = await prepareBattle(await relocationManifest(options.ability));
+  const battle = await prepareBattle(
+    options.manifest ?? (await relocationManifest(options.ability)),
+  );
   const world = createBattleWorld(battle),
     budget = { ...DEFAULT_BUDGET, ...options.budget };
   const actors = battle.actors.map((resolved, index) => {
     const actor = initialActor(world, resolved),
-      ability = resolved.abilities[0]!;
+      ability = resolved.abilities.find((ability) => ability.definition.trigger === 'action')!;
     actor.vitals.resources.mp -= 3;
     actor.actions.used[ability.id] = 1;
     actor.actions.action = {

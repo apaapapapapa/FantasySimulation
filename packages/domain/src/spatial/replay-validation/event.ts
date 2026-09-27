@@ -1,3 +1,4 @@
+import { deferredReceipts } from './deferred.ts';
 import type { StreamRecord } from '../stream.ts';
 import type { ReplayCheckpoint } from '../replay.ts';
 import type { ReplayContext } from './context.ts';
@@ -11,6 +12,7 @@ import { recordedStage } from './stage.ts';
 import { validateForce } from './force.ts';
 import { validateRevival } from './revival.ts';
 import { validateRecovery } from './recovery.ts';
+import { validateConceptEvent, validateDeferredDefinition } from './concepts.ts';
 import { requireReplay, emittedId, phases, same } from './common.ts';
 export function validateEvents(
   context: ReplayContext,
@@ -20,8 +22,16 @@ export function validateEvents(
 ) {
   const events = record.events,
     seen = new Set<number>();
+  const receipts = deferredReceipts(prior.deferred, events);
   let previous = [-1, -1, -1];
   for (const [offset, e] of events.entries()) {
+    validateConceptEvent(
+      context,
+      e,
+      ('changes' in record
+        ? record.changes.find((actor) => actor.id === e.actorId)?.clock
+        : undefined) ?? prior.state?.actors.find((actor) => actor.id === e.actorId)?.clock,
+    );
     const id = emittedId(e.id);
     requireReplay(
       e.sequence === prior.nextEvent + offset &&
@@ -56,9 +66,34 @@ export function validateEvents(
           'event actor reference',
         );
     if (e.entityId !== null) requireReplay(entities.has(e.entityId), 'event entity reference');
+    for (const receipt of e.timeStop?.captured ?? []) {
+      validateDeferredDefinition(context, receipt);
+      requireReplay(
+        e.timeStop?.state === 'capture' &&
+          receipt.controlId === e.timeStop.controlId &&
+          receipt.capturedAt === e.step &&
+          receipt.targetId === e.targetId &&
+          receipt.actorId !== receipt.targetId,
+        'capture receipt context',
+      );
+      if (receipt.deflection) {
+        const projectile = prior.state?.projectiles.find(
+          (p) => p.id === receipt.sourceProjectileId,
+        );
+        requireReplay(
+          !!projectile && same(projectile.deflection, receipt.deflection),
+          'captured projectile provenance',
+        );
+      }
+    }
     if (e.sourceActorId || e.sourceProjectileId) {
       const projectile = prior.state?.projectiles.find((p) => p.id === e.sourceProjectileId);
+      const retained = receipts.find(
+        (receipt) =>
+          e.deferrals?.includes(receipt.id) && receipt.sourceProjectileId === e.sourceProjectileId,
+      );
       const deflection =
+        retained?.deflection ??
         projectile?.deflection ??
         events.find((p) => p.entityId === e.sourceProjectileId && p.kind === 'projectile-deflect')
           ?.projectileDeflection;
@@ -68,7 +103,7 @@ export function validateEvents(
           e.actorId === deflection.ownerId &&
           emittedId(deflection.eventId) < id &&
           !!e.sourceProjectileId &&
-          entities.has(e.sourceProjectileId),
+          (entities.has(e.sourceProjectileId) || !!retained),
         'event projectile provenance',
       );
     }

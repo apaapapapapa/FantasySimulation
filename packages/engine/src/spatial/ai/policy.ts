@@ -281,7 +281,9 @@ export function choosePolicy(
       availableAt: observation?.availableAt ?? null,
       targetId: target?.id ?? null,
       targetObservedAt: target?.step ?? null,
-      targetAvailableAt: target ? target.step + actor.character.perception.reactionSteps : null,
+      targetAvailableAt: target
+        ? (target.availableAt ?? target.step + actor.character.perception.reactionSteps)
+        : null,
       appearance: target?.appearance
         ? { ...target.appearance, equipment: [...target.appearance.equipment] }
         : null,

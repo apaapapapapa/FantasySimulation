@@ -20,6 +20,49 @@ import {
 const tick = z.number().int().min(0).max(8000),
   bps = z.number().int().min(0).max(10000);
 const quantity = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+export const ConceptCueSchema = z.enum([
+  'instant-death',
+  'immortality',
+  'time-stop',
+  'absolute-hit',
+  'absolute-evasion',
+  'mind-read',
+]);
+export type ConceptCueKind = z.infer<typeof ConceptCueSchema>;
+const ObservedConceptSchema = z.strictObject({
+  kind: ConceptCueSchema,
+  targetId: IdSchema,
+  sampledAt: tick,
+  availableAt: tick,
+  expiresAt: tick,
+});
+export type ObservedConcept = z.infer<typeof ObservedConceptSchema>;
+const readTiming = {
+  eventId: IdSchema,
+  targetId: IdSchema,
+  ability: RefSchema,
+  sampledAt: tick,
+  availableAt: tick,
+  expiresAt: tick,
+};
+export const ReadObservationSchema = z
+  .discriminatedUnion('field', [
+    z.strictObject({
+      ...readTiming,
+      field: z.literal('health'),
+      range: z.strictObject({ low: bps, high: bps }).refine((v) => v.low <= v.high),
+    }),
+    z.strictObject({
+      ...readTiming,
+      field: z.literal('declared-action'),
+      action: z.strictObject({ abilityId: IdSchema, phase: ObservedPhaseSchema }).nullable(),
+    }),
+  ])
+  .refine(
+    (v) => v.availableAt > v.sampledAt && v.expiresAt > v.sampledAt,
+    'Bounded delayed reading',
+  );
+export type ReadObservation = z.infer<typeof ReadObservationSchema>;
 export const ObservedStatusSchema = z.strictObject({
   id: IdSchema,
   categories: z.array(StatusCategorySchema).max(8),
@@ -159,6 +202,8 @@ export const CognitionSchema = z.discriminatedUnion('kind', [
     perspective: z.literal('subjective'),
     learned: z.array(ExperienceSchema).max(32),
     expired: z.array(IdSchema).max(32),
+    concepts: z.array(ObservedConceptSchema).max(12).optional(),
+    readings: z.array(ReadObservationSchema).max(32).optional(),
     revivals: z
       .array(
         z.strictObject({ targetId: IdSchema, sampledAt: tick, availableAt: tick, expiresAt: tick }),

@@ -1,3 +1,5 @@
+import { cancelEndedStops } from './time-stop-control.ts';
+import { stopEffectHooks } from './time-stop-effects.ts';
 import { executedPhaseInterval } from './phasing.ts';
 import { commitBarrierDamage } from './barrier-damage.ts';
 import { cancelEndedObjects } from './spatial-commands.ts';
@@ -25,6 +27,15 @@ export function resolutionPhase(tx: StepTransaction) {
       phase: 'resolution',
       budget,
       world,
+      ...stopEffectHooks(tx, {
+        battle,
+        journal,
+        step,
+        activationStep: step + 1,
+        phase: 'resolution',
+        budget,
+        world,
+      }),
       aliveAtStart: new Set(actors.filter((a) => a.vitals.resources.hp > 0).map(actorId)),
     },
     work.reactions,
@@ -40,11 +51,12 @@ export function resolutionPhase(tx: StepTransaction) {
       'resolution',
     );
   finishStages(next, step + 1, journal);
+  cancelEndedStops(tx);
   cancelEndedRelocations(tx);
   cancelEndedObjects(tx);
   executedPhaseInterval(tx);
   for (const actor of next) {
-    if (!actor.vitals.staminaClock) continue;
+    if (tx.frozenAtStart.has(actorId(actor)) || !actor.vitals.staminaClock) continue;
     const start = actors.find((a) => actorId(a) === actorId(actor))!;
     recoverActorResources(
       actor,

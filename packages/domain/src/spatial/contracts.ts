@@ -307,7 +307,42 @@ const DamageScalingSchema = z
     'Damage scaling stats must be unique',
   );
 
+const revealTiming = {
+  durationSteps: positive(1000),
+  delaySteps: positive(500),
+  occlusion: z.literal('vision'),
+  powerBps: positive(10000),
+};
+const RevealEffectSchema = z.discriminatedUnion('field', [
+  z.strictObject({
+    kind: z.literal('reveal'),
+    field: z.literal('resistance'),
+    element: ElementSchema,
+    precisionBps: positive(10000),
+    ...revealTiming,
+  }),
+  z.strictObject({
+    kind: z.literal('reveal'),
+    field: z.literal('health'),
+    precisionBps: positive(10000),
+    ...revealTiming,
+  }),
+  z.strictObject({
+    kind: z.literal('reveal'),
+    field: z.literal('declared-action'),
+    ...revealTiming,
+  }),
+]);
 export const EffectSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('defeat'),
+    requires: z
+      .discriminatedUnion('kind', [
+        z.strictObject({ kind: z.literal('hp-at-most'), bps: uint(10000) }),
+        z.strictObject({ kind: z.literal('status'), id: IdSchema, present: z.boolean() }),
+      ])
+      .optional(),
+  }),
   z.strictObject({
     kind: z.literal('force'),
     profile: z.literal('linear-v1'),
@@ -337,16 +372,7 @@ export const EffectSchema = z.discriminatedUnion('kind', [
     categories: categoryList(StatusCategorySchema).optional(),
   }),
   z.strictObject({ kind: z.literal('water'), extinguish: z.literal(true) }),
-  z.strictObject({
-    kind: z.literal('reveal'),
-    field: z.literal('resistance'),
-    element: ElementSchema,
-    precisionBps: positive(10_000),
-    durationSteps: positive(1000),
-    delaySteps: positive(500),
-    occlusion: z.literal('vision'),
-    powerBps: positive(10_000),
-  }),
+  RevealEffectSchema,
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
 export const AdjustmentTargetSchema = z.enum([
@@ -418,55 +444,75 @@ export const RevivalHealthSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('fixed'), amount: positive(1_000_000) }),
   z.strictObject({ kind: z.literal('max-hp'), bps: positive(10000) }),
 ]);
-export const StatusSchema = z.strictObject({
-  seals: SealSchema.optional(),
-  phasing: PhasingSchema.optional(),
-  name: z.string().min(1).max(100),
-  originalText: z.string().max(20_000),
-  stackKey: IdSchema,
-  stacking: z.enum(['sum', 'replace', 'refresh', 'reject']),
-  maxStacks: positive(32),
-  durationSteps: positive(MAX_BATTLE_STEPS),
-  categories: categoryList(StatusCategorySchema).optional(),
-  burning: z.strictObject({ waterExtinguishable: z.boolean() }).optional(),
-  flightStaminaPerSecond: uint(1_000_000).optional(),
-  adjustments: z.array(StatusAdjustmentSchema).max(32).optional(),
-  reactions: z
-    .array(StatusReactionSchema)
-    .max(16)
-    .refine(
-      (values) => new Set(values.map((r) => r.element)).size === values.length,
-      'Only one reaction per element is allowed',
+export const StatusSchema = z
+  .strictObject({
+    evasion: z
+      .strictObject({
+        categories: categoryList(AbilityCategorySchema).optional(),
+        elements: categoryList(ElementSchema).optional(),
+      })
+      .optional(),
+    defeatImmunity: z.boolean().optional(),
+    stopImmunity: z.boolean().optional(),
+    immortality: z.strictObject({ protections: positive(4) }).optional(),
+    seals: SealSchema.optional(),
+    phasing: PhasingSchema.optional(),
+    name: z.string().min(1).max(100),
+    originalText: z.string().max(20_000),
+    stackKey: IdSchema,
+    stacking: z.enum(['sum', 'replace', 'refresh', 'reject']),
+    maxStacks: positive(32),
+    durationSteps: positive(MAX_BATTLE_STEPS),
+    categories: categoryList(StatusCategorySchema).optional(),
+    burning: z.strictObject({ waterExtinguishable: z.boolean() }).optional(),
+    flightStaminaPerSecond: uint(1_000_000).optional(),
+    adjustments: z.array(StatusAdjustmentSchema).max(32).optional(),
+    reactions: z
+      .array(StatusReactionSchema)
+      .max(16)
+      .refine(
+        (values) => new Set(values.map((r) => r.element)).size === values.length,
+        'Only one reaction per element is allowed',
+      )
+      .optional(),
+    visibility: z.enum(['visible', 'hidden']).optional(),
+    modifiers: z.strictObject({
+      attack: z.number().int().min(-100_000).max(100_000),
+      defense: z.number().int().min(-100_000).max(100_000),
+      speedBps: uint(30_000),
+      flight: z.boolean(),
+      rooted: z.boolean(),
+      silenced: z.boolean().optional(),
+    }),
+    periodic: z
+      .array(
+        z.union([
+          z.strictObject({
+            everySteps: positive(MAX_BATTLE_STEPS),
+            kind: z.enum(['damage', 'heal']),
+            amount: uint(1_000_000),
+            element: ElementSchema,
+          }),
+          z.strictObject({
+            everySteps: positive(MAX_BATTLE_STEPS),
+            kind: z.literal('resource'),
+            resource: z.enum(['mp', 'stamina']),
+            amount: z.number().int().min(-1_000_000).max(1_000_000),
+          }),
+        ]),
+      )
+      .max(8),
+  })
+  .superRefine((status, ctx) => {
+    if (
+      status.immortality &&
+      (status.maxStacks !== 1 || status.stacking === 'sum' || status.durationSteps > 6000)
     )
-    .optional(),
-  visibility: z.enum(['visible', 'hidden']).optional(),
-  modifiers: z.strictObject({
-    attack: z.number().int().min(-100_000).max(100_000),
-    defense: z.number().int().min(-100_000).max(100_000),
-    speedBps: uint(30_000),
-    flight: z.boolean(),
-    rooted: z.boolean(),
-    silenced: z.boolean().optional(),
-  }),
-  periodic: z
-    .array(
-      z.union([
-        z.strictObject({
-          everySteps: positive(MAX_BATTLE_STEPS),
-          kind: z.enum(['damage', 'heal']),
-          amount: uint(1_000_000),
-          element: ElementSchema,
-        }),
-        z.strictObject({
-          everySteps: positive(MAX_BATTLE_STEPS),
-          kind: z.literal('resource'),
-          resource: z.enum(['mp', 'stamina']),
-          amount: z.number().int().min(-1_000_000).max(1_000_000),
-        }),
-      ]),
-    )
-    .max(8),
-});
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Immortality requires one finite nonstacking cohort, at most 6000 steps',
+      });
+  });
 export const AttackSchema = z.discriminatedUnion('kind', [
   AreaAttackSchema,
   BeamAttackSchema,
@@ -609,6 +655,8 @@ export const AbilitySchema = z
     movementWhileCasting: z.enum(['allow', 'stop']),
     rangeMm: uint(200_000),
     aimErrorMilliDegrees: uint(45_000),
+    accuracy: z.literal('no-error').optional(),
+    timeStop: z.strictObject({ durationSteps: positive(100) }).optional(),
     attack: AttackSchema,
     effects: z.array(EffectSchema).max(16),
     stages: z.array(StageSchema).min(1).max(16).optional(),
@@ -616,6 +664,49 @@ export const AbilitySchema = z
     barrier: BarrierSchema.optional(),
   })
   .superRefine((ability, ctx) => {
+    if (
+      ability.timeStop &&
+      (ability.trigger !== 'action' ||
+        ability.target !== 'enemy' ||
+        ability.attack.kind !== 'hitscan' ||
+        ability.attack.radiusMm !== 0 ||
+        ability.effects.length ||
+        ability.stages ||
+        ability.relocation ||
+        ability.barrier ||
+        ability.accuracy)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'Time stop requires a standalone active opponent zero-radius sight ray with fixed full clock mask',
+      });
+    if (
+      ability.accuracy &&
+      (ability.trigger !== 'action' ||
+        ability.target !== 'enemy' ||
+        ability.attack.kind === 'direct')
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'No-error aiming requires an active spatial opponent attack',
+      });
+    if (
+      [...ability.effects, ...(ability.stages ?? []).flatMap((stage) => stage.effects)].some(
+        (effect) => effect.kind === 'reveal' && effect.field !== 'resistance',
+      ) &&
+      (ability.trigger !== 'action' || ability.target !== 'enemy')
+    )
+      ctx.addIssue({ code: 'custom', message: 'Mind reading requires an active opponent contact' });
+    if (
+      [...ability.effects, ...(ability.stages ?? []).flatMap((stage) => stage.effects)].some(
+        (effect) => effect.kind === 'defeat',
+      ) &&
+      (ability.trigger !== 'action' ||
+        ability.target !== 'enemy' ||
+        ability.attack.kind === 'direct')
+    )
+      ctx.addIssue({ code: 'custom', message: 'Defeat requires an active opponent contact' });
     const reaction = ability.reaction;
     const reactive = ReactionPointSchema.safeParse(ability.trigger).success;
     const response = reaction?.response;
@@ -627,7 +718,8 @@ export const AbilitySchema = z
       response?.kind !== 'deflect' &&
       response?.kind !== 'revive' &&
       !ability.relocation &&
-      !ability.barrier
+      !ability.barrier &&
+      !ability.timeStop
     )
       ctx.addIssue({
         code: 'custom',

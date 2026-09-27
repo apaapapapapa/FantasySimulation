@@ -1,3 +1,6 @@
+import { releaseStop } from './sim/time-stop-control.ts';
+import { commitReactiveEffects } from './sim/reactions.ts';
+import type { StopState } from './sim/time-stop-state.ts';
 import type { SpatialObject } from './rules/spatial-objects.ts';
 import type { ActorState, MeleeState, PreparedBattle } from './state.ts';
 import {
@@ -85,6 +88,7 @@ export function* simulate(
   let ledger = new HitLedger();
   let relocations: PendingRelocation[] | undefined;
   let objects: SpatialObject[] | undefined;
+  let stop: StopState | undefined;
   const work = new WorkMeter(budget);
   try {
     actors = [...battle.actors]
@@ -105,6 +109,14 @@ export function* simulate(
     world.castLimit = budget.maxCasts;
     const initial: StreamRecord = {
       kind: 'initial',
+      ...(battle.rules.experimental?.mechanics.includes('time-stop')
+        ? {
+            requiredFeatures: ['subject-clocks-v1', 'deferred-contacts-v1'] as [
+              'subject-clocks-v1',
+              'deferred-contacts-v1',
+            ],
+          }
+        : {}),
       schemaVersion: 1,
       step: 0,
       state: { actors: actors.map((a) => displayActor(a, 0)), projectiles: [] },
@@ -122,6 +134,7 @@ export function* simulate(
         serial,
         ...(relocations ? { relocations } : {}),
         ...(objects ? { objects } : {}),
+        ...(stop ? { stop } : {}),
       });
       let transaction: StepTransaction | undefined;
       // Boundary and interval are independent atomic commits. Work already attempted is retained.
@@ -137,9 +150,9 @@ export function* simulate(
           actors = tx.next.actors;
           bytes += committed.bytes;
           sequence += tx.journal.events.length;
-          melees = melees.filter((m) => attachedStageAlive(m, actors, step));
+          melees = tx.next.melees.filter((m) => attachedStageAlive(m, actors, step));
         } else actors = tx.next.actors;
-        ({ relocations, objects, ledger, serial } = tx.next);
+        ({ relocations, objects, ledger, serial, stop } = tx.next);
         const oldWorld = world;
         world = tx.commitWorld(world);
         context.world = world;
@@ -176,7 +189,7 @@ export function* simulate(
         const record = tx.intervalRecord();
         const committed = tx.journal.finish(record);
         tx.finishInterval();
-        ({ actors, melees, projectiles, ledger, serial, relocations, objects } = tx.next);
+        ({ actors, melees, projectiles, ledger, serial, relocations, objects, stop } = tx.next);
         step++;
         bytes += committed.bytes;
         sequence += tx.journal.events.length;
@@ -186,6 +199,54 @@ export function* simulate(
         outcome = outcomeFromError(error, !!battle.rules.interferenceDiagnostics);
       } finally {
         transaction?.discardWorld();
+      }
+    }
+    if (!outcome && stop?.active) {
+      try {
+        const tx = new StepTransaction(
+          { battle, budget, world, navigators, work },
+          {
+            actors,
+            melees,
+            projectiles,
+            ledger,
+            serial,
+            stop,
+            ...(objects ? { objects } : {}),
+            ...(relocations ? { relocations } : {}),
+          },
+          step,
+          sequence,
+          bytes,
+          'boundary',
+        );
+        const effects = releaseStop(tx, step, 'time-limit release-only settlement', 'boundary');
+        // No pulse, observation, movement, regeneration or command activation at maxSteps.
+        for (const actor of tx.next.actors)
+          actor.statuses = actor.statuses.filter((status) => status.endStep > step);
+        commitReactiveEffects(
+          tx.next.actors,
+          effects,
+          {
+            battle,
+            budget,
+            world,
+            journal: tx.journal,
+            step,
+            activationStep: step,
+            phase: 'boundary',
+          },
+          work.reactions,
+        );
+        const record = tx.boundaryRecord();
+        const committed = tx.journal.finish(record);
+        ({ actors, melees, stop } = tx.next);
+        bytes += committed.bytes;
+        sequence += tx.journal.events.length;
+        yield structuredClone(record);
+        outcome = verdict(actors);
+      } catch (error) {
+        outcome = outcomeFromError(error, true);
       }
     }
     outcome ??= { kind: 'draw', reason: 'time-limit' };
@@ -212,6 +273,33 @@ export function* simulate(
       outcome,
       decisionState: {
         step,
+        ...(stop
+          ? {
+              stop: {
+                ...stop,
+                requests: stop.requests.map(({ ability, ...request }) => ({
+                  ...request,
+                  ability: {
+                    id: ability.id,
+                    revision: ability.revision,
+                    contentHash: ability.contentHash,
+                  },
+                })),
+                ...(stop.active
+                  ? {
+                      active: {
+                        ...stop.active,
+                        ability: {
+                          id: stop.active.ability.id,
+                          revision: stop.active.ability.revision,
+                          contentHash: stop.active.ability.contentHash,
+                        },
+                      },
+                    }
+                  : {}),
+              },
+            }
+          : {}),
         actors: actors.map(decisionState),
         melees: melees.map((m) => ({
           ...m,

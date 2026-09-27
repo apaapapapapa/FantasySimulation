@@ -66,15 +66,16 @@ export function inObservedRange(ability: Ability, view: DecisionView): boolean {
   if (ability.target === 'self') return true;
   const target = view.memory.observation?.enemy ?? view.memory.lastSeen;
   if (!target) return false;
-  const delta = sub(
-    target.position,
-    bodyPoint(view.self, view.self.actor.character.body.muzzleOffset),
-  );
+  return inMuzzleRange(ability, view.self, target.position);
+}
+/** Shared release/boundary geometry; callers choose observed or current target points. */
+export function inMuzzleRange(ability: Ability, self: MotionState, target: Vec3): boolean {
+  const delta = sub(target, bodyPoint(self, self.actor.character.body.muzzleOffset));
   return (
     length(delta) <= ability.rangeMm / 1000 &&
     (ability.attack.kind === 'arc' ||
       ability.attack.kind === 'radial' ||
-      dot(view.self.facing, delta) >= -1e-12)
+      dot(self.facing, delta) >= -1e-12)
   );
 }
 /** Two explicit PRNG samples per released spatial attack, including zero-error shots. */

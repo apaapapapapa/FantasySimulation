@@ -1,3 +1,4 @@
+import { domainSnapshotStep, frozen } from '../rules/subject-clocks.ts';
 import { effectiveStatuses, sealedAbilityCategories } from '@fantasy/domain/spatial/execution';
 import type { ActorState, DecisionView, StatusRevision } from '../state.ts';
 import profile from '../profile.json' with { type: 'json' };
@@ -19,6 +20,7 @@ export function selfView(
   definitions: readonly StatusRevision[],
   gravityMmPerSecond2 = profile.gravityMmPerSecond2,
 ): DecisionView {
+  step = domainSnapshotStep(actor, step);
   const stats = effectiveStats(actor.body.motion.actor, actor.statuses, step);
   const active = actor.statuses.filter((s) => s.startStep <= step && step < s.endStep);
   const known = actor.body.motion.actor.knownStatuses ?? [];
@@ -36,6 +38,7 @@ export function selfView(
   );
   return {
     self,
+    ...(actor.clock ? { clock: actor.clock } : {}),
     resources: actor.vitals.resources,
     staminaExhausted: actor.vitals.staminaClock?.exhausted ?? false,
     flightStaminaPerSecond: stats.flight ? flightRate(actor.statuses, step) : 0,
@@ -47,10 +50,15 @@ export function selfView(
     reactionReadyAt: actor.actions.cooldowns,
     ownStatuses: active,
     incapacitated: stats.incapacitated,
-    canAct: step >= actor.actions.readyAt && !actor.actions.action && !stats.incapacitated,
+    canAct:
+      !frozen(actor) &&
+      step >= actor.actions.readyAt &&
+      !actor.actions.action &&
+      !stats.incapacitated,
     activeAbility: actor.actions.action?.ability.definition,
     stageOwnsMotion: ownsStageMotion(actor.actions.action, step),
     canMove:
+      !frozen(actor) &&
       !hasForcedMotion(actor.body, step) &&
       !stats.rooted &&
       !stats.incapacitated &&

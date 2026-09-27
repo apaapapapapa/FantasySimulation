@@ -60,6 +60,7 @@ export function commitReactiveEffects(
   projectileContacts?: ProjectileContacts,
 ) {
   const { journal, step, activationStep, phase, budget } = context;
+  effects = context.capture?.(effects) ?? effects;
   if (!actors.some((a) => a.body.motion.actor.abilities.some((b) => b.definition.reaction))) {
     commitEffects(actors, effects, context);
     return;
@@ -87,7 +88,13 @@ export function commitReactiveEffects(
   };
 
   const incoming = projectileContacts?.plan(effects, actors, context) ?? effects;
-  const before = activateReactions(actors, incoming, 'before-hit', 0, admission);
+  const before = activateReactions(
+    actors,
+    incoming.filter((effect) => !effect.deferral),
+    'before-hit',
+    0,
+    admission,
+  );
   if (projectileContacts) effects = [...effects, ...projectileContacts.finish(before)];
   const primary = wave(beforeHitApplications(actors, effects, before, step));
   const positive = positiveDamageApplications(primary);
@@ -96,8 +103,25 @@ export function commitReactiveEffects(
     after.filter((reaction) => reaction.response.kind === 'effects'),
     step,
   );
-  if (afterEffects.length) wave(afterEffects, 1);
-
+  const releasedDamage: PendingEffect[] = [];
+  if (afterEffects.length)
+    releasedDamage.push(
+      ...positiveDamageApplications(wave(afterEffects, 1)).filter((app) => app.deferral),
+    );
+  if (context.beforeCommit)
+    releasedDamage.push(
+      ...positiveDamageApplications(wave([], afterEffects.length ? 2 : 1)).filter(
+        (app) => app.deferral,
+      ),
+    );
+  if (releasedDamage.length) {
+    const releasedAfter = activateReactions(actors, releasedDamage, 'after-damage', 1, admission);
+    const releasedEffects = reactionApplications(
+      releasedAfter.filter((reaction) => reaction.response.kind === 'effects'),
+      step,
+    );
+    if (releasedEffects.length) wave(releasedEffects, afterEffects.length ? 3 : 2);
+  }
   const defeated = activateReactions(
     actors,
     all.map((app) => ({ ...app, parentEventId: app.id })),

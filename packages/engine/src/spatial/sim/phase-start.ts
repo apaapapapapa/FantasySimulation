@@ -1,3 +1,4 @@
+import { frozen, subjectStep } from '../rules/subject-clocks.ts';
 import { actionClock, declarationCost, inObservedRange } from '../rules/attacks.ts';
 import { ResourceBudget } from '../rules/resources.ts';
 import { resourceReady } from '../rules/locomotion.ts';
@@ -10,7 +11,7 @@ import { abilityPlan } from '../rules/ability-plan.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 export function startPhase(tx: StepTransaction) {
   const { battle } = tx.context;
-  const { step, journal, aiBoundary, previousMovement } = tx;
+  const { step, journal, previousMovement } = tx;
   const next = tx.next.actors;
   const views = new Map(
     next.map((actor) => [actorId(actor), selfView(actor, step, battle.rules.ai, battle.statuses)]),
@@ -26,6 +27,9 @@ export function startPhase(tx: StepTransaction) {
     ]),
   );
   for (const actor of next) {
+    if (frozen(actor)) continue;
+    const aiBoundary =
+      subjectStep(actor, step) % (battle.manifest.physicsProfile.aiMs / battle.rules.stepMs) === 0;
     const view = views.get(actorId(actor))!;
     if (
       aiBoundary &&

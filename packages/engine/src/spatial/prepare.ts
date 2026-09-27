@@ -93,6 +93,37 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
   const rules = get('ruleset', manifest.ruleset).definition;
   requireExecutableRules(rules);
   requireMechanics(get('ruleset', manifest.ruleset), manifest.revisions);
+  for (const recipient of manifest.revisions.some(
+    (revision) => revision.kind === 'status' && revision.definition.immortality,
+  )
+    ? actors
+    : []) {
+    const grants = actors.flatMap((source) =>
+      source.abilities
+        .filter((ability) => (ability.definition.target === 'self') === (source === recipient))
+        .flatMap((ability) =>
+          abilityPlan(ability).effects.flatMap((effect) =>
+            effect.kind === 'apply-status' ? [get('status', effect.status)] : [],
+          ),
+        ),
+    );
+    const immortal = statusKnowledge(
+      grants,
+      manifest.revisions.filter((revision) => revision.kind === 'status'),
+    ).filter((status) => status.definition.immortality);
+    if (
+      new Set(immortal.map((status) => `${status.id}:${status.revision}:${status.contentHash}`))
+        .size > 1
+    )
+      throw new EngineInputError(
+        'unsupported-mechanic',
+        `Conflicting immortality revisions for ${recipient.participant.actorId}`,
+        {
+          mechanic: 'immortality',
+          owner: immortal[0]!,
+        },
+      );
+  }
   for (const { participant, character } of actors) {
     for (const axis of ['x', 'y', 'z'] as const) {
       const extent = axis === 'y' ? character.body.heightMm / 2 : character.body.radiusMm;

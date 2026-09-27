@@ -8,6 +8,8 @@ import type {
   Definition,
   ElementSchema,
   Experience,
+  Effect,
+  ReactionContext,
   ForceContribution,
   Manifest,
   ObservedReaction,
@@ -21,6 +23,8 @@ import type {
   Revision,
   Stage,
   StageContact,
+  ConceptCueKind,
+  ObservedConcept,
 } from '@fantasy/domain/spatial/execution';
 import type { Vec3 } from './math.ts';
 export type DamageSource = { attack: number; magicPower?: number };
@@ -52,6 +56,7 @@ export type PreparedBattle = DeepReadonly<{
 }>;
 
 export type MotionState = {
+  frozen?: boolean;
   actor: ResolvedActor;
   position: Vec3;
   velocity: Vec3;
@@ -83,6 +88,8 @@ export type MotionIntent = {
 };
 
 export type ObservedActor = {
+  availableAt?: number;
+  conceptCue?: ConceptCueKind;
   id: string;
   position: Vec3;
   velocity: Vec3;
@@ -118,6 +125,10 @@ export type Observation = DeepReadonly<{
 }>;
 
 export type PerceptionMemory = DeepReadonly<{
+  concepts?: ObservedConcept[];
+  pendingReadings?: import('@fantasy/domain/spatial/execution').ReadObservation[];
+  readings?: import('@fantasy/domain/spatial/execution').ReadObservation[];
+  learnedReadings?: import('@fantasy/domain/spatial/execution').ReadObservation[];
   sampledAt: number;
   pending: Observation[];
   observation: Observation | null;
@@ -145,6 +156,7 @@ export type ThreatExperience = {
 };
 
 export type DecisionView = {
+  clock?: ActorClock;
   self: MotionState;
   resources: ResourceState;
   staminaExhausted: boolean;
@@ -195,6 +207,7 @@ export type PostureState = {
 export type StatusRevision = DeepReadonly<Extract<Revision, { kind: 'status' }>>;
 
 export type StatusCohort = {
+  globalStartStep?: number;
   revision: StatusRevision;
   startStep: number;
   endStep: number;
@@ -226,6 +239,7 @@ export type PendingRelocation = {
 };
 
 export type ActionState = {
+  globalStartedAt?: number;
   id: string;
   ability: AbilityRevision;
   cause: string;
@@ -247,6 +261,8 @@ export type ActorBodyState = {
 };
 
 export type ActorVitalsState = {
+  conceptCue?: { kind: ConceptCueKind; at: number };
+  immortalityUsed?: number;
   resources: ResourceState;
   staminaClock?: { remainder: number; exhausted: boolean };
 };
@@ -266,7 +282,13 @@ export type ActorMindState = {
   decisionRandom: DecisionRandom;
 };
 
+export type ActorClock = {
+  pausedSteps: number;
+  periods: { from: number; to: number }[];
+  frozen?: { controlId: string; from: number; until: number };
+};
 export type ActorState = {
+  clock?: ActorClock;
   body: ActorBodyState;
   vitals: ActorVitalsState;
   statuses: StatusCohort[];
@@ -323,3 +345,35 @@ export type SearchMemory = {
 };
 
 export type Gait = 'walk' | 'run' | 'slow';
+
+export type PendingEffect = DamageSnapshot & {
+  capturedVisible?: boolean;
+  deferral?: import('@fantasy/domain/spatial/execution').DeferredEffect;
+  actorId: string | null;
+  targetId: string;
+  effect: DeepReadonly<Effect>;
+  parentEventId: string | null;
+  abilityId: string | null;
+  causes?: readonly string[];
+  scaleBps?: number;
+  powerBps?: number;
+  stage?: StageContact;
+  reaction?: ReactionContext;
+  damageCancelled?: boolean;
+  sourceAbility?: AbilityRevision;
+  sourceActorId?: string;
+  sourceProjectileId?: string;
+  ancestry?: ReactionContext;
+  projectileContact?: { id: string; direct: boolean; reflected: boolean };
+
+  observation?: { self: MotionState; target: MotionState };
+  incomingDirection?: Vec3;
+};
+
+export type EffectTarget = {
+  statusStep?: number;
+  immortalityUsed?: number;
+  actor: ResolvedActor;
+  resources: ResourceState;
+  statuses: StatusCohort[];
+};

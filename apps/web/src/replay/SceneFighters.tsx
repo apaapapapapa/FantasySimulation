@@ -1,3 +1,4 @@
+import { conceptMark } from './concept-mark.ts';
 import { useRef, type RefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -126,7 +127,7 @@ function Fighter({
       equipment: actor.look.equipment,
       glow: tintColours(actor.signature ?? 'arcane').glow,
     },
-    spritePose(actor.pose, model.milliseconds),
+    spritePose(actor.pose, actor.subjectMilliseconds ?? model.milliseconds),
     flash,
   );
   const [x, , z] = actor.position;
@@ -198,11 +199,16 @@ function Fighter({
           />
         </group>
       )}
-      {(actor.sealing || actor.revived) && (
+      {(actor.sealing ||
+        actor.revived ||
+        actor.protected ||
+        actor.defeated ||
+        actor.frozen ||
+        actor.evaded) && (
         <group position={[0, actor.standingHeight * 0.45, 0]}>
           <GroundMark
             kind="runes"
-            colour={actor.revived ? '#72e0c1' : '#d9a6ff'}
+            colour={conceptMark(actor).colour}
             scale={actor.radius * 5}
             opacity={0.9}
             spin={-model.milliseconds / 1200}

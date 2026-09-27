@@ -1,3 +1,4 @@
+import { frozen, subjectStep } from '../rules/subject-clocks.ts';
 import { attackWorld } from '../rules/phasing.ts';
 import { contactSpatialObjects } from './object-contact.ts';
 import { damageBarrierContact } from './barrier-damage.ts';
@@ -14,18 +15,21 @@ import { settleForcedInterval } from '../rules/forces.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 export function contactPhase(tx: StepTransaction) {
   const { battle, budget, world, work } = tx.context;
-  const { step, journal, effects, resourceBudgets, forcePlans, aiBoundary } = tx;
+  const { step, journal, effects, resourceBudgets, forcePlans } = tx;
   const next = tx.next.actors,
     attacks = tx.next.melees,
     bullets = tx.next.projectiles,
     nextLedger = tx.next.ledger;
   const motionPlans = next.map((actor) =>
-    reserveMotion(
-      actor,
-      resourceBudgets.get(actorId(actor))!,
-      step,
-      aiBoundary && isDodgeDecision(actor.mind.decision),
-    ),
+    frozen(actor)
+      ? { intent: actor.body.intent, settle: () => {} }
+      : reserveMotion(
+          actor,
+          resourceBudgets.get(actorId(actor))!,
+          step,
+          subjectStep(actor, step) % (battle.manifest.physicsProfile.aiMs / battle.rules.stepMs) ===
+            0 && isDodgeDecision(actor.mind.decision),
+        ),
   );
   for (const [index, actor] of next.entries()) actor.body.intent = motionPlans[index]!.intent;
   const moved = moveActors(
@@ -70,6 +74,10 @@ export function contactPhase(tx: StepTransaction) {
   tx.projectileContacts = projectileStep.contacts;
   for (const attack of attacks) {
     const ownerActor = next.find((a) => actorId(a) === attack.actorId)!;
+    if (frozen(ownerActor)) {
+      surviving.push(attack);
+      continue;
+    }
     if (
       attack.stage &&
       (ownerActor.actions.action?.id !== attack.stage.actionId ||
@@ -109,7 +117,7 @@ export function contactPhase(tx: StepTransaction) {
               attack.stage,
               attack.hit,
               enemy.state.actor.participant.actorId,
-              step,
+              subjectStep(ownerActor, step),
             )
           : null;
       const hit = journal.emit({
@@ -188,7 +196,8 @@ export function contactPhase(tx: StepTransaction) {
   for (const actor of next) {
     const movement = moved.find((m) => m.state.actor.participant.actorId === actorId(actor))!;
     actor.body.motion = movement.state;
-    settleForcedInterval(actor, forcePlans.get(actorId(actor)) ?? null, movement, step);
+    if (!tx.frozenAtStart.has(actorId(actor)))
+      settleForcedInterval(actor, forcePlans.get(actorId(actor)) ?? null, movement, step);
     if (movement.landed) {
       const land = journal.emit({
         kind: 'land',

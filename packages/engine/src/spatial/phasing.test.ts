@@ -1,6 +1,7 @@
 import { tacticalPostures, STANDARD_BODY } from '@fantasy/samples';
 import { aiFixture } from '../../test-support/ai.ts';
 import { advancePosture, postureDuration } from './rules/posture.ts';
+import { freezeActor } from './rules/subject-clocks.ts';
 import { beforeAll, expect, it } from 'vite-plus/test';
 import {
   BodyPhasingSchema,
@@ -179,6 +180,7 @@ it('retains the counter across regrant and sealing and resets only at full solid
       exitPending: true,
       extendedIntervals: 49,
     });
+    freezeActor(tx.next.actors[0]!, 't.phase-safety', 2, 52);
     executedPhaseInterval(tx);
     expect(tx.next.actors[0]!.body.motion.phasing?.extendedIntervals).toBe(50);
     const seal = await sealRevision(

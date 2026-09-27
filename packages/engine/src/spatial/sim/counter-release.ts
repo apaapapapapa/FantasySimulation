@@ -33,6 +33,7 @@ export function releaseCounters(
 ): PendingEffect[] {
   const effects: PendingEffect[] = [];
   for (const actor of actors) {
+    if (actor.clock?.frozen) continue;
     const actorId = actor.body.motion.actor.participant.actorId;
     for (const reaction of actor.actions.reactions ?? []) {
       if (reaction.state !== 'queued' || reaction.readyAt > step) continue;

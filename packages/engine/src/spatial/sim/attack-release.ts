@@ -1,3 +1,4 @@
+import { queueStop } from './time-stop-control.ts';
 import { attackWorld } from '../rules/phasing.ts';
 import { damageBarrierContact } from './barrier-damage.ts';
 import { queueSpatialObject } from './spatial-commands.ts';
@@ -43,7 +44,7 @@ function spatial<K extends Exclude<AttackVariant['kind'], 'direct'>>(
   const definition = ability.definition,
     step = tx.step;
   const enemy = opponentInDuel(tx.next.actors, actorId(actor), actorId);
-  if (battle.rules.ai.reapplication)
+  if (battle.rules.ai.reapplication && !enemy.clock?.frozen)
     enemy.mind.memory = seenAttack(
       world,
       enemy.body.motion,
@@ -56,10 +57,24 @@ function spatial<K extends Exclude<AttackVariant['kind'], 'direct'>>(
     );
   const aim = launchDirection(
     actor.body.motion.facing,
-    definition.aimErrorMilliDegrees,
+    definition.accuracy === 'no-error' ? 0 : definition.aimErrorMilliDegrees,
     actor.mind.random,
   );
   actor.mind.random = aim.random;
+  if (definition.accuracy) {
+    actor.vitals.conceptCue = { kind: 'absolute-hit', at: step };
+    tx.journal.emit({
+      kind: 'diagnostic',
+      step,
+      phase: 'launch',
+      actorId: actorId(actor),
+      abilityId: ability.id,
+      parentEventId: launch.id,
+      ruleId: 'concept.no-error-aim',
+      reason:
+        'zero authored aim error; observed aim, geometry and contact evasion remain authoritative',
+    });
+  }
   if (
     needsMuzzle &&
     muzzleBlocked(
@@ -232,6 +247,10 @@ const releaseHandlers: AttackHandlers<ReleaseContext, void> = {
   projectile: (shape, context) => spatial(shape, context, true, releaseProjectile),
 };
 export function releaseAttack(context: ReleaseContext) {
+  if (context.ability.definition.timeStop) {
+    queueStop(context.tx, context.actor, context.ability, context.launch.id);
+    return;
+  }
   if (context.ability.definition.barrier) {
     queueSpatialObject(
       context.tx,

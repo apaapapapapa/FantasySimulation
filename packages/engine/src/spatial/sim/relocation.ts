@@ -84,6 +84,7 @@ export function activateRelocations(tx: StepTransaction) {
       body = bodyCapsule(motion.actor.character.body);
     const view = selfView(actor, tx.step, battle.rules.ai, battle.statuses);
     const permitted =
+      !actor.clock?.frozen &&
       actor.actions.action?.id === command.actionId &&
       actor.actions.action.stages?.interruptedAt === undefined &&
       actor.vitals.resources.hp > 0 &&

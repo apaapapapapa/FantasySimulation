@@ -1,3 +1,4 @@
+import { domainSnapshotStep, frozen } from './subject-clocks.ts';
 import { stageWindow } from '@fantasy/domain/spatial/execution';
 import type {
   PreviousMovement,
@@ -28,8 +29,9 @@ import { abilityPlan, authoredStages } from './ability-plan.ts';
 /** Attached volumes disappear with their owner window; detached projectiles use their snapshots. */
 export function attachedStageAlive(attack: MeleeState, actors: readonly ActorState[], at: number) {
   if (!attack.stage) return true;
-  const action = actors.find((a) => a.body.motion.actor.participant.actorId === attack.actorId)
-    ?.actions.action;
+  const owner = actors.find((a) => a.body.motion.actor.participant.actorId === attack.actorId);
+  if (owner) at = domainSnapshotStep(owner, at);
+  const action = owner?.actions.action;
   const plan = action ? abilityPlan(action.ability) : null;
   const stage = plan?.kind === 'staged' ? plan.stages[attack.stage.stageIndex] : undefined;
   return (
@@ -105,7 +107,8 @@ export function interruptStage(
 export function visibleStageCue(actor: ActorState, step: number): ObservedStage | undefined {
   if (hasForcedMotion(actor.body, step))
     return { shape: 'hold', state: 'active', motion: 'forced' };
-  const display = actor.actions.action && stageDisplay(actor.actions.action, step);
+  const display =
+    actor.actions.action && stageDisplay(actor.actions.action, domainSnapshotStep(actor, step));
   if (!display || display.state === 'preparing' || display.state === 'complete') return undefined;
   return {
     shape: display.state === 'active' ? display.shape : 'hold',
@@ -126,16 +129,18 @@ export function checkStageInterruption(
   const action = actor.actions.action,
     runtime = action?.stages;
   if (!action || !runtime || runtime.interruptedAt !== undefined) return;
+  const domainStep = domainSnapshotStep(actor, step);
   const plan = authoredStages(action.ability);
   const stage = plan[Math.max(0, runtime.index)]!;
   if (
     !runtime.active &&
     runtime.next === plan.length &&
-    step >= stageWindow(action.launchAt, stage).endAt
+    domainStep >= stageWindow(action.launchAt, stage).endAt
   )
     return;
   const current =
-    step < action.launchAt || (runtime.active && step < stageWindow(action.launchAt, stage).endAt);
+    domainStep < action.launchAt ||
+    (runtime.active && domainStep < stageWindow(action.launchAt, stage).endAt);
   const reason =
     actor.vitals.resources.hp === 0
       ? 'defeated'
@@ -158,6 +163,7 @@ export function interruptDamagedStages(
   phase: BattleEvent['phase'],
 ) {
   for (const actor of actors) {
+    if (frozen(actor)) continue;
     const action = actor.actions.action,
       runtime = action?.stages;
     if (!action || !runtime || (!runtime.active && at > action.launchAt)) continue;
@@ -177,6 +183,7 @@ export function interruptDamagedStages(
 }
 export function finishStages(actors: readonly ActorState[], at: number, journal: Journal) {
   for (const actor of actors) {
+    if (frozen(actor)) continue;
     const action = actor.actions.action,
       runtime = action?.stages;
     if (!action || !runtime?.active) continue;
