@@ -22,33 +22,73 @@ import {
   publishImmutableFile,
   GENERATED_UUID,
 } from '../replay/replay-files.ts';
-import { verifyReplayDirectory } from '../replay/replay-reader.ts';
+import { verifyReplayDirectory, verifyReplayChecksums } from '../replay/replay-reader.ts';
+import { assertPublicData } from '../replay/replay-public.ts';
+import type { ReplayVerificationPool } from '../replay/verification-pool.ts';
 import { OperationError, operationInput } from '../operation-error.ts';
 import type { BattleService } from '../jobs/battle-service.ts';
 
 const hashName = (hash: string) => HashSchema.parse(hash).slice(7);
 export class BattleBundles {
   private bytes: number | null = null;
+  private verification:
+    | {
+        seen: Set<string>;
+        publicData: boolean;
+        pool: ReplayVerificationPool | undefined;
+        closed: boolean;
+      }
+    | undefined;
   constructor(
     readonly root: string,
     readonly maxBytes = 16 * 1024 ** 3,
   ) {}
+  /** No caller can seed successful hashes; every new scope starts with full validation. */
+  verificationSession(options: { publicData?: boolean; pool?: ReplayVerificationPool } = {}) {
+    const session = new BattleBundles(this.root, this.maxBytes);
+    session.verification = {
+      seen: new Set(),
+      publicData: options.publicData ?? false,
+      pool: options.pool,
+      closed: false,
+    };
+    return session;
+  }
+  closeVerification() {
+    if (!this.verification) return;
+    this.verification.closed = true;
+    this.verification.seen.clear();
+  }
+  /** One batch per CPU window; settle all admitted reads before propagating a failure. */
+  async preverify(hashes: readonly string[]) {
+    if (!this.verification || this.verification.closed)
+      throw new Error('Replay verification session is not open');
+    const unique = [...new Set(hashes)],
+      width = this.verification.pool?.workers ?? 1;
+    for (let offset = 0; offset < unique.length; offset += width) {
+      const results = await Promise.allSettled(
+        unique.slice(offset, offset + width).map((hash) => this.verify(hash)),
+      );
+      const failure = results.find((result) => result.status === 'rejected');
+      if (failure?.status === 'rejected') throw failure.reason;
+    }
+  }
   private objectPath(hash: string) {
     return join(this.root, 'objects', hashName(hash));
   }
   async verify(objectHash: string): Promise<BundleReceipt> {
+    const scope = this.verification;
+    if (scope?.closed) throw new Error('Replay verification session is closed');
+    scope?.pool?.signal?.throwIfAborted();
     const directory = this.objectPath(objectHash);
     if (!(await lstat(directory)).isDirectory())
       throw new OperationError('DATA_INVALID', 'Invalid bundle directory');
     const receiptBytes = await readBoundedFile(join(directory, 'receipt.json'), 65536);
-    const receipt = operationInput(
-      () =>
-        parseJson(
-          BundleReceiptSchema,
-          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(receiptBytes)) as unknown,
-        ),
-      'DATA_INVALID',
-    );
+    const receipt = operationInput(() => {
+      const input: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(receiptBytes));
+      if (scope?.publicData) assertPublicData(input);
+      return parseJson(BundleReceiptSchema, input);
+    }, 'DATA_INVALID');
     const { objectHash: recorded, ...body } = receipt;
     if (recorded !== objectHash || recorded !== (await contentHash(body)))
       throw new OperationError('DATA_INVALID', 'Bundle receipt hash mismatch');
@@ -67,7 +107,18 @@ export class BattleBundles {
       bytes !== receipt.bytes
     )
       throw new OperationError('DATA_INVALID', 'Bundle result/attempt/replay binding mismatch');
-    await verifyReplayDirectory(directory, manifest);
+    if (scope?.seen.has(objectHash)) {
+      // Receipt -> manifest -> every compressed byte remains authenticated on every access.
+      await verifyReplayChecksums(directory, manifest);
+    } else {
+      if (scope?.pool) await scope.pool.verify(directory, manifest, scope.publicData);
+      else await verifyReplayDirectory(directory, manifest, scope?.publicData ? assertPublicData : undefined);
+      if (scope) {
+        if (scope.seen.size >= 256) scope.seen.delete(scope.seen.values().next().value!);
+        scope.seen.add(objectHash);
+      }
+    }
+    scope?.pool?.signal?.throwIfAborted();
     return receipt;
   }
   /** The checksum still applies when a consumer reads the saved input after full verification. */
@@ -75,20 +126,18 @@ export class BattleBundles {
     return (await this.readManifest(receipt)).manifest;
   }
   private async readManifest(receipt: BundleReceipt) {
+    if (this.verification?.closed) throw new Error('Replay verification session is closed');
     const manifestBytes = await readBoundedFile(
       join(this.objectPath(receipt.objectHash), 'manifest.json'),
       MAX_REPLAY_MANIFEST_BYTES,
     );
     if (sha256(manifestBytes) !== receipt.manifestChecksum)
       throw new OperationError('DATA_INVALID', 'Bundle manifest checksum mismatch');
-    const manifest = operationInput(
-      () =>
-        parseJson(
-          ReplayManifestSchema,
-          JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes)) as unknown,
-        ),
-      'DATA_INVALID',
-    );
+    const manifest = operationInput(() => {
+      const input: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes));
+      if (this.verification?.publicData) assertPublicData(input);
+      return parseJson(ReplayManifestSchema, input);
+    }, 'DATA_INVALID');
     return { manifest, manifestBytes };
   }
   async cached(simulationHash: string) {

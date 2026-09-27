@@ -11,6 +11,7 @@ export async function publicationPool<T>(
   items: readonly T[],
   concurrency: number,
   perform: (item: T) => Promise<void>,
+  queueName = 'transfer',
 ) {
   publicationConcurrency(concurrency);
   let next = 0;
@@ -20,7 +21,7 @@ export async function publicationPool<T>(
   await Promise.all(
     Array.from({ length: Math.min(items.length, concurrency) }, async () => {
       while (!failures.length && next < items.length) {
-        measured?.queue('transfer', performance.now() - queuedAt, items.length - next);
+        measured?.queue(queueName, performance.now() - queuedAt, items.length - next);
         const item = items[next++]!;
         try {
           await perform(item);

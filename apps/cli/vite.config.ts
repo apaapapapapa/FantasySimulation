@@ -6,6 +6,7 @@ export default defineConfig({
       league: 'src/league.ts',
       publication: 'src/publication.ts',
       'battle-worker': 'src/battle-worker.ts',
+      'verification-worker': 'src/verification-worker.ts',
     },
     platform: 'node',
     target: 'node24',

@@ -1,9 +1,12 @@
-import { OperationError } from '@fantasy/api/artifacts';
+import {
+  OperationError,
+  withReplayVerificationPool,
+  type ReplayVerificationPool,
+} from '@fantasy/api/artifacts';
 import {
   PublicLeagueDetailSchema,
   PublicLeagueSnapshotSchema,
   PublicLeagueSlotPageSchema,
-  canonicalJson,
   compareIds,
   leagueDefinitionClass,
   type LeaguePlan,
@@ -21,6 +24,9 @@ type LeagueWorkPublication = {
   ref: NonNullable<PublicCatalog['leagueWork']>;
   files: PublicationFile[];
 };
+type LeagueWorkBuilder =
+  | LeagueWorkPublication
+  | ((checked: Awaited<ReturnType<typeof checkLeague>>) => Promise<LeagueWorkPublication>);
 
 export function leagueFile(value: unknown) {
   const file = publicationJson(`leagues/${'0'.repeat(64)}.json`, value);
@@ -34,13 +40,29 @@ export async function exportLeague(
   partitions: readonly { partition: unknown; batch: unknown }[],
   completed: readonly LeagueCheckInput[],
   directory: string,
-  work?:
-    | LeagueWorkPublication
-    | ((checked: Awaited<ReturnType<typeof checkLeague>>) => Promise<LeagueWorkPublication>),
+  work?: LeagueWorkBuilder,
+  options: { verificationWorkers?: number; signal?: AbortSignal } = {},
 ) {
-  const checked = await checkStoredLeague(input, partitions, completed),
+  return withReplayVerificationPool(
+    options.verificationWorkers ?? 1,
+    (pool) => buildLeaguePublication(input, partitions, completed, directory, work, pool, options.signal),
+    options.signal,
+  );
+}
+
+async function buildLeaguePublication(
+  input: unknown,
+  partitions: readonly { partition: unknown; batch: unknown }[],
+  completed: readonly LeagueCheckInput[],
+  directory: string,
+  work: LeagueWorkBuilder | undefined,
+  pool: ReplayVerificationPool | undefined,
+  signal: AbortSignal | undefined,
+) {
+  const checked = await checkStoredLeague(input, partitions, completed, pool),
     { plan, standings } = checked;
   const journal = typeof work === 'function' ? await work(checked) : work;
+  signal?.throwIfAborted();
   const latestOutcomes = new Map(
     checked.attempts.map((attempt) => [attempt.slotId, attempt.outcome.kind] as const),
   );
@@ -58,22 +80,26 @@ export async function exportLeague(
   };
   const sets: PublicCatalog['sets'] = [];
   const pairs = new Map<string, PublicLeagueSlotPage['rows']>();
+  const results = new Map(checked.results.map((result) => [result.index.planId, result]));
   for (const { partition, batch } of checked.partitions.values()) {
-    const result = checked.results.find((r) => r.index.planId === batch.id);
-    const source = result
-      ? completed.find((c) => canonicalJson(c.result) === canonicalJson(result))
-      : undefined;
+    signal?.throwIfAborted();
+    const result = results.get(batch.id);
+    const source = result ? checked.resultSources.get(result.id) : undefined;
+    if (result && !source) throw new OperationError('DATA_INVALID', 'Missing verified result source');
     const built = await buildPublication(
       batch,
       source ? [{ index: result!.index, bundles: source.bundles }] : [],
       directory,
+      pool,
     );
     built.files.forEach(add);
     sets.push(built.setRef);
+    const batchSlots = new Map(batch.slots.map((slot) => [slot.key, slot]));
+    const rowIndexes = new Map(built.rows.map((row, index) => [row.slotId, index]));
     for (const slot of partition.slots) {
-      const batchSlot = batch.slots.find((s) => s.key === slot.id.slice(7))!;
-      const rowIndex = built.rows.findIndex((row) => row.slotId === batchSlot.id);
-      if (rowIndex < 0) throw new OperationError('DATA_INVALID', 'Missing public league row');
+      const batchSlot = batchSlots.get(slot.id.slice(7))!;
+      const rowIndex = rowIndexes.get(batchSlot.id);
+      if (rowIndex === undefined) throw new OperationError('DATA_INVALID', 'Missing public league row');
       const key = slot.characters.map((c) => c.id).join('/');
       const rows = pairs.get(key) ?? [];
       rows.push({
@@ -146,6 +172,7 @@ export async function exportLeague(
       inputHash: snapshot.inputHash,
     },
     ...(journal ? { leagueWork: journal.ref } : {}),
+    ...(signal ? { signal } : {}),
   });
   return {
     ...written,

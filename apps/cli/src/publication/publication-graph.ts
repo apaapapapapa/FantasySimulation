@@ -19,11 +19,10 @@ import {
   type ReplayManifest,
   type LeagueFileRef,
 } from '@fantasy/domain/spatial';
-import { BattleBundles } from '@fantasy/api/artifacts';
+import { BattleBundles, withReplayVerificationPool } from '@fantasy/api/artifacts';
 import { readBoundedFile, sha256 } from '@fantasy/api/artifacts';
 import {
   assertPublicData,
-  inspectPublicArtifact,
   publicationDirectory,
   PUBLICATION_MAX_BYTES,
   PUBLICATION_MAX_FILES,
@@ -308,24 +307,30 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
   };
 }
 
-export async function localPublicationGraph(root: string) {
+export async function localPublicationGraph(
+  root: string,
+  verificationWorkers = 1,
+  signal?: AbortSignal,
+) {
+  signal?.throwIfAborted();
   const read: PublicationRead = async (key, limit) => {
+    signal?.throwIfAborted();
     await publicationDirectory(dirname(join(root, key)));
     return readBoundedFile(join(root, key), limit);
   };
   const graph = await publicationGraph(read);
   for (const file of graph.files.values()) file.source = join(root, file.key);
-  const bundles = new BattleBundles(root);
-  for (const objectHash of graph.objects) {
-    await bundles.verify(objectHash);
-    const prefix = `objects/${publicHashName(objectHash)}/`;
-    const manifestBytes = await read(prefix + 'manifest.json', MAX_REPLAY_MANIFEST_BYTES);
-    const manifest = operationInput(
-      () => ReplayManifestSchema.parse(JSON.parse(manifestBytes.toString('utf8'))),
-      'DATA_INVALID',
-    );
-    for (const artifact of [...manifest.chunks, ...manifest.checkpoints])
-      await inspectPublicArtifact(graph.files.get(prefix + artifact.file)!, artifact.rawBytes);
-  }
-  return graph;
+  return withReplayVerificationPool(verificationWorkers, async (pool) => {
+    const bundles = new BattleBundles(root).verificationSession({
+      publicData: true,
+      ...(pool ? { pool } : {}),
+    });
+    try {
+      await bundles.preverify([...graph.objects]);
+      signal?.throwIfAborted();
+      return graph;
+    } finally {
+      bundles.closeVerification();
+    }
+  }, signal);
 }

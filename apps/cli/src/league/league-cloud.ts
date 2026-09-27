@@ -189,8 +189,10 @@ export async function finishCloudLeague(
   publicRoot: string,
   source: ExecutionSource,
   executionId: string,
+  options: { verificationWorkers?: number; signal?: AbortSignal } = {},
 ) {
   return measureAsync('aggregate.final', async () => {
+    options.signal?.throwIfAborted();
     const prepared = await preparedLeague(preparedRoot);
     await validateStoredLeaguePlan(prepared.plan);
     if (
@@ -198,7 +200,7 @@ export async function finishCloudLeague(
       canonicalJson(prepared.plan.source) !== canonicalJson(source)
     )
       throw new OperationError('IDENTITY_MISMATCH', 'Cloud finalizer identity mismatch');
-    const graph = await localPublicationGraph(publicRoot);
+    const graph = await localPublicationGraph(publicRoot, options.verificationWorkers ?? 2, options.signal);
     if (!graph.latestWork || graph.catalog.leagueWork?.hash !== prepared.work.hash)
       throw new OperationError('IDENTITY_MISMATCH', 'Cloud reservation journal mismatch');
     const inputs: LeagueCloudInput[] = [],
@@ -223,13 +225,19 @@ export async function finishCloudLeague(
       work: graph.latestWork.work,
       records: [...graph.latestWork.records.values()],
     };
-    const exported = await exportLeague(prepared.plan, inputs, completed, publicRoot, (checked) =>
-      finishCheckedLeagueWork(
-        checked,
-        inputs.map((input) => input.reservation),
-        reserved,
-        new BattleBundles(publicRoot),
-      ),
+    const exported = await exportLeague(
+      prepared.plan,
+      inputs,
+      completed,
+      publicRoot,
+      (checked) =>
+        finishCheckedLeagueWork(
+          checked,
+          inputs.map((input) => input.reservation),
+          reserved,
+          new BattleBundles(publicRoot),
+        ),
+      { verificationWorkers: options.verificationWorkers ?? 2, ...(options.signal ? { signal: options.signal } : {}) },
     );
     await writeCloudJson(join(preparedRoot, 'completion.json'), {
       ...exported,

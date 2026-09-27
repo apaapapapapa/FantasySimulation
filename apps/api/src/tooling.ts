@@ -22,6 +22,7 @@ export { operationCode } from './operation-code.ts';
 
 export { measuredCommand } from './measurement-report.ts';
 export {
+  Measurements,
   measureAsync,
   measureSync,
   startMeasurement,

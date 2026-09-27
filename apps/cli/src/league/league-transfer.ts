@@ -172,6 +172,7 @@ export async function transferCloudLeague(
           maxTransferBytes: PUBLICATION_MAX_BYTES,
           maxWorkerRequests: 1000,
           concurrency: 16,
+          verificationWorkers: 2,
         })
       : await restorePublication(root, await start(), PUBLICATION_MAX_BYTES, 16);
     if (!budget || !usage || !data) throw new Error('Publication transport was not started');

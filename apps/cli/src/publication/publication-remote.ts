@@ -42,6 +42,7 @@ export interface PublishOptions {
   maxTransferBytes?: number;
   maxWorkerRequests?: number;
   concurrency?: number;
+  verificationWorkers?: number;
   dryRun?: boolean;
   observe?(report: PublishReport): void;
 }
@@ -104,7 +105,7 @@ export async function publishPublication(
     const maxTransfer = limit(options.maxTransferBytes, 256_000_000, PUBLICATION_MAX_BYTES);
     const maxWorker = limit(options.maxWorkerRequests, 200, 1000);
     const concurrency = publicationConcurrency(options.concurrency);
-    const graph = await localPublicationGraph(root);
+    const graph = await localPublicationGraph(root, options.verificationWorkers ?? 1);
     const store = typeof destination === 'function' ? await destination(graph) : destination;
     const compatible = async () => {
       const viewer = ViewerBuildSchema.parse(await options.viewer());

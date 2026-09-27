@@ -9,6 +9,7 @@ import {
   type BatchIndex,
 } from '@fantasy/domain/spatial';
 import type { BattleBundles } from './battle-bundle.ts';
+import type { ReplayVerificationPool } from '../replay/verification-pool.ts';
 
 export type BatchCheckInput = { index: unknown; bundles: BattleBundles };
 export function shardSlots(plan: BatchPlan, index: number, count: number) {
@@ -24,11 +25,35 @@ export function shardSlots(plan: BatchPlan, index: number, count: number) {
   return plan.slots.filter((slot) => Number.parseInt(slot.id.slice(7, 15), 16) % count === index);
 }
 
-export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
+export async function checkedBatch(
+  input: unknown,
+  indexes: BatchCheckInput[],
+  verification?: { publicData?: boolean; pool?: ReplayVerificationPool },
+) {
+  if (indexes.length > 64) throw new Error('Expected at most 64 batch indexes');
+  const scoped = verification
+    ? indexes.map((value) => ({
+        index: value.index,
+        bundles: value.bundles.verificationSession(verification),
+      }))
+    : indexes;
+  try {
+    const checked = await checkBatchData(input, scoped, verification !== undefined);
+    if (verification) {
+      const originals = new Map(scoped.map((value, i) => [value.bundles, indexes[i]!.bundles]));
+      for (const [slot, bundles] of checked.sources)
+        checked.sources.set(slot, originals.get(bundles)!);
+    }
+    return checked;
+  } finally {
+    if (verification) scoped.forEach((value) => value.bundles.closeVerification());
+  }
+}
+
+async function checkBatchData(input: unknown, indexes: BatchCheckInput[], preverify: boolean) {
   const plan = parseJson(BatchPlanSchema, input);
   const { id: planId, ...planBody } = plan;
   if (planId !== (await contentHash(planBody))) throw new Error('Plan checksum mismatch');
-  if (indexes.length > 64) throw new Error('Expected at most 64 batch indexes');
   const revisionKeys = new Set<string>();
   for (const revision of plan.revisions) {
     const key = `${revision.kind}:${revision.id}:${revision.revision}`;
@@ -77,6 +102,7 @@ export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
   const shardIds = new Set<number>();
   let shardCount: number | undefined;
   const found = new Map<string, BatchIndex['slots'][number]>();
+  const pending: { bundles: BattleBundles; slots: BatchIndex['slots'] }[] = [];
   for (const value of indexes) {
     const index = operationInput(() => parseJson(BatchIndexSchema, value.index), 'DATA_INVALID'),
       { id, ...body } = index;
@@ -108,14 +134,8 @@ export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
         throw new OperationError('DATA_INVALID', 'Missing, duplicate or unexpected planned slot');
       found.set(slot.slotId, slot);
       sources.set(slot.slotId, value.bundles);
-      if (slot.receipt) {
-        if (
-          slot.receipt.simulationHash !== slot.simulationHash ||
-          canonicalJson(await value.bundles.verify(slot.receipt.objectHash)) !==
-            canonicalJson(slot.receipt)
-        )
-          throw new OperationError('DATA_INVALID', 'Index replay reference mismatch');
-      }
+      if (slot.receipt && slot.receipt.simulationHash !== slot.simulationHash)
+        throw new OperationError('DATA_INVALID', 'Index replay reference mismatch');
       const outcome = slot.receipt?.result.outcome.kind;
       if (
         (slot.reused && slot.state !== 'complete') ||
@@ -131,6 +151,22 @@ export async function checkedBatch(input: unknown, indexes: BatchCheckInput[]) {
           'DATA_INVALID',
           'Unverified or nondefinitive slot cannot be complete',
         );
+    }
+    pending.push({ bundles: value.bundles, slots: index.slots });
+  }
+  // Validate all identities before admitting CPU work. Windows fit the session hash bound.
+  for (const { bundles, slots } of pending) {
+    for (let offset = 0; offset < slots.length; offset += 128) {
+      const window = slots.slice(offset, offset + 128);
+      if (preverify)
+        await bundles.preverify(window.flatMap((slot) => (slot.receipt ? [slot.receipt.objectHash] : [])));
+      for (const slot of window) {
+        if (
+          slot.receipt &&
+          canonicalJson(await bundles.verify(slot.receipt.objectHash)) !== canonicalJson(slot.receipt)
+        )
+          throw new OperationError('DATA_INVALID', 'Index replay reference mismatch');
+      }
     }
   }
   const summary = {

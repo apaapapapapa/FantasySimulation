@@ -1,4 +1,5 @@
 import { OperationError, operationInput } from '@fantasy/api/artifacts';
+import type { ReplayVerificationPool } from '@fantasy/api/artifacts';
 import { join, resolve, sep } from 'node:path';
 import {
   PublicMatchPageSchema,
@@ -21,7 +22,7 @@ import {
 import { checkedBatch, type BatchCheckInput } from '@fantasy/api/artifacts';
 import { readBoundedFile, sha256 } from '@fantasy/api/artifacts';
 import {
-  inspectPublicArtifact,
+  publicationBytes,
   publicationDirectory,
   publicationJson,
   PUBLICATION_MAX_FILES,
@@ -49,6 +50,7 @@ export async function buildPublication(
   input: unknown,
   indexes: BatchCheckInput[],
   directory: string,
+  pool?: ReplayVerificationPool,
 ) {
   const root = resolve(directory);
   for (const value of indexes) {
@@ -59,7 +61,8 @@ export async function buildPublication(
     await publicationDirectory(value.bundles.root);
     await publicationDirectory(join(value.bundles.root, 'objects'));
   }
-  const checked = await checkedBatch(input, indexes),
+  // New scope: never trust aggregation's earlier pass across the journal callback.
+  const checked = await checkedBatch(input, indexes, { publicData: true, ...(pool ? { pool } : {}) }),
     { plan } = checked;
   const files: PublicationFile[] = [],
     objects = new Set<string>(),
@@ -155,7 +158,7 @@ export async function buildPublication(
             checksum: sha256(data),
             source: join(source, name),
           };
-          await inspectPublicArtifact(file);
+          await publicationBytes(file);
           files.push(file);
         }
         for (const ref of [...manifest.chunks, ...manifest.checkpoints]) {
@@ -165,7 +168,9 @@ export async function buildPublication(
             checksum: ref.checksum,
             source: join(source, ref.file),
           };
-          await inspectPublicArtifact(file, ref.rawBytes);
+          // Privacy was checked on the original parsed JSON during full validation.
+          // Re-read exact bytes here and again at write time; never trust mutable paths.
+          await publicationBytes(file);
           files.push(file);
         }
         if (files.length > PUBLICATION_MAX_FILES)
