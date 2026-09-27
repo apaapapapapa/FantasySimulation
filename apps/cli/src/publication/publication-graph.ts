@@ -11,6 +11,7 @@ import {
   assertPublicPageBinding,
   assertPublicReplayBinding,
   canonicalJson,
+  compareIds,
   publicHashName,
   type PublicReplaySet,
   type PublicMatchPage,
@@ -36,6 +37,10 @@ import type { LeagueJson } from '../league/league-metadata.ts';
 export type PublicationRead = ((key: string, limit: number) => Promise<Buffer>) & {
   prefetch?(files: readonly Pick<PublicationFile, 'key' | 'bytes' | 'checksum'>[]): Promise<void>;
 };
+
+function orderedEntries<T>(entries: Map<string, T>) {
+  return new Map([...entries].sort(([a], [b]) => compareIds(a, b)));
+}
 
 /** Traverse all retained generations, validating content-addressed references before any mutation. */
 export async function publicationGraph(source: PublicationRead, concurrency = 1) {
@@ -337,14 +342,15 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     }
     latestWork = catalog?.leagueWork ? workStates.get(catalog.leagueWork.hash)! : null;
   }
+  // I/O completion order must not leak into downstream traversal or publication output.
   return {
     current,
     catalog: catalog!,
-    files,
-    sources,
-    results,
-    objects,
-    sets,
+    files: orderedEntries(files),
+    sources: new Set([...sources].sort(compareIds)),
+    results: orderedEntries(results),
+    objects: new Set([...objects].sort(compareIds)),
+    sets: orderedEntries(sets),
     totalBytes,
     latestWork,
   };
@@ -354,14 +360,16 @@ export async function localPublicationGraph(
   root: string,
   verificationWorkers = 1,
   signal?: AbortSignal,
+  graphReadConcurrency = 4,
 ) {
+  publicationConcurrency(graphReadConcurrency, 64);
   signal?.throwIfAborted();
   const read: PublicationRead = async (key, limit) => {
     signal?.throwIfAborted();
     await publicationDirectory(dirname(join(root, key)));
     return readBoundedFile(join(root, key), limit);
   };
-  const graph = await publicationGraph(read);
+  const graph = await publicationGraph(read, graphReadConcurrency);
   for (const file of graph.files.values()) file.source = join(root, file.key);
   return withReplayVerificationPool(
     verificationWorkers,
