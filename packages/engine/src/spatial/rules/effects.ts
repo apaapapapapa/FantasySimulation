@@ -1,4 +1,4 @@
-import type { DamageSnapshot, ResolvedActor, StatusCohort, StatusRevision } from '../state.ts';
+import type { DamageSnapshot, EffectTarget, StatusRevision } from '../state.ts';
 import {
   DEFAULT_BUDGET,
   matchEffect,
@@ -6,7 +6,6 @@ import {
   compareIds,
   type DeepReadonly,
   type Effect,
-  type ResourceState,
   type BattleEvent,
 } from '@fantasy/domain/spatial/execution';
 import { calculateDamage, damageDefense, hasDamageFormula, type DamageEffect } from './damage.ts';
@@ -18,6 +17,7 @@ import {
 } from './status-modifiers.ts';
 import { planStatusEffects, reactionDamageBps } from './status-reactions.ts';
 import { applyStatuses, effectiveStats, UnresolvedRuleError, type StatusLimits } from './status.ts';
+import { availableImmortality, defeatRequest } from './concepts.ts';
 export type Fraction = { numerator: string; denominator: string };
 export function fraction(n: bigint, d: bigint): Fraction {
   if (n < 0n || d <= 0n) throw new Error('Invalid nonnegative fraction');
@@ -30,11 +30,7 @@ export function fraction(n: bigint, d: bigint): Fraction {
   }
   return { numerator: (n / a).toString(), denominator: (d / a).toString() };
 }
-export type EffectTarget = {
-  actor: ResolvedActor;
-  resources: ResourceState;
-  statuses: StatusCohort[];
-};
+export type { EffectTarget } from '../state.ts';
 export type EffectApplication = DamageSnapshot & {
   id: string;
   actorId: string | null;
@@ -86,11 +82,15 @@ type ResolutionContext = {
   scale: bigint;
   damages: DamageEntry[];
   healing: { applicationId: string; amount: number }[];
+  defeats: { applicationId: string; detail: NonNullable<BattleEvent['defeat']> }[];
   totals: { heal: bigint; shield: bigint };
 };
 // Status changes share one status transaction; observation/force commit at their existing boundary.
 const deferredEffect = () => {};
 const effectHandlers: EffectHandlers<ResolutionContext, void> = {
+  defeat: (effect, { target, application, step, defeats }) => {
+    defeats.push({ applicationId: application.id, detail: defeatRequest(target, effect, step) });
+  },
   damage: (effect, { target, application, stats, step, scale, damages, totals }) => {
     const dealtBps = application.dealtByElement?.[effect.element] ?? application.dealtBps ?? 10000;
     const resistance = statusResistance(
@@ -166,6 +166,7 @@ export function resolveEffects(
   activationStep = step + 1,
   limits: StatusLimits = DEFAULT_BUDGET,
   deferStatuses = false,
+  conceptMode = false,
 ) {
   const ids = new Set(targets.map((t) => t.actor.participant.actorId));
   if (
@@ -177,15 +178,19 @@ export function resolveEffects(
   const results = [...targets]
     .sort((a, b) => compareIds(a.actor.participant.actorId, b.actor.participant.actorId))
     .map((target) => {
+      const evaluationStep = step,
+        commitStep = activationStep;
+      const statusStep = target.statusStep ?? evaluationStep;
       try {
         const incoming = applications.filter(
           (a) => a.targetId === target.actor.participant.actorId,
         );
-        const stats = effectiveStats(target.actor, target.statuses, step);
+        const stats = effectiveStats(target.actor, target.statuses, statusStep);
         const reactions = deferStatuses
           ? null
-          : planStatusEffects(target.statuses, incoming, statuses, step);
+          : planStatusEffects(target.statuses, incoming, statuses, statusStep);
         const damages: DamageEntry[] = [];
+        const defeats: ResolutionContext['defeats'] = [];
         const totals = { heal: 0n, shield: BigInt(target.resources.shield) };
         const healing: { applicationId: string; amount: number }[] = [];
         for (const application of incoming) {
@@ -196,10 +201,11 @@ export function resolveEffects(
             target,
             application,
             stats,
-            step,
+            step: statusStep,
             scale,
             damages,
             healing,
+            defeats,
             totals,
           });
         }
@@ -246,12 +252,16 @@ export function resolveEffects(
               reactions.statuses,
               reactions.applications,
               reactions.dispels,
-              activationStep,
+              target.statusStep ?? commitStep,
               limits,
             )
           : { statuses: target.statuses, changes: [] };
         return {
           unclamped,
+          openingHp: target.resources.hp,
+          ordinaryHealing: heal,
+          guard: availableImmortality(target, statusStep),
+          defeats,
           maxHp,
           availableHp: BigInt(target.resources.hp) + heal,
           actorId: target.actor.participant.actorId,
@@ -285,39 +295,88 @@ export function resolveEffects(
       )
       .map((app) => [app.id, app]),
   );
-  for (const result of draining.size ? results : []) {
-    const actual =
-      result.availableHp < BigInt(result.hpDamage) ? result.availableHp : BigInt(result.hpDamage);
-    for (const detail of result.damage) {
-      const app = draining.get(detail.applicationId);
-      if (
-        !app ||
-        app.effect.kind !== 'damage' ||
-        !app.effect.drainBps ||
-        app.drainDisabled ||
-        !app.actorId ||
-        !app.abilityId ||
-        app.actorId === app.targetId
-      )
-        continue;
-      const source = results.find((r) => r.actorId === app.actorId);
-      const sourceTarget = targets.find((t) => t.actor.participant.actorId === app.actorId);
-      if (!source || !sourceTarget) continue;
-      const n = actual * BigInt(detail.toHp.numerator);
-      const d = BigInt(detail.toHp.denominator) * BigInt(result.hpDamage || 1);
-      const healing =
-        (n * BigInt(app.effect.drainBps) * hpRecoveryBps(sourceTarget.statuses, step)) /
-        (d * 100000000n);
-      detail.drain = { basis: fraction(n, d), healing: checked(healing) };
-      source.unclamped += healing;
-      source.healed += checked(healing);
+  const guarded = new Set<string>();
+  const concept =
+    conceptMode ||
+    results.some((result) => result.guard || result.defeats.length) ||
+    targets.some((target) =>
+      target.statuses.some((status) => status.revision.definition.immortality),
+    );
+  // Pure fixed-point probes: reducing the numeric loss by one HP can reduce opposing
+  // drain and expose a second lethal target. Add all required guards simultaneously.
+  for (let evaluation = 0; evaluation <= targets.length; evaluation++) {
+    for (const result of results) {
+      result.healed = checked(concept && !result.openingHp ? 0n : result.ordinaryHealing);
+      result.unclamped = BigInt(result.openingHp) + BigInt(result.healed) - BigInt(result.hpDamage);
     }
+    for (const result of draining.size ? results : []) {
+      const capacity =
+        concept && !result.openingHp
+          ? 0n
+          : result.availableHp - (guarded.has(result.actorId) ? 1n : 0n);
+      const actual =
+        capacity < 0n
+          ? 0n
+          : capacity < BigInt(result.hpDamage)
+            ? capacity
+            : BigInt(result.hpDamage);
+      for (const detail of result.damage) {
+        const app = draining.get(detail.applicationId);
+        if (
+          !app ||
+          app.effect.kind !== 'damage' ||
+          !app.effect.drainBps ||
+          app.drainDisabled ||
+          !app.actorId ||
+          !app.abilityId ||
+          app.actorId === app.targetId
+        )
+          continue;
+        const source = results.find((r) => r.actorId === app.actorId);
+        const sourceTarget = targets.find((t) => t.actor.participant.actorId === app.actorId);
+        if (!source || !sourceTarget || (concept && !source.openingHp)) continue;
+        const n = actual * BigInt(detail.toHp.numerator);
+        const d = BigInt(detail.toHp.denominator) * BigInt(result.hpDamage || 1);
+        const healing =
+          (n *
+            BigInt(app.effect.drainBps) *
+            hpRecoveryBps(sourceTarget.statuses, sourceTarget.statusStep ?? step)) /
+          (d * 100000000n);
+        detail.drain = { basis: fraction(n, d), healing: checked(healing) };
+        source.unclamped += healing;
+        source.healed += checked(healing);
+      }
+    }
+    const required = results.filter(
+      (result) =>
+        result.guard &&
+        !guarded.has(result.actorId) &&
+        (result.defeats.some((request) => request.detail.applied) || result.unclamped <= 0n),
+    );
+    if (!required.length) break;
+    for (const result of required) guarded.add(result.actorId);
+    if (evaluation === targets.length) throw new Error('Nonconvergent finite guard allocation');
   }
-  return results.map(({ unclamped, maxHp, availableHp: _, ...result }) => ({
-    ...result,
-    resources: {
-      ...result.resources,
-      hp: checked(unclamped < 0n ? 0n : unclamped > maxHp ? maxHp : unclamped),
-    },
-  }));
+  return results.map(
+    ({
+      unclamped,
+      maxHp,
+      availableHp: _,
+      guard,
+      openingHp,
+      ordinaryHealing: _ordinary,
+      ...result
+    }) => ({
+      ...result,
+      ...(guarded.has(result.actorId) && guard ? { protection: guard.revision } : {}),
+      resources: {
+        ...result.resources,
+        hp: guarded.has(result.actorId)
+          ? 1
+          : (concept && !openingHp) || result.defeats.some((request) => request.detail.applied)
+            ? 0
+            : checked(unclamped < 0n ? 0n : unclamped > maxHp ? maxHp : unclamped),
+      },
+    }),
+  );
 }

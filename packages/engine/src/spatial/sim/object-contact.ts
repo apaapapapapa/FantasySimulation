@@ -1,3 +1,4 @@
+import { frozen, subjectStep } from '../rules/subject-clocks.ts';
 import { attackWorld } from '../rules/phasing.ts';
 import type { MovedActor } from '../world/movement.ts';
 import { objectGeometry } from '../world/object-geometry.ts';
@@ -23,6 +24,7 @@ export function contactSpatialObjects(tx: StepTransaction, moved: readonly Moved
     const owner = tx.next.actors.find((a) => actorId(a) === object.ownerId)!,
       target = opponentInDuel(moved, object.ownerId, (a) => a.state.actor.participant.actorId),
       targetId = target.state.actor.participant.actorId;
+    if (object.kind === 'beam' && frozen(owner)) continue;
     const world = attackWorld(tx.context.world, object);
     tx.context.work.candidate();
     let contact: { time: number; point: typeof object.position } | null;
@@ -66,7 +68,12 @@ export function contactSpatialObjects(tx: StepTransaction, moved: readonly Moved
     }
     if (!contact) continue;
     const admission = object.stage
-      ? tx.next.ledger.contact(object.stage, object.hit, targetId, tx.step)
+      ? tx.next.ledger.contact(
+          object.stage,
+          object.hit,
+          targetId,
+          object.kind === 'beam' ? subjectStep(owner, tx.step) : tx.step,
+        )
       : null;
     const hit = tx.journal.emit({
       kind: admission?.accepted === false ? 'diagnostic' : 'hit',

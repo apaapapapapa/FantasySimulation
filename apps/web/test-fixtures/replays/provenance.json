@@ -67,5 +67,13 @@
     "battle": "phasing test-support manifest -> prepareBattle -> runPreparedBattle -> append all records -> finish",
     "contents": "Body phase expiration at 8; exit limit truncation at 58 with 50 committed extended intervals",
     "policy": "New fixed saved input for reverse/loop player tests. Existing fixtures preserved. Never regenerate to make a reader pass."
+  },
+  "p6-concept-stop": {
+    "implementationDigest": "sha256:0dc41f8c74562382ee6a0801d4beea5bd508e6d0ffdfd96b0c13ff93bb9e9de4",
+    "node": "24.19.0",
+    "writer": "apps/api/src/replay/replay-writer.ts ReplayWriter (display-ndjson-gzip-v1)",
+    "battle": "stopManifest({ duration: 100, steps: 120 }) -> prepareBattle -> runPreparedBattle -> append all records -> finish",
+    "contents": "New fixed saved input: paid control, frozen clock, captured contacts, one release wave; ends at step106",
+    "policy": "New display input with separately authored expected HP40 while pending and 100 paused intervals. Existing fixtures preserved; never regenerate to make a reader pass."
   }
 }

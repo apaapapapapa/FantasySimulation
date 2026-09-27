@@ -29,3 +29,9 @@ export function canSee(world: SpatialWorld, self: MotionState, point: Vec3): boo
     !world.forQuery({ ownerId: self.actor.participant.actorId }).occluded(eye, point, 'vision')
   );
 }
+export function canObserveActor(world: SpatialWorld, self: MotionState, target: MotionState) {
+  return (
+    target.vision?.visible !== false &&
+    canSee(world, self, bodyPoint(target, target.actor.character.body.aimOffset))
+  );
+}

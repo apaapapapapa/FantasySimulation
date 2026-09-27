@@ -1,3 +1,4 @@
+import { frozen, subjectStep } from '../rules/subject-clocks.ts';
 import { damageBarrierContact } from './barrier-damage.ts';
 import { statusDamageSource } from '../rules/status-damage.ts';
 import { inObservedRange } from '../rules/attacks.ts';
@@ -13,17 +14,21 @@ import { type StepTransaction, actorId } from './step-transaction.ts';
 import { releaseAttack } from './attack-release.ts';
 export function releasePhase(tx: StepTransaction) {
   const { battle, world, work } = tx.context;
-  const { step, journal, effects, resourceBudgets, forcePlans, aiBoundary, previousMovement } = tx;
+  const { step, journal, effects, resourceBudgets, forcePlans, previousMovement } = tx;
   const next = tx.next.actors,
     nextLedger = tx.next.ledger;
   for (const actor of next) {
+    if (frozen(actor)) continue;
     const action = actor.actions.action;
     if (!action) continue;
     if (!action.stages && (action.released || action.launchAt !== step)) continue;
     const releaseView = selfView(actor, step, battle.rules.ai, battle.statuses);
     const staged = action.stages
       ? releaseStage(actor, releaseView, step, resourceBudgets.get(actorId(actor))!, journal, {
-          dodge: aiBoundary && isDodgeDecision(actor.mind.decision),
+          dodge:
+            subjectStep(actor, step) %
+              (battle.manifest.physicsProfile.aiMs / battle.rules.stepMs) ===
+              0 && isDodgeDecision(actor.mind.decision),
           previous: previousMovement.get(actorId(actor))!,
         })
       : null;
@@ -65,6 +70,7 @@ export function releasePhase(tx: StepTransaction) {
     releaseAttack({ tx, actor, action, ability, staged, launch });
   }
   for (const actor of next) {
+    if (frozen(actor)) continue;
     const force = forcePlans.get(actorId(actor));
     if (force?.active) actor.body.intent.forced = { gravity: force.gravity!, force: force.force };
     applyStageMotion(actor, step);

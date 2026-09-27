@@ -1,4 +1,5 @@
 import { objectAbility } from './object-manifest.ts';
+import { experimentalRules } from '@fantasy/samples/testing';
 import type { Definition, Effect, Manifest } from '@fantasy/domain/spatial';
 import { combatManifest } from './fixtures.ts';
 import { initialStatus, withInitialStatus } from './ai.ts';
@@ -44,6 +45,14 @@ export type SpatialInterferenceMechanic =
   | 'phasing'
   | 'revival'
   | 'seal';
+export type ConceptInterferenceMechanic =
+  | SpatialInterferenceMechanic
+  | 'instant-death'
+  | 'immortality'
+  | 'absolute-hit'
+  | 'absolute-evasion'
+  | 'mind-read'
+  | 'time-stop';
 export type InterferenceMechanic = RecoveryInterferenceMechanic | 'projectile-deflection';
 const pairProjectile: Definition<'ability'>['attack'] = {
   kind: 'projectile',
@@ -67,8 +76,8 @@ const damage = (amount: number): Effect => ({
 
 /** Real two-sided contacts plus startup cohorts; no expected values or table lookup. */
 export async function interferencePairManifest(
-  left: SpatialInterferenceMechanic,
-  right: SpatialInterferenceMechanic,
+  left: ConceptInterferenceMechanic,
+  right: ConceptInterferenceMechanic,
 ): Promise<Manifest> {
   const input = await combatManifest(10, {
     ability: {
@@ -106,6 +115,39 @@ export async function interferencePairManifest(
     const status = initialStatus({ categories: ['debuff'], durationSteps: 20 });
     let reaction: Partial<Definition<'ability'>> | undefined;
     switch (mechanic) {
+      case 'time-stop':
+        action.timeStop = { durationSteps: 4 };
+        action.effects = [];
+        break;
+      case 'absolute-hit':
+        action.accuracy = 'no-error';
+        action.aimErrorMilliDegrees = 45000;
+        break;
+      case 'absolute-evasion':
+        status.evasion = {};
+        break;
+      case 'mind-read':
+        action.effects = [
+          {
+            kind: 'reveal',
+            field: 'health',
+            precisionBps: 1000,
+            durationSteps: 100,
+            delaySteps: 1,
+            occlusion: 'vision',
+            powerBps: 10000,
+          },
+        ];
+        break;
+      case 'instant-death':
+        action.effects = [{ kind: 'defeat' }];
+        break;
+      case 'immortality':
+        status.maxStacks = 1;
+        status.stacking = 'refresh';
+        status.immortality = { protections: 1 };
+        status.periodic = [{ kind: 'damage', amount: 100, element: 'fire', everySteps: 1000 }];
+        break;
       case 'revival':
         status.periodic = [{ kind: 'damage', amount: 100, element: 'fire', everySteps: 1000 }];
         reaction = {
@@ -330,7 +372,7 @@ export async function interferencePairManifest(
     }
     if (
       [left, right].includes('projectile-deflection') &&
-      !['contact', 'reveal', 'teleport', 'barrier'].includes(mechanic) &&
+      !['contact', 'reveal', 'mind-read', 'time-stop', 'teleport', 'barrier'].includes(mechanic) &&
       !action.stages
     )
       action.attack = {
@@ -387,5 +429,23 @@ export async function interferencePairManifest(
     input.revisions.find((r) => r.kind === 'ruleset' && r.id === input.ruleset.id)!,
     input.revisions.find((r) => r.kind === 'scenario' && r.id === input.scenario.id)!,
   ]);
-  return input;
+  return [left, right].some((mechanic) =>
+    [
+      'instant-death',
+      'immortality',
+      'absolute-hit',
+      'absolute-evasion',
+      'mind-read',
+      'time-stop',
+    ].includes(mechanic),
+  )
+    ? experimentalRules(input, [
+        'absolute-evasion',
+        'absolute-hit',
+        'immortality',
+        'instant-death',
+        'mind-read',
+        'time-stop',
+      ])
+    : input;
 }

@@ -1,7 +1,7 @@
 import { expect, it } from 'vite-plus/test';
 import { withSources } from './ast.ts';
 import { createTestProject } from './test-support/project.ts';
-import { capabilityCoverage, inspectCapabilities } from './capabilities.ts';
+import { capabilityCoverage, capabilityIds, inspectCapabilities } from './capabilities.ts';
 import { CAPABILITY_ROLES, type CapabilityCoverage } from './capability-contract.ts';
 import { qualityPaths } from './files.ts';
 
@@ -189,4 +189,12 @@ it('requires explicit, live delegation and rejects missing responsibilities/new 
   const findings = inspect(code, contract, ['effect:example', 'effect:new']);
   expect(findings.some((finding) => finding.role === 'display')).toBe(true);
   expect(findings.some((finding) => finding.capability === 'effect:new')).toBe(true);
+});
+
+it('enumerates nested reveal variants as one effect capability without losing other effects', () => {
+  const ids = capabilityIds();
+  expect(ids.filter((id) => id === 'effect:reveal')).toHaveLength(1);
+  expect(ids).toContain('effect:defeat');
+  expect(ids).toContain('attack:projectile');
+  expect(new Set(ids).size).toBe(ids.length);
 });

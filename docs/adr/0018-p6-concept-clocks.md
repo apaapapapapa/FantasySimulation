@@ -1,12 +1,11 @@
 # ADR 0018: P6 concept clocks and finite defeat protection
 
-**Proposed; owner approval required before Group3 implementation.** Refs #155 §8/P6-09, #1.
-Baseline `39c769091133dc94907f7090dead65d052e3d383` (#204 after #196). Requested self-review
-corrections are not approval. Design only; no runtime/schema/identity/publication changes.
+**Accepted for implementation by the owner's 2026-09-27 request to implement all remaining
+skills before completing #155.** Refs #155, #1. Baseline `39c769091133dc94907f7090dead65d052e3d383`.
+This instruction supersedes the proposal's implementation hold; it does not assert earlier approval.
 [ADR0016](0016-p6-foundation.md), [ADR0017](0017-p6-spatial-mechanics.md) and
-[reactions](../rules/reactions.md) still govern existing mechanics. These experimental amendments
-need approval. [Companion](0018-p6-concept-cases.json) owns proposed limits/cases, not runtime config
-or executed coverage.
+[reactions](../rules/reactions.md) govern existing mechanics. The [companion](0018-p6-concept-cases.json)
+retains independently authored arithmetic and acceptance requirements; executed bindings live in the corpus.
 
 ## 1. Clocks and representation
 
@@ -83,7 +82,7 @@ ineligible. TWO individually valid opposing requests BOTH fizzle; invalid/resist
 cannot cancel valid ones. No ID/order/speed/RNG tie-break. Activation reserves FULL duration
 against the match allowance with no early-release refund; record reserved and executed time
 separately. Exhaustion fizzles, never silently shortens duration; match end may release early.
-Work overflow is separately truncated. Companion bounds are proposals, not measurements.
+Work overflow is separately truncated. Capacity tests use the companion bounds.
 
 Boundary n, with shared snapshots inside each subphase:
 
@@ -236,34 +235,38 @@ No actor-order choice, epsilon or unbounded convergence; for living openings E e
 legacy drain arithmetic.
 N1 requires HP1/zero charges; N2 needs two rounds. Independently test rational rounding/swaps.
 
-## 5. Integration and acceptance
+## 5. Aim, evasion and reading (P6-11)
 
-Extend existing strict unions/exhaustive switches and owning resource/coordinator/readers, not
-a parallel resolver. Prepare/job/retry/league reject missing permission/unsupported variants
-with mechanic/revision BEFORE reservation, across full ability/status/equipment closures and
-dormant transforms. Standard rules cannot discard fields. Use new experimental rules/sample IDs,
-separate rankings and Pages/catalog labels. Actual experimental publication is not a gate;
-no official recalculation, R2 write or publication here.
-Preserve ALL baseline published definitions/IDs/hashes/results, including #204 additions, not
-hard-coded140. Apply ADR0010/0013 judgment version/new-ID/identity review, preserve old reads
-not old engines, and never regenerate failed corpus expectations or silently restamp.
+Experimental `accuracy: no-error` removes angular error, preserving two PRNG draws and delivered
+aim/range/geometry/occlusion. Effective finite `evasion` cancels a whole hostile contact after
+before-hit payment; category AND element filters apply. Self/environment/periodic effects are
+unaffected. Thus evasion cancels no-error hits; seal suppresses it normally.
 
-AI uses own costs/uses/guards and delivered public wounds/statuses/activation cues; unknown
-immunity/counts remain uncertain. No ability-ID branches or unused enemy/live/pending/replay
-truth. Capture-visibility and release-outcome cues use distinct global stamps/observer delays;
-never recalculate historic visibility through the release world. Keep bounded provenance.
-StreamRecord/ReplayState carry defeat/resistance, guard/drain/revival causes/uses; P6-10 adds
-clocks, projections, control, pending DESCRIPTORS in checkpoints and atomic release. Validate
-references/finite counts/global ordering and consumed-versus-pending exclusivity engine-free.
-Worker/SQLite/both viewers must round-trip old/new data; forward/reverse/loop never rerun combat
-or apply HP early. Unsupported features reject explicitly; valid partial errors remain readable.
+`reveal` adds HP-ratio buckets and declared-action ID/phase through active opponent zero-radius
+sight rays. Respect visibility/ward, precision/delay/duration; never expose future decisions/RNG.
+Freeze preserves the sampled payload and observer delay/expiry. Capture visibility is retained,
+not rechecked through later geometry; release outcomes get new stamps. AI uses delivered data.
+See companion `perceptionConcepts` for bounds.
 
-Domain interference.json remains the executed coverage source: every accepted ordered/self/
-conditional pair needs independent executed assertions; undefined experimental cells need
-ADR0016 unresolved fixtures. Neither this proposal nor its companion satisfies that coverage.
-Companion C1-C13/D1-D6/I1-I5/X1-X6 retain all original obligations; implemented=false until real
-fixtures exist. P6-09b owns D/I/C1 and applicable X1/X2/X4-X6; P6-10 owns C2-C13/X3/cross-cases;
-P6-11 stays separate. One owner integrates shared schema/settlement/identity. Quality/verify,
-clean-source, reviewed corpus/load, PR review and Linux PR/main CI remain mandatory. Arithmetic
-is not engine acceptance. Keep Markdown170000/pinned ADR0017; Refs #155/#1, no completion or
-auto-close while acceptance/milestones remain.
+## 6. Implementation and acceptance
+
+Internal scalar timers cache global projections, rebased once on thaw; bound subject deadlines
+stay constant and original global stamps are retained. Required replay features are
+`subject-clocks-v1`/`deferred-contacts-v1`. Checkpoints retain control counts and pending causal
+receipts after consumed shots. Validate identities/clocks/exactly-once release engine-free;
+normal finality has no pending control, errors retain committed partial state.
+
+Queue bytes count canonical UTF-8 interned contact templates, payloads and ordinal pairs,
+including released entries. Structural record maximum12,003 covers initial +6,000 intervals
++6,000 boundaries +one timeout release +terminal; match/work/byte limits remain unchanged.
+
+ADR0010 classification: additive, spatial-v1.22 unchanged. No-concept clocks/control fields are
+absent; preserve published definitions and seven fixed corpus expectations. New experimental
+rules/seven characters use new IDs; explicitly review implementation restamping and saved reads.
+Companion C1–C13/D1–D6/I1–I5/X1–X6 remain mandatory, not satisfied by arithmetic alone.
+Executed corpus/pair bindings, Worker/SQLite/viewer seek/loop, quality/verify, clean-source,
+review and Linux PR/main CI govern acceptance. Preserve Markdown170000 and published hashes.
+
+By the owner's order, complete all skills before official milestone dry-run/compute/publication;
+keep the same20 participants. Experimental rankings/manual execution stay separate; their actual
+publication is optional. Do not close #155 while acceptance or official milestones remain.

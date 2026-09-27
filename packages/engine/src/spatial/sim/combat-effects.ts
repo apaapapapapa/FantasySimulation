@@ -1,11 +1,6 @@
-import type { DamageSnapshot, ActorState, MotionState, AbilityRevision } from '../state.ts';
-import type {
-  BattleEvent,
-  DeepReadonly,
-  Effect,
-  StageContact,
-  ReactionContext,
-} from '@fantasy/domain/spatial/execution';
+import { domainSnapshotStep, frozen } from '../rules/subject-clocks.ts';
+import type { ActorState, MotionState } from '../state.ts';
+import type { BattleEvent, Effect } from '@fantasy/domain/spatial/execution';
 import { resolveEffects } from '../rules/effects.ts';
 import { damagePower } from '../rules/damage.ts';
 import type { Journal } from '../rules/journal.ts';
@@ -17,9 +12,12 @@ import { planStatusEffects } from '../rules/status-reactions.ts';
 import { applyStatuses, UnresolvedRuleError } from '../rules/status.ts';
 import type { EffectApplication } from '../rules/effects.ts';
 import { rememberThreat } from '../ai/threat-memory.ts';
-import { sub, unit, type Vec3 } from '../math.ts';
+import { sub, unit } from '../math.ts';
 import { recordInterference } from './interference.ts';
+import { readMind } from './mind-reading.ts';
+import { evadeContacts } from './contact-evasion.ts';
 const effectEventKinds = {
+  defeat: 'defeat',
   damage: 'damage',
   heal: 'heal',
   shield: 'shield',
@@ -29,27 +27,8 @@ const effectEventKinds = {
   reveal: 'diagnostic',
   force: 'force',
 } satisfies Record<Effect['kind'], BattleEvent['kind']>;
-export type PendingEffect = DamageSnapshot & {
-  actorId: string | null;
-  targetId: string;
-  effect: DeepReadonly<Effect>;
-  parentEventId: string | null;
-  abilityId: string | null;
-  causes?: readonly string[];
-  scaleBps?: number;
-  powerBps?: number;
-  stage?: StageContact;
-  reaction?: ReactionContext;
-  damageCancelled?: boolean;
-  sourceAbility?: AbilityRevision;
-  sourceActorId?: string;
-  sourceProjectileId?: string;
-  ancestry?: ReactionContext;
-  projectileContact?: { id: string; direct: boolean; reflected: boolean };
-
-  observation?: { self: MotionState; target: MotionState };
-  incomingDirection?: Vec3;
-};
+import type { PendingEffect } from '../state.ts';
+export type { PendingEffect } from '../state.ts';
 /** Keep the contact geometry even though simultaneous effects commit after movement. */
 export function contactObservation(
   moved: readonly MovedActor[],
@@ -78,6 +57,9 @@ export function commitEffects(
   waveIndex = 0,
 ) {
   const { battle, journal, step, activationStep, phase, budget, world } = context;
+  effects = context.capture?.(effects) ?? effects;
+  effects = context.beforeCommit?.(effects) ?? effects;
+  effects = evadeContacts(actors, effects, context);
   const applications = effects.map((effect) => {
     const event = journal.emit({
       step: activationStep,
@@ -87,6 +69,7 @@ export function commitEffects(
       actorId: effect.actorId,
       targetId: effect.targetId,
       abilityId: effect.abilityId,
+      ...(effect.deferral ? { deferrals: [effect.deferral.id] } : {}),
       ...(effect.sourceActorId
         ? { sourceActorId: effect.sourceActorId, sourceProjectileId: effect.sourceProjectileId! }
         : {}),
@@ -106,6 +89,16 @@ export function commitEffects(
         actor: a.body.motion.actor,
         resources: a.vitals.resources,
         statuses: a.statuses,
+        ...(frozen(a) || context.statusSteps?.has(a.body.motion.actor.participant.actorId)
+          ? {
+              statusStep:
+                context.statusSteps?.get(a.body.motion.actor.participant.actorId) ??
+                domainSnapshotStep(a, step),
+            }
+          : {}),
+        ...(a.vitals.immortalityUsed !== undefined
+          ? { immortalityUsed: a.vitals.immortalityUsed }
+          : {}),
       })),
       applications,
       battle.statuses,
@@ -113,6 +106,9 @@ export function commitEffects(
       activationStep,
       budget,
       deferStatuses,
+      battle.rules.experimental?.mechanics.some((mechanic) =>
+        ['instant-death', 'immortality', 'time-stop'].includes(mechanic),
+      ) ?? false,
     );
   } catch (error) {
     recordInterference(error, context);
@@ -135,8 +131,16 @@ export function commitEffects(
         app.event.amount = result.healing.find((h) => h.applicationId === app.id)!.amount;
       } else if (app.effect.kind === 'shield') {
         app.event.amount = Math.floor((app.effect.amount * (app.scaleBps ?? 10000)) / 10000);
+      } else if (app.effect.kind === 'defeat') {
+        app.event.defeat = result.defeats.find(
+          (request) => request.applicationId === app.id,
+        )!.detail;
+        app.event.ruleId = 'concept.defeat';
+        app.event.reason = app.event.defeat.reason;
       }
       const observer = actors.find((a) => a.body.motion.actor.participant.actorId === app.actorId);
+      if (app.effect.kind === 'defeat' && observer)
+        observer.vitals.conceptCue = { kind: 'instant-death', at: activationStep };
       if (
         app.effect.kind === 'damage' &&
         detail &&
@@ -187,7 +191,7 @@ export function commitEffects(
             ...(app.sourceActorId ? { sourceActorId: app.sourceActorId } : {}),
             ...(app.stage ? { stage: app.stage } : {}),
           },
-          step,
+          app.deferral ? activationStep - 1 : step,
           budget,
         );
         app.event.reason = Object.values(app.event.force.velocityMmPerSecond).every((n) => n === 0)
@@ -197,7 +201,7 @@ export function commitEffects(
       const ability =
         app.sourceAbility ??
         observer?.body.motion.actor.abilities.find((a) => a.id === app.abilityId);
-      if (observer && ability && observer !== actor) {
+      if (observer && !frozen(observer) && ability && observer !== actor) {
         const geometry = app.observation ?? {
           self: observer.body.motion,
           target: actor.body.motion,
@@ -208,7 +212,7 @@ export function commitEffects(
           contentHash: ability.contentHash,
         };
         const experience =
-          app.effect.kind === 'reveal'
+          app.effect.kind === 'reveal' && app.effect.field === 'resistance'
             ? observeReveal(
                 world,
                 geometry.self,
@@ -217,6 +221,7 @@ export function commitEffects(
                 ref,
                 app.id,
                 activationStep,
+                app.capturedVisible,
               )
             : app.effect.kind === 'damage' && detail
               ? observeImpact(
@@ -245,16 +250,72 @@ export function commitEffects(
                       !!app.damageCancelled ||
                       (app.scaleBps ?? 10000) !== 10000,
                     statuses: actor.statuses,
-                    statusStep: step,
+                    statusStep:
+                      context.statusSteps?.get(result.actorId) ?? domainSnapshotStep(actor, step),
                   },
                   activationStep,
                   battle.rules.ai,
+                  app.capturedVisible,
                 )
               : null;
         if (experience) observer.mind.memory = rememberExperience(observer.mind.memory, experience);
+        if (app.effect.kind === 'reveal' && app.effect.field !== 'resistance') {
+          const reading = readMind(
+            world,
+            geometry.self,
+            actor,
+            geometry.target,
+            app.effect,
+            ref,
+            app.id,
+            activationStep,
+            app.capturedVisible,
+          );
+          if (reading) {
+            observer.mind.memory = {
+              ...observer.mind.memory,
+              pendingReadings: [...(observer.mind.memory.pendingReadings ?? []), reading].slice(
+                -32,
+              ),
+            };
+            observer.vitals.conceptCue = { kind: 'mind-read', at: activationStep };
+          }
+          app.event.ruleId = 'concept.bounded-read';
+          app.event.reason = reading
+            ? 'sampled; delayed bounded observation queued'
+            : 'occluded or resisted';
+        }
       }
     }
     emitStatusChanges(result, journal, activationStep, phase);
+    if (result.protection) {
+      const use = (actor.vitals.immortalityUsed ?? 0) + 1;
+      actor.vitals.immortalityUsed = use;
+      actor.vitals.conceptCue = { kind: 'immortality', at: activationStep };
+      journal.emit({
+        kind: 'immortality',
+        step: activationStep,
+        phase,
+        actorId: result.actorId,
+        targetId: result.actorId,
+        ruleId: 'concept.immortality',
+        before: { ...actor.vitals.resources },
+        after: { ...result.resources },
+        causes: applications
+          .filter((application) => application.targetId === result.actorId)
+          .map((application) => application.id),
+        immortality: {
+          use,
+          status: {
+            id: result.protection.id,
+            revision: result.protection.revision,
+            contentHash: result.protection.contentHash,
+          },
+        },
+        reason: 'finite-opening-protection; least-simultaneous-drain-fixed-point',
+        ...(deferStatuses ? { wave: waveIndex } : {}),
+      });
+    }
     if (!deferStatuses) rememberApplications(actor, result.changes, applications, context);
     actor.vitals.resources = result.resources;
     actor.statuses = result.statuses;
@@ -326,12 +387,18 @@ export function commitTransactionStatuses(
 ) {
   const { battle, journal, step, activationStep, phase, budget } = context;
   for (const actor of actors) {
+    if (frozen(actor)) continue;
     const id = actor.body.motion.actor.participant.actorId;
     const incoming = applications.filter((a) => a.targetId === id);
     try {
       let plan: ReturnType<typeof planStatusEffects>;
       try {
-        plan = planStatusEffects(actor.statuses, incoming, battle.statuses, step);
+        plan = planStatusEffects(
+          actor.statuses,
+          incoming,
+          battle.statuses,
+          context.statusSteps?.get(id) ?? step,
+        );
       } catch (error) {
         if (!(error instanceof UnresolvedRuleError)) throw error;
         throw new UnresolvedRuleError(

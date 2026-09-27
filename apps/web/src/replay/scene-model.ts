@@ -124,6 +124,11 @@ export function buildSceneModel(
       appearance: definition.appearance,
       sealing: sealDisplay(context, actor, checkpoint.step).some((s) => s.sealing),
       revived: events.some((e) => e.revival && e.actorId === actor.id),
+      frozen: !!actor.clock?.frozen,
+      subjectMilliseconds: actor.clock ? actor.clock.subjectStep * 20 : undefined,
+      evaded: events.some((event) => event.evasion && event.actorId === actor.id),
+      protected: events.some((event) => event.immortality && event.actorId === actor.id),
+      defeated: events.some((event) => event.defeat?.applied && event.targetId === actor.id),
       casting: actor.action?.phase === 'cast',
       vision: unknownVision
         ? null

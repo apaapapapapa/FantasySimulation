@@ -6,11 +6,12 @@ import type { Budget, DisplayPath, ProjectileChanges } from '@fantasy/domain/spa
 import { type PendingEffect } from './combat-effects.ts';
 import type { Journal } from '../rules/journal.ts';
 import type { MovedActor } from '../world/movement.ts';
-import { clipTrace, type SpatialWorld } from '../world/physics.ts';
+import { straight, clipTrace, type SpatialWorld } from '../world/physics.ts';
 import { contactAttack } from '../rules/attack-contact.ts';
 import type { HitLedger } from '../rules/hit-ledger.ts';
 import {
   projectileCurve,
+  displayProjectile,
   projectileEventSource,
   type ProjectileState,
 } from '../rules/projectiles.ts';
@@ -54,13 +55,37 @@ export function stepProjectiles(
   )
     ? new ProjectileContacts(impactContext, alive, paths)
     : undefined;
-  for (const projectile of input) {
+  for (const original of input) {
+    let projectile = original;
+    const age = projectile.clock?.age ?? step - projectile.launchStep;
     const shape = projectile.ability.definition.attack;
-    if (shape.kind !== 'projectile' || projectile.launchStep + shape.lifetimeSteps <= step)
+    if (shape.kind !== 'projectile' || age >= shape.lifetimeSteps)
       throw new Error('Invalid active projectile lifetime');
     const owner = actors.find(
       (a) => a.body.motion.actor.participant.actorId === projectile.ownerId,
     )!;
+    if (owner.clock?.frozen) {
+      const paused = {
+        ...projectile,
+        clock: { age, at: step + 1, paused: (projectile.clock?.paused ?? 0) + 1 },
+      };
+      alive.push(paused);
+      paths.push({
+        entityId: projectile.id,
+        segments: straight(projectile.position, projectile.position),
+      });
+      const display = displayProjectile(paused);
+      changes.update.push({
+        id: projectile.id,
+        position: { ...projectile.position },
+        velocity: { ...projectile.velocity },
+        clock: display.clock,
+        endStep: display.endStep,
+      });
+      continue;
+    }
+    if (projectile.clock)
+      projectile = { ...projectile, clock: { ...projectile.clock, age: age + 1, at: step + 1 } };
     const enemy = opponentInDuel(
       moved,
       projectile.ownerId,
@@ -77,7 +102,7 @@ export function stepProjectiles(
       direction: projectile.velocity,
       offset: { x: 0, y: 0, z: 0 },
       rangeMm: projectile.ability.definition.rangeMm,
-      elapsedSteps: step - projectile.launchStep,
+      elapsedSteps: age,
       stageDuration: undefined,
       staged: !!projectile.stage,
       rules: battle.rules,
@@ -101,12 +126,20 @@ export function stepProjectiles(
         reason: contact.kind,
       });
       const input = { projectile, contact, curve, impact, enemy };
-      if (contacts && contact.kind === 'body') contacts.add(input);
+      if (
+        contacts &&
+        contact.kind === 'body' &&
+        !actors.find(
+          (actor) =>
+            actor.body.motion.actor.participant.actorId === enemy.state.actor.participant.actorId,
+        )!.clock?.frozen
+      )
+        contacts.add(input);
       else {
         effects.push(...impactEffects(input, impactContext, true, !!projectile.deflection));
         removeImpact(input, impactContext);
       }
-    } else if (step + 1 === projectile.launchStep + shape.lifetimeSteps) {
+    } else if (age + 1 === shape.lifetimeSteps) {
       changes.remove.push({ id: projectile.id, subtimeMicros: 1_000_000, reason: 'expired' });
       journal.emit({
         kind: 'projectile-remove',
@@ -124,6 +157,12 @@ export function stepProjectiles(
         id: projectile.id,
         position: { ...curve.next.position },
         velocity: { ...curve.next.velocity },
+        ...(projectile.clock
+          ? {
+              clock: displayProjectile(curve.next).clock,
+              endStep: displayProjectile(curve.next).endStep,
+            }
+          : {}),
       });
     }
   }

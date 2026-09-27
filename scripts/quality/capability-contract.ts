@@ -103,6 +103,11 @@ function attack(
  * bespoke visual effects need their own assertions, not a new unconditional exemption.
  */
 export const CAPABILITY_COVERAGE = {
+  'effect:defeat': effect(
+    'defeat',
+    'concepts.test.ts',
+    'resolves defeat before finite protection and revival with engine-free replay',
+  ),
   'effect:damage': effect(
     'damage',
     'effects.test.ts',

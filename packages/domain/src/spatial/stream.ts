@@ -1,3 +1,4 @@
+import { ClockDisplaySchema } from './clocks.ts';
 import { BodyPhasingSchema } from './phasing-display.ts';
 import { MAX_BATTLE_STEPS } from './contracts.ts';
 import { SpatialShapeSchema, SpatialSelectorsSchema } from './spatial-operations.ts';
@@ -84,7 +85,7 @@ export const StatusDisplaySchema = z.strictObject({
   flightStaminaPerSecond: z.number().int().min(0).max(1_000_000).optional(),
   revision: RefSchema,
   startStep: step,
-  endStep: z.number().int().min(1).max(12000),
+  endStep: z.number().int().min(1).max(12300),
   stacks: z.number().int().min(1).max(32),
 });
 export const ActionDisplaySchema = z.strictObject({
@@ -98,6 +99,8 @@ export const ActionDisplaySchema = z.strictObject({
   stage: StageDisplaySchema.optional(),
 });
 export const ActorDisplaySchema = z.strictObject({
+  clock: ClockDisplaySchema.optional(),
+  forceSchedule: z.array(ForceContributionSchema).max(256).optional(),
   phasing: BodyPhasingSchema.nullable().optional(),
   id: IdSchema,
   position: PhysicalVectorSchema,
@@ -113,6 +116,7 @@ export const ActorDisplaySchema = z.strictObject({
     .optional(),
   reactions: z.array(ReactionDisplaySchema).max(160).optional(),
   revivals: z.number().int().min(0).max(4).optional(),
+  immortalityUsed: z.number().int().min(0).max(4).optional(),
   force: z
     .strictObject({
       fromStep: step,
@@ -144,6 +148,7 @@ export type ActorDisplay = z.infer<typeof ActorDisplaySchema>;
 export const ActorDeltaSchema = ActorDisplaySchema.partial().required({ id: true });
 export type ActorDelta = z.infer<typeof ActorDeltaSchema>;
 export const ProjectileDisplaySchema = z.strictObject({
+  clock: ClockDisplaySchema.optional(),
   id: IdSchema,
   ownerId: IdSchema,
   abilityId: IdSchema,
@@ -151,7 +156,7 @@ export const ProjectileDisplaySchema = z.strictObject({
   velocity: PhysicalVectorSchema,
   radiusMm: z.number().int().min(1).max(5000),
   launchStep: step,
-  endStep: z.number().int().min(1).max(12000),
+  endStep: z.number().int().min(1).max(12300),
   deflection: ProjectileDeflectionSchema.optional(),
   stage: StageContactSchema.optional(),
 });
@@ -160,7 +165,12 @@ export const ProjectileDeltaSchema = ProjectileDisplaySchema.pick({
   id: true,
   position: true,
   velocity: true,
-}).extend({ ownerId: IdSchema.optional(), deflection: ProjectileDeflectionSchema.optional() });
+}).extend({
+  ownerId: IdSchema.optional(),
+  deflection: ProjectileDeflectionSchema.optional(),
+  clock: ClockDisplaySchema.optional(),
+  endStep: z.number().int().min(1).max(12300).optional(),
+});
 export const ProjectileChangesSchema = z.strictObject({
   spawn: z.array(ProjectileDisplaySchema).max(2),
   update: z.array(ProjectileDeltaSchema).max(256),
@@ -189,7 +199,7 @@ export const SpatialObjectDisplaySchema = z
     cause: IdSchema,
     launchStep: step,
     activeFrom: step,
-    endStep: z.number().int().min(1).max(12000),
+    endStep: z.number().int().min(1).max(12300),
     position: PhysicalVectorSchema,
     attachment: z.enum(['fixed', 'follow']),
     stage: StageContactSchema.optional(),
@@ -249,6 +259,10 @@ export type DisplayState = z.infer<typeof DisplayStateSchema>;
 export const StreamRecordSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('initial'),
+    requiredFeatures: z
+      .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1']))
+      .length(2)
+      .optional(),
     schemaVersion: z.literal(1),
     step: z.literal(0),
     state: DisplayStateSchema,

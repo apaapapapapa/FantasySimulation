@@ -1,3 +1,4 @@
+import { projectClockStamp } from '../clocks.ts';
 import { stageWindow, actionActiveUntil } from '../combat-derivations.ts';
 import type { DeepReadonly } from '../canonical.ts';
 import type { StageContact } from '../contracts.ts';
@@ -65,8 +66,8 @@ export function validateStage(
           motion.kind === configured.kind &&
           motion.speedMmPerSecond === configured.speedMmPerSecond &&
           motion.accelerationMmPerSecond2 === configured.accelerationMmPerSecond2 &&
-          motion.fromStep >= action.stage.startAt &&
-          motion.fromStep < action.stage.endAt &&
+          projectClockStamp(actor.clock, motion.fromStep, step) >= action.stage.startAt &&
+          projectClockStamp(actor.clock, motion.fromStep, step) < action.stage.endAt &&
           motion.fromStep < step &&
           (!actor.force?.active || motion.fromStep !== actor.force.fromStep || !motion.applied),
         'stage motion reference/time',

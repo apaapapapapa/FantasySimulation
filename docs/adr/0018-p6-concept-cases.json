@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "status": "proposed-design-only",
-  "implemented": false,
+  "status": "implemented",
+  "implemented": true,
   "baseline": "39c769091133dc94907f7090dead65d052e3d383",
-  "scope": "ADR0018 proposal. Not runtime config, engine fixtures, measured capacity, corpus or production interference coverage.",
+  "scope": "ADR0018 independent expectations and bounded acceptance requirements. Execution bindings are reviewed corpus tests; this file does not configure the runtime.",
   "limits": {
     "stop": {
       "minDurationGlobalIntervals": 1,
@@ -593,5 +593,112 @@
       "given": "Clock projection, missing feature declaration, duplicate release/consumption, missing checkpoint descriptor.",
       "expected": "Engine-free validation rejects inconsistency; projections never expire state; consumed and pending are exclusive; global release-only ordering is monotone."
     }
+  },
+  "perceptionConcepts": {
+    "absoluteHit": "no-error aim only; two PRNG draws; range/geometry/occlusion/delayed aim retained",
+    "evasion": "whole hostile contact; optional categories AND elements; effective finite status; after before-hit payment; excludes self/environment/periodic effects",
+    "readFields": ["health ratio bucket", "declared-action ID/phase or null"],
+    "readTiming": {
+      "maxDelaySteps": 500,
+      "maxDurationSteps": 1000,
+      "delayIncludesObserverReaction": true,
+      "clock": "observer cognition"
+    },
+    "precision": "positive bounded basis-point buckets; high clipped at 10000",
+    "occlusion": "vision only; revealWardBps must be strictly lower than powerBps",
+    "excluded": ["future RNG", "uncommitted decisions", "unrestricted private state"]
+  },
+  "executionBindings": {
+    "C1": ["battle-repeat-enumeration", "p6-recovery-13", "concept-identity"],
+    "C2": [
+      "concept-clock-status",
+      "concept-clock-shot",
+      "concept-clock-cast",
+      "concept-clock-motion",
+      "concept-ordered-pairs",
+      "concept-global-area",
+      "concept-global-beam",
+      "concept-global-barrier",
+      "concept-attached-thaw"
+    ],
+    "C3": ["concept-phasing-safety", "p6-phase-exit", "concept-clock-control"],
+    "C4": ["concept-stop-opposing", "concept-stop-immunity", "concept-clock-reserve"],
+    "C5": ["concept-stop-duration", "concept-stop-geometry"],
+    "C6": [
+      "concept-stop-geometry",
+      "concept-stop-probe",
+      "concept-stop-revive-false",
+      "concept-stop-revive-true"
+    ],
+    "C7": [
+      "concept-allocation",
+      "concept-stop-probe",
+      "concept-stop-terminal",
+      "concept-stop-rollback",
+      "concept-stop-revive-false",
+      "concept-stop-revive-true"
+    ],
+    "C8": [
+      "concept-stop-spatial",
+      "concept-ordered-pairs",
+      "concept-stop-range-forward",
+      "concept-stop-range-backward"
+    ],
+    "C9": [
+      "concept-stop-one",
+      "concept-clock-control",
+      "concept-clock-reserve",
+      "concept-stop-terminal"
+    ],
+    "C10": [
+      "concept-clock-stamps",
+      "concept-clock-shot",
+      "p6-deflection-09",
+      "concept-clock-future",
+      "concept-clock-force-binding"
+    ],
+    "C11": ["concept-clock-motion", "concept-attached-thaw"],
+    "C12": ["concept-stop-geometry"],
+    "C13": ["concept-clock-control", "concept-stop-immunity"],
+    "D1": ["concept-settlement", "concept-ordered-pairs"],
+    "D2": ["concept-allocation", "concept-settlement"],
+    "D3": ["concept-allocation", "concept-settlement"],
+    "D4": [
+      "concept-predicate",
+      "concept-return",
+      "concept-ordered-pairs",
+      "concept-status-predicate"
+    ],
+    "D5": ["concept-allocation", "concept-return", "concept-stop-probe"],
+    "D6": ["concept-allocation", "p6-recovery-02", "p6-recovery-04"],
+    "I1": ["concept-multiple", "concept-lifecycle-four", "concept-stop-terminal"],
+    "I2": ["concept-lifecycle-one", "concept-lifecycle-four"],
+    "I3": ["concept-allocation"],
+    "I4": ["concept-allocation", "concept-stop-rollback"],
+    "I5": ["concept-closure", "concept-lifecycle-one", "concept-lifecycle-four"],
+    "X1": ["concept-admission", "concept-closure", "concept-manual-league"],
+    "X2": ["concept-ordered-pairs"],
+    "X3": [
+      "concept-stop-contacts",
+      "concept-stop-operations",
+      "concept-stop-bytes",
+      "concept-stop-byte-overflow",
+      "concept-stop-cumulative",
+      "concept-stop-rollback"
+    ],
+    "X4": [
+      "concept-identity",
+      "concept-stop-rollback",
+      "concept-persistence",
+      "concept-stop-persistence",
+      "concept-stop-player"
+    ],
+    "X5": ["concept-read", "concept-read-private", "concept-stop-player"],
+    "X6": [
+      "concept-clock-stamps",
+      "concept-stop-invalid",
+      "concept-stop-terminal",
+      "concept-clock-force-binding"
+    ]
   }
 }

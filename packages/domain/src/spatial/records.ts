@@ -1,3 +1,4 @@
+import { StopRecordSchema } from './clocks.ts';
 import { MAX_BATTLE_STEPS } from './contracts.ts';
 import { z } from 'zod';
 import {
@@ -7,6 +8,8 @@ import {
   IdSchema,
   StageContactSchema,
   ReactionPointSchema,
+  RefSchema,
+  EffectSchema,
 } from './contracts.ts';
 import { CognitionSchema } from './cognition.ts';
 import { InterferencesSchema, TruncationDetailsSchema } from './interference-records.ts';
@@ -85,6 +88,19 @@ export const ProjectileDeflectionSchema = z.strictObject({
     .max(64),
 });
 export type ProjectileDeflection = z.infer<typeof ProjectileDeflectionSchema>;
+export const DeferredEffectSchema = z.strictObject({
+  id: IdSchema,
+  controlId: IdSchema,
+  capturedAt: step,
+  actorId: IdSchema,
+  targetId: IdSchema,
+  abilityId: IdSchema,
+  effect: EffectSchema,
+  sourceActorId: IdSchema.optional(),
+  sourceProjectileId: IdSchema.optional(),
+  deflection: ProjectileDeflectionSchema.optional(),
+});
+export type DeferredEffect = z.infer<typeof DeferredEffectSchema>;
 export const EventSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
@@ -120,6 +136,10 @@ export const EventSchema = z
       'force',
       'reaction',
       'revival',
+      'defeat',
+      'immortality',
+      'evasion',
+      'time-stop',
       'teleport',
     ]),
     actorId: IdSchema.nullable(),
@@ -175,6 +195,20 @@ export const EventSchema = z
     force: ForceContributionSchema.optional(),
     reaction: ReactionContextSchema.optional(),
     revival: z.strictObject({ use: z.number().int().min(1).max(4) }).optional(),
+    defeat: z
+      .strictObject({
+        applied: z.boolean(),
+        reason: z.enum(['accepted', 'immune', 'condition', 'already-defeated']),
+      })
+      .optional(),
+    immortality: z
+      .strictObject({ use: z.number().int().min(1).max(4), status: RefSchema })
+      .optional(),
+    timeStop: StopRecordSchema.extend({
+      captured: z.array(DeferredEffectSchema).max(4096).optional(),
+    }).optional(),
+    deferrals: z.array(IdSchema).min(1).max(16).optional(),
+    evasion: z.strictObject({ statuses: z.array(RefSchema).min(1).max(64) }).optional(),
     teleport: z.strictObject({ from: PhysicalVectorSchema, to: PhysicalVectorSchema }).optional(),
     wave: z.number().int().min(0).max(8).optional(),
     sourceActorId: IdSchema.optional(),
@@ -182,6 +216,44 @@ export const EventSchema = z
     projectileDeflection: ProjectileDeflectionSchema.optional(),
   })
   .superRefine((event, ctx) => {
+    if (
+      (event.kind === 'time-stop') !== !!event.timeStop ||
+      (event.timeStop && (!event.actorId || !event.targetId || event.actorId === event.targetId))
+    )
+      ctx.addIssue({ code: 'custom', message: 'Time stop requires opposing source and target' });
+    if (
+      (event.kind === 'evasion') !== !!event.evasion ||
+      (event.evasion && (!event.actorId || !event.targetId || event.actorId === event.targetId))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Evasion requires opposing contact actors and status references',
+      });
+    if (
+      (event.kind === 'defeat') !== !!event.defeat ||
+      (event.defeat &&
+        (!event.targetId ||
+          !event.actorId ||
+          !event.abilityId ||
+          event.defeat.applied !== (event.defeat.reason === 'accepted')))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Defeat requires a contact and explicit request result',
+      });
+    if (
+      (event.kind === 'immortality') !== !!event.immortality ||
+      (event.immortality &&
+        (!event.actorId ||
+          event.actorId !== event.targetId ||
+          !event.before ||
+          event.before.hp < 1 ||
+          event.after?.hp !== 1))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Immortality requires a living owner and HP1 transition',
+      });
     if (
       (event.kind === 'revival') !== !!event.revival ||
       (event.revival &&

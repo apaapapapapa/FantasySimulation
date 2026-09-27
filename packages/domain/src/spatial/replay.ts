@@ -1,7 +1,8 @@
+import { StopReplaySchema } from './clocks.ts';
 import { MAX_BATTLE_STEPS, MAX_FRAME_BYTES } from './contracts.ts';
 import { z } from 'zod';
 import { HashSchema, IdSchema, StoredManifestSchema } from './contracts.ts';
-import { ResultSchema } from './records.ts';
+import { DeferredEffectSchema, ResultSchema } from './records.ts';
 import { DisplayStateSchema, StreamRecordSchema } from './stream.ts';
 import { fail } from './replay-validation/common.ts';
 export { ReplayValidationError } from './replay-validation/common.ts';
@@ -13,8 +14,14 @@ export type RecordedManifest = z.infer<typeof RecordedManifestSchema>;
 export { eventHashLine, trajectoryHashLine } from './record-hashes.ts';
 export const MAX_RECORD_BYTES = MAX_FRAME_BYTES + 1;
 const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
-const recordIndex = z.number().int().min(0).max(12002);
+const recordIndex = z.number().int().min(0).max(12003);
 export const ReplayCheckpointSchema = z.strictObject({
+  stop: StopReplaySchema.optional(),
+  requiredFeatures: z
+    .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1']))
+    .length(2)
+    .optional(),
+  deferred: z.array(DeferredEffectSchema).max(4096).optional(),
   schemaVersion: z.literal(1),
   simulationHash: HashSchema,
   step,
@@ -49,7 +56,7 @@ export const ReplayChunkSchema = z.strictObject({
   ...ArtifactRefSchema.shape,
   index: recordIndex,
   firstRecord: recordIndex,
-  records: z.number().int().min(1).max(12002),
+  records: z.number().int().min(1).max(12003),
   fromStep: step,
   toStep: step,
   checkpoint: recordIndex,
@@ -100,8 +107,8 @@ export const ReplayManifestSchema = z
     eventHash: HashSchema,
     trajectoryHash: HashSchema,
     end: ReplayEndSchema,
-    checkpoints: z.array(ReplayCheckpointRefSchema).max(12002),
-    chunks: z.array(ReplayChunkSchema).max(12002),
+    checkpoints: z.array(ReplayCheckpointRefSchema).max(12003),
+    chunks: z.array(ReplayChunkSchema).max(12003),
   })
   .superRefine((manifest, ctx) => {
     if ((manifest.end.kind === 'result') !== (manifest.resultId !== null))

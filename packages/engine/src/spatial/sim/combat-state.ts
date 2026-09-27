@@ -1,3 +1,4 @@
+import { clockDisplay, rebaseActorTimers } from '../rules/subject-clocks.ts';
 import { actionActiveUntil, attackActiveSteps } from '@fantasy/domain/spatial/execution';
 import type { ResolvedActor, ActorState } from '../state.ts';
 export type { AbilityRevision, ActionState, ActorState, MeleeState } from '../state.ts';
@@ -43,10 +44,12 @@ export function initialActor(world: SpatialWorld, actor: ResolvedActor): ActorSt
 }
 export const cloneActor = (state: ActorState): ActorState => ({
   ...state,
+  ...(state.clock ? { clock: structuredClone(state.clock) } : {}),
   body: {
     ...state.body,
     motion: {
       ...state.body.motion,
+      ...(state.body.motion.posture ? { posture: structuredClone(state.body.motion.posture) } : {}),
       ...(state.body.motion.phasing ? { phasing: structuredClone(state.body.motion.phasing) } : {}),
       position: { ...state.body.motion.position },
       velocity: { ...state.body.motion.velocity },
@@ -82,6 +85,11 @@ export const cloneActor = (state: ActorState): ActorState => ({
   statuses: state.statuses.map((status) => ({ ...status, causes: [...status.causes] })),
 });
 export function displayActor(state: ActorState, step: number): ActorDisplay {
+  const clock = clockDisplay(state, step);
+  if (state.clock?.frozen && step > state.clock.frozen.from) {
+    state = cloneActor(state);
+    rebaseActorTimers(state, step - state.clock!.frozen!.from, state.clock!.frozen!.from);
+  }
   const { motion } = state.body;
   const { action } = state.actions;
   const revivals = revivalAbilityIds(motion.actor.abilities);
@@ -89,6 +97,7 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
   const last = action?.ability.definition.stages?.at(-1);
   const active = action ? attackActiveSteps(action.ability.definition.attack) : 1;
   return {
+    ...(clock ? { clock, forceSchedule: structuredClone(state.body.forces ?? []) } : {}),
     id: motion.actor.participant.actorId,
     position: { ...motion.position },
     velocity: { ...motion.velocity },
@@ -111,6 +120,9 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
       ? { force: structuredClone(state.body.forceDisplay) }
       : {}),
     resources: { ...state.vitals.resources },
+    ...(state.vitals.immortalityUsed !== undefined
+      ? { immortalityUsed: state.vitals.immortalityUsed }
+      : {}),
     ...(state.body.locomotion ? { locomotion: { ...state.body.locomotion } } : {}),
     ...(revivals.length
       ? {
@@ -123,7 +135,7 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
         revision: s.revision.revision,
         contentHash: s.revision.contentHash,
       },
-      startStep: s.startStep,
+      startStep: s.globalStartStep ?? s.startStep,
       endStep: s.endStep,
       stacks: s.stacks,
       ...(s.flightStaminaPerSecond !== undefined && {
@@ -135,7 +147,7 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
         ? {
             id: action.id,
             abilityId: action.ability.id,
-            startedAt: action.startedAt,
+            startedAt: action.globalStartedAt ?? action.startedAt,
             launchAt: action.launchAt,
             recoveryUntil: action.recoveryUntil,
             ...(stage && last
@@ -162,6 +174,7 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
 export function decisionState(state: ActorState) {
   // Preserve the existing compact wire shape and TS-state digest after splitting runtime ownership.
   const { motion, statuses, action, ...rest } = {
+    ...(state.clock ? { clock: state.clock } : {}),
     ...state.body,
     ...state.vitals,
     ...state.actions,

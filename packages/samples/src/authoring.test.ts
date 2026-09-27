@@ -9,6 +9,7 @@ import teleport from '../../../data/content/p6-teleport-v1.json' with { type: 'j
 import objects from '../../../data/content/p6-spatial-objects-v1.json' with { type: 'json' };
 import phasing from '../../../data/content/p6-phasing-v1.json' with { type: 'json' };
 import revivalSealing from '../../../data/content/p6-revival-sealing-v1.json' with { type: 'json' };
+import concepts from '../../../data/content/p6-concepts-v1.json' with { type: 'json' };
 import { compileCatalog } from './authoring.ts';
 
 const sources = [
@@ -20,6 +21,7 @@ const sources = [
   ...objects,
   ...phasing,
   ...revivalSealing,
+  ...concepts,
 ];
 
 const copy = (revision: Revision, id: string) => {

@@ -7,7 +7,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/absolute-evasion"
         }
       ]
     },
@@ -17,7 +17,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/absolute-hit"
         }
       ]
     },
@@ -27,7 +27,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/apply-status"
         }
       ]
     },
@@ -37,7 +37,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/area"
         }
       ]
     },
@@ -47,7 +47,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/attribute-absorption"
         }
       ]
     },
@@ -57,7 +57,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/barrier"
         }
       ]
     },
@@ -67,7 +67,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/beam"
         }
       ]
     },
@@ -77,7 +77,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -87,7 +87,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/contact"
         }
       ]
     },
@@ -97,7 +97,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/counter"
         }
       ]
     },
@@ -107,7 +107,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/damage"
         }
       ]
     },
@@ -117,7 +117,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/dispel"
         }
       ]
     },
@@ -127,7 +127,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/drain"
         }
       ]
     },
@@ -137,7 +137,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/elemental-reaction"
         }
       ]
     },
@@ -147,7 +147,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -157,7 +157,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/flight"
         }
       ]
     },
@@ -167,7 +167,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/force"
         }
       ]
     },
@@ -177,7 +177,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -187,7 +187,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/heal"
         }
       ]
     },
@@ -197,7 +197,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/immortality"
         }
       ]
     },
@@ -207,7 +207,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/instant-death"
         }
       ]
     },
@@ -217,7 +217,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/mind-read"
         }
       ]
     },
@@ -227,7 +227,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/motion"
         }
       ]
     },
@@ -237,7 +237,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/parry"
         }
       ]
     },
@@ -247,7 +247,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/periodic"
         }
       ]
     },
@@ -257,7 +257,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/permanent"
         }
       ]
     },
@@ -267,7 +267,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/phasing"
         }
       ]
     },
@@ -277,7 +277,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -287,7 +287,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/projectile"
         }
       ]
     },
@@ -297,7 +297,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/projectile-deflection"
         }
       ]
     },
@@ -307,7 +307,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/reaction-effects"
         }
       ]
     },
@@ -317,7 +317,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/resource"
         }
       ]
     },
@@ -327,7 +327,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/reveal"
         }
       ]
     },
@@ -337,7 +337,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/revival"
         }
       ]
     },
@@ -347,7 +347,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/seal"
         }
       ]
     },
@@ -357,7 +357,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/shield"
         }
       ]
     },
@@ -367,7 +367,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/silence"
         }
       ]
     },
@@ -377,7 +377,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/stages"
         }
       ]
     },
@@ -387,7 +387,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/status-adjustment"
         }
       ]
     },
@@ -397,7 +397,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/teleport"
         }
       ]
     },
@@ -407,7 +407,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/time-stop"
         }
       ]
     },
@@ -417,7 +417,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -427,7 +427,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "absolute-evasion/visibility"
         }
       ]
     },
@@ -437,7 +437,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/absolute-evasion"
         }
       ]
     },
@@ -447,7 +447,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/absolute-hit"
         }
       ]
     },
@@ -457,7 +457,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/apply-status"
         }
       ]
     },
@@ -467,7 +467,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/area"
         }
       ]
     },
@@ -477,7 +477,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/attribute-absorption"
         }
       ]
     },
@@ -487,7 +487,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/barrier"
         }
       ]
     },
@@ -497,7 +497,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/beam"
         }
       ]
     },
@@ -507,7 +507,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -517,7 +517,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/contact"
         }
       ]
     },
@@ -527,7 +527,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/counter"
         }
       ]
     },
@@ -537,7 +537,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/damage"
         }
       ]
     },
@@ -547,7 +547,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/dispel"
         }
       ]
     },
@@ -557,7 +557,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/drain"
         }
       ]
     },
@@ -567,7 +567,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/elemental-reaction"
         }
       ]
     },
@@ -577,7 +577,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -587,7 +587,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/flight"
         }
       ]
     },
@@ -597,7 +597,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/force"
         }
       ]
     },
@@ -607,7 +607,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -617,7 +617,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/heal"
         }
       ]
     },
@@ -627,7 +627,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/immortality"
         }
       ]
     },
@@ -637,7 +637,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/instant-death"
         }
       ]
     },
@@ -647,7 +647,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/mind-read"
         }
       ]
     },
@@ -657,7 +657,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/motion"
         }
       ]
     },
@@ -667,7 +667,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/parry"
         }
       ]
     },
@@ -677,7 +677,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/periodic"
         }
       ]
     },
@@ -687,7 +687,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/permanent"
         }
       ]
     },
@@ -697,7 +697,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/phasing"
         }
       ]
     },
@@ -707,7 +707,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -717,7 +717,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/projectile"
         }
       ]
     },
@@ -727,7 +727,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/projectile-deflection"
         }
       ]
     },
@@ -737,7 +737,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/reaction-effects"
         }
       ]
     },
@@ -747,7 +747,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/resource"
         }
       ]
     },
@@ -757,7 +757,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/reveal"
         }
       ]
     },
@@ -767,7 +767,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/revival"
         }
       ]
     },
@@ -777,7 +777,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/seal"
         }
       ]
     },
@@ -787,7 +787,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/shield"
         }
       ]
     },
@@ -797,7 +797,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/silence"
         }
       ]
     },
@@ -807,7 +807,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/stages"
         }
       ]
     },
@@ -817,7 +817,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/status-adjustment"
         }
       ]
     },
@@ -827,7 +827,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/teleport"
         }
       ]
     },
@@ -837,7 +837,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/time-stop"
         }
       ]
     },
@@ -847,7 +847,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -857,7 +857,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "absolute-hit/visibility"
         }
       ]
     },
@@ -867,7 +867,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "apply-status/absolute-evasion"
         }
       ]
     },
@@ -877,7 +877,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "apply-status/absolute-hit"
         }
       ]
     },
@@ -1073,7 +1073,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "apply-status/immortality"
         }
       ]
     },
@@ -1083,7 +1083,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "apply-status/instant-death"
         }
       ]
     },
@@ -1093,7 +1093,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "apply-status/mind-read"
         }
       ]
     },
@@ -1287,7 +1287,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "apply-status/time-stop"
         }
       ]
     },
@@ -1317,7 +1317,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "area/absolute-evasion"
         }
       ]
     },
@@ -1327,7 +1327,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "area/absolute-hit"
         }
       ]
     },
@@ -1507,7 +1507,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "area/immortality"
         }
       ]
     },
@@ -1517,7 +1517,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "area/instant-death"
         }
       ]
     },
@@ -1527,7 +1527,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "area/mind-read"
         }
       ]
     },
@@ -1717,7 +1717,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "area/time-stop"
         }
       ]
     },
@@ -1747,7 +1747,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "attribute-absorption/absolute-evasion"
         }
       ]
     },
@@ -1757,7 +1757,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "attribute-absorption/absolute-hit"
         }
       ]
     },
@@ -1937,7 +1937,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "attribute-absorption/immortality"
         }
       ]
     },
@@ -1947,7 +1947,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "attribute-absorption/instant-death"
         }
       ]
     },
@@ -1957,7 +1957,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "attribute-absorption/mind-read"
         }
       ]
     },
@@ -2147,7 +2147,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "attribute-absorption/time-stop"
         }
       ]
     },
@@ -2177,7 +2177,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "barrier/absolute-evasion"
         }
       ]
     },
@@ -2187,7 +2187,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "barrier/absolute-hit"
         }
       ]
     },
@@ -2367,7 +2367,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "barrier/immortality"
         }
       ]
     },
@@ -2377,7 +2377,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "barrier/instant-death"
         }
       ]
     },
@@ -2387,7 +2387,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "barrier/mind-read"
         }
       ]
     },
@@ -2577,7 +2577,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "barrier/time-stop"
         }
       ]
     },
@@ -2607,7 +2607,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "beam/absolute-evasion"
         }
       ]
     },
@@ -2617,7 +2617,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "beam/absolute-hit"
         }
       ]
     },
@@ -2797,7 +2797,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "beam/immortality"
         }
       ]
     },
@@ -2807,7 +2807,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "beam/instant-death"
         }
       ]
     },
@@ -2817,7 +2817,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "beam/mind-read"
         }
       ]
     },
@@ -3007,7 +3007,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "beam/time-stop"
         }
       ]
     },
@@ -3467,7 +3467,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "contact/absolute-evasion"
         }
       ]
     },
@@ -3477,7 +3477,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "contact/absolute-hit"
         }
       ]
     },
@@ -3657,7 +3657,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "contact/immortality"
         }
       ]
     },
@@ -3667,7 +3667,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "contact/instant-death"
         }
       ]
     },
@@ -3677,7 +3677,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "contact/mind-read"
         }
       ]
     },
@@ -3867,7 +3867,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "contact/time-stop"
         }
       ]
     },
@@ -3897,7 +3897,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "counter/absolute-evasion"
         }
       ]
     },
@@ -3907,7 +3907,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "counter/absolute-hit"
         }
       ]
     },
@@ -4087,7 +4087,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "counter/immortality"
         }
       ]
     },
@@ -4097,7 +4097,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "counter/instant-death"
         }
       ]
     },
@@ -4107,7 +4107,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "counter/mind-read"
         }
       ]
     },
@@ -4297,7 +4297,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "counter/time-stop"
         }
       ]
     },
@@ -4327,7 +4327,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "damage/absolute-evasion"
         }
       ]
     },
@@ -4337,7 +4337,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "damage/absolute-hit"
         }
       ]
     },
@@ -4517,7 +4517,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "damage/immortality"
         }
       ]
     },
@@ -4527,7 +4527,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "damage/instant-death"
         }
       ]
     },
@@ -4537,7 +4537,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "damage/mind-read"
         }
       ]
     },
@@ -4727,7 +4727,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "damage/time-stop"
         }
       ]
     },
@@ -4757,7 +4757,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "dispel/absolute-evasion"
         }
       ]
     },
@@ -4767,7 +4767,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "dispel/absolute-hit"
         }
       ]
     },
@@ -4947,7 +4947,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "dispel/immortality"
         }
       ]
     },
@@ -4957,7 +4957,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "dispel/instant-death"
         }
       ]
     },
@@ -4967,7 +4967,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "dispel/mind-read"
         }
       ]
     },
@@ -5157,7 +5157,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "dispel/time-stop"
         }
       ]
     },
@@ -5187,7 +5187,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "drain/absolute-evasion"
         }
       ]
     },
@@ -5197,7 +5197,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "drain/absolute-hit"
         }
       ]
     },
@@ -5377,7 +5377,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "drain/immortality"
         }
       ]
     },
@@ -5387,7 +5387,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "drain/instant-death"
         }
       ]
     },
@@ -5397,7 +5397,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "drain/mind-read"
         }
       ]
     },
@@ -5587,7 +5587,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "drain/time-stop"
         }
       ]
     },
@@ -5617,7 +5617,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "elemental-reaction/absolute-evasion"
         }
       ]
     },
@@ -5627,7 +5627,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "elemental-reaction/absolute-hit"
         }
       ]
     },
@@ -5827,7 +5827,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "elemental-reaction/immortality"
         }
       ]
     },
@@ -5837,7 +5837,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "elemental-reaction/instant-death"
         }
       ]
     },
@@ -5847,7 +5847,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "elemental-reaction/mind-read"
         }
       ]
     },
@@ -6041,7 +6041,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "elemental-reaction/time-stop"
         }
       ]
     },
@@ -6501,7 +6501,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "flight/absolute-evasion"
         }
       ]
     },
@@ -6511,7 +6511,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "flight/absolute-hit"
         }
       ]
     },
@@ -6691,7 +6691,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "flight/immortality"
         }
       ]
     },
@@ -6701,7 +6701,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "flight/instant-death"
         }
       ]
     },
@@ -6711,7 +6711,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "flight/mind-read"
         }
       ]
     },
@@ -6901,7 +6901,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "flight/time-stop"
         }
       ]
     },
@@ -6931,7 +6931,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "force/absolute-evasion"
         }
       ]
     },
@@ -6941,7 +6941,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "force/absolute-hit"
         }
       ]
     },
@@ -7121,7 +7121,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "force/immortality"
         }
       ]
     },
@@ -7131,7 +7131,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "force/instant-death"
         }
       ]
     },
@@ -7141,7 +7141,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "force/mind-read"
         }
       ]
     },
@@ -7331,7 +7331,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "force/time-stop"
         }
       ]
     },
@@ -7791,7 +7791,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "heal/absolute-evasion"
         }
       ]
     },
@@ -7801,7 +7801,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "heal/absolute-hit"
         }
       ]
     },
@@ -7981,7 +7981,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "heal/immortality"
         }
       ]
     },
@@ -7991,7 +7991,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "heal/instant-death"
         }
       ]
     },
@@ -8001,7 +8001,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "heal/mind-read"
         }
       ]
     },
@@ -8191,7 +8191,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "heal/time-stop"
         }
       ]
     },
@@ -8221,7 +8221,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/absolute-evasion"
         }
       ]
     },
@@ -8231,7 +8231,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/absolute-hit"
         }
       ]
     },
@@ -8241,7 +8241,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/apply-status"
         }
       ]
     },
@@ -8251,7 +8251,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/area"
         }
       ]
     },
@@ -8261,7 +8261,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/attribute-absorption"
         }
       ]
     },
@@ -8271,7 +8271,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/barrier"
         }
       ]
     },
@@ -8281,7 +8281,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/beam"
         }
       ]
     },
@@ -8291,7 +8291,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -8301,7 +8301,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/contact"
         }
       ]
     },
@@ -8311,7 +8311,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/counter"
         }
       ]
     },
@@ -8321,7 +8321,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/damage"
         }
       ]
     },
@@ -8331,7 +8331,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/dispel"
         }
       ]
     },
@@ -8341,7 +8341,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/drain"
         }
       ]
     },
@@ -8351,7 +8351,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/elemental-reaction"
         }
       ]
     },
@@ -8361,7 +8361,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -8371,7 +8371,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/flight"
         }
       ]
     },
@@ -8381,7 +8381,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/force"
         }
       ]
     },
@@ -8391,7 +8391,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -8401,7 +8401,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/heal"
         }
       ]
     },
@@ -8411,7 +8411,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/immortality"
         }
       ]
     },
@@ -8421,7 +8421,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/instant-death"
         }
       ]
     },
@@ -8431,7 +8431,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/mind-read"
         }
       ]
     },
@@ -8441,7 +8441,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/motion"
         }
       ]
     },
@@ -8451,7 +8451,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/parry"
         }
       ]
     },
@@ -8461,7 +8461,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/periodic"
         }
       ]
     },
@@ -8471,7 +8471,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/permanent"
         }
       ]
     },
@@ -8481,7 +8481,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/phasing"
         }
       ]
     },
@@ -8491,7 +8491,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -8501,7 +8501,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/projectile"
         }
       ]
     },
@@ -8511,7 +8511,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/projectile-deflection"
         }
       ]
     },
@@ -8521,7 +8521,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/reaction-effects"
         }
       ]
     },
@@ -8531,7 +8531,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/resource"
         }
       ]
     },
@@ -8541,7 +8541,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/reveal"
         }
       ]
     },
@@ -8551,7 +8551,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/revival"
         }
       ]
     },
@@ -8561,7 +8561,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/seal"
         }
       ]
     },
@@ -8571,7 +8571,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/shield"
         }
       ]
     },
@@ -8581,7 +8581,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/silence"
         }
       ]
     },
@@ -8591,7 +8591,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/stages"
         }
       ]
     },
@@ -8601,7 +8601,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/status-adjustment"
         }
       ]
     },
@@ -8611,7 +8611,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/teleport"
         }
       ]
     },
@@ -8621,7 +8621,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/time-stop"
         }
       ]
     },
@@ -8631,7 +8631,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -8641,7 +8641,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "immortality/visibility"
         }
       ]
     },
@@ -8651,7 +8651,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/absolute-evasion"
         }
       ]
     },
@@ -8661,7 +8661,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/absolute-hit"
         }
       ]
     },
@@ -8671,7 +8671,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/apply-status"
         }
       ]
     },
@@ -8681,7 +8681,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/area"
         }
       ]
     },
@@ -8691,7 +8691,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/attribute-absorption"
         }
       ]
     },
@@ -8701,7 +8701,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/barrier"
         }
       ]
     },
@@ -8711,7 +8711,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/beam"
         }
       ]
     },
@@ -8721,7 +8721,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -8731,7 +8731,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/contact"
         }
       ]
     },
@@ -8741,7 +8741,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/counter"
         }
       ]
     },
@@ -8751,7 +8751,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/damage"
         }
       ]
     },
@@ -8761,7 +8761,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/dispel"
         }
       ]
     },
@@ -8771,7 +8771,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/drain"
         }
       ]
     },
@@ -8781,7 +8781,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/elemental-reaction"
         }
       ]
     },
@@ -8791,7 +8791,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -8801,7 +8801,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/flight"
         }
       ]
     },
@@ -8811,7 +8811,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/force"
         }
       ]
     },
@@ -8821,7 +8821,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -8831,7 +8831,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/heal"
         }
       ]
     },
@@ -8841,7 +8841,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/immortality"
         }
       ]
     },
@@ -8851,7 +8851,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/instant-death"
         }
       ]
     },
@@ -8861,7 +8861,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/mind-read"
         }
       ]
     },
@@ -8871,7 +8871,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/motion"
         }
       ]
     },
@@ -8881,7 +8881,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/parry"
         }
       ]
     },
@@ -8891,7 +8891,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/periodic"
         }
       ]
     },
@@ -8901,7 +8901,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/permanent"
         }
       ]
     },
@@ -8911,7 +8911,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/phasing"
         }
       ]
     },
@@ -8921,7 +8921,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -8931,7 +8931,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/projectile"
         }
       ]
     },
@@ -8941,7 +8941,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/projectile-deflection"
         }
       ]
     },
@@ -8951,7 +8951,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/reaction-effects"
         }
       ]
     },
@@ -8961,7 +8961,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/resource"
         }
       ]
     },
@@ -8971,7 +8971,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/reveal"
         }
       ]
     },
@@ -8981,7 +8981,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/revival"
         }
       ]
     },
@@ -8991,7 +8991,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/seal"
         }
       ]
     },
@@ -9001,7 +9001,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/shield"
         }
       ]
     },
@@ -9011,7 +9011,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/silence"
         }
       ]
     },
@@ -9021,7 +9021,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/stages"
         }
       ]
     },
@@ -9031,7 +9031,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/status-adjustment"
         }
       ]
     },
@@ -9041,7 +9041,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/teleport"
         }
       ]
     },
@@ -9051,7 +9051,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/time-stop"
         }
       ]
     },
@@ -9061,7 +9061,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -9071,7 +9071,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "instant-death/visibility"
         }
       ]
     },
@@ -9081,7 +9081,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/absolute-evasion"
         }
       ]
     },
@@ -9091,7 +9091,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/absolute-hit"
         }
       ]
     },
@@ -9101,7 +9101,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/apply-status"
         }
       ]
     },
@@ -9111,7 +9111,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/area"
         }
       ]
     },
@@ -9121,7 +9121,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/attribute-absorption"
         }
       ]
     },
@@ -9131,7 +9131,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/barrier"
         }
       ]
     },
@@ -9141,7 +9141,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/beam"
         }
       ]
     },
@@ -9151,7 +9151,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -9161,7 +9161,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/contact"
         }
       ]
     },
@@ -9171,7 +9171,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/counter"
         }
       ]
     },
@@ -9181,7 +9181,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/damage"
         }
       ]
     },
@@ -9191,7 +9191,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/dispel"
         }
       ]
     },
@@ -9201,7 +9201,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/drain"
         }
       ]
     },
@@ -9211,7 +9211,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/elemental-reaction"
         }
       ]
     },
@@ -9221,7 +9221,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -9231,7 +9231,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/flight"
         }
       ]
     },
@@ -9241,7 +9241,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/force"
         }
       ]
     },
@@ -9251,7 +9251,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -9261,7 +9261,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/heal"
         }
       ]
     },
@@ -9271,7 +9271,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/immortality"
         }
       ]
     },
@@ -9281,7 +9281,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/instant-death"
         }
       ]
     },
@@ -9291,7 +9291,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/mind-read"
         }
       ]
     },
@@ -9301,7 +9301,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/motion"
         }
       ]
     },
@@ -9311,7 +9311,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/parry"
         }
       ]
     },
@@ -9321,7 +9321,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/periodic"
         }
       ]
     },
@@ -9331,7 +9331,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/permanent"
         }
       ]
     },
@@ -9341,7 +9341,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/phasing"
         }
       ]
     },
@@ -9351,7 +9351,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -9361,7 +9361,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/projectile"
         }
       ]
     },
@@ -9371,7 +9371,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/projectile-deflection"
         }
       ]
     },
@@ -9381,7 +9381,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/reaction-effects"
         }
       ]
     },
@@ -9391,7 +9391,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/resource"
         }
       ]
     },
@@ -9401,7 +9401,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/reveal"
         }
       ]
     },
@@ -9411,7 +9411,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/revival"
         }
       ]
     },
@@ -9421,7 +9421,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/seal"
         }
       ]
     },
@@ -9431,7 +9431,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/shield"
         }
       ]
     },
@@ -9441,7 +9441,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/silence"
         }
       ]
     },
@@ -9451,7 +9451,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/stages"
         }
       ]
     },
@@ -9461,7 +9461,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/status-adjustment"
         }
       ]
     },
@@ -9471,7 +9471,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/teleport"
         }
       ]
     },
@@ -9481,7 +9481,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/time-stop"
         }
       ]
     },
@@ -9491,7 +9491,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -9501,7 +9501,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "mind-read/visibility"
         }
       ]
     },
@@ -9511,7 +9511,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "motion/absolute-evasion"
         }
       ]
     },
@@ -9521,7 +9521,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "motion/absolute-hit"
         }
       ]
     },
@@ -9701,7 +9701,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "motion/immortality"
         }
       ]
     },
@@ -9711,7 +9711,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "motion/instant-death"
         }
       ]
     },
@@ -9721,7 +9721,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "motion/mind-read"
         }
       ]
     },
@@ -9911,7 +9911,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "motion/time-stop"
         }
       ]
     },
@@ -9941,7 +9941,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "parry/absolute-evasion"
         }
       ]
     },
@@ -9951,7 +9951,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "parry/absolute-hit"
         }
       ]
     },
@@ -10131,7 +10131,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "parry/immortality"
         }
       ]
     },
@@ -10141,7 +10141,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "parry/instant-death"
         }
       ]
     },
@@ -10151,7 +10151,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "parry/mind-read"
         }
       ]
     },
@@ -10341,7 +10341,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "parry/time-stop"
         }
       ]
     },
@@ -10371,7 +10371,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "periodic/absolute-evasion"
         }
       ]
     },
@@ -10381,7 +10381,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "periodic/absolute-hit"
         }
       ]
     },
@@ -10561,7 +10561,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "periodic/immortality"
         }
       ]
     },
@@ -10571,7 +10571,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "periodic/instant-death"
         }
       ]
     },
@@ -10581,7 +10581,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "periodic/mind-read"
         }
       ]
     },
@@ -10771,7 +10771,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "periodic/time-stop"
         }
       ]
     },
@@ -10801,7 +10801,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "permanent/absolute-evasion"
         }
       ]
     },
@@ -10811,7 +10811,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "permanent/absolute-hit"
         }
       ]
     },
@@ -10999,7 +10999,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "permanent/immortality"
         }
       ]
     },
@@ -11009,7 +11009,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "permanent/instant-death"
         }
       ]
     },
@@ -11019,7 +11019,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "permanent/mind-read"
         }
       ]
     },
@@ -11209,7 +11209,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "permanent/time-stop"
         }
       ]
     },
@@ -11239,7 +11239,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "phasing/absolute-evasion"
         }
       ]
     },
@@ -11249,7 +11249,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "phasing/absolute-hit"
         }
       ]
     },
@@ -11429,7 +11429,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "phasing/immortality"
         }
       ]
     },
@@ -11439,7 +11439,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "phasing/instant-death"
         }
       ]
     },
@@ -11449,7 +11449,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "phasing/mind-read"
         }
       ]
     },
@@ -11639,7 +11639,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "phasing/time-stop"
         }
       ]
     },
@@ -12099,7 +12099,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "projectile/absolute-evasion"
         }
       ]
     },
@@ -12109,7 +12109,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "projectile/absolute-hit"
         }
       ]
     },
@@ -12289,7 +12289,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "projectile/immortality"
         }
       ]
     },
@@ -12299,7 +12299,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "projectile/instant-death"
         }
       ]
     },
@@ -12309,7 +12309,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "projectile/mind-read"
         }
       ]
     },
@@ -12499,7 +12499,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "projectile/time-stop"
         }
       ]
     },
@@ -12529,7 +12529,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "projectile-deflection/absolute-evasion"
         }
       ]
     },
@@ -12539,7 +12539,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "projectile-deflection/absolute-hit"
         }
       ]
     },
@@ -12719,7 +12719,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "projectile-deflection/immortality"
         }
       ]
     },
@@ -12729,7 +12729,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "projectile-deflection/instant-death"
         }
       ]
     },
@@ -12739,7 +12739,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "projectile-deflection/mind-read"
         }
       ]
     },
@@ -12929,7 +12929,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "projectile-deflection/time-stop"
         }
       ]
     },
@@ -12959,7 +12959,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "reaction-effects/absolute-evasion"
         }
       ]
     },
@@ -12969,7 +12969,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "reaction-effects/absolute-hit"
         }
       ]
     },
@@ -13149,7 +13149,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "reaction-effects/immortality"
         }
       ]
     },
@@ -13159,7 +13159,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "reaction-effects/instant-death"
         }
       ]
     },
@@ -13169,7 +13169,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "reaction-effects/mind-read"
         }
       ]
     },
@@ -13359,7 +13359,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "reaction-effects/time-stop"
         }
       ]
     },
@@ -13389,7 +13389,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "resource/absolute-evasion"
         }
       ]
     },
@@ -13399,7 +13399,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "resource/absolute-hit"
         }
       ]
     },
@@ -13579,7 +13579,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "resource/immortality"
         }
       ]
     },
@@ -13589,7 +13589,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "resource/instant-death"
         }
       ]
     },
@@ -13599,7 +13599,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "resource/mind-read"
         }
       ]
     },
@@ -13789,7 +13789,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "resource/time-stop"
         }
       ]
     },
@@ -13819,7 +13819,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "reveal/absolute-evasion"
         }
       ]
     },
@@ -13829,7 +13829,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "reveal/absolute-hit"
         }
       ]
     },
@@ -14009,7 +14009,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "reveal/immortality"
         }
       ]
     },
@@ -14019,7 +14019,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "reveal/instant-death"
         }
       ]
     },
@@ -14029,7 +14029,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "reveal/mind-read"
         }
       ]
     },
@@ -14219,7 +14219,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "reveal/time-stop"
         }
       ]
     },
@@ -14249,7 +14249,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "revival/absolute-evasion"
         }
       ]
     },
@@ -14259,7 +14259,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "revival/absolute-hit"
         }
       ]
     },
@@ -14439,7 +14439,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "revival/immortality"
         }
       ]
     },
@@ -14449,7 +14449,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "revival/instant-death"
         }
       ]
     },
@@ -14459,7 +14459,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "revival/mind-read"
         }
       ]
     },
@@ -14649,7 +14649,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "revival/time-stop"
         }
       ]
     },
@@ -14679,7 +14679,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "seal/absolute-evasion"
         }
       ]
     },
@@ -14689,7 +14689,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "seal/absolute-hit"
         }
       ]
     },
@@ -14869,7 +14869,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "seal/immortality"
         }
       ]
     },
@@ -14879,7 +14879,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "seal/instant-death"
         }
       ]
     },
@@ -14889,7 +14889,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "seal/mind-read"
         }
       ]
     },
@@ -15079,7 +15079,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "seal/time-stop"
         }
       ]
     },
@@ -15109,7 +15109,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "shield/absolute-evasion"
         }
       ]
     },
@@ -15119,7 +15119,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "shield/absolute-hit"
         }
       ]
     },
@@ -15299,7 +15299,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "shield/immortality"
         }
       ]
     },
@@ -15309,7 +15309,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "shield/instant-death"
         }
       ]
     },
@@ -15319,7 +15319,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "shield/mind-read"
         }
       ]
     },
@@ -15509,7 +15509,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "shield/time-stop"
         }
       ]
     },
@@ -15539,7 +15539,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "silence/absolute-evasion"
         }
       ]
     },
@@ -15549,7 +15549,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "silence/absolute-hit"
         }
       ]
     },
@@ -15729,7 +15729,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "silence/immortality"
         }
       ]
     },
@@ -15739,7 +15739,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "silence/instant-death"
         }
       ]
     },
@@ -15749,7 +15749,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "silence/mind-read"
         }
       ]
     },
@@ -15939,7 +15939,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "silence/time-stop"
         }
       ]
     },
@@ -15969,7 +15969,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "stages/absolute-evasion"
         }
       ]
     },
@@ -15979,7 +15979,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "stages/absolute-hit"
         }
       ]
     },
@@ -16159,7 +16159,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "stages/immortality"
         }
       ]
     },
@@ -16169,7 +16169,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "stages/instant-death"
         }
       ]
     },
@@ -16179,7 +16179,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "stages/mind-read"
         }
       ]
     },
@@ -16369,7 +16369,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "stages/time-stop"
         }
       ]
     },
@@ -16399,7 +16399,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "status-adjustment/absolute-evasion"
         }
       ]
     },
@@ -16409,7 +16409,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "status-adjustment/absolute-hit"
         }
       ]
     },
@@ -16589,7 +16589,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "status-adjustment/immortality"
         }
       ]
     },
@@ -16599,7 +16599,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "status-adjustment/instant-death"
         }
       ]
     },
@@ -16609,7 +16609,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "status-adjustment/mind-read"
         }
       ]
     },
@@ -16799,7 +16799,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "status-adjustment/time-stop"
         }
       ]
     },
@@ -16829,7 +16829,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "teleport/absolute-evasion"
         }
       ]
     },
@@ -16839,7 +16839,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "teleport/absolute-hit"
         }
       ]
     },
@@ -17019,7 +17019,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "teleport/immortality"
         }
       ]
     },
@@ -17029,7 +17029,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "teleport/instant-death"
         }
       ]
     },
@@ -17039,7 +17039,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "teleport/mind-read"
         }
       ]
     },
@@ -17229,7 +17229,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "teleport/time-stop"
         }
       ]
     },
@@ -17259,7 +17259,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/absolute-evasion"
         }
       ]
     },
@@ -17269,7 +17269,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/absolute-hit"
         }
       ]
     },
@@ -17279,7 +17279,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/apply-status"
         }
       ]
     },
@@ -17289,7 +17289,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/area"
         }
       ]
     },
@@ -17299,7 +17299,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/attribute-absorption"
         }
       ]
     },
@@ -17309,7 +17309,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/barrier"
         }
       ]
     },
@@ -17319,7 +17319,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/beam"
         }
       ]
     },
@@ -17329,7 +17329,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "reject.causality"
         }
       ]
     },
@@ -17339,7 +17339,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/contact"
         }
       ]
     },
@@ -17349,7 +17349,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/counter"
         }
       ]
     },
@@ -17359,7 +17359,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/damage"
         }
       ]
     },
@@ -17369,7 +17369,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/dispel"
         }
       ]
     },
@@ -17379,7 +17379,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/drain"
         }
       ]
     },
@@ -17389,7 +17389,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/elemental-reaction"
         }
       ]
     },
@@ -17399,7 +17399,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "reject.existence-erasure"
         }
       ]
     },
@@ -17409,7 +17409,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/flight"
         }
       ]
     },
@@ -17419,7 +17419,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/force"
         }
       ]
     },
@@ -17429,7 +17429,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "reject.foresight"
         }
       ]
     },
@@ -17439,7 +17439,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/heal"
         }
       ]
     },
@@ -17449,7 +17449,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/immortality"
         }
       ]
     },
@@ -17459,7 +17459,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/instant-death"
         }
       ]
     },
@@ -17469,7 +17469,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/mind-read"
         }
       ]
     },
@@ -17479,7 +17479,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/motion"
         }
       ]
     },
@@ -17489,7 +17489,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/parry"
         }
       ]
     },
@@ -17499,7 +17499,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/periodic"
         }
       ]
     },
@@ -17509,7 +17509,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/permanent"
         }
       ]
     },
@@ -17519,7 +17519,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/phasing"
         }
       ]
     },
@@ -17529,7 +17529,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "reject.piercing"
         }
       ]
     },
@@ -17539,7 +17539,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/projectile"
         }
       ]
     },
@@ -17549,7 +17549,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/projectile-deflection"
         }
       ]
     },
@@ -17559,7 +17559,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/reaction-effects"
         }
       ]
     },
@@ -17569,7 +17569,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/resource"
         }
       ]
     },
@@ -17579,7 +17579,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/reveal"
         }
       ]
     },
@@ -17589,7 +17589,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/revival"
         }
       ]
     },
@@ -17599,7 +17599,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/seal"
         }
       ]
     },
@@ -17609,7 +17609,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/shield"
         }
       ]
     },
@@ -17619,7 +17619,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/silence"
         }
       ]
     },
@@ -17629,7 +17629,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/stages"
         }
       ]
     },
@@ -17639,7 +17639,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/status-adjustment"
         }
       ]
     },
@@ -17649,7 +17649,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/teleport"
         }
       ]
     },
@@ -17659,7 +17659,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/time-stop"
         }
       ]
     },
@@ -17669,7 +17669,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "reject.universal-victory"
         }
       ]
     },
@@ -17679,7 +17679,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "time-stop/visibility"
         }
       ]
     },
@@ -18119,7 +18119,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-evasion"
+          "fixture": "visibility/absolute-evasion"
         }
       ]
     },
@@ -18129,7 +18129,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.absolute-hit"
+          "fixture": "visibility/absolute-hit"
         }
       ]
     },
@@ -18309,7 +18309,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.immortality"
+          "fixture": "visibility/immortality"
         }
       ]
     },
@@ -18319,7 +18319,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.instant-death"
+          "fixture": "visibility/instant-death"
         }
       ]
     },
@@ -18329,7 +18329,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.mind-read"
+          "fixture": "visibility/mind-read"
         }
       ]
     },
@@ -18519,7 +18519,7 @@
       "cases": [
         {
           "when": "always",
-          "fixture": "reject.time-stop"
+          "fixture": "visibility/time-stop"
         }
       ]
     },
@@ -18559,6 +18559,7 @@
     "objects": "p6.spatial-object-pairs",
     "phasing": "p6.phasing-pairs",
     "deflection": "deflection-pairs",
-    "revivalSealing": "p6-revival-seal-pairs"
+    "revivalSealing": "p6-revival-seal-pairs",
+    "concepts": "concept-ordered-pairs"
   }
 }

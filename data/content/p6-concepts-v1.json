@@ -1,0 +1,1123 @@
+[
+  {
+    "kind": "ability",
+    "id": "concept-bolt-v1",
+    "revision": 1,
+    "definition": {
+      "name": "概念弾",
+      "originalText": "実験用の有限な即着弾。",
+      "trigger": "action",
+      "categories": ["special"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 3,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 15,
+      "cooldownSteps": 20,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 0,
+          "element": "arcane",
+          "defense": "none"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "finite-defeat-v1",
+    "revision": 1,
+    "definition": {
+      "name": "終止の接触",
+      "originalText": "接触が成立すればHP0を要求する。耐性・有限不死・蘇生に従う。",
+      "trigger": "action",
+      "categories": ["special"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 20,
+        "uses": 2
+      },
+      "castSteps": 10,
+      "recoverySteps": 15,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "defeat"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "opponent-time-stop-v1",
+    "revision": 1,
+    "definition": {
+      "name": "対手の時間停止",
+      "originalText": "相手の主体時計を50区間停止。命中効果は解除時に一括解決する。",
+      "trigger": "action",
+      "categories": ["special"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 20,
+        "uses": 2
+      },
+      "castSteps": 5,
+      "recoverySteps": 15,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [],
+      "timeStop": {
+        "durationSteps": 50
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "no-error-shot-v1",
+    "revision": 1,
+    "definition": {
+      "name": "無誤差照準",
+      "originalText": "照準の乱数誤差がない。届いた観測位置を狙い、壁・射程・移動・接触回避の規則を守る。",
+      "trigger": "action",
+      "categories": ["special"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 3,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 15,
+      "cooldownSteps": 20,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 15000,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 0,
+          "element": "arcane",
+          "defense": "none"
+        }
+      ],
+      "accuracy": "no-error"
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "bounded-mind-read-v1",
+    "revision": 1,
+    "definition": {
+      "name": "有限の読心",
+      "originalText": "視線と鑑定防壁を越えたときだけ、HP比率10%幅と宣言済み行動を遅延して知る。",
+      "trigger": "action",
+      "categories": ["special"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 3,
+        "uses": 0
+      },
+      "castSteps": 5,
+      "recoverySteps": 15,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 20000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "reveal",
+          "field": "health",
+          "precisionBps": 1000,
+          "durationSteps": 100,
+          "delaySteps": 5,
+          "powerBps": 10000,
+          "occlusion": "vision"
+        },
+        {
+          "kind": "reveal",
+          "field": "declared-action",
+          "durationSteps": 100,
+          "delaySteps": 5,
+          "powerBps": 10000,
+          "occlusion": "vision"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "status",
+    "id": "finite-immortality-v1",
+    "revision": 1,
+    "definition": {
+      "name": "二度の有限不死",
+      "originalText": "実験用の有限な状態。封印・解除と期間に従う。",
+      "stackKey": "immortal",
+      "stacking": "refresh",
+      "durationSteps": 300,
+      "maxStacks": 1,
+      "categories": ["buff"],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [],
+      "immortality": {
+        "protections": 2
+      }
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "finite-immortality-v1-grant",
+    "revision": 1,
+    "definition": {
+      "name": "二度の有限不死",
+      "originalText": "開幕に自分へ有限状態を付与する。",
+      "trigger": "battle-start",
+      "categories": ["special"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 1
+      },
+      "castSteps": 0,
+      "recoverySteps": 15,
+      "cooldownSteps": 20,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "$ref": "status:finite-immortality-v1:1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "status",
+    "id": "finite-contact-evasion-v1",
+    "revision": 1,
+    "definition": {
+      "name": "有限の接触回避",
+      "originalText": "実験用の有限な状態。封印・解除と期間に従う。",
+      "stackKey": "finite-contact-evasion-v1",
+      "stacking": "refresh",
+      "durationSteps": 300,
+      "maxStacks": 1,
+      "categories": ["buff"],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [],
+      "evasion": {}
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "finite-contact-evasion-v1-grant",
+    "revision": 1,
+    "definition": {
+      "name": "有限の接触回避",
+      "originalText": "開幕に自分へ有限状態を付与する。",
+      "trigger": "battle-start",
+      "categories": ["special"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 1
+      },
+      "castSteps": 0,
+      "recoverySteps": 15,
+      "cooldownSteps": 20,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "$ref": "status:finite-contact-evasion-v1:1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "status",
+    "id": "concept-resistance-v1",
+    "revision": 1,
+    "definition": {
+      "name": "即死と時間停止への耐性",
+      "originalText": "実験用の有限な状態。封印・解除と期間に従う。",
+      "stackKey": "concept-resistance-v1",
+      "stacking": "refresh",
+      "durationSteps": 300,
+      "maxStacks": 1,
+      "categories": ["buff"],
+      "visibility": "visible",
+      "modifiers": {
+        "attack": 0,
+        "defense": 0,
+        "speedBps": 10000,
+        "flight": false,
+        "rooted": false
+      },
+      "periodic": [],
+      "defeatImmunity": true,
+      "stopImmunity": true
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "concept-resistance-v1-grant",
+    "revision": 1,
+    "definition": {
+      "name": "即死と時間停止への耐性",
+      "originalText": "開幕に自分へ有限状態を付与する。",
+      "trigger": "battle-start",
+      "categories": ["special"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 1
+      },
+      "castSteps": 0,
+      "recoverySteps": 15,
+      "cooldownSteps": 20,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [
+        {
+          "kind": "apply-status",
+          "status": {
+            "$ref": "status:concept-resistance-v1:1"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "death-mage-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "終止の術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "abilityId": "finite-defeat-v1",
+          "when": {
+            "kind": "always"
+          }
+        },
+        {
+          "abilityId": "concept-bolt-v1",
+          "when": {
+            "kind": "always"
+          }
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "character",
+    "id": "death-mage-v1",
+    "revision": 1,
+    "definition": {
+      "name": "終止の術師",
+      "originalText": "P6実験能力の検証用。標準の公式リーグには参加しない。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:finite-defeat-v1:1"
+        },
+        {
+          "$ref": "ability:concept-bolt-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:death-mage-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "immortal-warden-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "二度耐える守護者の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "abilityId": "concept-bolt-v1",
+          "when": {
+            "kind": "always"
+          }
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "character",
+    "id": "immortal-warden-v1",
+    "revision": 1,
+    "definition": {
+      "name": "二度耐える守護者",
+      "originalText": "P6実験能力の検証用。標準の公式リーグには参加しない。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:finite-immortality-v1-grant:1"
+        },
+        {
+          "$ref": "ability:concept-bolt-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:immortal-warden-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "chronomancer-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "時を留める術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "abilityId": "opponent-time-stop-v1",
+          "when": {
+            "kind": "always"
+          }
+        },
+        {
+          "abilityId": "concept-bolt-v1",
+          "when": {
+            "kind": "always"
+          }
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "character",
+    "id": "chronomancer-v1",
+    "revision": 1,
+    "definition": {
+      "name": "時を留める術師",
+      "originalText": "P6実験能力の検証用。標準の公式リーグには参加しない。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:opponent-time-stop-v1:1"
+        },
+        {
+          "$ref": "ability:concept-bolt-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:chronomancer-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "unerring-mage-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "無誤差の射手の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "abilityId": "no-error-shot-v1",
+          "when": {
+            "kind": "always"
+          }
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "character",
+    "id": "unerring-mage-v1",
+    "revision": 1,
+    "definition": {
+      "name": "無誤差の射手",
+      "originalText": "P6実験能力の検証用。標準の公式リーグには参加しない。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:no-error-shot-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:unerring-mage-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "evasive-mage-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "接触をかわす術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "abilityId": "concept-bolt-v1",
+          "when": {
+            "kind": "always"
+          }
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "character",
+    "id": "evasive-mage-v1",
+    "revision": 1,
+    "definition": {
+      "name": "接触をかわす術師",
+      "originalText": "P6実験能力の検証用。標準の公式リーグには参加しない。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:finite-contact-evasion-v1-grant:1"
+        },
+        {
+          "$ref": "ability:concept-bolt-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:evasive-mage-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "mind-reader-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "有限の読心術師の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "abilityId": "bounded-mind-read-v1",
+          "when": {
+            "kind": "always"
+          }
+        },
+        {
+          "abilityId": "concept-bolt-v1",
+          "when": {
+            "kind": "always"
+          }
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "character",
+    "id": "mind-reader-v1",
+    "revision": 1,
+    "definition": {
+      "name": "有限の読心術師",
+      "originalText": "P6実験能力の検証用。標準の公式リーグには参加しない。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:bounded-mind-read-v1:1"
+        },
+        {
+          "$ref": "ability:concept-bolt-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:mind-reader-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "concept-warden-v1-policy",
+    "revision": 1,
+    "definition": {
+      "name": "概念耐性の守護者の方針",
+      "originalText": "条件を満たす優先行動と、観測に基づく移動",
+      "priorities": [
+        {
+          "abilityId": "concept-bolt-v1",
+          "when": {
+            "kind": "always"
+          }
+        }
+      ],
+      "movement": "hold",
+      "preferredDistanceMm": 7000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "character",
+    "id": "concept-warden-v1",
+    "revision": 1,
+    "definition": {
+      "name": "概念耐性の守護者",
+      "originalText": "P6実験能力の検証用。標準の公式リーグには参加しない。",
+      "stats": {
+        "hp": 90,
+        "mp": 400,
+        "attack": 20,
+        "defense": 5,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4000,
+        "accelerationMmPerSecond2": 12000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "$ref": "ability:concept-resistance-v1-grant:1"
+        },
+        {
+          "$ref": "ability:concept-bolt-v1:1"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "$ref": "policy:concept-warden-v1-policy:1"
+      }
+    }
+  },
+  {
+    "kind": "ruleset",
+    "id": "experimental-concepts-v1",
+    "revision": 1,
+    "definition": {
+      "name": "P6概念能力・実験",
+      "rulesVersion": "spatial-v1.22",
+      "ai": {
+        "profile": "observed-utility-v1",
+        "observation": "visible-coarse-v1",
+        "initialKnowledge": "empty-match-v1",
+        "random": "actor-purpose-rejection-v1",
+        "horizonSteps": 50,
+        "memorySamples": 32,
+        "knowledgeTtlSteps": 500,
+        "damageQuantum": 10,
+        "healthPrior": 200,
+        "explorationWeight": 60,
+        "riskWeight": 800,
+        "killWeight": 2400,
+        "actionWeight": 100,
+        "dodgeWeight": 600,
+        "appearancePriors": {
+          "defaultEfficacyBps": 7500,
+          "cues": [
+            {
+              "match": {
+                "surface": "red"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "fire",
+                  "bps": 6500
+                }
+              ]
+            },
+            {
+              "match": {
+                "surface": "blue"
+              },
+              "confidenceBps": 1000,
+              "efficacy": [
+                {
+                  "element": "ice",
+                  "bps": 6500
+                }
+              ]
+            }
+          ]
+        },
+        "slots": "simultaneous-v1",
+        "minimumCandidateWeightBps": 500,
+        "relativeImpactBps": [2500, 7500, 12500],
+        "reapplication": "self-observed-v1",
+        "groundEvasion": "posture-jump-v1",
+        "cover": "observed-threat-v1",
+        "search": {
+          "maxWaitSteps": 500,
+          "cellsPerSide": 5,
+          "revisitSteps": 500,
+          "lowSightMm": 100,
+          "goalTimeoutSteps": 150
+        }
+      },
+      "stepMs": 20,
+      "maxSteps": 6000,
+      "gravityMmPerSecond2": -9807,
+      "fallSafeSpeedMmPerSecond": 8000,
+      "fallDamagePerMeterPerSecond": 5,
+      "curveErrorMm": 1,
+      "bodyContact": "symmetric-stop",
+      "aoeOcclusion": "five-samples-equal-linear-v1",
+      "simultaneousConflict": "unresolved",
+      "experimental": {
+        "mechanics": [
+          "absolute-evasion",
+          "absolute-hit",
+          "immortality",
+          "instant-death",
+          "mind-read",
+          "time-stop"
+        ]
+      }
+    }
+  }
+]

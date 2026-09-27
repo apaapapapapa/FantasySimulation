@@ -1,6 +1,7 @@
 import type { ActorDisplay } from '../stream.ts';
 import type { ReplayActor, ReplayContext } from './context.ts';
 import { requireReplay, emittedId } from './common.ts';
+import { projectClockStamp } from '../clocks.ts';
 export function validateReactions(
   context: ReplayContext,
   actor: ActorDisplay,
@@ -31,7 +32,12 @@ export function validateReactions(
       !!response &&
         ability?.definition.trigger === reaction.context.point &&
         reaction.activatedAt <= step &&
-        reaction.readyAt === reaction.activatedAt &&
+        reaction.readyAt ===
+          projectClockStamp(
+            actor.clock,
+            reaction.activatedAt,
+            reaction.state === 'queued' ? step : reaction.readyAt,
+          ) &&
         reaction.recoveryUntil >= reaction.activatedAt + 2 &&
         reaction.cooldownUntil >= reaction.activatedAt &&
         context.actors.some((a) => a.participant.actorId === reaction.targetId) &&

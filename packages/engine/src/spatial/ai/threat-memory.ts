@@ -2,6 +2,7 @@ import type { DecisionView, PerceptionMemory, ThreatExperience, MotionState } fr
 import type { DeepReadonly, Effect } from '@fantasy/domain/spatial/execution';
 import { canSee, bodyPoint } from '../world/visibility.ts';
 import type { SpatialWorld } from '../world/physics.ts';
+import { observedAge } from '../rules/subject-clocks.ts';
 
 /** Self impacts and visible attack cues cross the same delayed, bounded memory boundary. */
 export function rememberThreat(
@@ -60,10 +61,17 @@ export function reapplicationEstimate(view: DecisionView, statusId: string, acti
           (e) => !e.statusId && e.sourceId === last.sourceId && e.element === last.element,
         )
       : [];
-  const samples = [...new Set(observations.map((e) => e.sampledAt))].sort((a, b) => a - b);
+  const samples = [
+    ...new Set(
+      observations.map((e) => view.step - observedAge(view.clock, e.sampledAt, view.step)),
+    ),
+  ].sort((a, b) => a - b);
   if (samples.length < 2) return null;
   const interval = Math.max(1, Math.round((samples.at(-1)! - samples[0]!) / (samples.length - 1)));
-  const origin = Math.max(last.sampledAt, samples.at(-1)!);
+  const origin = Math.max(
+    view.step - observedAge(view.clock, last.sampledAt, view.step),
+    samples.at(-1)!,
+  );
   const next = origin + Math.max(1, Math.ceil((activation - origin) / interval)) * interval;
   return {
     statusId,

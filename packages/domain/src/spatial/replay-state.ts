@@ -1,4 +1,15 @@
+import { closureMechanics } from './mechanic-uses.ts';
+import {
+  advanceDeferred,
+  advanceStopReplay,
+  validateStopCheckpoint,
+} from './replay-validation/deferred.ts';
+import { validateClocks } from './replay-validation/clocks.ts';
 import { validateRevivalCounts } from './replay-validation/revival.ts';
+import {
+  validateImmortalityCounts,
+  validateDeferredDefinition,
+} from './replay-validation/concepts.ts';
 import { validatePhasing, validatePhasingTransition } from './replay-validation/phasing.ts';
 import { validateSpatialObject, applySpatialObjects } from './replay-validation/spatial-object.ts';
 import { compareIds } from './canonical.ts';
@@ -42,6 +53,8 @@ export class ReplayState {
           }
         : parseJson(ReplayCheckpointSchema, checkpoint);
     const v = this.value;
+    validateStopCheckpoint(v);
+    v.deferred?.forEach((receipt) => validateDeferredDefinition(context, receipt));
     requireReplay(
       v.simulationHash === context.simulationHash && v.step <= context.rules.maxSteps,
       'checkpoint binding/range',
@@ -59,6 +72,21 @@ export class ReplayState {
       requireReplay(v.nextRecord > 0 && v.lastRecord !== null, 'checkpoint cursor');
       this.validateState(v.state, v.step);
       const last = v.lastRecord!;
+      validateClocks(
+        context,
+        undefined,
+        v.state.actors,
+        undefined,
+        v.state.projectiles,
+        last,
+        false,
+      );
+      if (closureMechanics(context.manifest.revisions).some((use) => use.mechanic === 'time-stop'))
+        requireReplay(
+          v.requiredFeatures?.includes('subject-clocks-v1') === true &&
+            v.requiredFeatures.includes('deferred-contacts-v1'),
+          'missing checkpoint features',
+        );
       requireReplay(
         v.nextRecord >= v.step + 1 && v.nextRecord <= 2 * v.step + 3,
         'checkpoint record cursor',
@@ -215,11 +243,21 @@ export class ReplayState {
   apply(input: unknown): StreamRecord {
     const record = parseJson(StreamRecordSchema, input),
       prior = this.value;
-    requireReplay(!this.ended && prior.nextRecord < 12002, 'record after terminal/limit');
+    requireReplay(!this.ended && prior.nextRecord < 12003, 'record after terminal/limit');
     let state: DisplayState,
       step = prior.step,
       boundaryApplied = prior.boundaryApplied;
     if (record.kind === 'initial') {
+      if (
+        closureMechanics(this.context.manifest.revisions).some(
+          (use) => use.mechanic === 'time-stop',
+        )
+      )
+        requireReplay(
+          record.requiredFeatures?.includes('subject-clocks-v1') === true &&
+            record.requiredFeatures.includes('deferred-contacts-v1'),
+          'missing clock/release features',
+        );
       requireReplay(
         prior.state === null &&
           record.state.projectiles.length === 0 &&
@@ -317,6 +355,7 @@ export class ReplayState {
               ...state.projectiles[index]!,
               ...p,
               ownerId: p.ownerId ?? state.projectiles[index]!.ownerId,
+              endStep: p.endStep ?? state.projectiles[index]!.endStep,
             };
           }
           for (const id of removed.keys())
@@ -337,6 +376,15 @@ export class ReplayState {
       validateEvents(this.context, this.value, record, entities);
     }
     validateRevivalCounts(prior.state?.actors, state.actors, record);
+    validateImmortalityCounts(prior.state?.actors, state.actors, record);
+    validateClocks(
+      this.context,
+      prior.state?.actors,
+      state.actors,
+      prior.state?.projectiles,
+      state.projectiles,
+      record,
+    );
     this.validateState(
       state,
       step,
@@ -345,7 +393,19 @@ export class ReplayState {
     state.actors.sort((a, b) => compareIds(a.id, b.id));
     state.projectiles.sort((a, b) => compareIds(a.id, b.id));
     state.objects?.sort((a, b) => compareIds(a.id, b.id));
-    this.value = {
+    const deferred = advanceDeferred(prior.deferred, 'events' in record ? record.events : []);
+    const stop = advanceStopReplay(prior.stop, 'events' in record ? record.events : []);
+    const requiredFeatures =
+      record.kind === 'initial' ? record.requiredFeatures : prior.requiredFeatures;
+    if (record.kind === 'terminal' && ['win', 'draw'].includes(record.outcome.kind))
+      requireReplay(
+        !deferred?.length && !stop?.controls.some((control) => control.releasedAt === undefined),
+        'unsettled contacts/control at normal finality',
+      );
+    const next: ReplayCheckpoint = {
+      ...(deferred ? { deferred } : {}),
+      ...(stop ? { stop } : {}),
+      ...(requiredFeatures ? { requiredFeatures } : {}),
       schemaVersion: 1,
       simulationHash: prior.simulationHash,
       step,
@@ -355,6 +415,8 @@ export class ReplayState {
       state,
       lastRecord: record,
     };
+    validateStopCheckpoint(next);
+    this.value = next;
     return structuredClone(record);
   }
 }

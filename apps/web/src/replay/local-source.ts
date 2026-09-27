@@ -14,7 +14,7 @@ export const LOCAL_MANIFEST = 'manifest.json';
 /** Public bundles carry a receipt next to the manifest. It is not an attestation; it is ignored. */
 const RECEIPT = 'receipt.json';
 const ARTIFACT = /^(chunk|checkpoint)-[0-9]{5}\.(ndjson|json)\.gz$/;
-const MAX_ARTIFACTS = 2 * 12002;
+const MAX_ARTIFACTS = 2 * 12003;
 export const LOCAL_MAX_FILES = MAX_ARTIFACTS + 2;
 /** The #79 manifest and stored-byte limits, plus an ignorable public receipt. */
 export const LOCAL_MAX_BYTES =

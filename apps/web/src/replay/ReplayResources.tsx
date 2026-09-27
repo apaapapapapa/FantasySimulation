@@ -3,6 +3,17 @@ import { motionSummary } from './motion-labels.ts';
 import { stageCount } from './scene-model.ts';
 import { sealDisplay } from './seal-display.ts';
 import { recoveryDisplay } from './recovery-display.ts';
+const effectNames = {
+  damage: 'ダメージ',
+  heal: '回復',
+  shield: 'シールド',
+  defeat: '即死',
+  force: '強制移動',
+  reveal: '情報開示',
+  water: '水',
+  dispel: '解除',
+  'apply-status': '状態付与',
+};
 
 export function ReplayResources({
   context,
@@ -76,7 +87,46 @@ export function ReplayResources({
                 );
               })}
               <td>
+                {actor.clock && (
+                  <p>
+                    {actor.clock.frozen ? '時間停止中' : '時間停止解除済み'} / 本人の経過{' '}
+                    {(actor.clock.subjectStep * 0.02).toFixed(2)}秒 / 累計停止{' '}
+                    {(actor.clock.pausedSteps * 0.02).toFixed(2)}秒
+                  </p>
+                )}
+                {!!checkpoint.deferred?.filter((receipt) => receipt.targetId === actor.id)
+                  .length && (
+                  <details>
+                    <summary>
+                      保留中の効果:{' '}
+                      {
+                        checkpoint.deferred.filter((receipt) => receipt.targetId === actor.id)
+                          .length
+                      }
+                      件（解除時に反映）
+                    </summary>
+                    <ul>
+                      {checkpoint.deferred
+                        .filter((receipt) => receipt.targetId === actor.id)
+                        .map((receipt) => (
+                          <li key={receipt.id}>
+                            {context.manifest.revisions.find(
+                              (revision) =>
+                                revision.kind === 'ability' && revision.id === receipt.abilityId,
+                            )?.definition.name ?? receipt.abilityId}
+                            {' / '}
+                            {effectNames[receipt.effect.kind]}
+                            {' / 接触時刻 '}
+                            {(receipt.capturedAt * 0.02).toFixed(2)}秒
+                          </li>
+                        ))}
+                    </ul>
+                  </details>
+                )}
                 {actor.revivals !== undefined && <p>蘇生: 使用 {actor.revivals}/4回</p>}
+                {actor.immortalityUsed !== undefined && (
+                  <p>不死: 累積使用 {actor.immortalityUsed}回</p>
+                )}
                 <ul aria-label={`${actor.id} 動作`}>
                   {motionSummary(
                     actor,

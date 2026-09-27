@@ -1,3 +1,4 @@
+import { cloneStopState, type StopState } from './time-stop-state.ts';
 import type { PreviousMovement, ActorState, MeleeState, PreparedBattle } from '../state.ts';
 import type {
   Budget,
@@ -26,6 +27,7 @@ import { sameRecordValue } from '../rules/record-values.ts';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
 export type SimulationState = {
+  stop?: StopState;
   actors: ActorState[];
   melees: MeleeState[];
   projectiles: ProjectileState[];
@@ -51,6 +53,7 @@ export class StepTransaction {
   readonly journal: Journal;
   readonly before: ReturnType<typeof displayActor>[];
   readonly aiBoundary: boolean;
+  readonly frozenAtStart: Set<string>;
   readonly effects: PendingEffect[] = [];
   readonly barrierDamage = new Map<string, number>();
   readonly objectRemovals = new Map<string, SpatialObjectChanges['remove'][number]['reason']>();
@@ -75,10 +78,16 @@ export class StepTransaction {
     this.previous = previous;
     this.step = step;
     this.before = previous.actors.map((actor) => displayActor(actor, step));
+    this.frozenAtStart = new Set(
+      previous.actors.filter((actor) => actor.clock?.frozen).map(actorId),
+    );
     this.next = {
+      ...(previous.stop ? { stop: cloneStopState(previous.stop) } : {}),
       actors: previous.actors.map(cloneActor),
       melees:
-        phase === 'interval' ? previous.melees.map((attack) => ({ ...attack })) : previous.melees,
+        phase === 'interval' || previous.stop?.active
+          ? previous.melees.map((attack) => ({ ...attack }))
+          : previous.melees,
       projectiles: [...previous.projectiles],
       ledger: previous.ledger.clone(),
       serial: previous.serial,

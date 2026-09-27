@@ -6,6 +6,7 @@ import type { ForceContribution } from '../records.ts';
 // would reject previously accepted saved bytes.
 const noForceDisplay = () => false;
 const forceDisplay: EffectHandlers<ForceContribution, boolean> = {
+  defeat: noForceDisplay,
   damage: noForceDisplay,
   heal: noForceDisplay,
   shield: noForceDisplay,

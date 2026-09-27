@@ -132,13 +132,23 @@ function assessSingle(
   const riskAversion = (20000 - (weights.riskToleranceBps ?? 10000)) / 10000;
   const costConcern = (weights.resourceConservationBps ?? 10000) / 10000;
   const beforeHitRisk = Math.min(1, (burnRisk * Math.max(1, cast)) / rules.horizonSteps);
+  const declaredRead = view.memory.readings?.findLast(
+    (reading) =>
+      reading.field === 'declared-action' &&
+      reading.targetId === target?.id &&
+      reading.availableAt <= view.step &&
+      reading.expiresAt > view.step &&
+      reading.sampledAt >= (view.memory.observation?.sampledAt ?? 0),
+  );
+  const observedAction =
+    declaredRead?.field === 'declared-action' ? declaredRead.action?.phase : target?.action;
   const observedThreat =
     (view.memory.observation?.projectiles.length ?? 0) * 0.15 +
     (view.memory.observation?.spatial?.filter(
       (o) => o.ownerId !== view.self.actor.participant.actorId && o.kind !== 'barrier',
     ).length ?? 0) *
       0.2 +
-    (target?.action === 'cast' ? 0.25 : target?.action === 'active' ? 0.4 : 0);
+    (observedAction === 'cast' ? 0.25 : observedAction === 'active' ? 0.4 : 0);
   const exposure = Math.min(1, (observedThreat * duration * riskAversion) / rules.horizonSteps);
   const costBps = clampBps(
     10000 *
@@ -196,6 +206,13 @@ function assessSingle(
       'own relocation range and known endpoint; exposure and delayed occupancy remain uncertain',
     );
   }
+  if (d.timeStop) {
+    utility += rules.actionWeight * (target ? 2 : 0.1) * Math.min(1, d.timeStop.durationSteps / 20);
+    confidence = Math.min(confidence, 1000);
+    reasons.push(
+      'own bounded stop duration; observed target, hidden immunity and activation geometry unknown',
+    );
+  }
   const effects = abilityPlan(ability).effects;
   const stateValue = assessStatusEffects(view, effects, d.target, view.step + cast);
   utility += (stateValue.risk?.nonDamageValue ?? stateValue.value) * rules.actionWeight;
@@ -211,6 +228,27 @@ function assessSingle(
   }
   if (stateValue.reason) reasons.push(stateValue.reason);
   const effectAssessments: EffectHandlers<undefined, void> = {
+    defeat: (effect) => {
+      const requirement = effect.requires;
+      const plausible =
+        !requirement ||
+        (requirement.kind === 'hp-at-most'
+          ? target?.wounds !== 'unhurt' && target?.wounds !== 'unknown'
+          : (target?.statuses ?? []).some((status) => status.id === requirement.id) ===
+            requirement.present);
+      const protectedBefore = view.memory.concepts?.some(
+        (cue) =>
+          cue.targetId === target?.id &&
+          cue.kind === 'immortality' &&
+          cue.availableAt <= view.step &&
+          cue.expiresAt > view.step,
+      );
+      utility += rules.killWeight * (target && plausible ? (protectedBefore ? 0.25 : 0.5) : 0.05);
+      confidence = Math.min(confidence, 1000);
+      reasons.push(
+        'own defeat predicate; delayed wounds and visible statuses, enemy immunity unknown',
+      );
+    },
     damage: (effect) => {
       if (d.target !== 'enemy') return;
       const power = Number(
@@ -294,7 +332,20 @@ function assessSingle(
       );
     },
     reveal: (effect) => {
-      const known = efficacy(view, effect.element, 1);
+      const known =
+        effect.field === 'resistance'
+          ? efficacy(view, effect.element, 1)
+          : {
+              confidence: view.memory.readings?.some(
+                (reading) =>
+                  reading.field === effect.field &&
+                  reading.targetId === target?.id &&
+                  reading.availableAt <= view.step &&
+                  reading.expiresAt > view.step,
+              )
+                ? 10000
+                : 0,
+            };
       utility +=
         (rules.explorationWeight *
           3 *
@@ -319,19 +370,34 @@ function assessSingle(
     const motion = target ? length(target.velocity) : 0;
     success = clampBps(
       8500 -
-        d.aimErrorMilliDegrees / 10 -
+        (d.accuracy === 'no-error' ? 0 : d.aimErrorMilliDegrees) / 10 -
         motion * 150 -
         (view.memory.observation?.enemy ? 0 : 2500),
     );
     success = clampBps(success * shapeEstimate(view, d.attack));
+    const healthRead = view.memory.readings
+      ?.filter(
+        (reading) =>
+          reading.field === 'health' &&
+          reading.targetId === target?.id &&
+          reading.availableAt <= view.step &&
+          reading.expiresAt > view.step,
+      )
+      .at(-1);
+    if (healthRead) {
+      evidence.push(healthRead.eventId);
+      reasons.push('delayed bounded health reading');
+    }
     const healthFraction =
-      target?.wounds === 'critical'
-        ? 0.25
-        : target?.wounds === 'severe'
-          ? 0.5
-          : target?.wounds === 'hurt'
-            ? 0.85
-            : 1;
+      healthRead?.field === 'health'
+        ? (healthRead.range.low + healthRead.range.high) / 20000
+        : target?.wounds === 'critical'
+          ? 0.25
+          : target?.wounds === 'severe'
+            ? 0.5
+            : target?.wounds === 'hurt'
+              ? 0.85
+              : 1;
     const certainty = confidence / 10000;
     kill = clampBps(
       success *

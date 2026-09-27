@@ -1,3 +1,4 @@
+import { conceptMark } from './concept-mark.ts';
 import { useId } from 'react';
 import { prng } from './pixel-art.ts';
 import { visionRing, type Point, type SceneModel } from './scene-model.ts';
@@ -208,16 +209,16 @@ export function Scene2D({
               strokeOpacity={0.8}
               strokeWidth={outline * 1.5}
             />
-            {(a.sealing || a.revived) && (
+            {(a.sealing || a.revived || a.protected || a.defeated || a.frozen || a.evaded) && (
               <circle
                 cx={a.position[0]}
                 cy={a.position[2]}
                 r={a.radius * 1.8}
                 fill="none"
-                stroke={a.revived ? '#72e0c1' : '#d9a6ff'}
+                stroke={conceptMark(a).colour}
                 strokeWidth={0.05}
               >
-                <title>{a.revived ? '蘇生' : '封印中'}</title>
+                <title>{conceptMark(a).label}</title>
               </circle>
             )}
             <circle

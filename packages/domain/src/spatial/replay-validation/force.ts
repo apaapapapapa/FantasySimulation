@@ -1,3 +1,4 @@
+import { projectClockStamp } from '../clocks.ts';
 import { matchesForceDisplay } from './effect.ts';
 import { composeForce, DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND } from '../combat-derivations.ts';
 import type { ActorDisplay } from '../stream.ts';
@@ -16,12 +17,23 @@ export function validateForce(context: ReplayContext, force: ForceContribution) 
 }
 
 export function validateForces(context: ReplayContext, actor: ActorDisplay, step: number) {
+  if (actor.forceSchedule) {
+    requireReplay(
+      !!actor.clock &&
+        new Set(actor.forceSchedule.map((force) => force.id)).size === actor.forceSchedule.length,
+      'force schedule identity',
+    );
+    for (const force of actor.forceSchedule) {
+      validateForce(context, force);
+      requireReplay(force.startAt <= step + 1 && force.endAt >= step, 'force schedule window');
+    }
+  }
   if (actor.force) {
     const force = actor.force;
     requireReplay(
       force.capMmPerSecond ===
         (context.rules.forcedSpeedCapMmPerSecond ?? DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND) &&
-        force.fromStep === step - 1 &&
+        projectClockStamp(actor.clock, force.fromStep, step) === step - 1 &&
         force.contributors.length > 0 &&
         new Set(force.contributors.map((f) => f.id)).size === force.contributors.length,
       'force interval/contributors',

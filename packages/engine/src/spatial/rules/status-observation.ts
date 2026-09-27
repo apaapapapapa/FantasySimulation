@@ -39,7 +39,11 @@ export function statusBenefit(
     m.defense / 25 +
     (m.speedBps - 10000) / 10000 +
     Number(m.flight) +
-    (status.phasing ? 0.5 : 0) -
+    (status.phasing ? 0.5 : 0) +
+    (status.immortality ? Math.min(2, status.immortality.protections) : 0) +
+    (status.defeatImmunity ? 0.5 : 0) +
+    (status.stopImmunity ? 0.5 : 0) +
+    (status.evasion ? 1 : 0) -
     Number(m.rooted) -
     Number(m.silenced ?? false) -
     (status.seals
