@@ -1,8 +1,9 @@
-import { expect, it } from 'vite-plus/test';
+import { expect, it, vi } from 'vite-plus/test';
 import { readFile, writeFile, lstat, utimes } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LeaguePartitionResultSchema } from '@fantasy/domain/spatial';
 import { Measurements } from '@fantasy/api/tooling';
+import { BattleBundles } from '@fantasy/api/artifacts';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { leaguePublicationFixture } from '../../test-support/leagues.ts';
 import { exportLeague } from './league-export.ts';
@@ -130,5 +131,37 @@ it('retains an independent Worker pass after the journal callback corrupts a che
       ),
     ).rejects.toMatchObject({ code: 'DATA_INVALID' });
     expect(await readFile(pointer)).toEqual(original);
+  });
+}, 30000);
+
+it('propagates inline cancellation between hashes without completing the remaining partition', async () => {
+  await withReplayDirectory(async (root) => {
+    const fixture = await leaguePublicationFixture(join(root, 'inline-abort'), { size: 2 });
+    const controller = new AbortController();
+    const original = BattleBundles.prototype.verify;
+    let calls = 0;
+    const verify = vi.spyOn(BattleBundles.prototype, 'verify').mockImplementation(async function (
+      this: BattleBundles,
+      hash: string,
+    ) {
+      const receipt = await original.call(this, hash);
+      if (++calls === 1) controller.abort(new Error('stop inline'));
+      return receipt;
+    });
+    try {
+      await expect(
+        exportLeague(
+          fixture.plan,
+          fixture.partitions,
+          fixture.completed,
+          join(root, 'cancelled'),
+          undefined,
+          { verificationWorkers: 1, signal: controller.signal },
+        ),
+      ).rejects.toThrow('stop inline');
+      expect(calls).toBe(1);
+    } finally {
+      verify.mockRestore();
+    }
   });
 }, 30000);

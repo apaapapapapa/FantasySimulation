@@ -1,32 +1,34 @@
 # ADR 0011: Integrated performance
 
-PR #60 accepted TS/Rapier/Piscina: 1,000 new matches, two Workers, 1504.65s,
-ten [gates](0002-spatial-engine.md) passed.
-P95 was 7.721s (8s limit); the last quarter was 9.056s. This is not P4/P5 acceptance.
-Keep default one/maximum four Workers and the 1.5GiB abort threshold, not an OS cap.
-[Evidence](../measurements/p3-integrated-linux.json) and
+PR #60 selected TS/Rapier/Piscina: default one/maximum four Workers, 1.5GiB abort.
+Historical 1,000-match measurements and reproduction (not P4/P5 acceptance):
+[Evidence](../measurements/p3-integrated-linux.json) and the
 [original protocol](https://github.com/apaapapapapa/FantasySimulation/blob/6ea13284e6c7845c7badef202054a951be7144b6/docs/adr/0011-integrated-performance.md)
-retain the protocol and evidence. CI is not reference-host acceptance.
 
-## Publication refinement — #189 / #210, 2026-09-27
+## Requested refinements — #189/#210
 
-The owner requested these changes after design review; independent review, latest CI
-and same-input performance evidence remain required. [Recording](0006-recorded-replay.md)
-and [publication](0008-headless-batch.md) contracts stay unchanged.
+Preserve [recording](0006-recorded-replay.md), [publication](0008-headless-batch.md),
+bindings, denominators, attempts, quotas and retention. Review and real performance
+evidence remain required.
 
-Fresh per-partition sessions retain only 256 successful object hashes. Every reuse
-rereads/authenticates receipt, manifest and all compressed bytes; names/mtime/external
-claims grant no trust. Eviction, closure and new sessions require full verification.
-Share aggregation's three semantic passes; keep a fresh export pass after the journal
-callback (four to two). Keep every binding, denominator, consumed attempt and conflict.
-Index authenticated results instead of stringifying them.
+Sessions keep 256 successful hashes. Reuse authenticates receipt, manifest and
+compressed bytes, never mtime/claims. Eviction/closure requires full validation.
+Share three aggregation passes; independently validate export after its callback
+(four to two). Index authenticated results.
 
-Inspect original JSON during the existing bounded decode/semantic pass. Keep UTF-8,
-checksums, limits, checkpoints and terminal hashes. Piscina verifiers default inline;
-cloud requests two, capped at four and available CPUs minus one. Use bounded batches,
-empty environments and explicit loaders, not an OS sandbox. Drain failures/cancellation
-and close pools; Worker spans are not CPU or additive wall time.
+Inspect original JSON during bounded decoding; retain UTF-8, checkpoints and hashes. Verifiers default inline; cloud requests two, capped at four/CPUs minus
+one. Bound heaps/batches; empty environments are not sandboxes. Propagate aborts
+inline too; drain and close. Worker spans are not CPU or additive wall time.
+Keep four durable immutable writes, fsync/link/directory sync and pointer-last commit.
 
-After preflight, allow four immutable writes with unchanged fsync/link/directory sync.
-Drain before failing; recheck generation and commit current.json last. Never parallelize
-mutable pointers/leases. No format, rules, retention, quota, R2 concurrency or main change.
+Share fresh post-validation inventory within one serialized publication.
+Account for lease size; retain orphan conflicts,
+all-reference HEAD, conditional PUT, generation/viewer/readback barriers. Reuse exact
+receipt GET evidence, not buffers. No pointer caching or lease refunds.
+
+Prefetch hash/size-bound children after parent validation into owned disk.
+Deduplicate keys; retain ordered checks and bounded requests/payloads;
+drain before cleanup. Cloud GET/HEAD use 32; PUT/Reader use 16. S3 tuning allows 1–64
+and 16–256MiB payload reservations (64MiB default), not RSS guarantees. Match sockets
+and keep-alive. Measure LIST pages. Keep serial control writes, retries, bucket
+settings, Local Uploads, formats and workflows unchanged.

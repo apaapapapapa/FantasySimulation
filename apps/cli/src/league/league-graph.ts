@@ -40,6 +40,7 @@ export async function validatePublicLeague(
   const pairPages = new Map<string, string>();
   const visited = new Set<string>();
   const details = [];
+  await json.prefetch?.(snapshot.standings.rows.map((summary) => summary.detail));
   for (const summary of snapshot.standings.rows) {
     const detail = await json(summary.detail, PublicLeagueDetailSchema);
     if (
@@ -48,6 +49,7 @@ export async function validatePublicLeague(
       detail.opponents.length !== definition.characters.length - 1
     )
       throw new OperationError('DATA_INVALID', 'League detail identity mismatch');
+    await json.prefetch?.(detail.opponents.flatMap((opponent) => opponent.pages));
     const opponents = new Set<string>();
     for (const opponent of detail.opponents) {
       if (
@@ -166,6 +168,7 @@ export async function validatePublicLeagueWork(
   receipts: Map<string, BundleReceipt>,
 ) {
   const work = await json(ref, PublicLeagueWorkSchema);
+  await json.prefetch?.([...work.progress, ...work.reservations]);
   const records = new Map<
     string,
     ReturnType<typeof LeagueProgressPageSchema.parse>['records'][number]

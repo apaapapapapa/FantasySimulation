@@ -11,6 +11,9 @@ import { sha256 } from '@fantasy/api/artifacts';
 import { leagueFailure, leagueFailureSummary } from './league-diagnostics.ts';
 import { withMilestonePublication } from '../../test-support/league-milestones.ts';
 import { probeLeague } from './league-probe.ts';
+import { publicationFixture } from '../../test-support/publication.ts';
+import { exportPublication } from '../publication/publication-export.ts';
+import { SUPPORTED_REPLAY_FORMAT } from '@fantasy/domain';
 
 afterEach(() => vi.restoreAllMocks());
 const config = {
@@ -101,15 +104,10 @@ it.each(['pointer-json', 'pointer-utf8', 'catalog-json', 'catalog-utf8'])(
   },
 );
 it('requires durable inventory/data leases before restore and never reuses the same failed lease', async () => {
-  let current: Awaited<ReturnType<PublicationS3['readControl']>> = null;
-  vi.spyOn(console, 'log').mockImplementation(() => {});
-  vi.spyOn(PublicationS3.prototype, 'readControl').mockImplementation(async () => current);
-  vi.spyOn(PublicationS3.prototype, 'putControl').mockImplementation(async (data, etag) => {
-    if ((current?.etag ?? null) !== etag) throw new Error('CAS conflict');
-    current = { data: Buffer.from(data), etag: String(JSON.parse(data.toString()).sequence) };
-  });
+  const ledger = mockUsageLedger();
   vi.spyOn(PublicationS3.prototype, 'inventory').mockResolvedValue(new Map());
   const read = vi.spyOn(PublicationS3.prototype, 'read').mockImplementation(async () => {
+    const current = ledger();
     if (current) {
       const ids = JSON.parse(current.data.toString()).leases.map((l: { id: string }) => l.id);
       expect(ids).toContain('fixture-restore');
@@ -167,5 +165,57 @@ it('refuses to bootstrap a deleted usage ledger when durable league reservations
       transferCloudLeague(config, join(root, 'restored'), join(root, 'reports'), identity),
     ).rejects.toThrow('ledger is missing');
     expect(write).not.toHaveBeenCalled();
+  });
+});
+
+function mockUsageLedger() {
+  let current: Awaited<ReturnType<PublicationS3['readControl']>> = null;
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(PublicationS3.prototype, 'readControl').mockImplementation(async () => current);
+  vi.spyOn(PublicationS3.prototype, 'putControl').mockImplementation(async (data, etag) => {
+    if ((current?.etag ?? null) !== etag) throw new Error('CAS conflict');
+    current = { data: Buffer.from(data), etag: String(JSON.parse(data.toString()).sequence) };
+  });
+  return () => current;
+}
+
+it('uses one post-validation inventory for both lease admission and publication', async () => {
+  mockUsageLedger();
+  const objects = new Map<string, Buffer>();
+  const inventory = vi
+    .spyOn(PublicationS3.prototype, 'inventory')
+    .mockImplementation(async () => new Map([...objects].map(([key, data]) => [key, data.length])));
+  vi.spyOn(PublicationS3.prototype, 'read').mockImplementation(async (key) => {
+    const data = objects.get(key);
+    return data ? { data: Buffer.from(data), etag: 'fixture' } : null;
+  });
+  vi.spyOn(PublicationS3.prototype, 'head').mockImplementation(
+    async (key) => objects.get(key)?.length ?? null,
+  );
+  vi.spyOn(PublicationS3.prototype, 'put').mockImplementation(async (key, data) => {
+    objects.set(key, Buffer.from(data));
+  });
+  await withReplayDirectory(async (root) => {
+    const fixture = await publicationFixture(join(root, 'input'));
+    const directory = join(root, 'public');
+    await exportPublication(fixture.plan, [fixture], directory);
+    await transferCloudLeague(
+      config,
+      directory,
+      join(root, 'reports'),
+      { ...identity, id: 'publish-one-list' },
+      {
+        viewer: async () => ({
+          schemaVersion: 1,
+          sourceSha: 'b'.repeat(40),
+          publicationSchema: 1,
+          replay: SUPPORTED_REPLAY_FORMAT,
+        }),
+        ancestor: () => true,
+        worker: async (key) => Buffer.from(objects.get(key)!),
+      },
+    );
+    expect(inventory).toHaveBeenCalledTimes(1);
+    expect(objects.has('catalog/current.json')).toBe(true);
   });
 });

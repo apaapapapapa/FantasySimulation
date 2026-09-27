@@ -42,10 +42,11 @@ export async function checkStoredLeague(
   partitions: readonly { partition: unknown; batch: unknown }[],
   completed: readonly LeagueCheckInput[],
   pool?: ReplayVerificationPool,
+  signal?: AbortSignal,
 ) {
   const stored = await storedLeagueInputs(input, partitions);
   return {
-    ...(await checkLeagueData(stored.plan, completed, stored, pool)),
+    ...(await checkLeagueData(stored.plan, completed, stored, pool, signal)),
     partitions: stored.partitions,
   };
 }
@@ -55,6 +56,7 @@ async function checkLeagueData(
   completed: readonly LeagueCheckInput[],
   stored?: Awaited<ReturnType<typeof storedLeagueInputs>>,
   pool?: ReplayVerificationPool,
+  signal?: AbortSignal,
 ) {
   if (completed.length > plan.partitions.length)
     throw new OperationError('DATA_INVALID', 'Excessive league results');
@@ -65,7 +67,10 @@ async function checkLeagueData(
   for (const original of completed) {
     const entry = {
       ...original,
-      bundles: original.bundles.verificationSession(pool ? { pool } : {}),
+      bundles: original.bundles.verificationSession({
+        ...(pool ? { pool } : {}),
+        ...(signal ? { signal } : {}),
+      }),
     };
     try {
       const { partition, batch } = stored

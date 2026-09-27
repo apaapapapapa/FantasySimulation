@@ -37,6 +37,7 @@ export class BattleBundles {
         publicData: boolean;
         pool: ReplayVerificationPool | undefined;
         closed: boolean;
+        signal: AbortSignal | undefined;
       }
     | undefined;
   constructor(
@@ -44,13 +45,16 @@ export class BattleBundles {
     readonly maxBytes = 16 * 1024 ** 3,
   ) {}
   /** No caller can seed successful hashes; every new scope starts with full validation. */
-  verificationSession(options: { publicData?: boolean; pool?: ReplayVerificationPool } = {}) {
+  verificationSession(
+    options: { publicData?: boolean; pool?: ReplayVerificationPool; signal?: AbortSignal } = {},
+  ) {
     const session = new BattleBundles(this.root, this.maxBytes);
     session.verification = {
       seen: new Set(),
       publicData: options.publicData ?? false,
       pool: options.pool,
       closed: false,
+      signal: options.signal ?? options.pool?.signal,
     };
     return session;
   }
@@ -79,7 +83,7 @@ export class BattleBundles {
   async verify(objectHash: string): Promise<BundleReceipt> {
     const scope = this.verification;
     if (scope?.closed) throw new Error('Replay verification session is closed');
-    scope?.pool?.signal?.throwIfAborted();
+    scope?.signal?.throwIfAborted();
     const directory = this.objectPath(objectHash);
     if (!(await lstat(directory)).isDirectory())
       throw new OperationError('DATA_INVALID', 'Invalid bundle directory');
@@ -125,7 +129,7 @@ export class BattleBundles {
         scope.seen.add(objectHash);
       }
     }
-    scope?.pool?.signal?.throwIfAborted();
+    scope?.signal?.throwIfAborted();
     return receipt;
   }
   /** The checksum still applies when a consumer reads the saved input after full verification. */

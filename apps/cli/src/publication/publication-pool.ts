@@ -1,7 +1,7 @@
 import { currentMeasurements } from '@fantasy/api/artifacts';
 
-export function publicationConcurrency(value = 1) {
-  if (!Number.isInteger(value) || value < 1 || value > 16)
+export function publicationConcurrency(value = 1, maximum = 16) {
+  if (!Number.isInteger(value) || value < 1 || value > maximum)
     throw new Error('Invalid publication concurrency');
   return value;
 }
@@ -12,8 +12,9 @@ export async function publicationPool<T>(
   concurrency: number,
   perform: (item: T) => Promise<void>,
   queueName = 'transfer',
+  maximum = 16,
 ) {
-  publicationConcurrency(concurrency);
+  publicationConcurrency(concurrency, maximum);
   let next = 0;
   const failures: unknown[] = [];
   const measured = currentMeasurements(),

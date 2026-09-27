@@ -28,7 +28,7 @@ export function shardSlots(plan: BatchPlan, index: number, count: number) {
 export async function checkedBatch(
   input: unknown,
   indexes: BatchCheckInput[],
-  verification?: { publicData?: boolean; pool?: ReplayVerificationPool },
+  verification?: { publicData?: boolean; pool?: ReplayVerificationPool; signal?: AbortSignal },
 ) {
   if (indexes.length > 64) throw new Error('Expected at most 64 batch indexes');
   const scoped = verification

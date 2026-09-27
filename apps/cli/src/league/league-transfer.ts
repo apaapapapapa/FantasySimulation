@@ -5,6 +5,7 @@ import {
   PublicCatalogSchema,
   PUBLICATION_MAX_BYTES,
   PUBLICATION_MAX_FILES,
+  canonicalJson,
   type LeagueUsage,
   type LeagueUsageLease,
 } from '@fantasy/domain/spatial';
@@ -28,6 +29,7 @@ import { admitLeagueUsage } from './league-budget.ts';
 import { writeCloudJson } from './league-cloud-files.ts';
 import { requireLeagueRestoreBinding } from './league-probe.ts';
 import { PublicReadFailure } from '../publication/publication-http.ts';
+import { transferTuning, type TransferTuning } from '../publication/publication-io.ts';
 
 export function leagueTransferBudget(
   files: number,
@@ -63,8 +65,11 @@ export async function transferCloudLeague(
   identity: Pick<LeagueUsageLease, 'id' | 'day' | 'sourceSha'>,
   options?: Pick<PublishOptions, 'viewer' | 'worker' | 'ancestor'>,
   restoreBinding?: { probe: unknown; definition: unknown },
+  tuningInput: TransferTuning = {},
 ) {
-  const control = new PublicationS3(config, transport(601, 20));
+  const tuning = transferTuning({ readConcurrency: 32, headConcurrency: 32, ...tuningInput });
+  let control: PublicationS3 | undefined;
+  const controller = () => (control ??= new PublicationS3(config, transport(601, 20), 1));
   let data: PublicationS3 | undefined;
   try {
     if (restoreBinding) {
@@ -75,79 +80,86 @@ export async function transferCloudLeague(
         restoreBinding.definition,
         identity.sourceSha,
         async (key, limit) => {
-          const value = await control.read(key, limit);
+          const value = await controller().read(key, limit);
           if (!value) throw new PublicReadFailure(404);
           return value.data;
         },
       );
     }
     let inventory: Map<string, number> | undefined;
-    if (!(await control.readControl())) {
-      // A missing ledger is bootstrap only, never permission to reset an existing league.
-      const pointer = await control.read('catalog/current.json', 4000000);
-      if (pointer) {
-        const current = operationInput(
-          () =>
-            PublicCatalogCurrentSchema.parse(
-              JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(pointer.data)),
-            ),
-          'DATA_INVALID',
-        );
-        const catalog = await control.read(
-          `catalog/${current.catalogHash.slice(7)}.json`,
-          current.bytes,
-        );
-        if (
-          !catalog ||
-          catalog.data.length !== current.bytes ||
-          sha256(catalog.data) !== current.catalogHash
-        )
-          throw new OperationError(
-            'DATA_INVALID',
-            'Cannot bootstrap usage from an unverified catalog',
-          );
-        if (
-          operationInput(
-            () =>
-              PublicCatalogSchema.parse(
-                JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(catalog.data)),
-              ),
-            'DATA_INVALID',
-          ).leagueWork
-        )
-          throw new OperationError(
-            'DATA_INVALID',
-            'Existing league usage ledger is missing; manual recovery required',
-          );
-      }
-      inventory = await control.inventory();
-      if (
-        inventory.size >= PUBLICATION_MAX_FILES ||
-        [...inventory.values()].reduce((sum, n) => sum + n, 0) + PUBLICATION_CONTROL_BYTES >
-          PUBLICATION_MAX_BYTES
-      )
-        throw new OperationError('BUDGET_EXCEEDED', 'No capacity for durable league usage ledger');
-    }
-    await admitLeagueUsage(control, {
-      ...identity,
-      id: identity.id + '-inventory',
-      classA: 600,
-      classB: 20,
-      worker: 0,
-    });
-    inventory ??= await control.inventory();
-    // Reserve the maximum ledger size, including a newly bootstrapped ledger.
-    inventory.set(PUBLICATION_CONTROL_KEY, PUBLICATION_CONTROL_BYTES);
-    const bytes = [...inventory.values()].reduce((sum, n) => sum + n, 0);
-    if (bytes > PUBLICATION_MAX_BYTES || inventory.size > PUBLICATION_MAX_FILES)
-      throw new OperationError('BUDGET_EXCEEDED', 'League retained capacity exceeded');
-    const receipts = [...inventory.keys()].filter((key) => key.endsWith('/receipt.json')).length;
+    let bytes = 0,
+      receipts = 0;
     let budget: ReturnType<typeof leagueTransferBudget> | undefined;
     let usage: LeagueUsage | undefined;
     const start = async (graph?: Parameters<PublicationStoreFactory>[0]) => {
+      if (!(await controller().readControl())) {
+        // A missing ledger is bootstrap only, never permission to reset an existing league.
+        const pointer = await controller().read('catalog/current.json', 4000000);
+        if (pointer) {
+          const current = operationInput(
+            () =>
+              PublicCatalogCurrentSchema.parse(
+                JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(pointer.data)),
+              ),
+            'DATA_INVALID',
+          );
+          const catalog = await controller().read(
+            `catalog/${current.catalogHash.slice(7)}.json`,
+            current.bytes,
+          );
+          if (
+            !catalog ||
+            catalog.data.length !== current.bytes ||
+            sha256(catalog.data) !== current.catalogHash
+          )
+            throw new OperationError(
+              'DATA_INVALID',
+              'Cannot bootstrap usage from an unverified catalog',
+            );
+          if (
+            operationInput(
+              () =>
+                PublicCatalogSchema.parse(
+                  JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(catalog.data)),
+                ),
+              'DATA_INVALID',
+            ).leagueWork
+          )
+            throw new OperationError(
+              'DATA_INVALID',
+              'Existing league usage ledger is missing; manual recovery required',
+            );
+        }
+        inventory = await controller().inventory();
+        if (
+          inventory.size >= PUBLICATION_MAX_FILES ||
+          [...inventory.values()].reduce((sum, n) => sum + n, 0) + PUBLICATION_CONTROL_BYTES >
+            PUBLICATION_MAX_BYTES
+        )
+          throw new OperationError(
+            'BUDGET_EXCEEDED',
+            'No capacity for durable league usage ledger',
+          );
+      }
+      await admitLeagueUsage(controller(), {
+        ...identity,
+        id: identity.id + '-inventory',
+        classA: 600,
+        classB: 20,
+        worker: 0,
+      });
+      inventory ??= await controller().inventory();
+      const listed = new Map(inventory);
+      // Reserve the maximum ledger size, including a newly bootstrapped ledger.
+      inventory.set(PUBLICATION_CONTROL_KEY, PUBLICATION_CONTROL_BYTES);
+      bytes = [...inventory.values()].reduce((sum, n) => sum + n, 0);
+      if (bytes > PUBLICATION_MAX_BYTES || inventory.size > PUBLICATION_MAX_FILES)
+        throw new OperationError('BUDGET_EXCEEDED', 'League retained capacity exceeded');
+      receipts = [...inventory.keys()].filter((key) => key.endsWith('/receipt.json')).length;
+
       const additions = graph
         ? [...graph.files.keys()].filter(
-            (key) => key !== 'catalog/current.json' && !inventory.has(key),
+            (key) => key !== 'catalog/current.json' && !inventory!.has(key),
           ).length + 1
         : 0;
       budget = leagueTransferBudget(
@@ -156,13 +168,15 @@ export async function transferCloudLeague(
         additions,
         !options,
       );
-      usage = await admitLeagueUsage(control, {
+      usage = await admitLeagueUsage(controller(), {
         ...identity,
         ...budget,
         classB: budget.classB + budget.worker,
       });
-      data = new PublicationS3(config, transport(budget.classA, budget.classB));
-      return data;
+      data = new PublicationS3(config, transport(budget.classA, budget.classB), tuning.sockets);
+      // The lease readback authenticates the new control size without a second full LIST.
+      listed.set(PUBLICATION_CONTROL_KEY, Buffer.byteLength(canonicalJson(usage)));
+      return { store: data, inventory: listed };
     };
     const outcome = options
       ? await publishPublication(root, start, {
@@ -172,10 +186,21 @@ export async function transferCloudLeague(
           maxTransferBytes: PUBLICATION_MAX_BYTES,
           maxWorkerRequests: 1000,
           concurrency: 16,
+          readConcurrency: tuning.read,
+          writeConcurrency: tuning.write,
+          headConcurrency: tuning.head,
+          maxInFlightBytes: tuning.bytes,
           verificationWorkers: 2,
         })
-      : await restorePublication(root, await start(), PUBLICATION_MAX_BYTES, 16);
-    if (!budget || !usage || !data) throw new Error('Publication transport was not started');
+      : await restorePublication(
+          root,
+          (await start()).store,
+          PUBLICATION_MAX_BYTES,
+          tuning.read,
+          tuning.bytes,
+        );
+    if (!budget || !usage || !data || !inventory || !control)
+      throw new Error('Publication transport was not started');
     await writeCloudJson(join(reportRoot, identity.id + '.json'), {
       outcome,
       reserved: budget,
@@ -190,11 +215,11 @@ export async function transferCloudLeague(
     console.log(
       JSON.stringify({
         phase: options ? 'publication' : 'restoration',
-        control: control.metrics(),
+        control: control?.metrics(),
         transport: data?.metrics(),
       }),
     );
     data?.close();
-    control.close();
+    control?.close();
   }
 }

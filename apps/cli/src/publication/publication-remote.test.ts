@@ -349,3 +349,54 @@ it('publishes missing planned slots with an explicit incomplete count', async ()
     incompleteRows: 1,
   });
 });
+
+it.each([16, 32, 64])(
+  'shares one fresh inventory and one receipt GET at width %s',
+  async (width) => {
+    const { directory, store, options, fixture } = await setup();
+    await publishPublication(directory, store, options);
+    const inventory = vi.spyOn(store, 'inventory');
+    const read = vi.spyOn(store, 'read');
+    const head = vi.spyOn(store, 'head');
+    const start = vi.fn(async () => ({ store, inventory: await store.inventory() }));
+    const writes = store.writes.length;
+    const result = await publishPublication(directory, start, {
+      ...options,
+      readConcurrency: width,
+      writeConcurrency: width,
+      headConcurrency: width,
+      // Reader requests remain independently checked; do not count this separate channel as S3 GETs.
+      worker: async (key) => Buffer.from(store.objects.get(key)!.data),
+    });
+    expect(result.status).toBe('verified');
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(inventory).toHaveBeenCalledTimes(1);
+    const key = `objects/${fixture.receipt.objectHash.slice(7)}/receipt.json`;
+    expect(read.mock.calls.filter(([path]) => path === key)).toHaveLength(1);
+    expect(head.mock.calls.filter(([path]) => path === key)).toHaveLength(1);
+    expect(store.writes.length).toBe(writes);
+  },
+);
+
+it('does not reuse an inventory snapshot across publication calls', async () => {
+  const { root, directory, store, options } = await setup();
+  const start = async () => ({ store, inventory: await store.inventory() });
+  await publishPublication(directory, start, options);
+  const conflict = await publicationFixture(
+    join(root, 'later-orphan'),
+    'complete',
+    undefined,
+    true,
+  );
+  const key = `objects/${conflict.receipt.objectHash.slice(7)}/receipt.json`;
+  store.objects.set(key, {
+    data: await readFile(join(conflict.object, 'receipt.json')),
+    etag: 'new',
+  });
+  const writes = store.writes.length;
+  await expect(publishPublication(directory, start, options)).rejects.toMatchObject({
+    phase: 'committed-unverified',
+    cause: { message: 'Existing simulation result conflict' },
+  });
+  expect(store.writes.length).toBe(writes);
+});

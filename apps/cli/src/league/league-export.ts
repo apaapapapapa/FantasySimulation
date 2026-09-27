@@ -60,7 +60,7 @@ async function buildLeaguePublication(
   pool: ReplayVerificationPool | undefined,
   signal: AbortSignal | undefined,
 ) {
-  const checked = await checkStoredLeague(input, partitions, completed, pool),
+  const checked = await checkStoredLeague(input, partitions, completed, pool, signal),
     { plan, standings } = checked;
   const journal = typeof work === 'function' ? await work(checked) : work;
   signal?.throwIfAborted();
@@ -93,6 +93,7 @@ async function buildLeaguePublication(
       source ? [{ index: result!.index, bundles: source.bundles }] : [],
       directory,
       pool,
+      signal,
     );
     built.files.forEach(add);
     sets.push(built.setRef);

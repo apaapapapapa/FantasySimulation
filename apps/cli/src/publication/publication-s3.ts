@@ -15,7 +15,8 @@ import {
   PUBLICATION_CONTROL_BYTES,
 } from './publication-files.ts';
 import type { PublicationStore } from './publication-remote.ts';
-import { startMeasurement } from '@fantasy/api/tooling';
+import { startMeasurement, measureAsync } from '@fantasy/api/tooling';
+import { publicationConcurrency } from './publication-pool.ts';
 
 export interface R2Config {
   accountId: string;
@@ -57,7 +58,9 @@ export class PublicationS3 implements PublicationStore {
   constructor(
     private readonly config: R2Config,
     budget: Partial<S3PublicationBudget> = {},
+    maxSockets = 50,
   ) {
+    publicationConcurrency(maxSockets, 64);
     this.budget = {
       maxRequests: 100_000,
       maxClassARequests: 100_000,
@@ -95,6 +98,7 @@ export class PublicationS3 implements PublicationStore {
       credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
       maxAttempts: this.budget.maxAttempts,
       retryMode: 'standard',
+      requestHandler: { httpsAgent: { keepAlive: true, maxSockets, maxTotalSockets: maxSockets } },
       requestChecksumCalculation: 'WHEN_REQUIRED',
       responseChecksumValidation: 'WHEN_REQUIRED',
     });
@@ -153,16 +157,18 @@ export class PublicationS3 implements PublicationStore {
     let cursor: string | undefined,
       bytes = 0;
     do {
-      const page = await this.client
-        .send(
-          new ListObjectsV2Command({
-            Bucket: this.config.bucket,
-            MaxKeys: 1000,
-            ...(cursor ? { ContinuationToken: cursor } : {}),
-          }),
-          this.options('A'),
-        )
-        .catch((e) => this.failure(e));
+      const page = await measureAsync('r2.LIST', () =>
+        this.client
+          .send(
+            new ListObjectsV2Command({
+              Bucket: this.config.bucket,
+              MaxKeys: 1000,
+              ...(cursor ? { ContinuationToken: cursor } : {}),
+            }),
+            this.options('A'),
+          )
+          .catch((e) => this.failure(e)),
+      );
       for (const item of page.Contents ?? []) {
         const key =
             item.Key === PUBLICATION_CONTROL_KEY ? item.Key : PublicKeySchema.parse(item.Key),

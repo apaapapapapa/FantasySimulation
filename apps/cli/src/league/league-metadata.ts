@@ -12,10 +12,10 @@ import {
 } from '@fantasy/domain/spatial';
 import { normalizeStoredLeagueDefinition } from '@fantasy/engine/spatial';
 
-export type LeagueJson = <T>(
-  ref: LeagueFileRef,
-  schema: { parse(value: unknown): T },
-) => Promise<T>;
+export type LeagueJson = {
+  <T>(ref: LeagueFileRef, schema: { parse(value: unknown): T }): Promise<T>;
+  prefetch?: ((refs: readonly LeagueFileRef[]) => Promise<void>) | undefined;
+};
 const same = (a: unknown, b: unknown) => canonicalJson(a) === canonicalJson(b);
 
 /** Validate stored bytes and links without current-engine eligibility or slot expansion. */

@@ -51,6 +51,7 @@ export async function buildPublication(
   indexes: BatchCheckInput[],
   directory: string,
   pool?: ReplayVerificationPool,
+  signal?: AbortSignal,
 ) {
   const root = resolve(directory);
   for (const value of indexes) {
@@ -64,6 +65,7 @@ export async function buildPublication(
   // New scope: never trust aggregation's earlier pass across the journal callback.
   const checked = await checkedBatch(input, indexes, {
       publicData: true,
+      ...(signal ? { signal } : {}),
       ...(pool ? { pool } : {}),
     }),
     { plan } = checked;

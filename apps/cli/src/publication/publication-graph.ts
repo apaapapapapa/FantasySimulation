@@ -31,12 +31,15 @@ import {
 } from './publication-files.ts';
 
 import { publicationConcurrency, publicationPool } from './publication-pool.ts';
+import type { LeagueJson } from '../league/league-metadata.ts';
 
-export type PublicationRead = (key: string, limit: number) => Promise<Buffer>;
+export type PublicationRead = ((key: string, limit: number) => Promise<Buffer>) & {
+  prefetch?(files: readonly Pick<PublicationFile, 'key' | 'bytes' | 'checksum'>[]): Promise<void>;
+};
 
 /** Traverse all retained generations, validating content-addressed references before any mutation. */
 export async function publicationGraph(source: PublicationRead, concurrency = 1) {
-  publicationConcurrency(concurrency);
+  publicationConcurrency(concurrency, 64);
   const files = new Map<string, PublicationFile>(),
     sources = new Set<string>();
   const results = new Map<string, string>(),
@@ -124,6 +127,13 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
           bytes: manifestBytes.length,
           checksum: receipt.manifestChecksum,
         });
+        await source.prefetch?.(
+          [...manifest.chunks, ...manifest.checkpoints].map((ref) => ({
+            key: objectPrefix + ref.file,
+            bytes: ref.bytes,
+            checksum: ref.checksum,
+          })),
+        );
         for (const artifact of [...manifest.chunks, ...manifest.checkpoints]) {
           const file = {
             key: objectPrefix + artifact.file,
@@ -153,12 +163,12 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     if (generations.has(hash) || generations.size >= 1000)
       throw new OperationError('DATA_INVALID', 'Invalid catalog ancestry');
     generations.add(hash);
-    const key = `catalog/${publicHashName(hash)}.json`;
+    const key: string = `catalog/${publicHashName(hash)}.json`;
     // Historical catalog sizes are not stored in their successor; hash still binds every byte.
-    const bytes = await read(key, expectedBytes ?? MAX_PUBLIC_JSON_BYTES);
+    const bytes: Buffer = await read(key, expectedBytes ?? MAX_PUBLIC_JSON_BYTES);
     if (sha256(bytes) !== hash || (expectedBytes !== undefined && bytes.length !== expectedBytes))
       throw new OperationError('DATA_INVALID', 'Catalog checksum mismatch');
-    const generation = operationInput(
+    const generation: PublicCatalog = operationInput(
       () =>
         PublicCatalogSchema.parse(
           JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)),
@@ -181,6 +191,15 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
         throw new OperationError('DATA_INVALID', 'Conflicting league work size');
       leagueWork.set(ref.hash, ref);
     }
+    await source.prefetch?.(
+      generation.sets
+        .filter((ref) => !sets.has(ref.setHash))
+        .map((ref) => ({
+          key: `sets/${publicHashName(ref.setHash)}/set.json`,
+          bytes: ref.bytes,
+          checksum: ref.setHash,
+        })),
+    );
     for (const ref of generation.sets) {
       const prefix = `sets/${publicHashName(ref.setHash)}/`;
       if (sets.has(ref.setHash)) {
@@ -193,6 +212,13 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
       sets.set(ref.setHash, set);
       const counts = { complete: 0, failed: 0, unresolved: 0, truncated: 0, pending: 0 };
       let lastSlot = '';
+      await source.prefetch?.(
+        set.pages.map((ref) => ({
+          key: prefix + publicHashName(ref.pageHash) + '.json',
+          bytes: ref.bytes,
+          checksum: ref.pageHash,
+        })),
+      );
       for (const pageRef of set.pages) {
         const page = await json(
           prefix + publicHashName(pageRef.pageHash) + '.json',
@@ -210,26 +236,32 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
           lastSlot = row.slotId;
           counts[row.state]++;
         }
-        await publicationPool(page.rows, concurrency, async (row) => {
-          if (!row.replay) return;
-          const { receipt, manifest } = await bundle(row.replay.objectHash);
-          const reference = files.get(
-            `objects/${publicHashName(row.replay.objectHash)}/receipt.json`,
-          )!;
-          if (
-            reference.bytes !== row.replay.receiptBytes ||
-            reference.checksum !== row.replay.receiptChecksum
-          )
-            throw new OperationError('DATA_INVALID', 'Receipt checksum mismatch');
-          assertPublicReplayBinding(row, receipt, manifest);
-          if (
-            (!row.reused && canonicalJson(receipt.source) !== canonicalJson(set.source)) ||
-            manifest.input.engineVersion !== set.engineVersion ||
-            manifest.input.implementationDigest !== set.implementationDigest
-          )
-            throw new OperationError('DATA_INVALID', 'Public source identity mismatch');
-          sources.add(receipt.source.sha);
-        });
+        await publicationPool(
+          page.rows,
+          concurrency,
+          async (row) => {
+            if (!row.replay) return;
+            const { receipt, manifest } = await bundle(row.replay.objectHash);
+            const reference = files.get(
+              `objects/${publicHashName(row.replay.objectHash)}/receipt.json`,
+            )!;
+            if (
+              reference.bytes !== row.replay.receiptBytes ||
+              reference.checksum !== row.replay.receiptChecksum
+            )
+              throw new OperationError('DATA_INVALID', 'Receipt checksum mismatch');
+            assertPublicReplayBinding(row, receipt, manifest);
+            if (
+              (!row.reused && canonicalJson(receipt.source) !== canonicalJson(set.source)) ||
+              manifest.input.engineVersion !== set.engineVersion ||
+              manifest.input.implementationDigest !== set.implementationDigest
+            )
+              throw new OperationError('DATA_INVALID', 'Public source identity mismatch');
+            sources.add(receipt.source.sha);
+          },
+          'restore.rows',
+          64,
+        );
       }
       if (canonicalJson(counts) !== canonicalJson(set.counts))
         throw new OperationError('DATA_INVALID', 'Public state counts mismatch');
@@ -241,7 +273,7 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     const { validatePublicLeague, validatePublicLeagueWork, assertLeagueWorkTransition } =
       await import('../league/league-graph.ts');
     const cached = new Map<string, { bytes: number; value: unknown }>();
-    const leagueJson = async <T>(
+    const leagueJson: LeagueJson = async <T>(
       ref: LeagueFileRef,
       schema: { parse(value: unknown): T },
     ): Promise<T> => {
@@ -258,6 +290,17 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
       cached.set(ref.hash, { bytes: ref.bytes, value });
       return value;
     };
+    leagueJson.prefetch = source.prefetch
+      ? async (refs: readonly LeagueFileRef[]) =>
+          source.prefetch!(
+            refs.map((ref) => ({
+              key: `leagues/${publicHashName(ref.hash)}.json`,
+              bytes: ref.bytes,
+              checksum: ref.hash,
+            })),
+          )
+      : undefined;
+    await leagueJson.prefetch?.([...leagues.values(), ...leagueWork.values()]);
     for (const ref of leagues.values()) {
       const snapshot = await validatePublicLeague(ref, leagueJson, sets, pages);
       sources.add(snapshot.sourceSha);
@@ -325,6 +368,7 @@ export async function localPublicationGraph(
     async (pool) => {
       const bundles = new BattleBundles(root).verificationSession({
         publicData: true,
+        ...(signal ? { signal } : {}),
         ...(pool ? { pool } : {}),
       });
       try {
