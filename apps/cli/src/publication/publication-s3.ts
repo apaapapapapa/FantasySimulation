@@ -164,13 +164,14 @@ export class PublicationS3 implements PublicationStore {
       `S3 operation failed (HTTP ${status ?? 'unknown'}); no credentials logged`,
     );
   }
-  /** 429, 5xx and connection loss (no HTTP status) are transient; validation errors are not. */
+  /**
+   * 429, 5xx, connection loss and per-request socket timeouts (no HTTP status) are transient;
+   * validation errors are not, and nothing retries once the transport deadline has expired.
+   */
   private transient(error: unknown) {
     if (error instanceof OperationError || this.signal.aborted) return false;
     const status = this.status(error);
-    if (status !== undefined) return status === 429 || status >= 500;
-    const name = error && typeof error === 'object' ? (error as { name?: unknown }).name : '';
-    return name !== 'AbortError' && name !== 'TimeoutError';
+    return status === undefined || status === 429 || status >= 500;
   }
   /** Charges every attempt before sending; backoff stays inside the transport deadline. */
   private async attempt<T>(

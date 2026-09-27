@@ -220,9 +220,12 @@ export async function publishPublication(
       async (file) => {
         if (file.key !== pointer.key) {
           if (inventory.has(file.key)) {
+            // The local MD5 proof reads the whole file, so it shares the in-flight byte budget.
             if (
               !exactReceipts.has(file.key) &&
-              !(await listedMatch(file, inventory.get(file.key), etags?.get(file.key)))
+              !(await transfer.run(file.bytes, () =>
+                listedMatch(file, inventory.get(file.key), etags?.get(file.key)),
+              ))
             )
               await transfer.run(file.bytes, () => exact(store, file));
             present.add(file.key);

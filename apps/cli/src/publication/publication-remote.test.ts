@@ -8,6 +8,7 @@ import { SUPPORTED_REPLAY_FORMAT } from '@fantasy/domain';
 import { publicationFixture } from '../../test-support/publication.ts';
 import { exportPublication } from './publication-export.ts';
 import { localPublicationGraph } from './publication-graph.ts';
+import { PublicationIo } from './publication-io.ts';
 import { PUBLICATION_CONTROL_KEY } from './publication-files.ts';
 import { leagueFailure, leagueFailureSummary } from '../league/league-diagnostics.ts';
 import {
@@ -249,9 +250,10 @@ it.each([true, false])(
   async (matching) => {
     const { directory, store, options } = await setup();
     await publishPublication(directory, store, options);
-    const [objectKey] = [...store.objects.keys()].filter(
-      (key) => key.startsWith('objects/') && !key.endsWith('/receipt.json'),
-    );
+    // The largest object has a size no other stored file shares.
+    const [objectKey] = [...store.objects.keys()]
+      .filter((key) => key.startsWith('objects/') && !key.endsWith('/receipt.json'))
+      .sort((a, b) => store.objects.get(b)!.data.length - store.objects.get(a)!.data.length);
     const data = store.objects.get(objectKey!)!.data;
     const md5 = createHash('md5')
       .update(matching ? data : Buffer.from('other'))
@@ -259,6 +261,7 @@ it.each([true, false])(
     store.listedEtags = () => new Map([[objectKey!, `"${md5}"`]]);
     const read = vi.spyOn(store, 'read');
     const head = vi.spyOn(store, 'head');
+    const reserve = vi.spyOn(PublicationIo.prototype, 'run');
     await expect(
       publishPublication(directory, store, {
         ...options,
@@ -268,6 +271,11 @@ it.each([true, false])(
     ).resolves.toMatchObject({ status: 'verified' });
     expect(read.mock.calls.some(([key]) => key === objectKey)).toBe(!matching);
     expect(head.mock.calls.some(([key]) => key === objectKey)).toBe(false);
+    // Hashing the local file is charged to the in-flight byte budget like the GET fallback and
+    // the Reader read-back of this sample-bundle object (one reservation each).
+    expect(reserve.mock.calls.filter(([bytes]) => bytes === data.length)).toHaveLength(
+      matching ? 2 : 3,
+    );
   },
 );
 it('rejects a listed object whose ETag disagrees and whose bytes collide', async () => {

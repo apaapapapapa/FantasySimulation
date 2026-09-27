@@ -59,6 +59,14 @@ it('retries transient data failures as counted requests and records listed ETags
       classBRequests: 3,
       transientRetries: 2,
     });
+    // A per-request SDK socket timeout is transient while the transport deadline remains.
+    send
+      .mockRejectedValueOnce(Object.assign(new Error('socket timeout'), { name: 'TimeoutError' }))
+      .mockResolvedValueOnce({ ContentLength: 8 } as never);
+    const timedOut = store.head('catalog/current.json');
+    await vi.runAllTimersAsync();
+    await expect(timedOut).resolves.toBe(8);
+    expect(store.metrics()).toMatchObject({ transientRetries: 3 });
     send.mockResolvedValueOnce({
       Contents: [{ Key: 'catalog/current.json', Size: 7, ETag: '"etag-1"' }],
     } as never);
