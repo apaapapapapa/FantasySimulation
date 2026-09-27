@@ -2,6 +2,7 @@ import { lstat, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
+import { measureAsync } from '@fantasy/api/tooling';
 import {
   BundleReceiptSchema,
   MAX_PUBLIC_JSON_BYTES,
@@ -62,17 +63,32 @@ export function receiptIdentity(key: string, bytes: Buffer, results: Map<string,
   return receipt;
 }
 
-/** Check every ancestor, not just the final artifact entry. */
-export async function publicationDirectory(path: string, create = false): Promise<void> {
+const directoryChecks = new Map<string, Promise<void>>();
+/** Share only overlapping checks; retain no successful or failed path validation in a cache. */
+export function publicationDirectory(path: string, create = false): Promise<void> {
   const full = resolve(path),
-    parent = dirname(full);
-  if (parent !== full) await publicationDirectory(parent, create);
-  if (create)
-    await mkdir(full).catch((error: NodeJS.ErrnoException) => {
-      if (error.code !== 'EEXIST') throw error;
-    });
-  if (!(await lstat(full)).isDirectory())
-    throw new OperationError('DATA_INVALID', 'Publication directory must not be a symlink');
+    key = `${create ? 'create' : 'read'}:${full}`;
+  const pending = directoryChecks.get(key);
+  if (pending) return pending;
+  const task = (async () => {
+    const parent = dirname(full);
+    if (parent !== full) await publicationDirectory(parent, create);
+    if (create)
+      await measureAsync('publication.directory.mkdir', () => mkdir(full)).catch(
+        (error: NodeJS.ErrnoException) => {
+          if (error.code !== 'EEXIST') throw error;
+        },
+      );
+    const metadata = await measureAsync('publication.directory.lstat', () => lstat(full));
+    if (!metadata.isDirectory())
+      throw new OperationError('DATA_INVALID', 'Publication directory must not be a symlink');
+  })();
+  directoryChecks.set(key, task);
+  const clear = () => {
+    if (directoryChecks.get(key) === task) directoryChecks.delete(key);
+  };
+  void task.then(clear, clear);
+  return task;
 }
 export async function optionalPublicationFile(path: string, limit: number) {
   try {
