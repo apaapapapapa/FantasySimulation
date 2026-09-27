@@ -3,7 +3,7 @@ import type { ReplaySource } from './open-replay.ts';
 import type { ReplayFrame } from './replay-player.ts';
 import { openReplaySession, type ReplaySession } from './replay-session.ts';
 import { buildSceneModel } from './scene-model.ts';
-import { Scene2D } from './Scene2D.tsx';
+import { Scene2D, zoomStep } from './Scene2D.tsx';
 import { replayErrorText as errorText } from './load-message.ts';
 import { SceneBoundary } from './SceneBoundary.tsx';
 import { playbackStep } from './playback-clock.ts';
@@ -177,8 +177,7 @@ export function ReplayPanel({
   function camera(kind: CameraNudge['kind']) {
     if (view === '2d') {
       // Zoom 1 frames the fighters; zooming out can widen the window to the whole arena.
-      if (kind === 'in' || kind === 'out')
-        setZoom((z) => Math.min(8, Math.max(1 / 8, kind === 'in' ? z * 1.5 : z / 1.5)));
+      if (model && (kind === 'in' || kind === 'out')) setZoom((z) => zoomStep(model, z, kind));
       return;
     }
     setCameraMode('free');

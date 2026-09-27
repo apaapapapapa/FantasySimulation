@@ -28,17 +28,35 @@ const TUFTS = (() => {
 const MAP_MARGIN = 5;
 const MAP_MINIMUM = 14;
 
-/** Square top-view window around the fighters, zoomable and never larger than the arena. */
-export function mapWindow(model: SceneModel, zoom: number, focus?: Point) {
-  const { min, max, actors } = model;
+/** Window side at zoom 1: the fighters and a margin, never below the minimum. */
+function fighterSpan({ actors }: SceneModel) {
   const xs = actors.map((a) => a.position[0]),
     zs = actors.map((a) => a.position[2]);
   const spread = actors.length
     ? Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs))
     : Infinity;
-  const base = Math.max(MAP_MINIMUM, spread + 2 * MAP_MARGIN) / zoom;
+  return Math.max(MAP_MINIMUM, spread + 2 * MAP_MARGIN);
+}
+const MAX_ZOOM = 8;
+
+/**
+ * One zoom button press. Zooming out stops once the whole recorded arena is in view, however
+ * large it is; zooming in stops at a fixed magnification.
+ */
+export function zoomStep(model: SceneModel, zoom: number, kind: 'in' | 'out') {
+  const arena = Math.max(model.max[0] - model.min[0], model.max[2] - model.min[2]);
+  const minimum = Math.min(1, fighterSpan(model) / arena);
+  return Math.min(MAX_ZOOM, Math.max(minimum, kind === 'in' ? zoom * 1.5 : zoom / 1.5));
+}
+
+/** Square top-view window around the fighters, zoomable and never larger than the arena. */
+export function mapWindow(model: SceneModel, zoom: number, focus?: Point) {
+  const { min, max, actors } = model;
+  const base = fighterSpan(model) / zoom;
   const width = Math.min(max[0] - min[0], base),
     depth = Math.min(max[2] - min[2], base);
+  const xs = actors.map((a) => a.position[0]),
+    zs = actors.map((a) => a.position[2]);
   const centre = focus ?? [
     actors.length ? (Math.max(...xs) + Math.min(...xs)) / 2 : model.centre[0],
     0,

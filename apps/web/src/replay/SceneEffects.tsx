@@ -289,7 +289,7 @@ export function SceneEffects({ model }: { model: SceneModel }) {
     model,
     model.paths
       .filter((p) => !actorIds.has(p.entityId))
-      .map((p) => ({ ...p, colour: tints.get(p.entityId) ?? tintColours(null).glow })),
+      .map((p) => ({ ...p, colour: p.deflected ? DEFLECTED : tintColours(p.tint).glow })),
     step,
     SPANS.trail,
   );

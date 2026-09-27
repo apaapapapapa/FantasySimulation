@@ -223,17 +223,34 @@ export function buildSceneModel(
         : []),
     ];
   });
-  const paths = records.flatMap((record) =>
-    record.kind === 'interval'
-      ? record.paths.flatMap((path) =>
-          path.segments.map((segment, i) => ({
-            id: `${record.toStep}:${path.entityId}:${i}`,
-            entityId: path.entityId,
-            points: [point(segment.start), point(segment.end)] as [Point, Point],
-          })),
-        )
-      : [],
-  );
+  const shown = new Map((checkpoint.state?.projectiles ?? []).map((p) => [p.id, p]));
+  const paths = records.flatMap((record) => {
+    if (record.kind !== 'interval') return [];
+    // A projectile removed in this interval is gone from the checkpoint, but the interval's own
+    // removal event still names its ability; a recorded source marks a deflected projectile.
+    const removals = new Map(
+      record.events.flatMap((e) =>
+        e.kind === 'projectile-remove' && e.entityId ? [[e.entityId, e] as const] : [],
+      ),
+    );
+    return record.paths.flatMap((path) => {
+      const live = shown.get(path.entityId),
+        removal = removals.get(path.entityId);
+      const tint = live
+        ? tintOf(context, live.abilityId, live.ownerId)
+        : removal
+          ? tintOf(context, removal.abilityId, removal.sourceActorId ?? removal.actorId)
+          : null;
+      const deflected = live ? !!live.deflection : !!removal?.sourceProjectileId;
+      return path.segments.map((segment, i) => ({
+        id: `${record.toStep}:${path.entityId}:${i}`,
+        entityId: path.entityId,
+        points: [point(segment.start), point(segment.end)] as [Point, Point],
+        tint,
+        deflected,
+      }));
+    });
+  });
   const shapes = (checkpoint.state?.actors ?? [])
     .flatMap((actor) => [
       ...(actor.action?.stage?.geometry

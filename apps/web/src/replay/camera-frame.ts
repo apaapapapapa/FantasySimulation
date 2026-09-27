@@ -15,8 +15,8 @@ const VIEWS: Record<FramedMode, { yaw: number; pitch: number }> = {
 /** Sprites stand full height on screen; this much of the body height above the feet is kept
  * in view for the sprite frame and its name plate. */
 const SPRITE_TOP = 1.45;
-/** Half the sprite frame's width per metre of standing height (32-px frame, 25-px figure). */
-const SPRITE_HALF_WIDTH = 0.64;
+/** Half the sprite frame's width per metre of standing height (48-px frame, 33-px figure). */
+const SPRITE_HALF_WIDTH = 0.73;
 const MARGIN = { width: 1.3, height: 1.2 };
 const MINIMUM = { width: 6.5, height: 3.6 };
 /** Follow mode stays this close unless the followed sprite needs more room. */
