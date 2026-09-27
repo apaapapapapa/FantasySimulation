@@ -24,6 +24,21 @@ it.each([
 ])('rejects private data without echoing its value', (value) => {
   expect(() => assertPublicData({ name: value })).toThrow('Private');
 });
+it.each([
+  'https://:secret@example.test',
+  'https://user:@example.test',
+  'https://a:b:c@example.test',
+])('rejects every credential-bearing URL form %s', (value) =>
+  expect(() => assertPublicData(value)).toThrow('Private'),
+);
+it('accepts public URLs and scans colon-heavy text without super-linear backtracking', () => {
+  expect(() => assertPublicData('https://example.test/a:b?c=d:e')).not.toThrow();
+  const started = performance.now();
+  // Quadratic before the fix: 40,000 pairs took about 1.7s; linear scanning takes milliseconds.
+  expect(() => assertPublicData('https://' + 'a:'.repeat(200_000))).not.toThrow();
+  expect(() => assertPublicData('/' + 'a'.repeat(200_000) + ' ')).toThrow('Private');
+  expect(performance.now() - started).toBeLessThan(1000);
+});
 it('scans expanded compressed artifacts before including their original bytes', async () => {
   const raw = JSON.stringify({ reason: 'load /home/private/keys' }) + '\n',
     data = gzipSync(raw);

@@ -1,5 +1,5 @@
 import { expect, it, vi } from 'vite-plus/test';
-import { readFile, writeFile, lstat, utimes } from 'node:fs/promises';
+import { open, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LeaguePartitionResultSchema } from '@fantasy/domain/spatial';
 import { Measurements } from '@fantasy/api/tooling';
@@ -63,9 +63,10 @@ it.each(['receipt', 'manifest', 'chunk', 'checkpoint'] as const)(
         kind === 'receipt' || kind === 'manifest'
           ? `${kind}.json`
           : (kind === 'chunk' ? manifest.chunks : manifest.checkpoints)[0]!.file;
-      const path = join(directory, file);
-      const before = await readFile(path);
-      const metadata = await lstat(path);
+      // One handle for read, tamper and restore: no path is re-resolved between check and use.
+      const handle = await open(join(directory, file), 'r+');
+      const before = await handle.readFile();
+      const metadata = await handle.stat();
       const scope = entry.bundles.verificationSession();
       const measured = new Measurements();
       try {
@@ -77,15 +78,16 @@ it.each(['receipt', 'manifest', 'chunk', 'checkpoint'] as const)(
         expect(measured.report().validation.calls).toBe(1);
         const broken = Buffer.from(before);
         broken[0] = broken[0]! ^ 1;
-        await writeFile(path, broken);
-        await utimes(path, metadata.atime, metadata.mtime);
-        expect((await lstat(path)).size).toBe(metadata.size);
+        await handle.write(broken, 0, broken.length, 0);
+        await handle.utimes(metadata.atime, metadata.mtime);
+        expect((await handle.stat()).size).toBe(metadata.size);
         await expect(scope.verify(receipt.objectHash)).rejects.toMatchObject({
           code: 'DATA_INVALID',
         });
       } finally {
         scope.closeVerification();
-        await writeFile(path, before);
+        await handle.write(before, 0, before.length, 0);
+        await handle.close();
       }
       await expect(scope.verify(receipt.objectHash)).rejects.toThrow('closed');
       const fresh = entry.bundles.verificationSession();
