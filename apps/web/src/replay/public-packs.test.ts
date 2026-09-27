@@ -1,4 +1,6 @@
 import { expect, it } from 'vite-plus/test';
+import { createHash } from 'node:crypto';
+import { canonicalJson } from '@fantasy/domain/spatial';
 import { packedFixture, packedResponse } from '../../../../e2e/packed-fixtures.ts';
 import { publicLibrary } from './public-source.ts';
 import { openReplay } from './open-replay.ts';
@@ -7,6 +9,32 @@ import { seekStep } from './seek-step.ts';
 function served(fault?: string) {
   const fixture = packedFixture(),
     requests: { key: string; range: string | null }[] = [];
+  if (fault === 'v1-catalog') {
+    const catalog = Buffer.from(
+      canonicalJson({
+        schemaVersion: 1,
+        previousCatalogHash: null,
+        sets: [
+          {
+            setHash: fixture.setHash,
+            bytes: fixture.files.get(`sets/${fixture.setHash.slice(7)}/set.json`)!.length,
+          },
+        ],
+      }),
+    );
+    const hash = createHash('sha256').update(catalog).digest('hex');
+    fixture.files.set(`catalog/${hash}.json`, catalog);
+    fixture.files.set(
+      'catalog/current.json',
+      Buffer.from(
+        canonicalJson({
+          schemaVersion: 1,
+          catalogHash: 'sha256:' + hash,
+          bytes: catalog.length,
+        }),
+      ),
+    );
+  }
   const request: typeof fetch = async (url, init) => {
     const key = new URL(url.toString()).pathname.slice(1),
       range = new Headers(init?.headers).get('range');
@@ -34,7 +62,7 @@ function served(fault?: string) {
 it('selects, opens and seeks historical recordings using only verified closed ranges', async () => {
   const { fixture, requests, library } = served();
   const catalog = await library.catalog(),
-    set = await library.set(catalog.sets[0]!);
+    set = await library.set(catalog.sets[0]!, catalog.schemaVersion);
   await library.page(fixture.setHash, set, 0);
   expect(requests).toHaveLength(4);
   expect(requests.every(({ range }) => range === null)).toBe(true);
@@ -51,6 +79,17 @@ it('selects, opens and seeks historical recordings using only verified closed ra
       .filter(({ key }) => key.startsWith('packs/'))
       .every(({ range }) => /^bytes=\d+-\d+$/.test(range!)),
   ).toBe(true);
+});
+it('rejects an internally hashed v1 catalog pointing to a v2 set before loading a page or pack', async () => {
+  const { library, requests } = served('v1-catalog');
+  const catalog = await library.catalog();
+  await expect(library.set(catalog.sets[0]!, catalog.schemaVersion)).rejects.toMatchObject({
+    kind: 'damaged',
+  });
+  expect(requests).toHaveLength(3);
+  expect(
+    requests.some(({ key }) => key.startsWith('packs/') || key.startsWith('pack-indexes/')),
+  ).toBe(false);
 });
 it.each(['200', 'range', 'size', 'etag', 'encoding', 'corrupt', 'index'])(
   'rejects %s before decoding, without retrying a whole pack',

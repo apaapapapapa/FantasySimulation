@@ -171,11 +171,20 @@ export function publicLibrary(
       throw new ReplayLoadError('damaged', 'Public catalog version mismatch');
     return catalog;
   }
-  async function set(ref: PublicCatalog['sets'][number], signal?: AbortSignal) {
-    return json(`sets/${publicHashName(ref.setHash)}/set.json`, PublicReplaySetSchema, signal, {
-      checksum: ref.setHash,
-      bytes: ref.bytes,
-    });
+  async function set(
+    ref: PublicCatalog['sets'][number],
+    catalogVersion: PublicCatalog['schemaVersion'],
+    signal?: AbortSignal,
+  ) {
+    const set = await json(
+      `sets/${publicHashName(ref.setHash)}/set.json`,
+      PublicReplaySetSchema,
+      signal,
+      { checksum: ref.setHash, bytes: ref.bytes },
+    );
+    if (set.schemaVersion > catalogVersion)
+      throw new ReplayLoadError('damaged', 'Public catalog cannot reference newer set version');
+    return set;
   }
   async function page(setHash: string, set: PublicReplaySet, index: number, signal?: AbortSignal) {
     const ref = set.pages[index];

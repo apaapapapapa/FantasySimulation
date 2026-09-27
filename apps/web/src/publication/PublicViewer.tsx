@@ -116,7 +116,7 @@ function MatchViewer({
       return;
     }
     void library
-      .set(ref, controller.signal)
+      .set(ref, catalog.schemaVersion, controller.signal)
       .then((value) => {
         if (!controller.signal.aborted) setLoadedSet({ hash: setHash, value });
       })

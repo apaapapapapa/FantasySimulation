@@ -2,6 +2,8 @@ import { test, expect } from '../fixtures.ts';
 import { packedFixture, packedResponse } from '../packed-fixtures.ts';
 import { disableWebgl } from './fixtures.ts';
 
+test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
 test('static-packed-replay', async ({ page, context }) => {
   const fixture = packedFixture(),
     ranges: string[] = [];
@@ -29,6 +31,12 @@ test('static-packed-replay', async ({ page, context }) => {
     await expect(step).toHaveText(value);
   }
   expect(ranges.length).toBeGreaterThanOrEqual(4);
+  await page.getByRole('button', { name: '先頭へ' }).tap();
+  await expect(step).toHaveText('0');
+  await page.getByLabel('再生速度').selectOption('4');
+  await page.getByRole('button', { name: '再生', exact: true }).tap();
+  await expect(step).toHaveText('30');
+  await expect(page.getByRole('button', { name: '再生', exact: true })).toBeDisabled();
   await page.reload();
   await expect(page.getByLabel('リプレイID', { exact: true })).toHaveText(row.replay.replayId);
 });
