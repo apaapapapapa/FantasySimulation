@@ -9,7 +9,7 @@ const stage: StageContact = {
   emitterId: 0,
   hitGroupId: 'group.1',
 };
-const rule = { maxHits: 3, minIntervalSteps: 2, requireSeparation: true };
+const rule = { group: 'group.1', maxHits: 3, minIntervalSteps: 2, requireSeparation: true };
 
 describe('copy-on-write transaction hit history', () => {
   it('keeps an empty fork isolated from later parent writes', () => {
