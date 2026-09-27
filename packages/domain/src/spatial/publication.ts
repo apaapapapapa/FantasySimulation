@@ -13,6 +13,8 @@ import { BatchSlotResultSchema, BundleReceiptSchema, ExecutionSourceSchema } fro
 import { ResultSchema } from './records.ts';
 import { ReplayManifestSchema, ReplayValidationError, type ReplayManifest } from './replay.ts';
 import { LeagueFileRefSchema, PublicLeagueCatalogRefSchema } from './league/publication.ts';
+import { PackedReplayRefsSchema } from './publication/packs.ts';
+export * from './publication/packs.ts';
 export { PUBLICATION_MAX_BYTES, PUBLICATION_MAX_FILES } from './publication/index.ts';
 
 export const PUBLIC_PAGE_ROWS = 100;
@@ -23,7 +25,7 @@ const namedRevision = RefSchema.extend({ name: CharacterSchema.shape.name });
 const participant = ParticipantSchema.extend({
   character: namedRevision,
 });
-export const PublicReplayRefSchema = BundleReceiptSchema.pick({
+const LegacyReplayRefSchema = BundleReceiptSchema.pick({
   objectHash: true,
   simulationHash: true,
   resultId: true,
@@ -31,6 +33,10 @@ export const PublicReplayRefSchema = BundleReceiptSchema.pick({
   replayId: true,
   manifestChecksum: true,
 }).extend({ receiptChecksum: HashSchema, receiptBytes: z.number().int().min(1).max(65536) });
+export const PublicReplayRefSchema = z.union([
+  LegacyReplayRefSchema,
+  LegacyReplayRefSchema.extend({ packs: PackedReplayRefsSchema }),
+]);
 export type PublicReplayRef = z.infer<typeof PublicReplayRefSchema>;
 export const PublicMatchRowSchema = z
   .strictObject({
@@ -94,9 +100,9 @@ export const PublicMatchRowSchema = z
       ctx.addIssue({ code: 'custom', message: 'Public row state/result/replay binding mismatch' });
   });
 export type PublicMatchRow = z.infer<typeof PublicMatchRowSchema>;
-export const PublicMatchPageSchema = z
+const MatchPageBaseSchema = z
   .strictObject({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.union([z.literal(1), z.literal(2)]),
     planId: HashSchema,
     index: z.number().int().min(0).max(9),
     rows: z.array(PublicMatchRowSchema).min(1).max(PUBLIC_PAGE_ROWS),
@@ -108,6 +114,16 @@ export const PublicMatchPageSchema = z
         message: 'Public rows must be unique and ordered by slot ID',
       });
   });
+export const PublicMatchPageSchema = z.union([
+  MatchPageBaseSchema.safeExtend({
+    schemaVersion: z.literal(1),
+    rows: z
+      .array(PublicMatchRowSchema.safeExtend({ replay: LegacyReplayRefSchema.nullable() }))
+      .min(1)
+      .max(PUBLIC_PAGE_ROWS),
+  }),
+  MatchPageBaseSchema.safeExtend({ schemaVersion: z.literal(2) }),
+]);
 export type PublicMatchPage = z.infer<typeof PublicMatchPageSchema>;
 export const PublicStateCountsSchema = z.strictObject({
   complete: count,
@@ -118,7 +134,7 @@ export const PublicStateCountsSchema = z.strictObject({
 });
 export const PublicReplaySetSchema = z
   .strictObject({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.union([z.literal(1), z.literal(2)]),
     planId: HashSchema,
     source: ExecutionSourceSchema,
     engineVersion: IdSchema,
@@ -156,7 +172,7 @@ export const PublicReplaySetSchema = z
 export type PublicReplaySet = z.infer<typeof PublicReplaySetSchema>;
 export const PublicCatalogSchema = z
   .strictObject({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.union([z.literal(1), z.literal(2)]),
     previousCatalogHash: HashSchema.nullable(),
     leagues: z.array(PublicLeagueCatalogRefSchema).max(1000).optional(),
     leagueWork: LeagueFileRefSchema.optional(),
@@ -175,7 +191,7 @@ export const PublicCatalogSchema = z
   });
 export type PublicCatalog = z.infer<typeof PublicCatalogSchema>;
 export const PublicCatalogCurrentSchema = z.strictObject({
-  schemaVersion: z.literal(1),
+  schemaVersion: z.union([z.literal(1), z.literal(2)]),
   catalogHash: HashSchema,
   bytes,
 });
@@ -186,7 +202,7 @@ export const publicHashName = (hash: string) => HashSchema.parse(hash).slice(7);
 export const PublicKeySchema = z
   .string()
   .regex(
-    /^(?:catalog\/(?:current|[0-9a-f]{64})\.json|leagues\/[0-9a-f]{64}\.json|sets\/[0-9a-f]{64}\/(?:set|[0-9a-f]{64})\.json|objects\/[0-9a-f]{64}\/(?:receipt\.json|manifest\.json|chunk-[0-9]{5}\.ndjson\.gz|checkpoint-[0-9]{5}\.json\.gz))$/,
+    /^(?:packs\/[0-9a-f]{64}\.bin|pack-indexes\/[0-9a-f]{64}\.json|catalog\/(?:current|[0-9a-f]{64})\.json|leagues\/[0-9a-f]{64}\.json|sets\/[0-9a-f]{64}\/(?:set|[0-9a-f]{64})\.json|objects\/[0-9a-f]{64}\/(?:receipt\.json|manifest\.json|chunk-[0-9]{5}\.ndjson\.gz|checkpoint-[0-9]{5}\.json\.gz))$/,
   );
 
 /** A transport must verify receipt/manifest bytes before using this reference check. */
@@ -212,6 +228,7 @@ export function assertPublicReplayBinding(
       ([key, value]) =>
         key !== 'receiptChecksum' &&
         key !== 'receiptBytes' &&
+        key !== 'packs' &&
         receipt[key as keyof typeof receipt] !== value,
     ) ||
     !row.participants.every((p) => named('character', p.character)) ||
@@ -255,6 +272,11 @@ export function assertPublicReplayBinding(
 
 export function assertPublicPageBinding(set: PublicReplaySet, page: PublicMatchPage) {
   const ref = set.pages[page.index];
-  if (!ref || page.planId !== set.planId || page.rows.length !== ref.rows)
+  if (
+    page.schemaVersion !== set.schemaVersion ||
+    !ref ||
+    page.planId !== set.planId ||
+    page.rows.length !== ref.rows
+  )
     throw new ReplayValidationError('Public set/page reference mismatch');
 }

@@ -49,7 +49,7 @@ function publicSet() {
   };
 }
 
-describe('public layout contract v1', () => {
+describe('public layout contracts v1/v2', () => {
   it('rejects unknown versions and extra fields for each document', () => {
     const documents = [
       [PublicCatalogCurrentSchema, { schemaVersion: 1, catalogHash: hash(1), bytes: 100 }],
@@ -65,7 +65,7 @@ describe('public layout contract v1', () => {
     ] as const;
     for (const [schema, value] of documents) {
       expect(schema.safeParse(value).success).toBe(true);
-      expect(schema.safeParse({ ...value, schemaVersion: 2 }).success).toBe(false);
+      expect(schema.safeParse({ ...value, schemaVersion: 3 }).success).toBe(false);
       expect(schema.safeParse({ ...value, credentials: 'private' }).success).toBe(false);
     }
   });

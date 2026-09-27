@@ -14,7 +14,7 @@ export const SUPPORTED_REPLAY_FORMAT = Object.freeze({
 export const ViewerBuildSchema = z.strictObject({
   schemaVersion: z.literal(1),
   sourceSha: ExecutionSourceSchema.shape.sha,
-  publicationSchema: z.literal(1),
+  publicationSchema: z.union([z.literal(1), z.literal(2)]),
   replay: z.strictObject({
     manifestSchema: z.literal(SUPPORTED_REPLAY_FORMAT.manifestSchema),
     inputSchema: z.literal(SUPPORTED_REPLAY_FORMAT.inputSchema),
@@ -23,3 +23,9 @@ export const ViewerBuildSchema = z.strictObject({
     profile: z.literal(SUPPORTED_REPLAY_FORMAT.profile),
   }),
 });
+
+export const ReaderBuildSchema = z.strictObject({
+  sourceSha: ExecutionSourceSchema.shape.sha,
+  publicationSchema: z.literal(2),
+});
+export type ReaderBuild = z.infer<typeof ReaderBuildSchema>;

@@ -1,5 +1,9 @@
 import { ZodError } from 'zod';
-import { ReplayValidationError, RevisionGraphError } from '@fantasy/domain/spatial';
+import {
+  ReplayValidationError,
+  PackValidationError,
+  RevisionGraphError,
+} from '@fantasy/domain/spatial';
 
 export type OperationCode =
   | 'INPUT_INVALID'
@@ -28,7 +32,7 @@ export function operationInput<T>(parse: () => T, code: 'INPUT_INVALID' | 'DATA_
   try {
     return parse();
   } catch (error) {
-    if (error instanceof ReplayValidationError)
+    if (error instanceof ReplayValidationError || error instanceof PackValidationError)
       throw new OperationError('DATA_INVALID', 'Invalid replay data');
     if (
       error instanceof ZodError ||
@@ -48,7 +52,8 @@ export function artifactOperationCode(
   schemaCode: 'INPUT_INVALID' | 'DATA_INVALID' = 'INPUT_INVALID',
 ): OperationCode | 'UNKNOWN' {
   if (error instanceof OperationError) return error.code;
-  if (error instanceof ReplayValidationError) return 'DATA_INVALID';
+  if (error instanceof ReplayValidationError || error instanceof PackValidationError)
+    return 'DATA_INVALID';
   if (error instanceof ZodError) return schemaCode;
   if (error instanceof RevisionGraphError) return 'INPUT_INVALID';
   return 'UNKNOWN';

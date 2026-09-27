@@ -1,3 +1,4 @@
+import type { ReplayLocation } from '../replay/pack-reader.ts';
 import { currentMeasurements, measureSync } from '../measurements.ts';
 import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { availableParallelism } from 'node:os';
@@ -103,7 +104,7 @@ export class BattlePool {
       port2.close();
     }
   }
-  async verify(directory: string, manifest: ReplayManifest, publicData: boolean) {
+  async verify(directory: ReplayLocation, manifest: ReplayManifest, publicData: boolean) {
     if (this.closed) throw new Error('Battle pool is closed');
     if (this.startupFailure) throw this.startupFailure;
     const source = import.meta.url.endsWith('.ts');

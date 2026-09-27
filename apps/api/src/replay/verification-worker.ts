@@ -1,10 +1,11 @@
+import type { ReplayLocation } from './pack-reader.ts';
 import { ReplayManifestSchema, type ReplayManifest } from '@fantasy/domain/spatial';
 import { artifactOperationCode, operationInput, type OperationCode } from '../operation-error.ts';
 import { verifyReplayDirectory } from './replay-reader.ts';
 import { assertPublicData } from './replay-public.ts';
 
 export type VerificationTask = {
-  directory: string;
+  directory: ReplayLocation;
   manifest: ReplayManifest;
   publicData: boolean;
 };

@@ -1,3 +1,4 @@
+import type { ReplayLocation } from './pack-reader.ts';
 import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Piscina } from 'piscina';
@@ -9,13 +10,13 @@ import type { VerificationResponse, VerificationTask } from './verification-work
 export type ReplayVerifier = {
   readonly workers: number;
   readonly signal?: AbortSignal | undefined;
-  verify(directory: string, manifest: ReplayManifest, publicData: boolean): Promise<void>;
+  verify(directory: ReplayLocation, manifest: ReplayManifest, publicData: boolean): Promise<void>;
 };
 
 /** Both standalone and producer pools use the same response/error accounting. */
 export async function verifyInWorker(
   run: (task: VerificationTask) => Promise<VerificationResponse>,
-  directory: string,
+  directory: ReplayLocation,
   manifest: ReplayManifest,
   publicData: boolean,
 ) {
@@ -73,7 +74,7 @@ export class ReplayVerificationPool {
       this.startupFailure = error;
     });
   }
-  async verify(directory: string, manifest: ReplayManifest, publicData: boolean) {
+  async verify(directory: ReplayLocation, manifest: ReplayManifest, publicData: boolean) {
     if (this.closed) throw new Error('Replay verification pool is closed');
     if (this.startupFailure) throw this.startupFailure;
     this.signal?.throwIfAborted();

@@ -21,3 +21,5 @@ export {
 } from './replay/verification-pool.ts';
 export { currentMeasurements, measureAsync } from './measurements.ts';
 export { default as verifyRecordedReplay } from './replay/verification-worker.ts';
+
+export { PackArchive, readPackEntry, replayRead, type PackedEntry } from './replay/pack-reader.ts';

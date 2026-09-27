@@ -1,3 +1,4 @@
+import { packPublication } from './publication-packs.ts';
 import { OperationError, operationInput } from '@fantasy/api/artifacts';
 import type { ReplayVerificationPool } from '@fantasy/api/artifacts';
 import { join, resolve, sep } from 'node:path';
@@ -20,7 +21,7 @@ import {
   type RevisionRef,
 } from '@fantasy/domain/spatial';
 import { checkedBatch, type BatchCheckInput } from '@fantasy/api/artifacts';
-import { readBoundedFile, sha256 } from '@fantasy/api/artifacts';
+import { sha256 } from '@fantasy/api/artifacts';
 import {
   publicationBytes,
   publicationDirectory,
@@ -52,6 +53,7 @@ export async function buildPublication(
   directory: string,
   pool?: ReplayVerificationPool,
   signal?: AbortSignal,
+  packs = false,
 ) {
   const root = resolve(directory);
   for (const value of indexes) {
@@ -60,7 +62,11 @@ export async function buildPublication(
     // Empty artifact directories are absent after Actions transfers; no recording is read.
     if (!parseJson(BatchIndexSchema, value.index).slots.some((slot) => slot.receipt)) continue;
     await publicationDirectory(value.bundles.root);
-    await publicationDirectory(join(value.bundles.root, 'objects'));
+    for (const collection of ['objects', 'packs', 'pack-indexes']) {
+      await publicationDirectory(join(value.bundles.root, collection)).catch((error: unknown) => {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      });
+    }
   }
   // New scope: never trust aggregation's earlier pass across the journal callback.
   const checked = await checkedBatch(input, indexes, {
@@ -106,9 +112,8 @@ export async function buildPublication(
     };
     if (receipt) {
       const prefix = `objects/${publicHashName(receipt.objectHash)}/`,
-        source = join(checked.sources.get(slot.id)!.root, prefix);
-      await publicationDirectory(source);
-      const receiptBytes = await readBoundedFile(join(source, 'receipt.json'), 65536);
+        bundles = checked.sources.get(slot.id)!;
+      const receiptBytes = await bundles.read(receipt.objectHash, 'receipt.json', 65536);
       if (
         canonicalJson(
           operationInput(
@@ -118,8 +123,9 @@ export async function buildPublication(
         ) !== canonicalJson(receipt)
       )
         throw new OperationError('DATA_INVALID', 'Receipt changed after verification');
-      const manifestBytes = await readBoundedFile(
-        join(source, 'manifest.json'),
+      const manifestBytes = await bundles.read(
+        receipt.objectHash,
+        'manifest.json',
         MAX_REPLAY_MANIFEST_BYTES,
       );
       if (sha256(manifestBytes) !== receipt.manifestChecksum)
@@ -157,11 +163,12 @@ export async function buildPublication(
           ['receipt.json', receiptBytes],
           ['manifest.json', manifestBytes],
         ] as const) {
+          const size = data.length;
           const file = {
             key: prefix + name,
-            bytes: data.length,
+            bytes: size,
             checksum: sha256(data),
-            source: join(source, name),
+            load: () => bundles.read(receipt.objectHash, name, size),
           };
           await publicationBytes(file);
           files.push(file);
@@ -171,7 +178,8 @@ export async function buildPublication(
             key: prefix + ref.file,
             bytes: ref.bytes,
             checksum: ref.checksum,
-            source: join(source, ref.file),
+            load: () => bundles.read(receipt.objectHash, ref.file, ref.bytes),
+            rawBytes: ref.rawBytes,
           };
           // Privacy was checked on the original parsed JSON during full validation.
           // Re-read exact bytes here and again at write time; never trust mutable paths.
@@ -184,6 +192,10 @@ export async function buildPublication(
     }
     rows.push(parseJson(PublicMatchRowSchema, row));
   }
+  if (packs) {
+    const packed = await packPublication(files, rows, signal);
+    files.splice(0, files.length, ...packed);
+  }
   const counts = { complete: 0, failed: 0, unresolved: 0, truncated: 0, pending: 0 };
   rows.forEach((row) => counts[row.state]++);
   const pages: PublicationFile[] = [],
@@ -191,7 +203,7 @@ export async function buildPublication(
   for (let offset = 0; offset < rows.length; offset += PUBLIC_PAGE_ROWS) {
     const index = pages.length,
       page = PublicMatchPageSchema.parse({
-        schemaVersion: 1,
+        schemaVersion: packs ? 2 : 1,
         planId: plan.id,
         index,
         rows: rows.slice(offset, offset + PUBLIC_PAGE_ROWS),
@@ -202,7 +214,7 @@ export async function buildPublication(
     pageRefs.push({ index, pageHash: file.checksum, bytes: file.bytes, rows: page.rows.length });
   }
   const set = PublicReplaySetSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: packs ? 2 : 1,
     planId: plan.id,
     source: plan.source,
     engineVersion: plan.engineVersion,
@@ -238,9 +250,13 @@ export async function exportPublication(
   indexes: BatchCheckInput[],
   directory: string,
   maxBytes?: number,
+  packs = false,
 ) {
-  const built = await buildPublication(input, indexes, directory);
-  const written = await commitPublication(directory, built.files, [built.setRef], { maxBytes });
+  const built = await buildPublication(input, indexes, directory, undefined, undefined, packs);
+  const written = await commitPublication(directory, built.files, [built.setRef], {
+    maxBytes,
+    schemaVersion: built.set.schemaVersion,
+  });
   return {
     setHash: built.setHash,
     totalRows: built.set.totalRows,

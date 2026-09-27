@@ -21,7 +21,10 @@ import {
   syncDirectory,
   writeDurableFile,
   measureAsync,
+  PackArchive,
+  replayRead,
 } from '@fantasy/api/artifacts';
+import { PublicationIo } from './publication-io.ts';
 import { publicationPool } from './publication-pool.ts';
 
 export { assertPublicData } from '@fantasy/api/artifacts';
@@ -34,6 +37,9 @@ export type PublicationFile = {
   checksum: string;
   data?: Buffer;
   source?: string;
+  rawBytes?: number;
+  parts?: PublicationFile[];
+  load?: () => Promise<Buffer>;
 };
 const absent = (error: unknown) => (error as NodeJS.ErrnoException).code === 'ENOENT';
 
@@ -107,7 +113,21 @@ export function publicationJson(key: string, value: unknown): PublicationFile {
   return { key: PublicKeySchema.parse(key), bytes: data.length, checksum: sha256(data), data };
 }
 export async function publicationBytes(file: PublicationFile) {
-  const data = file.data ?? (await readBoundedFile(file.source!, file.bytes));
+  let data = file.data;
+  if (!data && file.parts) {
+    data = Buffer.alloc(file.bytes);
+    let offset = 0;
+    for (const part of file.parts) {
+      const bytes = await publicationBytes(part);
+      if (offset + bytes.length > data.length)
+        throw new OperationError('DATA_INVALID', 'Pack assembly overflow');
+      data.set(bytes, offset);
+      offset += bytes.length;
+    }
+    if (offset !== data.length)
+      throw new OperationError('DATA_INVALID', 'Pack assembly size mismatch');
+  }
+  data ??= file.load ? await file.load() : await readBoundedFile(file.source!, file.bytes);
   if (data.length !== file.bytes || sha256(data) !== file.checksum)
     throw new OperationError('DATA_INVALID', 'Publication input changed after verification');
   return data;
@@ -125,13 +145,16 @@ export async function publicationInventory(root: string, objectsOnly = false) {
   const files = new Map<string, number>();
   async function walk(directory: string, prefix: string) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
-      if (objectsOnly && !prefix && entry.name !== 'objects') continue;
+      if (objectsOnly && !prefix && !['objects', 'packs', 'pack-indexes'].includes(entry.name))
+        continue;
       if (!prefix && entry.name === '.publication-lock') continue;
       const key = prefix + entry.name,
         path = join(directory, entry.name);
       if (
         entry.isDirectory() &&
-        /^(?:catalog|leagues|sets|objects|(?:sets|objects)\/[0-9a-f]{64})$/.test(key)
+        /^(?:catalog|leagues|sets|objects|packs|pack-indexes|(?:sets|objects)\/[0-9a-f]{64})$/.test(
+          key,
+        )
       )
         await walk(path, key + '/');
       else if (entry.isFile()) {
@@ -159,13 +182,35 @@ export async function writePublication(
     throw new OperationError('INPUT_INVALID', 'Invalid publication capacity');
   const stored = await publicationInventory(root);
   const incoming = new Map<string, string>();
-  for (const file of files.filter((f) => f.key.endsWith('/receipt.json'))) {
+  for (const file of files
+    .flatMap((f) => f.parts ?? [f])
+    .filter((f) => f.key.endsWith('/receipt.json'))) {
     receiptIdentity(file.key, await publicationBytes(file), incoming);
   }
   for (const key of stored.keys())
     if (key.endsWith('/receipt.json')) {
       receiptIdentity(key, await readBoundedFile(join(root, key), 65536), incoming);
     }
+  const archive = new PackArchive(root);
+  const packedObjects = new Set<string>();
+  for (const key of stored.keys())
+    if (key.startsWith('pack-indexes/')) {
+      const { PackIndexSchema } = await import('@fantasy/domain/spatial');
+      const index = PackIndexSchema.parse(
+        JSON.parse(
+          (await readBoundedFile(join(root, key), MAX_PUBLIC_JSON_BYTES)).toString('utf8'),
+        ),
+      );
+      for (const entry of index.entries)
+        if (entry.key.endsWith('/receipt.json'))
+          packedObjects.add('sha256:' + entry.key.split('/')[1]!);
+    }
+  for (const object of packedObjects)
+    receiptIdentity(
+      `objects/${publicHashName(object)}/receipt.json`,
+      await replayRead(await archive.location(object))('receipt.json', 65536),
+      incoming,
+    );
   const additions: PublicationFile[] = [];
   const keys = new Set<string>();
   for (const file of files) {
@@ -194,16 +239,26 @@ export async function writePublication(
       throw new OperationError('PUBLICATION_CONFLICT', 'Publication generation changed');
   };
   await assertGeneration();
-  await publicationPool(
-    additions,
-    4,
-    async (file) => {
-      signal?.throwIfAborted();
-      await publicationDirectory(dirname(join(root, file.key)), true);
-      await publishImmutableFile(join(root, file.key), await publicationBytes(file));
-    },
-    'publication.write',
-  );
+  const width = files.some((file) => file.key.startsWith('packs/')) ? 2 : 4;
+  const io = new PublicationIo(width, 64 * 1024 ** 2, signal);
+  try {
+    for (const packed of [true, false])
+      await publicationPool(
+        additions.filter((file) => file.key.startsWith('packs/') === packed),
+        width,
+        async (file) => {
+          signal?.throwIfAborted();
+          await publicationDirectory(dirname(join(root, file.key)), true);
+          await io.run(
+            file.bytes + Math.max(0, ...(file.parts ?? []).map((part) => part.bytes)),
+            async () => publishImmutableFile(join(root, file.key), await publicationBytes(file)),
+          );
+        },
+        'publication.write',
+      );
+  } finally {
+    await io.close();
+  }
   await assertGeneration();
   signal?.throwIfAborted();
   if (!previous?.equals(current.data!)) {

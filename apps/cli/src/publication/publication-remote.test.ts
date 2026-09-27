@@ -99,27 +99,28 @@ it('rejects changed local bytes after transport admission without committing the
   });
   expect(store.objects.has('catalog/current.json')).toBe(false);
 });
-async function setup() {
+async function setup(packs = false) {
   const root = await mkdtemp(join(tmpdir(), 'remote-publication-'));
   roots.push(root);
   const fixture = await publicationFixture(join(root, 'batch'));
   const directory = join(root, 'public');
-  await exportPublication(fixture.plan, [fixture], directory);
+  await exportPublication(fixture.plan, [fixture], directory, undefined, packs);
   const store = new MemoryStore();
   const options: PublishOptions = {
     viewer: async () => ({
       schemaVersion: 1,
       sourceSha: 'b'.repeat(40),
-      publicationSchema: 1,
+      publicationSchema: packs ? 2 : 1,
       replay: SUPPORTED_REPLAY_FORMAT,
     }),
     ancestor: (source, viewer) => source === 'a'.repeat(40) && viewer === 'b'.repeat(40),
-    worker: async (key) => {
+    worker: async (key, _limit, range) => {
       const value = await store.read(key);
       if (!value) throw new Error('Missing worker object');
-      return value.data;
+      return range ? value.data.subarray(range.offset, range.offset + range.bytes) : value.data;
     },
   };
+  options.worker.readerBuild = () => ({ sourceSha: 'b'.repeat(40), publicationSchema: 2 });
   return { root, directory, fixture, store, options };
 }
 it.each([Buffer.from('{REMOTE_PRIVATE_SENTINEL'), Buffer.from([0xff])])(
@@ -530,5 +531,46 @@ it.each([false, true])(
     expect(count() - before).toBe(report.reservedS3Requests);
     if (unchanged) expect(report.reservedS3Requests).toBe(4);
     expect(report.status).toBe('verified');
+  },
+);
+
+it('publishes immutable packs before probing Reader ranges and committing the v2 pointer', async () => {
+  const { directory, store, options } = await setup(true);
+  const read = options.worker;
+  const ranged = vi.fn(async (...args: Parameters<typeof read>) => {
+    if (args[2])
+      expect(store.objects.has('catalog/current.json')).toBe(
+        ranged.mock.calls.filter((call) => call[2]).length > 1,
+      );
+    return read(...args);
+  });
+  const result = await publishPublication(directory, store, {
+    ...options,
+    worker: Object.assign(ranged, { readerBuild: () => options.worker.readerBuild!() }),
+  });
+  expect(result.status).toBe('verified');
+  expect(ranged.mock.calls.filter((call) => call[2])).toHaveLength(2);
+  expect(store.writes.at(-1)).toBe('catalog/current.json');
+  expect(store.writes.some((key) => key.startsWith('objects/'))).toBe(false);
+  expect((await prunePublication(store, false)).keys).toEqual([]);
+});
+it.each(['viewer', 'reader'] as const)(
+  'keeps the pointer unchanged when the deployed %s lacks pack support',
+  async (kind) => {
+    const { directory, store, options } = await setup(true);
+    if (kind === 'viewer')
+      options.viewer = async () => ({
+        schemaVersion: 1,
+        sourceSha: 'b'.repeat(40),
+        publicationSchema: 1,
+        replay: SUPPORTED_REPLAY_FORMAT,
+      });
+    else options.worker = async (key) => (await store.read(key))!.data;
+    await expect(publishPublication(directory, store, options)).rejects.toMatchObject({
+      phase: 'not-committed',
+    });
+    expect(store.objects.has('catalog/current.json')).toBe(false);
+    if (kind === 'viewer') expect(store.writes).toEqual([]);
+    else expect(store.writes.some((key) => key.startsWith('packs/'))).toBe(true);
   },
 );

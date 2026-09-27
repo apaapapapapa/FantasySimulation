@@ -9,7 +9,7 @@ it('limits public connections and emits source-bound compatible metadata with co
   expect(build.metadata).toEqual({
     schemaVersion: 1,
     sourceSha: '1'.repeat(40),
-    publicationSchema: 1,
+    publicationSchema: 2,
     replay: {
       manifestSchema: 1,
       inputSchema: 3,

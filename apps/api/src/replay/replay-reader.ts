@@ -1,3 +1,4 @@
+import { replayRead, type ReplayLocation } from './pack-reader.ts';
 import { currentMeasurements, measureSync, startMeasurement } from '../measurements.ts';
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -28,9 +29,9 @@ export function replayValidationProfile(manifest: ReplayManifest) {
     : null;
 }
 /** Trusted DB receipts bind prior semantic verification to these exact compressed bytes. */
-export async function verifyReplayChecksums(directory: string, manifest: ReplayManifest) {
+export async function verifyReplayChecksums(directory: ReplayLocation, manifest: ReplayManifest) {
   for (const ref of [...manifest.chunks, ...manifest.checkpoints]) {
-    const bytes = await readBoundedFile(join(directory, ref.file), ref.bytes);
+    const bytes = await replayRead(directory)(ref.file, ref.bytes);
     if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
       throw new OperationError('DATA_INVALID', 'Replay file size or checksum mismatch');
   }
@@ -58,23 +59,31 @@ export async function readReplayManifest(
   if (manifest.id !== id) throw new OperationError('DATA_INVALID', 'Replay ID mismatch');
   return manifest;
 }
-export async function readReplayChunk(directory: string, manifest: ReplayManifest, index: number) {
+export async function readReplayChunk(
+  directory: ReplayLocation,
+  manifest: ReplayManifest,
+  index: number,
+) {
   const ref = manifest.chunks[index];
   if (!ref) throw new Error('Unknown replay chunk');
-  const raw = await readCompressed(directory, ref);
+  const raw = await readCompressed('', ref, replayRead(directory));
   return measureSync('json.records', () =>
     operationInput(() => replayChunkRecords(raw, ref), 'DATA_INVALID'),
   );
 }
-const readCheckpoint = async (directory: string, manifest: ReplayManifest, index: number) => {
-  const raw = await readCompressed(directory, manifest.checkpoints[index]!);
+const readCheckpoint = async (
+  directory: ReplayLocation,
+  manifest: ReplayManifest,
+  index: number,
+) => {
+  const raw = await readCompressed('', manifest.checkpoints[index]!, replayRead(directory));
   return measureSync('json.checkpoint', () =>
     operationInput(() => JSON.parse(raw) as unknown, 'DATA_INVALID'),
   );
 };
 /** Full verification precedes writing, untrusted import/publication and legacy receipt adoption. */
 export async function verifyReplayDirectory(
-  directory: string,
+  directory: ReplayLocation,
   manifest: ReplayManifest,
   inspect?: (value: unknown) => void,
 ) {

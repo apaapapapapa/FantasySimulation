@@ -119,3 +119,27 @@ it('keeps league verification alive after a long upload while bounding each requ
   for (const invalid of [0, 14400001, 1.5, NaN])
     expect(() => publicHttp('https://viewer.example/', invalid)).toThrow('deadline');
 });
+it('records the deployed Reader SHA only after an exact bounded range response', async () => {
+  const data = Buffer.from([1, 2, 3]),
+    range = { offset: 4, bytes: 3, total: 10 };
+  const headers = {
+    'content-type': 'application/octet-stream',
+    'content-range': 'bytes 4-6/10',
+    'content-length': '3',
+    'accept-ranges': 'bytes',
+    etag: '"pack"',
+    'x-replay-publication': '2',
+    'x-replay-source': 'a'.repeat(40),
+  };
+  const fetch = vi.fn().mockResolvedValueOnce(new Response(data, { status: 206, headers }));
+  vi.stubGlobal('fetch', fetch);
+  const read = publicHttp('https://reader.example/');
+  expect(read.readerBuild()).toBeUndefined();
+  expect(await read('packs/' + 'b'.repeat(64) + '.bin', 3, range)).toEqual(data);
+  expect(read.readerBuild()).toEqual({ sourceSha: 'a'.repeat(40), publicationSchema: 2 });
+  expect(fetch.mock.calls[0]![1].headers.Range).toBe('bytes=4-6');
+  fetch.mockResolvedValueOnce(new Response(data, { status: 200, headers }));
+  await expect(read('packs/' + 'b'.repeat(64) + '.bin', 3, range)).rejects.toThrow(
+    'range response',
+  );
+});

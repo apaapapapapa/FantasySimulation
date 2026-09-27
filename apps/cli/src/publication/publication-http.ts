@@ -1,3 +1,5 @@
+import { ReaderBuildSchema, type ReaderBuild } from '@fantasy/domain';
+import { assertPackResponse, type PackRange } from '@fantasy/domain/spatial';
 import { measureAsync } from '@fantasy/api/tooling';
 import { execFileSync } from 'node:child_process';
 import { OperationError } from '@fantasy/api/tooling';
@@ -71,7 +73,8 @@ export function publicHttp(root: string, deadlineMs = 300000) {
   const deadline = AbortSignal.timeout(deadlineMs);
   let requests = 0,
     total = 0;
-  return async (key: string, limit: number) =>
+  let build: ReaderBuild | undefined;
+  const read = async (key: string, limit: number, range?: PackRange) =>
     measureAsync('public.GET', async () => {
       if (++requests > 1002)
         throw new OperationError('BUDGET_EXCEEDED', 'Public read-back request limit');
@@ -83,7 +86,12 @@ export function publicHttp(root: string, deadlineMs = 300000) {
         redirect: 'error',
         credentials: 'omit',
         headers: {
-          accept: key.endsWith('.gz') ? 'application/gzip' : 'application/json',
+          accept: range
+            ? 'application/octet-stream'
+            : key.endsWith('.gz')
+              ? 'application/gzip'
+              : 'application/json',
+          ...(range ? { Range: `bytes=${range.offset}-${range.offset + range.bytes - 1}` } : {}),
           'cache-control': 'no-cache',
         },
       }).catch(() => {
@@ -93,11 +101,30 @@ export function publicHttp(root: string, deadlineMs = 300000) {
         !response.ok ||
         !response.headers
           .get('content-type')
-          ?.startsWith(key.endsWith('.gz') ? 'application/gzip' : 'application/json') ||
+          ?.startsWith(
+            range
+              ? 'application/octet-stream'
+              : key.endsWith('.gz')
+                ? 'application/gzip'
+                : 'application/json',
+          ) ||
         (key.endsWith('.gz') && response.headers.has('content-encoding'))
       ) {
         await response.body?.cancel();
         throw new PublicReadFailure(response.status);
+      }
+      let observedBuild: ReaderBuild | undefined;
+      if (range) {
+        try {
+          assertPackResponse(response.status, response.headers, range);
+          observedBuild = ReaderBuildSchema.parse({
+            sourceSha: response.headers.get('x-replay-source'),
+            publicationSchema: Number(response.headers.get('x-replay-publication')),
+          });
+        } catch (error) {
+          await response.body?.cancel();
+          throw error;
+        }
       }
       const reader = response.body?.getReader();
       if (!reader) throw new OperationError('DATA_INVALID', 'Public read-back body missing');
@@ -124,6 +151,10 @@ export function publicHttp(root: string, deadlineMs = 300000) {
       } finally {
         reader.releaseLock();
       }
+      if (range && size !== range.bytes)
+        throw new OperationError('DATA_INVALID', 'Truncated pack range response');
+      if (observedBuild) build = observedBuild;
       return Buffer.concat(parts);
     });
+  return Object.assign(read, { readerBuild: () => build });
 }

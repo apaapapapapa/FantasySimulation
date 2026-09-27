@@ -52,6 +52,8 @@ output and work budgets plus 256 MiB. Built CLI: node apps/cli/dist/batch.mjs (c
 
 ## Publication
 
+`league export` / `publication publish` accept opt-in `--packs` (ADR 0019).
+
 [Workflow](../../.github/workflows/publication.yml): cloud commands/environment;
 [ADR 0008](../adr/0008-headless-batch.md): contracts. Restore needs a new directory.
 Cleanup: `vp run publication prune public-dir`, review orphan keys/bytes, then --confirm.
