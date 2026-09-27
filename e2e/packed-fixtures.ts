@@ -100,6 +100,8 @@ export function packedResponse(
           ? 'application/gzip'
           : 'application/json',
       'access-control-allow-origin': '*',
+      'access-control-expose-headers':
+        'Content-Encoding, Content-Range, Content-Length, Accept-Ranges, ETag',
       'content-length': String(body.length),
       ...(packed && ok
         ? {
