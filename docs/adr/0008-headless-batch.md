@@ -4,7 +4,7 @@
 retains ALL limits, predicates, command/exit semantics, evidence and linked execution/
 protocol history. This navigation summary changes none of them.
 [ADR0011](0011-integrated-performance.md) records implemented refinements;
-[ADR0019](0019-league-pipeline.md) is proposed, not an approved amendment.
+[ADR0019](0019-league-pipeline.md) is approved; its rollout gates still apply.
 
 ## Publication v1
 

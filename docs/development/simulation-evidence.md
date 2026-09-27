@@ -45,5 +45,5 @@ probe/source-driver distinction. Full protocol owns all exceptions and reproduct
 ## Integrated persistence performance
 
 [ADR0011](../adr/0011-integrated-performance.md):1000-battle fixed-machine protocol.
-[ADR0019](../adr/0019-league-pipeline.md):proposed7600-match pipeline and measured baseline,
+[ADR0019](../adr/0019-league-pipeline.md):approved7600-match pipeline and measured baseline,
 not a change to existing verification gates.
