@@ -137,11 +137,17 @@ export function assertPackedFiles(
 ) {
   if (entries.length !== expected.length)
     throw new PackValidationError('Packed replay file coverage mismatch');
-  for (const file of expected) {
-    const matches = entries.filter((entry) => entry.key === file.key);
-    if (matches.length !== 1)
+  const byKey = new Map<string, PackEntry>();
+  for (const entry of entries) {
+    if (byKey.has(entry.key))
       throw new PackValidationError('Missing or duplicate packed replay file');
-    assertPackArtifact(matches[0]!, file);
+    byKey.set(entry.key, entry);
+  }
+  for (const file of expected) {
+    const entry = byKey.get(file.key);
+    if (!entry) throw new PackValidationError('Missing or duplicate packed replay file');
+    assertPackArtifact(entry, file);
+    byKey.delete(file.key);
   }
 }
 

@@ -3,16 +3,28 @@ import {
   PACK_GROUP_SLOTS,
   PACK_TARGET_BYTES,
   PACK_RANGE_BYTES,
+  PACK_INDEX_BYTES,
+  PACK_MAX_BYTES,
   PackIndexSchema,
   packKey,
   packIndexKey,
   compareIds,
+  canonicalJson,
   type PackEntry,
   type PackIndexRef,
   type PublicMatchRow,
 } from '@fantasy/domain/spatial';
 import { OperationError } from '@fantasy/api/artifacts';
 import { publicationBytes, publicationJson, type PublicationFile } from './publication-files.ts';
+
+const indexOverhead = Buffer.byteLength(
+  canonicalJson({
+    schemaVersion: 1,
+    packHash: 'sha256:' + '0'.repeat(64),
+    packBytes: PACK_MAX_BYTES,
+    entries: [],
+  }),
+);
 
 /** Original durable bundles are the spool. Keep only descriptors until the bounded commit. */
 export async function packPublication(
@@ -42,6 +54,7 @@ export async function packPublication(
     let parts: PublicationFile[] = [],
       indexEntries: PackEntry[] = [],
       size = 0,
+      indexBytes = indexOverhead,
       hash = createHash('sha256');
     const flush = () => {
       if (!size) return;
@@ -63,22 +76,35 @@ export async function packPublication(
       parts = [];
       indexEntries = [];
       size = 0;
+      indexBytes = indexOverhead;
       hash = createHash('sha256');
     };
     for (const file of entries) {
       signal?.throwIfAborted();
       if (file.bytes > PACK_RANGE_BYTES || file.bytes < 1)
         throw new OperationError('BUDGET_EXCEEDED', 'Replay entry exceeds pack range bound');
-      if (size && (size + file.bytes > PACK_TARGET_BYTES || parts.length === 16384)) flush();
-      const data = await publicationBytes(file);
-      indexEntries.push({
+      const entry: PackEntry = {
         key: file.key,
         offset: size,
         bytes: file.bytes,
         checksum: file.checksum,
         encoding: file.key.endsWith('.gz') ? 'gzip' : 'identity',
         rawBytes: file.rawBytes ?? file.bytes,
-      });
+      };
+      const entryBytes = () => Buffer.byteLength(canonicalJson(entry)) + 1;
+      if (
+        size &&
+        (size + file.bytes > PACK_TARGET_BYTES ||
+          // Also stay inside canonicalJson's conservative string/node budget.
+          parts.length === 4096 ||
+          indexBytes + entryBytes() > PACK_INDEX_BYTES)
+      ) {
+        flush();
+        entry.offset = 0;
+      }
+      const data = await publicationBytes(file);
+      indexEntries.push(entry);
+      indexBytes += entryBytes();
       parts.push(file);
       hash.update(data);
       size += file.bytes;

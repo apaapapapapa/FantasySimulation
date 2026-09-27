@@ -1,5 +1,11 @@
 import { expect, it } from 'vite-plus/test';
-import { PackIndexSchema, parsePackRange, assertPackResponse, PACK_RANGE_BYTES } from './packs.ts';
+import {
+  PackIndexSchema,
+  parsePackRange,
+  assertPackResponse,
+  PACK_RANGE_BYTES,
+  assertPackedFiles,
+} from './packs.ts';
 
 const index = () => ({
   schemaVersion: 1,
@@ -13,6 +19,23 @@ const index = () => ({
     encoding: 'identity',
     rawBytes: 4,
   })),
+});
+it('checks large complete coverage and refuses repeated or missing logical references', () => {
+  const base = PackIndexSchema.parse(index()).entries[0]!;
+  const entries = Array.from({ length: 10000 }, (_, i) => ({
+    ...base,
+    key: `objects/${'b'.repeat(64)}/checkpoint-${String(i).padStart(5, '0')}.json.gz`,
+    offset: i * 4,
+  }));
+  const expected = entries.map(({ key }) => ({ key, bytes: 4, checksum: base.checksum }));
+  expect(() => assertPackedFiles(entries, expected)).not.toThrow();
+  expect(() => assertPackedFiles([...entries.slice(1), entries[1]!], expected)).toThrow(
+    'duplicate',
+  );
+  expect(() => assertPackedFiles(entries, [...expected.slice(1), expected[1]!])).toThrow(
+    'duplicate',
+  );
+  expect(() => assertPackedFiles(entries.slice(1), expected)).toThrow('coverage');
 });
 it.each([
   'overlap',

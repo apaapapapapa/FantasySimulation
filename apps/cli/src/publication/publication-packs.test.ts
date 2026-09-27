@@ -9,6 +9,7 @@ import {
   canonicalJson,
   packKey,
   packIndexKey,
+  PACK_INDEX_BYTES,
 } from '@fantasy/domain/spatial';
 import { publicationFixture, readPublication } from '../../test-support/publication.ts';
 import { exportPublication } from './publication-export.ts';
@@ -191,6 +192,33 @@ it('rejects a symlinked source collection before reading legacy or packed input'
     await expect(
       exportPublication(fixture.plan, [fixture], join(root, 'public'), undefined, true),
     ).rejects.toThrow('symlink');
+  });
+});
+
+it('splits many small artifacts before their canonical index exceeds its byte limit', async () => {
+  await withReplayDirectory(async (root) => {
+    const { packPublication } = await import('./publication-packs.ts');
+    const fixture = await publicationFixture(join(root, 'batch')),
+      target = join(root, 'public');
+    await exportPublication(fixture.plan, [fixture], target);
+    const row = (await readPublication(target)).sets[0]!.rows[0]!;
+    const data = Buffer.from([1]);
+    const files = Array.from({ length: 16384 }, (_, i) => ({
+      key: `objects/${row.replay!.objectHash.slice(7)}/chunk-${String(i).padStart(5, '0')}.ndjson.gz`,
+      data,
+      bytes: 1,
+      rawBytes: 1,
+      checksum: sha256(data),
+    }));
+    const packed = await packPublication(files, [row]);
+    const indexes = packed.filter((file) => file.key.startsWith('pack-indexes/'));
+    expect(indexes.length).toBeGreaterThan(1);
+    expect(indexes.every((file) => file.bytes <= PACK_INDEX_BYTES)).toBe(true);
+    expect(
+      indexes
+        .flatMap((file) => PackIndexSchema.parse(JSON.parse(file.data!.toString('utf8'))).entries)
+        .map((entry) => entry.key),
+    ).toEqual(files.map((file) => file.key));
   });
 });
 
