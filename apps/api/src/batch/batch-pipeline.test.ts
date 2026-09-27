@@ -3,9 +3,11 @@ import { setImmediate } from 'node:timers/promises';
 import { join } from 'node:path';
 import { ARTIFACT_RESERVATION_BYTES, canonicalJson } from '@fantasy/domain/spatial';
 import { readdir } from 'node:fs/promises';
+import { availableParallelism } from 'node:os';
 import { batchInput, batchSource } from '../../test-support/batches.ts';
 import { withReplayDirectory } from '../../test-support/replays.ts';
 import { BattleService } from '../jobs/battle-service.ts';
+import { BattlePool } from '../jobs/worker-pool.ts';
 import { Measurements } from '../measurements.ts';
 import { openStore } from '../db/store.ts';
 import { BattleBundles } from './battle-bundle.ts';
@@ -66,17 +68,26 @@ function heldPublication(fail = false) {
   };
 }
 
-it.each([1, 2])(
-  'bounds the publication window to %i with work reservations and serial durable commits',
-  async (window) => {
+it.each([
+  { workers: 1, window: 1 },
+  ...Array.from({ length: Math.min(4, Math.max(1, availableParallelism() - 1)) }, (_, i) => ({
+    workers: i + 1,
+    window: 2,
+  })),
+])(
+  'bounds all admitted results with $workers Workers and a $window-unit publication window',
+  async ({ workers, window }) => {
     await withReplayDirectory(async (root) => {
       const plan = await createBatchPlan(
-        { ...(await batchInput(6)), maxWorkBytes: (2 + window) * ARTIFACT_RESERVATION_BYTES },
+        {
+          ...(await batchInput(6)),
+          maxWorkBytes: (workers * 2 + window) * ARTIFACT_RESERVATION_BYTES,
+        },
         batchSource,
       );
       const held = heldPublication(),
         measurement = new Measurements();
-      const running = measurement.run(() => runBatch(plan, root, batchSource));
+      const running = measurement.run(() => runBatch(plan, root, batchSource, { workers }));
       try {
         await held.entered;
         if (window === 2) await held.secondFinished;
@@ -191,5 +202,64 @@ it('holds every unpublished result when the real output reservation is exhausted
     expect(await new BattleBundles(root, plan.maxOutputBytes).storedBytes()).toBeLessThanOrEqual(
       plan.maxOutputBytes,
     );
+  });
+}, 30_000);
+
+it('finishes an admitted calculation after a publication failure without cancelling its attempt', async () => {
+  await withReplayDirectory(async (root) => {
+    const plan = await createBatchPlan(await batchInput(6), batchSource),
+      held = heldPublication(true),
+      computing = gate(),
+      finish = gate();
+    const original = BattlePool.prototype.run;
+    let runs = 0,
+      admittedSignal: AbortSignal | undefined;
+    const pool = vi.spyOn(BattlePool.prototype, 'run').mockImplementation(async function (
+      this: BattlePool,
+      ...args: Parameters<BattlePool['run']>
+    ) {
+      if (++runs === 2) {
+        admittedSignal = args[3];
+        computing.resolve();
+        await finish.promise;
+      }
+      return original.apply(this, args);
+    });
+    const cancelled = vi.spyOn(BattleService.prototype, 'cancel');
+    const running = runBatch(plan, root, batchSource, { workers: 2 });
+    try {
+      await held.entered;
+      await computing.promise;
+      held.release();
+      await setImmediate();
+      expect(admittedSignal?.aborted).toBe(false);
+      expect(cancelled).not.toHaveBeenCalled();
+      finish.resolve();
+      const stopped = await running;
+      expect(held.state.submissions).toBe(2);
+      expect(stopped.index.slots.filter((s) => s.state === 'failed')).toHaveLength(1);
+      expect(stopped.index.slots.filter((s) => s.state === 'complete')).toHaveLength(1);
+      expect(stopped.index.slots.filter((s) => s.state === 'pending')).toHaveLength(4);
+      expect(cancelled).not.toHaveBeenCalled();
+      held.restore();
+      pool.mockRestore();
+      const resumed = await runBatch(plan, root, batchSource, { workers: 2 });
+      expect(resumed.index.complete).toBe(true);
+      const store = openStore(join(root, '.work', 'database.sqlite'));
+      try {
+        expect(store.db.prepare('SELECT count(*) AS n FROM simulation_attempts').get()).toEqual({
+          n: 6,
+        });
+      } finally {
+        store.close();
+      }
+    } finally {
+      held.release();
+      finish.resolve();
+      await running.catch(() => {});
+      held.restore();
+      pool.mockRestore();
+      cancelled.mockRestore();
+    }
   });
 }, 30_000);

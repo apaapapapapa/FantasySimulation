@@ -31,6 +31,11 @@ export type BattleSubmission = {
   budget?: Budget;
   simulationHash?: string;
 };
+export type BattleOutcome = {
+  key: string;
+  job: ReturnType<BattleService['status']>['job'] | null;
+  error: unknown;
+};
 export type RuntimeOptions = {
   workers?: number;
   timeoutMs?: number;
@@ -140,54 +145,65 @@ export class BattleService {
   runMany(
     inputs: AsyncIterable<BattleSubmission> | Iterable<BattleSubmission>,
     clientId: string,
-    options: { retryFailed?: boolean; signal?: AbortSignal } = {},
+    options: {
+      retryFailed?: boolean;
+      signal?: AbortSignal;
+      window?: number;
+      consume?: (outcome: BattleOutcome) => Promise<void>;
+    } = {},
   ) {
+    const run = async (input: BattleSubmission, signal: AbortSignal): Promise<BattleOutcome> => {
+      try {
+        let job;
+        for (;;) {
+          signal.throwIfAborted();
+          const generation = this.generation;
+          try {
+            job = await this.submit(
+              input.spec,
+              clientId,
+              input.key,
+              input.budget,
+              input.simulationHash,
+            );
+            if (
+              options.retryFailed &&
+              ['failed', 'cancelled'].includes(job.state) &&
+              job.allowedOperations.retry
+            )
+              job = await this.retry(job.id, job.attempts, input.budget ?? DEFAULT_BUDGET);
+            break;
+          } catch (error) {
+            if (!(error instanceof StoreError) || error.code !== 'queue-capacity') throw error;
+            await this.capacityChanged(generation, signal);
+          }
+        }
+        const cancel = () => {
+          this.cancel(job.id);
+        };
+        signal.addEventListener('abort', cancel, { once: true });
+        if (signal.aborted) cancel();
+        try {
+          return { key: input.key, job: this.view(await this.wait(job.id)), error: null };
+        } catch (error) {
+          this.cancel(job.id);
+          await this.wait(job.id, this.completionReserveMs);
+          throw error;
+        } finally {
+          signal.removeEventListener('abort', cancel);
+        }
+      } catch (error) {
+        return { key: input.key, job: null, error };
+      }
+    };
     return stagedWork(
       inputs,
-      this.pool.workers,
+      options.window ?? this.pool.workers,
       async (input, signal) => {
-        try {
-          let job;
-          for (;;) {
-            signal.throwIfAborted();
-            const generation = this.generation;
-            try {
-              job = await this.submit(
-                input.spec,
-                clientId,
-                input.key,
-                input.budget,
-                input.simulationHash,
-              );
-              if (
-                options.retryFailed &&
-                ['failed', 'cancelled'].includes(job.state) &&
-                job.allowedOperations.retry
-              )
-                job = await this.retry(job.id, job.attempts, input.budget ?? DEFAULT_BUDGET);
-              break;
-            } catch (error) {
-              if (!(error instanceof StoreError) || error.code !== 'queue-capacity') throw error;
-              await this.capacityChanged(generation, signal);
-            }
-          }
-          const cancel = () => {
-            this.cancel(job.id);
-          };
-          signal.addEventListener('abort', cancel, { once: true });
-          if (signal.aborted) cancel();
-          try {
-            return { key: input.key, job: this.view(await this.wait(job.id)), error: null };
-          } catch (error) {
-            this.cancel(job.id);
-            await this.wait(job.id, this.completionReserveMs);
-            throw error;
-          } finally {
-            signal.removeEventListener('abort', cancel);
-          }
-        } catch (error) {
-          return { key: input.key, job: null, error };
-        }
+        const outcome = await run(input, signal);
+        // The same admission credit covers calculation and its downstream durable save.
+        await options.consume?.(outcome);
+        return outcome;
       },
       options.signal,
     );

@@ -12,7 +12,6 @@ import {
   type ExecutionSource,
 } from '@fantasy/domain/spatial';
 import { type BattleSubmission, BattleService } from '../jobs/battle-service.ts';
-import { stagedWork } from '../jobs/staged-work.ts';
 import { BattleBundles } from './battle-bundle.ts';
 import { validateBatchPlan } from './batch-plan.ts';
 import { shardSlots } from './batch-check.ts';
@@ -77,6 +76,7 @@ export async function executeBatch(
     await bundles.recoverStaging();
     await bundles.publishJson('plans', plan.id, plan);
     const entries = new Map<string, BatchIndex['slots'][number]>();
+    let admitted = 0;
     async function* submissions(): AsyncGenerator<BattleSubmission> {
       for (const slot of slots) {
         if (entries.has(slot.id)) continue;
@@ -102,6 +102,12 @@ export async function executeBatch(
           ) {
             entry.reason = 'Batch stopped or deadline reserve reached; no new match was started';
           } else {
+            // runMany holds this credit through consume(), including completed results.
+            admitted++;
+            currentMeasurements()?.capacity(
+              'save.queueReservedBytes',
+              admitted * ARTIFACT_RESERVATION_BYTES,
+            );
             yield {
               key: slot.id,
               spec: slot.spec,
@@ -119,10 +125,10 @@ export async function executeBatch(
     const pending = submissions();
     let publication = Promise.resolve(),
       queued = 0;
-    const publications = stagedWork(
-      runtime.runMany(pending, `batch:${plan.id.slice(7)}`, { ...options, signal }),
-      publicationWindow,
-      async (outcome) => {
+    const publications = runtime.runMany(pending, `batch:${plan.id.slice(7)}`, {
+      ...options,
+      window: publicationWindow,
+      consume: async (outcome) => {
         const previous = publication,
           queuedAt = performance.now(),
           position = ++queued,
@@ -131,7 +137,6 @@ export async function executeBatch(
         publication = new Promise<void>((resolve) => {
           release = resolve;
         });
-        measurement?.capacity('save.queueReservedBytes', queued * ARTIFACT_RESERVATION_BYTES);
         try {
           // Pulling the next result overlaps computation with saving. Capacity checks,
           // object/pointer commits and WAL checkpoints still have one ordered writer.
@@ -171,11 +176,12 @@ export async function executeBatch(
           stop.abort(error);
           throw error;
         } finally {
+          admitted--;
           queued--;
           release();
         }
       },
-    );
+    });
     // Do not abort this consumer: runMany stops admission and every admitted save drains.
     for await (const _ of publications) {
       /* The index is issued only after all publications have settled. */
