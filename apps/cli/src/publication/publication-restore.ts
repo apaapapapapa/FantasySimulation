@@ -68,56 +68,49 @@ export async function restorePublication(
           'PUBLICATION_CONFLICT',
           'Publication generation changed during restore',
         );
-      return { status: 'empty' as const, files: 0, downloadBytes, reads };
+      return { status: 'empty' as const, files: 0, downloadBytes: 0, reads };
     }
     const downloaded = new Set<string>();
     const pending = new Map<string, Promise<void>>();
-    const download = async (key: string, limit: number, checksum?: string) => {
+    // Prefetch persists and verifies bytes but does not read them back merely to discard them.
+    const ensureDownloaded = async (key: string, limit: number, checksum?: string) => {
       PublicKeySchema.parse(key);
-      const path = join(root, key);
-      if (!downloaded.has(key)) {
-        let task = pending.get(key);
-        if (!task) {
-          if (downloaded.size + pending.size >= PUBLICATION_MAX_FILES)
-            throw new OperationError('BUDGET_EXCEEDED', 'Publication restore file limit');
-          task = io.run(limit, async () => {
-            const value = key === pointer ? before : await remote(key, limit);
-            if (
-              !value ||
-              value.data.length > limit ||
-              (checksum && (value.data.length !== limit || sha256(value.data) !== checksum))
-            )
-              throw new OperationError(
-                'DATA_INVALID',
-                'Retained publication is missing or corrupt',
-              );
-            await publicationDirectory(dirname(path), true);
-            await writeDurableFile(path, value.data);
-            downloaded.add(key);
-          });
-          pending.set(key, task);
-        }
-        try {
-          await task;
-        } finally {
-          if (pending.get(key) === task) pending.delete(key);
-        }
+      if (downloaded.has(key)) return;
+      let task = pending.get(key);
+      if (!task) {
+        if (downloaded.size + pending.size >= PUBLICATION_MAX_FILES)
+          throw new OperationError('BUDGET_EXCEEDED', 'Publication restore file limit');
+        task = io.run(limit, async () => {
+          const value = key === pointer ? before : await remote(key, limit);
+          if (
+            !value ||
+            value.data.length > limit ||
+            (checksum && (value.data.length !== limit || sha256(value.data) !== checksum))
+          )
+            throw new OperationError('DATA_INVALID', 'Retained publication is missing or corrupt');
+          const path = join(root, key);
+          await publicationDirectory(dirname(path), true);
+          await writeDurableFile(path, value.data);
+          downloaded.add(key);
+        });
+        pending.set(key, task);
       }
-      return io.run(limit, async () => {
-        const bytes = await readBoundedFile(path, limit);
-        if (checksum && (bytes.length !== limit || sha256(bytes) !== checksum))
-          throw new OperationError('DATA_INVALID', 'Retained publication reference changed');
-        return bytes;
-      });
+      try {
+        await task;
+      } finally {
+        if (pending.get(key) === task) pending.delete(key);
+      }
     };
-    const source: PublicationRead = (key, limit) => download(key, limit);
+    const source: PublicationRead = async (key, limit) => {
+      await ensureDownloaded(key, limit);
+      // The graph authenticates these freshly read bytes against the validated parent reference.
+      return io.run(limit, () => readBoundedFile(join(root, key), limit));
+    };
     source.prefetch = async (files) => {
       await publicationPool(
         files,
         concurrency,
-        async (file) => {
-          await download(file.key, file.bytes, file.checksum);
-        },
+        (file) => ensureDownloaded(file.key, file.bytes, file.checksum),
         'restore.prefetch',
         64,
       );

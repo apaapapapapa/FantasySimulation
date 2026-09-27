@@ -98,13 +98,13 @@ it('does not admit unverified writes or concurrent leases based on the same gene
   expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
   expect(JSON.parse((await store.readControl())!.data.toString()).leases).toHaveLength(1);
 });
-it('reserves restoration, immutable collision/head/recovery reads and publication before admission', () => {
+it('reserves collision OR recovery reads, pointer barriers and retries without removed HEADs', () => {
   // Restore: every file plus pointer/catalog/current reads and 1,024 counted transient retries.
   expect(leagueTransferBudget(926, 60, 0, true)).toEqual({ classA: 1, classB: 1953, worker: 0 });
   const full = leagueTransferBudget(335183, 7600, 335183, false);
   expect(full.classA).toBe(335183 + 502 + 256);
-  expect(full.classB).toBe(7600 + 2 * 335183 + 10 + 1024);
-  expect(full.classB).toBeGreaterThan(335183 * 2 + 7600);
+  expect(full.classB).toBe(7600 + 335183 + 10 + 1024);
+  expect(full.classB).toBeGreaterThan(335183 + 7600);
   expect(full.worker).toBe(1000);
   const reserved = reserveLeagueUsage(
     null,
@@ -113,4 +113,19 @@ it('reserves restoration, immutable collision/head/recovery reads and publicatio
   expect(reserved.leases).toHaveLength(1);
   for (const invalid of [-1, 500001, 1.5, NaN])
     expect(() => leagueTransferBudget(invalid, 0, 0, true)).toThrow('counts');
+});
+it('applies smaller reservations only to new leases without refunding earlier usage', () => {
+  const consumed = lease('old-publication', { classA: 1000, classB: 5000, worker: 0 });
+  const before = reserveLeagueUsage(null, consumed);
+  const next = leagueTransferBudget(100, 20, 50, false);
+  const after = reserveLeagueUsage(
+    before,
+    lease('new-publication', { ...next, classB: next.classB + next.worker }),
+  );
+  expect(after.leases).toHaveLength(2);
+  expect(after.leases.find((entry) => entry.id === consumed.id)).toEqual(consumed);
+  expect(before.leases).toEqual([consumed]);
+  expect(after.leases.find((entry) => entry.id === 'new-publication')?.classB).toBe(
+    100 + 20 + 10 + 1024 + 1000,
+  );
 });

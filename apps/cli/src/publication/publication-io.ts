@@ -18,7 +18,12 @@ export function transferTuning(input: TransferTuning = {}, fallback = 16) {
   return { read, write, head, bytes, sockets: Math.max(read, write, head) };
 }
 
-type Pending = { bytes: number; start(): Promise<void>; reject(error: unknown): void };
+type Pending = {
+  bytes: number;
+  bypasses: number;
+  start(): Promise<void>;
+  reject(error: unknown): void;
+};
 /** One payload budget across nested graph tasks. No response buffers are retained in the queue. */
 export class PublicationIo {
   private readonly pending: Pending[] = [];
@@ -50,6 +55,7 @@ export class PublicationIo {
     return new Promise<T>((resolve, reject) => {
       this.pending.push({
         bytes,
+        bypasses: 0,
         reject,
         start: async () => {
           try {
@@ -67,16 +73,26 @@ export class PublicationIo {
       this.pump();
     });
   }
+  /** At most 64 candidates and eight overtakes per task; then drain for that task. */
+  private next() {
+    for (let index = 0; index < Math.min(this.pending.length, 64); index++) {
+      const task = this.pending[index]!;
+      if (this.bytes + task.bytes <= this.maxBytes) return index;
+      if (task.bypasses >= 8) break;
+    }
+    return -1;
+  }
   private pump() {
     while (!this.stopped && this.active < this.concurrency && this.pending.length) {
-      const task = this.pending[0]!;
-      if (this.bytes + task.bytes > this.maxBytes) break;
-      this.pending.shift();
+      const index = this.next();
+      if (index < 0) break;
+      for (let skipped = 0; skipped < index; skipped++) this.pending[skipped]!.bypasses++;
+      const [task] = this.pending.splice(index, 1);
       this.active++;
-      this.bytes += task.bytes;
-      void task.start().finally(() => {
+      this.bytes += task!.bytes;
+      void task!.start().finally(() => {
         this.active--;
-        this.bytes -= task.bytes;
+        this.bytes -= task!.bytes;
         this.pump();
         if (!this.active && !this.pending.length) this.idle.splice(0).forEach((done) => done());
       });

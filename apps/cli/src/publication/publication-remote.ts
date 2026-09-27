@@ -54,6 +54,7 @@ export interface PublishOptions extends TransferTuning {
   maxWorkerRequests?: number;
   concurrency?: number;
   verificationWorkers?: number;
+  graphReadConcurrency?: number;
   signal?: AbortSignal;
   dryRun?: boolean;
   observe?(report: PublishReport): void;
@@ -144,6 +145,7 @@ export async function publishPublication(
       root,
       options.verificationWorkers ?? 1,
       options.signal,
+      options.graphReadConcurrency ?? 4,
     );
     const session = typeof destination === 'function' ? await destination(graph) : destination;
     const store = 'store' in session ? session.store : session;
@@ -199,17 +201,29 @@ export async function publishPublication(
     await publicationPool(
       [...inventory.keys()].filter((key) => key.endsWith('/receipt.json')),
       tuning.read,
-      async (key) =>
-        transfer.run(65536, async () => {
+      async (key) => {
+        const expected = graph.files.get(key);
+        // Only the fully verified local graph can supply receipt/result identity evidence.
+        // Orphans still require a GET even when the listing provides an MD5 ETag.
+        if (
+          expected &&
+          (await transfer.run(expected.bytes, () =>
+            listedMatch(expected, inventory.get(key), etags?.get(key)),
+          ))
+        ) {
+          exactReceipts.add(key);
+          return;
+        }
+        await transfer.run(65536, async () => {
           const value = await store.read(key, 65536);
           if (!value) throw new OperationError('DATA_INVALID', 'Remote receipt disappeared');
           receiptIdentity(key, value.data, resultHashes);
-          const expected = graph.files.get(key);
           if (expected) {
             exactBytes(expected, value);
             exactReceipts.add(key);
           }
-        }),
+        });
+      },
       'r2.receipts',
       64,
     );
@@ -266,9 +280,10 @@ export async function publishPublication(
       writes: additions.length + (unchanged ? 0 : 1),
       transferBytes,
       workerRequests: selected.size,
-      // Includes every HEAD/generation check and a recovery GET for each uncertain PUT.
-      // The store has already charged inventory pages, receipt and collision reads.
-      reservedS3Requests: additions.length * 2 + graph.files.size + 3 + (unchanged ? 0 : 2),
+      // Remaining normal requests: PUT + uncertain-response GET per addition, two generation
+      // reads, pointer GET/HEAD, and optional pointer PUT + recovery GET. No full-graph HEAD.
+      // Inventory/collisions are already charged; counted retries draw on the lease headroom.
+      reservedS3Requests: additions.length * 2 + 4 + (unchanged ? 0 : 2),
       incompleteRows: [...graph.sets.values()].reduce((n, set) => n + set.incompleteRows, 0),
     };
     options.observe?.(report);

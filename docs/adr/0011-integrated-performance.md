@@ -1,34 +1,34 @@
 # ADR 0011: Integrated performance
 
-PR #60 selected TS/Rapier/Piscina: default one/maximum four Workers, 1.5GiB abort.
-Historical 1,000-match measurements and reproduction (not P4/P5 acceptance):
-[Evidence](../measurements/p3-integrated-linux.json) and the
-[original protocol](https://github.com/apaapapapapa/FantasySimulation/blob/6ea13284e6c7845c7badef202054a951be7144b6/docs/adr/0011-integrated-performance.md)
+TS/Rapier/Piscina (#60): default one/maximum four Workers; 1.5GiB abort.
+1,000-match history, not P4/P5 acceptance:
+[measurements](../measurements/p3-integrated-linux.json),
+[protocol](https://github.com/apaapapapapa/FantasySimulation/blob/6ea13284e6c7845c7badef202054a951be7144b6/docs/adr/0011-integrated-performance.md).
 
-## Requested refinements — #189/#210
+## Refinements — #189/#210
 
 Preserve [recording](0006-recorded-replay.md), [publication](0008-headless-batch.md),
-bindings, denominators, attempts, quotas and retention. Review and real performance
-evidence remain required.
+bindings, denominators, attempts, quotas, retention and review/measurement.
+Cache 256 successes; authenticate receipt/manifest/compressed bytes, not mtime/claims.
+Eviction/closure revalidates. Share aggregation; independently validate
+post-callback export (four to two).
+Index verified results.
+Bound original-JSON decoding; retain UTF-8/checkpoints/hashes.
+Verifiers: inline default, cloud two, cap four/CPUs minus one; bounded heaps/batches.
+Empty environments are not sandboxes. Propagate aborts; drain/close. Worker spans
+are neither CPU nor additive wall time. Keep four durable immutable writes,
+fsync/link/directory sync and pointer-last commit.
 
-Sessions keep 256 successful hashes. Reuse authenticates receipt, manifest and
-compressed bytes, never mtime/claims. Eviction/closure requires full validation.
-Share three aggregation passes; independently validate export after its callback
-(four to two). Index authenticated results.
-
-Inspect original JSON during bounded decoding; retain UTF-8, checkpoints and hashes. Verifiers default inline; cloud requests two, capped at four/CPUs minus
-one. Bound heaps/batches; empty environments are not sandboxes. Propagate aborts
-inline too; drain and close. Worker spans are not CPU or additive wall time.
-Keep four durable immutable writes, fsync/link/directory sync and pointer-last commit.
-
-Share fresh post-validation inventory within one serialized publication.
-Account for lease size; retain orphan conflicts,
-reference proofs, conditional PUT, generation/viewer/readback barriers. Reuse exact
-receipt GET evidence, not buffers. No pointer caching or lease refunds.
-
-Prefetch hash/size-bound children after parent validation into owned disk.
-Deduplicate keys; retain ordered checks and bounded requests/payloads;
-drain before cleanup. Cloud GET/HEAD use 32; PUT/Reader use 16. S3 tuning allows 1–64
-and 16–256MiB payload reservations (64MiB default), not RSS guarantees. Match sockets
-and keep-alive. Measure LIST pages. Keep serial control writes, bucket
-settings, Local Uploads, formats and workflows unchanged.
+Share fresh post-validation inventory in one serialized publication.
+Receipt GET or verified local bytes/size/MD5 ETag prove bytes; orphans still GET.
+Keep lease-size accounting, conditional PUT, generation/viewer/readback barriers.
+Reserve collision OR recovery GET per file, pointer checks and retry headroom,
+not removed HEADs. No pointer caching or lease refunds.
+Prefetch validated children to owned disk without discarded rereads; deduplicate,
+bound payloads/requests and drain before cleanup. Local graph I/O uses four,
+separate from verifiers; sort references. Share only in-flight directory checks
+per path/mode; measure mkdir/lstat.
+Transfer fair-fit scans 64 entries, caps overtakes at eight/task, then drains.
+Cloud GET/HEAD:32; PUT/Reader:16. Tuning:1–64,16–256MiB (default64MiB), not RSS.
+Match sockets/keep-alive; measure LIST. Retain serial control writes, bucket
+settings, Local Uploads, formats and workflows.
