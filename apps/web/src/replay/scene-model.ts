@@ -8,8 +8,47 @@ import type {
 } from '@fantasy/domain/spatial';
 
 export type Point = [number, number, number];
-type Shape = { id: string; kind: AttackGeometry['kind']; radius: number; points: [Point, Point] };
+/** Display colour family of a saved ability: its first damage element, else its support effect. */
+export type Tint =
+  | 'physical'
+  | 'fire'
+  | 'ice'
+  | 'lightning'
+  | 'arcane'
+  | 'water'
+  | 'earth'
+  | 'heal'
+  | 'shield';
+type Shape = {
+  id: string;
+  /** Recorded geometry the pose/segment belongs to; one blade sweep shares a group. */
+  group: string;
+  actorId: string;
+  tint: Tint | null;
+  kind: AttackGeometry['kind'];
+  radius: number;
+  points: [Point, Point];
+};
 const point = (v: { x: number; y: number; z: number }): Point => [v.x, v.y, v.z];
+type Ability = ReplayContext['actors'][number]['abilities'][number];
+function abilityTint(ability: Ability): Tint | null {
+  const effects = [
+    ...ability.definition.effects,
+    ...(ability.definition.stages ?? []).flatMap((stage) => stage.effects),
+  ];
+  for (const effect of effects) if (effect.kind === 'damage') return effect.element;
+  if (effects.some((effect) => effect.kind === 'heal')) return 'heal';
+  return effects.some((effect) => effect.kind === 'shield') ? 'shield' : null;
+}
+/** Looks in the owner's saved loadout first; a deflected projectile keeps its original ability. */
+function tintOf(context: ReplayContext, abilityId: string | null, ownerId: string | null) {
+  if (!abilityId) return null;
+  const owners = [...context.actors].sort(
+    (a, b) => Number(b.participant.actorId === ownerId) - Number(a.participant.actorId === ownerId),
+  );
+  const ability = owners.flatMap((owner) => owner.abilities).find((a) => a.id === abilityId);
+  return ability ? abilityTint(ability) : null;
+}
 /** Arrows show the recorded velocity over this display interval; they never move bodies. */
 export const ARROW_SECONDS = 0.1;
 const ahead = (from: Point, velocity: Point): [Point, Point] => [
@@ -47,9 +86,11 @@ export function buildSceneModel(
     max = metres(scenario.definition.bounds.max);
   const centre: Point = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
   const actors = (checkpoint.state?.actors ?? []).map((actor, index) => {
-    const definition = context.actors.find((a) => a.participant.actorId === actor.id)?.character;
+    const loadout = context.actors.find((a) => a.participant.actorId === actor.id);
+    const definition = loadout?.character;
     if (!definition) throw new Error('Missing recorded character');
     const body = actor.posture?.body ?? definition.body;
+    const hp = actor.resources.hp;
     const radius = body.radiusMm / 1000;
     const horizontal = Math.hypot(actor.facing.x, actor.facing.z);
     const fx = horizontal ? actor.facing.x / horizontal : 1;
@@ -131,6 +172,27 @@ export function buildSceneModel(
       force: actor.force?.active
         ? { applied: point(actor.force.applied), capped: actor.force.capped }
         : null,
+      /** Bottom of the recorded capsule and the saved standing height that scales the figure. */
+      feet: actor.position.y - body.heightMm / 2000,
+      standingHeight: definition.body.heightMm / 1000,
+      hp: hp === undefined ? null : { value: hp, max: definition.stats.hp },
+      look: {
+        silhouette: definition.appearance?.silhouette ?? 'humanoid',
+        equipment: definition.appearance?.equipment ?? [],
+      },
+      pose: {
+        defeated: hp !== undefined && hp <= 0,
+        posture: actor.posture?.current ?? 'standing',
+        grounded: actor.grounded,
+        locomotion: actor.locomotion ?? null,
+        phase: actor.action?.phase ?? null,
+      },
+      struck: events.some(
+        (e) => (e.kind === 'hit' || e.kind === 'damage') && e.targetId === actor.id,
+      ),
+      tint: tintOf(context, actor.action?.abilityId ?? null, actor.id),
+      /** First tinted ability in the saved loadout, for idle glowing parts such as a staff. */
+      signature: loadout.abilities.map(abilityTint).find((tint) => tint !== null) ?? null,
     };
   });
   // Recorded forced velocity (m/s) and the requested stage-motion velocity; no path is inferred.
@@ -175,27 +237,48 @@ export function buildSceneModel(
   const shapes = (checkpoint.state?.actors ?? [])
     .flatMap((actor) => [
       ...(actor.action?.stage?.geometry
-        ? [{ id: `${actor.id}:stage`, geometry: actor.action.stage.geometry }]
+        ? [
+            {
+              id: `${actor.id}:stage`,
+              actorId: actor.id,
+              abilityId: actor.action.abilityId,
+              geometry: actor.action.stage.geometry,
+            },
+          ]
         : []),
       ...(actor.reactions ?? []).flatMap((reaction, i) =>
-        reaction.geometry ? [{ id: `${actor.id}:reaction:${i}`, geometry: reaction.geometry }] : [],
+        reaction.geometry
+          ? [
+              {
+                id: `${actor.id}:reaction:${i}`,
+                actorId: actor.id,
+                abilityId: reaction.abilityId,
+                geometry: reaction.geometry,
+              },
+            ]
+          : [],
       ),
     ])
-    .flatMap<Shape>(({ id, geometry }: { id: string; geometry: AttackGeometry }) =>
-      geometry.kind === 'blade'
+    .flatMap<Shape>(({ id, actorId, abilityId, geometry }) => {
+      const common = {
+        group: id,
+        actorId,
+        tint: tintOf(context, abilityId, actorId),
+        kind: geometry.kind,
+        radius: geometry.radiusMm / 1000,
+      };
+      return geometry.kind === 'blade'
         ? geometry.poses.map((pose, i) => ({
+            ...common,
             id: `${id}:${i}`,
-            kind: geometry.kind,
-            radius: geometry.radiusMm / 1000,
             points: [point(pose.root), point(pose.tip)] as [Point, Point],
           }))
         : geometry.segments.map((segment, i) => ({
+            ...common,
             id: `${id}:${i}`,
-            kind: geometry.kind,
-            radius: geometry.radiusMm / 1000,
             points: [point(segment.start), point(segment.end)] as [Point, Point],
-          })),
-    );
+          }));
+    });
   const hits = events.flatMap((e) =>
     e.kind === 'hit' && e.point ? [{ id: e.id, position: point(e.point) }] : [],
   );
@@ -205,11 +288,16 @@ export function buildSceneModel(
     centre,
     span: Math.max(...max.map((n, i) => n - min[i]!)),
     follow: actors[0]?.position ?? centre,
+    step: checkpoint.step,
+    /** Recorded time of the displayed step; decorative motion is keyed to it, never to a clock. */
+    milliseconds: checkpoint.step * context.manifest.physicsProfile.stepMs,
     obstacles: scenario.definition.obstacles.map((obstacle) => {
       const common = {
         id: obstacle.id,
         position: metres(obstacle.center),
         colour: obstacle.blocks.movement ? '#526174' : '#364358',
+        material: obstacle.material ?? 'generic',
+        solid: obstacle.blocks.movement,
       };
       if (obstacle.kind === 'pillar')
         return {
@@ -240,6 +328,7 @@ export function buildSceneModel(
       position: point(o.position),
       shape: o.shape ?? null,
       colour: o.kind === 'barrier' ? '#62c7ee' : o.kind === 'area' ? '#f6a96d' : '#ff87cf',
+      tint: tintOf(context, o.abilityId, o.ownerId),
       durability: o.durability === undefined ? null : `${o.durability}/${o.maxDurability}`,
       beams:
         o.geometry && o.geometry.kind === 'ray'
@@ -256,6 +345,8 @@ export function buildSceneModel(
       radius: p.radiusMm / 1000,
       ownerId: p.ownerId,
       colour: p.deflection ? '#72e0c1' : '#f0bd67',
+      deflected: !!p.deflection,
+      tint: tintOf(context, p.abilityId, p.ownerId),
     })),
     paths,
     shapes,
@@ -308,7 +399,16 @@ export function buildSceneModel(
     effects: events.flatMap((event) => {
       if (!['launch', 'hit', 'projectile-deflect'].includes(event.kind)) return [];
       const position = event.point ? point(event.point) : undefined;
-      return position ? [{ id: event.id, kind: event.kind, position }] : [];
+      return position
+        ? [
+            {
+              id: event.id,
+              kind: event.kind,
+              position,
+              tint: tintOf(context, event.abilityId, event.actorId),
+            },
+          ]
+        : [];
     }),
   };
 }

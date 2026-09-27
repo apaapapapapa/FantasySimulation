@@ -176,8 +176,9 @@ export function ReplayPanel({
     stepLink && shown !== undefined ? new URL(stepLink(shown), window.location.href).href : null;
   function camera(kind: CameraNudge['kind']) {
     if (view === '2d') {
+      // Zoom 1 frames the fighters; zooming out can widen the window to the whole arena.
       if (kind === 'in' || kind === 'out')
-        setZoom((z) => Math.min(8, Math.max(1, kind === 'in' ? z * 1.5 : z / 1.5)));
+        setZoom((z) => Math.min(8, Math.max(1 / 8, kind === 'in' ? z * 1.5 : z / 1.5)));
       return;
     }
     setCameraMode('free');
@@ -188,7 +189,7 @@ export function ReplayPanel({
       model={model}
       overlays={overlays}
       zoom={zoom}
-      focus={cameraMode === 'follow' ? model.follow : model.centre}
+      focus={cameraMode === 'follow' ? model.follow : undefined}
     />
   );
   return (
@@ -397,7 +398,7 @@ export function ReplayPanel({
                 </p>
               )}
               <p>
-                色付きの身体・効果の印と、白線の判定形状を分けて表示します。視野は遮蔽判定前の定義上の範囲です。
+                ドット絵のキャラクターと光の効果は、記録された状態・イベントから描いた演出です（効果は数step残って薄れます）。正確な形状は当たり判定（白線）で表示します。視野は遮蔽判定前の定義上の範囲です。
               </p>
               {overlays.vision && model?.actors.some((actor) => !actor.vision) && (
                 <p>

@@ -1,11 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls } from '@react-three/drei';
-import { Vector3 } from 'three';
+import { Fog, Vector3 } from 'three';
 import type { Point, SceneModel } from './scene-model.ts';
 import { Scene2D } from './Scene2D.tsx';
 import type { Overlays } from './overlays.ts';
 import { SceneOverlays } from './SceneOverlays.tsx';
+import { frameCamera, FOV_DEGREES } from './camera-frame.ts';
+import { SceneTerrain } from './SceneTerrain.tsx';
+import { SceneFighters } from './SceneFighters.tsx';
+import { SceneEffects } from './SceneEffects.tsx';
 
 export type CameraMode = 'overview' | 'side' | 'follow' | 'free';
 /** One on-screen camera command (touch-friendly alternative to drag/pinch gestures). */
@@ -20,50 +24,83 @@ type Props = {
   nudge?: CameraNudge | null;
 };
 const TURN = Math.PI / 12;
+/** Drawing-buffer rows; the browser upscales them with nearest-neighbour for a dot-art look. */
+const PIXEL_ROWS = 240;
+
+/**
+ * Pixel ratio giving about PIXEL_ROWS drawing-buffer rows, with a whole number of device pixels
+ * per buffer pixel so every dot is the same size. It is passed as the Canvas `dpr` prop, which
+ * R3F re-applies on every render.
+ */
+function usePixelRatio(stage: RefObject<HTMLDivElement | null>) {
+  const [height, setHeight] = useState(PIXEL_ROWS * 2);
+  useEffect(() => {
+    const element = stage.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry) setHeight(entry.contentRect.height);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [stage]);
+  const device = window.devicePixelRatio || 1;
+  return device / Math.max(1, Math.round((height * device) / PIXEL_ROWS));
+}
+
+/** Fog starts just beyond what the camera looks at, so the far floor edge fades into the night. */
+function DepthFog() {
+  const fog = useRef<Fog>(null);
+  useFrame(({ camera, controls }) => {
+    const target = (controls as { target?: Vector3 } | null)?.target;
+    const distance = target ? camera.position.distanceTo(target) : 30;
+    const value = fog.current;
+    if (!value) return;
+    value.near = distance * 1.1;
+    value.far = distance * 2.6;
+  });
+  return <fog ref={fog} attach="fog" args={['#0a0f10', 30, 90]} />;
+}
 
 function Camera({
   mode,
-  span,
-  follow,
-  centre,
+  model,
   nudge,
 }: {
   mode: CameraMode;
-  span: number;
-  follow: Point;
-  centre: Point;
+  model: SceneModel;
   nudge: CameraNudge | null | undefined;
 }) {
-  const { camera, gl, controls } = useThree();
-  const previous = useRef<CameraMode | null>(null);
+  const { camera, gl, controls, size } = useThree();
+  const aspect = size.width / Math.max(1, size.height);
+  const framing = useMemo(
+    () => (mode === 'free' ? null : frameCamera(mode, model.actors, aspect)),
+    [mode, model.actors, aspect],
+  );
+  // Free mode keeps the last framed target, so the user orbits what was on screen.
+  const [anchor, setAnchor] = useState<Point>(model.centre);
+  if (framing && framing.target !== anchor) setAnchor(framing.target);
   const applied = useRef(nudge?.seq ?? 0);
-  const [x, y, z] = follow;
-  const [cx, cy, cz] = centre;
   useEffect(() => {
-    if (mode === 'free' && previous.current === mode) return;
-    const target: Point = mode === 'follow' ? [x, y, z] : [cx, cy, cz];
-    if (mode === 'side') camera.position.set(cx + span, cy + span / 5, cz);
-    else if (mode === 'follow') camera.position.set(x + 5, y + 3, z + 5);
-    else camera.position.set(cx + span * 0.7, cy + span * 0.9, cz + span * 0.8);
-    camera.lookAt(...target);
+    if (!framing) return;
+    camera.position.set(...framing.position);
+    camera.lookAt(...framing.target);
     camera.updateProjectionMatrix();
-    previous.current = mode;
-  }, [camera, mode, span, x, y, z, cx, cy, cz]);
+  }, [camera, framing]);
   useEffect(() => {
     if (!nudge || nudge.seq === applied.current || mode !== 'free') return;
     applied.current = nudge.seq;
-    const target = (controls as { target?: Vector3 } | null)?.target ?? new Vector3(...centre);
+    const target = (controls as { target?: Vector3 } | null)?.target ?? new Vector3(...anchor);
     const offset = camera.position.clone().sub(target);
     if (nudge.kind === 'left' || nudge.kind === 'right')
       offset.applyAxisAngle(new Vector3(0, 1, 0), nudge.kind === 'left' ? -TURN : TURN);
     else {
       const length = offset.length() * (nudge.kind === 'in' ? 0.75 : 1 / 0.75);
-      offset.setLength(Math.min(span * 4, Math.max(1, length)));
+      offset.setLength(Math.min(model.span * 4, Math.max(1, length)));
     }
     camera.position.copy(target).add(offset);
     camera.lookAt(target);
     (controls as { update?: () => void } | null)?.update?.();
-  }, [camera, controls, nudge, mode, span, centre]);
+  }, [camera, controls, nudge, mode, model.span, anchor]);
   useFrame(() => {
     if (gl.info.render.calls > 0) gl.domElement.dataset.rendered = 'true';
   });
@@ -71,23 +108,33 @@ function Camera({
     <OrbitControls
       makeDefault
       enabled={mode === 'free'}
-      target={mode === 'follow' ? follow : centre}
+      target={framing?.target ?? anchor}
       enableDamping={false}
       minDistance={1}
-      maxDistance={span * 4}
+      maxDistance={model.span * 4}
     />
   );
 }
 
-/** Every mesh comes from the saved manifest/state. Camera frames never advance combat. */
+/**
+ * Every mesh comes from the saved manifest/state; camera frames never advance combat.
+ * The look (pixel scale, sprites, glows, lights) is presentation only.
+ */
 export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
-  const { span, centre, follow } = model;
+  const stage = useRef<HTMLDivElement>(null);
+  const dpr = usePixelRatio(stage);
   return (
     // Touch gestures belong to the camera only in free mode; otherwise the page scrolls.
-    <div className="replay-canvas" data-camera={cameraMode}>
+    <div ref={stage} className="replay-canvas replay-stage" data-camera={cameraMode}>
       <Canvas
-        camera={{ near: 0.05, far: 2000, position: [span, span, span] }}
-        dpr={1}
+        flat
+        dpr={dpr}
+        camera={{
+          fov: FOV_DEGREES,
+          near: 0.05,
+          far: 2000,
+          position: [model.span, model.span, model.span],
+        }}
         onCreated={({ gl }) => {
           gl.domElement.setAttribute('role', 'img');
           gl.domElement.setAttribute('aria-label', '保存ログの3D表示');
@@ -99,128 +146,34 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
           </>
         }
       >
-        <color attach="background" args={['#0f1828']} />
-        <ambientLight intensity={1.3} />
-        <directionalLight position={[8, 20, 12]} intensity={2} />
-        <Camera mode={cameraMode} span={span} follow={follow} centre={centre} nudge={nudge} />
-        {model.obstacles.map((o) => (
-          <mesh
-            key={o.id}
-            position={o.position}
-            rotation={o.kind === 'box' ? o.rotation : [0, 0, 0]}
-          >
-            {o.kind === 'box' ? (
-              <boxGeometry args={o.size} />
-            ) : (
-              <cylinderGeometry args={[o.radius, o.radius, o.height, 24]} />
-            )}
-            <meshStandardMaterial color={o.colour} roughness={0.9} />
-          </mesh>
-        ))}
-        {model.objects.map((o) => (
-          <group key={o.id}>
-            {o.shape && (
-              <mesh
-                position={o.position}
-                rotation={
-                  o.shape.kind === 'box'
-                    ? [0, (o.shape.yawMilliDegrees * Math.PI) / 180000, 0]
-                    : [0, 0, 0]
-                }
-              >
-                {o.shape.kind === 'box' ? (
-                  <boxGeometry
-                    args={[
-                      o.shape.sizeMm.x / 1000,
-                      o.shape.sizeMm.y / 1000,
-                      o.shape.sizeMm.z / 1000,
-                    ]}
-                  />
-                ) : o.shape.kind === 'sphere' ? (
-                  <sphereGeometry args={[o.shape.radiusMm / 1000, 24, 16]} />
-                ) : (
-                  <cylinderGeometry
-                    args={[
-                      o.shape.radiusMm / 1000,
-                      o.shape.radiusMm / 1000,
-                      o.shape.heightMm / 1000,
-                      24,
-                    ]}
-                  />
-                )}
-                <meshStandardMaterial
-                  color={o.colour}
-                  transparent
-                  opacity={0.3}
-                  depthWrite={false}
-                />
-              </mesh>
-            )}
-            {o.beams.map((b) => (
-              <Line
-                key={b.id}
-                points={b.points}
-                color={o.colour}
-                lineWidth={Math.max(2, b.radius * 30)}
-              />
-            ))}
-          </group>
-        ))}
-        {model.actors.map((a) => (
-          <group key={a.id} position={a.position}>
-            <mesh>
-              <capsuleGeometry args={[a.radius, a.length, 6, 16]} />
-              <meshStandardMaterial
-                color={a.colour}
-                transparent={!!a.phasing}
-                opacity={a.phasing ? 0.45 : 1}
-                wireframe={a.phasing?.pending ?? false}
-              />
-            </mesh>
-            {(a.sealing || a.revived) && (
-              <mesh rotation={[Math.PI / 2, 0, 0]}>
-                <torusGeometry args={[a.radius * 1.8, 0.05, 8, 32]} />
-                <meshBasicMaterial color={a.revived ? '#72e0c1' : '#d9a6ff'} />
-              </mesh>
-            )}
-            {a.casting && (
-              <mesh rotation={[Math.PI / 2, 0, 0]}>
-                <torusGeometry args={[a.radius * 1.5, 0.04, 6, 24]} />
-                <meshBasicMaterial color="#b695ff" />
-              </mesh>
-            )}
-            {overlays.collision && (
-              <>
+        <color attach="background" args={['#070a0c']} />
+        <DepthFog />
+        <ambientLight color="#4b5b7c" intensity={1.25} />
+        <hemisphereLight args={['#9fb6e6', '#3a2a18', 1.1]} />
+        <directionalLight position={[-7, 16, 10]} color="#dfe8ff" intensity={1.3} />
+        <Camera mode={cameraMode} model={model} nudge={nudge} />
+        <SceneTerrain model={model} />
+        <SceneFighters model={model} portal={stage as RefObject<HTMLElement>} />
+        <SceneEffects model={model} />
+        {overlays.collision && (
+          <>
+            {model.actors.map((a) => (
+              <group key={a.id} position={a.position}>
                 <mesh>
                   <capsuleGeometry args={[a.radius, a.length, 6, 16]} />
                   <meshBasicMaterial color="#e5f3ff" wireframe depthTest={false} />
                 </mesh>
                 <Line points={[[0, 0, 0], a.facing]} color="#faf5d6" lineWidth={2} />
-              </>
-            )}
-          </group>
-        ))}
-        {model.projectiles.map((p) => (
-          <mesh key={p.id} position={p.position}>
-            <sphereGeometry args={[p.radius, 12, 8]} />
-            <meshBasicMaterial color={p.colour} wireframe={overlays.collision} />
-          </mesh>
-        ))}
-        {model.effects.map((e) => (
-          <mesh key={e.id} position={e.position}>
-            <sphereGeometry args={[0.18, 8, 6]} />
-            <meshBasicMaterial
-              color={
-                e.kind === 'projectile-deflect'
-                  ? '#72e0c1'
-                  : e.kind === 'hit'
-                    ? '#ff849e'
-                    : '#f7d77f'
-              }
-              wireframe
-            />
-          </mesh>
-        ))}
+              </group>
+            ))}
+            {model.projectiles.map((p) => (
+              <mesh key={p.id} position={p.position}>
+                <sphereGeometry args={[p.radius, 12, 8]} />
+                <meshBasicMaterial color="#e5f3ff" wireframe depthTest={false} />
+              </mesh>
+            ))}
+          </>
+        )}
         <SceneOverlays model={model} overlays={overlays} />
       </Canvas>
     </div>
