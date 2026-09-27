@@ -42,9 +42,11 @@ export function leagueTransferBudget(
       throw new OperationError('INPUT_INVALID', 'Invalid league transfer counts');
   // Counted transient retries (LEAGUE_TRANSIENT_RETRIES) draw on explicit, bounded headroom.
   const classA = restore ? 1 : additions + 502 + LEAGUE_RETRY_WRITES;
+  // Each graph file needs at most a collision GET OR an uncertain-PUT recovery GET.
+  // Receipt scans (including orphans) and pointer barriers remain reserved; full-graph HEADs do not.
   const classB = restore
     ? files + 3 + LEAGUE_RETRY_READS
-    : receipts + 2 * files + 10 + LEAGUE_RETRY_READS;
+    : receipts + files + 10 + LEAGUE_RETRY_READS;
   const worker = restore ? 0 : 1000;
   return { classA, classB, worker };
 }
