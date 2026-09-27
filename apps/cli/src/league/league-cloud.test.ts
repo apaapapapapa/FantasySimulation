@@ -171,3 +171,26 @@ it('commits the complete twenty-character, five-field, swapped four-trial league
   expect(official.ruleset.id).toBe('standard-tactics-v2');
   expect(leagueSlotCount(official)).toBe(7600);
 });
+
+it('adds the P6 official milestone with the same league and only a newer standard ruleset', async () => {
+  const read = async (name: string) =>
+    LeagueDefinitionSchema.parse(
+      JSON.parse(
+        await readFile(new URL(`../../../../data/leagues/${name}.json`, import.meta.url), 'utf8'),
+      ),
+    );
+  const [previous, milestone] = await Promise.all([read('official-20-v1'), read('official-20-v2')]);
+  const unchanged = (definition: typeof previous) => {
+    const { id: _id, name: _name, ruleset: _ruleset, revisions, ...rest } = definition;
+    return { ...rest, revisions: revisions.filter((revision) => revision.kind !== 'ruleset') };
+  };
+  expect(unchanged(milestone)).toEqual(unchanged(previous));
+  expect(milestone.id).toBe('official-20-v2');
+  expect(milestone.ruleset.id).toBe('standard-tactics-spatial-v1');
+  const rules = milestone.revisions.filter((revision) => revision.kind === 'ruleset');
+  expect(rules).toHaveLength(1);
+  expect(rules[0]).toMatchObject({ id: 'standard-tactics-spatial-v1', revision: 1 });
+  expect(rules[0]!.definition).toMatchObject({ rulesVersion: 'spatial-v1.22' });
+  expect(rules[0]!.definition).not.toHaveProperty('experimental');
+  expect(leagueSlotCount(milestone)).toBe(7600);
+});
