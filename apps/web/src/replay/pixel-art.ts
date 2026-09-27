@@ -11,6 +11,56 @@ export const mix = (a: Rgb, b: Rgb, t: number): Rgb => [
   Math.round(a[1] + (b[1] - a[1]) * t),
   Math.round(a[2] + (b[2] - a[2]) * t),
 ];
+function toHsl([r, g, b]: Rgb): [number, number, number] {
+  const [red, green, blue] = [r / 255, g / 255, b / 255];
+  const max = Math.max(red, green, blue),
+    min = Math.min(red, green, blue),
+    light = (max + min) / 2,
+    chroma = max - min;
+  if (!chroma) return [0, 0, light];
+  const saturation = chroma / (1 - Math.abs(2 * light - 1));
+  const hue =
+    max === red
+      ? ((green - blue) / chroma + 6) % 6
+      : max === green
+        ? (blue - red) / chroma + 2
+        : (red - green) / chroma + 4;
+  return [hue * 60, saturation, light];
+}
+function fromHsl(hue: number, saturation: number, light: number): Rgb {
+  const chroma = (1 - Math.abs(2 * light - 1)) * saturation,
+    h = (((hue % 360) + 360) % 360) / 60,
+    x = chroma * (1 - Math.abs((h % 2) - 1)),
+    m = light - chroma / 2;
+  const [r, g, b] =
+    h < 1
+      ? [chroma, x, 0]
+      : h < 2
+        ? [x, chroma, 0]
+        : h < 3
+          ? [0, chroma, x]
+          : h < 4
+            ? [0, x, chroma]
+            : h < 5
+              ? [x, 0, chroma]
+              : [chroma, 0, x];
+  const channel = (v: number) => Math.round((v + m) * 255);
+  return [channel(r), channel(g), channel(b)];
+}
+/**
+ * A tone of `colour` from -1 (deep shadow) to 1 (highlight). As in hand-made pixel-art ramps,
+ * lighter tones drift toward warm yellow and darker ones toward cool violet.
+ */
+export function shade(colour: Rgb, amount: number): Rgb {
+  const [hue, saturation, light] = toHsl(colour);
+  const turn = (((((amount > 0 ? 50 : 255) - hue) % 360) + 540) % 360) - 180;
+  return fromHsl(
+    hue + Math.sign(turn) * Math.min(Math.abs(turn), Math.abs(amount) * 24),
+    Math.min(1, Math.max(0, saturation + (amount > 0 ? -0.08 : 0.12) * Math.abs(amount))),
+    Math.min(0.96, Math.max(0.04, light + amount * 0.3)),
+  );
+}
+
 export const blank = (width: number, height: number): PixelImage => ({
   width,
   height,

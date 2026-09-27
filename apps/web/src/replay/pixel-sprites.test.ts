@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vite-plus/test';
 import type { PixelImage } from './pixel-art.ts';
 import {
   SPRITE_FEET,
+  SPRITE_FIGURE,
   SPRITE_SIZE,
   spriteFade,
   spriteImage,
+  spritePixelScale,
   spritePose,
   type PoseState,
   type SpriteLook,
@@ -92,12 +94,25 @@ describe('pixel sprites', () => {
     );
     expect(frames.size).toBe(poses.length);
   });
+  it('keeps the recorded outfit on a defeated figure and colours glowing parts by the tint', () => {
+    for (const equipment of [['staff'], ['blade', 'shield'], ['bow']] as const)
+      expect(spriteImage(look({ equipment }), 'down').data).not.toEqual(
+        spriteImage(look(), 'down').data,
+      );
+    // The empty-handed scarf, a staff orb and a helm visor glow in the saved ability colour.
+    for (const equipment of [[], ['staff'], ['blade', 'shield']] as const) {
+      const outfit = look({ equipment });
+      expect(spriteImage({ ...outfit, glow: '#ff8a3d' }, 'idle').data).not.toEqual(
+        spriteImage(outfit, 'idle').data,
+      );
+    }
+  });
   it('turns everything but the outline white for a hit flash', () => {
     const image = spriteImage(look(), 'idle', true);
     for (let i = 0; i < image.data.length; i += 4) {
       if (image.data[i + 3] !== 255) continue;
       const rgb = [...image.data.slice(i, i + 3)];
-      expect(rgb.join() === INK.join() || rgb.join() === [0xff, 0xfa, 0xf0].join()).toBe(true);
+      expect(rgb.join() === INK.join() || rgb.join() === [0xff, 0xf8, 0xec].join()).toBe(true);
     }
   });
 });
@@ -153,4 +168,21 @@ it('keeps a phased sprite translucent but whole, and visible through the terrain
   expect(spriteFade({ pending: true }).opacity).toBeLessThan(
     spriteFade({ pending: false }).opacity,
   );
+});
+
+it('draws every texel over a whole number of pixels, close to the true size once enlarged', () => {
+  const cases = [0.6, 1.8, 3, 20].flatMap((height) =>
+    Array.from({ length: 400 }, (_, i) => 1 + i / 2).map((perMetre) => ({
+      scale: spritePixelScale(height, perMetre),
+      truth: height * perMetre,
+    })),
+  );
+  for (const { scale } of cases) {
+    expect(Number.isInteger(scale)).toBe(true);
+    expect(scale).toBeGreaterThanOrEqual(1);
+  }
+  for (const { scale, truth } of cases.filter((c) => c.truth >= 1.5 * SPRITE_FIGURE)) {
+    expect(scale * SPRITE_FIGURE).toBeGreaterThanOrEqual((truth * 2) / 3);
+    expect(scale * SPRITE_FIGURE).toBeLessThanOrEqual((truth * 4) / 3);
+  }
 });

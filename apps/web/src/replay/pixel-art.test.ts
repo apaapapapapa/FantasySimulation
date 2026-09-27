@@ -4,6 +4,8 @@ import {
   glowTexture,
   meadowMask,
   prng,
+  rgb,
+  shade,
   terrainTile,
   type PixelImage,
   type TerrainKind,
@@ -89,4 +91,19 @@ it('keeps meadow variation in the red and green data channels', () => {
   }
   expect(red.size).toBeGreaterThan(20);
   expect(green.size).toBeGreaterThan(20);
+});
+
+it('shades a colour lighter toward yellow and darker toward violet', () => {
+  const red = rgb('#e76669'),
+    grey = rgb('#b5bfd1');
+  expect(shade(red, 0)).toEqual(red);
+  const luma = ([r, g, b]: readonly number[]) => 0.3 * r! + 0.59 * g! + 0.11 * b!;
+  for (const colour of [red, grey, rgb('#64a7e4'), rgb('#76bfa0')]) {
+    const tones = [-0.85, -0.45, 0, 0.45].map((amount) => shade(colour, amount));
+    for (let i = 1; i < tones.length; i++)
+      expect(luma(tones[i]!)).toBeGreaterThan(luma(tones[i - 1]!));
+  }
+  // Red highlights gain green (toward yellow); its shadows gain blue (toward violet).
+  expect(shade(red, 0.45)[1] - shade(red, 0.45)[2]).toBeGreaterThan(red[1] - red[2]);
+  expect(shade(red, -0.45)[2]).toBeGreaterThan(shade(red, -0.45)[1]);
 });

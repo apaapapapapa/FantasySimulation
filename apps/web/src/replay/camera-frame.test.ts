@@ -50,15 +50,16 @@ describe('camera framing', () => {
   it.each(['overview', 'side', 'follow'] as const)(
     'keeps a tall body’s whole sprite frame in the %s view',
     (mode) => {
-      // Bodies may be up to 20 m tall; the sprite frame is 32/25 of the figure height wide.
+      // Bodies may be up to 20 m tall; the 48-px sprite frame holds a 33-px figure standing on
+      // row 44 of 48, so it reaches 44/33 of the height above the feet and 24/33 to each side.
       for (const bodies of [
         [body(-8, 0, 0, 18), body(6, 0)],
         [body(0, 0, 0, 20), body(3, 1)],
       ]) {
         const { project } = view(mode, bodies, 16 / 9);
         for (const b of mode === 'follow' ? bodies.slice(0, 1) : bodies)
-          for (const height of [0, b.standingHeight * 1.28])
-            for (const side of [-0.64, 0.64]) {
+          for (const height of [0, (b.standingHeight * 44) / 33])
+            for (const side of [-24 / 33, 24 / 33]) {
               const ndc = project(
                 [b.position[0], b.feet, b.position[2]],
                 height,
