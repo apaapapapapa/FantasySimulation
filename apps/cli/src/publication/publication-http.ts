@@ -57,7 +57,7 @@ export function ancestorOf(source: string, viewer: string, repository: string) {
   }
 }
 export function publicHttp(root: string, deadlineMs = 300000) {
-  if (!Number.isInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 7200000)
+  if (!Number.isInteger(deadlineMs) || deadlineMs < 1 || deadlineMs > 14400000)
     throw new OperationError('INPUT_INVALID', 'Invalid public read-back deadline');
   let base: URL;
   try {

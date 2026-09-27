@@ -73,21 +73,29 @@ const readCheckpoint = async (directory: string, manifest: ReplayManifest, index
   );
 };
 /** Full verification precedes writing, untrusted import/publication and legacy receipt adoption. */
-export async function verifyReplayDirectory(directory: string, manifest: ReplayManifest) {
+export async function verifyReplayDirectory(
+  directory: string,
+  manifest: ReplayManifest,
+  inspect?: (value: unknown) => void,
+) {
   const measured = currentMeasurements(),
     end = startMeasurement('validate.replay');
   let succeeded = false;
   try {
+    inspect?.(manifest);
     const context = await replayContext(manifest.input, manifest.simulationHash);
     const replay = new ReplayState(context),
       events = createHash('sha256'),
       trajectory = createHash('sha256');
     for (const [i, ref] of manifest.chunks.entries()) {
       const checkpoint = await readCheckpoint(directory, manifest, i);
+      inspect?.(checkpoint);
       if (canonicalJson(checkpoint) !== canonicalJson(replay.checkpoint()))
         throw new OperationError('DATA_INVALID', 'Checkpoint does not match the verified prefix');
       const records = await readReplayChunk(directory, manifest, i);
       for (const input of records) {
+        // Keep the original value: a schema must not hide private text from inspection.
+        inspect?.(input);
         const record = operationInput(() => replay.apply(input), 'DATA_INVALID');
         measureSync('hash.replayStream', () => {
           if ('events' in record)

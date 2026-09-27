@@ -163,7 +163,7 @@ it.each([
 it.each([
   { maxRequests: 2000001 },
   { maxClassARequests: 900001 },
-  { deadlineMs: 3600001 },
+  { deadlineMs: 10800001 },
   { maxClassBRequests: 0 },
 ])('rejects an out-of-policy transport budget before any request', (budget) => {
   expect(() => fixture(budget)).toThrow('budget');
@@ -219,3 +219,49 @@ it('measures concurrent GET bodies once, separates PUT/HEAD and retains failed c
   expect(report.incompleteSpans).toBe(0);
   expect(JSON.stringify(report)).not.toContain('fixture-secret');
 });
+
+it('measures each LIST page, including an interrupted page', async () => {
+  const { Measurements } = await import('@fantasy/api/testing');
+  const measurement = new Measurements();
+  const { store, send } = fixture({ maxAttempts: 1 });
+  send.mockResolvedValueOnce({
+    Contents: [],
+    IsTruncated: true,
+    NextContinuationToken: 'next',
+  } as never);
+  send.mockRejectedValueOnce({ $metadata: { httpStatusCode: 503 } });
+  await measurement.run(async () => {
+    await expect(store.inventory()).rejects.toThrow('HTTP 503');
+  });
+  expect(measurement.report().stages['r2.LIST']).toMatchObject({ count: 2, failures: 1 });
+  expect(store.metrics().classARequests).toBe(2);
+});
+
+it.each([16, 32, 64])(
+  'configures the SDK connection limit to %s with keep-alive',
+  async (maxSockets) => {
+    const store = new PublicationS3(
+      {
+        accountId: 'a'.repeat(32),
+        bucket: 'socket-fixture',
+        accessKeyId: 'fixture',
+        secretAccessKey: 'fixture',
+      },
+      { maxAttempts: 1 },
+      maxSockets,
+    );
+    stores.push(store);
+    // Inspect the pinned SDK handler configuration, not a mirrored application setting.
+    const client = (store as unknown as { client: S3Client }).client;
+    const handler = client.config.requestHandler as unknown as {
+      configProvider: Promise<{
+        httpsAgent: { maxSockets: number; maxTotalSockets: number; keepAlive: boolean };
+      }>;
+    };
+    expect((await handler.configProvider).httpsAgent).toMatchObject({
+      maxSockets,
+      maxTotalSockets: maxSockets,
+      keepAlive: true,
+    });
+  },
+);

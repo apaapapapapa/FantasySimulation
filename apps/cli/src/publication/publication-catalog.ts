@@ -29,8 +29,10 @@ export async function commitPublication(
     maxBytes?: number | undefined;
     league?: NonNullable<PublicCatalog['leagues']>[number];
     leagueWork?: PublicCatalog['leagueWork'];
+    signal?: AbortSignal;
   } = {},
 ) {
+  options.signal?.throwIfAborted();
   const root = resolve(directory);
   await publicationDirectory(root, true);
   const lock = join(root, '.publication-lock');
@@ -117,6 +119,7 @@ export async function commitPublication(
       current,
       previous,
       options.maxBytes ?? PUBLICATION_MAX_BYTES,
+      options.signal,
     );
     return { catalogHash: catalogFile.checksum, ...written };
   } finally {

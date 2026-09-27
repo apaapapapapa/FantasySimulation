@@ -2,7 +2,11 @@ import { mkdtemp, readFile, rm, stat, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, expect, it } from 'vite-plus/test';
-import { publicationFixture, publicationIndex } from '../../test-support/publication.ts';
+import {
+  publicationFixture,
+  publicationIndex,
+  expandPublicationPlan,
+} from '../../test-support/publication.ts';
 import { exportPublication } from './publication-export.ts';
 import { localPublicationGraph } from './publication-graph.ts';
 import { restorePublication } from './publication-restore.ts';
@@ -146,3 +150,56 @@ it.each([0, -1, 1.5, Number.NaN, 8_000_000_001])(
     await expect(stat(restored)).rejects.toMatchObject({ code: 'ENOENT' });
   },
 );
+
+it('prefetches independent metadata without duplicate GETs or changing restored bytes', async () => {
+  const { original, fixture, restored, reader, requests } = await snapshot();
+  await exportPublication(await expandPublicationPlan(fixture.plan, 250), [], original);
+  const load = reader.read.bind(reader);
+  let active = 0,
+    peak = 0;
+  reader.read = async (key, limit) => {
+    peak = Math.max(peak, ++active);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      return await load(key, limit);
+    } finally {
+      active--;
+    }
+  };
+  const result = await restorePublication(restored, reader, undefined, 4);
+  expect(peak).toBeGreaterThan(1);
+  expect(peak).toBeLessThanOrEqual(4);
+  const immutable = requests.filter((key) => key !== 'catalog/current.json');
+  expect(new Set(immutable).size).toBe(immutable.length);
+  expect(result.reads).toBe(result.files + 1);
+  expect((await localPublicationGraph(restored)).current).toEqual(
+    (await localPublicationGraph(original)).current,
+  );
+});
+
+it('settles admitted prefetches before removing an interrupted restore', async () => {
+  const { original, fixture, restored, reader } = await snapshot();
+  await exportPublication(await expandPublicationPlan(fixture.plan, 250), [], original);
+  const load = reader.read.bind(reader);
+  let active = 0,
+    completed = 0;
+  reader.read = async (key, limit) => {
+    active++;
+    try {
+      await new Promise((resolve) => setTimeout(resolve, key.endsWith('/set.json') ? 3 : 1));
+      if (key.endsWith('/set.json')) throw new Error('prefetch interrupted');
+      return await load(key, limit);
+    } finally {
+      active--;
+      completed++;
+    }
+  };
+  await expect(restorePublication(restored, reader, undefined, 4)).rejects.toThrow(
+    'prefetch interrupted',
+  );
+  expect(active).toBe(0);
+  const settled = completed;
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  expect(completed).toBe(settled);
+  await expect(stat(restored)).rejects.toMatchObject({ code: 'ENOENT' });
+});

@@ -3,7 +3,8 @@ import type { ResolvedActor } from '../state.ts';
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import { cosDegrees, cross, dot, length, lerp, sub, unit, type Vec3 } from '../math.ts';
 import { capsuleShape, COLLISION_SKIN, type SpatialWorld } from './physics.ts';
-import { bodyCapsule, metres } from './terrain.ts';
+import { bodyCapsule } from './terrain.ts';
+import { prepareNavigationGraph } from './navigation-graph.ts';
 
 type Mode = 'walk' | 'jump' | 'fly';
 export type Waypoint = { position: Vec3; mode: Mode };
@@ -29,6 +30,11 @@ function estimatedCost(from: Vec3, to: Vec3, mode: Mode, resources: NavigationRe
 /** One planner per actor and immutable battle world; geometric edge checks are reusable. */
 export class Navigator {
   private readonly cache = new Map<string, boolean>();
+  private readonly graphs = new Map<boolean, ReturnType<typeof prepareNavigationGraph>>();
+  private readonly costs = new Map<string, number>();
+  private readonly previous = new Map<string, { id: string | null; mode: Mode }>();
+  private readonly frontier = new Set<string>();
+  private readonly settled = new Set<string>();
   private readonly world: SpatialWorld;
   private readonly actor: ResolvedActor;
   private readonly scenario: DeepReadonly<Definition<'scenario'>>;
@@ -36,6 +42,14 @@ export class Navigator {
   private readonly exploring: boolean;
   invalidate() {
     this.cache.clear();
+    this.graphs.clear();
+    this.resetSearch();
+  }
+  private resetSearch() {
+    this.costs.clear();
+    this.previous.clear();
+    this.frontier.clear();
+    this.settled.clear();
   }
   constructor(
     world: SpatialWorld,
@@ -215,15 +229,15 @@ export class Navigator {
     const mode = flight ? 'fly' : 'walk';
     if (this.traversable(start, goal, mode, resources?.speedMmPerSecond))
       return path([{ position: { ...goal }, mode }], 0);
-    const nodes = this.scenario.navigation.nodes.filter(
-      (n) => n.mode === (flight ? 'air' : 'ground'),
-    );
-    const points = new Map(nodes.map((n) => [n.id, metres(n.position)]));
-    const edges = this.scenario.navigation.edges;
-    const costs = new Map<string, number>(),
-      previous = new Map<string, { id: string | null; mode: Mode }>(),
-      open = new Set<string>(),
-      closed = new Set<string>();
+    let graph = this.graphs.get(flight);
+    if (!graph) {
+      graph = prepareNavigationGraph(this.scenario.navigation, flight);
+      this.graphs.set(flight, graph);
+    }
+    const { nodes, points, adjacent } = graph;
+    // A failed/early-returned search must not seed the next request's frontier or costs.
+    this.resetSearch();
+    const { costs, previous, frontier, settled } = this;
     let forward = unit({ ...sub(goal, start), y: 0 });
     if (length(forward) < 1e-12) forward = unit({ ...this.actor.participant.facing, y: 0 });
     if (length(forward) < 1e-12) forward = { x: 1, y: 0, z: 0 };
@@ -245,15 +259,15 @@ export class Navigator {
       if (this.traversable(start, point, mode)) {
         costs.set(node.id, cost(start, point, mode));
         previous.set(node.id, { id: null, mode });
-        open.add(node.id);
+        frontier.add(node.id);
       }
     }
-    while (open.size) {
+    while (frontier.size) {
       if (++visited > maxNodes) return { kind: 'budget-exceeded', visited: visited - 1 };
       let chosen: string | undefined,
         score = Infinity;
       for (const node of ordered)
-        if (open.has(node.id)) {
+        if (frontier.has(node.id)) {
           const candidate = costs.get(node.id)! + length(sub(points.get(node.id)!, goal));
           if (candidate < score) {
             chosen = node.id;
@@ -263,14 +277,15 @@ export class Navigator {
       const id = chosen!,
         point = points.get(id)!;
       if (resources && bestPath && score >= bestCost) return { ...bestPath, visited };
-      open.delete(id);
-      closed.add(id);
+      frontier.delete(id);
+      settled.add(id);
       if (this.traversable(point, goal, mode)) {
         const waypoints: Waypoint[] = [{ position: { ...goal }, mode }];
         let cursor: string | null = id;
         while (cursor !== null) {
           const parent: { id: string | null; mode: Mode } = previous.get(cursor)!;
-          waypoints.unshift({ position: points.get(cursor)!, mode: parent.mode });
+          // Cached coordinates are private; callers own their returned paths.
+          waypoints.unshift({ position: { ...points.get(cursor)! }, mode: parent.mode });
           cursor = parent.id;
         }
         if (!resources) return path(waypoints, visited);
@@ -280,13 +295,11 @@ export class Navigator {
           bestPath = path(waypoints, visited);
         }
       }
-      for (const edge of edges) {
-        const next =
-          edge.from === id ? edge.to : edge.bidirectional && edge.to === id ? edge.from : null;
+      for (const { edge, next } of adjacent.get(id) ?? []) {
         if (
           !next ||
           !points.has(next) ||
-          closed.has(next) ||
+          settled.has(next) ||
           (flight ? edge.mode !== 'fly' : edge.mode === 'fly') ||
           (edge.mode === 'jump' && !allowJump)
         )
@@ -320,7 +333,7 @@ export class Navigator {
         if (nextCost < (costs.get(next) ?? Infinity)) {
           costs.set(next, nextCost);
           previous.set(next, { id, mode: edge.mode });
-          open.add(next);
+          frontier.add(next);
         }
       }
     }

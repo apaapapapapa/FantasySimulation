@@ -116,6 +116,6 @@ it('keeps league verification alive after a long upload while bounding each requ
   expect(last.aborted).toBe(true); // The individual request still has a five-minute bound.
   await vi.advanceTimersByTimeAsync(5400000);
   await expect(league('build.json', 4096)).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE' });
-  for (const invalid of [0, 7200001, 1.5, NaN])
+  for (const invalid of [0, 14400001, 1.5, NaN])
     expect(() => publicHttp('https://viewer.example/', invalid)).toThrow('deadline');
 });

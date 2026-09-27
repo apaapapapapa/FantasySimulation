@@ -1,5 +1,5 @@
 import { ZodError } from 'zod';
-import { ReplayValidationError } from '@fantasy/domain/spatial';
+import { ReplayValidationError, RevisionGraphError } from '@fantasy/domain/spatial';
 
 export type OperationCode =
   | 'INPUT_INVALID'
@@ -40,4 +40,16 @@ export function operationInput<T>(parse: () => T, code: 'INPUT_INVALID' | 'DATA_
       throw new OperationError(code, 'Invalid JSON document or schema');
     throw error;
   }
+}
+
+/** Shared saved-data classification without importing execution or persistence code. */
+export function artifactOperationCode(
+  error: unknown,
+  schemaCode: 'INPUT_INVALID' | 'DATA_INVALID' = 'INPUT_INVALID',
+): OperationCode | 'UNKNOWN' {
+  if (error instanceof OperationError) return error.code;
+  if (error instanceof ReplayValidationError) return 'DATA_INVALID';
+  if (error instanceof ZodError) return schemaCode;
+  if (error instanceof RevisionGraphError) return 'INPUT_INVALID';
+  return 'UNKNOWN';
 }

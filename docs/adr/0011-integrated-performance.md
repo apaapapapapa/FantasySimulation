@@ -1,33 +1,34 @@
-# ADR 0011: P3 integrated performance
+# ADR 0011: Integrated performance
 
-PR #60 accepted TypeScript + Rapier + Piscina: 1,000 new matches on 2 Workers
-completed in 1504.65s and passed all ten gates in [ADR 0002](0002-spatial-engine.md).
-Keep thresholds and default 1 / maximum 4 Workers. This is not P4/P5 acceptance.
+PR #60 selected TS/Rapier/Piscina: default one/maximum four Workers, 1.5GiB abort.
+Historical 1,000-match measurements and reproduction (not P4/P5 acceptance):
+[Evidence](../measurements/p3-integrated-linux.json) and the
+[original protocol](https://github.com/apaapapapapa/FantasySimulation/blob/6ea13284e6c7845c7badef202054a951be7144b6/docs/adr/0011-integrated-performance.md)
 
-[Historical receipt](https://github.com/apaapapapapa/FantasySimulation/blob/6ea13284e6c7845c7badef202054a951be7144b6/docs/adr/0011-integrated-performance.md)
-and [measurements](../measurements/p3-integrated-linux.json) retain exact source/toolchain,
-host, raw-log references, four-Worker comparisons and the reviewed identity transition.
+## Requested refinements — #189/#210
 
-## Reproduction
+Preserve [recording](0006-recorded-replay.md), [publication](0008-headless-batch.md),
+bindings, denominators, attempts, quotas and retention. Review and real performance
+evidence remain required.
 
-Run from a clean commit into an unused directory:
+Sessions keep 256 successful hashes. Reuse authenticates receipt, manifest and
+compressed bytes, never mtime/claims. Eviction/closure requires full validation.
+Share three aggregation passes; independently validate export after its callback
+(four to two). Index authenticated results.
 
-```sh
-pnpm --filter @fantasy/api exec node --import tsx ../../scripts/integrated-benchmark.ts .generated/harness/p3-full 2 1000
-```
+Inspect original JSON during bounded decoding; retain UTF-8, checkpoints and hashes. Verifiers default inline; cloud requests two, capped at four/CPUs minus
+one. Bound heaps/batches; empty environments are not sandboxes. Propagate aborts
+inline too; drain and close. Worker spans are not CPU or additive wall time.
+Keep four durable immutable writes, fsync/link/directory sync and pointer-last commit.
 
-The fixed integrated profile uses 13 characters, 10 pairs, seed 20260923 + input
-index and 200 full 6,000-step trials through real Worker/SQLite/replay/bundle paths.
-For profiling, pass 1 or 4 Workers and 100 trials; `full-batch` then remains unknown.
-Shared CI does not replace reference-host performance acceptance.
+Share fresh post-validation inventory within one serialized publication.
+Account for lease size; retain orphan conflicts,
+all-reference HEAD, conditional PUT, generation/viewer/readback barriers. Reuse exact
+receipt GET evidence, not buffers. No pointer caching or lease refunds.
 
-## Limits
-
-No failures, truncations or cache reuse occurred. Overall p95 was 7.721s (8s limit),
-but the final quarter reached 9.056s. Do not extrapolate to other hosts, worst-case
-geometry/projectiles or 495,000 matches. RSS is sampled at 100ms, Worker memory per
-attempt; memory categories are not additive. Above 1.5 GiB, stop admission and abort
-attempts; this is not an OS cap. Preserve world disposal, WASM reuse and pool closure.
-Backpressure includes transfer, validation, compression and storage; separate TS/WASM
-CPU, HTTP and task queue latency remain unmeasured. External service deployment needs
-OS-isolation review.
+Prefetch hash/size-bound children after parent validation into owned disk.
+Deduplicate keys; retain ordered checks and bounded requests/payloads;
+drain before cleanup. Cloud GET/HEAD use 32; PUT/Reader use 16. S3 tuning allows 1–64
+and 16–256MiB payload reservations (64MiB default), not RSS guarantees. Match sockets
+and keep-alive. Measure LIST pages. Keep serial control writes, retries, bucket
+settings, Local Uploads, formats and workflows unchanged.

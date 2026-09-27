@@ -11,6 +11,9 @@ import { sha256 } from '@fantasy/api/artifacts';
 import { leagueFailure, leagueFailureSummary } from './league-diagnostics.ts';
 import { withMilestonePublication } from '../../test-support/league-milestones.ts';
 import { probeLeague } from './league-probe.ts';
+import { publicationFixture } from '../../test-support/publication.ts';
+import { exportPublication } from '../publication/publication-export.ts';
+import { SUPPORTED_REPLAY_FORMAT } from '@fantasy/domain';
 
 afterEach(() => vi.restoreAllMocks());
 const config = {
@@ -101,15 +104,10 @@ it.each(['pointer-json', 'pointer-utf8', 'catalog-json', 'catalog-utf8'])(
   },
 );
 it('requires durable inventory/data leases before restore and never reuses the same failed lease', async () => {
-  let current: Awaited<ReturnType<PublicationS3['readControl']>> = null;
-  vi.spyOn(console, 'log').mockImplementation(() => {});
-  vi.spyOn(PublicationS3.prototype, 'readControl').mockImplementation(async () => current);
-  vi.spyOn(PublicationS3.prototype, 'putControl').mockImplementation(async (data, etag) => {
-    if ((current?.etag ?? null) !== etag) throw new Error('CAS conflict');
-    current = { data: Buffer.from(data), etag: String(JSON.parse(data.toString()).sequence) };
-  });
+  const ledger = mockUsageLedger();
   vi.spyOn(PublicationS3.prototype, 'inventory').mockResolvedValue(new Map());
   const read = vi.spyOn(PublicationS3.prototype, 'read').mockImplementation(async () => {
+    const current = ledger();
     if (current) {
       const ids = JSON.parse(current.data.toString()).leases.map((l: { id: string }) => l.id);
       expect(ids).toContain('fixture-restore');
@@ -117,6 +115,7 @@ it('requires durable inventory/data leases before restore and never reuses the s
     }
     return null;
   });
+  const timeouts = vi.spyOn(AbortSignal, 'timeout');
   await withReplayDirectory(async (root) => {
     const inventory = await transferCloudLeague(
       config,
@@ -138,6 +137,9 @@ it('requires durable inventory/data leases before restore and never reuses the s
       },
     );
     expect(inventory).toMatchObject({ files: 1, bytes: 65536, usedWriteRequests: 10601 });
+    // Restore keeps the one-hour S3 transport bound; only publication gets three hours.
+    expect(timeouts.mock.calls.map(([ms]) => ms)).toContain(3_600_000);
+    expect(timeouts.mock.calls.map(([ms]) => ms)).not.toContain(10_800_000);
     const count = read.mock.calls.length;
     await expect(
       transferCloudLeague(config, join(root, 'retry'), join(root, 'reports'), identity),
@@ -167,5 +169,98 @@ it('refuses to bootstrap a deleted usage ledger when durable league reservations
       transferCloudLeague(config, join(root, 'restored'), join(root, 'reports'), identity),
     ).rejects.toThrow('ledger is missing');
     expect(write).not.toHaveBeenCalled();
+  });
+});
+
+function mockUsageLedger() {
+  let current: Awaited<ReturnType<PublicationS3['readControl']>> = null;
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+  vi.spyOn(PublicationS3.prototype, 'readControl').mockImplementation(async () => current);
+  vi.spyOn(PublicationS3.prototype, 'putControl').mockImplementation(async (data, etag) => {
+    if ((current?.etag ?? null) !== etag) throw new Error('CAS conflict');
+    current = { data: Buffer.from(data), etag: String(JSON.parse(data.toString()).sequence) };
+  });
+  return () => current;
+}
+
+/** In-memory bucket for publication tests; `put` may be overridden per test. */
+function mockObjectStore() {
+  const objects = new Map<string, Buffer>();
+  const inventory = vi
+    .spyOn(PublicationS3.prototype, 'inventory')
+    .mockImplementation(async () => new Map([...objects].map(([key, data]) => [key, data.length])));
+  vi.spyOn(PublicationS3.prototype, 'read').mockImplementation(async (key) => {
+    const data = objects.get(key);
+    return data ? { data: Buffer.from(data), etag: 'fixture' } : null;
+  });
+  vi.spyOn(PublicationS3.prototype, 'head').mockImplementation(
+    async (key) => objects.get(key)?.length ?? null,
+  );
+  const put = vi.spyOn(PublicationS3.prototype, 'put').mockImplementation(async (key, data) => {
+    objects.set(key, Buffer.from(data));
+  });
+  return { objects, inventory, put };
+}
+/** Exports a fixture publication once and returns a publisher bound to that directory. */
+async function publicationTransfer(root: string, objects: ReadonlyMap<string, Buffer>) {
+  const fixture = await publicationFixture(join(root, 'input'));
+  const directory = join(root, 'public');
+  await exportPublication(fixture.plan, [fixture], directory);
+  return (id: string) =>
+    transferCloudLeague(
+      config,
+      directory,
+      join(root, 'reports'),
+      { ...identity, id },
+      {
+        viewer: async () => ({
+          schemaVersion: 1,
+          sourceSha: 'b'.repeat(40),
+          publicationSchema: 1,
+          replay: SUPPORTED_REPLAY_FORMAT,
+        }),
+        ancestor: () => true,
+        worker: async (key) => Buffer.from(objects.get(key)!),
+      },
+    );
+}
+
+it('resumes an interrupted publication without rewriting stored objects, within a three-hour transport', async () => {
+  mockUsageLedger();
+  const { objects, put } = mockObjectStore();
+  const written: string[] = [];
+  let failAfter = 2;
+  put.mockImplementation(async (key, data) => {
+    if (failAfter-- === 0) throw new Error('interrupted transport');
+    written.push(key);
+    objects.set(key, Buffer.from(data));
+  });
+  const timeouts = vi.spyOn(AbortSignal, 'timeout');
+  await withReplayDirectory(async (root) => {
+    const publish = await publicationTransfer(root, objects);
+    await expect(publish('publish-interrupted')).rejects.toThrow();
+    const stored = new Set(objects.keys());
+    expect(stored.size).toBeGreaterThan(0);
+    expect(objects.has('catalog/current.json')).toBe(false);
+    failAfter = Infinity;
+    await publish('publish-resumed');
+    expect(objects.has('catalog/current.json')).toBe(true);
+    // Objects stored by the interrupted attempt are verified, never uploaded again.
+    expect(written.filter((key) => stored.has(key))).toHaveLength(stored.size);
+    expect(new Set(written).size).toBe(written.length);
+  });
+  const deadlines = timeouts.mock.calls.map(([ms]) => ms);
+  expect(deadlines).toContain(10_800_000);
+  expect(deadlines).not.toContain(3_600_000);
+});
+it('uses one post-validation inventory for both lease admission and publication', async () => {
+  mockUsageLedger();
+  const { objects, inventory } = mockObjectStore();
+  await withReplayDirectory(async (root) => {
+    await (
+      await publicationTransfer(root, objects)
+    )('publish-one-list');
+    expect(inventory).toHaveBeenCalledTimes(1);
+    expect(objects.has('catalog/current.json')).toBe(true);
   });
 });

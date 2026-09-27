@@ -1,18 +1,14 @@
-import { ZodError } from 'zod';
-import { RevisionGraphError, ReplayValidationError } from '@fantasy/domain/spatial';
 import { EngineInputError } from '@fantasy/engine/spatial';
 import { StoreError } from './db/store-error.ts';
-import { OperationError, type OperationCode } from './operation-error.ts';
+import { artifactOperationCode, type OperationCode } from './operation-error.ts';
 
 /** Execution-aware classification stays outside the saved-artifact entry point. */
 export function operationCode(
   error: unknown,
   schemaCode: 'INPUT_INVALID' | 'DATA_INVALID' = 'INPUT_INVALID',
 ): OperationCode | 'UNKNOWN' {
-  if (error instanceof OperationError) return error.code;
-  if (error instanceof ReplayValidationError) return 'DATA_INVALID';
-  if (error instanceof ZodError) return schemaCode;
-  if (error instanceof RevisionGraphError) return 'INPUT_INVALID';
+  const shared = artifactOperationCode(error, schemaCode);
+  if (shared !== 'UNKNOWN') return shared;
   if (error instanceof EngineInputError)
     return error.code.startsWith('unsupported-') ? 'IDENTITY_MISMATCH' : 'INPUT_INVALID';
   if (error instanceof StoreError) {

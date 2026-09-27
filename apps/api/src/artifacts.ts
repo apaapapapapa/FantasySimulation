@@ -13,3 +13,11 @@ export {
   writeDurableFile,
   publishImmutableFile,
 } from './replay/replay-files.ts';
+export { assertPublicData } from './replay/replay-public.ts';
+export {
+  ReplayVerificationPool,
+  replayVerificationWorkers,
+  withReplayVerificationPool,
+} from './replay/verification-pool.ts';
+export { currentMeasurements } from './measurements.ts';
+export { default as verifyRecordedReplay } from './replay/verification-worker.ts';

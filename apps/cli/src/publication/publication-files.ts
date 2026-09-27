@@ -14,13 +14,16 @@ import {
 import {
   OperationError,
   operationInput,
+  assertPublicData,
   publishImmutableFile,
   readBoundedFile,
   sha256,
   syncDirectory,
   writeDurableFile,
 } from '@fantasy/api/artifacts';
+import { publicationPool } from './publication-pool.ts';
 
+export { assertPublicData } from '@fantasy/api/artifacts';
 export { PUBLICATION_MAX_BYTES, PUBLICATION_MAX_FILES } from '@fantasy/domain/spatial';
 export const PUBLICATION_CONTROL_KEY = 'control/league-usage.json';
 export const PUBLICATION_CONTROL_BYTES = 65536;
@@ -57,30 +60,6 @@ export function receiptIdentity(key: string, bytes: Buffer, results: Map<string,
     throw new OperationError('DATA_INVALID', 'Existing simulation result conflict');
   if (definitive) results.set(receipt.simulationHash, receipt.resultHash);
   return receipt;
-}
-
-/** Public JSON is allowlisted by schemas; free text must not carry local diagnostics or credentials. */
-export function assertPublicData(value: unknown): void {
-  if (typeof value === 'string') {
-    if (
-      /(?:^|[\s="'(])(?:\/[^\s/]+[^\s]*|[a-z]:[\\/]|\\\\)|(?:^|[\\/])\.work(?:[\\/]|$)|\b(?:gh[pousr]_[A-Za-z0-9_]{20,}|github_pat_[A-Za-z0-9_]+|AKIA[A-Z0-9]{16})\b|-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:password|secret|token|api[_-]?key|authorization)\s*[:=]|https?:\/\/[^\s/@]+:[^\s/@]+@/i.test(
-        value,
-      )
-    )
-      throw new OperationError('DATA_INVALID', 'Private text is not publishable');
-  } else if (Array.isArray(value)) value.forEach(assertPublicData);
-  else if (value && typeof value === 'object') {
-    for (const [key, item] of Object.entries(value)) {
-      if (
-        /^(?:env|environment|password|secret|token|apiKey|authorization|credentials|absolutePath)$/i.test(
-          key,
-        )
-      )
-        throw new OperationError('DATA_INVALID', 'Private field is not publishable');
-      assertPublicData(key);
-      assertPublicData(item);
-    }
-  }
 }
 
 /** Check every ancestor, not just the final artifact entry. */
@@ -157,7 +136,9 @@ export async function writePublication(
   current: PublicationFile,
   previous: Buffer | null,
   maxBytes: number,
+  signal?: AbortSignal,
 ) {
+  signal?.throwIfAborted();
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > PUBLICATION_MAX_BYTES)
     throw new OperationError('INPUT_INVALID', 'Invalid publication capacity');
   const stored = await publicationInventory(root);
@@ -197,17 +178,25 @@ export async function writePublication(
       throw new OperationError('PUBLICATION_CONFLICT', 'Publication generation changed');
   };
   await assertGeneration();
-  for (const file of additions) {
-    await publicationDirectory(dirname(join(root, file.key)), true);
-    await publishImmutableFile(join(root, file.key), await publicationBytes(file));
-  }
+  await publicationPool(
+    additions,
+    4,
+    async (file) => {
+      signal?.throwIfAborted();
+      await publicationDirectory(dirname(join(root, file.key)), true);
+      await publishImmutableFile(join(root, file.key), await publicationBytes(file));
+    },
+    'publication.write',
+  );
   await assertGeneration();
+  signal?.throwIfAborted();
   if (!previous?.equals(current.data!)) {
     await publicationDirectory(join(root, 'catalog'), true);
     // Mutable pointer replacement is last; staged pointer stays outside the public layout.
     const temporary = join(root, '.publication-lock', randomUUID());
     try {
       await writeDurableFile(temporary, await publicationBytes(current));
+      signal?.throwIfAborted();
       await rename(temporary, join(root, current.key));
       await syncDirectory(join(root, 'catalog'));
     } finally {

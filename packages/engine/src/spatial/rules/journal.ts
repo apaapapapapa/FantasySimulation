@@ -8,6 +8,7 @@ import {
   type StreamRecord,
 } from '@fantasy/domain/spatial/execution';
 import { SpatialBudgetError } from '../world/physics.ts';
+import { sameRecordValue, utf8ByteLength } from './record-values.ts';
 export type EventInput = Pick<BattleEvent, 'kind' | 'step' | 'phase' | 'ruleId'> &
   Partial<Omit<BattleEvent, 'id' | 'sequence' | 'schemaVersion'>>;
 const phaseOrder: Record<BattleEvent['phase'], number> = {
@@ -18,10 +19,9 @@ const phaseOrder: Record<BattleEvent['phase'], number> = {
   resolution: 4,
   terminal: 5,
 };
-const encoder = new TextEncoder();
 export const recordBytes = (record: unknown) => {
   try {
-    return encoder.encode(canonicalJson(record)).byteLength + 1;
+    return utf8ByteLength(canonicalJson(record)) + 1;
   } catch (error) {
     if (error instanceof Error && /^JSON (structure|byte) budget exceeded$/.test(error.message))
       throw new SpatialBudgetError('record-encoding');
@@ -113,7 +113,7 @@ export function displayChanges(
         'statuses',
         'action',
       ] as const)
-        if (canonicalJson(previous[key] ?? null) !== canonicalJson(actor[key] ?? null))
+        if (!sameRecordValue(previous[key] ?? null, actor[key] ?? null))
           Object.assign(delta, { [key]: actor[key] });
       return Object.keys(delta).length > 1 ? [delta] : [];
     })

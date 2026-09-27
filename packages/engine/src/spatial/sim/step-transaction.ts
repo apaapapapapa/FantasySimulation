@@ -21,7 +21,8 @@ import type { WorkMeter } from './work-meter.ts';
 import type { Obstacle } from '../geometry-types.ts';
 import type { PendingRelocation } from '../state.ts';
 import { displaySpatialObject, type SpatialObject } from '../rules/spatial-objects.ts';
-import { canonicalJson, type SpatialObjectChanges } from '@fantasy/domain/spatial/execution';
+import type { SpatialObjectChanges } from '@fantasy/domain/spatial/execution';
+import { sameRecordValue } from '../rules/record-values.ts';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
 export type SimulationState = {
@@ -115,9 +116,7 @@ export class StepTransaction {
     if (!previous.length && !next.length) return undefined;
     const changes: SpatialObjectChanges = {
       spawn: next.filter((o) => !previous.some((p) => p.id === o.id)),
-      update: next.filter((o) =>
-        previous.some((p) => p.id === o.id && canonicalJson(p) !== canonicalJson(o)),
-      ),
+      update: next.filter((o) => previous.some((p) => p.id === o.id && !sameRecordValue(p, o))),
       remove: previous
         .filter((o) => !next.some((p) => p.id === o.id))
         .map((o) => ({ id: o.id, reason: this.objectRemovals.get(o.id) ?? 'expired' })),
@@ -127,11 +126,12 @@ export class StepTransaction {
       : undefined;
   }
   boundaryRecord(): Extract<StreamRecord, { kind: 'boundary' }> {
+    const objects = this.objectChanges();
     return {
       kind: 'boundary',
       schemaVersion: 1,
       step: this.step,
-      ...(this.objectChanges() ? { objects: this.objectChanges()! } : {}),
+      ...(objects ? { objects } : {}),
       changes: displayChanges(
         this.before,
         this.next.actors.map((actor) => displayActor(actor, this.step)),
@@ -140,10 +140,11 @@ export class StepTransaction {
     };
   }
   intervalRecord(): Extract<StreamRecord, { kind: 'interval' }> {
+    const objects = this.objectChanges();
     return {
       kind: 'interval',
       schemaVersion: 1,
-      ...(this.objectChanges() ? { objects: this.objectChanges()! } : {}),
+      ...(objects ? { objects } : {}),
       fromStep: this.step,
       toStep: this.step + 1,
       paths: this.paths,

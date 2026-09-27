@@ -16,6 +16,7 @@ import {
 } from './publication-files.ts';
 import { sha256 } from '@fantasy/api/artifacts';
 import { publicationConcurrency, publicationPool } from './publication-pool.ts';
+import { PublicationIo, transferTuning, type TransferTuning } from './publication-io.ts';
 
 export interface RemoteObject {
   data: Buffer;
@@ -32,8 +33,10 @@ export interface PublicationStore {
 /** Starts transport and reserves usage only after the complete local graph is verified. */
 export type PublicationStoreFactory = (
   graph: Awaited<ReturnType<typeof localPublicationGraph>>,
-) => Promise<PublicationStore>;
-export interface PublishOptions {
+) => Promise<
+  PublicationStore | { store: PublicationStore; inventory: ReadonlyMap<string, number> }
+>;
+export interface PublishOptions extends TransferTuning {
   viewer(): Promise<unknown>;
   ancestor(source: string, viewer: string): boolean;
   worker(key: string, limit: number): Promise<Buffer>;
@@ -42,6 +45,8 @@ export interface PublishOptions {
   maxTransferBytes?: number;
   maxWorkerRequests?: number;
   concurrency?: number;
+  verificationWorkers?: number;
+  signal?: AbortSignal;
   dryRun?: boolean;
   observe?(report: PublishReport): void;
 }
@@ -73,11 +78,13 @@ const rank = (key: string) =>
       : key.startsWith('leagues/')
         ? 3
         : 4;
-async function exact(store: PublicationStore, file: PublicationFile) {
-  const value = await store.read(file.key, file.bytes);
+function exactBytes(file: PublicationFile, value: RemoteObject | null) {
   if (!value || value.data.length !== file.bytes || sha256(value.data) !== file.checksum)
     throw new OperationError('DATA_INVALID', 'Immutable publication collision');
   return value;
+}
+async function exact(store: PublicationStore, file: PublicationFile) {
+  return exactBytes(file, await store.read(file.key, file.bytes));
 }
 export type PublicationPhase = 'not-committed' | 'commit-unknown' | 'committed-unverified';
 export class PublicationFailure extends Error {
@@ -98,14 +105,23 @@ export async function publishPublication(
   options: PublishOptions,
 ) {
   let phase: PublicationPhase = 'not-committed';
+  let io: PublicationIo | undefined;
   try {
     const maxBytes = limit(options.maxBytes, PUBLICATION_MAX_BYTES, PUBLICATION_MAX_BYTES);
     const maxWrites = limit(options.maxWrites, 10000, PUBLICATION_MAX_FILES);
     const maxTransfer = limit(options.maxTransferBytes, 256_000_000, PUBLICATION_MAX_BYTES);
     const maxWorker = limit(options.maxWorkerRequests, 200, 1000);
     const concurrency = publicationConcurrency(options.concurrency);
-    const graph = await localPublicationGraph(root);
-    const store = typeof destination === 'function' ? await destination(graph) : destination;
+    const tuning = transferTuning(options, concurrency);
+    io = new PublicationIo(tuning.sockets, tuning.bytes, options.signal);
+    const transfer = io;
+    const graph = await localPublicationGraph(
+      root,
+      options.verificationWorkers ?? 1,
+      options.signal,
+    );
+    const session = typeof destination === 'function' ? await destination(graph) : destination;
+    const store = 'store' in session ? session.store : session;
     const compatible = async () => {
       const viewer = ViewerBuildSchema.parse(await options.viewer());
       for (const source of graph.sources)
@@ -148,22 +164,42 @@ export async function publishPublication(
         ).sets.map((s) => s.setHash),
       );
     }
-    const inventory = await store.inventory();
+    // A factory snapshot is collected after graph verification, never persisted across commands.
+    const inventory = new Map('store' in session ? session.inventory : await store.inventory());
     const resultHashes = new Map(graph.results);
-    await publicationPool([...inventory.keys()], concurrency, async (key) => {
-      if (key.endsWith('/receipt.json')) {
-        const value = await store.read(key, 65536);
-        if (!value) throw new OperationError('DATA_INVALID', 'Remote receipt disappeared');
-        receiptIdentity(key, value.data, resultHashes);
-      }
-    });
+    const exactReceipts = new Set<string>();
+    await publicationPool(
+      [...inventory.keys()].filter((key) => key.endsWith('/receipt.json')),
+      tuning.read,
+      async (key) =>
+        transfer.run(65536, async () => {
+          const value = await store.read(key, 65536);
+          if (!value) throw new OperationError('DATA_INVALID', 'Remote receipt disappeared');
+          receiptIdentity(key, value.data, resultHashes);
+          const expected = graph.files.get(key);
+          if (expected) {
+            exactBytes(expected, value);
+            exactReceipts.add(key);
+          }
+        }),
+      'r2.receipts',
+      64,
+    );
     const additions: PublicationFile[] = [];
-    await publicationPool([...graph.files.values()], concurrency, async (file) => {
-      if (file.key !== pointer.key) {
-        if (inventory.has(file.key)) await exact(store, file);
-        else additions.push(file);
-      }
-    });
+    await publicationPool(
+      [...graph.files.values()],
+      tuning.read,
+      async (file) => {
+        if (file.key !== pointer.key) {
+          if (inventory.has(file.key)) {
+            if (!exactReceipts.has(file.key))
+              await transfer.run(file.bytes, () => exact(store, file));
+          } else additions.push(file);
+        }
+      },
+      'r2.collisions',
+      64,
+    );
     const selected = new Set<string>([
       pointer.key,
       `catalog/${publicHashName(graph.current.catalogHash)}.json`,
@@ -213,6 +249,8 @@ export async function publishPublication(
         'BUDGET_EXCEEDED',
         'Publication capacity/request budget exceeded before writing',
       );
+    // Empty inventories queue no remote I/O, so the queue alone cannot observe cancellation.
+    options.signal?.throwIfAborted();
     if (options.dryRun) return { status: 'planned' as const, ...report };
     const sameGeneration = async () => {
       const now = await store.read(pointer.key, 4_000_000);
@@ -227,28 +265,39 @@ export async function publishPublication(
     for (let stage = 0; stage <= 4; stage++) {
       await publicationPool(
         additions.filter((file) => rank(file.key) === stage),
-        concurrency,
-        async (file) => {
-          try {
-            await store.put(file.key, await publicationBytes(file), null);
-          } catch (error) {
-            // A lost response may follow a successful conditional PUT. Only identical bytes recover it.
+        tuning.write,
+        (file) =>
+          transfer.run(file.bytes, async () => {
             try {
-              await exact(store, file);
-            } catch {
-              throw error;
+              await store.put(file.key, await publicationBytes(file), null);
+            } catch (error) {
+              // A lost response may follow a successful conditional PUT. Only identical bytes recover it.
+              try {
+                await exact(store, file);
+              } catch {
+                throw error;
+              }
             }
-          }
-        },
+          }),
+        'r2.upload',
+        64,
       );
     }
     // All referenced immutable objects must be present before committing current.json.
-    await publicationPool([...graph.files.values()], concurrency, async (file) => {
-      if (file.key !== pointer.key && (await store.head(file.key)) !== file.bytes)
-        throw new OperationError('DATA_INVALID', 'S3 size verification failed');
-    });
+    await publicationPool(
+      [...graph.files.values()],
+      tuning.head,
+      (file) =>
+        transfer.run(0, async () => {
+          if (file.key !== pointer.key && (await store.head(file.key)) !== file.bytes)
+            throw new OperationError('DATA_INVALID', 'S3 size verification failed');
+        }),
+      'r2.head',
+      64,
+    );
     await compatible();
     await sameGeneration();
+    options.signal?.throwIfAborted();
     if (!unchanged) {
       phase = 'commit-unknown';
       try {
@@ -266,14 +315,18 @@ export async function publishPublication(
     if ((await store.head(pointer.key)) !== pointer.bytes)
       throw new OperationError('DATA_INVALID', 'S3 pointer verification failed');
     await publicationPool([...selected], concurrency, async (key) => {
-      const file = graph.files.get(key)!,
-        data = await options.worker(key, file.bytes);
-      if (data.length !== file.bytes || sha256(data) !== file.checksum)
-        throw new OperationError('DATA_INVALID', 'Worker read-back checksum mismatch');
+      const file = graph.files.get(key)!;
+      await transfer.run(file.bytes, async () => {
+        const data = await options.worker(key, file.bytes);
+        if (data.length !== file.bytes || sha256(data) !== file.checksum)
+          throw new OperationError('DATA_INVALID', 'Worker read-back checksum mismatch');
+      });
     });
     return { status: 'verified' as const, ...report };
   } catch (error) {
     throw new PublicationFailure(phase, error);
+  } finally {
+    await io?.close();
   }
 }
 
