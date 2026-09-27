@@ -4,8 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import type { ReplayContext } from '@fantasy/domain/spatial';
 import { savedReplay } from '../../test-support/saved-replay.ts';
 import { ReplayPlayer } from './replay-player.ts';
-import { buildSceneModel } from './scene-model.ts';
-import { mapWindow, Scene2D } from './Scene2D.tsx';
+import { buildSceneModel, type SceneModel } from './scene-model.ts';
+import { mapWindow, Scene2D, zoomStep } from './Scene2D.tsx';
 import { NO_OVERLAYS } from './overlays.ts';
 
 async function* frames(name: string, steps: Iterable<number>) {
@@ -132,6 +132,26 @@ describe('display fields for the pixel-art replay', () => {
     for await (const { model } of frames('p6-deflection-160', [11]))
       expect(model.projectiles.some((p) => p.deflected)).toBe(true);
   });
+  it.each([
+    ['swordsman-sky-mage-240', 140, 'projectile.a.1', false],
+    ['p6-deflection-160', 17, 'projectile.a.0', true],
+  ] as const)(
+    'keeps the saved tint on the %s interval that removes the projectile',
+    async (name, step, id, deflected) => {
+      const shown = [];
+      for await (const shot of frames(name, [step - 1, step])) shown.push(shot);
+      const [before, after] = shown;
+      const live = (shot: typeof before) =>
+        shot!.frame.checkpoint.state!.projectiles.find((p) => p.id === id);
+      expect(live(after)).toBeUndefined();
+      const expected = savedTint(before!.context, live(before)!.abilityId);
+      const removed = after!.model.paths.filter((p) => p.entityId === id);
+      expect(expected).toBeTruthy();
+      expect(removed.length).toBeGreaterThan(0);
+      for (const segment of removed)
+        expect([segment.tint, segment.deflected]).toEqual([expected, deflected]);
+    },
+  );
 });
 
 describe('2D top view', () => {
@@ -155,6 +175,32 @@ describe('2D top view', () => {
       const followed = mapWindow(model, 2, model.follow);
       expect(followed.x + followed.width / 2).toBeCloseTo(model.follow[0], 9);
       expect(followed.z + followed.depth / 2).toBeCloseTo(model.follow[2], 9);
+    }
+  });
+  it('zooms out until the whole arena is visible, even the largest supported one', async () => {
+    for await (const { model } of frames('swordsman-sky-mage-240', [0, 120])) {
+      // The same fighters inside the 200 m maximum arena extent.
+      const wide: SceneModel = {
+        ...model,
+        min: [-100, model.min[1], -100],
+        max: [100, model.max[1], 100],
+      };
+      for (const arena of [model, wide]) {
+        let zoom = 1;
+        for (let press = 0; press < 40; press++) zoom = zoomStep(arena, zoom, 'out');
+        expect(mapWindow(arena, zoom)).toEqual({
+          x: arena.min[0],
+          z: arena.min[2],
+          width: arena.max[0] - arena.min[0],
+          depth: arena.max[2] - arena.min[2],
+        });
+        // One press back in narrows the window again.
+        expect(mapWindow(arena, zoomStep(arena, zoom, 'in')).width).toBeLessThan(
+          arena.max[0] - arena.min[0],
+        );
+        for (let press = 0; press < 40; press++) zoom = zoomStep(arena, zoom, 'in');
+        expect(zoom).toBe(8);
+      }
     }
   });
   it('labels each fighter with its saved name and recorded HP', async () => {
