@@ -1,4 +1,4 @@
-import { currentMeasurements } from '@fantasy/api/tooling';
+import { currentMeasurements } from '@fantasy/api/artifacts';
 
 export function publicationConcurrency(value = 1) {
   if (!Number.isInteger(value) || value < 1 || value > 16)

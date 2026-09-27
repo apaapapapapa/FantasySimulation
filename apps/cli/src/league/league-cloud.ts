@@ -200,7 +200,11 @@ export async function finishCloudLeague(
       canonicalJson(prepared.plan.source) !== canonicalJson(source)
     )
       throw new OperationError('IDENTITY_MISMATCH', 'Cloud finalizer identity mismatch');
-    const graph = await localPublicationGraph(publicRoot, options.verificationWorkers ?? 2, options.signal);
+    const graph = await localPublicationGraph(
+      publicRoot,
+      options.verificationWorkers ?? 2,
+      options.signal,
+    );
     if (!graph.latestWork || graph.catalog.leagueWork?.hash !== prepared.work.hash)
       throw new OperationError('IDENTITY_MISMATCH', 'Cloud reservation journal mismatch');
     const inputs: LeagueCloudInput[] = [],
@@ -237,7 +241,10 @@ export async function finishCloudLeague(
           reserved,
           new BattleBundles(publicRoot),
         ),
-      { verificationWorkers: options.verificationWorkers ?? 2, ...(options.signal ? { signal: options.signal } : {}) },
+      {
+        verificationWorkers: options.verificationWorkers ?? 2,
+        ...(options.signal ? { signal: options.signal } : {}),
+      },
     );
     await writeCloudJson(join(preparedRoot, 'completion.json'), {
       ...exported,

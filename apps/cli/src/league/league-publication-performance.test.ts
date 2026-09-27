@@ -15,14 +15,32 @@ it('keeps identical public bytes with one, two and four requested verifiers and 
     for (const verificationWorkers of [1, 2, 4]) {
       const target = join(root, `public-${verificationWorkers}`);
       const measurement = new Measurements();
-      const result = await measurement.run(() => exportLeague(
-        fixture.plan, fixture.partitions, [...fixture.completed].reverse(), target, undefined,
-        { verificationWorkers },
-      ));
-      expect(result).toMatchObject({ status: 'formal', planned: 4, resolved: 4, missingPartitions: [] });
-      expect(measurement.report().validation).toMatchObject({ calls: 8, uniqueReplays: 4, repeatedCalls: 4 });
+      const result = await measurement.run(() =>
+        exportLeague(
+          fixture.plan,
+          fixture.partitions,
+          [...fixture.completed].reverse(),
+          target,
+          undefined,
+          { verificationWorkers },
+        ),
+      );
+      expect(result).toMatchObject({
+        status: 'formal',
+        planned: 4,
+        resolved: 4,
+        missingPartitions: [],
+      });
+      expect(measurement.report().validation).toMatchObject({
+        calls: 8,
+        uniqueReplays: 4,
+        repeatedCalls: 4,
+      });
       const graph = await localPublicationGraph(target);
-      const entries = [...graph.files.values()].map((file): [string, string] => [file.key, file.checksum]);
+      const entries = [...graph.files.values()].map((file): [string, string] => [
+        file.key,
+        file.checksum,
+      ]);
       entries.sort(([a], [b]) => a.localeCompare(b));
       if (previous) expect(entries).toEqual(previous);
       previous = entries;
@@ -40,9 +58,10 @@ it.each(['receipt', 'manifest', 'chunk', 'checkpoint'] as const)(
       const receipt = result.index.slots.find((slot) => slot.receipt)!.receipt!;
       const manifest = await entry.bundles.manifest(receipt);
       const directory = join(entry.bundles.root, 'objects', receipt.objectHash.slice(7));
-      const file = kind === 'receipt' || kind === 'manifest'
-        ? `${kind}.json`
-        : (kind === 'chunk' ? manifest.chunks : manifest.checkpoints)[0]!.file;
+      const file =
+        kind === 'receipt' || kind === 'manifest'
+          ? `${kind}.json`
+          : (kind === 'chunk' ? manifest.chunks : manifest.checkpoints)[0]!.file;
       const path = join(directory, file);
       const before = await readFile(path);
       const metadata = await lstat(path);
@@ -60,7 +79,9 @@ it.each(['receipt', 'manifest', 'chunk', 'checkpoint'] as const)(
         await writeFile(path, broken);
         await utimes(path, metadata.atime, metadata.mtime);
         expect((await lstat(path)).size).toBe(metadata.size);
-        await expect(scope.verify(receipt.objectHash)).rejects.toMatchObject({ code: 'DATA_INVALID' });
+        await expect(scope.verify(receipt.objectHash)).rejects.toMatchObject({
+          code: 'DATA_INVALID',
+        });
       } finally {
         scope.closeVerification();
         await writeFile(path, before);
@@ -89,15 +110,25 @@ it('retains an independent Worker pass after the journal callback corrupts a che
     const result = LeaguePartitionResultSchema.parse(entry.result);
     const receipt = result.index.slots.find((slot) => slot.receipt)!.receipt!;
     const manifest = await entry.bundles.manifest(receipt);
-    const path = join(entry.bundles.root, 'objects', receipt.objectHash.slice(7), manifest.checkpoints[0]!.file);
-    await expect(exportLeague(
-      fixture.plan, fixture.partitions, fixture.completed, target,
-      async () => {
-        await writeFile(path, Buffer.from('corrupt'));
-        return { ref: { hash: `sha256:${'0'.repeat(64)}`, bytes: 2 }, files: [] };
-      },
-      { verificationWorkers: 2 },
-    )).rejects.toMatchObject({ code: 'DATA_INVALID' });
+    const path = join(
+      entry.bundles.root,
+      'objects',
+      receipt.objectHash.slice(7),
+      manifest.checkpoints[0]!.file,
+    );
+    await expect(
+      exportLeague(
+        fixture.plan,
+        fixture.partitions,
+        fixture.completed,
+        target,
+        async () => {
+          await writeFile(path, Buffer.from('corrupt'));
+          return { ref: { hash: `sha256:${'0'.repeat(64)}`, bytes: 2 }, files: [] };
+        },
+        { verificationWorkers: 2 },
+      ),
+    ).rejects.toMatchObject({ code: 'DATA_INVALID' });
     expect(await readFile(pointer)).toEqual(original);
   });
 }, 30000);

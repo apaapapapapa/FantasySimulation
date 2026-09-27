@@ -62,7 +62,10 @@ export async function buildPublication(
     await publicationDirectory(join(value.bundles.root, 'objects'));
   }
   // New scope: never trust aggregation's earlier pass across the journal callback.
-  const checked = await checkedBatch(input, indexes, { publicData: true, ...(pool ? { pool } : {}) }),
+  const checked = await checkedBatch(input, indexes, {
+      publicData: true,
+      ...(pool ? { pool } : {}),
+    }),
     { plan } = checked;
   const files: PublicationFile[] = [],
     objects = new Set<string>(),

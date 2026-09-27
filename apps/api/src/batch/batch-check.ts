@@ -159,11 +159,14 @@ async function checkBatchData(input: unknown, indexes: BatchCheckInput[], prever
     for (let offset = 0; offset < slots.length; offset += 128) {
       const window = slots.slice(offset, offset + 128);
       if (preverify)
-        await bundles.preverify(window.flatMap((slot) => (slot.receipt ? [slot.receipt.objectHash] : [])));
+        await bundles.preverify(
+          window.flatMap((slot) => (slot.receipt ? [slot.receipt.objectHash] : [])),
+        );
       for (const slot of window) {
         if (
           slot.receipt &&
-          canonicalJson(await bundles.verify(slot.receipt.objectHash)) !== canonicalJson(slot.receipt)
+          canonicalJson(await bundles.verify(slot.receipt.objectHash)) !==
+            canonicalJson(slot.receipt)
         )
           throw new OperationError('DATA_INVALID', 'Index replay reference mismatch');
       }

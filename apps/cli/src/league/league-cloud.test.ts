@@ -190,5 +190,4 @@ it('adds the P6 official milestone with the same league and only a newer standar
   expect(rules[0]!.definition).toMatchObject({ rulesVersion: 'spatial-v1.22' });
   expect(rules[0]!.definition).not.toHaveProperty('experimental');
   expect(leagueSlotCount(milestone)).toBe(7600);
-}
-);
+});

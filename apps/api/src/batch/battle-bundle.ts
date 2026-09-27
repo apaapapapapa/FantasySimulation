@@ -85,7 +85,9 @@ export class BattleBundles {
       throw new OperationError('DATA_INVALID', 'Invalid bundle directory');
     const receiptBytes = await readBoundedFile(join(directory, 'receipt.json'), 65536);
     const receipt = operationInput(() => {
-      const input: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(receiptBytes));
+      const input: unknown = JSON.parse(
+        new TextDecoder('utf-8', { fatal: true }).decode(receiptBytes),
+      );
       if (scope?.publicData) assertPublicData(input);
       return parseJson(BundleReceiptSchema, input);
     }, 'DATA_INVALID');
@@ -112,7 +114,12 @@ export class BattleBundles {
       await verifyReplayChecksums(directory, manifest);
     } else {
       if (scope?.pool) await scope.pool.verify(directory, manifest, scope.publicData);
-      else await verifyReplayDirectory(directory, manifest, scope?.publicData ? assertPublicData : undefined);
+      else
+        await verifyReplayDirectory(
+          directory,
+          manifest,
+          scope?.publicData ? assertPublicData : undefined,
+        );
       if (scope) {
         if (scope.seen.size >= 256) scope.seen.delete(scope.seen.values().next().value!);
         scope.seen.add(objectHash);
@@ -134,7 +141,9 @@ export class BattleBundles {
     if (sha256(manifestBytes) !== receipt.manifestChecksum)
       throw new OperationError('DATA_INVALID', 'Bundle manifest checksum mismatch');
     const manifest = operationInput(() => {
-      const input: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes));
+      const input: unknown = JSON.parse(
+        new TextDecoder('utf-8', { fatal: true }).decode(manifestBytes),
+      );
       if (this.verification?.publicData) assertPublicData(input);
       return parseJson(ReplayManifestSchema, input);
     }, 'DATA_INVALID');

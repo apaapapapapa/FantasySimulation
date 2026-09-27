@@ -16,7 +16,9 @@ it('inspects the original records in the same bounded decode pass as semantic ve
     const expected = await verifyReplayDirectory(directory, manifest);
     const inspection = vi.fn(assertPublicData);
     const measurement = new Measurements();
-    const actual = await measurement.run(() => verifyReplayDirectory(directory, manifest, inspection));
+    const actual = await measurement.run(() =>
+      verifyReplayDirectory(directory, manifest, inspection),
+    );
     expect(actual).toEqual(expected);
     expect(inspection).toHaveBeenCalledTimes(1 + manifest.chunks.length + manifest.records);
     expect(measurement.report().validation.calls).toBe(1);
@@ -28,7 +30,9 @@ it('inspects the original records in the same bounded decode pass as semantic ve
     const compressed = gzipSync(text);
     const changed = structuredClone(manifest);
     Object.assign(changed.checkpoints[0]!, {
-      checksum: sha256(compressed), bytes: compressed.length, rawBytes: Buffer.byteLength(text),
+      checksum: sha256(compressed),
+      bytes: compressed.length,
+      rawBytes: Buffer.byteLength(text),
     });
     await writeFile(join(directory, ref.file), compressed);
     // The privacy error must precede checkpoint/schema normalization, not inspect a stripped value.
@@ -47,16 +51,33 @@ it('uses the existing full validator in a secret-free Worker and rejects corrupt
       expect(pool.pool.options.env).toEqual({});
       const measurement = new Measurements();
       await measurement.run(() => pool.verify(directory, manifest, true));
-      expect(measurement.report().validation).toMatchObject({ calls: 1, failures: undefined });
-      expect(measurement.report().validation.replays[manifest.id]).toEqual({ calls: 1, failures: 0 });
+      expect(measurement.report().validation).toMatchObject({
+        calls: 1,
+        uniqueReplays: 1,
+        repeatedCalls: 0,
+      });
+      expect(measurement.report().validation.replays[manifest.id]).toEqual({
+        calls: 1,
+        failures: 0,
+      });
       const path = join(directory, manifest.chunks[0]!.file);
       const original = await readFile(path);
       const broken = Buffer.from(original);
       broken[0] = broken[0]! ^ 1;
       await writeFile(path, broken);
-      await expect(pool.verify(directory, manifest, true)).rejects.toMatchObject({ code: 'DATA_INVALID' });
+      await expect(
+        measurement.run(() => pool.verify(directory, manifest, true)),
+      ).rejects.toMatchObject({ code: 'DATA_INVALID' });
+      expect(measurement.report().validation.replays[manifest.id]).toEqual({
+        calls: 2,
+        failures: 1,
+      });
       await writeFile(path, original);
-      await pool.verify(directory, manifest, true);
+      await measurement.run(() => pool.verify(directory, manifest, true));
+      expect(measurement.report().validation.replays[manifest.id]).toEqual({
+        calls: 3,
+        failures: 1,
+      });
     } finally {
       await pool.close();
     }
@@ -64,21 +85,25 @@ it('uses the existing full validator in a secret-free Worker and rejects corrupt
   });
 }, 30000);
 
-it('rejects aborted and dead Workers rather than issuing verification success', async () => {
+it('rejects aborted and terminated in-flight Workers rather than issuing verification success', async () => {
   await withReplayDirectory(async (root) => {
     const { manifest } = await recordedBattle(root, 20);
     const controller = new AbortController();
     const pool = new ReplayVerificationPool(1, controller.signal);
     try {
       controller.abort();
-      await expect(pool.verify(join(root, manifest.id), manifest, false)).rejects.toThrow();
+      await expect(pool.verify(join(root, manifest.id), manifest, false)).rejects.toThrow(/abort/i);
     } finally {
       await pool.close();
     }
     const dead = new ReplayVerificationPool(1);
     try {
-      await dead.pool.destroy();
-      await expect(dead.verify(join(root, manifest.id), manifest, false)).rejects.toThrow();
+      // Warm the real Worker, then terminate an admitted verification, not an idle pool.
+      await dead.verify(join(root, manifest.id), manifest, false);
+      const pending = dead.verify(join(root, manifest.id), manifest, false);
+      const rejected = expect(pending).rejects.toThrow(/terminat|closed|abort/i);
+      await dead.close();
+      await rejected;
     } finally {
       await dead.close();
     }

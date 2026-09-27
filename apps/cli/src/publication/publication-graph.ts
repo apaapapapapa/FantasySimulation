@@ -320,17 +320,21 @@ export async function localPublicationGraph(
   };
   const graph = await publicationGraph(read);
   for (const file of graph.files.values()) file.source = join(root, file.key);
-  return withReplayVerificationPool(verificationWorkers, async (pool) => {
-    const bundles = new BattleBundles(root).verificationSession({
-      publicData: true,
-      ...(pool ? { pool } : {}),
-    });
-    try {
-      await bundles.preverify([...graph.objects]);
-      signal?.throwIfAborted();
-      return graph;
-    } finally {
-      bundles.closeVerification();
-    }
-  }, signal);
+  return withReplayVerificationPool(
+    verificationWorkers,
+    async (pool) => {
+      const bundles = new BattleBundles(root).verificationSession({
+        publicData: true,
+        ...(pool ? { pool } : {}),
+      });
+      try {
+        await bundles.preverify([...graph.objects]);
+        signal?.throwIfAborted();
+        return graph;
+      } finally {
+        bundles.closeVerification();
+      }
+    },
+    signal,
+  );
 }

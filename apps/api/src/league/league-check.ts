@@ -128,7 +128,9 @@ async function checkLeagueData(
         )
           throw new OperationError('DATA_INVALID', 'Result rewrites reserved attempt history');
         for (const attempt of history.attempts) {
-          const receipt = attempt.objectHash ? await entry.bundles.verify(attempt.objectHash) : null;
+          const receipt = attempt.objectHash
+            ? await entry.bundles.verify(attempt.objectHash)
+            : null;
           if (receipt && bind) await bind(batchSlot, receipt);
           let outcome: LeagueAttempt['outcome'];
           if (receipt?.result.outcome.kind === 'win') {

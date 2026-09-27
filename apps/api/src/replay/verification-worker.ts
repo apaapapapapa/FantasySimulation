@@ -22,7 +22,10 @@ export default async function verify(task: VerificationTask): Promise<Verificati
     attempted = false,
     code: VerificationResponse['code'] = 'UNKNOWN';
   try {
-    const manifest = operationInput(() => ReplayManifestSchema.parse(task.manifest), 'DATA_INVALID');
+    const manifest = operationInput(
+      () => ReplayManifestSchema.parse(task.manifest),
+      'DATA_INVALID',
+    );
     attempted = true;
     await verifyReplayDirectory(
       task.directory,

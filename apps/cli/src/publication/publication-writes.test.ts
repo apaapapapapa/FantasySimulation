@@ -16,35 +16,54 @@ it.each(['success', 'failure', 'cancel'] as const)(
       await exportLeague(fixture.plan, fixture.partitions, [], target);
       const pointer = join(target, 'catalog/current.json');
       const before = await readFile(pointer);
-      const gate = Promise.withResolvers<void>();
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
       const original = artifacts.publishImmutableFile;
       const controller = new AbortController();
-      let active = 0, maximum = 0, admitted = 0, settled = false;
-      const write = vi.spyOn(artifacts, 'publishImmutableFile').mockImplementation(async (path, bytes) => {
-        const ordinal = admitted++;
-        active++;
-        maximum = Math.max(maximum, active);
-        try {
-          await gate.promise;
-          if (mode === 'failure' && ordinal === 0) throw new Error('Injected durable write failure');
-          await original(path, bytes);
-        } finally {
-          active--;
-        }
-      });
+      let active = 0,
+        maximum = 0,
+        admitted = 0,
+        settled = false;
+      const write = vi
+        .spyOn(artifacts, 'publishImmutableFile')
+        .mockImplementation(async (path, bytes) => {
+          const ordinal = admitted++;
+          active++;
+          maximum = Math.max(maximum, active);
+          try {
+            await gate;
+            if (mode === 'failure' && ordinal === 0)
+              throw new Error('Injected durable write failure');
+            await original(path, bytes);
+          } finally {
+            active--;
+          }
+        });
       const pending = exportLeague(
-        fixture.plan, fixture.partitions, fixture.completed, target, undefined,
+        fixture.plan,
+        fixture.partitions,
+        fixture.completed,
+        target,
+        undefined,
         { signal: controller.signal },
       ).then(
-        (value) => { settled = true; return { value, error: null }; },
-        (error: unknown) => { settled = true; return { value: null, error }; },
+        (value) => {
+          settled = true;
+          return { value, error: null };
+        },
+        (error: unknown) => {
+          settled = true;
+          return { value: null, error };
+        },
       );
       try {
         await vi.waitFor(() => expect(active).toBe(4), { timeout: 10000 });
         expect(await readFile(pointer)).toEqual(before);
         expect(settled).toBe(false);
         if (mode === 'cancel') controller.abort();
-        gate.resolve();
+        release();
         const outcome = await pending;
         expect(active).toBe(0);
         expect(maximum).toBe(4);
@@ -59,7 +78,7 @@ it.each(['success', 'failure', 'cancel'] as const)(
           expect(await readFile(pointer)).toEqual(before);
         }
       } finally {
-        gate.resolve();
+        release();
         await pending;
         write.mockRestore();
       }

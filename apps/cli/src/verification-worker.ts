@@ -1,1 +1,1 @@
-export { default } from '@fantasy/api/verification-worker';
+export { verifyRecordedReplay as default } from '@fantasy/api/artifacts';

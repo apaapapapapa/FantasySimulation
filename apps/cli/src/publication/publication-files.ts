@@ -178,11 +178,16 @@ export async function writePublication(
       throw new OperationError('PUBLICATION_CONFLICT', 'Publication generation changed');
   };
   await assertGeneration();
-  await publicationPool(additions, 4, async (file) => {
-    signal?.throwIfAborted();
-    await publicationDirectory(dirname(join(root, file.key)), true);
-    await publishImmutableFile(join(root, file.key), await publicationBytes(file));
-  }, 'publication.write');
+  await publicationPool(
+    additions,
+    4,
+    async (file) => {
+      signal?.throwIfAborted();
+      await publicationDirectory(dirname(join(root, file.key)), true);
+      await publishImmutableFile(join(root, file.key), await publicationBytes(file));
+    },
+    'publication.write',
+  );
   await assertGeneration();
   signal?.throwIfAborted();
   if (!previous?.equals(current.data!)) {

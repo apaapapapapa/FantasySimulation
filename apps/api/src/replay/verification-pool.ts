@@ -18,7 +18,10 @@ export class ReplayVerificationPool {
   readonly workers: number;
   private startupFailure: Error | undefined;
   private closed = false;
-  constructor(workers = 2, readonly signal?: AbortSignal) {
+  constructor(
+    workers = 2,
+    readonly signal?: AbortSignal,
+  ) {
     this.workers = replayVerificationWorkers(workers);
     const source = import.meta.url.endsWith('.ts');
     this.pool = new Piscina({
@@ -50,6 +53,7 @@ export class ReplayVerificationPool {
         { directory, manifest, publicData },
         this.signal ? { signal: this.signal } : undefined,
       );
+      if (this.closed) throw new Error('Replay verification pool is closed');
       if (result.attempted) measured?.validation(manifest.id, result.success);
       for (const [name, bytes] of Object.entries(result.memory))
         measured?.capacity(`verification.worker.${name}`, bytes);

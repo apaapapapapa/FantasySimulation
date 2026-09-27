@@ -45,7 +45,8 @@ export async function exportLeague(
 ) {
   return withReplayVerificationPool(
     options.verificationWorkers ?? 1,
-    (pool) => buildLeaguePublication(input, partitions, completed, directory, work, pool, options.signal),
+    (pool) =>
+      buildLeaguePublication(input, partitions, completed, directory, work, pool, options.signal),
     options.signal,
   );
 }
@@ -85,7 +86,8 @@ async function buildLeaguePublication(
     signal?.throwIfAborted();
     const result = results.get(batch.id);
     const source = result ? checked.resultSources.get(result.id) : undefined;
-    if (result && !source) throw new OperationError('DATA_INVALID', 'Missing verified result source');
+    if (result && !source)
+      throw new OperationError('DATA_INVALID', 'Missing verified result source');
     const built = await buildPublication(
       batch,
       source ? [{ index: result!.index, bundles: source.bundles }] : [],
@@ -99,7 +101,8 @@ async function buildLeaguePublication(
     for (const slot of partition.slots) {
       const batchSlot = batchSlots.get(slot.id.slice(7))!;
       const rowIndex = rowIndexes.get(batchSlot.id);
-      if (rowIndex === undefined) throw new OperationError('DATA_INVALID', 'Missing public league row');
+      if (rowIndex === undefined)
+        throw new OperationError('DATA_INVALID', 'Missing public league row');
       const key = slot.characters.map((c) => c.id).join('/');
       const rows = pairs.get(key) ?? [];
       rows.push({
