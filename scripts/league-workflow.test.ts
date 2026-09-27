@@ -16,7 +16,8 @@ it('runs once daily on tested main, skips unchanged inputs and keeps manual dry-
   expect(workflow).toContain(
     "LEAGUE_MODE: ${{ github.event_name == 'schedule' && 'schedule' || inputs.mode }}",
   );
-  expect(workflow).toContain('OFFICIAL_LEAGUE_DEFINITION: data/leagues/official-20-v1.json');
+  expect(workflow).toContain('OFFICIAL_LEAGUE_DEFINITION: data/leagues/official-20-v2.json');
+  expect(workflow).toContain('default: data/leagues/official-20-v2.json');
   expect(workflow).toContain('name: league-probe-${{ github.run_id }}-${{ github.run_attempt }}');
   expect(workflow).toContain(
     "needs.probe.outputs.needed == 'true' && (github.event_name == 'schedule' || inputs.mode == 'publish')",
