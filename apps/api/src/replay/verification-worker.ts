@@ -1,6 +1,5 @@
 import { ReplayManifestSchema, type ReplayManifest } from '@fantasy/domain/spatial';
-import { operationCode } from '../operation-code.ts';
-import { operationInput, type OperationCode } from '../operation-error.ts';
+import { artifactOperationCode, operationInput, type OperationCode } from '../operation-error.ts';
 import { verifyReplayDirectory } from './replay-reader.ts';
 import { assertPublicData } from './replay-public.ts';
 
@@ -34,7 +33,7 @@ export default async function verify(task: VerificationTask): Promise<Verificati
     );
     success = true;
   } catch (error) {
-    code = operationCode(error);
+    code = artifactOperationCode(error);
   }
   const { heapUsed, external, arrayBuffers } = process.memoryUsage();
   return { success, attempted, code, memory: { heapUsed, external, arrayBuffers } };
