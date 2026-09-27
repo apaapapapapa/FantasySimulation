@@ -1,0 +1,597 @@
+{
+  "schemaVersion": 1,
+  "status": "proposed-design-only",
+  "implemented": false,
+  "baseline": "39c769091133dc94907f7090dead65d052e3d383",
+  "scope": "ADR0018 proposal. Not runtime config, engine fixtures, measured capacity, corpus or production interference coverage.",
+  "limits": {
+    "stop": {
+      "minDurationGlobalIntervals": 1,
+      "maxDurationGlobalIntervals": 100,
+      "maxSuccessfulActivationsPerMatch": 4,
+      "maxReservedDurationIntervalsPerMatch": 300,
+      "refundReservedDurationOnEarlyRelease": false
+    },
+    "immortality": {
+      "minDurationStatusSteps": 1,
+      "maxDurationStatusSteps": 6000,
+      "minProtectionCountPerMatch": 1,
+      "maxProtectionCountPerMatch": 4,
+      "countResetsOnRegrant": false
+    },
+    "queue": {
+      "maxOccupiedContacts": 256,
+      "maxCumulativeCommittedContactsPerMatch": 256,
+      "maxOccupiedEffectOperations": 4096,
+      "maxCumulativeCommittedEffectOperationsPerMatch": 4096,
+      "maxCanonicalDescriptorBytes": 65536,
+      "effectiveDescriptorByteLimit": "min(maxCanonicalDescriptorBytes, budget.maxFrameBytes)",
+      "releaseResetsCumulativeCounters": false,
+      "overflow": "truncated; whole attempted transaction rollback; previous commits and attempted work retained"
+    },
+    "guardSelection": {
+      "maxStrictSetGrowthRounds": 2,
+      "maxAllocationEvaluationsIncludingStability": 3,
+      "scope": "One pure allocation plan. Early-release preflight and final plan are separately work-metered."
+    }
+  },
+  "arithmeticModel": {
+    "description": "Two actors, one already post-shield numeric incoming component each, owned by the opponent. Not full engine simulation. Before-hit/status/revival/geometry are excluded. defeat means an already eligible unresisted request.",
+    "defaults": {
+      "maxHp": 100,
+      "ordinaryHealing": 0,
+      "incomingDamage": 0,
+      "drainBpsOnIncoming": 0,
+      "hpRecoveryBps": 10000,
+      "eligibleGuard": false,
+      "defeat": false
+    },
+    "fieldMeaning": "drainBpsOnIncoming credits the opponent only if that damage source has opening hp>0, using its recovery multiplier and this target numeric basis. Opening hp=0 forces effective ordinary healing, drainBasis and drainReceived to0 in every allocation. Keep accepted target damage/basis; do not redistribute skipped credits or backfill them on revival. expected.drainBasis is capacity before drain rate even when credit is disabled; final HP0 alone does not exclude an opening-alive source.",
+    "expectations": "Authored independently from the proposed arithmetic, not recorded from a production resolver; verification must assert them, not regenerate them."
+  },
+  "arithmeticCases": {
+    "N1": {
+      "meaning": "Least fixed point: mutual survival must not spend guards.",
+      "a": {
+        "hp": 10,
+        "incomingDamage": 19,
+        "drainBpsOnIncoming": 10000,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10,
+        "incomingDamage": 19,
+        "drainBpsOnIncoming": 10000,
+        "eligibleGuard": true
+      },
+      "expected": {
+        "a": {
+          "hp": 1,
+          "guardUse": 0,
+          "drainBasis": 10,
+          "drainReceived": 10
+        },
+        "b": {
+          "hp": 1,
+          "guardUse": 0,
+          "drainBasis": 10,
+          "drainReceived": 10
+        },
+        "growthRounds": 0
+      }
+    },
+    "N2": {
+      "meaning": "Adding one required guard makes the other necessary; add simultaneously per round.",
+      "a": {
+        "hp": 10,
+        "incomingDamage": 20,
+        "drainBpsOnIncoming": 10000,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10,
+        "incomingDamage": 19,
+        "drainBpsOnIncoming": 10000,
+        "eligibleGuard": true
+      },
+      "expected": {
+        "a": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 9,
+          "drainReceived": 9
+        },
+        "b": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 9,
+          "drainReceived": 9
+        },
+        "growthRounds": 2
+      }
+    },
+    "N3": {
+      "meaning": "Both require a guard in the first growth round.",
+      "a": {
+        "hp": 10,
+        "incomingDamage": 20,
+        "drainBpsOnIncoming": 10000,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10,
+        "incomingDamage": 20,
+        "drainBpsOnIncoming": 10000,
+        "eligibleGuard": true
+      },
+      "expected": {
+        "a": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 9,
+          "drainReceived": 9
+        },
+        "b": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 9,
+          "drainReceived": 9
+        },
+        "growthRounds": 1
+      }
+    },
+    "N4": {
+      "meaning": "Unavailable guard cannot be selected when reduced opposing drain becomes lethal.",
+      "a": {
+        "hp": 10,
+        "incomingDamage": 20,
+        "drainBpsOnIncoming": 10000,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10,
+        "incomingDamage": 19,
+        "drainBpsOnIncoming": 10000
+      },
+      "expected": {
+        "a": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 9,
+          "drainReceived": 10
+        },
+        "b": {
+          "hp": 0,
+          "guardUse": 0,
+          "drainBasis": 10,
+          "drainReceived": 9
+        },
+        "growthRounds": 1
+      }
+    },
+    "N5": {
+      "meaning": "No eligible guards retains nonrecursive legacy drain arithmetic.",
+      "a": {
+        "hp": 10,
+        "incomingDamage": 20,
+        "drainBpsOnIncoming": 10000
+      },
+      "b": {
+        "hp": 10,
+        "incomingDamage": 19,
+        "drainBpsOnIncoming": 10000
+      },
+      "expected": {
+        "a": {
+          "hp": 0,
+          "guardUse": 0,
+          "drainBasis": 10,
+          "drainReceived": 10
+        },
+        "b": {
+          "hp": 1,
+          "guardUse": 0,
+          "drainBasis": 10,
+          "drainReceived": 10
+        },
+        "growthRounds": 0
+      }
+    },
+    "N6": {
+      "meaning": "Damage3 plus defeat plus heal5 cannot survive without guard.",
+      "a": {
+        "hp": 10,
+        "incomingDamage": 3,
+        "ordinaryHealing": 5,
+        "defeat": true
+      },
+      "b": {
+        "hp": 10
+      },
+      "expected": {
+        "a": {
+          "hp": 0,
+          "guardUse": 0,
+          "drainBasis": 3,
+          "drainReceived": 0
+        },
+        "b": {
+          "hp": 10,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 0
+        },
+        "growthRounds": 0
+      }
+    },
+    "N7": {
+      "meaning": "Damage20 plus defeat with guard permits at most9 numeric drain basis.",
+      "a": {
+        "hp": 10,
+        "incomingDamage": 20,
+        "drainBpsOnIncoming": 10000,
+        "defeat": true,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10
+      },
+      "expected": {
+        "a": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 9,
+          "drainReceived": 0
+        },
+        "b": {
+          "hp": 19,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 9
+        },
+        "growthRounds": 1
+      }
+    },
+    "N8": {
+      "meaning": "Pure defeat produces no numeric drain basis.",
+      "a": {
+        "hp": 10,
+        "defeat": true
+      },
+      "b": {
+        "hp": 10
+      },
+      "expected": {
+        "a": {
+          "hp": 0,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 0
+        },
+        "b": {
+          "hp": 10,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 0
+        },
+        "growthRounds": 0
+      }
+    },
+    "N9": {
+      "meaning": "Pure defeat with guard consumes one guard but creates no numeric damage.",
+      "a": {
+        "hp": 10,
+        "defeat": true,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10
+      },
+      "expected": {
+        "a": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 0,
+          "drainReceived": 0
+        },
+        "b": {
+          "hp": 10,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 0
+        },
+        "growthRounds": 1
+      }
+    },
+    "N10": {
+      "meaning": "Defeat overrides incoming drain even if ordinary arithmetic would survive.",
+      "a": {
+        "hp": 10,
+        "defeat": true
+      },
+      "b": {
+        "hp": 10,
+        "incomingDamage": 4,
+        "drainBpsOnIncoming": 10000
+      },
+      "expected": {
+        "a": {
+          "hp": 0,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 4
+        },
+        "b": {
+          "hp": 6,
+          "guardUse": 0,
+          "drainBasis": 4,
+          "drainReceived": 0
+        },
+        "growthRounds": 0
+      }
+    },
+    "N11": {
+      "meaning": "Early-release combined wave: A hp3 takes5 while pending damage4 to B drains4 to A; no revival.",
+      "a": {
+        "hp": 3,
+        "incomingDamage": 5
+      },
+      "b": {
+        "hp": 10,
+        "incomingDamage": 4,
+        "drainBpsOnIncoming": 10000
+      },
+      "expected": {
+        "a": {
+          "hp": 2,
+          "guardUse": 0,
+          "drainBasis": 3,
+          "drainReceived": 4
+        },
+        "b": {
+          "hp": 6,
+          "guardUse": 0,
+          "drainBasis": 4,
+          "drainReceived": 0
+        },
+        "growthRounds": 0
+      }
+    },
+    "N12": {
+      "meaning": "An opening-dead source stays dead despite ordinary heal and outgoing drain.",
+      "a": {
+        "hp": 0,
+        "ordinaryHealing": 8,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10,
+        "incomingDamage": 4,
+        "drainBpsOnIncoming": 10000
+      },
+      "expected": {
+        "a": {
+          "hp": 0,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 0
+        },
+        "b": {
+          "hp": 6,
+          "guardUse": 0,
+          "drainBasis": 4,
+          "drainReceived": 0
+        },
+        "growthRounds": 0
+      }
+    },
+    "N13": {
+      "meaning": "One floor after drain rate and recipient recovery multiplier: floor(1*0.5*1.5)=0.",
+      "a": {
+        "hp": 2,
+        "incomingDamage": 7,
+        "drainBpsOnIncoming": 5000,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10,
+        "hpRecoveryBps": 15000
+      },
+      "expected": {
+        "a": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 1,
+          "drainReceived": 0
+        },
+        "b": {
+          "hp": 10,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 0
+        },
+        "growthRounds": 1
+      }
+    },
+    "N14": {
+      "meaning": "Same-wave ordinary healing increases numeric capacity before guard floor, without drain feedback.",
+      "a": {
+        "hp": 10,
+        "incomingDamage": 20,
+        "ordinaryHealing": 5,
+        "drainBpsOnIncoming": 10000,
+        "eligibleGuard": true
+      },
+      "b": {
+        "hp": 10
+      },
+      "expected": {
+        "a": {
+          "hp": 1,
+          "guardUse": 1,
+          "drainBasis": 14,
+          "drainReceived": 0
+        },
+        "b": {
+          "hp": 24,
+          "guardUse": 0,
+          "drainBasis": 0,
+          "drainReceived": 14
+        },
+        "growthRounds": 1
+      }
+    }
+  },
+  "acceptanceCases": {
+    "C1": {
+      "owner": "P6-09b",
+      "given": "No stop; repeated and mapped actor/slot/position/RNG permutations.",
+      "expected": "Legacy domain progression/results/events/paths unchanged; all hashes repeat and mapped outcomes symmetric."
+    },
+    "C2": {
+      "owner": "P6-10",
+      "given": "Freeze while moving, casting, regenerating, pulsing, homing and observing; fixed/following objects.",
+      "expected": "All subject domains stop; detached area/global lifetimes continue; no catch-up, new costs or hidden observation delivery."
+    },
+    "C3": {
+      "owner": "P6-10",
+      "given": "Seal alone, seal with freeze, phasing exit-pending at global safety limit.",
+      "expected": "Seal alone does not pause time; freeze does. Exit safety still reaches truncated with recorded causes, never defeat or forced ejection."
+    },
+    "C4": {
+      "owner": "P6-10",
+      "given": "Two opposing stops; resistance on one; existing active control; repeat request.",
+      "expected": "Both valid requests fizzle; one invalid request cannot cancel the valid one; nesting/refresh do not extend."
+    },
+    "C5": {
+      "owner": "P6-10",
+      "given": "Many queued contacts, shields and changed defense before release.",
+      "expected": "One simultaneous release wave, original launch power/captured geometry, one opening defense snapshot and shared shield."
+    },
+    "C6": {
+      "owner": "P6-10",
+      "given": "Before-hit candidates on captured contacts, after-damage/revival on release.",
+      "expected": "No retroactive parry/deflection; normal bounded release reactions; cost/hit/cause consumption exactly once."
+    },
+    "C7": {
+      "owner": "P6-10",
+      "given": "N11 versus N12, available revival, late reaction cost/wave, timeout or release overflow.",
+      "expected": "N11 survives without revival; N12 cannot heal from HP0. Probe never consumes a guard/revival/event. Normal finality flushes all; errors immediately stop and preserve committed queue. No extra boundary pulse."
+    },
+    "C8": {
+      "owner": "P6-10",
+      "given": "Same-boundary paid teleport/placement and new stop; teleport escapes activation range; source already frozen.",
+      "expected": "Valid commands precede new stop; post-spatial range can fizzle stop; previously frozen source command fizzles without refund, not deferred."
+    },
+    "C9": {
+      "owner": "P6-10",
+      "given": "Duration-one stop [s,s+1), due release plus re-stop, early release near match limit.",
+      "expected": "One frozen interval; release and re-stop add no tick/catch-up; retain full semantic duration reservation and final battle-ended command rules."
+    },
+    "C10": {
+      "owner": "P6-10",
+      "given": "G=100, recipient clock60, new status duration10; action/force deadlines and different-clock deflection.",
+      "expected": "Subject end70/global activation100/global projection110. Projection is not expiry during freeze. Thaw rebinds it; shot remaining lifetime unchanged across owners. Different-age shots in one hit group use global re-hit time, never cross-instance age subtraction."
+    },
+    "C11": {
+      "owner": "P6-10",
+      "given": "Touching attached emitter freezes and resumes; frozen hovering/resource carry.",
+      "expected": "No separation credit for omitted emission/global gap; resumed clearance required. Frozen maintenance and carries do not progress; ordinary unfrozen hovering still pays."
+    },
+    "C12": {
+      "owner": "P6-10",
+      "given": "Source crosses target via teleport after capture; captured blast blocker later disappears.",
+      "expected": "Force uses captured direction and starts at release; coverage/falloff/occlusion remain captured, not recomputed from release geometry."
+    },
+    "C13": {
+      "owner": "P6-10",
+      "given": "Innate/temporary/sealed immunity; later immunity; source seal/incapacity/interruption; ordinary control dispel.",
+      "expected": "Effective immunity resists activation only. Active global control persists until its explicit end/lethal release; ordinary dispel/seal cannot remove it; no hidden AI details."
+    },
+    "D1": {
+      "owner": "P6-09b",
+      "given": "Pure defeat against shields/ordinary resistance and explicit effective immunity.",
+      "expected": "Only dedicated effective immunity stops accepted defeat; no damage/drain/absorption or synthetic after-damage."
+    },
+    "D2": {
+      "owner": "P6-09b",
+      "given": "N6; separately pure defeat with an eligible explicit revive-to7 response.",
+      "expected": "N6 HP0; explicit revive resets to7 after all waves and pays exactly once; ordinary heals do not revive."
+    },
+    "D3": {
+      "owner": "P6-09b",
+      "given": "N7 and eligible revival response.",
+      "expected": "HP1, one guard charge, numeric drain basis9; no revival use."
+    },
+    "D4": {
+      "owner": "P6-09b",
+      "given": "Opening wound/status prerequisite versus same-wave new wound/status; whole/damage parry and deflected defeat.",
+      "expected": "Only opening predicate qualifies; whole parry blocks contact, damage-only retains defeat; returned payload affects original source."
+    },
+    "D5": {
+      "owner": "P6-09b",
+      "given": "N10/N11 versus N12 and actor swaps; opening-dead and returned sources; later explicit revival.",
+      "expected": "N12: dead source HP/guard/basis/drain all0 before final HP clamp; target HP6/basis4, no redirected credit. Later revival does not back-credit it. N10 retains drainReceived4 but defeat sets HP0; N11 survives at HP2 without revival. Returned payload cannot drain."
+    },
+    "D6": {
+      "owner": "P6-09b",
+      "given": "Multiple numeric contributions with heal/shield/absorption, N13 rounding, disabled/periodic/environment cases.",
+      "expected": "Exact proportional rational basis only over numeric damage, one floor per drain contribution; no drain feedback or synthetic defeat contribution."
+    },
+    "I1": {
+      "owner": "P6-09b",
+      "given": "Two simultaneous lethal contacts, next lethal wave, timeout release and exhausted count.",
+      "expected": "One charge per allocation wave, not per attack; later waves can consume next charge; fifth never protects when C=4."
+    },
+    "I2": {
+      "owner": "P6-09b",
+      "given": "Expiry/refresh/dispel/regrant/seal/unseal/revival/new cohort and same-wave new guard.",
+      "expected": "Spent count survives all lifecycle changes; no retroactive grant; suppressed/expired guard does not protect."
+    },
+    "I3": {
+      "owner": "P6-09b",
+      "given": "Numeric N1-N14 and exact actor swaps.",
+      "expected": "Independent expected HP/guard/basis/drain values match; choose least fixed point and preserve no-guard arithmetic."
+    },
+    "I4": {
+      "owner": "P6-09b",
+      "given": "N1 has another fixed point; N2 has cascaded requirements; probe fails.",
+      "expected": "N1 spends zero, N2 grows twice; at most three allocations; probes never mutate counters, RNG, HP or events."
+    },
+    "I5": {
+      "owner": "P6-09b",
+      "given": "C=1 guard regranted after use; C=4 after four uses; conflicting recipient closure.",
+      "expected": "No further protection after each match allowance; input rejects conflicts including opposing/dormant grants, equipment and transforms."
+    },
+    "X1": {
+      "owner": "P6-09b-and-P6-10",
+      "given": "Missing permissions; dormant unsupported variants; conflicting immortality revisions.",
+      "expected": "Reject with mechanic/revision before prepare/job/retry/league reservation; preserve existing input omission behavior."
+    },
+    "X2": {
+      "owner": "P6-09b-and-P6-10",
+      "given": "All accepted ordered/self/conditional matrix cells, deleted cell/fixture, unresolved pair.",
+      "expected": "Independent executed assertions cover each accepted rule, negatives fail, undefined experimental cases emit bounded ADR0016 diagnostics."
+    },
+    "X3": {
+      "owner": "P6-10",
+      "given": "Isolated exact/+1 contacts/operations/bytes, 200 captures released then100 more, simultaneous group overflow.",
+      "expected": "Exact succeeds with other bounds nonbinding; overflow is atomic truncated. Release reduces occupancy only. Work persists but candidate queue/HP/RNG/IDs/ledger/clocks/records roll back."
+    },
+    "X4": {
+      "owner": "P6-09b-and-P6-10",
+      "given": "Repeated hashes, injected rollback, old/new Worker/SQLite/checkpoints, both viewers.",
+      "expected": "All state hashes stable; rollback includes world/queues/clock/resource/identity state; round-trip immutable published definitions and saved records."
+    },
+    "X5": {
+      "owner": "P6-09b-and-P6-10",
+      "given": "Delayed/private observation, pending display, forward/reverse/loop seek, partial/invalid records.",
+      "expected": "No enemy hidden-state leak or early queued HP; no combat rerun; malformed/unsupported data explicitly rejects, valid partial errors remain inspectable."
+    },
+    "X6": {
+      "owner": "P6-09b-and-P6-10",
+      "given": "Clock projection, missing feature declaration, duplicate release/consumption, missing checkpoint descriptor.",
+      "expected": "Engine-free validation rejects inconsistency; projections never expire state; consumed and pending are exclusive; global release-only ordering is monotone."
+    }
+  }
+}
