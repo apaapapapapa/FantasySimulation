@@ -30,6 +30,11 @@ export interface S3PublicationBudget {
   maxClassBRequests: number;
   deadlineMs: number;
   maxAttempts: 1 | 3;
+  /**
+   * Retries of a failed data GET/HEAD/PUT/LIST after 429, 5xx or a lost connection. Each
+   * retry is a new logical request charged to the same class budget; control writes never retry.
+   */
+  transientRetries?: 0 | 1 | 2;
 }
 export class PublicationS3 implements PublicationStore {
   private readonly client: S3Client;
@@ -41,6 +46,8 @@ export class PublicationS3 implements PublicationStore {
   private transferred = 0;
   private writes = 0;
   private uploaded = 0;
+  private retries = 0;
+  private readonly etags = new Map<string, string>();
   remainingRequests() {
     return this.budget.maxRequests - this.requests;
   }
@@ -53,6 +60,7 @@ export class PublicationS3 implements PublicationStore {
       successfulWrites: this.writes,
       readBytes: this.transferred,
       uploadedBytes: this.uploaded,
+      transientRetries: this.retries,
     };
   }
   constructor(
@@ -67,6 +75,7 @@ export class PublicationS3 implements PublicationStore {
       maxClassBRequests: 100_000,
       deadlineMs: 300_000,
       maxAttempts: 3,
+      transientRetries: 0,
       ...budget,
     };
     for (const [key, maximum] of [
@@ -79,7 +88,10 @@ export class PublicationS3 implements PublicationStore {
       if (!Number.isInteger(value) || value < 1 || value > maximum)
         throw new OperationError('INPUT_INVALID', 'Invalid S3 publication budget');
     }
-    if (![1, 3].includes(this.budget.maxAttempts))
+    if (
+      ![1, 3].includes(this.budget.maxAttempts) ||
+      ![0, 1, 2].includes(this.budget.transientRetries ?? 0)
+    )
       throw new OperationError('INPUT_INVALID', 'Invalid S3 retry budget');
     this.signal = AbortSignal.timeout(this.budget.deadlineMs);
     if (
@@ -152,22 +164,56 @@ export class PublicationS3 implements PublicationStore {
       `S3 operation failed (HTTP ${status ?? 'unknown'}); no credentials logged`,
     );
   }
+  /**
+   * 429, 5xx, connection loss and per-request socket timeouts (no HTTP status) are transient;
+   * validation errors are not, and nothing retries once the transport deadline has expired.
+   */
+  private transient(error: unknown) {
+    if (error instanceof OperationError || this.signal.aborted) return false;
+    const status = this.status(error);
+    return status === undefined || status === 429 || status >= 500;
+  }
+  /** Charges every attempt before sending; backoff stays inside the transport deadline. */
+  private async attempt<T>(
+    kind: 'A' | 'B',
+    work: (options: { abortSignal: AbortSignal }) => Promise<T>,
+  ) {
+    for (let retry = 0; ; retry++) {
+      try {
+        return await work(this.options(kind));
+      } catch (error) {
+        if (retry >= (this.budget.transientRetries ?? 0) || !this.transient(error)) throw error;
+        this.retries++;
+        await new Promise<void>((resolve) => {
+          const timer = setTimeout(resolve, 250 * 4 ** retry);
+          this.signal.addEventListener('abort', () => (clearTimeout(timer), resolve()), {
+            once: true,
+          });
+        });
+      }
+    }
+  }
+  /** ETags from the latest inventory; single-part R2 ETags are the object's MD5. */
+  listedEtags(): ReadonlyMap<string, string> {
+    return this.etags;
+  }
   async inventory() {
     const result = new Map<string, number>();
+    this.etags.clear();
     let cursor: string | undefined,
       bytes = 0;
     do {
       const page = await measureAsync('r2.LIST', () =>
-        this.client
-          .send(
+        this.attempt('A', (options) =>
+          this.client.send(
             new ListObjectsV2Command({
               Bucket: this.config.bucket,
               MaxKeys: 1000,
               ...(cursor ? { ContinuationToken: cursor } : {}),
             }),
-            this.options('A'),
-          )
-          .catch((e) => this.failure(e)),
+            options,
+          ),
+        ).catch((e) => (e instanceof OperationError ? Promise.reject(e) : this.failure(e))),
       );
       for (const item of page.Contents ?? []) {
         const key =
@@ -178,6 +224,7 @@ export class PublicationS3 implements PublicationStore {
         if (key === PUBLICATION_CONTROL_KEY && size > PUBLICATION_CONTROL_BYTES)
           throw new OperationError('DATA_INVALID', 'Invalid league usage ledger size');
         result.set(key, size);
+        if (item.ETag) this.etags.set(key, item.ETag);
         bytes += size;
         if (result.size > PUBLICATION_MAX_FILES || bytes > PUBLICATION_MAX_BYTES)
           throw new OperationError(
@@ -210,11 +257,8 @@ export class PublicationS3 implements PublicationStore {
     const end = startMeasurement('r2.GET');
     let readBytes = 0;
     let succeeded = false;
-    try {
-      const value = await this.client.send(
-        new GetObjectCommand(this.input(key, control)),
-        this.options('B'),
-      );
+    const get = async (options: { abortSignal: AbortSignal }) => {
+      const value = await this.client.send(new GetObjectCommand(this.input(key, control)), options);
       if (!value.Body || !value.ETag)
         throw new OperationError('DATA_INVALID', 'Incomplete S3 body');
       const reader = value.Body.transformToWebStream().getReader(),
@@ -236,8 +280,13 @@ export class PublicationS3 implements PublicationStore {
       } finally {
         reader.releaseLock();
       }
-      succeeded = true;
       return { data: Buffer.concat(parts), etag: value.ETag };
+    };
+    try {
+      // The ledger is a compare-and-swap document: its reads stay single-attempt too.
+      const value = control ? await get(this.options('B')) : await this.attempt('B', get);
+      succeeded = true;
+      return value;
     } catch (error) {
       if (this.status(error) === 404) return null;
       this.failure(error);
@@ -250,8 +299,11 @@ export class PublicationS3 implements PublicationStore {
     let succeeded = false;
     try {
       const bytes =
-        (await this.client.send(new HeadObjectCommand(this.input(key)), this.options('B')))
-          .ContentLength ?? null;
+        (
+          await this.attempt('B', (options) =>
+            this.client.send(new HeadObjectCommand(this.input(key)), options),
+          )
+        ).ContentLength ?? null;
       succeeded = true;
       return bytes;
     } catch (error) {
@@ -268,8 +320,8 @@ export class PublicationS3 implements PublicationStore {
     const end = startMeasurement('r2.PUT');
     let succeeded = false;
     try {
-      await this.client
-        .send(
+      const put = (options: { abortSignal: AbortSignal }) =>
+        this.client.send(
           new PutObjectCommand({
             ...this.input(key, control),
             Body: data,
@@ -281,9 +333,13 @@ export class PublicationS3 implements PublicationStore {
                 : 'public, max-age=31536000, immutable, no-transform',
             ...(previousEtag === null ? { IfNoneMatch: '*' } : { IfMatch: previousEtag }),
           }),
-          this.options('A'),
-        )
-        .catch((e) => this.failure(e));
+          options,
+        );
+      // A retried conditional PUT whose first response was lost reports 412; callers then
+      // accept only identical stored bytes. Ledger compare-and-swap writes never retry.
+      await (control ? put(this.options('A')) : this.attempt('A', put)).catch((e) =>
+        this.failure(e),
+      );
       this.writes++;
       this.uploaded += data.length;
       succeeded = true;

@@ -14,6 +14,7 @@ import {
   PUBLICATION_CONTROL_KEY,
   type PublicationFile,
 } from './publication-files.ts';
+import { createHash } from 'node:crypto';
 import { sha256 } from '@fantasy/api/artifacts';
 import { publicationConcurrency, publicationPool } from './publication-pool.ts';
 import { PublicationIo, transferTuning, type TransferTuning } from './publication-io.ts';
@@ -29,12 +30,19 @@ export interface PublicationStore {
   head(key: string): Promise<number | null>;
   put(key: string, data: Buffer, previousEtag: string | null): Promise<void>;
   remove(key: string): Promise<void>;
+  /** ETags recorded by the latest `inventory()`, when the store lists them. */
+  listedEtags?(): ReadonlyMap<string, string>;
 }
 /** Starts transport and reserves usage only after the complete local graph is verified. */
 export type PublicationStoreFactory = (
   graph: Awaited<ReturnType<typeof localPublicationGraph>>,
 ) => Promise<
-  PublicationStore | { store: PublicationStore; inventory: ReadonlyMap<string, number> }
+  | PublicationStore
+  | {
+      store: PublicationStore;
+      inventory: ReadonlyMap<string, number>;
+      etags?: ReadonlyMap<string, string>;
+    }
 >;
 export interface PublishOptions extends TransferTuning {
   viewer(): Promise<unknown>;
@@ -85,6 +93,23 @@ function exactBytes(file: PublicationFile, value: RemoteObject | null) {
 }
 async function exact(store: PublicationStore, file: PublicationFile) {
   return exactBytes(file, await store.read(file.key, file.bytes));
+}
+/**
+ * A listed single-part ETag equal to the MD5 of the verified local bytes (with equal size)
+ * proves identical content without downloading it; anything else falls back to a full GET.
+ */
+async function listedMatch(
+  file: PublicationFile,
+  size: number | undefined,
+  etag: string | undefined,
+) {
+  const md5 = /^"?([a-f0-9]{32})"?$/i.exec(etag ?? '')?.[1]?.toLowerCase();
+  if (!md5 || size !== file.bytes) return false;
+  return (
+    createHash('md5')
+      .update(await publicationBytes(file))
+      .digest('hex') === md5
+  );
 }
 export type PublicationPhase = 'not-committed' | 'commit-unknown' | 'committed-unverified';
 export class PublicationFailure extends Error {
@@ -166,6 +191,9 @@ export async function publishPublication(
     }
     // A factory snapshot is collected after graph verification, never persisted across commands.
     const inventory = new Map('store' in session ? session.inventory : await store.inventory());
+    const etags = 'store' in session ? session.etags : store.listedEtags?.();
+    // Keys whose stored bytes this publication proved identical (GET, ETag or successful PUT).
+    const present = new Set<string>();
     const resultHashes = new Map(graph.results);
     const exactReceipts = new Set<string>();
     await publicationPool(
@@ -192,8 +220,15 @@ export async function publishPublication(
       async (file) => {
         if (file.key !== pointer.key) {
           if (inventory.has(file.key)) {
-            if (!exactReceipts.has(file.key))
+            // The local MD5 proof reads the whole file, so it shares the in-flight byte budget.
+            if (
+              !exactReceipts.has(file.key) &&
+              !(await transfer.run(file.bytes, () =>
+                listedMatch(file, inventory.get(file.key), etags?.get(file.key)),
+              ))
+            )
               await transfer.run(file.bytes, () => exact(store, file));
+            present.add(file.key);
           } else additions.push(file);
         }
       },
@@ -278,14 +313,16 @@ export async function publishPublication(
                 throw error;
               }
             }
+            present.add(file.key);
           }),
         'r2.upload',
         64,
       );
     }
     // All referenced immutable objects must be present before committing current.json.
+    // Objects proved in this serialized publication skip the extra HEAD.
     await publicationPool(
-      [...graph.files.values()],
+      [...graph.files.values()].filter((file) => !present.has(file.key)),
       tuning.head,
       (file) =>
         transfer.run(0, async () => {

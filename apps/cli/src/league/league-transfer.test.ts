@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { leagueFixture } from '@fantasy/samples/testing';
@@ -243,8 +244,23 @@ it('resumes an interrupted publication without rewriting stored objects, within 
     expect(stored.size).toBeGreaterThan(0);
     expect(objects.has('catalog/current.json')).toBe(false);
     failAfter = Infinity;
+    // The listing's MD5 ETags prove the interrupted attempt's objects without downloading them.
+    vi.spyOn(PublicationS3.prototype, 'listedEtags').mockImplementation(
+      () =>
+        new Map(
+          [...objects].map(([key, data]) => [
+            key,
+            `"${createHash('md5').update(data).digest('hex')}"`,
+          ]),
+        ),
+    );
+    const read = vi.mocked(PublicationS3.prototype.read);
+    read.mockClear();
     await publish('publish-resumed');
     expect(objects.has('catalog/current.json')).toBe(true);
+    expect(
+      read.mock.calls.filter(([key]) => stored.has(key) && !key.endsWith('/receipt.json')),
+    ).toHaveLength(0);
     // Objects stored by the interrupted attempt are verified, never uploaded again.
     expect(written.filter((key) => stored.has(key))).toHaveLength(stored.size);
     expect(new Set(written).size).toBe(written.length);

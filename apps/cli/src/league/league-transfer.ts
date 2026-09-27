@@ -40,14 +40,20 @@ export function leagueTransferBudget(
   for (const n of [files, receipts, additions])
     if (!Number.isSafeInteger(n) || n < 0 || n > PUBLICATION_MAX_FILES)
       throw new OperationError('INPUT_INVALID', 'Invalid league transfer counts');
-  const classA = restore ? 1 : additions + 502;
-  const classB = restore ? files + 3 : receipts + 2 * files + 10;
+  // Counted transient retries (LEAGUE_TRANSIENT_RETRIES) draw on explicit, bounded headroom.
+  const classA = restore ? 1 : additions + 502 + LEAGUE_RETRY_WRITES;
+  const classB = restore
+    ? files + 3 + LEAGUE_RETRY_READS
+    : receipts + 2 * files + 10 + LEAGUE_RETRY_READS;
   const worker = restore ? 0 : 1000;
   return { classA, classB, worker };
 }
+export const LEAGUE_TRANSIENT_RETRIES = 2;
+export const LEAGUE_RETRY_WRITES = 256;
+export const LEAGUE_RETRY_READS = 1024;
 /**
- * A full league publication writes ~88k small immutable objects and HEAD-verifies each, which
- * takes about two hours at measured R2 rates (#189); restore keeps the one-hour bound.
+ * A full league publication writes ~88k small immutable objects, which took about two hours at
+ * measured R2 rates (#189); restore keeps the one-hour bound.
  */
 export const LEAGUE_RESTORE_DEADLINE_MS = 3_600_000;
 export const LEAGUE_PUBLISH_DEADLINE_MS = 10_800_000;
@@ -55,12 +61,15 @@ export const leagueTransport = (
   classA: number,
   classB: number,
   deadlineMs = LEAGUE_RESTORE_DEADLINE_MS,
+  transientRetries: 0 | 2 = 0,
 ): S3PublicationBudget => ({
   maxRequests: classA + classB,
   maxClassARequests: classA,
   maxClassBRequests: classB,
   deadlineMs,
+  // One SDK attempt keeps the ledger exact; data retries are separate, counted requests.
   maxAttempts: 1,
+  transientRetries,
 });
 export const leagueUsageTotals = (usage: LeagueUsage) => ({
   usedReadRequests: 10000 + usage.leases.reduce((sum, entry) => sum + entry.classB, 0),
@@ -187,12 +196,12 @@ export async function transferCloudLeague(
       });
       data = new PublicationS3(
         config,
-        leagueTransport(budget.classA, budget.classB, deadline),
+        leagueTransport(budget.classA, budget.classB, deadline, LEAGUE_TRANSIENT_RETRIES),
         tuning.sockets,
       );
       // The lease readback authenticates the new control size without a second full LIST.
       listed.set(PUBLICATION_CONTROL_KEY, Buffer.byteLength(canonicalJson(usage)));
-      return { store: data, inventory: listed };
+      return { store: data, inventory: listed, etags: controller().listedEtags() };
     };
     const outcome = options
       ? await publishPublication(root, start, {

@@ -23,12 +23,12 @@ Keep four durable immutable writes, fsync/link/directory sync and pointer-last c
 
 Share fresh post-validation inventory within one serialized publication.
 Account for lease size; retain orphan conflicts,
-all-reference HEAD, conditional PUT, generation/viewer/readback barriers. Reuse exact
+reference proofs, conditional PUT, generation/viewer/readback barriers. Reuse exact
 receipt GET evidence, not buffers. No pointer caching or lease refunds.
 
 Prefetch hash/size-bound children after parent validation into owned disk.
 Deduplicate keys; retain ordered checks and bounded requests/payloads;
 drain before cleanup. Cloud GET/HEAD use 32; PUT/Reader use 16. S3 tuning allows 1–64
 and 16–256MiB payload reservations (64MiB default), not RSS guarantees. Match sockets
-and keep-alive. Measure LIST pages. Keep serial control writes, retries, bucket
+and keep-alive. Measure LIST pages. Keep serial control writes, bucket
 settings, Local Uploads, formats and workflows unchanged.

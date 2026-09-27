@@ -43,6 +43,69 @@ it('uses conditional writes, explicit MIME/cache and no HTTP gzip encoding', asy
   expect(pointer).not.toHaveProperty('IfNoneMatch');
   expect(store.remainingRequests()).toBe(99998);
 });
+it('retries transient data failures as counted requests and records listed ETags', async () => {
+  vi.useFakeTimers();
+  try {
+    const { store, send } = fixture({ maxAttempts: 1, transientRetries: 2 });
+    send
+      .mockRejectedValueOnce({ $metadata: { httpStatusCode: 503 } })
+      .mockRejectedValueOnce(Object.assign(new Error('socket hang up'), { code: 'ECONNRESET' }))
+      .mockResolvedValueOnce({ ContentLength: 7 } as never);
+    const head = store.head('catalog/current.json');
+    await vi.runAllTimersAsync();
+    await expect(head).resolves.toBe(7);
+    expect(store.metrics()).toMatchObject({
+      logicalRequests: 3,
+      classBRequests: 3,
+      transientRetries: 2,
+    });
+    // A per-request SDK socket timeout is transient while the transport deadline remains.
+    send
+      .mockRejectedValueOnce(Object.assign(new Error('socket timeout'), { name: 'TimeoutError' }))
+      .mockResolvedValueOnce({ ContentLength: 8 } as never);
+    const timedOut = store.head('catalog/current.json');
+    await vi.runAllTimersAsync();
+    await expect(timedOut).resolves.toBe(8);
+    expect(store.metrics()).toMatchObject({ transientRetries: 3 });
+    send.mockResolvedValueOnce({
+      Contents: [{ Key: 'catalog/current.json', Size: 7, ETag: '"etag-1"' }],
+    } as never);
+    await store.inventory();
+    expect(store.listedEtags().get('catalog/current.json')).toBe('"etag-1"');
+  } finally {
+    vi.useRealTimers();
+  }
+});
+it.each([
+  ['forbidden', { $metadata: { httpStatusCode: 403 } }, 'REMOTE_AUTH'],
+  ['conflict', { $metadata: { httpStatusCode: 412 } }, 'PUBLICATION_CONFLICT'],
+])('never retries a %s response', async (_name, failure, code) => {
+  const { store, send } = fixture({ maxAttempts: 1, transientRetries: 2 });
+  send.mockRejectedValue(failure);
+  await expect(store.put('catalog/current.json', Buffer.from('{}'), null)).rejects.toMatchObject({
+    code,
+  });
+  expect(send).toHaveBeenCalledTimes(1);
+});
+it('keeps ledger compare-and-swap single-attempt and stops retries at the class budget', async () => {
+  const { store, send } = fixture({ maxAttempts: 1, transientRetries: 2, maxClassBRequests: 2 });
+  send.mockRejectedValue({ $metadata: { httpStatusCode: 503 } });
+  await expect(store.readControl()).rejects.toMatchObject({ code: 'REMOTE_UNAVAILABLE' });
+  expect(send).toHaveBeenCalledTimes(1);
+  await expect(
+    store.putControl(Buffer.from(JSON.stringify({ schemaVersion: 1 })), null),
+  ).rejects.toThrow();
+  vi.useFakeTimers();
+  try {
+    const head = store.head('catalog/current.json');
+    const settled = expect(head).rejects.toMatchObject({ code: 'BUDGET_EXCEEDED' });
+    await vi.runAllTimersAsync();
+    await settled;
+  } finally {
+    vi.useRealTimers();
+  }
+  expect(store.metrics()).toMatchObject({ classBRequests: 2 });
+});
 it('paginates inventory, refuses unexpected keys and stops repeated cursors', async () => {
   const { store, send } = fixture();
   send.mockResolvedValueOnce({
