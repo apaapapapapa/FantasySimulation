@@ -122,7 +122,10 @@ it('applies smaller reservations only to new leases without refunding earlier us
     before,
     lease('new-publication', { ...next, classB: next.classB + next.worker }),
   );
-  expect(after.leases[0]).toEqual(consumed);
+  expect(after.leases).toHaveLength(2);
+  expect(after.leases.find((entry) => entry.id === consumed.id)).toEqual(consumed);
   expect(before.leases).toEqual([consumed]);
-  expect(after.leases[1]!.classB).toBe(100 + 20 + 10 + 1024 + 1000);
+  expect(after.leases.find((entry) => entry.id === 'new-publication')?.classB).toBe(
+    100 + 20 + 10 + 1024 + 1000,
+  );
 });
