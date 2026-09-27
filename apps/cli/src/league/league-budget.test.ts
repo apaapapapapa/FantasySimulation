@@ -99,9 +99,11 @@ it('does not admit unverified writes or concurrent leases based on the same gene
   expect(JSON.parse((await store.readControl())!.data.toString()).leases).toHaveLength(1);
 });
 it('reserves restoration, immutable collision/head/recovery reads and publication before admission', () => {
-  expect(leagueTransferBudget(926, 60, 0, true)).toEqual({ classA: 1, classB: 929, worker: 0 });
+  // Restore: every file plus pointer/catalog/current reads and 1,024 counted transient retries.
+  expect(leagueTransferBudget(926, 60, 0, true)).toEqual({ classA: 1, classB: 1953, worker: 0 });
   const full = leagueTransferBudget(335183, 7600, 335183, false);
-  expect(full.classA).toBeGreaterThan(335183);
+  expect(full.classA).toBe(335183 + 502 + 256);
+  expect(full.classB).toBe(7600 + 2 * 335183 + 10 + 1024);
   expect(full.classB).toBeGreaterThan(335183 * 2 + 7600);
   expect(full.worker).toBe(1000);
   const reserved = reserveLeagueUsage(

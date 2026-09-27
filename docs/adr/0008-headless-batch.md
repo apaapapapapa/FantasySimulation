@@ -33,7 +33,7 @@ owns schemas, binding, privacy, transport and production evidence:
   barriers await every admitted operation on error; deduplication still checks every reference.
   League publication validates the local graph once, then reserves data usage and starts
   transport from that graph. Writes recheck bytes; deadline exhaustion is a budget failure.
-- HEAD every immutable reference; recheck viewer/generation before current. Verify S3 and
+- Prove refs by bytes, MD5 ETag or this run's PUT; recheck viewer/generation. S3/
   Worker catalog/set/sample-bundle readback. Uncertain PUTs recover only with identical bytes.
   Restore exclusively owns its new directory, reserves in-flight bytes and rechecks pointer;
   failure removes only owned files. No automatic deletion/upgrade; explicit prune protects ancestors.
@@ -93,8 +93,8 @@ Private control/league-usage.json is excluded from Reader/prune and counts towar
 Conditional, readback-verified leases precede transfers; never refund failures. Monthly caps:
 900k Class A/9M Class B (10k control reserve); automation Worker 90k/day (1k probe reserve).
 Budget restore from inventory and publication from verified files/receipts, including uncertain-PUT
-GETs and Worker reads; one SDK attempt. Missing ledger with an existing journal requires recovery,
-never a reset. Other traffic/base fees remain uncapped.
+GETs and Worker reads; 1 SDK try, <=2 counted data retries (no ledger). Missing ledger with an
+existing journal needs recovery, never a reset. Other traffic/base fees remain uncapped.
 [7,600-slot evidence](../measurements/p5-official-actions.json): publication/readback and
 viewer acceptance pending (Refs #134).
 

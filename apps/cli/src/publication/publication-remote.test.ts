@@ -1,5 +1,6 @@
 import { mkdtemp, rm, readFile, writeFile, cp } from 'node:fs/promises';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { BattleBundles } from '@fantasy/api/artifacts';
@@ -17,6 +18,7 @@ import {
 } from './publication-remote.ts';
 
 class MemoryStore implements PublicationStore {
+  listedEtags?: () => ReadonlyMap<string, string>;
   readonly objects = new Map<string, { data: Buffer; etag: string }>();
   readonly writes: string[] = [];
   readonly removed: string[] = [];
@@ -242,6 +244,42 @@ it('never overwrites a colliding immutable object', async () => {
   });
   expect(store.writes).toEqual([]);
 });
+it.each([true, false])(
+  'proves listed objects by MD5 ETag without a GET, else falls back to a byte check (match %s)',
+  async (matching) => {
+    const { directory, store, options } = await setup();
+    await publishPublication(directory, store, options);
+    const [objectKey] = [...store.objects.keys()].filter(
+      (key) => key.startsWith('objects/') && !key.endsWith('/receipt.json'),
+    );
+    const data = store.objects.get(objectKey!)!.data;
+    const md5 = createHash('md5')
+      .update(matching ? data : Buffer.from('other'))
+      .digest('hex');
+    store.listedEtags = () => new Map([[objectKey!, `"${md5}"`]]);
+    const read = vi.spyOn(store, 'read');
+    const head = vi.spyOn(store, 'head');
+    await expect(
+      publishPublication(directory, store, {
+        ...options,
+        // Reader read-back is a separate channel; only S3 byte checks are counted here.
+        worker: async (key) => Buffer.from(store.objects.get(key)!.data),
+      }),
+    ).resolves.toMatchObject({ status: 'verified' });
+    expect(read.mock.calls.some(([key]) => key === objectKey)).toBe(!matching);
+    expect(head.mock.calls.some(([key]) => key === objectKey)).toBe(false);
+  },
+);
+it('rejects a listed object whose ETag disagrees and whose bytes collide', async () => {
+  const { directory, store, options, fixture } = await setup();
+  const key = `objects/${fixture.receipt.objectHash.slice(7)}/manifest.json`;
+  store.objects.set(key, { data: Buffer.from('{}'), etag: 'old' });
+  store.listedEtags = () => new Map([[key, `"${createHash('md5').update('{}').digest('hex')}"`]]);
+  await expect(publishPublication(directory, store, options)).rejects.toMatchObject({
+    phase: 'not-committed',
+  });
+  expect(store.writes).toEqual([]);
+});
 it('rejects a second valid result for the same simulation even in an orphan', async () => {
   const { root, directory, store, options } = await setup();
   const conflict = await publicationFixture(join(root, 'conflict'), 'complete', undefined, true);
@@ -256,9 +294,14 @@ it('rejects a second valid result for the same simulation even in an orphan', as
   });
   expect(store.writes).toEqual([]);
 });
-it('does not commit when a referenced HEAD is missing', async () => {
+it('does not commit when a listed object has disappeared before its byte check', async () => {
   const { directory, store, options } = await setup();
-  store.head = async () => null;
+  const key = [...(await localPublicationGraph(directory)).files.keys()].find((k) =>
+    k.startsWith('objects/'),
+  )!;
+  const listed = store.inventory.bind(store);
+  // The listing still reports the object, but the bytes are gone: no HEAD shortcut may hide it.
+  store.inventory = async () => new Map([...(await listed()), [key, 1]]);
   await expect(publishPublication(directory, store, options)).rejects.toMatchObject({
     phase: 'not-committed',
   });
@@ -390,7 +433,8 @@ it.each([16, 32, 64])(
     expect(inventory).toHaveBeenCalledTimes(1);
     const key = `objects/${fixture.receipt.objectHash.slice(7)}/receipt.json`;
     expect(read.mock.calls.filter(([path]) => path === key)).toHaveLength(1);
-    expect(head.mock.calls.filter(([path]) => path === key)).toHaveLength(1);
+    // Objects proved in this publication are not HEAD-checked a second time.
+    expect(head.mock.calls.filter(([path]) => path !== 'catalog/current.json')).toHaveLength(0);
     expect(store.writes.length).toBe(writes);
   },
 );
