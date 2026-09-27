@@ -288,18 +288,19 @@ it('rejects a listed object whose ETag disagrees and whose bytes collide', async
   });
   expect(store.writes).toEqual([]);
 });
-it('rejects a second valid result for the same simulation even in an orphan', async () => {
+it('rejects a second valid result for the same simulation even in an orphan with an ETag', async () => {
   const { root, directory, store, options } = await setup();
   const conflict = await publicationFixture(join(root, 'conflict'), 'complete', undefined, true);
   const key = `objects/${conflict.receipt.objectHash.slice(7)}/receipt.json`;
-  store.objects.set(key, {
-    data: await readFile(join(conflict.object, 'receipt.json')),
-    etag: 'old',
-  });
+  const data = await readFile(join(conflict.object, 'receipt.json'));
+  store.objects.set(key, { data, etag: 'old' });
+  store.listedEtags = () => new Map([[key, `"${createHash('md5').update(data).digest('hex')}"`]]);
+  const read = vi.spyOn(store, 'read');
   await expect(publishPublication(directory, store, options)).rejects.toMatchObject({
     phase: 'not-committed',
     cause: { message: 'Existing simulation result conflict' },
   });
+  expect(read.mock.calls.some(([path]) => path === key)).toBe(true);
   expect(store.writes).toEqual([]);
 });
 it('does not commit when a listed object has disappeared before its byte check', async () => {
@@ -377,6 +378,7 @@ it.each(['missing', 'corrupt', 'budget'] as const)(
     if (failure === 'budget') store.remainingRequests = () => 1;
     await expect(prunePublication(store, true)).rejects.toThrow();
     expect(store.removed).toEqual([]);
+    expect(store.objects.has('catalog/current.json')).toBe(true);
     expect(store.objects.has(orphan)).toBe(true);
   },
 );
@@ -469,3 +471,64 @@ it('does not reuse an inventory snapshot across publication calls', async () => 
   });
   expect(store.writes.length).toBe(writes);
 });
+
+it.each(['quoted', 'bare', 'uppercase', 'missing', 'multipart', 'mismatch', 'size'])(
+  'uses receipt ETag evidence only with matching verified bytes and size: %s',
+  async (kind) => {
+    const { directory, store, options, fixture } = await setup();
+    await publishPublication(directory, store, options);
+    const key = `objects/${fixture.receipt.objectHash.slice(7)}/receipt.json`;
+    const md5 = createHash('md5').update(store.objects.get(key)!.data).digest('hex');
+    const tags: Record<string, string> = {
+      quoted: `"${md5}"`,
+      bare: md5,
+      uppercase: `"${md5.toUpperCase()}"`,
+      multipart: `"${md5}-2"`,
+      mismatch: `"${'0'.repeat(32)}"`,
+      size: `"${md5}"`,
+    };
+    store.listedEtags = () => new Map(kind === 'missing' ? [] : [[key, tags[kind]!]]);
+    if (kind === 'size') {
+      const inventory = store.inventory.bind(store);
+      store.inventory = async () => {
+        const listed = await inventory();
+        listed.set(key, listed.get(key)! + 1);
+        return listed;
+      };
+    }
+    const read = vi.spyOn(store, 'read');
+    await publishPublication(directory, store, {
+      ...options,
+      worker: async (path) => Buffer.from(store.objects.get(path)!.data),
+    });
+    expect(read.mock.calls.filter(([path]) => path === key)).toHaveLength(
+      ['quoted', 'bare', 'uppercase'].includes(kind) ? 0 : 1,
+    );
+  },
+);
+
+it.each([false, true])(
+  'covers every remaining request including uncertain PUT recovery, unchanged=%s',
+  async (unchanged) => {
+    const { directory, store, options } = await setup();
+    if (unchanged) await publishPublication(directory, store, options);
+    const save = store.put.bind(store);
+    store.put = async (...args) => {
+      await save(...args);
+      throw new Error('lost successful PUT response');
+    };
+    const calls = [vi.spyOn(store, 'read'), vi.spyOn(store, 'head'), vi.spyOn(store, 'put')];
+    const count = () => calls.reduce((sum, spy) => sum + spy.mock.calls.length, 0);
+    let before = 0;
+    const report = await publishPublication(directory, store, {
+      ...options,
+      worker: async (key) => Buffer.from(store.objects.get(key)!.data),
+      observe: () => {
+        before = count();
+      },
+    });
+    expect(count() - before).toBe(report.reservedS3Requests);
+    if (unchanged) expect(report.reservedS3Requests).toBe(4);
+    expect(report.status).toBe('verified');
+  },
+);
