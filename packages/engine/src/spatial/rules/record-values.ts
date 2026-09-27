@@ -13,19 +13,22 @@ function equalValue(left: unknown, right: unknown): boolean {
   if (left === right) return true;
   if (left === null || right === null || typeof left !== 'object' || typeof right !== 'object')
     return false;
-  if (Array.isArray(left))
-    return (
-      Array.isArray(right) &&
-      left.length === right.length &&
-      left.every((value, index) => equalValue(value, right[index]))
-    );
+  if (Array.isArray(left)) {
+    if (!Array.isArray(right) || left.length !== right.length) return false;
+    // Match JSON's null representation of holes accepted by the existing validator.
+    for (let index = 0; index < left.length; index++)
+      if (!equalValue(left[index] ?? null, right[index] ?? null)) return false;
+    return true;
+  }
   if (Array.isArray(right)) return false;
   const a = left as Record<string, unknown>,
     b = right as Record<string, unknown>;
   const keys = Object.keys(a);
   return (
     keys.length === Object.keys(b).length &&
-    keys.every((key) => Object.hasOwn(b, key) && equalValue(a[key], b[key]))
+    keys.every(
+      (key) => Object.prototype.propertyIsEnumerable.call(b, key) && equalValue(a[key], b[key]),
+    )
   );
 }
 

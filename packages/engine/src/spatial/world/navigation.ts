@@ -33,8 +33,8 @@ export class Navigator {
   private readonly graphs = new Map<boolean, ReturnType<typeof prepareNavigationGraph>>();
   private readonly costs = new Map<string, number>();
   private readonly previous = new Map<string, { id: string | null; mode: Mode }>();
-  private readonly open = new Set<string>();
-  private readonly closed = new Set<string>();
+  private readonly frontier = new Set<string>();
+  private readonly settled = new Set<string>();
   private readonly world: SpatialWorld;
   private readonly actor: ResolvedActor;
   private readonly scenario: DeepReadonly<Definition<'scenario'>>;
@@ -48,8 +48,8 @@ export class Navigator {
   private resetSearch() {
     this.costs.clear();
     this.previous.clear();
-    this.open.clear();
-    this.closed.clear();
+    this.frontier.clear();
+    this.settled.clear();
   }
   constructor(
     world: SpatialWorld,
@@ -237,7 +237,7 @@ export class Navigator {
     const { nodes, points, adjacent } = graph;
     // A failed/early-returned search must not seed the next request's frontier or costs.
     this.resetSearch();
-    const { costs, previous, open, closed } = this;
+    const { costs, previous, frontier, settled } = this;
     let forward = unit({ ...sub(goal, start), y: 0 });
     if (length(forward) < 1e-12) forward = unit({ ...this.actor.participant.facing, y: 0 });
     if (length(forward) < 1e-12) forward = { x: 1, y: 0, z: 0 };
@@ -259,15 +259,15 @@ export class Navigator {
       if (this.traversable(start, point, mode)) {
         costs.set(node.id, cost(start, point, mode));
         previous.set(node.id, { id: null, mode });
-        open.add(node.id);
+        frontier.add(node.id);
       }
     }
-    while (open.size) {
+    while (frontier.size) {
       if (++visited > maxNodes) return { kind: 'budget-exceeded', visited: visited - 1 };
       let chosen: string | undefined,
         score = Infinity;
       for (const node of ordered)
-        if (open.has(node.id)) {
+        if (frontier.has(node.id)) {
           const candidate = costs.get(node.id)! + length(sub(points.get(node.id)!, goal));
           if (candidate < score) {
             chosen = node.id;
@@ -277,8 +277,8 @@ export class Navigator {
       const id = chosen!,
         point = points.get(id)!;
       if (resources && bestPath && score >= bestCost) return { ...bestPath, visited };
-      open.delete(id);
-      closed.add(id);
+      frontier.delete(id);
+      settled.add(id);
       if (this.traversable(point, goal, mode)) {
         const waypoints: Waypoint[] = [{ position: { ...goal }, mode }];
         let cursor: string | null = id;
@@ -299,7 +299,7 @@ export class Navigator {
         if (
           !next ||
           !points.has(next) ||
-          closed.has(next) ||
+          settled.has(next) ||
           (flight ? edge.mode !== 'fly' : edge.mode === 'fly') ||
           (edge.mode === 'jump' && !allowJump)
         )
@@ -333,7 +333,7 @@ export class Navigator {
         if (nextCost < (costs.get(next) ?? Infinity)) {
           costs.set(next, nextCost);
           previous.set(next, { id, mode: edge.mode });
-          open.add(next);
+          frontier.add(next);
         }
       }
     }

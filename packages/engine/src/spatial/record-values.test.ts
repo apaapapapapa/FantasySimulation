@@ -19,6 +19,15 @@ describe('allocation-light record values', () => {
     expect(sameRecordValue(left, right)).toBe(equal);
     expect(sameRecordValue(left, right)).toBe(canonicalJson(left) === canonicalJson(right));
   });
+  it('matches canonical treatment of non-enumerable keys and accepted array holes', () => {
+    const hidden = Object.defineProperty({ other: 0 }, 'value', { value: 1 });
+    expect(sameRecordValue({ value: 1 }, hidden)).toBe(false);
+    expect(canonicalJson({ value: 1 }) === canonicalJson(hidden)).toBe(false);
+    const hole = Object.assign(new Array(1), { ignored: 0 });
+    expect(sameRecordValue(hole, [null])).toBe(true);
+    expect(sameRecordValue(hole, [1])).toBe(false);
+    expect(canonicalJson(hole)).toBe('[null]');
+  });
   it('agrees with canonical JSON for independently generated JSON values', () => {
     fc.assert(
       fc.property(fc.jsonValue(), fc.jsonValue(), (left, right) => {
@@ -32,7 +41,7 @@ describe('allocation-light record values', () => {
     const cycle: { child?: unknown } = {};
     cycle.child = cycle;
     for (const value of [undefined, NaN, Infinity, { missing: undefined }, new Date(), cycle])
-      expect(() => sameRecordValue(value, value)).toThrow();
+      expect(() => sameRecordValue(value, value)).toThrow(/JSON/);
     let deep: unknown = null;
     for (let index = 0; index < 26; index++) deep = { child: deep };
     expect(() => sameRecordValue(deep, deep)).toThrow('JSON structure budget exceeded');

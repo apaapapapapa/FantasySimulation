@@ -1,11 +1,11 @@
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import { metres } from './terrain.ts';
 
-type Navigation = DeepReadonly<Definition<'scenario'>['navigation']>;
-type Adjacent = { edge: Navigation['edges'][number]; next: string };
+type NavigationTopology = DeepReadonly<Definition<'scenario'>['navigation']>;
+type Adjacent = { edge: NavigationTopology['edges'][number]; next: string };
 
 /** Static topology only; clearance, resource costs and query work remain in Navigator.find. */
-export function prepareNavigationGraph(navigation: Navigation, flight: boolean) {
+export function prepareNavigationGraph(navigation: NavigationTopology, flight: boolean) {
   const nodes = navigation.nodes.filter((node) => node.mode === (flight ? 'air' : 'ground'));
   const points = new Map(nodes.map((node) => [node.id, metres(node.position)]));
   const adjacent = new Map<string, Adjacent[]>();
