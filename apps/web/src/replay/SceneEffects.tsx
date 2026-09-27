@@ -140,44 +140,38 @@ function SpatialObject({
     object.kind === 'area' && shape?.kind === 'sphere'
       ? groundBelow(model.obstacles, object.position, model.min[1])
       : null;
+  // One geometry element and one transform for the volume and the barrier outline, so the
+  // outline always shares the saved yaw of the shape it traces.
+  const geometry = (segments: number) =>
+    shape?.kind === 'box' ? (
+      <boxGeometry args={[shape.sizeMm.x / 1000, shape.sizeMm.y / 1000, shape.sizeMm.z / 1000]} />
+    ) : shape?.kind === 'sphere' ? (
+      <icosahedronGeometry args={[shape.radiusMm / 1000, segments > 10 ? 2 : 1]} />
+    ) : shape ? (
+      <cylinderGeometry
+        args={[shape.radiusMm / 1000, shape.radiusMm / 1000, shape.heightMm / 1000, segments]}
+      />
+    ) : null;
   return (
     <group>
       {shape && (
-        <mesh
+        <group
           position={object.position}
           rotation={
             shape.kind === 'box' ? [0, (shape.yawMilliDegrees * Math.PI) / 180000, 0] : [0, 0, 0]
           }
         >
-          {shape.kind === 'box' ? (
-            <boxGeometry
-              args={[shape.sizeMm.x / 1000, shape.sizeMm.y / 1000, shape.sizeMm.z / 1000]}
-            />
-          ) : shape.kind === 'sphere' ? (
-            <icosahedronGeometry args={[shape.radiusMm / 1000, 2]} />
-          ) : (
-            <cylinderGeometry
-              args={[shape.radiusMm / 1000, shape.radiusMm / 1000, shape.heightMm / 1000, 20]}
-            />
+          <mesh>
+            {geometry(20)}
+            {volume(false)}
+          </mesh>
+          {object.kind === 'barrier' && (
+            <mesh>
+              {geometry(10)}
+              {volume(true)}
+            </mesh>
           )}
-          {volume(false)}
-        </mesh>
-      )}
-      {shape && object.kind === 'barrier' && (
-        <mesh position={object.position}>
-          {shape.kind === 'sphere' ? (
-            <icosahedronGeometry args={[shape.radiusMm / 1000, 1]} />
-          ) : shape.kind === 'box' ? (
-            <boxGeometry
-              args={[shape.sizeMm.x / 1000, shape.sizeMm.y / 1000, shape.sizeMm.z / 1000]}
-            />
-          ) : (
-            <cylinderGeometry
-              args={[shape.radiusMm / 1000, shape.radiusMm / 1000, shape.heightMm / 1000, 10]}
-            />
-          )}
-          {volume(true)}
-        </mesh>
+        </group>
       )}
       {ground !== null && shape?.kind === 'sphere' && (
         <mesh

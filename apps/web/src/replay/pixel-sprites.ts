@@ -597,6 +597,16 @@ export type PoseState = {
   } | null;
   phase: 'cast' | 'active' | 'recovery' | null;
 };
+/**
+ * Material alpha for a sprite. Texels are fully opaque or fully clear, so the cutoff scales with
+ * the opacity: a translucent phased figure keeps its whole silhouette. Phased bodies are drawn
+ * through the terrain they pass through instead of disappearing inside it.
+ */
+export function spriteFade(phasing: { pending: boolean } | null) {
+  const opacity = phasing ? (phasing.pending ? 0.3 : 0.45) : 1;
+  return { opacity, alphaTest: opacity / 2, throughTerrain: phasing !== null };
+}
+
 const GAIT_MS = { walk: 180, run: 110, slow: 260, flight: 150 } as const;
 
 /** Frame choice from recorded state; `milliseconds` is the displayed step time, not a clock. */

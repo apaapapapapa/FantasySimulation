@@ -12,7 +12,13 @@ import {
 } from 'three';
 import { useAfterimages } from './afterimages.ts';
 import { groundBelow } from './ground.ts';
-import { SPRITE_FEET, SPRITE_FIGURE, SPRITE_SIZE, spritePose } from './pixel-sprites.ts';
+import {
+  SPRITE_FEET,
+  SPRITE_FIGURE,
+  SPRITE_SIZE,
+  spriteFade,
+  spritePose,
+} from './pixel-sprites.ts';
 import type { SceneModel } from './scene-model.ts';
 import { glowMap, spriteTexture } from './textures.ts';
 import { tintColours } from './tint-colours.ts';
@@ -141,7 +147,7 @@ function Fighter({
     element.style.setProperty('--lift', covered ? `${PLATE_LIFT}px` : '0px');
   });
   const hp = actor.hp && Math.max(0, Math.min(1, actor.hp.value / Math.max(1, actor.hp.max)));
-  const phase = actor.phasing ? (actor.phasing.pending ? 0.3 : 0.45) : 1;
+  const fade = spriteFade(actor.phasing);
   return (
     <group position={[x, actor.feet, z]}>
       <group position={[0, ground - actor.feet + 0.02, 0]}>
@@ -192,14 +198,15 @@ function Fighter({
         ref={sprite}
         geometry={QUAD}
         position={[0, 0.02, 0]}
-        renderOrder={2}
+        renderOrder={fade.throughTerrain ? 5 : 2}
         frustumCulled={false}
       >
         <meshBasicMaterial
           map={texture}
-          alphaTest={0.5}
-          transparent={phase < 1}
-          opacity={phase}
+          alphaTest={fade.alphaTest}
+          transparent={fade.opacity < 1}
+          opacity={fade.opacity}
+          depthTest={!fade.throughTerrain}
           side={DoubleSide}
           toneMapped={false}
           onBeforeCompile={uprightSprite}

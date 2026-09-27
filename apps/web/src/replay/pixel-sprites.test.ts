@@ -3,6 +3,7 @@ import type { PixelImage } from './pixel-art.ts';
 import {
   SPRITE_FEET,
   SPRITE_SIZE,
+  spriteFade,
   spriteImage,
   spritePose,
   type PoseState,
@@ -137,4 +138,19 @@ describe('sprite pose selection', () => {
     expect(spritePose(state({ locomotion: moving('flight'), grounded: false }), 0)).toBe('fly-a');
     expect(spritePose(state({ locomotion: moving('flight'), grounded: false }), 150)).toBe('fly-b');
   });
+});
+
+it('keeps a phased sprite translucent but whole, and visible through the terrain it enters', () => {
+  // Texels are fully opaque (alpha 1) or clear (alpha 0); the material multiplies them by opacity
+  // before the cutoff, so the cutoff must stay between 0 and the opacity.
+  for (const phasing of [null, { pending: false }, { pending: true }]) {
+    const { opacity, alphaTest, throughTerrain } = spriteFade(phasing);
+    expect(alphaTest).toBeGreaterThan(0);
+    expect(alphaTest).toBeLessThan(opacity);
+    expect(throughTerrain).toBe(phasing !== null);
+    expect(opacity < 1).toBe(phasing !== null);
+  }
+  expect(spriteFade({ pending: true }).opacity).toBeLessThan(
+    spriteFade({ pending: false }).opacity,
+  );
 });

@@ -16,8 +16,9 @@ function view(mode: FramedMode, bodies: ReturnType<typeof body>[], aspect: numbe
   camera.lookAt(...framing.target);
   camera.updateMatrixWorld();
   const up = new Vector3().setFromMatrixColumn(camera.matrixWorld, 1);
-  const project = (p: Point, height = 0) =>
-    new Vector3(...p).addScaledVector(up, height).project(camera);
+  const right = new Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+  const project = (p: Point, height = 0, side = 0) =>
+    new Vector3(...p).addScaledVector(up, height).addScaledVector(right, side).project(camera);
   return { framing, camera, project };
 }
 
@@ -43,6 +44,29 @@ describe('camera framing', () => {
             expect(Math.abs(ndc.y)).toBeLessThan(1);
             expect(ndc.z).toBeLessThan(1);
           }
+      }
+    },
+  );
+  it.each(['overview', 'side', 'follow'] as const)(
+    'keeps a tall body’s whole sprite frame in the %s view',
+    (mode) => {
+      // Bodies may be up to 20 m tall; the sprite frame is 32/25 of the figure height wide.
+      for (const bodies of [
+        [body(-8, 0, 0, 18), body(6, 0)],
+        [body(0, 0, 0, 20), body(3, 1)],
+      ]) {
+        const { project } = view(mode, bodies, 16 / 9);
+        for (const b of mode === 'follow' ? bodies.slice(0, 1) : bodies)
+          for (const height of [0, b.standingHeight * 1.28])
+            for (const side of [-0.64, 0.64]) {
+              const ndc = project(
+                [b.position[0], b.feet, b.position[2]],
+                height,
+                side * b.standingHeight,
+              );
+              expect(Math.abs(ndc.x)).toBeLessThan(1);
+              expect(Math.abs(ndc.y)).toBeLessThan(1);
+            }
       }
     },
   );

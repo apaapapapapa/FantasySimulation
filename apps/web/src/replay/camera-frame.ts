@@ -15,9 +15,13 @@ const VIEWS: Record<FramedMode, { yaw: number; pitch: number }> = {
 /** Sprites stand full height on screen; this much of the body height above the feet is kept
  * in view for the sprite frame and its name plate. */
 const SPRITE_TOP = 1.45;
-const MARGIN = { width: 2.4, height: 1.2 };
+/** Half the sprite frame's width per metre of standing height (32-px frame, 25-px figure). */
+const SPRITE_HALF_WIDTH = 0.64;
+const MARGIN = { width: 1.3, height: 1.2 };
 const MINIMUM = { width: 6.5, height: 3.6 };
+/** Follow mode stays this close unless the followed sprite needs more room. */
 const FOLLOW_DISTANCE = 10;
+const FOLLOW_MARGIN = { width: 0.4, height: 0.4 };
 const TAN = Math.tan((FOV_DEGREES * Math.PI) / 360);
 const dot = (a: Point, b: Point) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 
@@ -43,13 +47,36 @@ export function frameCamera(mode: FramedMode, bodies: readonly Body[], aspect: n
     target,
     position: target.map((n, i) => n + back[i]! * distance) as Point,
   });
-  if (mode === 'follow' && bodies[0]) return place(bodies[0].position, FOLLOW_DISTANCE);
   if (!bodies.length) return place([0, 0, 0], MINIMUM.height / TAN);
   // Sprites stand full height on screen: each body spans feet → feet + camera-up · top.
   const spans = bodies.map((b) => {
     const feet: Point = [b.position[0], b.feet, b.position[2]];
-    return { feet, x: dot(feet, right), y: dot(feet, up), top: b.standingHeight * SPRITE_TOP };
+    return {
+      feet,
+      x: dot(feet, right),
+      y: dot(feet, up),
+      top: b.standingHeight * SPRITE_TOP,
+      half: b.standingHeight * SPRITE_HALF_WIDTH,
+    };
   });
+  const tanWidth = TAN * Math.max(0.1, aspect);
+  // Perspective-exact: each sprite constrains the distance by its own depth and size.
+  const fit = (target: Point, framed: typeof spans, margin: typeof MARGIN, minimum: number) =>
+    framed.reduce((distance, span) => {
+      const q = span.feet.map((n, i) => n - target[i]!) as Point;
+      const depth = dot(q, back),
+        x = dot(q, right),
+        y = dot(q, up);
+      return Math.max(
+        distance,
+        depth + (Math.abs(x) + span.half + margin.width) / tanWidth,
+        depth + (Math.max(Math.abs(y), Math.abs(y + span.top)) + margin.height) / TAN,
+      );
+    }, minimum);
+  if (mode === 'follow') {
+    const followed = bodies[0]!.position;
+    return place(followed, fit(followed, spans.slice(0, 1), FOLLOW_MARGIN, FOLLOW_DISTANCE));
+  }
   const left = Math.min(...spans.map((s) => s.x)),
     rightmost = Math.max(...spans.map((s) => s.x));
   const bottom = Math.min(...spans.map((s) => s.y)),
@@ -62,19 +89,6 @@ export function frameCamera(mode: FramedMode, bodies: readonly Body[], aspect: n
       right[i]! * ((left + rightmost) / 2 - spans[0]!.x) +
       up[i]! * ((bottom + top) / 2 - spans[0]!.y),
   ) as Point;
-  // Perspective-exact: a point nearer the camera needs proportionally more distance.
-  const tanWidth = TAN * Math.max(0.1, aspect);
-  let distance = Math.max(MINIMUM.height / TAN, MINIMUM.width / tanWidth);
-  for (const span of spans) {
-    const q = span.feet.map((n, i) => n - target[i]!) as Point;
-    const depth = dot(q, back),
-      x = dot(q, right),
-      y = dot(q, up);
-    distance = Math.max(
-      distance,
-      depth + (Math.abs(x) + MARGIN.width) / tanWidth,
-      depth + (Math.max(Math.abs(y), Math.abs(y + span.top)) + MARGIN.height) / TAN,
-    );
-  }
-  return place(target, distance);
+  const minimum = Math.max(MINIMUM.height / TAN, MINIMUM.width / tanWidth);
+  return place(target, fit(target, spans, MARGIN, minimum));
 }
