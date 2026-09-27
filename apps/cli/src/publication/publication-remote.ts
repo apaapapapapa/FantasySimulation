@@ -249,6 +249,8 @@ export async function publishPublication(
         'BUDGET_EXCEEDED',
         'Publication capacity/request budget exceeded before writing',
       );
+    // Empty inventories queue no remote I/O, so the queue alone cannot observe cancellation.
+    options.signal?.throwIfAborted();
     if (options.dryRun) return { status: 'planned' as const, ...report };
     const sameGeneration = async () => {
       const now = await store.read(pointer.key, 4_000_000);

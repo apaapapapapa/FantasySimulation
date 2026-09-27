@@ -198,6 +198,23 @@ it('dry run reports byte/request budgets without mutating storage', async () => 
   expect(result.reservedS3Requests).toBeGreaterThan(result.writes * 2);
   expect(store.writes).toEqual([]);
 });
+it('does not report a cancelled dry run on an empty destination as planned', async () => {
+  const { directory, store, options } = await setup();
+  const controller = new AbortController();
+  const viewer = options.viewer;
+  // Cancellation arrives after local validation, while no remote I/O stage is queued.
+  const cancelled = publishPublication(directory, store, {
+    ...options,
+    dryRun: true,
+    signal: controller.signal,
+    viewer: async () => {
+      controller.abort();
+      return viewer();
+    },
+  });
+  await expect(cancelled).rejects.toThrow();
+  expect(store.writes).toEqual([]);
+});
 it('resumes interrupted immutable uploads and only recovers a lost response with exact bytes', async () => {
   const { directory, store, options } = await setup();
   const put = store.put.bind(store);
