@@ -1,0 +1,106 @@
+name: PR210 R2 review support
+on:
+  push:
+    branches: [validation/pr210-r2-20260927]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Apply the reviewed proposal to the exact PR parent
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/r2-review"
+          git rev-parse HEAD > "$RUNNER_TEMP/r2-review/workflow-source.txt"
+          python3 - <<'PY'
+          import base64, hashlib, lzma, os
+          from pathlib import Path
+          encoded = ''.join(Path(f'.github/r2-proposal.part{i}').read_text() for i in range(4))
+          raw = lzma.decompress(base64.b64decode(encoded, validate=True))
+          assert len(raw) < 1000000
+          assert hashlib.sha256(raw).hexdigest() == '7e10642efa6cdab9d0ae97ec64035608ba6d045f2702557c194d628e92345cfc'
+          Path(os.environ['RUNNER_TEMP'], 'r2-review', 'proposal.patch').write_bytes(raw)
+          PY
+          git checkout --detach e04a41ca385b0b0c49b909ca40093fab9a67c749
+          git apply --check "$RUNNER_TEMP/r2-review/proposal.patch"
+          git apply "$RUNNER_TEMP/r2-review/proposal.patch"
+          git diff --name-only > "$RUNNER_TEMP/r2-review/allowed.txt"
+          git ls-files --others --exclude-standard >> "$RUNNER_TEMP/r2-review/allowed.txt"
+          test "$(wc -l < "$RUNNER_TEMP/r2-review/allowed.txt")" = 21
+      - uses: ./.github/actions/setup-project
+      - name: Format and run focused and canonical verification
+        id: verify
+        shell: bash
+        run: |
+          set +e
+          vp check --fix > "$RUNNER_TEMP/r2-review/format.log" 2>&1
+          echo $? > "$RUNNER_TEMP/r2-review/format.exit"
+          python3 - <<'PY'
+          import os, subprocess
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'], 'r2-review')
+          allowed=set((root/'allowed.txt').read_text().splitlines())
+          changed=subprocess.check_output(['git','diff','--name-only'],text=True).splitlines()
+          extra=[p for p in changed if p not in allowed]
+          (root/'unrelated-format-paths.txt').write_text('\n'.join(extra))
+          for path in extra: subprocess.run(['git','restore','--',path],check=True)
+          PY
+          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp run typecheck > "$RUNNER_TEMP/r2-review/typecheck.log" 2>&1
+          echo $? > "$RUNNER_TEMP/r2-review/typecheck.exit"
+          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp run check:quality > "$RUNNER_TEMP/r2-review/quality.log" 2>&1
+          echo $? > "$RUNNER_TEMP/r2-review/quality.exit"
+          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp test run apps/cli/src/publication apps/cli/src/league/league-transfer.test.ts apps/cli/src/league/league-publication-performance.test.ts > "$RUNNER_TEMP/r2-review/focused.log" 2>&1
+          echo $? > "$RUNNER_TEMP/r2-review/focused.exit"
+          env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp run verify > "$RUNNER_TEMP/r2-review/verify.log" 2>&1
+          code=$?
+          echo "$code" > "$RUNNER_TEMP/r2-review/verify.exit"
+          set -e
+          if test "$code" = 0; then
+            git config user.name 'apaapapapapa'
+            git config user.email '83394495+apaapapapapa@users.noreply.github.com'
+            while IFS= read -r file; do git add -- "$file"; done < "$RUNNER_TEMP/r2-review/allowed.txt"
+            git commit -m 'perf(r2): reuse inventory and bound parallel restore and transfer' -m 'Refs #189. Preserve orphan conflicts, byte verification, leases, conditional pointer updates and ordered graph validation. No production R2 changes or full-league performance claim.'
+            git rev-parse HEAD > "$RUNNER_TEMP/r2-review/candidate-sha.txt"
+            env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp run harness source .generated/harness/source-r2 > "$RUNNER_TEMP/r2-review/source.log" 2>&1
+            env -u GITHUB_SHA -u GITHUB_EVENT_NAME -u GITHUB_EVENT_PATH vp run harness report .generated/harness/source-r2/report.json source-clean source-verify > "$RUNNER_TEMP/r2-review/source-assessment.log" 2>&1
+            echo 'passed=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Preserve reviewed source and diagnostics
+        if: always()
+        shell: bash
+        run: |
+          if test -f "$RUNNER_TEMP/r2-review/allowed.txt"; then
+            git diff e04a41ca385b0b0c49b909ca40093fab9a67c749 --binary > "$RUNNER_TEMP/r2-review/reviewed.patch"
+            tar -T "$RUNNER_TEMP/r2-review/allowed.txt" -czf "$RUNNER_TEMP/r2-review/reviewed-files.tar.gz"
+          fi
+          if test -d .generated/harness; then cp -R .generated/harness "$RUNNER_TEMP/r2-review/harness"; fi
+      - name: Stage verified candidate for connector review only
+        if: steps.verify.outputs.passed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          test -z "$(git status --porcelain)"
+          test "$(git rev-parse HEAD^)" = e04a41ca385b0b0c49b909ca40093fab9a67c749
+          auth=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$auth"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $auth" push origin HEAD:refs/heads/validation/pr210-r2-candidate-20260927
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: pr210-r2-review
+          path: ${{ runner.temp }}/r2-review
+          if-no-files-found: error
+          retention-days: 2
+      - name: Require successful canonical verification
+        if: always()
+        shell: bash
+        run: test '${{ steps.verify.outputs.passed }}' = true
