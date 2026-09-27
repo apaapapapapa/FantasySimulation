@@ -3,7 +3,8 @@ import type { ResolvedActor } from '../state.ts';
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import { cosDegrees, cross, dot, length, lerp, sub, unit, type Vec3 } from '../math.ts';
 import { capsuleShape, COLLISION_SKIN, type SpatialWorld } from './physics.ts';
-import { bodyCapsule, metres } from './terrain.ts';
+import { bodyCapsule } from './terrain.ts';
+import { prepareNavigationGraph } from './navigation-graph.ts';
 
 type Mode = 'walk' | 'jump' | 'fly';
 export type Waypoint = { position: Vec3; mode: Mode };
@@ -29,6 +30,11 @@ function estimatedCost(from: Vec3, to: Vec3, mode: Mode, resources: NavigationRe
 /** One planner per actor and immutable battle world; geometric edge checks are reusable. */
 export class Navigator {
   private readonly cache = new Map<string, boolean>();
+  private readonly graphs = new Map<boolean, ReturnType<typeof prepareNavigationGraph>>();
+  private readonly costs = new Map<string, number>();
+  private readonly previous = new Map<string, { id: string | null; mode: Mode }>();
+  private readonly open = new Set<string>();
+  private readonly closed = new Set<string>();
   private readonly world: SpatialWorld;
   private readonly actor: ResolvedActor;
   private readonly scenario: DeepReadonly<Definition<'scenario'>>;
@@ -36,6 +42,14 @@ export class Navigator {
   private readonly exploring: boolean;
   invalidate() {
     this.cache.clear();
+    this.graphs.clear();
+    this.resetSearch();
+  }
+  private resetSearch() {
+    this.costs.clear();
+    this.previous.clear();
+    this.open.clear();
+    this.closed.clear();
   }
   constructor(
     world: SpatialWorld,
@@ -215,15 +229,15 @@ export class Navigator {
     const mode = flight ? 'fly' : 'walk';
     if (this.traversable(start, goal, mode, resources?.speedMmPerSecond))
       return path([{ position: { ...goal }, mode }], 0);
-    const nodes = this.scenario.navigation.nodes.filter(
-      (n) => n.mode === (flight ? 'air' : 'ground'),
-    );
-    const points = new Map(nodes.map((n) => [n.id, metres(n.position)]));
-    const edges = this.scenario.navigation.edges;
-    const costs = new Map<string, number>(),
-      previous = new Map<string, { id: string | null; mode: Mode }>(),
-      open = new Set<string>(),
-      closed = new Set<string>();
+    let graph = this.graphs.get(flight);
+    if (!graph) {
+      graph = prepareNavigationGraph(this.scenario.navigation, flight);
+      this.graphs.set(flight, graph);
+    }
+    const { nodes, points, adjacent } = graph;
+    // A failed/early-returned search must not seed the next request's frontier or costs.
+    this.resetSearch();
+    const { costs, previous, open, closed } = this;
     let forward = unit({ ...sub(goal, start), y: 0 });
     if (length(forward) < 1e-12) forward = unit({ ...this.actor.participant.facing, y: 0 });
     if (length(forward) < 1e-12) forward = { x: 1, y: 0, z: 0 };
@@ -270,7 +284,8 @@ export class Navigator {
         let cursor: string | null = id;
         while (cursor !== null) {
           const parent: { id: string | null; mode: Mode } = previous.get(cursor)!;
-          waypoints.unshift({ position: points.get(cursor)!, mode: parent.mode });
+          // Cached coordinates are private; callers own their returned paths.
+          waypoints.unshift({ position: { ...points.get(cursor)! }, mode: parent.mode });
           cursor = parent.id;
         }
         if (!resources) return path(waypoints, visited);
@@ -280,9 +295,7 @@ export class Navigator {
           bestPath = path(waypoints, visited);
         }
       }
-      for (const edge of edges) {
-        const next =
-          edge.from === id ? edge.to : edge.bidirectional && edge.to === id ? edge.from : null;
+      for (const { edge, next } of adjacent.get(id) ?? []) {
         if (
           !next ||
           !points.has(next) ||

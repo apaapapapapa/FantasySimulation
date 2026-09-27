@@ -8,8 +8,10 @@ import { initialDecisionRandom } from '../ai/decision-random.ts';
 import type { SpatialWorld } from '../world/physics.ts';
 import { initialResources } from '../rules/resources.ts';
 import { stageDisplay } from '../rules/stages.ts';
+import { revivalAbilityIds } from './display-plan.ts';
 
 export function initialActor(world: SpatialWorld, actor: ResolvedActor): ActorState {
+  revivalAbilityIds(actor.abilities);
   return {
     body: {
       motion: initialMotion(world, actor),
@@ -82,6 +84,7 @@ export const cloneActor = (state: ActorState): ActorState => ({
 export function displayActor(state: ActorState, step: number): ActorDisplay {
   const { motion } = state.body;
   const { action } = state.actions;
+  const revivals = revivalAbilityIds(motion.actor.abilities);
   const stage = action ? stageDisplay(action, step) : undefined;
   const last = action?.ability.definition.stages?.at(-1);
   const active = action ? attackActiveSteps(action.ability.definition.attack) : 1;
@@ -109,11 +112,9 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
       : {}),
     resources: { ...state.vitals.resources },
     ...(state.body.locomotion ? { locomotion: { ...state.body.locomotion } } : {}),
-    ...(motion.actor.abilities.some((a) => a.definition.reaction?.response.kind === 'revive')
+    ...(revivals.length
       ? {
-          revivals: motion.actor.abilities
-            .filter((a) => a.definition.reaction?.response.kind === 'revive')
-            .reduce((n, a) => n + (state.actions.used[a.id] ?? 0), 0),
+          revivals: revivals.reduce((n, id) => n + (state.actions.used[id] ?? 0), 0),
         }
       : {}),
     statuses: state.statuses.map((s) => ({
