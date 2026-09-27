@@ -16,6 +16,7 @@ import { BattleBundles } from './battle-bundle.ts';
 import { validateBatchPlan } from './batch-plan.ts';
 import { shardSlots } from './batch-check.ts';
 import { openStore } from '../db/store.ts';
+import type { BattlePool } from '../jobs/worker-pool.ts';
 
 export async function executeBatch(
   input: unknown,
@@ -29,6 +30,7 @@ export async function executeBatch(
     reverse?: boolean;
     retryFailed?: boolean;
     signal?: AbortSignal;
+    pool?: BattlePool;
   } = {},
 ) {
   const plan = await validateBatchPlan(input, source),
@@ -67,10 +69,12 @@ export async function executeBatch(
       throw new Error('Batch database exceeds the 64 MiB metadata limit');
     await store.loadPinnedRevisions(plan.revisions);
     runtime = await measureAsync('worker.poolOpen', () =>
-      BattleService.open(store, join(root, '.work', 'replays'), {
-        workers,
-        storageBytes: plan.maxWorkBytes,
-      }),
+      BattleService.open(
+        store,
+        join(root, '.work', 'replays'),
+        { workers, storageBytes: plan.maxWorkBytes },
+        options.pool,
+      ),
     );
     const bundles = new BattleBundles(root, plan.maxOutputBytes);
     await bundles.recoverStaging();

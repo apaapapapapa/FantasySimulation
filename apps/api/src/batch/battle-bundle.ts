@@ -24,7 +24,7 @@ import {
 } from '../replay/replay-files.ts';
 import { verifyReplayDirectory, verifyReplayChecksums } from '../replay/replay-reader.ts';
 import { assertPublicData } from '../replay/replay-public.ts';
-import type { ReplayVerificationPool } from '../replay/verification-pool.ts';
+import type { ReplayVerifier } from '../replay/verification-pool.ts';
 import { OperationError, operationInput } from '../operation-error.ts';
 import type { BattleService } from '../jobs/battle-service.ts';
 
@@ -35,7 +35,7 @@ export class BattleBundles {
     | {
         seen: Set<string>;
         publicData: boolean;
-        pool: ReplayVerificationPool | undefined;
+        pool: ReplayVerifier | undefined;
         closed: boolean;
         signal: AbortSignal | undefined;
       }
@@ -46,7 +46,7 @@ export class BattleBundles {
   ) {}
   /** No caller can seed successful hashes; every new scope starts with full validation. */
   verificationSession(
-    options: { publicData?: boolean; pool?: ReplayVerificationPool; signal?: AbortSignal } = {},
+    options: { publicData?: boolean; pool?: ReplayVerifier; signal?: AbortSignal } = {},
   ) {
     const session = new BattleBundles(this.root, this.maxBytes);
     session.verification = {
@@ -280,8 +280,11 @@ export class BattleBundles {
       result: result.result,
     });
     const receipt: BundleReceipt = { ...body, objectHash: await contentHash(body) };
-    return this.publishObject(receipt, manifest, (ref) =>
-      runtime.replayFile(manifest.id, ref.file),
+    return this.publishObject(
+      receipt,
+      manifest,
+      (ref) => runtime.replayFile(manifest.id, ref.file),
+      runtime.replayVerifier,
     );
   }
   /** Retained results enter a new shard only after complete receipt/replay verification. */
@@ -321,6 +324,7 @@ export class BattleBundles {
     load: (
       ref: ReplayManifest['chunks'][number] | ReplayManifest['checkpoints'][number],
     ) => Promise<Buffer>,
+    pool?: ReplayVerifier,
   ) {
     const original = await this.cached(receipt.simulationHash);
     if (original && ['win', 'draw'].includes(receipt.result.outcome.kind)) {
@@ -352,7 +356,8 @@ export class BattleBundles {
       }
       await writeDurableFile(join(staging, 'manifest.json'), canonicalJson(manifest));
       await writeDurableFile(join(staging, 'receipt.json'), receiptText);
-      await verifyReplayDirectory(staging, manifest);
+      if (pool) await pool.verify(staging, manifest, false);
+      else await verifyReplayDirectory(staging, manifest);
       await syncDirectory(staging);
       try {
         await rename(staging, this.objectPath(receipt.objectHash));
