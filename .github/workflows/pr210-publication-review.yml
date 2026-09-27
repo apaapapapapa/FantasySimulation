@@ -1,0 +1,39 @@
+name: PR210 publication review support
+on:
+  push:
+    branches: [validation/pr210-publication-20260927]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Produce canonical formatting proposal and diagnostic evidence
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/pr210-review"
+          git rev-parse HEAD > "$RUNNER_TEMP/pr210-review/source-sha.txt"
+          set +e
+          vp check --fix > "$RUNNER_TEMP/pr210-review/format.log" 2>&1
+          echo $? > "$RUNNER_TEMP/pr210-review/format.exit"
+          node scripts/ci/verify.ts static > "$RUNNER_TEMP/pr210-review/static.log" 2>&1
+          echo $? > "$RUNNER_TEMP/pr210-review/static.exit"
+          set -e
+          git diff --binary > "$RUNNER_TEMP/pr210-review/format.patch"
+          git ls-files -z | tar --null -T - -czf "$RUNNER_TEMP/pr210-review/reviewed-source.tar.gz"
+          if test -d .generated/harness/quality; then
+            cp -R .generated/harness/quality "$RUNNER_TEMP/pr210-review/quality"
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: pr210-review-support
+          path: ${{ runner.temp }}/pr210-review
+          if-no-files-found: error
+          retention-days: 1
