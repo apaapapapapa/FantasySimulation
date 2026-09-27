@@ -53,6 +53,9 @@ it('measures real Worker/persistence/reverification without changing results or 
     expect(report.validation.calls).toBe(12); // Writer seal, bundle publish, producer scope; final check rehashes.
     expect(report.validation.uniqueReplays).toBe(4);
     expect(report.validation.repeatedCalls).toBe(8);
+    expect(report.stages['validate.replay']?.count).toBe(4);
+    expect(report.stages['validate.replay.worker']?.count).toBe(8);
+    expect(report.capacitySampleMaxBytes['verification.worker.heapUsed']).toBeGreaterThan(0);
     expect(report.stages['db.walCheckpoint']?.count).toBe(4);
     // Every stored record, including each match's deferred terminal record, is one append span.
     const bundles = new BattleBundles(join(root, 'measured', 'bundles'));

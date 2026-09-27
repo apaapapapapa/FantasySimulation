@@ -4,12 +4,15 @@ import { availableParallelism } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { MessageChannel } from 'node:worker_threads';
 import { Piscina } from 'piscina';
-import type { Budget } from '@fantasy/domain/spatial';
+import type { Budget, ReplayManifest } from '@fantasy/domain/spatial';
 import type { WorkerResult } from './battle-worker.ts';
+import { verifyInWorker } from '../replay/verification-pool.ts';
+import type { VerificationResponse } from '../replay/verification-worker.ts';
 
 export class BattlePool {
   readonly pool: Piscina;
   private startupFailure: Error | null = null;
+  private closed = false;
   constructor(readonly workers = 1) {
     if (
       !Number.isInteger(workers) ||
@@ -24,8 +27,10 @@ export class BattlePool {
       ),
       minThreads: workers,
       maxThreads: workers,
-      maxQueue: 0,
+      // The single publication writer can wait behind calculation on a one-Worker host.
+      maxQueue: 1,
       concurrentTasksPerWorker: 1,
+      env: {},
       execArgv: source ? ['--import', import.meta.resolve('tsx')] : [],
       resourceLimits: { maxOldGenerationSizeMb: 120, maxYoungGenerationSizeMb: 8, stackSizeMb: 4 },
       atomics: 'async',
@@ -40,6 +45,7 @@ export class BattlePool {
     accept: (records: unknown[]) => Promise<void>,
     signal: AbortSignal,
   ): Promise<WorkerResult> {
+    if (this.closed) throw new Error('Battle pool is closed');
     if (this.startupFailure) throw this.startupFailure;
     const { port1, port2 } = new MessageChannel();
     let pending = Promise.resolve(),
@@ -97,7 +103,31 @@ export class BattlePool {
       port2.close();
     }
   }
+  async verify(directory: string, manifest: ReplayManifest, publicData: boolean) {
+    if (this.closed) throw new Error('Battle pool is closed');
+    if (this.startupFailure) throw this.startupFailure;
+    const source = import.meta.url.endsWith('.ts');
+    await verifyInWorker(
+      async (task) => {
+        const result: VerificationResponse = await this.pool.run(task, {
+          filename: fileURLToPath(
+            new URL(
+              source ? '../replay/verification-worker.ts' : './verification-worker.mjs',
+              import.meta.url,
+            ),
+          ),
+        });
+        if (this.closed) throw new Error('Battle pool is closed');
+        return result;
+      },
+      directory,
+      manifest,
+      publicData,
+    );
+  }
   async close() {
+    if (this.closed) return;
+    this.closed = true;
     await this.pool.destroy();
   }
 }

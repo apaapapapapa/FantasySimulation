@@ -20,6 +20,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { createBatchPlan } from '../batch/batch-plan.ts';
 import { runBatch } from '../batch/batch-runner.ts';
+import { BattlePool } from '../jobs/worker-pool.ts';
 import { BattleBundles } from '../batch/battle-bundle.ts';
 import { checkedBatch } from '../batch/batch-check.ts';
 import { publishImmutableFile } from '../replay/replay-files.ts';
@@ -140,9 +141,11 @@ export async function runLeaguePartition(
     canonicalJson(reservation),
   );
   // One producer owns the scope; every later check still reopens and hashes saved bytes.
-  const bundleRoot = join(root, 'bundles'),
+  const pool = new BattlePool(options.workers ?? 1),
+    bundleRoot = join(root, 'bundles'),
     bundles = new BattleBundles(bundleRoot, batch.maxOutputBytes).verificationSession({
       publicData: true,
+      pool,
     });
   try {
     const results = new Map<string, BatchIndex['slots'][number]>();
@@ -190,6 +193,7 @@ export async function runLeaguePartition(
     for (const attempt of [1, 2] as const) {
       const outcomes = await runSelection(batch, plan, records, executionId, attempt, bundles, {
         workers: options.workers ?? 1,
+        pool,
         deadlineMs: Math.max(1, Math.floor(deadline - (performance.now() - started))),
         reverse: options.reverse ?? false,
         ...(options.signal ? { signal: options.signal } : {}),
@@ -245,5 +249,6 @@ export async function runLeaguePartition(
     return result;
   } finally {
     bundles.closeVerification();
+    await pool.close();
   }
 }

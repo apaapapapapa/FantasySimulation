@@ -8,6 +8,7 @@ import { verifyReplayDirectory } from './replay-reader.ts';
 import { readCompressed, sha256 } from './replay-files.ts';
 import { assertPublicData } from './replay-public.ts';
 import { ReplayVerificationPool, replayVerificationWorkers } from './verification-pool.ts';
+import { BattlePool } from '../jobs/worker-pool.ts';
 
 it('inspects the original records in the same bounded decode pass as semantic verification', async () => {
   await withReplayDirectory(async (root) => {
@@ -39,51 +40,63 @@ it('inspects the original records in the same bounded decode pass as semantic ve
     await expect(verifyReplayDirectory(directory, changed, assertPublicData)).rejects.toThrow(
       'Private field is not publishable',
     );
+    const shared = new BattlePool(1);
+    try {
+      await expect(shared.verify(directory, changed, true)).rejects.toMatchObject({
+        code: 'DATA_INVALID',
+      });
+    } finally {
+      await shared.close();
+    }
   });
 }, 30000);
 
-it('uses the existing full validator in a secret-free Worker and rejects corruption', async () => {
-  await withReplayDirectory(async (root) => {
-    const { manifest } = await recordedBattle(root, 20);
-    const directory = join(root, manifest.id);
-    const pool = new ReplayVerificationPool(1);
-    try {
-      expect(pool.pool.options.env).toEqual({});
-      const measurement = new Measurements();
-      await measurement.run(() => pool.verify(directory, manifest, true));
-      expect(measurement.report().validation).toMatchObject({
-        calls: 1,
-        uniqueReplays: 1,
-        repeatedCalls: 0,
-      });
-      expect(measurement.report().validation.replays[manifest.id]).toEqual({
-        calls: 1,
-        failures: 0,
-      });
-      const path = join(directory, manifest.chunks[0]!.file);
-      const original = await readFile(path);
-      const broken = Buffer.from(original);
-      broken[0] = broken[0]! ^ 1;
-      await writeFile(path, broken);
-      await expect(
-        measurement.run(() => pool.verify(directory, manifest, true)),
-      ).rejects.toMatchObject({ code: 'DATA_INVALID' });
-      expect(measurement.report().validation.replays[manifest.id]).toEqual({
-        calls: 2,
-        failures: 1,
-      });
-      await writeFile(path, original);
-      await measurement.run(() => pool.verify(directory, manifest, true));
-      expect(measurement.report().validation.replays[manifest.id]).toEqual({
-        calls: 3,
-        failures: 1,
-      });
-    } finally {
-      await pool.close();
-    }
-    await expect(pool.verify(directory, manifest, true)).rejects.toThrow('closed');
-  });
-}, 30000);
+it.each([ReplayVerificationPool, BattlePool])(
+  'rejects corrupted bytes in secret-free %s',
+  async (Pool) => {
+    await withReplayDirectory(async (root) => {
+      const { manifest } = await recordedBattle(root, 20);
+      const directory = join(root, manifest.id);
+      const pool = new Pool(1);
+      try {
+        expect(pool.pool.options.env).toEqual({});
+        const measurement = new Measurements();
+        await measurement.run(() => pool.verify(directory, manifest, true));
+        expect(measurement.report().validation).toMatchObject({
+          calls: 1,
+          uniqueReplays: 1,
+          repeatedCalls: 0,
+        });
+        expect(measurement.report().validation.replays[manifest.id]).toEqual({
+          calls: 1,
+          failures: 0,
+        });
+        const path = join(directory, manifest.chunks[0]!.file);
+        const original = await readFile(path);
+        const broken = Buffer.from(original);
+        broken[0] = broken[0]! ^ 1;
+        await writeFile(path, broken);
+        await expect(
+          measurement.run(() => pool.verify(directory, manifest, true)),
+        ).rejects.toMatchObject({ code: 'DATA_INVALID' });
+        expect(measurement.report().validation.replays[manifest.id]).toEqual({
+          calls: 2,
+          failures: 1,
+        });
+        await writeFile(path, original);
+        await measurement.run(() => pool.verify(directory, manifest, true));
+        expect(measurement.report().validation.replays[manifest.id]).toEqual({
+          calls: 3,
+          failures: 1,
+        });
+      } finally {
+        await pool.close();
+      }
+      await expect(pool.verify(directory, manifest, true)).rejects.toThrow('closed');
+    });
+  },
+  30000,
+);
 
 it('rejects aborted and terminated in-flight Workers rather than issuing verification success', async () => {
   await withReplayDirectory(async (root) => {

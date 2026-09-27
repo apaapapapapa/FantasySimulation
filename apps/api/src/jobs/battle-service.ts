@@ -24,6 +24,7 @@ import { ReplayWriter } from '../replay/replay-writer.ts';
 import { BattlePool } from './worker-pool.ts';
 import { ownRuntime } from './runtime-owner.ts';
 import { ArtifactStore } from '../replay/artifact-store.ts';
+import type { ReplayVerifier } from '../replay/verification-pool.ts';
 
 export type BattleSubmission = {
   key: string;
@@ -57,13 +58,14 @@ export class BattleService {
     private readonly pool: BattlePool,
     private readonly owner: Awaited<ReturnType<typeof ownRuntime>>,
     private readonly options: Required<RuntimeOptions>,
+    private readonly ownsPool: boolean,
   ) {
     this.artifacts = new ArtifactStore(jobs, owner.root);
     this.timer = setInterval(() => this.tick(), 250);
     this.timer.unref();
     this.tick();
   }
-  static async open(store: Store, root: string, options: RuntimeOptions = {}) {
+  static async open(store: Store, root: string, options: RuntimeOptions = {}, pool?: BattlePool) {
     const config = {
       workers: 1,
       timeoutMs: JOB_LIMITS.timeoutMs,
@@ -72,6 +74,8 @@ export class BattleService {
       storageBytes: JOB_LIMITS.storageBytes,
       ...options,
     };
+    if (pool && pool.workers !== config.workers)
+      throw new Error('Shared pool must match the runtime Worker limit');
     for (const [name, value, max] of [
       ['timeout', config.timeoutMs, JOB_LIMITS.timeoutMs],
       ['rss', config.maxRssBytes, 1.5 * 1024 ** 3],
@@ -87,7 +91,14 @@ export class BattleService {
     const jobs = new JobStore(store, { ...JOB_LIMITS, queued: config.queueLimit, storageBytes });
     const owner = await ownRuntime(jobs, root);
     try {
-      return new BattleService(store, jobs, new BattlePool(config.workers), owner, config);
+      return new BattleService(
+        store,
+        jobs,
+        pool ?? new BattlePool(config.workers),
+        owner,
+        config,
+        pool === undefined,
+      );
     } catch (error) {
       owner.release();
       throw error;
@@ -488,6 +499,9 @@ export class BattleService {
   get completionReserveMs() {
     return this.options.timeoutMs + 1000;
   }
+  get replayVerifier(): ReplayVerifier {
+    return this.pool;
+  }
   private view(job: Job) {
     let retry = false;
     try {
@@ -555,7 +569,7 @@ export class BattleService {
       task.controller.abort(new Error('Coordinator shutdown'));
     await Promise.all([...this.active.values()].map((t) => t.done));
     try {
-      await this.pool.close();
+      if (this.ownsPool) await this.pool.close();
     } finally {
       this.owner.release();
     }
