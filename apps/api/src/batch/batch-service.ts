@@ -1,4 +1,4 @@
-import { measureAsync, measureSync, sampleDatabase } from '../measurements.ts';
+import { currentMeasurements, measureAsync, measureSync, sampleDatabase } from '../measurements.ts';
 import { ARTIFACT_RESERVATION_BYTES } from '@fantasy/domain/spatial';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -12,6 +12,7 @@ import {
   type ExecutionSource,
 } from '@fantasy/domain/spatial';
 import { type BattleSubmission, BattleService } from '../jobs/battle-service.ts';
+import { stagedWork } from '../jobs/staged-work.ts';
 import { BattleBundles } from './battle-bundle.ts';
 import { validateBatchPlan } from './batch-plan.ts';
 import { shardSlots } from './batch-check.ts';
@@ -40,6 +41,13 @@ export async function executeBatch(
     throw new Error('Invalid batch deadline');
   if (plan.maxWorkBytes < (workers * 2 + 1) * ARTIFACT_RESERVATION_BYTES)
     throw new Error('Work capacity cannot fit concurrent Worker reservations; use fewer Workers');
+  // One replay is bounded to 20 MiB. Reserve before pulling: at most two/40 MiB,
+  // with the original one-item window retained when work capacity is tight.
+  const publicationWindow = Math.min(
+    2,
+    Math.floor((64 * 1024 ** 2) / ARTIFACT_RESERVATION_BYTES),
+    Math.floor(plan.maxWorkBytes / ARTIFACT_RESERVATION_BYTES) - workers * 2,
+  );
   const selected = shardSlots(plan, shardIndex, shardCount);
   const slots = options.reverse ? [...selected].reverse() : selected;
   const estimated = slots.length * plan.estimatedBytesPerMatch;
@@ -50,6 +58,8 @@ export async function executeBatch(
   let runtime: BattleService | undefined;
   const started = performance.now(),
     results: BatchIndex['slots'] = [];
+  const stop = new AbortController();
+  const signal = options.signal ? AbortSignal.any([options.signal, stop.signal]) : stop.signal;
   try {
     // Bound SQLite separately from compressed artifacts; WAL is checkpointed after each slot.
     const pageSize = Number(store.db.pragma('page_size', { simple: true }));
@@ -87,7 +97,7 @@ export async function executeBatch(
             entry.state = 'complete';
             entry.reused = true;
           } else if (
-            options.signal?.aborted ||
+            signal.aborted ||
             performance.now() - started + runtime!.completionReserveMs >= deadlineMs
           ) {
             entry.reason = 'Batch stopped or deadline reserve reached; no new match was started';
@@ -107,31 +117,68 @@ export async function executeBatch(
     }
     // Keep pending rows even on abort. Only the service's in-flight jobs receive cancellation.
     const pending = submissions();
-    for await (const outcome of runtime.runMany(pending, `batch:${plan.id.slice(7)}`, options)) {
-      const entry = entries.get(outcome.key)!;
-      try {
-        if (outcome.error) throw outcome.error;
-        const done = outcome.job!;
-        if (!done.resultId || done.state !== 'completed') {
-          entry.state = 'failed';
-          entry.reason = done.error ?? done.state;
-        } else {
-          // Consumer backpressure serializes publication while Workers remain bounded.
-          entry.receipt = await measureAsync('save.publish', () =>
-            bundles.publish(runtime!, done.resultId!, source),
-          );
-          const kind = entry.receipt.result.outcome.kind;
-          entry.state = kind === 'win' || kind === 'draw' ? 'complete' : kind;
-          entry.reason =
-            entry.state === 'complete' ? '' : canonicalJson(entry.receipt.result).slice(0, 1000);
+    let publication = Promise.resolve(),
+      queued = 0;
+    const publications = stagedWork(
+      runtime.runMany(pending, `batch:${plan.id.slice(7)}`, { ...options, signal }),
+      publicationWindow,
+      async (outcome) => {
+        const previous = publication,
+          queuedAt = performance.now(),
+          position = ++queued,
+          measurement = currentMeasurements();
+        let release!: () => void;
+        publication = new Promise<void>((resolve) => {
+          release = resolve;
+        });
+        measurement?.capacity('save.queueReservedBytes', queued * ARTIFACT_RESERVATION_BYTES);
+        try {
+          // Pulling the next result overlaps computation with saving. Capacity checks,
+          // object/pointer commits and WAL checkpoints still have one ordered writer.
+          await previous;
+          measurement?.queue('save.publication', performance.now() - queuedAt, position);
+          const entry = entries.get(outcome.key)!;
+          try {
+            if (outcome.error) throw outcome.error;
+            const done = outcome.job!;
+            if (!done.resultId || done.state !== 'completed') {
+              entry.state = 'failed';
+              entry.reason = done.error ?? done.state;
+            } else {
+              try {
+                entry.receipt = await measureAsync('save.publish', () =>
+                  bundles.publish(runtime!, done.resultId!, source),
+                );
+              } catch (error) {
+                stop.abort(error);
+                throw error;
+              }
+              const kind = entry.receipt.result.outcome.kind;
+              entry.state = kind === 'win' || kind === 'draw' ? 'complete' : kind;
+              entry.reason =
+                entry.state === 'complete'
+                  ? ''
+                  : canonicalJson(entry.receipt.result).slice(0, 1000);
+            }
+          } catch (error) {
+            entry.state = 'failed';
+            entry.reason = (error instanceof Error ? error.message : String(error)).slice(0, 1000);
+          }
+          sampleDatabase(databasePath);
+          measureSync('db.walCheckpoint', () => store.db.pragma('wal_checkpoint(TRUNCATE)'));
+          sampleDatabase(databasePath);
+        } catch (error) {
+          stop.abort(error);
+          throw error;
+        } finally {
+          queued--;
+          release();
         }
-      } catch (error) {
-        entry.state = 'failed';
-        entry.reason = (error instanceof Error ? error.message : String(error)).slice(0, 1000);
-      }
-      sampleDatabase(databasePath);
-      measureSync('db.walCheckpoint', () => store.db.pragma('wal_checkpoint(TRUNCATE)'));
-      sampleDatabase(databasePath);
+      },
+    );
+    // Do not abort this consumer: runMany stops admission and every admitted save drains.
+    for await (const _ of publications) {
+      /* The index is issued only after all publications have settled. */
     }
     // Preserve cached/held rows even when admission was stopped before the first pull.
     // The generator marks the remaining noncached slots pending without submitting them.
