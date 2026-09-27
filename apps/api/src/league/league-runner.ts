@@ -71,7 +71,7 @@ async function runSelection(
   records: Map<string, LeagueProgress>,
   executionId: string,
   attempt: 1 | 2,
-  root: string,
+  bundles: BattleBundles,
   options: Parameters<typeof runBatch>[3],
 ) {
   const selected = batch.slots.filter((slot) => {
@@ -96,11 +96,10 @@ async function runSelection(
     },
     plan.source,
   );
-  const result = await runBatch(retry, root, plan.source, {
+  const result = await runBatch(retry, bundles.root, plan.source, {
     ...options,
     retryFailed: attempt === 2,
   });
-  const bundles = new BattleBundles(root);
   const checked = await checkedBatch(retry, [{ index: result.index, bundles }]);
   return [...checked.found.values()];
 }
@@ -140,102 +139,111 @@ export async function runLeaguePartition(
     join(root, 'reservations', id.slice(7) + '.json'),
     canonicalJson(reservation),
   );
+  // One producer owns the scope; every later check still reopens and hashes saved bytes.
   const bundleRoot = join(root, 'bundles'),
-    bundles = new BattleBundles(bundleRoot, batch.maxOutputBytes);
-  const results = new Map<string, BatchIndex['slots'][number]>();
-  if (options.retained)
-    for (const record of records.values())
-      for (const attempt of record.attempts)
-        if (attempt.objectHash) await bundles.importRecorded(options.retained, attempt.objectHash);
-  for (const slot of batch.slots) {
-    const attempts = records.get(slot.simulationHash)!.attempts;
-    const latest =
-      attempts.at(-1)?.state === 'reserved' && attempts.at(-1)?.executionId === executionId
-        ? attempts.at(-2)
-        : attempts.at(-1);
-    const entry: BatchIndex['slots'][number] = {
-      slotId: slot.id,
-      simulationHash: slot.simulationHash,
-      state: 'pending',
-      receipt: null,
-      reused: false,
-      reason: '',
-    };
-    if (latest && (latest.state === 'win' || latest.state === 'draw')) {
-      if (!options.retained || !latest.objectHash)
-        throw new OperationError('DATA_INVALID', 'Reusable result is unavailable');
-      entry.receipt = await bundles.importConfirmed(options.retained, latest.objectHash);
-      entry.state = 'complete';
-      entry.reused = true;
-    } else if (
-      latest?.objectHash &&
-      (latest.state === 'truncated' || latest.state === 'unresolved')
-    ) {
-      entry.receipt = await bundles.verify(latest.objectHash);
-      entry.state = latest.state;
-      entry.reason = 'Retry budget exhausted; partial replay remains available';
-    } else if (latest && latest.state !== 'reserved') {
-      entry.state = 'failed';
-      entry.reason = 'Retry budget exhausted; result remains unresolved';
-    } else if (latest && latest.executionId !== executionId) {
-      entry.state = 'failed';
-      entry.reason = 'Reserved attempt returned no verified result';
-    }
-    results.set(slot.id, entry);
-  }
-  for (const attempt of [1, 2] as const) {
-    const outcomes = await runSelection(batch, plan, records, executionId, attempt, bundleRoot, {
-      workers: options.workers ?? 1,
-      deadlineMs: Math.max(1, Math.floor(deadline - (performance.now() - started))),
-      reverse: options.reverse ?? false,
-      ...(options.signal ? { signal: options.signal } : {}),
+    bundles = new BattleBundles(bundleRoot, batch.maxOutputBytes).verificationSession({
+      publicData: true,
     });
-    for (const entry of outcomes) {
-      const record = records.get(entry.simulationHash)!,
-        latest = record.attempts.at(-1)!;
-      if (
-        latest.state !== 'reserved' ||
-        latest.executionId !== executionId ||
-        latest.attempt !== attempt
-      )
-        throw new OperationError(
-          'IDENTITY_MISMATCH',
-          'Returned result has no matching reservation',
-        );
-      if (entry.state === 'pending') {
-        record.attempts.pop(); // Proven not admitted: retain the same available attempt and prior partial replay.
-        continue;
-      } else {
-        latest.state =
-          entry.receipt?.result.outcome.kind ?? (options.signal?.aborted ? 'cancelled' : 'failed');
-        latest.objectHash = entry.receipt?.objectHash ?? null;
+  try {
+    const results = new Map<string, BatchIndex['slots'][number]>();
+    if (options.retained)
+      for (const record of records.values())
+        for (const attempt of record.attempts)
+          if (attempt.objectHash)
+            await bundles.importRecorded(options.retained, attempt.objectHash);
+    for (const slot of batch.slots) {
+      const attempts = records.get(slot.simulationHash)!.attempts;
+      const latest =
+        attempts.at(-1)?.state === 'reserved' && attempts.at(-1)?.executionId === executionId
+          ? attempts.at(-2)
+          : attempts.at(-1);
+      const entry: BatchIndex['slots'][number] = {
+        slotId: slot.id,
+        simulationHash: slot.simulationHash,
+        state: 'pending',
+        receipt: null,
+        reused: false,
+        reason: '',
+      };
+      if (latest && (latest.state === 'win' || latest.state === 'draw')) {
+        if (!options.retained || !latest.objectHash)
+          throw new OperationError('DATA_INVALID', 'Reusable result is unavailable');
+        entry.receipt = await bundles.importConfirmed(options.retained, latest.objectHash);
+        entry.state = 'complete';
+        entry.reused = true;
+      } else if (
+        latest?.objectHash &&
+        (latest.state === 'truncated' || latest.state === 'unresolved')
+      ) {
+        entry.receipt = await bundles.verify(latest.objectHash);
+        entry.state = latest.state;
+        entry.reason = 'Retry budget exhausted; partial replay remains available';
+      } else if (latest && latest.state !== 'reserved') {
+        entry.state = 'failed';
+        entry.reason = 'Retry budget exhausted; result remains unresolved';
+      } else if (latest && latest.executionId !== executionId) {
+        entry.state = 'failed';
+        entry.reason = 'Reserved attempt returned no verified result';
       }
-      results.set(entry.slotId, entry);
+      results.set(slot.id, entry);
     }
+    for (const attempt of [1, 2] as const) {
+      const outcomes = await runSelection(batch, plan, records, executionId, attempt, bundles, {
+        workers: options.workers ?? 1,
+        deadlineMs: Math.max(1, Math.floor(deadline - (performance.now() - started))),
+        reverse: options.reverse ?? false,
+        ...(options.signal ? { signal: options.signal } : {}),
+      });
+      for (const entry of outcomes) {
+        const record = records.get(entry.simulationHash)!,
+          latest = record.attempts.at(-1)!;
+        if (
+          latest.state !== 'reserved' ||
+          latest.executionId !== executionId ||
+          latest.attempt !== attempt
+        )
+          throw new OperationError(
+            'IDENTITY_MISMATCH',
+            'Returned result has no matching reservation',
+          );
+        if (entry.state === 'pending') {
+          record.attempts.pop(); // Proven not admitted: retain the same available attempt and prior partial replay.
+          continue;
+        } else {
+          latest.state =
+            entry.receipt?.result.outcome.kind ??
+            (options.signal?.aborted ? 'cancelled' : 'failed');
+          latest.objectHash = entry.receipt?.objectHash ?? null;
+        }
+        results.set(entry.slotId, entry);
+      }
+    }
+    const indexBody = parseJson(BatchIndexBodySchema, {
+      schemaVersion: 1,
+      source,
+      planId: batch.id,
+      shardIndex: 0,
+      shardCount: 1,
+      slots: batch.slots.map((slot) => results.get(slot.id)!),
+      complete: [...results.values()].every((entry) => entry.state === 'complete'),
+    });
+    const index = { ...indexBody, id: await contentHash(indexBody) };
+    await checkedBatch(batch, [{ index, bundles }]);
+    const body = parseJson(LeaguePartitionResultBodySchema, {
+      schemaVersion: 1,
+      reservationId: id,
+      index,
+      progress: await progressPage([...records.values()]),
+      elapsedMs: Math.round(performance.now() - started),
+    });
+    const result = { ...body, id: await contentHash(body) };
+    await mkdir(join(root, 'results'), { recursive: true });
+    await publishImmutableFile(
+      join(root, 'results', result.id.slice(7) + '.json'),
+      canonicalJson(result),
+    );
+    return result;
+  } finally {
+    bundles.closeVerification();
   }
-  const indexBody = parseJson(BatchIndexBodySchema, {
-    schemaVersion: 1,
-    source,
-    planId: batch.id,
-    shardIndex: 0,
-    shardCount: 1,
-    slots: batch.slots.map((slot) => results.get(slot.id)!),
-    complete: [...results.values()].every((entry) => entry.state === 'complete'),
-  });
-  const index = { ...indexBody, id: await contentHash(indexBody) };
-  await checkedBatch(batch, [{ index, bundles }]);
-  const body = parseJson(LeaguePartitionResultBodySchema, {
-    schemaVersion: 1,
-    reservationId: id,
-    index,
-    progress: await progressPage([...records.values()]),
-    elapsedMs: Math.round(performance.now() - started),
-  });
-  const result = { ...body, id: await contentHash(body) };
-  await mkdir(join(root, 'results'), { recursive: true });
-  await publishImmutableFile(
-    join(root, 'results', result.id.slice(7) + '.json'),
-    canonicalJson(result),
-  );
-  return result;
 }
