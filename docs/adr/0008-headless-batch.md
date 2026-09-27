@@ -1,109 +1,45 @@
 # ADR 0008: Batch and publication
 
-The [execution contract](https://github.com/apaapapapapa/FantasySimulation/blob/e9325df8ca62beba39b85d100265379e4c5ad2fb/docs/adr/0008-headless-batch.md)
-owns plans/shards/capacity/deadlines/durability/recovery. `batch check` verifies all inputs:
-0 complete, 2 incomplete (missing indexes pending), 1 invalid. Hashes are not authentication.
-Historical data is read-only; execution reconstructs current engine/source/digest.
+[Authoritative current contract](https://github.com/apaapapapapa/FantasySimulation/blob/c99b04394ad6bc091c100ed8f73fac6ca57d3075/docs/adr/0008-headless-batch.md)
+retains ALL limits, predicates, command/exit semantics, evidence and linked execution/
+protocol history. This navigation summary changes none of them.
+[ADR0011](0011-integrated-performance.md) records implemented refinements;
+[ADR0019](0019-league-pipeline.md) is proposed, not an approved amendment.
 
 ## Publication v1
 
-The [reviewed protocol](https://github.com/apaapapapapa/FantasySimulation/blob/3b5a1846fe63a450b94998a9fbe8c8839fec18c6/docs/adr/0008-headless-batch.md)
-owns schemas, binding, privacy, transport and production evidence:
-
-- Strict domain schemas reject unknown fields/versions. Public layout: catalog/current.json,
-  catalog/<hash>.json, sets/<setHash>/{set,<pageHash>}.json, objects/<objectHash>/...,
-  leagues/<hash>.json. Catalogs retain all ancestors, <=1,000 sets; sets <=10 pages,
-  <=100 sorted slots/page. Canonical UTF-8 JSON has no newline/self-hash; pages omit setHash.
-  Hash decoded JSON/compressed gzip; receipts bind original manifests/artifacts/results.
-- Saved-batch export uses batch check, never SQLite/engine/Git/network. Complete supports full
-  playback; unresolved/truncated verified partial playback; failed/pending has null result/ref,
-  zero records/no playback. Preserve IDs/fields/denominators; fixed reasons exclude raw diagnostics.
-- Allowlist public fields; scan JSON/expanded gzip for paths/private fields/known credentials.
-  Arbitrary secrets remain administrator responsibility. Exclude DBs/.work/environment/drafts,
-  symlinks/non-layout keys. Reject conflicting bytes/definitive results; reuse identical bytes.
-- Preflight graph/bundles/privacy, inventory, collisions, viewer ancestry/formats and budgets.
-  Hard caps: 8,000,000,000 bytes including staging, 500,000 files. Commit objects -> pages ->
-  sets -> leagues -> catalog -> current. Local lock and pointer recheck; conditional S3 PUT
-  (If-Match, initial If-None-Match). Remove abandoned locks only after process exit.
-- Default transport: 100k logical requests, <=3 SDK attempts, five minutes, concurrency 1,
-  256MB restore/transfer, 10k writes/200 Worker reads. Explicit --league-transfer on
-  publish/upload/restore: 8GB/500k writes/1,000 Worker reads/16 concurrent operations;
-  S3 <=2M requests, <=900k Class A/2M Class B, one hour, one SDK attempt. Environment limits
-  may lower defaults. Charge requests before admission, including failures. Parallel stage
-  barriers await every admitted operation on error; deduplication still checks every reference.
-  League publication validates the local graph once, then reserves data usage and starts
-  transport from that graph. Writes recheck bytes; deadline exhaustion is a budget failure.
-- Prove refs by bytes, MD5 ETag or this run's PUT; recheck viewer/generation. S3/
-  Worker catalog/set/sample-bundle readback. Uncertain PUTs recover only with identical bytes.
-  Restore exclusively owns its new directory, reserves in-flight bytes and rechecks pointer;
-  failure removes only owned files. No automatic deletion/upgrade; explicit prune protects ancestors.
-- Export exit 2 means incomplete input, not remote failure. --require-complete-input rejects
-  current partial input before S3; historical partial rows remain visible without exit 2.
-  Other CLI partial-row semantics remain. Conditional PUT protects concurrent processes.
+Strict schemas and full saved-binding/byte/privacy validation before transport;
+saved reads never execute engines. Hashes are not authentication. Retain partial
+denominators, conflict rejection, durability, pointer-last conditional commit,
+ancestry/readback, precharged budgets, failure drain and owned restore cleanup.
+No automatic deletion/upgrade. Full contract owns predicates and CLI semantics.
 
 ## Cloud and Reader
 
-[Smartphone procedure](../development/cloud-publication.md): no PC/agent credentials.
-[Manual publication](../../.github/workflows/publication.yml) serializes writes, rechecks main
-CI/ci-gate after Environment protection, and binds public plan/index/objects to the run.
-R2 keys: main-only r2-publication credential steps; never repository secrets/agents/chat/logs/
-source/Pages. Worker deployment needs separate authorization.
-
-Private R2; Reader allows only PublicKeySchema GET/HEAD/OPTIONS, no list/write/signing/engine.
-JSON application/json; gzip application/gzip without Content-Encoding. no-transform; current
-max-age=30, immutable max-age=31536000; exact Pages CORS. Viewer distinguishes missing/damaged/
-unsupported/unavailable/visible 429 or 1027; CORS-hidden failures remain unavailable.
-
-2026-09-25 [R2 pricing](https://developers.cloudflare.com/r2/pricing/): Standard includes
-10GB-month, 1M Class A/10M Class B monthly, free egress; [Workers Free](https://developers.cloudflare.com/workers/platform/pricing/)
-100k/day account-wide. Monitor plans/usage/alerts; stop on budget/quota errors. Measure actual
-costs/bytes/requests/URL/build/browsers/recovery/repeat publication; mocks do not suffice.
-Project counters cannot cap unrelated traffic. The linked protocol retains earlier production
-evidence, token approval, paid plans/invoices/alerts (not caps) and mobile/recovery measurements.
+[Smartphone operations](../development/cloud-publication.md): successful main CI,
+protected credential steps only; keys never reach agents/Pages/compute. Separate Worker
+deployment approval. Private R2; narrow read-only allowlist, exact-origin CORS,
+JSON/gzip without Content-Encoding, no-transform, current30s/immutable31536000s cache.
+Retain quota/error distinctions. Full contract owns default/league-transfer budgets,
+retry/deadline rules and dated pricing/production evidence; mocks cannot prove acceptance.
 
 ## League publication v1 (Refs #134)
 
-Optional catalog.leagues (latest snapshot/ID)/leagueWork preserve old catalog bytes.
-Documents: revision/summary/character detail/<=100-slot pair pages/progress/journals.
-Overview loads details/slots on demand. A slot binds
-leagueHash/slot ID to setHash/pageHash/rowId and immutable replay. Empty sets require a journal.
-Saved-league export verifies every plan/partition hash, source, slot/spec/definition and
-recorded input. Preserve engine/digest; never prepare battles or load old engines.
-Execution requires current identity ([ADR 0010](0010-battle-version-compatibility.md)).
-Keep partial receipts; reject conflicting definitive win/draw results. Reused receipts may
-predate new set source: simulation/engine/digest must match and both sources belong to viewer
-ancestry. Restore/readback cover retained leagues. `publication upload` accepts a verified
-provisional graph with exit 0 and explicit unresolved counts/rank status.
+Immutable plans/slots/input/source/attempt/replay bindings, journal-before-admission,
+two attempts, no lost history/duplicate scoring. Formal only when all slots resolve;
+provisional counts remain. [Milestones](0016-p6-foundation.md) gate official updates.
+Keep whole-workflow r2-publication exclusion;64 partitions/4 jobs/2 Workers/25m compute.
+Never rerun failed jobs alone. Recovery checks original successful workers, CI/ancestry,
+artifacts/catalog equality; no simulation/new reservation/refund. Retain7-day artifacts
+and full contract's recovery/publication timeouts.
 
-Journal before admission; at most two attempts, including reservations. Reject lost/rewritten
-history. Refund only verified never-admitted work. Retain R2 history; artifacts expire in 7 days.
-[Daily league](../../.github/workflows/league.yml) skips unchanged input without eligible retries;
-manual dry-run is read-only. Current main CI gates start; finish rechecks CI/ancestry.
-Shared r2-publication concurrency; caps: 64 partitions, 4 jobs, 2 Workers/job,
-25-minute computation. Missing results retain denominators. Never rerun only failed jobs.
-IDs/hashes bind allowlisted artifacts to original run/attempt.
-[Recovery](../../.github/workflows/league-recovery.yml): failed main publications, or cancelled/
-timed-out publication after successful finalization (verified ordered steps);
-require successful workers, original CI/ancestry and artifact/catalog equality.
-Keep original source/execution, tested main, fresh leases and generation checks.
-No simulation/new reservation/refund. Recovery 90m; league jobs 300m, publish S3 180m, read-back 240m; other 60m.
-Fetch missing viewer SHAs for merge-base without moving HEAD.
-
-Private control/league-usage.json is excluded from Reader/prune and counts toward 8GB/500k.
-Conditional, readback-verified leases precede transfers; never refund failures. Monthly caps:
-900k Class A/9M Class B (10k control reserve); automation Worker 90k/day (1k probe reserve).
-Budget restore from inventory and publication from verified files/receipts, including uncertain-PUT
-GETs and Worker reads; 1 SDK try, <=2 counted data retries (no ledger). Missing ledger with an
-existing journal needs recovery, never a reset. Other traffic/base fees remain uncapped.
-[7,600-slot evidence](../measurements/p5-official-actions.json): publication/readback and
-viewer acceptance pending (Refs #134).
+Private usage ledger is outside Reader/prune. Conditional verified leases, no consumed
+lease refunds/reset; missing ledger requires recovery. Monthly900k A/9M B,10k control
+reserve; Worker90k/day,1k probe reserve. Preserve default and transient-retry accounting.
+[P5 evidence](../measurements/p5-official-actions.json) retains historical acceptance status.
 
 ## Capacity (2026-09-25)
 
-[Pilot](../measurements/p5-league-pilot-linux.json): 4 characters/5 fields/2 placements/1 trial;
-60 wins, 2 Workers, sequential 32/28 partitions: 63,382ms, 926 files/6,678,394 bytes.
-Mean scaling to 7,600: ~115k files/818MB exceeds 100k/256MB; not worst-case/production evidence.
-Reviewed: 500k files with history, 8GB, 1,000 slots/plan, 512MiB work.
-Estimate: 128 slots/plan, 4s/600kB/44 files each, 24MB metadata/partition;
-60 partitions, 6GB/335,183 files plus retention. Preflight cumulative requests.
-Underestimates stop at limits; no automatic expansion.
+Caps8GB/500k including control/history/staging,1000 slots/plan,512MiB work.
+[Pilot](../measurements/p5-league-pilot-linux.json) and full contract retain raw measurements/
+estimates/reproduction. Extrapolation is not production proof; underestimates fail at bounds.

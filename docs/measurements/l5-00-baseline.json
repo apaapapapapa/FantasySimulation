@@ -1,0 +1,1278 @@
+{
+  "schemaVersion": 1,
+  "status": "baseline-only; target not achieved",
+  "reviewedAgainstMain": "c99b04394ad6bc091c100ed8f73fac6ca57d3075",
+  "sourceSha": "553b14ab883b39903982d446d9c48f7f09111f56",
+  "runId": 36285560434,
+  "runAttempt": 1,
+  "observationCount": 187,
+  "computePartitions": 60,
+  "matchCount": 7600,
+  "incompleteObservations": 0,
+  "outcomes": {
+    "win": 7385,
+    "draw": 215
+  },
+  "storedReplayBytes": 544616905,
+  "matchMetrics": {
+    "coordinatorWallMs": {
+      "count": 7600,
+      "sum": 6332686.959951,
+      "median": 539.0010875000007,
+      "p95": 2200.4324630000046,
+      "max": 16025.212268999996
+    },
+    "workerComputeElapsedMs": {
+      "count": 7600,
+      "sum": 3244100.722223009,
+      "median": 260.6243364999973,
+      "p95": 1148.6520299997355,
+      "max": 9766.624698000203
+    },
+    "workerThreadCpuMs": {
+      "count": 7600,
+      "sum": 3784051.945,
+      "median": 312.0155,
+      "p95": 1312.5049999999999,
+      "max": 11094.062
+    }
+  },
+  "phases": {
+    "artifact-aggregate": {
+      "observations": 1,
+      "processCpuMs": 23347.75,
+      "processWallSumMs": 65383.33070199999,
+      "validationCalls": 0,
+      "sampledMaxRssBytes": 424349696,
+      "stages": {
+        "artifact.download": {
+          "count": 61,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 64974.81413900003
+        },
+        "save.read": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 0.7789090000001124
+        }
+      }
+    },
+    "artifact-input": {
+      "observations": 60,
+      "processCpuMs": 5577.416,
+      "processWallSumMs": 54183.145621,
+      "validationCalls": 0,
+      "sampledMaxRssBytes": 357621760,
+      "stages": {
+        "artifact.download": {
+          "count": 60,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 39646.659561
+        }
+      }
+    },
+    "artifact-prepare": {
+      "observations": 1,
+      "processCpuMs": 8223.745,
+      "processWallSumMs": 45798.300252,
+      "validationCalls": 2,
+      "sampledMaxRssBytes": 415432704,
+      "stages": {
+        "artifact.select": {
+          "count": 61,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1768.9004089999967
+        },
+        "artifact.upload": {
+          "count": 61,
+          "failures": 0,
+          "bytes": 62307969,
+          "inclusiveMs": 43959.23730100001
+        },
+        "decompress": {
+          "count": 26,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 10.36716999999976
+        },
+        "hash.bytes": {
+          "count": 591,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 33.25110299999869
+        },
+        "hash.replayStream": {
+          "count": 874,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 69.41720300000202
+        },
+        "json.checkpoint": {
+          "count": 13,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 0.4984520000007251
+        },
+        "json.records": {
+          "count": 13,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 6.566468999999415
+        },
+        "save.read": {
+          "count": 372,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 105.77946999999972
+        },
+        "validate.replay": {
+          "count": 2,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 222.56117500000005
+        }
+      }
+    },
+    "artifact-result": {
+      "observations": 60,
+      "processCpuMs": 83843.281,
+      "processWallSumMs": 117224.067293,
+      "validationCalls": 0,
+      "sampledMaxRssBytes": 413712384,
+      "stages": {
+        "artifact.select": {
+          "count": 60,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 9378.800774
+        },
+        "artifact.upload": {
+          "count": 60,
+          "failures": 0,
+          "bytes": 568055709,
+          "inclusiveMs": 106811.886362
+        },
+        "save.read": {
+          "count": 60,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 129.7097389999991
+        }
+      }
+    },
+    "cloud-admit": {
+      "observations": 1,
+      "processCpuMs": 15250.542,
+      "processWallSumMs": 518009.24896399997,
+      "validationCalls": 2,
+      "sampledMaxRssBytes": 416071680,
+      "stages": {
+        "decompress": {
+          "count": 26,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 9.50971600000048
+        },
+        "hash.bytes": {
+          "count": 16956,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 141.2208049979672
+        },
+        "hash.replayStream": {
+          "count": 874,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 68.67642800009344
+        },
+        "json.checkpoint": {
+          "count": 13,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 0.468127000000095
+        },
+        "json.records": {
+          "count": 13,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 6.486634000000777
+        },
+        "public.GET": {
+          "count": 29,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 13610.91895299987
+        },
+        "r2.GET": {
+          "count": 8254,
+          "failures": 0,
+          "bytes": 17942358,
+          "inclusiveMs": 3905354.149467999
+        },
+        "r2.HEAD": {
+          "count": 252,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 76266.618388
+        },
+        "r2.PUT": {
+          "count": 81,
+          "failures": 0,
+          "bytes": 5139389,
+          "inclusiveMs": 76152.36686499979
+        },
+        "save.directorySync": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 0.4234980000182986
+        },
+        "save.file": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1.1501309999730438
+        },
+        "save.fsync": {
+          "count": 2,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 0.9572679999982938
+        },
+        "save.read": {
+          "count": 389,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 279.7780019998463
+        },
+        "save.write": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 757,
+          "inclusiveMs": 0.27522599999792874
+        },
+        "validate.replay": {
+          "count": 2,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 220.18536400000448
+        }
+      }
+    },
+    "cloud-finish": {
+      "observations": 1,
+      "processCpuMs": 3429273.253,
+      "processWallSumMs": 3057086.002969,
+      "validationCalls": 30402,
+      "sampledMaxRssBytes": 562454528,
+      "stages": {
+        "aggregate.final": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 3057003.689154
+        },
+        "decompress": {
+          "count": 289842,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 90028.10802103703
+        },
+        "hash.bytes": {
+          "count": 618721,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 7305.316582846424
+        },
+        "hash.replayStream": {
+          "count": 8763882,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 941353.9908541746
+        },
+        "json.checkpoint": {
+          "count": 144921,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 5983.681336020649
+        },
+        "json.records": {
+          "count": 144921,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 112233.65100005719
+        },
+        "save.directorySync": {
+          "count": 88065,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 24870.54152296763
+        },
+        "save.file": {
+          "count": 88065,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 52165.90258397581
+        },
+        "save.fsync": {
+          "count": 176130,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 53854.47636601934
+        },
+        "save.read": {
+          "count": 556881,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 209904.78107221492
+        },
+        "save.write": {
+          "count": 88065,
+          "failures": 0,
+          "bytes": 579739932,
+          "inclusiveMs": 5415.688037968241
+        },
+        "validate.replay": {
+          "count": 30402,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 2631878.4960259805
+        }
+      }
+    },
+    "cloud-prepare": {
+      "observations": 1,
+      "processCpuMs": 112885.34,
+      "processWallSumMs": 115525.378667,
+      "validationCalls": 2,
+      "sampledMaxRssBytes": 396853248,
+      "stages": {
+        "db.transaction": {
+          "count": 120,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 855.5214990000677
+        },
+        "decompress": {
+          "count": 26,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 10.73269200000027
+        },
+        "hash.bytes": {
+          "count": 611,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 37.348575999908576
+        },
+        "hash.replayStream": {
+          "count": 874,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 71.77906600000256
+        },
+        "json.checkpoint": {
+          "count": 13,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 0.47049600000013925
+        },
+        "json.records": {
+          "count": 13,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 6.589811999999483
+        },
+        "save.directorySync": {
+          "count": 141,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 244.93822899989027
+        },
+        "save.file": {
+          "count": 141,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1146.8663679999736
+        },
+        "save.fsync": {
+          "count": 282,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1343.1478249998036
+        },
+        "save.read": {
+          "count": 253,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 69.22395399998072
+        },
+        "save.write": {
+          "count": 141,
+          "failures": 0,
+          "bytes": 30027475,
+          "inclusiveMs": 17.32542700006161
+        },
+        "validate.replay": {
+          "count": 2,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 231.67204399999991
+        }
+      }
+    },
+    "cloud-probe": {
+      "observations": 1,
+      "processCpuMs": 14093.3,
+      "processWallSumMs": 16246.119289,
+      "validationCalls": 0,
+      "sampledMaxRssBytes": 467607552,
+      "stages": {
+        "hash.bytes": {
+          "count": 11,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1.4232720000018162
+        },
+        "public.GET": {
+          "count": 11,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 4034.192231
+        },
+        "save.directorySync": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1.2890909999987343
+        },
+        "save.file": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 20.636548999998922
+        },
+        "save.fsync": {
+          "count": 2,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 21.53073199999926
+        },
+        "save.read": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 0.7918979999999465
+        },
+        "save.write": {
+          "count": 1,
+          "failures": 0,
+          "bytes": 1146,
+          "inclusiveMs": 0.09700700000030338
+        }
+      }
+    },
+    "cloud-restore": {
+      "observations": 1,
+      "processCpuMs": 5423.632,
+      "processWallSumMs": 207925.48615,
+      "validationCalls": 2,
+      "sampledMaxRssBytes": 357842944,
+      "stages": {
+        "decompress": {
+          "count": 26,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 8.732992000004742
+        },
+        "hash.bytes": {
+          "count": 697,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 27.1181679998067
+        },
+        "hash.replayStream": {
+          "count": 874,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 66.08634599955985
+        },
+        "json.checkpoint": {
+          "count": 13,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 0.45838400002685376
+        },
+        "json.records": {
+          "count": 13,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 6.529808999970555
+        },
+        "r2.GET": {
+          "count": 182,
+          "failures": 0,
+          "bytes": 7498428,
+          "inclusiveMs": 74902.4656809997
+        },
+        "r2.PUT": {
+          "count": 2,
+          "failures": 0,
+          "bytes": 5559,
+          "inclusiveMs": 1566.846007999991
+        },
+        "save.directorySync": {
+          "count": 2,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1.1679989999975078
+        },
+        "save.file": {
+          "count": 176,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 2716.1369299998914
+        },
+        "save.fsync": {
+          "count": 178,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 2602.285784000065
+        },
+        "save.read": {
+          "count": 234,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 61.62904699992987
+        },
+        "save.write": {
+          "count": 176,
+          "failures": 0,
+          "bytes": 7485206,
+          "inclusiveMs": 37.78338700009044
+        },
+        "validate.replay": {
+          "count": 2,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 211.3816349999979
+        }
+      }
+    },
+    "cloud-run": {
+      "observations": 60,
+      "processCpuMs": 9740751.726,
+      "processWallSumMs": 6073074.583401999,
+      "validationCalls": 30400,
+      "sampledMaxRssBytes": 770334720,
+      "stages": {
+        "db.commit": {
+          "count": 7600,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 10764.62216699958
+        },
+        "db.open": {
+          "count": 60,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1444.9506019999976
+        },
+        "db.transaction": {
+          "count": 83697,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 81024.22650999838
+        },
+        "db.walCheckpoint": {
+          "count": 7600,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 33252.35007400002
+        },
+        "decompress": {
+          "count": 289816,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 159541.16138600276
+        },
+        "hash.bytes": {
+          "count": 941454,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 19596.596322006706
+        },
+        "hash.recordStream": {
+          "count": 2190752,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 255294.62902300182
+        },
+        "hash.replayStream": {
+          "count": 8763008,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 901318.6181859967
+        },
+        "json.checkpoint": {
+          "count": 144908,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 6433.592502002293
+        },
+        "json.records": {
+          "count": 144908,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 107783.87190000316
+        },
+        "json.worker": {
+          "count": 36868,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 35690.98085000037
+        },
+        "record.append": {
+          "count": 2190752,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1166859.541001999
+        },
+        "record.compressWrite": {
+          "count": 72454,
+          "failures": 0,
+          "bytes": 417925023,
+          "inclusiveMs": 195324.0457549978
+        },
+        "record.finish": {
+          "count": 7600,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 913343.7782379999
+        },
+        "record.serialize": {
+          "count": 2190752,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 112900.17123899428
+        },
+        "save.directorySync": {
+          "count": 38300,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 60870.87504099926
+        },
+        "save.file": {
+          "count": 103154,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 225876.96385300203
+        },
+        "save.fsync": {
+          "count": 213908,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 389305.74209799885
+        },
+        "save.publish": {
+          "count": 7600,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 1277307.328372
+        },
+        "save.read": {
+          "count": 640672,
+          "failures": 22920,
+          "bytes": 0,
+          "inclusiveMs": 457100.342542001
+        },
+        "save.write": {
+          "count": 103154,
+          "failures": 0,
+          "bytes": 734973055,
+          "inclusiveMs": 15294.695837001746
+        },
+        "validate.replay": {
+          "count": 30400,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 2724228.9201119994
+        },
+        "validate.streaming": {
+          "count": 2190752,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 314483.37633900414
+        },
+        "worker.poolOpen": {
+          "count": 60,
+          "failures": 0,
+          "bytes": 0,
+          "inclusiveMs": 954.9287830000021
+        }
+      }
+    }
+  },
+  "timing": {
+    "workflowCreatedAt": "2026-09-27T01:27:00Z",
+    "runStartedAt": "2026-09-27T01:27:00Z",
+    "observedAt": "2026-09-27T04:16:33.101Z",
+    "observedWallMs": 10173101,
+    "requestedAt": null,
+    "scheduledAt": null,
+    "r2WorkerReadbackAt": null,
+    "pagesAcceptedAt": null,
+    "requestToPagesMs": null,
+    "target300Seconds": "unmeasured"
+  },
+  "jobs": [
+    {
+      "id": 108525554265,
+      "name": "probe",
+      "createdAt": "2026-09-27T01:27:00Z",
+      "startedAt": "2026-09-27T01:27:03Z",
+      "completedAt": "2026-09-27T01:27:43Z",
+      "conclusion": "success",
+      "unseparatedBeforeStartMs": 3000,
+      "wallMs": 40000
+    },
+    {
+      "id": 108525654406,
+      "name": "prepare",
+      "createdAt": "2026-09-27T01:27:43Z",
+      "startedAt": "2026-09-27T01:27:47Z",
+      "completedAt": "2026-09-27T01:43:00Z",
+      "conclusion": "success",
+      "unseparatedBeforeStartMs": 4000,
+      "wallMs": 913000
+    },
+    {
+      "id": 108532429265,
+      "name": "publish",
+      "createdAt": "2026-09-27T02:16:11Z",
+      "startedAt": "2026-09-27T02:16:14Z",
+      "completedAt": null,
+      "conclusion": null,
+      "unseparatedBeforeStartMs": 3000,
+      "wallMs": null
+    }
+  ],
+  "computeJobWindow": {
+    "startedAt": "2026-09-27T01:43:03Z",
+    "completedAt": "2026-09-27T02:16:10Z"
+  },
+  "recovery": {
+    "runId": 36307784643,
+    "runAttempt": 1,
+    "sourceSha": "c0837b60c1e94536f9dd915ae1647912e6e555d3",
+    "jobConclusion": "success",
+    "reports": {
+      "reports/league-36285560434-1-admit.json": {
+        "control": {
+          "classARequests": 95,
+          "classBRequests": 5,
+          "logicalRequests": 100,
+          "maxAttempts": 1,
+          "readBytes": 14889,
+          "successfulWrites": 2,
+          "uploadedBytes": 6171
+        },
+        "month": "2026-09",
+        "outcome": {
+          "addedFiles": 78,
+          "catalogHash": "sha256:29cfe0dcb61edbdf03984946f914f1f4ba9b929d2c4173f22f3d7d37d888ad37",
+          "incompleteRows": 0,
+          "projectedBytes": 594833137,
+          "reservedS3Requests": 413,
+          "reusedFiles": 173,
+          "status": "verified",
+          "storedBytes": 589700038,
+          "transferBytes": 5133218,
+          "workerRequests": 27,
+          "writes": 79
+        },
+        "reserved": {
+          "classA": 581,
+          "classB": 8585,
+          "worker": 1000
+        },
+        "sequence": 20,
+        "transport": {
+          "classARequests": 172,
+          "classBRequests": 8501,
+          "logicalRequests": 8673,
+          "maxAttempts": 1,
+          "readBytes": 17927469,
+          "successfulWrites": 79,
+          "uploadedBytes": 5133218
+        },
+        "usedReadRequests": 887870,
+        "usedWriteRequests": 371962
+      },
+      "reports/league-36307784643-1-publish.json": {
+        "control": {
+          "classARequests": 161,
+          "classBRequests": 5,
+          "logicalRequests": 166,
+          "maxAttempts": 1,
+          "readBytes": 21161,
+          "successfulWrites": 2,
+          "transientRetries": 0,
+          "uploadedBytes": 8685
+        },
+        "month": "2026-09",
+        "outcome": {
+          "addedFiles": 21758,
+          "catalogHash": "sha256:e50110b3cbe04c47451760dc09626a20c02d7e2325be711e8ce927f4119626dc",
+          "incompleteRows": 0,
+          "projectedBytes": 1174573468,
+          "reservedS3Requests": 131836,
+          "reusedFiles": 66556,
+          "status": "verified",
+          "storedBytes": 1013167331,
+          "transferBytes": 161406256,
+          "workerRequests": 197,
+          "writes": 21759
+        },
+        "reserved": {
+          "classA": 22517,
+          "classB": 191505,
+          "worker": 1000
+        },
+        "sequence": 28,
+        "transport": {
+          "classARequests": 21759,
+          "classBRequests": 13847,
+          "logicalRequests": 35606,
+          "maxAttempts": 1,
+          "readBytes": 17908631,
+          "successfulWrites": 21759,
+          "transientRetries": 0,
+          "uploadedBytes": 161406256
+        },
+        "usedReadRequests": 1646696,
+        "usedWriteRequests": 556935
+      },
+      "reports/league-36285560434-1-restore.json": {
+        "control": {
+          "classARequests": 95,
+          "classBRequests": 7,
+          "logicalRequests": 102,
+          "maxAttempts": 1,
+          "readBytes": 13809,
+          "successfulWrites": 2,
+          "uploadedBytes": 5559
+        },
+        "month": "2026-09",
+        "outcome": {
+          "catalogHash": "sha256:a18632dbc8db1fe3d9d7aa1d092ef15f18f1dc76a556717f2511b415dddd748e",
+          "downloadBytes": 7484619,
+          "files": 174,
+          "reads": 175,
+          "status": "restored"
+        },
+        "reserved": {
+          "classA": 1,
+          "classB": 92465,
+          "worker": 0
+        },
+        "sequence": 18,
+        "transport": {
+          "classARequests": 0,
+          "classBRequests": 175,
+          "logicalRequests": 175,
+          "maxAttempts": 1,
+          "readBytes": 7484619,
+          "successfulWrites": 0,
+          "uploadedBytes": 0
+        },
+        "usedReadRequests": 878265,
+        "usedWriteRequests": 370781
+      },
+      "prepared/estimate.json": {
+        "compute": 7600,
+        "estimatedBytes": 6589762413,
+        "estimatedFiles": 427645,
+        "estimatedMs": 30400000,
+        "exhausted": 0,
+        "matchesPerPlan": 128,
+        "newMatches": 7600,
+        "partitions": 60,
+        "planned": 7600,
+        "readRequests": 670366,
+        "retries": 0,
+        "reused": 0,
+        "writeRequests": 335183
+      },
+      "prepared/completion.json": {
+        "addedFiles": 88063,
+        "bytes": 592356670,
+        "catalogHash": "sha256:e50110b3cbe04c47451760dc09626a20c02d7e2325be711e8ce927f4119626dc",
+        "elapsedMs": [
+          87175, 238609, 68762, 61673, 68170, 60811, 243466, 145056, 55316, 69607, 71492, 64595,
+          229844, 99739, 125986, 133879, 73995, 300098, 122872, 132167, 157710, 94333, 71784, 54406,
+          55819, 42137, 155292, 214845, 109237, 146882, 202558, 127548, 148566, 140843, 102157,
+          60749, 67072, 54559, 58479, 65769, 115289, 52017, 69469, 67346, 86739, 54923, 69802,
+          69315, 67569, 66058, 77284, 77378, 77798, 94004, 118936, 66085, 97204, 79764, 51542, 17635
+        ],
+        "missingPartitions": [],
+        "planned": 7600,
+        "receivedPartitions": 60,
+        "resolved": 7600,
+        "reusedFiles": 60,
+        "snapshot": {
+          "bytes": 16463,
+          "hash": "sha256:9583faa570172f16b9e92d6d68e2e56a47761fdf349e6944035549a464102190"
+        },
+        "status": "formal"
+      }
+    },
+    "pagesAcceptedAt": null,
+    "freshCalculation": false
+  },
+  "artifacts": [
+    {
+      "id": 10928873407,
+      "name": "league-recovery-measurements-36307784643-1",
+      "digest": "sha256:fad46a822fee89b47973db818aa9887899fff366aeaab7530f9c8e46248fd6fd"
+    },
+    {
+      "id": 10919709436,
+      "name": "league-timing-36285560434-1-compute-0",
+      "digest": "sha256:bf52cb15d837c041580d17e686ed42604e81b5f096e6378221baf0e6f6ade35a"
+    },
+    {
+      "id": 10920816162,
+      "name": "league-timing-36285560434-1-compute-1",
+      "digest": "sha256:b9214c7c19092ca350b596c707dfb9cc66c0698b6a573d21e711f3b44dc79d4a"
+    },
+    {
+      "id": 10920274818,
+      "name": "league-timing-36285560434-1-compute-10",
+      "digest": "sha256:4b89904d6f4261732ab9bc703dd09450204217ffc21aa58b9e59f736a217b1ed"
+    },
+    {
+      "id": 10920663472,
+      "name": "league-timing-36285560434-1-compute-11",
+      "digest": "sha256:c745469596cad857687cf97a99254f7a40ce2b7fb4a6218eb4fb572848c3dcd9"
+    },
+    {
+      "id": 10920713369,
+      "name": "league-timing-36285560434-1-compute-12",
+      "digest": "sha256:da61a8e25e539c2d7c9a5699c61ac4ef8cd04d1c3616e8b487cee3ea527277c5"
+    },
+    {
+      "id": 10920955182,
+      "name": "league-timing-36285560434-1-compute-13",
+      "digest": "sha256:3ce6fe28ac92c4ac656d7c72e7360eddef9978dcc55b0887ef80b5f69fc88fd8"
+    },
+    {
+      "id": 10920454194,
+      "name": "league-timing-36285560434-1-compute-14",
+      "digest": "sha256:c78187ffc55949aa800164a68dade60807883c44c7c1060ffb20e19794c7c433"
+    },
+    {
+      "id": 10920950770,
+      "name": "league-timing-36285560434-1-compute-15",
+      "digest": "sha256:64c0482cb135ac323d688a7be6ad229dee5e2e3f9a9c01684405e840a2e8d1aa"
+    },
+    {
+      "id": 10920960206,
+      "name": "league-timing-36285560434-1-compute-16",
+      "digest": "sha256:06d66eec9a752fbfb1b3907f4aacd279bbde1b6ccd44f3aa4b3131940774e0b9"
+    },
+    {
+      "id": 10919849757,
+      "name": "league-timing-36285560434-1-compute-17",
+      "digest": "sha256:c052908db08e5fbe7cb8b390d5fb007e81d4eee8cb434ad28ad2fd845bc087ad"
+    },
+    {
+      "id": 10920149167,
+      "name": "league-timing-36285560434-1-compute-18",
+      "digest": "sha256:7c08c94dbf2d59812c2ce24dcebfaedf61472ea47a88cb31ab92e0fb1ef46ef9"
+    },
+    {
+      "id": 10920940453,
+      "name": "league-timing-36285560434-1-compute-19",
+      "digest": "sha256:c4d1cc9b49b56d242670642fc75a642b0a91d3d98fbc39ee979175730eae58c4"
+    },
+    {
+      "id": 10919879107,
+      "name": "league-timing-36285560434-1-compute-2",
+      "digest": "sha256:55f754c9ac0fd0ee06d572f5d5456e48c948d1c355c3fb0f60e43f7779f6c09d"
+    },
+    {
+      "id": 10920524513,
+      "name": "league-timing-36285560434-1-compute-20",
+      "digest": "sha256:992b08ea4ef89db428a1927b2a38713d543fd775a4ee1302a4f19a84f3c37f10"
+    },
+    {
+      "id": 10920659174,
+      "name": "league-timing-36285560434-1-compute-21",
+      "digest": "sha256:4a305cf074a4d4aaf4a279f3c6fa3998ed13c9a59fb6aca007f616a35a6b86a2"
+    },
+    {
+      "id": 10920693895,
+      "name": "league-timing-36285560434-1-compute-22",
+      "digest": "sha256:8ee906299511ef61bb7cfa0fd01fbe34c1861bcad929c6e3844ae5a12c237d3b"
+    },
+    {
+      "id": 10920946100,
+      "name": "league-timing-36285560434-1-compute-23",
+      "digest": "sha256:ce522a8dc0edfa9b1426deed0eb01583faa99fdea3e0343a065a615a02dadf82"
+    },
+    {
+      "id": 10920494728,
+      "name": "league-timing-36285560434-1-compute-24",
+      "digest": "sha256:1ccdead4ad0ea87a064ba98efcb0cd2383e863e2189b6e0028e0ab17058be88b"
+    },
+    {
+      "id": 10920449767,
+      "name": "league-timing-36285560434-1-compute-25",
+      "digest": "sha256:c53b977993fdd9fc748770fbe884d3ad66489e762567c1651e73c8e2aecc2c12"
+    },
+    {
+      "id": 10920911505,
+      "name": "league-timing-36285560434-1-compute-26",
+      "digest": "sha256:95ab008765a11cd1e0e16fcda89371b7022d54e556eb1bcd72e85c69a684fbd5"
+    },
+    {
+      "id": 10920599445,
+      "name": "league-timing-36285560434-1-compute-27",
+      "digest": "sha256:9d089e6eb062dc31df593ecd2083c5b12213fd446bb1aae7d0655dffe487e24d"
+    },
+    {
+      "id": 10920996198,
+      "name": "league-timing-36285560434-1-compute-28",
+      "digest": "sha256:9141b10df07da1ebc3fdb5be0123ba52ac80129390e58036ed5eef6e692424c9"
+    },
+    {
+      "id": 10920763845,
+      "name": "league-timing-36285560434-1-compute-29",
+      "digest": "sha256:9df5caa069b2b48ebb1af7cca9ccb1a093f6453f91c838f3ffd85c1d4f802f07"
+    },
+    {
+      "id": 10920508694,
+      "name": "league-timing-36285560434-1-compute-3",
+      "digest": "sha256:6ff9e8dbb09a504b042e687517a5cf617f9334eaac75572c8c297fd24c555d6b"
+    },
+    {
+      "id": 10921440038,
+      "name": "league-timing-36285560434-1-compute-30",
+      "digest": "sha256:fc7a819b6e90585aa0ab51b26b45247476468c7a5d22cbf1b2c0e84694ed27a9"
+    },
+    {
+      "id": 10920832249,
+      "name": "league-timing-36285560434-1-compute-31",
+      "digest": "sha256:7dfab3e1126b8b70b47a829797ba17362276857559f7201c68a61e17f217e66a"
+    },
+    {
+      "id": 10920936617,
+      "name": "league-timing-36285560434-1-compute-32",
+      "digest": "sha256:58729b83b1554ef1bcb725defeb70a9307bff81fbe5b83c1964e31b645d00f30"
+    },
+    {
+      "id": 10921675157,
+      "name": "league-timing-36285560434-1-compute-33",
+      "digest": "sha256:9203effccd7267462a6ef4bb994b83ee9f0634dbba394d28695ce64cc3c5cf52"
+    },
+    {
+      "id": 10921415178,
+      "name": "league-timing-36285560434-1-compute-34",
+      "digest": "sha256:4f6dbd92498854beac2bd62452d60dbb112a80a84d68d02988dfe1f07c11acf3"
+    },
+    {
+      "id": 10920744200,
+      "name": "league-timing-36285560434-1-compute-35",
+      "digest": "sha256:b7e0402736e3bfb592654c3327cb793709cb85e21c60de3000cd06a6fb145839"
+    },
+    {
+      "id": 10921400701,
+      "name": "league-timing-36285560434-1-compute-36",
+      "digest": "sha256:9e5dc8bbbe987e4f56673b5f3665e323c18f2488d6ab34e9314b59a14a3c339a"
+    },
+    {
+      "id": 10921485548,
+      "name": "league-timing-36285560434-1-compute-37",
+      "digest": "sha256:78ec398789be319b595a44c7a10b9875d801eb082927aff4e4677a1a78ed4bc8"
+    },
+    {
+      "id": 10921111369,
+      "name": "league-timing-36285560434-1-compute-38",
+      "digest": "sha256:05699a3ea38c8b23b7f007bdc445824a1249c1c494d52b985701cfc4e327509f"
+    },
+    {
+      "id": 10921585048,
+      "name": "league-timing-36285560434-1-compute-39",
+      "digest": "sha256:ac7b25095fc282beb70c1951c7aad3c807d49393d83143fd26500b38a4ee46b2"
+    },
+    {
+      "id": 10919609913,
+      "name": "league-timing-36285560434-1-compute-4",
+      "digest": "sha256:4255c64c28105be4beec77c27c23e63cd75a0b7b3a514e40dc9502f785c64d0b"
+    },
+    {
+      "id": 10921151340,
+      "name": "league-timing-36285560434-1-compute-40",
+      "digest": "sha256:995a5882f52667ed28f5ef1ab8201ad4721f3a77497230ba04fb06a68ed71ed6"
+    },
+    {
+      "id": 10920802363,
+      "name": "league-timing-36285560434-1-compute-41",
+      "digest": "sha256:de38e5872872660f481d0d66e933e98caf5857edc08d511a27e367135c42f604"
+    },
+    {
+      "id": 10921560586,
+      "name": "league-timing-36285560434-1-compute-42",
+      "digest": "sha256:b5a2ee98c831437bed4f54314e7de3d176f2ac0730012554bb07322defd119fa"
+    },
+    {
+      "id": 10921151416,
+      "name": "league-timing-36285560434-1-compute-43",
+      "digest": "sha256:982fcb57a071f031492e1cffd50b39163162f9bd48a9662ef9d50daf68d74cb9"
+    },
+    {
+      "id": 10920887282,
+      "name": "league-timing-36285560434-1-compute-44",
+      "digest": "sha256:67d74a51db7c20f29e9a9cf70143889efffa6fe2503e351e7dcf6a97b9d9b093"
+    },
+    {
+      "id": 10921345987,
+      "name": "league-timing-36285560434-1-compute-45",
+      "digest": "sha256:8e5bdeb49d1315d170a56f6ec0aee91a11089547145beacd4a368fadc231df38"
+    },
+    {
+      "id": 10920857498,
+      "name": "league-timing-36285560434-1-compute-46",
+      "digest": "sha256:120a57c3d01276ca5dca837c15114dfad093f309306889a1825533c52f1b4d96"
+    },
+    {
+      "id": 10920729882,
+      "name": "league-timing-36285560434-1-compute-47",
+      "digest": "sha256:f7e5ea4342340cfc9cf8230913a0da4944f9204279b2ccdb149f915006f2168a"
+    },
+    {
+      "id": 10920808868,
+      "name": "league-timing-36285560434-1-compute-48",
+      "digest": "sha256:d19c2cf9b109ac237d9694bd68164f5f749db62907d4d322fb2fb8f06bb65a90"
+    },
+    {
+      "id": 10921145819,
+      "name": "league-timing-36285560434-1-compute-49",
+      "digest": "sha256:b22c52aabd40202bb95d9cc95d6c6db35835aaa6b3d82c9807ea93f9ecd58e5d"
+    },
+    {
+      "id": 10919774289,
+      "name": "league-timing-36285560434-1-compute-5",
+      "digest": "sha256:911ebde2138a97e8251a05a014f2f6032a8059242d15c9458ccec34cc0e528e1"
+    },
+    {
+      "id": 10921620829,
+      "name": "league-timing-36285560434-1-compute-50",
+      "digest": "sha256:13bf26122eb021e26ed99e2d7376daaf98296e213196aeccb428f7eff2d63a1b"
+    },
+    {
+      "id": 10920818101,
+      "name": "league-timing-36285560434-1-compute-51",
+      "digest": "sha256:e9b42b6772aa4cd29e5f5016660e5fe4d922f8cef521fbd3c334891aeea26eb6"
+    },
+    {
+      "id": 10921171712,
+      "name": "league-timing-36285560434-1-compute-52",
+      "digest": "sha256:bd46aa8629b334fcae1a1c559442e2399f69c700cb7833fb15681f75fa9371f4"
+    },
+    {
+      "id": 10920997187,
+      "name": "league-timing-36285560434-1-compute-53",
+      "digest": "sha256:fb3b752c7a9393fa68122a77a1707f370a5763cd4008897e17e1322e5e89715a"
+    },
+    {
+      "id": 10921486286,
+      "name": "league-timing-36285560434-1-compute-54",
+      "digest": "sha256:1ffc292276879cbac459fce70bdb90904e828f919cd57fdfe4ed4afd1dc24b9f"
+    },
+    {
+      "id": 10921175973,
+      "name": "league-timing-36285560434-1-compute-55",
+      "digest": "sha256:d2ae5e615533e5fcd28076118e54f868a8239ee09fdb0f85822adc35155dfc79"
+    },
+    {
+      "id": 10921566057,
+      "name": "league-timing-36285560434-1-compute-56",
+      "digest": "sha256:8e7ca7f030cbd3a8165bf338ebd8c15f15de7fee5b51a024f9692eea1148819c"
+    },
+    {
+      "id": 10921376519,
+      "name": "league-timing-36285560434-1-compute-57",
+      "digest": "sha256:f6b35da25753b870048a9ef4b2b4f945be91518d05dea489707d85c46c7960fc"
+    },
+    {
+      "id": 10921255929,
+      "name": "league-timing-36285560434-1-compute-58",
+      "digest": "sha256:712b70bdca9cf4e8c7df5fb56fc529e11ad368ba32bfa0a3e0b83c5a89dea44c"
+    },
+    {
+      "id": 10921605498,
+      "name": "league-timing-36285560434-1-compute-59",
+      "digest": "sha256:9317baf7f3ff68c7b19cec29f2846b6bfc5778fa1091132804f724fd46f7ef7b"
+    },
+    {
+      "id": 10920128841,
+      "name": "league-timing-36285560434-1-compute-6",
+      "digest": "sha256:f3c4d41b80c666a7b3d7afeaacb91cb923b70f015da6fcaaeb2e5c8815f473f4"
+    },
+    {
+      "id": 10919989099,
+      "name": "league-timing-36285560434-1-compute-7",
+      "digest": "sha256:f524e16651b4928bcae9e63930dddd5e9db064750b45620c396798892a85c5a7"
+    },
+    {
+      "id": 10920334386,
+      "name": "league-timing-36285560434-1-compute-8",
+      "digest": "sha256:a1e2d590e60c30b8b4ce22788ad4d9a6730a3a0cd92d5fc11f2ac0b14211071b"
+    },
+    {
+      "id": 10920128817,
+      "name": "league-timing-36285560434-1-compute-9",
+      "digest": "sha256:ed817955b495ad74842e9c6f8864524ce4984fd8662201ff234beb3ac0d937eb"
+    },
+    {
+      "id": 10919704274,
+      "name": "league-timing-36285560434-1-prepare",
+      "digest": "sha256:a48978b954ed27c7c4b843e209052a8f03527b36aa65833a53a0fb4c69a2d8de"
+    },
+    {
+      "id": 10920775932,
+      "name": "league-timing-36285560434-1-probe",
+      "digest": "sha256:ff8272257246df9b930429280a9a0d3cd666671e756b27a7015e890cc6b222f6"
+    },
+    {
+      "id": 10922962578,
+      "name": "league-timing-36285560434-1-publish",
+      "digest": "sha256:04a35fc100257486fa9f672998b633e7ca8dd2df5a3a6579ee9f61b6f4d360ba"
+    }
+  ],
+  "interpretation": [
+    "63 timing artifacts, 187 unique process sidecars including all 60 compute partitions; ZIP SHA-256 values matched GitHub artifact metadata.",
+    "Each match distribution is recomputed from all 7600 raw samples; p95 is nearest rank.",
+    "Worker computeMs uses performance.now around stream.next. It includes record production and is elapsed time, not CPU.",
+    "Worker thread CPU is part of process CPU. Do not add them. Inclusive spans overlap each other, including save/validate/decode/hash; they are not CPU or additive wall time.",
+    "Match wall ends at replay commit/cleanup; later bundle publication and partition validation are outside that sample.",
+    "Publish transport was killed before a sidecar was written. Its missing measurements are unknown, not zero. Pages acceptance is absent.",
+    "Recovery uses existing immutable results and earlier R2 writes. Do not combine its duration with the original run into a fresh 7600-match acceptance.",
+    "This baseline predates #210/#212/#213. It does not establish their improvement ratio or approve 16/32-runner production execution."
+  ],
+  "reproduction": {
+    "source": "scripts/league-measurements.ts at baseline source SHA",
+    "steps": [
+      "List both pages of original run artifacts (186 total); select 63 league-timing artifacts including probe/prepare/60 compute/publish.",
+      "Download each immutable artifact ID and require the listed ZIP SHA-256 before reading measurement-*.json; require matching source/run/attempt, 187 unique observation IDs, 60 cloud-run sidecars and 7600 unique simulation hashes.",
+      "Run the existing league-measurements.ts summarizer on those measurement files; for each command sum process cpu.userMs+cpu.systemMs separately from inclusive span durations.",
+      "Read actions.json from publish artifact; keep missing transport and Pages timestamps null. Read recovery artifact separately."
+    ]
+  }
+}
