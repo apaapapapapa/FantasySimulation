@@ -1,6 +1,6 @@
 # ADR 0019: Bounded league publication pipeline
 
-**Proposed; approval before contract implementation.** Refs #189 L5-01.
+**Accepted 2026-09-27; owner approval recorded in PR #214.** Refs #189 L5-01.
 Main c99b043 includes #203/#210/#212/#213. Design/evidence only; existing
 [publication](0008-headless-batch.md), [league](0015-league.md) and
 [milestone](0016-p6-foundation.md) contracts remain active.
