@@ -2,7 +2,6 @@ import { lstat, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
-import { measureAsync } from '@fantasy/api/tooling';
 import {
   BundleReceiptSchema,
   MAX_PUBLIC_JSON_BYTES,
@@ -21,6 +20,7 @@ import {
   sha256,
   syncDirectory,
   writeDurableFile,
+  measureAsync,
 } from '@fantasy/api/artifacts';
 import { publicationPool } from './publication-pool.ts';
 
