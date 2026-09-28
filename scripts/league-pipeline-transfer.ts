@@ -102,6 +102,8 @@ export async function transferPipeline(
       baseline,
     );
     const graph = evidenceGraph(finalized.evidence);
+    const league = graph.catalog.leagues?.find((ref) => ref.hash === finalized.snapshot.hash);
+    if (!league) throw new Error('Finalized league is missing from its catalog');
     const metadataWrites =
       [...graph.files.keys()].filter(
         (key) => key !== 'catalog/current.json' && !session.inventory.has(key),
@@ -155,6 +157,18 @@ export async function transferPipeline(
     await writeCloudJson(join(context.root, 'completion.json'), {
       outcome,
       catalogHash: finalized.catalogHash,
+      // The 300s acceptance applies only to a formal league computed without retained results.
+      league: {
+        id: league.id,
+        snapshot: league.hash,
+        status: finalized.status,
+        planned: finalized.planned,
+        resolved: finalized.resolved,
+        reusedSlots: received.producers.reduce(
+          (sum, producer) => sum + producer.result.index.slots.filter((slot) => slot.reused).length,
+          0,
+        ),
+      },
       staging: session.staging.metrics(),
       metadata: github.metrics(),
       transport: session.store.metrics(),

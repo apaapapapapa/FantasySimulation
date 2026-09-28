@@ -18,6 +18,7 @@ export const UI_STATIC_CASES = [
   'static-league-overview',
   'static-league-pair-replay',
   'static-league-provisional',
+  'static-pages-acceptance',
   'static-packed-replay',
   'static-selection',
   'static-selection-original',
@@ -80,6 +81,7 @@ export const UI_STATIC_PARTS = {
       'static-webgl-fallback',
       'static-stale-navigation',
       'static-list-cost-and-states',
+      'static-pages-acceptance',
     ],
   },
 } as const satisfies Record<

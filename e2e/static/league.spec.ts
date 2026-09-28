@@ -1,6 +1,8 @@
-import { test, expect } from '../fixtures.ts';
+import { PublicCatalogCurrentSchema } from '@fantasy/domain/spatial';
+import { test, expect, guardNetwork } from '../fixtures.ts';
 import { leagueFiles, leagueGenerations, leagueRows } from '../league-fixtures.ts';
 import { leagueLink } from '../../apps/web/src/publication/league-route.ts';
+import { acceptPublishedLeague } from '../../scripts/league-pages-acceptance.ts';
 import { serveFixture } from './fixtures.ts';
 import type { PublicReadObservation } from '../../apps/web/src/replay/public-source.ts';
 import { experimentalLeagueFiles } from '../experimental-league-fixtures.ts';
@@ -179,4 +181,59 @@ test('static-league-provisional', async ({ page, context }) => {
   await expect(page.getByRole('region', { name: '保存リプレイ' })).toHaveCount(0);
   await page.goto('/FantasySimulation/#/leagues/latest');
   await expect(page.getByRole('alert')).toHaveText('リーグURLの形式が不正です');
+});
+
+test('static-pages-acceptance', async ({ browser, baseURL, blockedOrigins }) => {
+  const league = leagueGenerations[1]!;
+  const current = PublicCatalogCurrentSchema.parse(
+    JSON.parse(leagueFiles.get('catalog/current.json')!.toString()),
+  );
+  const expected = {
+    viewerUrl: new URL('/FantasySimulation/', baseURL).href,
+    catalogHash: current.catalogHash,
+    league: { id: league.snapshot.id, snapshot: league.hash },
+  };
+  let contexts = 0;
+  const open = async () => {
+    const context = await browser.newContext();
+    contexts++;
+    await guardNetwork(context, blockedOrigins);
+    await serveFixture(context, leagueFiles);
+    return { page: await context.newPage(), close: () => context.close() };
+  };
+  const accepted = await acceptPublishedLeague(open, expected, {
+    deadlineMs: 20000,
+    intervalMs: 100,
+    stepTimeoutMs: 8000,
+  });
+  expect(accepted).toMatchObject({
+    status: 'accepted',
+    formal: true,
+    planned: 24,
+    resolved: 24,
+    attempts: [{ error: null }],
+  });
+  if (accepted.status !== 'accepted') throw new Error('Expected acceptance');
+  expect(leagueRows.some((row) => row.replay?.replayId === accepted.replayId)).toBe(true);
+  const { pointerMs, leagueMs, replayMs } = accepted.timings;
+  expect(pointerMs <= leagueMs && leagueMs <= replayMs).toBe(true);
+  // Viewer assets and publication reads are counted per origin; unknown sizes stay explicit.
+  expect(accepted.traffic.map((entry) => entry.origin)).toEqual(
+    expect.arrayContaining([
+      new URL(baseURL!).origin,
+      new URL(process.env.FANTASY_UI_DATA_ORIGIN!).origin,
+    ]),
+  );
+  for (const entry of accepted.traffic)
+    expect(entry.requests > 0 && entry.bytes >= 0 && entry.unsized <= entry.requests).toBe(true);
+  // A pointer that never reaches the committed catalog is retried in new contexts, never accepted.
+  const stale = await acceptPublishedLeague(
+    open,
+    { ...expected, catalogHash: 'sha256:' + '0'.repeat(64) },
+    { deadlineMs: 15000, intervalMs: 100, stepTimeoutMs: 5000, maxAttempts: 2 },
+  );
+  expect(stale.status).toBe('failed');
+  expect(stale.attempts).toHaveLength(2);
+  expect(stale.attempts.every((attempt) => attempt.error?.startsWith('Stale catalog'))).toBe(true);
+  expect(contexts).toBe(1 + stale.attempts.length);
 });

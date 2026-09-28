@@ -34,6 +34,7 @@ export async function runtimeFixture(root: string) {
     '@protobuf-ts/runtime-rpc',
     '@octokit/core',
     '@octokit/plugin-paginate-rest',
+    '@playwright/test',
     'tsx',
   ]) {
     const real = join(

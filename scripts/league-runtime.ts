@@ -110,6 +110,8 @@ const rootDependencies = [
   '@protobuf-ts/runtime-rpc',
   '@octokit/core',
   '@octokit/plugin-paginate-rest',
+  // The transfer job's fresh-browser acceptance; its browser is installed per run, never cached.
+  '@playwright/test',
   'tsx',
 ];
 const workspaces = [
