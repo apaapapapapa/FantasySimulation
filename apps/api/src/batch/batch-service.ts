@@ -1,7 +1,7 @@
 import { currentMeasurements, measureAsync, measureSync, sampleDatabase } from '../measurements.ts';
 import { ARTIFACT_RESERVATION_BYTES } from '@fantasy/domain/spatial';
 import { mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import {
   BatchIndexBodySchema,
   compareIds,
@@ -13,6 +13,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { type BattleSubmission, BattleService } from '../jobs/battle-service.ts';
 import { BattleBundles } from './battle-bundle.ts';
+import { PrivateDataError } from '../replay/replay-public.ts';
 import { validateBatchPlan } from './batch-plan.ts';
 import { shardSlots } from './batch-check.ts';
 import { openStore } from '../db/store.ts';
@@ -31,10 +32,18 @@ export async function executeBatch(
     retryFailed?: boolean;
     signal?: AbortSignal;
     pool?: BattlePool;
+    /** A caller's open verification scope on `root`: its staging pass is the first full one. */
+    bundles?: BattleBundles;
   } = {},
 ) {
   const plan = await validateBatchPlan(input, source),
     workers = options.workers ?? 1;
+  if (
+    options.bundles &&
+    (resolve(options.bundles.root) !== resolve(root) ||
+      options.bundles.maxBytes !== plan.maxOutputBytes)
+  )
+    throw new Error('Borrowed batch bundles differ from the batch output');
   const shardIndex = options.shardIndex ?? 0,
     shardCount = options.shardCount ?? 1;
   const deadlineMs = options.deadlineMs ?? 1_800_000;
@@ -76,11 +85,18 @@ export async function executeBatch(
         options.pool,
       ),
     );
-    const bundles = new BattleBundles(root, plan.maxOutputBytes);
+    const bundles = options.bundles ?? new BattleBundles(root, plan.maxOutputBytes);
     await bundles.recoverStaging();
     await bundles.publishJson('plans', plan.id, plan);
     const entries = new Map<string, BatchIndex['slots'][number]>();
-    let admitted = 0;
+    let admitted = 0,
+      unpublishable: PrivateDataError | undefined;
+    // Private input would fail every retry the same way: stop, drain and issue no index.
+    const refuse = (error: unknown) => {
+      if (!(error instanceof PrivateDataError)) return;
+      unpublishable ??= error;
+      stop.abort(error);
+    };
     async function* submissions(): AsyncGenerator<BattleSubmission> {
       for (const slot of slots) {
         if (entries.has(slot.id)) continue;
@@ -120,6 +136,7 @@ export async function executeBatch(
             };
           }
         } catch (error) {
+          refuse(error);
           entry.state = 'failed';
           entry.reason = (error instanceof Error ? error.message : String(error)).slice(0, 1000);
         }
@@ -159,6 +176,7 @@ export async function executeBatch(
                   bundles.publish(runtime!, done.resultId!, source),
                 );
               } catch (error) {
+                refuse(error);
                 stop.abort(error);
                 throw error;
               }
@@ -193,6 +211,7 @@ export async function executeBatch(
     // Preserve cached/held rows even when admission was stopped before the first pull.
     // The generator marks the remaining noncached slots pending without submitting them.
     for await (const _ of submissions()) throw new Error('Staging left unsubmitted work');
+    if (unpublishable) throw unpublishable;
     const body = parseJson(BatchIndexBodySchema, {
       schemaVersion: 1,
       source,

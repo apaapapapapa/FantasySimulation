@@ -6,7 +6,7 @@ import { recordedBattle, withReplayDirectory } from '../../test-support/replays.
 import { Measurements } from '../measurements.ts';
 import { verifyReplayDirectory } from './replay-reader.ts';
 import { readCompressed, sha256 } from './replay-files.ts';
-import { assertPublicData } from './replay-public.ts';
+import { assertPublicData, PrivateDataError } from './replay-public.ts';
 import { ReplayVerificationPool, replayVerificationWorkers } from './verification-pool.ts';
 import { BattlePool } from '../jobs/worker-pool.ts';
 
@@ -42,9 +42,16 @@ it('inspects the original records in the same bounded decode pass as semantic ve
     );
     const shared = new BattlePool(1);
     try {
-      await expect(shared.verify(directory, changed, true)).rejects.toMatchObject({
+      // The Worker keeps the publishability class a batch must not turn into a per-slot retry.
+      const refused = shared.verify(directory, changed, true);
+      await expect(refused).rejects.toBeInstanceOf(PrivateDataError);
+      await expect(refused).rejects.toMatchObject({
         code: 'DATA_INVALID',
+        message: 'Private field is not publishable',
       });
+      await expect(shared.verify(directory, changed, false)).rejects.not.toBeInstanceOf(
+        PrivateDataError,
+      );
     } finally {
       await shared.close();
     }
