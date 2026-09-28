@@ -1,0 +1,911 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-09-28T00:33:21.579294+00:00",
+  "baseSha": "f7f8c7473e36da73790148d221628ac2e5e7551c",
+  "sourceState": "working tree; base plus additive content pinned below",
+  "node": "24.19.0",
+  "pnpm": "11.27.1",
+  "implementationDigest": "sha256:effd654a194c1ffcf47e3672391504389e63b79198290348cd654bb457e6098a",
+  "inputs": {
+    "data/content/melee-balance-v1.json": "sha256:81d29e61b9a4c6f243cafa1a75b03ced9ab433bf3b4acff606676856a20bc348",
+    "data/leagues/official-20-v2.json": "sha256:3f8a7f8947eae5e41fe4dd2bef7c3a183a07005705f6f213c98e9ebc60f96db4",
+    "data/leagues/official-20-balanced-v1.json": "sha256:09e2f7a8f8cade8f92b89107552e0a3db3aec5d59d4fb49e9835004a069cceee",
+    "pnpm-lock.yaml": "sha256:72fa2389256cb4ca5c2c447f8ed7c879e2423f4124138759f7631ceb196738d3"
+  },
+  "publicBaseline": {
+    "url": "https://fantasysimulation-replay-reader.tokyojp.workers.dev/leagues/9583faa570172f16b9e92d6d68e2e56a47761fdf349e6944035549a464102190.json",
+    "sha256": "sha256:9583faa570172f16b9e92d6d68e2e56a47761fdf349e6944035549a464102190",
+    "sourceSha": "553b14ab883b39903982d446d9c48f7f09111f56",
+    "planned": 7600,
+    "resolved": 7600,
+    "rows": [
+      {
+        "character": "posture-duelist-v1",
+        "detail": {
+          "bytes": 13608,
+          "hash": "sha256:b5b74b83488358aa016dd9527b4345182953a3179c696132e2ad01b817ada132"
+        },
+        "displayOrder": 16,
+        "overall": {
+          "completion": {
+            "denominator": "1",
+            "numerator": "1"
+          },
+          "counts": {
+            "draws": 82,
+            "losses": 547,
+            "planned": 760,
+            "unresolved": 0,
+            "wins": 131
+          },
+          "drawRate": {
+            "denominator": "380",
+            "numerator": "41"
+          },
+          "lossRate": {
+            "denominator": "760",
+            "numerator": "547"
+          },
+          "lower": {
+            "denominator": "19",
+            "numerator": "430"
+          },
+          "rateDenominator": "planned-slots",
+          "upper": {
+            "denominator": "19",
+            "numerator": "430"
+          },
+          "winRate": {
+            "denominator": "760",
+            "numerator": "131"
+          }
+        },
+        "rank": 16
+      },
+      {
+        "character": "swordsman",
+        "detail": {
+          "bytes": 13623,
+          "hash": "sha256:9c10c2ffc46450dc80b2e53b2040fd4d36750f9d69c3a5dc91d459e6253e0e2a"
+        },
+        "displayOrder": 17,
+        "overall": {
+          "completion": {
+            "denominator": "1",
+            "numerator": "1"
+          },
+          "counts": {
+            "draws": 83,
+            "losses": 551,
+            "planned": 760,
+            "unresolved": 0,
+            "wins": 126
+          },
+          "drawRate": {
+            "denominator": "760",
+            "numerator": "83"
+          },
+          "lossRate": {
+            "denominator": "40",
+            "numerator": "29"
+          },
+          "lower": {
+            "denominator": "76",
+            "numerator": "1675"
+          },
+          "rateDenominator": "planned-slots",
+          "upper": {
+            "denominator": "76",
+            "numerator": "1675"
+          },
+          "winRate": {
+            "denominator": "380",
+            "numerator": "63"
+          }
+        },
+        "rank": 17
+      },
+      {
+        "character": "lancer",
+        "detail": {
+          "bytes": 13592,
+          "hash": "sha256:47ba29fc2a4e8ad1d3916af9decf3796a8e56668840c34e7b1b7e8c3241841f8"
+        },
+        "displayOrder": 18,
+        "overall": {
+          "completion": {
+            "denominator": "1",
+            "numerator": "1"
+          },
+          "counts": {
+            "draws": 2,
+            "losses": 660,
+            "planned": 760,
+            "unresolved": 0,
+            "wins": 98
+          },
+          "drawRate": {
+            "denominator": "380",
+            "numerator": "1"
+          },
+          "lossRate": {
+            "denominator": "38",
+            "numerator": "33"
+          },
+          "lower": {
+            "denominator": "38",
+            "numerator": "495"
+          },
+          "rateDenominator": "planned-slots",
+          "upper": {
+            "denominator": "38",
+            "numerator": "495"
+          },
+          "winRate": {
+            "denominator": "380",
+            "numerator": "49"
+          }
+        },
+        "rank": 18
+      },
+      {
+        "character": "stage-vanguard-v1",
+        "detail": {
+          "bytes": 13584,
+          "hash": "sha256:6814c15f3e36e7f685db6b3f957d49c2c5d9d1ebe8512e8b40ac1102d18c4f40"
+        },
+        "displayOrder": 19,
+        "overall": {
+          "completion": {
+            "denominator": "1",
+            "numerator": "1"
+          },
+          "counts": {
+            "draws": 1,
+            "losses": 697,
+            "planned": 760,
+            "unresolved": 0,
+            "wins": 62
+          },
+          "drawRate": {
+            "denominator": "760",
+            "numerator": "1"
+          },
+          "lossRate": {
+            "denominator": "760",
+            "numerator": "697"
+          },
+          "lower": {
+            "denominator": "76",
+            "numerator": "625"
+          },
+          "rateDenominator": "planned-slots",
+          "upper": {
+            "denominator": "76",
+            "numerator": "625"
+          },
+          "winRate": {
+            "denominator": "380",
+            "numerator": "31"
+          }
+        },
+        "rank": 19
+      },
+      {
+        "character": "staged-duelist-v1",
+        "detail": {
+          "bytes": 13537,
+          "hash": "sha256:78cb1394c7f02ef37aab23ac152ab19c64970cacdba722990b69299fe95f01ab"
+        },
+        "displayOrder": 20,
+        "overall": {
+          "completion": {
+            "denominator": "1",
+            "numerator": "1"
+          },
+          "counts": {
+            "draws": 1,
+            "losses": 756,
+            "planned": 760,
+            "unresolved": 0,
+            "wins": 3
+          },
+          "drawRate": {
+            "denominator": "760",
+            "numerator": "1"
+          },
+          "lossRate": {
+            "denominator": "190",
+            "numerator": "189"
+          },
+          "lower": {
+            "denominator": "76",
+            "numerator": "35"
+          },
+          "rateDenominator": "planned-slots",
+          "upper": {
+            "denominator": "76",
+            "numerator": "35"
+          },
+          "winRate": {
+            "denominator": "760",
+            "numerator": "3"
+          }
+        },
+        "rank": 20
+      }
+    ]
+  },
+  "protocol": {
+    "rules": "standard-tactics-spatial-v1",
+    "masterSeed": 20260925,
+    "trials": [0, 1],
+    "opponentsPerCharacter": 19,
+    "battlefields": 5,
+    "placements": ["normal", "swapped"],
+    "maxSteps": 6000,
+    "pairedIdentity": "same actor IDs, RNG seeds/streams, positions, rules, scenarios and budgets; replace all five affected roster entries in candidate battles",
+    "totalExecutedMatches": 3800,
+    "uniqueCoordinates": 1700,
+    "repeatedTargetPairs": "Matches between two targets are executed from both reporting perspectives; they are not independent samples.",
+    "limitations": "Balance comparison, not a new full public ranking, performance benchmark or R2 publication acceptance. Trials 2 and 3 are unmeasured."
+  },
+  "summary": [
+    {
+      "character": "staged-duelist-v1",
+      "replacement": "staged-duelist-trained-v1",
+      "casesPerVersion": 380,
+      "before": {
+        "wins": 2,
+        "draws": 1,
+        "losses": 377,
+        "invalid": 0,
+        "winRatePercent": 0.526
+      },
+      "after": {
+        "wins": 207,
+        "draws": 3,
+        "losses": 170,
+        "invalid": 0,
+        "winRatePercent": 54.474
+      },
+      "byTrial": [
+        {
+          "target": "staged-duelist-v1",
+          "mode": "all",
+          "cases": 190,
+          "before": {
+            "wins": 0,
+            "draws": 0,
+            "losses": 190,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 103,
+            "draws": 1,
+            "losses": 86,
+            "invalid": 0
+          }
+        },
+        {
+          "target": "staged-duelist-v1",
+          "mode": "holdout",
+          "cases": 190,
+          "before": {
+            "wins": 2,
+            "draws": 1,
+            "losses": 187,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 104,
+            "draws": 2,
+            "losses": 84,
+            "invalid": 0
+          }
+        }
+      ],
+      "byScenario": {
+        "aerial-surveyed-v1": {
+          "before": {
+            "wins": 0,
+            "draws": 0,
+            "losses": 76,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 52,
+            "draws": 0,
+            "losses": 24,
+            "invalid": 0
+          }
+        },
+        "elevation-surveyed-v1": {
+          "before": {
+            "wins": 0,
+            "draws": 0,
+            "losses": 76,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 40,
+            "draws": 0,
+            "losses": 36,
+            "invalid": 0
+          }
+        },
+        "flat-surveyed-v1": {
+          "before": {
+            "wins": 0,
+            "draws": 0,
+            "losses": 76,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 40,
+            "draws": 0,
+            "losses": 36,
+            "invalid": 0
+          }
+        },
+        "indoor-surveyed-v1": {
+          "before": {
+            "wins": 0,
+            "draws": 1,
+            "losses": 75,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 45,
+            "draws": 1,
+            "losses": 30,
+            "invalid": 0
+          }
+        },
+        "pillars-surveyed-v1": {
+          "before": {
+            "wins": 2,
+            "draws": 0,
+            "losses": 74,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 30,
+            "draws": 2,
+            "losses": 44,
+            "invalid": 0
+          }
+        }
+      }
+    },
+    {
+      "character": "stage-vanguard-v1",
+      "replacement": "stage-vanguard-trained-v1",
+      "casesPerVersion": 380,
+      "before": {
+        "wins": 32,
+        "draws": 1,
+        "losses": 347,
+        "invalid": 0,
+        "winRatePercent": 8.421
+      },
+      "after": {
+        "wins": 270,
+        "draws": 0,
+        "losses": 110,
+        "invalid": 0,
+        "winRatePercent": 71.053
+      },
+      "byTrial": [
+        {
+          "target": "stage-vanguard-v1",
+          "mode": "all",
+          "cases": 190,
+          "before": {
+            "wins": 17,
+            "draws": 0,
+            "losses": 173,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 141,
+            "draws": 0,
+            "losses": 49,
+            "invalid": 0
+          }
+        },
+        {
+          "target": "stage-vanguard-v1",
+          "mode": "holdout",
+          "cases": 190,
+          "before": {
+            "wins": 15,
+            "draws": 1,
+            "losses": 174,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 129,
+            "draws": 0,
+            "losses": 61,
+            "invalid": 0
+          }
+        }
+      ],
+      "byScenario": {
+        "aerial-surveyed-v1": {
+          "before": {
+            "wins": 12,
+            "draws": 0,
+            "losses": 64,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 62,
+            "draws": 0,
+            "losses": 14,
+            "invalid": 0
+          }
+        },
+        "elevation-surveyed-v1": {
+          "before": {
+            "wins": 4,
+            "draws": 0,
+            "losses": 72,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 54,
+            "draws": 0,
+            "losses": 22,
+            "invalid": 0
+          }
+        },
+        "flat-surveyed-v1": {
+          "before": {
+            "wins": 4,
+            "draws": 0,
+            "losses": 72,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 54,
+            "draws": 0,
+            "losses": 22,
+            "invalid": 0
+          }
+        },
+        "indoor-surveyed-v1": {
+          "before": {
+            "wins": 8,
+            "draws": 1,
+            "losses": 67,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 58,
+            "draws": 0,
+            "losses": 18,
+            "invalid": 0
+          }
+        },
+        "pillars-surveyed-v1": {
+          "before": {
+            "wins": 4,
+            "draws": 0,
+            "losses": 72,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 42,
+            "draws": 0,
+            "losses": 34,
+            "invalid": 0
+          }
+        }
+      }
+    },
+    {
+      "character": "lancer",
+      "replacement": "lancer-trained-v1",
+      "casesPerVersion": 380,
+      "before": {
+        "wins": 50,
+        "draws": 2,
+        "losses": 328,
+        "invalid": 0,
+        "winRatePercent": 13.158
+      },
+      "after": {
+        "wins": 208,
+        "draws": 4,
+        "losses": 168,
+        "invalid": 0,
+        "winRatePercent": 54.737
+      },
+      "byTrial": [
+        {
+          "target": "lancer",
+          "mode": "all",
+          "cases": 190,
+          "before": {
+            "wins": 24,
+            "draws": 0,
+            "losses": 166,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 107,
+            "draws": 2,
+            "losses": 81,
+            "invalid": 0
+          }
+        },
+        {
+          "target": "lancer",
+          "mode": "holdout",
+          "cases": 190,
+          "before": {
+            "wins": 26,
+            "draws": 2,
+            "losses": 162,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 101,
+            "draws": 2,
+            "losses": 87,
+            "invalid": 0
+          }
+        }
+      ],
+      "byScenario": {
+        "aerial-surveyed-v1": {
+          "before": {
+            "wins": 8,
+            "draws": 2,
+            "losses": 66,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 44,
+            "draws": 4,
+            "losses": 28,
+            "invalid": 0
+          }
+        },
+        "elevation-surveyed-v1": {
+          "before": {
+            "wins": 8,
+            "draws": 0,
+            "losses": 68,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 44,
+            "draws": 0,
+            "losses": 32,
+            "invalid": 0
+          }
+        },
+        "flat-surveyed-v1": {
+          "before": {
+            "wins": 8,
+            "draws": 0,
+            "losses": 68,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 44,
+            "draws": 0,
+            "losses": 32,
+            "invalid": 0
+          }
+        },
+        "indoor-surveyed-v1": {
+          "before": {
+            "wins": 13,
+            "draws": 0,
+            "losses": 63,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 40,
+            "draws": 0,
+            "losses": 36,
+            "invalid": 0
+          }
+        },
+        "pillars-surveyed-v1": {
+          "before": {
+            "wins": 13,
+            "draws": 0,
+            "losses": 63,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 36,
+            "draws": 0,
+            "losses": 40,
+            "invalid": 0
+          }
+        }
+      }
+    },
+    {
+      "character": "swordsman",
+      "replacement": "swordsman-trained-v1",
+      "casesPerVersion": 380,
+      "before": {
+        "wins": 62,
+        "draws": 43,
+        "losses": 275,
+        "invalid": 0,
+        "winRatePercent": 16.316
+      },
+      "after": {
+        "wins": 227,
+        "draws": 2,
+        "losses": 151,
+        "invalid": 0,
+        "winRatePercent": 59.737
+      },
+      "byTrial": [
+        {
+          "target": "swordsman",
+          "mode": "all",
+          "cases": 190,
+          "before": {
+            "wins": 30,
+            "draws": 20,
+            "losses": 140,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 115,
+            "draws": 0,
+            "losses": 75,
+            "invalid": 0
+          }
+        },
+        {
+          "target": "swordsman",
+          "mode": "holdout",
+          "cases": 190,
+          "before": {
+            "wins": 32,
+            "draws": 23,
+            "losses": 135,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 112,
+            "draws": 2,
+            "losses": 76,
+            "invalid": 0
+          }
+        }
+      ],
+      "byScenario": {
+        "aerial-surveyed-v1": {
+          "before": {
+            "wins": 12,
+            "draws": 10,
+            "losses": 54,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 56,
+            "draws": 0,
+            "losses": 20,
+            "invalid": 0
+          }
+        },
+        "elevation-surveyed-v1": {
+          "before": {
+            "wins": 12,
+            "draws": 8,
+            "losses": 56,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 40,
+            "draws": 0,
+            "losses": 36,
+            "invalid": 0
+          }
+        },
+        "flat-surveyed-v1": {
+          "before": {
+            "wins": 12,
+            "draws": 8,
+            "losses": 56,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 40,
+            "draws": 0,
+            "losses": 36,
+            "invalid": 0
+          }
+        },
+        "indoor-surveyed-v1": {
+          "before": {
+            "wins": 13,
+            "draws": 9,
+            "losses": 54,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 52,
+            "draws": 2,
+            "losses": 22,
+            "invalid": 0
+          }
+        },
+        "pillars-surveyed-v1": {
+          "before": {
+            "wins": 13,
+            "draws": 8,
+            "losses": 55,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 39,
+            "draws": 0,
+            "losses": 37,
+            "invalid": 0
+          }
+        }
+      }
+    },
+    {
+      "character": "posture-duelist-v1",
+      "replacement": "posture-duelist-trained-v1",
+      "casesPerVersion": 380,
+      "before": {
+        "wins": 66,
+        "draws": 40,
+        "losses": 274,
+        "invalid": 0,
+        "winRatePercent": 17.368
+      },
+      "after": {
+        "wins": 165,
+        "draws": 0,
+        "losses": 215,
+        "invalid": 0,
+        "winRatePercent": 43.421
+      },
+      "byTrial": [
+        {
+          "target": "posture-duelist-v1",
+          "mode": "all",
+          "cases": 190,
+          "before": {
+            "wins": 33,
+            "draws": 20,
+            "losses": 137,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 78,
+            "draws": 0,
+            "losses": 112,
+            "invalid": 0
+          }
+        },
+        {
+          "target": "posture-duelist-v1",
+          "mode": "holdout",
+          "cases": 190,
+          "before": {
+            "wins": 33,
+            "draws": 20,
+            "losses": 137,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 87,
+            "draws": 0,
+            "losses": 103,
+            "invalid": 0
+          }
+        }
+      ],
+      "byScenario": {
+        "aerial-surveyed-v1": {
+          "before": {
+            "wins": 16,
+            "draws": 8,
+            "losses": 52,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 40,
+            "draws": 0,
+            "losses": 36,
+            "invalid": 0
+          }
+        },
+        "elevation-surveyed-v1": {
+          "before": {
+            "wins": 12,
+            "draws": 8,
+            "losses": 56,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 16,
+            "draws": 0,
+            "losses": 60,
+            "invalid": 0
+          }
+        },
+        "flat-surveyed-v1": {
+          "before": {
+            "wins": 12,
+            "draws": 8,
+            "losses": 56,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 34,
+            "draws": 0,
+            "losses": 42,
+            "invalid": 0
+          }
+        },
+        "indoor-surveyed-v1": {
+          "before": {
+            "wins": 14,
+            "draws": 8,
+            "losses": 54,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 41,
+            "draws": 0,
+            "losses": 35,
+            "invalid": 0
+          }
+        },
+        "pillars-surveyed-v1": {
+          "before": {
+            "wins": 12,
+            "draws": 8,
+            "losses": 56,
+            "invalid": 0
+          },
+          "after": {
+            "wins": 34,
+            "draws": 0,
+            "losses": 42,
+            "invalid": 0
+          }
+        }
+      }
+    }
+  ],
+  "rawResults": {
+    "path": "docs/measurements/melee-balance-v1-results.jsonl.gz",
+    "sha256": "sha256:df2cc20d9f36ae5fe2450d07303917606bd682824be3655ffc74e38a8210b2a7",
+    "rows": 1900
+  },
+  "reproduction": {
+    "mapping": {
+      "staged-duelist-v1": "staged-duelist-trained-v1",
+      "stage-vanguard-v1": "stage-vanguard-trained-v1",
+      "lancer": "lancer-trained-v1",
+      "swordsman": "swordsman-trained-v1",
+      "posture-duelist-v1": "posture-duelist-trained-v1"
+    },
+    "driverSha256": "sha256:7c4b06de2577bc9d17d7280683caa264f5cdb129364d44cab08dc40c370effcc",
+    "driverSource": "import { readFileSync, writeFileSync, appendFileSync } from 'node:fs';\nimport { ManifestBuilder, leagueCoordinates, runPreparedBattle, reference } from '@fantasy/engine/spatial';\nconst [target, output, mode = 'pilot'] = process.argv.slice(2);\nconst league = JSON.parse(readFileSync('data/leagues/official-20-v2.json', 'utf8'));\nconst catalog = JSON.parse(readFileSync('data/spatial/catalog.json', 'utf8'));\nconst mapping = JSON.parse(readFileSync('.generated/balance/mapping.json', 'utf8'));\nconst oldBuilder = ManifestBuilder.from(league.revisions);\nconst newBuilder = ManifestBuilder.from(catalog);\nconst candidateRef = ref => mapping[ref.id]\n  ? reference(catalog.find(r => r.kind === 'character' && r.id === mapping[ref.id])) : ref;\nconst summary = { target, mode, cases: 0, before: {wins:0,draws:0,losses:0,invalid:0}, after: {wins:0,draws:0,losses:0,invalid:0}, rows: [] };\nwriteFileSync(output + '.jsonl', '');\nfunction measure(run, actor) {\n  const own = run.records.flatMap(r => r.events ?? []).filter(e => e.actorId === actor);\n  const outcome = run.result.outcome;\n  return { score: outcome.kind === 'win' ? outcome.winner === actor ? 'wins' : 'losses' : outcome.kind === 'draw' ? 'draws' : 'invalid',\n    result: run.result, hits: own.filter(e => e.kind === 'hit').length,\n    casts: own.filter(e => e.kind === 'cast-start').length,\n    damage: own.filter(e => e.kind === 'damage').reduce((s, e) => s + e.amount, 0),\n    emptyHits: own.filter(e => e.kind === 'damage' && e.amount === 0).length };\n}\nfor await (const {slot, spec} of leagueCoordinates(league)) {\n  if (!slot.characters.some(c => c.id === target) || slot.trial !== (mode === 'holdout' ? 1 : 0)) continue;\n  const opponent = slot.characters.find(c => c.id !== target).id;\n  if (mode === 'pilot' && (slot.scenario.id !== 'flat-surveyed-v1' || !['guardian','archer','fire-mage','stamina-scout-v1','water-observer'].includes(opponent))) continue;\n  const actor = spec.participants.find(p => p.character.id === target).actorId;\n  const updated = {...spec, participants: spec.participants.map(p => ({...p, character: candidateRef(p.character)}))};\n  const row = {opponent, scenario:slot.scenario.id, placement:slot.placement, trial:slot.trial, seed:slot.seed, actor};\n  for (const [label,builder,input] of [['before',oldBuilder,spec],['after',newBuilder,updated]]) {\n    row[label] = measure(await runPreparedBattle(await builder.build(input), league.budget), actor);\n    summary[label][row[label].score]++;\n  }\n  summary.cases++;\n  appendFileSync(output + '.jsonl', JSON.stringify(row) + '\\n');\n  summary.rows.push(row);\n  if (summary.cases % 20 === 0) console.log(target, summary.cases, summary.before, summary.after);\n}\nwriteFileSync(output + '.json', JSON.stringify(summary));\nconsole.log(JSON.stringify({...summary, rows: undefined}));\n",
+    "commands": [
+      "node .generated/balance/compare.mjs <old-character-id> <output-prefix> all",
+      "node .generated/balance/compare.mjs <old-character-id> <output-prefix> holdout"
+    ],
+    "instructions": "Restore driverSource at .generated/balance/compare.mjs and mapping at .generated/balance/mapping.json; run from repository root with the pinned toolchain for each of the five old-character IDs. Driver uses the existing engine/league planner; no alternative simulator."
+  }
+}

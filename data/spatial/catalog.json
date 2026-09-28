@@ -216,6 +216,90 @@
   },
   {
     "kind": "ability",
+    "id": "dash-cut-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:c2f8ba10c3079c8014b00bb3c7fae174e7fd1c240ebb173ac450941f1573df3c",
+    "definition": {
+      "name": "突進斬り・練達",
+      "originalText": "前へ突進して斬りつけ、追撃できる距離まで相手を押し戻す。",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 6,
+        "uses": 0
+      },
+      "castSteps": 2,
+      "recoverySteps": 10,
+      "cooldownSteps": 30,
+      "movementWhileCasting": "allow",
+      "rangeMm": 4000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 1800,
+        "radiusMm": 200,
+        "activeSteps": 8,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 14,
+          "attackScaleBps": 7500,
+          "element": "physical"
+        },
+        {
+          "kind": "force",
+          "profile": "linear-v1",
+          "direction": "away",
+          "speedMmPerSecond": 6000,
+          "durationSteps": 3
+        }
+      ],
+      "stages": [
+        {
+          "id": "dash-cut",
+          "offsetSteps": 0,
+          "durationSteps": 8,
+          "attack": {
+            "kind": "melee",
+            "reachMm": 1800,
+            "radiusMm": 200,
+            "activeSteps": 8,
+            "maxHitsPerTarget": 1
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 14,
+              "attackScaleBps": 7500,
+              "element": "physical"
+            },
+            {
+              "kind": "force",
+              "profile": "linear-v1",
+              "direction": "away",
+              "speedMmPerSecond": 6000,
+              "durationSteps": 3
+            }
+          ],
+          "selfMotion": {
+            "kind": "dash",
+            "speedMmPerSecond": 8000,
+            "accelerationMmPerSecond2": 100000
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "dash-cut-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -1238,6 +1322,94 @@
   },
   {
     "kind": "ability",
+    "id": "return-cut-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:aed5d37a3aaca97a0dfb5b10d4b1e2fb8c974790af1a77b4e6ab391ee866e86a",
+    "definition": {
+      "name": "返しの連撃・練達",
+      "originalText": "攻撃力を生かす二段の斬撃。返しの一撃にも体力を消費する。",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 6,
+        "uses": 0
+      },
+      "castSteps": 2,
+      "recoverySteps": 4,
+      "cooldownSteps": 30,
+      "movementWhileCasting": "allow",
+      "rangeMm": 2300,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 2000,
+        "radiusMm": 200,
+        "activeSteps": 4,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 10,
+          "attackScaleBps": 5000,
+          "element": "physical"
+        }
+      ],
+      "stages": [
+        {
+          "id": "cut",
+          "offsetSteps": 0,
+          "durationSteps": 4,
+          "attack": {
+            "kind": "melee",
+            "reachMm": 2000,
+            "radiusMm": 200,
+            "activeSteps": 4,
+            "maxHitsPerTarget": 1
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 10,
+              "attackScaleBps": 5000,
+              "element": "physical"
+            }
+          ]
+        },
+        {
+          "id": "return",
+          "offsetSteps": 5,
+          "durationSteps": 4,
+          "attack": {
+            "kind": "melee",
+            "reachMm": 2000,
+            "radiusMm": 200,
+            "activeSteps": 4,
+            "maxHitsPerTarget": 1
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 15,
+              "attackScaleBps": 5000,
+              "element": "physical"
+            }
+          ],
+          "cost": {
+            "stamina": 4
+          }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "return-cut-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -1912,6 +2084,91 @@
   },
   {
     "kind": "ability",
+    "id": "spear-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:71b2885362e5bc0bf2556ae9b03d8244fe9c985f7057942f5dcf4937f12cf346",
+    "definition": {
+      "name": "槍の突き・練達",
+      "originalText": "長い間合いから素早く槍を突き出す。",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 4,
+      "recoverySteps": 22,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 3700,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 3400,
+        "radiusMm": 150,
+        "activeSteps": 5,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 10000,
+          "element": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "stamina-strike-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:7421cedb639c525baff3788c5dae6383d5b280f8c564b52be16f93f2eac2bc6c",
+    "definition": {
+      "name": "踏み込む斬撃・練達",
+      "originalText": "体力の消耗を抑え、踏み込みと斬撃を継続する。",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 6,
+        "uses": 0
+      },
+      "castSteps": 3,
+      "recoverySteps": 18,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 2300,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 2000,
+        "radiusMm": 200,
+        "activeSteps": 4,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 10000,
+          "element": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "stamina-strike-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -2039,6 +2296,48 @@
   },
   {
     "kind": "ability",
+    "id": "sword-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:78731db2ed9ba511a56c6d5d8eb7bf2e5820c9c5501a086e2dd3066667fc5627",
+    "definition": {
+      "name": "剣・練達",
+      "originalText": "踏み込みながら素早く剣を振り、短い隙で次の攻撃につなぐ。",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "uses": 0
+      },
+      "castSteps": 3,
+      "recoverySteps": 18,
+      "cooldownSteps": 0,
+      "movementWhileCasting": "allow",
+      "rangeMm": 2300,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "melee",
+        "reachMm": 2000,
+        "radiusMm": 200,
+        "activeSteps": 4,
+        "maxHitsPerTarget": 1
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 12,
+          "attackScaleBps": 10000,
+          "element": "physical"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
     "id": "takeoff",
     "revision": 1,
     "schemaVersion": 1,
@@ -2073,6 +2372,69 @@
             "revision": 1,
             "contentHash": "sha256:14b879c8bd78e4f2cbc510b9ade3a5395e07c5bf17fbda1b8e75894383d14944"
           }
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "wide-sweep-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:bab5ea0a1fcd1fc011581c516ec78303c61ba5c7ac7f85dda18e515aa789e76a",
+    "definition": {
+      "name": "全周の薙ぎ払い・練達",
+      "originalText": "攻撃力を生かし、周囲を一周する薙ぎ払いで攻撃する。",
+      "trigger": "action",
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 8,
+        "uses": 0
+      },
+      "castSteps": 3,
+      "recoverySteps": 8,
+      "cooldownSteps": 30,
+      "movementWhileCasting": "allow",
+      "rangeMm": 2400,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "radial",
+        "reachMm": 2000,
+        "bladeRadiusMm": 100,
+        "startAngleMilliDegrees": -90000
+      },
+      "effects": [
+        {
+          "kind": "damage",
+          "amount": 18,
+          "attackScaleBps": 7500,
+          "element": "physical"
+        }
+      ],
+      "stages": [
+        {
+          "id": "sweep",
+          "offsetSteps": 0,
+          "durationSteps": 20,
+          "attack": {
+            "kind": "radial",
+            "reachMm": 2000,
+            "bladeRadiusMm": 100,
+            "startAngleMilliDegrees": -90000
+          },
+          "effects": [
+            {
+              "kind": "damage",
+              "amount": 18,
+              "attackScaleBps": 7500,
+              "element": "physical"
+            }
+          ]
         }
       ]
     }
@@ -3781,6 +4143,79 @@
   },
   {
     "kind": "character",
+    "id": "lancer-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:7f0c2760e81138499484a23bb7ba310e496bc793b239c9bbb68d3bc6575711ec",
+    "definition": {
+      "name": "槍兵・練達",
+      "originalText": "槍の射程を生かして間合いを保ち、相手を牽制する槍兵。",
+      "stats": {
+        "hp": 120,
+        "mp": 100,
+        "attack": 20,
+        "defense": 7,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 4800,
+        "accelerationMmPerSecond2": 18000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [],
+      "equipment": [
+        {
+          "id": "long-spear-trained-v1",
+          "revision": 1,
+          "contentHash": "sha256:7a890aebf597dd529e69d217b7be9d13f042fc4720910d133fad444335904041"
+        }
+      ],
+      "policy": {
+        "id": "lancer-trained-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:845e0172f8db75052eda79c59cf997268c3e05c802579e3d0b0b9d865e975ec1"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "mind-reader-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -4355,6 +4790,146 @@
   },
   {
     "kind": "character",
+    "id": "posture-duelist-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:55cb5ec2dbb28d9d5b9a68f6dd7cee292bbcdb1e5614fe16fd39c375773e366c",
+    "definition": {
+      "name": "体力を配分する斥候・姿勢検証・練達",
+      "originalText": "姿勢による回避を維持し、体力を配分して追走と斬撃を続ける斥候。",
+      "stamina": {
+        "max": 100,
+        "recoveryPerSecond": 10,
+        "resumeAt": 20
+      },
+      "stats": {
+        "hp": 115,
+        "mp": 100,
+        "attack": 20,
+        "defense": 6,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "postures": {
+        "crouching": {
+          "body": {
+            "radiusMm": 300,
+            "heightMm": 1000,
+            "eyeOffset": {
+              "x": 0,
+              "y": 350,
+              "z": 0
+            },
+            "muzzleOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "aimOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "speedBps": 5000,
+          "transitionSteps": 10
+        },
+        "prone": {
+          "body": {
+            "radiusMm": 300,
+            "heightMm": 600,
+            "eyeOffset": {
+              "x": 0,
+              "y": 100,
+              "z": 0
+            },
+            "muzzleOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            },
+            "aimOffset": {
+              "x": 0,
+              "y": 0,
+              "z": 0
+            }
+          },
+          "speedBps": 2000,
+          "transitionSteps": 20
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 5000,
+        "accelerationMmPerSecond2": 18000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000,
+        "locomotion": {
+          "walk": {
+            "speedMmPerSecond": 3000,
+            "staminaPerMeter": 1
+          },
+          "run": {
+            "speedMmPerSecond": 6500,
+            "staminaPerMeter": 3
+          },
+          "exhaustedSpeedMmPerSecond": 1000,
+          "jumpStamina": 12,
+          "dodgeStamina": 8,
+          "stepStaminaPerMeter": 10
+        }
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "stamina-strike-trained-v1",
+          "revision": 1,
+          "contentHash": "sha256:7421cedb639c525baff3788c5dae6383d5b280f8c564b52be16f93f2eac2bc6c"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "posture-duelist-trained-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:0c2a398895e8e18ff40f225a6fc523c0a017c10a36eece81fe1f68eef0685035"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "posture-duelist-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -4748,6 +5323,103 @@
   },
   {
     "kind": "character",
+    "id": "stage-vanguard-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:bfe553d5172679acf5fe47b2d8cb4fcad01b5b1e105ed29e11bd8f2ddaa963be",
+    "definition": {
+      "name": "突進と薙ぎ払いの前衛・練達",
+      "originalText": "走り続ける持久力と装甲を備え、突進と薙ぎ払いで追撃する前衛。",
+      "stamina": {
+        "max": 100,
+        "recoveryPerSecond": 10,
+        "resumeAt": 20
+      },
+      "stats": {
+        "hp": 140,
+        "mp": 100,
+        "attack": 20,
+        "defense": 8,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 5000,
+        "accelerationMmPerSecond2": 18000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000,
+        "locomotion": {
+          "walk": {
+            "speedMmPerSecond": 3000,
+            "staminaPerMeter": 1
+          },
+          "run": {
+            "speedMmPerSecond": 6500,
+            "staminaPerMeter": 3
+          },
+          "exhaustedSpeedMmPerSecond": 1000,
+          "jumpStamina": 12,
+          "dodgeStamina": 8,
+          "stepStaminaPerMeter": 10
+        }
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "dash-cut-trained-v1",
+          "revision": 1,
+          "contentHash": "sha256:c2f8ba10c3079c8014b00bb3c7fae174e7fd1c240ebb173ac450941f1573df3c"
+        },
+        {
+          "id": "wide-sweep-trained-v1",
+          "revision": 1,
+          "contentHash": "sha256:bab5ea0a1fcd1fc011581c516ec78303c61ba5c7ac7f85dda18e515aa789e76a"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "stage-vanguard-trained-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:3fa380635645f36d92f9fe994a46bd46cba0266859e0de7145d4d8ecfc0f5751"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "stage-vanguard-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -4840,6 +5512,83 @@
         "id": "stage-vanguard-v1-policy",
         "revision": 1,
         "contentHash": "sha256:9d74211f70745ea4fac5dfe60724ef0496b42edd8fbe75c951e1959c976f1949"
+      }
+    }
+  },
+  {
+    "kind": "character",
+    "id": "staged-duelist-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:9e93220867cd7c628fda844b205b7d81b3062b7a5b526ff8e3bec9e93a54c74d",
+    "definition": {
+      "name": "連撃の剣士・練達",
+      "originalText": "連撃の威力と体力回復を鍛え、踏み込んで二段の斬撃を繰り出す剣士。",
+      "stamina": {
+        "max": 60,
+        "recoveryPerSecond": 10
+      },
+      "stats": {
+        "hp": 130,
+        "mp": 100,
+        "attack": 20,
+        "defense": 7,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 5000,
+        "accelerationMmPerSecond2": 18000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "return-cut-trained-v1",
+          "revision": 1,
+          "contentHash": "sha256:aed5d37a3aaca97a0dfb5b10d4b1e2fb8c974790af1a77b4e6ab391ee866e86a"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "staged-duelist-trained-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:dcd5d7b887400b60db89fd739a06c13b5ac4a1b3ee2ae81c2cb7d7a0d331aaec"
       }
     }
   },
@@ -5257,6 +6006,79 @@
   },
   {
     "kind": "character",
+    "id": "swordsman-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:d65898a9c61269834462374cff0c45d8b17aeeb3024799466c317abe271953d9",
+    "definition": {
+      "name": "剣士・練達",
+      "originalText": "接近速度と防御を鍛え、素早い斬撃で戦う剣士。",
+      "stats": {
+        "hp": 130,
+        "mp": 100,
+        "attack": 20,
+        "defense": 8,
+        "actionSpeedBps": 10000,
+        "shield": 0,
+        "resistances": {
+          "physical": 0,
+          "fire": 0,
+          "ice": 0,
+          "lightning": 0,
+          "arcane": 0
+        }
+      },
+      "body": {
+        "radiusMm": 300,
+        "heightMm": 1800,
+        "eyeOffset": {
+          "x": 0,
+          "y": 650,
+          "z": 0
+        },
+        "muzzleOffset": {
+          "x": 0,
+          "y": 400,
+          "z": 300
+        },
+        "aimOffset": {
+          "x": 0,
+          "y": 200,
+          "z": 0
+        }
+      },
+      "movement": {
+        "speedMmPerSecond": 5200,
+        "accelerationMmPerSecond2": 18000,
+        "turnMilliDegreesPerSecond": 360000,
+        "jumpMmPerSecond": 5000,
+        "stepHeightMm": 300,
+        "maxSlopeMilliDegrees": 45000,
+        "flySpeedMmPerSecond": 5000
+      },
+      "perception": {
+        "rangeMm": 50000,
+        "fovMilliDegrees": 180000,
+        "reactionSteps": 5,
+        "memorySteps": 250
+      },
+      "abilities": [
+        {
+          "id": "sword-trained-v1",
+          "revision": 1,
+          "contentHash": "sha256:78731db2ed9ba511a56c6d5d8eb7bf2e5820c9c5501a086e2dd3066667fc5627"
+        }
+      ],
+      "equipment": [],
+      "policy": {
+        "id": "swordsman-trained-v1-policy",
+        "revision": 1,
+        "contentHash": "sha256:f0719ed62cac1f4b23820ae43073798bcd5c3095f4f4ab6dccb57723e11ace42"
+      }
+    }
+  },
+  {
+    "kind": "character",
     "id": "unerring-mage-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -5432,6 +6254,26 @@
           "id": "spear",
           "revision": 1,
           "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3"
+        }
+      ]
+    }
+  },
+  {
+    "kind": "equipment",
+    "id": "long-spear-trained-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:7a890aebf597dd529e69d217b7be9d13f042fc4720910d133fad444335904041",
+    "definition": {
+      "name": "長槍・練達",
+      "originalText": "攻撃力を補い、素早い長槍の突きを使える装備。",
+      "attackBonus": 5,
+      "defenseBonus": 0,
+      "abilities": [
+        {
+          "id": "spear-trained-v1",
+          "revision": 1,
+          "contentHash": "sha256:71b2885362e5bc0bf2556ae9b03d8244fe9c985f7057942f5dcf4937f12cf346"
         }
       ]
     }
@@ -5859,6 +6701,29 @@
   },
   {
     "kind": "policy",
+    "id": "lancer-trained-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:845e0172f8db75052eda79c59cf997268c3e05c802579e3d0b0b9d865e975ec1",
+    "definition": {
+      "name": "槍兵の方針・練達",
+      "originalText": "観測した相手との間合いを保ち、使用可能な技を選ぶ。",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "spear-trained-v1"
+        }
+      ],
+      "movement": "keep-distance",
+      "preferredDistanceMm": 2600,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
     "id": "mind-reader-v1-policy",
     "revision": 1,
     "schemaVersion": 1,
@@ -6019,6 +6884,37 @@
       ],
       "movement": "evade",
       "preferredDistanceMm": 8000,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true,
+      "evaluation": {
+        "attackBps": 10000,
+        "survivalBps": 10000,
+        "explorationBps": 10000,
+        "riskToleranceBps": 5000,
+        "resourceConservationBps": 15000,
+        "searchAggressionBps": 5000
+      }
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "posture-duelist-trained-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:0c2a398895e8e18ff40f225a6fc523c0a017c10a36eece81fe1f68eef0685035",
+    "definition": {
+      "name": "体力を配分する斥候の方針・姿勢と索敵・練達",
+      "originalText": "観測した相手に接近し、使用可能な技と移動・回避を選ぶ。",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "stamina-strike-trained-v1"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
       "flightAltitudeMm": 6000,
       "jumpWhenBlocked": true,
       "evaluation": {
@@ -6278,6 +7174,35 @@
   },
   {
     "kind": "policy",
+    "id": "stage-vanguard-trained-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:3fa380635645f36d92f9fe994a46bd46cba0266859e0de7145d4d8ecfc0f5751",
+    "definition": {
+      "name": "突進と薙ぎ払いの前衛の方針・練達",
+      "originalText": "観測した相手に接近し、使用可能な技と移動・回避を選ぶ。",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "dash-cut-trained-v1"
+        },
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "wide-sweep-trained-v1"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1400,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
     "id": "stage-vanguard-v1-policy",
     "revision": 1,
     "schemaVersion": 1,
@@ -6301,6 +7226,29 @@
       ],
       "movement": "approach",
       "preferredDistanceMm": 1400,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "staged-duelist-trained-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:dcd5d7b887400b60db89fd739a06c13b5ac4a1b3ee2ae81c2cb7d7a0d331aaec",
+    "definition": {
+      "name": "連撃の剣士の方針・練達",
+      "originalText": "観測した相手に接近し、使用可能な技と移動・回避を選ぶ。",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "return-cut-trained-v1"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
       "flightAltitudeMm": 6000,
       "jumpWhenBlocked": true
     }
@@ -6412,6 +7360,29 @@
             "kind": "always"
           },
           "abilityId": "sword"
+        }
+      ],
+      "movement": "approach",
+      "preferredDistanceMm": 1200,
+      "flightAltitudeMm": 6000,
+      "jumpWhenBlocked": true
+    }
+  },
+  {
+    "kind": "policy",
+    "id": "swordsman-trained-v1-policy",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:f0719ed62cac1f4b23820ae43073798bcd5c3095f4f4ab6dccb57723e11ace42",
+    "definition": {
+      "name": "剣士の方針・練達",
+      "originalText": "観測した相手に接近し、使用可能な技と移動・回避を選ぶ。",
+      "priorities": [
+        {
+          "when": {
+            "kind": "always"
+          },
+          "abilityId": "sword-trained-v1"
         }
       ],
       "movement": "approach",
