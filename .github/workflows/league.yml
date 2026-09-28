@@ -16,7 +16,7 @@ on:
         required: true
       definition:
         description: Committed league definition
-        default: data/leagues/official-20-v2.json
+        default: data/leagues/official-20-balanced-v1.json
         type: string
         required: true
 permissions:
@@ -30,7 +30,7 @@ defaults:
     working-directory: apps/cli
 env:
   FANTASY_MEASUREMENTS_DIR: ${{ github.workspace }}/apps/cli/.generated/league-timing
-  OFFICIAL_LEAGUE_DEFINITION: data/leagues/official-20-v2.json
+  OFFICIAL_LEAGUE_DEFINITION: data/leagues/official-20-balanced-v1.json
   PUBLICATION_VIEWER_URL: https://apaapapapapa.github.io/FantasySimulation/
   PUBLICATION_WORKER_URL: https://fantasysimulation-replay-reader.tokyojp.workers.dev/
 jobs:
