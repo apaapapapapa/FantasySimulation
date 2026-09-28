@@ -8,7 +8,7 @@ import {
   type LeaguePlan,
   type PublicLeagueWork,
 } from '@fantasy/domain/spatial';
-import { BattleBundles } from '@fantasy/api/artifacts';
+import type { BundleRead } from '@fantasy/api/artifacts';
 import {
   progressPage,
   reserveLeaguePartition,
@@ -29,7 +29,7 @@ export async function buildLeagueWork(
   completed: readonly LeagueCheckInput[],
   prior: { ref: LeagueFileRef | null; records: readonly LeagueProgress[] },
   executionId: string,
-  retained?: BattleBundles,
+  retained?: BundleRead,
 ) {
   await validateLeaguePlan(plan);
   if (completed.length)
@@ -71,7 +71,7 @@ export async function finishCheckedLeagueWork(
   verified: Awaited<ReturnType<typeof checkLeague>>,
   reservations: readonly LeagueReservation[],
   reserved: { ref: LeagueFileRef; records: readonly LeagueProgress[]; work: PublicLeagueWork },
-  retained: BattleBundles,
+  retained: BundleRead,
 ) {
   const { plan } = verified;
   if (

@@ -7,6 +7,9 @@ inputs:
   collect-actions:
     default: 'false'
     description: Collect paginated current-attempt job and step timestamps
+  extra-files:
+    default: ''
+    description: Explicit structured reports to preserve with this job's timing artifact
 runs:
   using: composite
   steps:
@@ -29,7 +32,9 @@ runs:
       continue-on-error: true
       with:
         name: league-timing-${{ github.run_id }}-${{ github.run_attempt }}-${{ inputs.suffix }}
-        path: ${{ env.FANTASY_MEASUREMENTS_DIR }}/*.json
+        path: |
+          ${{ env.FANTASY_MEASUREMENTS_DIR }}/*.json
+          ${{ inputs.extra-files }}
         if-no-files-found: warn
         include-hidden-files: true
         retention-days: 7

@@ -16,6 +16,26 @@ const privateError = () =>
   });
 afterEach(() => vi.restoreAllMocks());
 
+it.each([
+  ['pipeline-restore', 'restoration'],
+  ['pipeline-prepare', 'planning'],
+  ['pipeline-admit', 'publication'],
+  ['pipeline-compute', 'execution'],
+  ['pipeline-transfer', 'publication'],
+  ['pipeline-recover', 'publication'],
+])(
+  'preserves %s phase and structured failure filename without private details',
+  async (command, phase) => {
+    await withReplayDirectory(async (root) => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      await reportLeagueFailure(privateError(), { command, executionId: 'league-123-1' }, root);
+      const text = await readFile(join(root, 'reports', `failure-${command}.json`), 'utf8');
+      expect(JSON.parse(text)).toMatchObject({ command, phase, executionId: 'league-123-1' });
+      expect(text).not.toContain(secret);
+    });
+  },
+);
+
 it('retains source codes from admission and checksum verification', async () => {
   let failure: unknown;
   try {

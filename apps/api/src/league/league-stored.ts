@@ -9,7 +9,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { leagueCoordinates } from '@fantasy/engine/spatial';
 import { checkedBatch } from '../batch/batch-check.ts';
-import type { BattleBundles } from '../batch/battle-bundle.ts';
+import type { BundleRead } from '../batch/battle-bundle.ts';
 import { OperationError } from '../operation-error.ts';
 import { leaguePartitionIdentity, validateStoredLeaguePlan } from './league-plan.ts';
 
@@ -99,7 +99,7 @@ export function storedResultPartition(
 }
 
 /** Bind an already verified recording to its original plan, without preparing a battle. */
-export function storedLeagueBundleBinding(batch: BatchPlan, bundles: BattleBundles) {
+export function storedLeagueBundleBinding(batch: BatchPlan, bundles: BundleRead) {
   const revisions = new Map(
     batch.revisions.map((revision) => [revisionKey(revision), revision.contentHash]),
   );

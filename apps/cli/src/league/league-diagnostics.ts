@@ -12,6 +12,12 @@ const commands = {
   run: 'execution',
   finish: 'validation',
   publish: 'publication',
+  'pipeline-restore': 'restoration',
+  'pipeline-prepare': 'planning',
+  'pipeline-admit': 'publication',
+  'pipeline-compute': 'execution',
+  'pipeline-transfer': 'publication',
+  'pipeline-recover': 'publication',
 } as const;
 type Command = keyof typeof commands;
 type Retry = 'conditional' | 'no' | 'unknown';
@@ -104,7 +110,7 @@ export function leagueFailure(error: unknown, context: LeagueFailureContext) {
       ? (context.command as Command)
       : 'unknown';
   const schemaCode =
-    command === 'probe' || command === 'prepare' || context.validating
+    (command !== 'unknown' && commands[command] === 'planning') || context.validating
       ? 'INPUT_INVALID'
       : 'DATA_INVALID';
   let classified: unknown = operationCode(error, schemaCode);

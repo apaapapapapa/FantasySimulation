@@ -1,0 +1,27 @@
+name: Authenticated league runtime
+description: Exact main CI dependency distribution, with measured frozen fallback
+inputs:
+  ci-run:
+    required: true
+    description: Successful same-source main CI run
+runs:
+  using: composite
+  steps:
+    - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+      with:
+        node-version-file: .node-version
+        run-install: false
+        cache: false
+    - id: runtime
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        LEAGUE_CI_RUN: ${{ inputs.ci-run }}
+        LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+      run: node scripts/league-runtime-bootstrap.ts
+    - if: steps.runtime.outputs.installed != 'true'
+      uses: ./.github/actions/setup-project
+    - name: Verify runtime startup
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      run: node --import tsx scripts/league-runtime-smoke.ts

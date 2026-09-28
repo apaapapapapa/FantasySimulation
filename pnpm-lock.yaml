@@ -42,6 +42,9 @@ importers:
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
+      '@protobuf-ts/runtime-rpc':
+        specifier: 2.11.1
+        version: 2.11.1
       '@semantic-release/commit-analyzer':
         specifier: 13.0.1
         version: 13.0.1(semantic-release@25.0.9(supports-color@10.2.2)(typescript@7.0.2))(supports-color@10.2.2)
@@ -78,6 +81,9 @@ importers:
       semantic-release:
         specifier: 25.0.9
         version: 25.0.9(supports-color@10.2.2)(typescript@7.0.2)
+      tsx:
+        specifier: 4.23.15
+        version: 4.23.15
       typescript:
         specifier: 7.0.2
         version: 7.0.2

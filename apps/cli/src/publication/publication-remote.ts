@@ -1,3 +1,4 @@
+import { evidenceGraph, evidenceMd5, type PublicationEvidence } from './publication-evidence.ts';
 import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { ReaderBuildSchema, ViewerBuildSchema } from '@fantasy/domain';
 import {
@@ -16,6 +17,7 @@ import {
   PUBLICATION_MAX_BYTES,
   PUBLICATION_MAX_FILES,
   PUBLICATION_CONTROL_KEY,
+  isLeagueCheckpointKey,
   type PublicationFile,
 } from './publication-files.ts';
 import { createHash } from 'node:crypto';
@@ -64,6 +66,7 @@ export interface PublishOptions extends TransferTuning {
   signal?: AbortSignal;
   dryRun?: boolean;
   observe?(report: PublishReport): void;
+  beforeCommit?(): Promise<void>;
 }
 export interface PublishReport {
   catalogHash: string;
@@ -113,9 +116,11 @@ async function listedMatch(
   file: PublicationFile,
   size: number | undefined,
   etag: string | undefined,
+  authenticatedMd5?: string,
 ) {
   const md5 = /^"?([a-f0-9]{32})"?$/i.exec(etag ?? '')?.[1]?.toLowerCase();
   if (!md5 || size !== file.bytes) return false;
+  if (authenticatedMd5) return md5 === authenticatedMd5;
   return (
     createHash('md5')
       .update(await publicationBytes(file))
@@ -140,6 +145,37 @@ export async function publishPublication(
   destination: PublicationStore | PublicationStoreFactory,
   options: PublishOptions,
 ) {
+  try {
+    return await publishGraph(
+      await localPublicationGraph(
+        root,
+        options.verificationWorkers ?? 1,
+        options.signal,
+        options.graphReadConcurrency ?? 4,
+      ),
+      destination,
+      options,
+    );
+  } catch (error) {
+    if (error instanceof PublicationFailure) throw error;
+    throw new PublicationFailure('not-committed', error);
+  }
+}
+
+export async function publishPublicationEvidence(
+  evidence: PublicationEvidence,
+  destination: PublicationStore | PublicationStoreFactory,
+  options: PublishOptions,
+) {
+  return publishGraph(evidenceGraph(evidence), destination, options, evidence);
+}
+
+async function publishGraph(
+  graph: Awaited<ReturnType<typeof publicationGraph>>,
+  destination: PublicationStore | PublicationStoreFactory,
+  options: PublishOptions,
+  evidence?: PublicationEvidence,
+) {
   let phase: PublicationPhase = 'not-committed';
   let io: PublicationIo | undefined;
   try {
@@ -151,12 +187,6 @@ export async function publishPublication(
     const tuning = transferTuning(options, concurrency);
     io = new PublicationIo(tuning.sockets, tuning.bytes, options.signal);
     const transfer = io;
-    const graph = await localPublicationGraph(
-      root,
-      options.verificationWorkers ?? 1,
-      options.signal,
-      options.graphReadConcurrency ?? 4,
-    );
     const session = typeof destination === 'function' ? await destination(graph) : destination;
     const store = 'store' in session ? session.store : session;
     let viewerSourceSha = '';
@@ -225,7 +255,12 @@ export async function publishPublication(
         if (
           expected &&
           (await transfer.run(expected.bytes, () =>
-            listedMatch(expected, inventory.get(key), etags?.get(key)),
+            listedMatch(
+              expected,
+              inventory.get(key),
+              etags?.get(key),
+              evidence && evidenceMd5(evidence, expected),
+            ),
           ))
         ) {
           exactReceipts.add(key);
@@ -284,7 +319,12 @@ export async function publishPublication(
             if (
               !exactReceipts.has(file.key) &&
               !(await transfer.run(file.bytes, () =>
-                listedMatch(file, inventory.get(file.key), etags?.get(file.key)),
+                listedMatch(
+                  file,
+                  inventory.get(file.key),
+                  etags?.get(file.key),
+                  evidence && evidenceMd5(evidence, file),
+                ),
               ))
             )
               await transfer.run(file.bytes, () => exact(store, file));
@@ -417,6 +457,7 @@ export async function publishPublication(
     );
     // Prove actual dual-reader capability before exposing any v2 pointer.
     await verifyReader();
+    await options.beforeCommit?.();
     await compatible();
     if (graph.current.schemaVersion === 2) report.viewerSourceSha = viewerSourceSha;
     await sameGeneration();
@@ -465,7 +506,8 @@ export async function prunePublication(store: PublicationStore, confirm = false)
   });
   const inventory = await store.inventory();
   const keys = [...inventory.keys()].filter(
-    (key) => key !== PUBLICATION_CONTROL_KEY && !graph.files.has(key),
+    (key) =>
+      key !== PUBLICATION_CONTROL_KEY && !isLeagueCheckpointKey(key) && !graph.files.has(key),
   );
   if (keys.length > 10000) throw new Error('Orphan deletion request limit');
   if (confirm && keys.length * 2 > store.remainingRequests())

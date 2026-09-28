@@ -70,9 +70,43 @@ async function buildLeaguePublication(
   signal: AbortSignal | undefined,
   packs: boolean,
 ) {
-  const checked = await checkStoredLeague(input, partitions, completed, pool, signal),
-    { plan, standings } = checked;
+  const checked = await checkStoredLeague(input, partitions, completed, pool, signal);
   const journal = typeof work === 'function' ? await work(checked) : work;
+  return composeLeaguePublication(
+    checked,
+    directory,
+    journal,
+    async (batch) => {
+      const result = checked.results.find((entry) => entry.index.planId === batch.id);
+      const source = result ? checked.resultSources.get(result.id) : undefined;
+      if (result && !source)
+        throw new OperationError('DATA_INVALID', 'Missing verified result source');
+      return buildPublication(
+        batch,
+        source ? [{ index: result!.index, bundles: source.bundles }] : [],
+        directory,
+        pool,
+        signal,
+        packs,
+      );
+    },
+    packs,
+    signal,
+  );
+}
+
+/** Shared exact scorer output and metadata layout for local export and authenticated producers. */
+export async function composeLeaguePublication(
+  checked: Awaited<ReturnType<typeof checkStoredLeague>>,
+  directory: string,
+  journal: LeagueWorkPublication | undefined,
+  publication: (
+    batch: import('@fantasy/domain/spatial').BatchPlan,
+  ) => Promise<Awaited<ReturnType<typeof buildPublication>>>,
+  packs: boolean,
+  signal?: AbortSignal,
+) {
+  const { plan, standings } = checked;
   signal?.throwIfAborted();
   const latestOutcomes = new Map(
     checked.attempts.map((attempt) => [attempt.slotId, attempt.outcome.kind] as const),
@@ -91,21 +125,9 @@ async function buildLeaguePublication(
   };
   const sets: PublicCatalog['sets'] = [];
   const pairs = new Map<string, PublicLeagueSlotPage['rows']>();
-  const results = new Map(checked.results.map((result) => [result.index.planId, result]));
   for (const { partition, batch } of checked.partitions.values()) {
     signal?.throwIfAborted();
-    const result = results.get(batch.id);
-    const source = result ? checked.resultSources.get(result.id) : undefined;
-    if (result && !source)
-      throw new OperationError('DATA_INVALID', 'Missing verified result source');
-    const built = await buildPublication(
-      batch,
-      source ? [{ index: result!.index, bundles: source.bundles }] : [],
-      directory,
-      pool,
-      signal,
-      packs,
-    );
+    const built = await publication(batch);
     built.files.forEach(add);
     sets.push(built.setRef);
     const batchSlots = new Map(batch.slots.map((slot) => [slot.key, slot]));

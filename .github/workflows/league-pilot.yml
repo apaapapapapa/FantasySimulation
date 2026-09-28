@@ -1,0 +1,81 @@
+name: League pipeline pilots
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful exact-source main CI
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+env:
+  LEAGUE_CI_RUN: ${{ inputs.ci_run_id }}
+jobs:
+  produce:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Secret-free produce pilot
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        run: node --import tsx scripts/league-artifact-pilot.ts produce
+  consume:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Secret-free consume pilot
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        run: node --import tsx scripts/league-artifact-pilot.ts consume
+  workers:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Secret-free workers pilot
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        run: node --import tsx scripts/league-worker-pilot.ts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: league-${{ github.run_id }}-${{ github.run_attempt }}-cost-profile
+          path: .generated/league-worker-pilot/cost-profile.json
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: league-worker-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/league-worker-pilot/*.json
+          compression-level: 0
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7

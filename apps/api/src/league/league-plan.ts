@@ -26,7 +26,7 @@ import {
   validateStoredLeagueRevision,
 } from '@fantasy/engine/spatial';
 import { createBatchPlan, validateBatchPlan } from '../batch/batch-plan.ts';
-import type { BattleBundles } from '../batch/battle-bundle.ts';
+import type { BundleRead } from '../batch/battle-bundle.ts';
 import { nextLeagueAttempt, verifyLeagueProgress } from './league-progress.ts';
 import { canonicalJson } from '@fantasy/domain/spatial';
 const WORK_BYTES = 512 * 1024 ** 2;
@@ -97,7 +97,7 @@ export async function planLeague(
   source: ExecutionSource,
   options: LeagueEstimateInput,
   history: readonly LeagueProgress[] = [],
-  bundles?: BattleBundles,
+  bundles?: BundleRead,
 ) {
   const revision = await createLeagueRevision(input, source.sha),
     progress = await verifyLeagueProgress(history, bundles);
