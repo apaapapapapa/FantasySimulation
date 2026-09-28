@@ -8,10 +8,10 @@ import {
   type BatchPlan,
   type BatchIndex,
 } from '@fantasy/domain/spatial';
-import type { BattleBundles } from './battle-bundle.ts';
-import type { ReplayVerificationPool } from '../replay/verification-pool.ts';
+import type { BundleRead } from './battle-bundle.ts';
+import type { ReplayVerifier } from '../replay/verification-pool.ts';
 
-export type BatchCheckInput = { index: unknown; bundles: BattleBundles };
+export type BatchCheckInput = { index: unknown; bundles: BundleRead };
 export function shardSlots(plan: BatchPlan, index: number, count: number) {
   if (
     !Number.isInteger(count) ||
@@ -28,7 +28,7 @@ export function shardSlots(plan: BatchPlan, index: number, count: number) {
 export async function checkedBatch(
   input: unknown,
   indexes: BatchCheckInput[],
-  verification?: { publicData?: boolean; pool?: ReplayVerificationPool; signal?: AbortSignal },
+  verification?: { publicData?: boolean; pool?: ReplayVerifier; signal?: AbortSignal },
 ) {
   if (indexes.length > 64) throw new Error('Expected at most 64 batch indexes');
   const scoped = verification
@@ -98,11 +98,11 @@ async function checkBatchData(input: unknown, indexes: BatchCheckInput[], prever
     }
   }
   const expected = new Map(plan.slots.map((s) => [s.id, s.simulationHash]));
-  const sources = new Map<string, BattleBundles>();
+  const sources = new Map<string, BundleRead>();
   const shardIds = new Set<number>();
   let shardCount: number | undefined;
   const found = new Map<string, BatchIndex['slots'][number]>();
-  const pending: { bundles: BattleBundles; slots: BatchIndex['slots'] }[] = [];
+  const pending: { bundles: BundleRead; slots: BatchIndex['slots'] }[] = [];
   for (const value of indexes) {
     const index = operationInput(() => parseJson(BatchIndexSchema, value.index), 'DATA_INVALID'),
       { id, ...body } = index;

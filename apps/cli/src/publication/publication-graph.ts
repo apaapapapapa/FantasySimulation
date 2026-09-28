@@ -39,13 +39,24 @@ import type { LeagueJson } from '../league/league-metadata.ts';
 export type PublicationRead = ((key: string, limit: number) => Promise<Buffer>) & {
   prefetch?(files: readonly Pick<PublicationFile, 'key' | 'bytes' | 'checksum'>[]): Promise<void>;
 };
+export type ReplayProof = {
+  ref: PublicReplayRef;
+  receipt: BundleReceipt;
+  manifest: ReplayManifest;
+  physical: PublicationFile[];
+  logical: PublicationFile[];
+};
 
 function orderedEntries<T>(entries: Map<string, T>) {
   return new Map([...entries].sort(([a], [b]) => compareIds(a, b)));
 }
 
 /** Traverse all retained generations, validating content-addressed references before any mutation. */
-export async function publicationGraph(source: PublicationRead, concurrency = 1) {
+export async function publicationGraph(
+  source: PublicationRead,
+  concurrency = 1,
+  authenticated?: ReadonlyMap<string, ReplayProof>,
+) {
   publicationConcurrency(concurrency, 64);
   const files = new Map<string, PublicationFile>(),
     sources = new Set<string>();
@@ -54,6 +65,7 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     sets = new Map<string, PublicReplaySet>();
   const pages = new Map<string, PublicMatchPage>(),
     receipts = new Map<string, BundleReceipt>();
+  const replays = new Map<string, ReplayProof>();
   const leagues = new Map<string, NonNullable<PublicCatalog['leagues']>[number]>();
   const leagueWork = new Map<string, LeagueFileRef>();
   const catalogs: PublicCatalog[] = [];
@@ -112,13 +124,40 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     let promise = bundles.get(identity);
     if (!promise) {
       promise = (async () => {
+        const proof = authenticated?.get(identity);
+        if (proof) {
+          if (canonicalJson(proof.ref) !== identity)
+            throw new OperationError('DATA_INVALID', 'Authenticated replay reference mismatch');
+          const prefix = `objects/${publicHashName(objectHash)}/`;
+          const receiptData = Buffer.from(canonicalJson(proof.receipt));
+          const receipt = receiptIdentity(prefix + 'receipt.json', receiptData, results);
+          if (
+            receiptData.length !== ref.receiptBytes ||
+            sha256(receiptData) !== ref.receiptChecksum ||
+            sha256(canonicalJson(proof.manifest)) !== receipt.manifestChecksum
+          )
+            throw new OperationError('DATA_INVALID', 'Authenticated replay metadata mismatch');
+          proof.physical.forEach(add);
+          for (const file of proof.logical) {
+            const old = logicalFiles.get(file.key);
+            if (old && (old.checksum !== file.checksum || old.bytes !== file.bytes))
+              throw new OperationError('DATA_INVALID', 'Conflicting authenticated replay storage');
+            logicalFiles.set(file.key, file);
+          }
+          receipts.set(objectHash, receipt);
+          objects.add(objectHash);
+          replays.set(identity, proof);
+          return { receipt, manifest: proof.manifest };
+        }
         const packed = await packs.source(ref);
         const load = packed?.read ?? read;
+        const logical: PublicationFile[] = [];
         const addLogical = (file: PublicationFile) => {
           const old = logicalFiles.get(file.key);
           if (old && (old.checksum !== file.checksum || old.bytes !== file.bytes))
             throw new OperationError('DATA_INVALID', 'Conflicting replay storage reference');
           logicalFiles.set(file.key, file);
+          logical.push(file);
           if (!packed) add(file);
         };
         const objectPrefix = `objects/${publicHashName(objectHash)}/`;
@@ -171,6 +210,22 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
           addLogical(file);
         }
         objects.add(receipt.objectHash);
+        const physical =
+          'packs' in ref
+            ? ref.packs.flatMap((indexRef) => {
+                const index = files.get(`pack-indexes/${indexRef.hash.slice(7)}.json`)!;
+                const pack = packs.index(indexRef.hash);
+                return [index, files.get(`packs/${pack.packHash.slice(7)}.bin`)!];
+              })
+            : logical;
+        const reference = ({ key, bytes, checksum }: PublicationFile) => ({ key, bytes, checksum });
+        replays.set(identity, {
+          ref,
+          receipt,
+          manifest,
+          logical: logical.map(reference),
+          physical: physical.map(reference),
+        });
         return { receipt, manifest };
       })();
       bundles.set(identity, promise);
@@ -381,6 +436,8 @@ export async function publicationGraph(source: PublicationRead, concurrency = 1)
     results: orderedEntries(results),
     objects: new Set([...objects].sort(compareIds)),
     sets: orderedEntries(sets),
+    pages: orderedEntries(pages),
+    replays: orderedEntries(replays),
     totalBytes,
     latestWork,
   };

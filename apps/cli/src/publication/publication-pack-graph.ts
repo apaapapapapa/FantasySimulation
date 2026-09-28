@@ -90,6 +90,11 @@ export function packGraphReader(
   }
   return {
     source,
+    index(hash: string) {
+      const index = indexes.get(hash);
+      if (!index) throw new OperationError('DATA_INVALID', 'Missing authenticated pack index');
+      return index;
+    },
     finish() {
       for (const index of indexes.values())
         for (const entry of index.entries)

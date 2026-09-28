@@ -14,6 +14,7 @@ export { reserveLeaguePartition, runLeaguePartition } from './league/league-runn
 export {
   progressPage,
   validateProgressPage,
+  validateLeagueReservation,
   verifyLeagueProgress,
 } from './league/league-progress.ts';
 export { checkLeague, checkStoredLeague, type LeagueCheckInput } from './league/league-check.ts';

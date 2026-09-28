@@ -1,4 +1,4 @@
-export { BattleBundles } from './batch/battle-bundle.ts';
+export { BattleBundles, type BundleRead } from './batch/battle-bundle.ts';
 export { OperationError, operationInput } from './operation-error.ts';
 export {
   checkedBatch,
@@ -18,6 +18,7 @@ export {
   ReplayVerificationPool,
   replayVerificationWorkers,
   withReplayVerificationPool,
+  type ReplayVerifier,
 } from './replay/verification-pool.ts';
 export { currentMeasurements, measureAsync } from './measurements.ts';
 export { default as verifyRecordedReplay } from './replay/verification-worker.ts';

@@ -12,7 +12,7 @@ import {
   type LeaguePlan,
   type LeaguePartition,
 } from '@fantasy/domain/spatial';
-import type { BattleBundles } from '../batch/battle-bundle.ts';
+import type { BundleRead } from '../batch/battle-bundle.ts';
 
 export function leagueProgressMap(input: readonly LeagueProgress[]) {
   if (input.length > 64000) throw new OperationError('BUDGET_EXCEEDED', 'League progress limit');
@@ -36,10 +36,7 @@ export function nextLeagueAttempt(record?: LeagueProgress): 1 | 2 | null {
   return 2;
 }
 
-export async function verifyLeagueProgress(
-  input: readonly LeagueProgress[],
-  bundles?: BattleBundles,
-) {
+export async function verifyLeagueProgress(input: readonly LeagueProgress[], bundles?: BundleRead) {
   const records = leagueProgressMap(input);
   for (const record of records.values())
     for (const attempt of record.attempts) {

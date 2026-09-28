@@ -1,6 +1,6 @@
 import { packPublication } from './publication-packs.ts';
 import { OperationError, operationInput } from '@fantasy/api/artifacts';
-import type { ReplayVerificationPool } from '@fantasy/api/artifacts';
+import type { ReplayVerifier } from '@fantasy/api/artifacts';
 import { join, resolve, sep } from 'node:path';
 import {
   PublicMatchPageSchema,
@@ -51,7 +51,7 @@ export async function buildPublication(
   input: unknown,
   indexes: BatchCheckInput[],
   directory: string,
-  pool?: ReplayVerificationPool,
+  pool?: ReplayVerifier,
   signal?: AbortSignal,
   packs = false,
 ) {

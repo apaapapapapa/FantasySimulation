@@ -21,7 +21,7 @@ import {
 import { createBatchPlan } from '../batch/batch-plan.ts';
 import { runBatch } from '../batch/batch-runner.ts';
 import { BattlePool } from '../jobs/worker-pool.ts';
-import { BattleBundles } from '../batch/battle-bundle.ts';
+import { BattleBundles, type BundleRead } from '../batch/battle-bundle.ts';
 import { checkedBatch } from '../batch/batch-check.ts';
 import { publishImmutableFile } from '../replay/replay-files.ts';
 import { validateLeaguePlan, validateLeaguePartition } from './league-plan.ts';
@@ -37,7 +37,7 @@ export async function reserveLeaguePartition(
   partition: LeaguePartition,
   input: readonly LeagueProgress[],
   executionId: string,
-  retained?: BattleBundles,
+  retained?: BundleRead,
 ): Promise<LeagueReservation> {
   IdSchema.parse(executionId);
   const prior = await verifyLeagueProgress(input, retained);
@@ -115,6 +115,7 @@ export async function runLeaguePartition(
   executionId: string,
   options: {
     workers?: number;
+    pool?: BattlePool;
     deadlineMs?: number;
     reverse?: boolean;
     signal?: AbortSignal;
@@ -134,6 +135,9 @@ export async function runLeaguePartition(
   const deadline = options.deadlineMs ?? 1500000;
   if (!Number.isInteger(deadline) || deadline < 1 || deadline > 1800000)
     throw new OperationError('INPUT_INVALID', 'Invalid league deadline');
+  const workers = options.workers ?? options.pool?.workers ?? 1;
+  if (options.pool && options.pool.workers !== workers)
+    throw new OperationError('INPUT_INVALID', 'League worker count differs from borrowed pool');
   await mkdir(join(root, 'reservations'), { recursive: true });
   // This create-only claim also blocks concurrent local runners and same-token reruns.
   await publishImmutableFile(
@@ -141,7 +145,7 @@ export async function runLeaguePartition(
     canonicalJson(reservation),
   );
   // One producer owns the scope; every later check still reopens and hashes saved bytes.
-  const pool = new BattlePool(options.workers ?? 1),
+  const pool = options.pool ?? new BattlePool(workers),
     bundleRoot = join(root, 'bundles'),
     bundles = new BattleBundles(bundleRoot, batch.maxOutputBytes).verificationSession({
       publicData: true,
@@ -192,7 +196,7 @@ export async function runLeaguePartition(
     }
     for (const attempt of [1, 2] as const) {
       const outcomes = await runSelection(batch, plan, records, executionId, attempt, bundles, {
-        workers: options.workers ?? 1,
+        workers,
         pool,
         deadlineMs: Math.max(1, Math.floor(deadline - (performance.now() - started))),
         reverse: options.reverse ?? false,
@@ -249,6 +253,6 @@ export async function runLeaguePartition(
     return result;
   } finally {
     bundles.closeVerification();
-    await pool.close();
+    if (!options.pool) await pool.close();
   }
 }

@@ -31,6 +31,20 @@ import { OperationError, operationInput } from '../operation-error.ts';
 import type { BattleService } from '../jobs/battle-service.ts';
 
 const hashName = (hash: string) => HashSchema.parse(hash).slice(7);
+/** Read boundary used by the existing result checks; implementations own their trust scope. */
+export interface BundleRead {
+  readonly root: string;
+  verify(hash: string): Promise<BundleReceipt>;
+  manifest(receipt: BundleReceipt): Promise<ReplayManifest>;
+  read(hash: string, file: string, limit: number): Promise<Buffer>;
+  verificationSession(options?: {
+    publicData?: boolean;
+    pool?: ReplayVerifier;
+    signal?: AbortSignal;
+  }): BundleRead;
+  closeVerification(): void;
+  preverify(hashes: readonly string[]): Promise<void>;
+}
 export class BattleBundles {
   private bytes: number | null = null;
   private readonly packs: PackArchive;

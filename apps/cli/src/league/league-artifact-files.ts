@@ -10,10 +10,24 @@ import {
 import { preparedLeague, cloudInput } from './league-cloud-files.ts';
 
 /** Explicit allowlists, never a recursive upload of the worker's DB or environment. */
-export async function leagueArtifactFiles(root: string, kind: 'baseline' | 'input' | 'result') {
+export async function leagueArtifactFiles(
+  root: string,
+  kind: 'baseline' | 'input' | 'result' | 'inputs',
+) {
   await publicationDirectory(root);
   const files: string[] = [];
-  if (kind === 'baseline') {
+  if (kind === 'inputs') {
+    const prepared = await preparedLeague(root);
+    files.push(join(root, 'prepared.json'));
+    if (await optionalPublicationFile(join(root, 'cost-profile.json'), 4000000))
+      files.push(join(root, 'cost-profile.json'));
+    for (let index = 0; index < prepared.inputs.length; index++) {
+      await cloudInput(root, prepared, index);
+      files.push(
+        ...(await leagueArtifactFiles(join(root, 'inputs', String(index)), 'input')).files,
+      );
+    }
+  } else if (kind === 'baseline') {
     const prepared = await preparedLeague(join(root, 'prepared'));
     const graph = await localPublicationGraph(join(root, 'public'));
     if (graph.catalog.leagueWork?.hash !== prepared.work.hash)

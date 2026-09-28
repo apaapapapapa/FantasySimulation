@@ -10,7 +10,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { aggregateLeague, aggregateStoredLeague, leagueMatches } from '@fantasy/engine/spatial';
 import { checkedBatch } from '../batch/batch-check.ts';
-import type { BattleBundles } from '../batch/battle-bundle.ts';
+import type { BundleRead } from '../batch/battle-bundle.ts';
 import type { ReplayVerificationPool } from '../replay/verification-pool.ts';
 import { validateLeaguePlan, validateLeaguePartition } from './league-plan.ts';
 import {
@@ -29,7 +29,7 @@ export type LeagueCheckInput = {
   batch: unknown;
   reservation: unknown;
   result: unknown;
-  bundles: BattleBundles;
+  bundles: BundleRead;
 };
 export async function checkLeague(input: unknown, completed: readonly LeagueCheckInput[]) {
   const plan = await validateLeaguePlan(input);

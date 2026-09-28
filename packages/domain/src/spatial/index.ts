@@ -28,3 +28,12 @@ export * from './spatial-operations.ts';
 export * from './phasing-display.ts';
 export * from './angles.ts';
 export * from './replay-validation/deferred.ts';
+export {
+  LeagueCostProfileSchema,
+  LeaguePipelineIdentitySchema,
+  LeaguePipelineFileSchema,
+  LeagueReplayProofSchema,
+  LeagueEvidenceCheckpointSchema,
+  LeagueProducerProofSchema,
+  LeagueProducerTerminalSchema,
+} from './league-pipeline/publication.ts';

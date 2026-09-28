@@ -36,7 +36,7 @@ export async function leaguePublicationFixture(
     history,
     options.retained,
   );
-  const completed: LeagueCheckInput[] = [],
+  const completed: (LeagueCheckInput & { bundles: BattleBundles })[] = [],
     reservations: LeagueReservation[] = [];
   for (const entry of prepared.partitions) {
     const reservation = await reserveLeaguePartition(

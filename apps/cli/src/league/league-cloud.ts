@@ -161,6 +161,11 @@ export async function runCloudLeague(
   source: ExecutionSource,
   executionId: string,
   signal?: AbortSignal,
+  options: {
+    pool?: import('@fantasy/api/tooling').BattlePool;
+    workers?: number;
+    deadlineMs?: number;
+  } = {},
 ) {
   const input = LeagueCloudInputSchema.parse(await cloudJson(join(inputRoot, 'input.json')));
   assertCloudSource(input, source, executionId);
@@ -173,8 +178,9 @@ export async function runCloudLeague(
     source,
     executionId,
     {
-      workers: 2,
-      deadlineMs: 1500000,
+      ...options,
+      workers: options.workers ?? options.pool?.workers ?? 2,
+      deadlineMs: options.deadlineMs ?? 1500000,
       retained: new BattleBundles(join(inputRoot, 'retained')),
       ...(signal ? { signal } : {}),
     },
@@ -189,7 +195,7 @@ export async function finishCloudLeague(
   publicRoot: string,
   source: ExecutionSource,
   executionId: string,
-  options: { verificationWorkers?: number; signal?: AbortSignal } = {},
+  options: { verificationWorkers?: number; signal?: AbortSignal; packs?: boolean } = {},
 ) {
   return measureAsync('aggregate.final', async () => {
     options.signal?.throwIfAborted();
@@ -243,6 +249,7 @@ export async function finishCloudLeague(
         ),
       {
         verificationWorkers: options.verificationWorkers ?? 2,
+        packs: options.packs ?? false,
         ...(options.signal ? { signal: options.signal } : {}),
       },
     );
