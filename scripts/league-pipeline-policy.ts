@@ -72,6 +72,9 @@ export async function requireArtifactPilot(github: PipelineArtifacts, runId: num
     run_id: runId,
   });
   if (
+    run.id !== runId ||
+    !Number.isSafeInteger(run.run_attempt) ||
+    run.run_attempt < 1 ||
     run.path !== '.github/workflows/league-pilot.yml' ||
     run.head_sha !== github.identity.source.sha ||
     run.head_branch !== 'main' ||
@@ -90,14 +93,26 @@ export async function requireArtifactPilot(github: PipelineArtifacts, runId: num
     },
   );
   if (
+    jobs.total_count > 100 ||
     jobs.jobs.length !== jobs.total_count ||
-    ['produce', 'consume'].some(
+    ['produce', 'consume', 'workers'].some(
       (name) =>
         jobs.jobs.filter(
-          (job: { name: string; conclusion: string }) =>
-            job.name === name && job.conclusion === 'success',
+          (job: {
+            name: string;
+            status: string;
+            conclusion: string;
+            head_sha: string;
+            run_attempt: number;
+          }) =>
+            job.name === name &&
+            job.status === 'completed' &&
+            job.conclusion === 'success' &&
+            job.head_sha === github.identity.source.sha &&
+            job.run_attempt === run.run_attempt,
         ).length !== 1,
     )
   )
     throw new Error('Artifact visibility/quota pilot incomplete');
+  return run;
 }

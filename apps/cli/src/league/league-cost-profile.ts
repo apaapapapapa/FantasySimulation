@@ -41,6 +41,8 @@ export async function preparedLeagueCosts(
     return new Map<string, number>();
   }
   const profile = LeagueCostProfileSchema.parse(JSON.parse(data.toString('utf8')));
+  if (canonicalJson(profile.source) !== canonicalJson(prepared.plan.source))
+    throw new OperationError('IDENTITY_MISMATCH', 'Measured cost profile source mismatch');
   const groups = new Map<string, number[]>();
   const pairKey = (scenario: string, characters: string[]) =>
     canonicalJson([scenario, [...characters].sort()]);

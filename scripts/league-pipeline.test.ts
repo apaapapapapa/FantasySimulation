@@ -6,11 +6,68 @@ import { withReplayDirectory } from '@fantasy/api/testing';
 import { PipelineArtifacts } from './league-pipeline-artifacts.ts';
 import { pipelineActionsFixture } from './test-support/league-actions.ts';
 import { pipelineCapacity, pipelinePollMs, pipelineRunners } from './league-pipeline-policy.ts';
+import { measuredPipelineProfile } from './league-pipeline-profile.ts';
+import { artifactZip } from './test-support/league-zip.ts';
+import { archiveHash } from './league-archive.ts';
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
+it.each(['valid', 'source', 'measurement', 'pilot', 'worker'] as const)(
+  'authenticates Worker cost profile provenance before admission: %s',
+  async (variant) => {
+    await withReplayDirectory(async (root) => {
+      const { identity, state, fetch } = pipelineActionsFixture();
+      const measurementHash = 'sha256:' + 'c'.repeat(64);
+      const profile = {
+        schemaVersion: 1,
+        source: {
+          ...identity.source,
+          sha: variant === 'source' ? 'd'.repeat(40) : identity.source.sha,
+        },
+        measurementHash: variant === 'measurement' ? 'sha256:' + 'e'.repeat(64) : measurementHash,
+        metric: 'worker-compute-elapsed-ms',
+        samples: [
+          {
+            simulationHash: 'sha256:' + 'f'.repeat(64),
+            scenario: 'field',
+            characters: ['a', 'b'],
+            elapsedMs: 12,
+          },
+        ],
+      };
+      Object.assign(state.run, {
+        path: '.github/workflows/league-pilot.yml',
+        status: 'completed',
+        conclusion: 'success',
+        head_sha: variant === 'pilot' ? 'b'.repeat(40) : identity.source.sha,
+      });
+      state.jobs.splice(
+        0,
+        state.jobs.length,
+        ...['produce', 'consume', 'workers'].map((name) => ({ ...state.jobs[0]!, name })),
+      );
+      if (variant === 'worker') state.jobs[2]!.conclusion = 'failure';
+      state.zip = artifactZip('cost-profile.json', Buffer.from(JSON.stringify(profile)));
+      Object.assign(state.artifact, {
+        name: 'league-123-1-cost-profile',
+        digest: archiveHash(state.zip),
+        size_in_bytes: state.zip.length,
+      });
+      const pending = measuredPipelineProfile(
+        { root, identity, token: 'test', github: new PipelineArtifacts('test', identity) },
+        123,
+        measurementHash,
+      );
+      if (variant === 'valid') await expect(pending).resolves.toEqual(profile);
+      else await expect(pending).rejects.toThrow(/mismatch|Untrusted|incomplete/);
+      if (variant === 'pilot' || variant === 'worker')
+        expect(fetch.mock.calls.some(([url]) => String(url).endsWith('/zip'))).toBe(false);
+      expect(state.downloadToken).toBe(false);
+    });
+  },
+);
 it('authenticates actual immutable ZIPs, never forwards GitHub credentials and rejects changed bytes', async () => {
   await withReplayDirectory(async (root) => {
     const { identity, state } = pipelineActionsFixture(),

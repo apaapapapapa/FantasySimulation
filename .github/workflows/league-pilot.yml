@@ -64,6 +64,13 @@ jobs:
           LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
         run: node --import tsx scripts/league-worker-pilot.ts
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: league-${{ github.run_id }}-${{ github.run_attempt }}-cost-profile
+          path: .generated/league-worker-pilot/cost-profile.json
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: league-worker-pilot-${{ github.run_id }}-${{ github.run_attempt }}

@@ -56,5 +56,11 @@ it('uses pair, field and global medians as hints without changing the archived p
       0, 1, 2, 3, 4, 5, 6, 7,
     ]);
     expect(JSON.stringify(prepared)).toBe(snapshot);
+    await rm(join(root, 'cost-profile.json'));
+    await writeCloudJson(join(root, 'cost-profile.json'), {
+      ...profile,
+      source: { ...profile.source, sha: 'f'.repeat(40) },
+    });
+    await expect(preparedLeagueCosts(root, prepared, true)).rejects.toThrow('source mismatch');
   });
 });

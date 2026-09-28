@@ -17,7 +17,7 @@ on:
         type: string
         default: data/leagues/official-20-v2.json
       cost_profile:
-        description: Reviewed committed worker-pilot cost profile (required for new runs)
+        description: Reviewed measurementHash from the same-source successful Worker pilot
         type: string
       runners:
         description: Persistent runners (above four requires approved measured account capacity)

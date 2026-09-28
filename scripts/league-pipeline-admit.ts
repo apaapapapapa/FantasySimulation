@@ -29,12 +29,8 @@ import {
 } from '../apps/cli/src/league/league-checkpoint.ts';
 import { durableLeagueCheckpoint } from './league-pipeline-checkpoint.ts';
 import { uploadPipelineArtifact } from './league-pipeline-upload.ts';
-import {
-  pipelineCapacity,
-  pipelineCi,
-  pipelineRunners,
-  requireArtifactPilot,
-} from './league-pipeline-policy.ts';
+import { pipelineCapacity, pipelineCi, pipelineRunners } from './league-pipeline-policy.ts';
+import { measuredPipelineProfile } from './league-pipeline-profile.ts';
 import {
   pipelineAuditAge,
   pipelineR2,
@@ -50,10 +46,14 @@ import {
 export async function restorePipeline(context: PipelineContext) {
   const definition = await pipelineDefinition();
   // Reject unmeasured inputs/capacity before any R2 lease or request.
-  await pipelineProfile();
   pipelineRunners(requiredPipeline('LEAGUE_RUNNERS'), process.env.LEAGUE_APPROVED_RUNNERS);
   await pipelineCi(context.github, context.ciRun, 'start');
-  await requireArtifactPilot(context.github, Number(requiredPipeline('LEAGUE_PILOT_RUN')));
+  const profile = await measuredPipelineProfile(
+    context,
+    Number(requiredPipeline('LEAGUE_PILOT_RUN')),
+    requiredPipeline('LEAGUE_COST_PROFILE'),
+  );
+  await writeCloudJson(join(context.root, 'cost-profile.json'), profile);
   const session = await openLeagueStaging(pipelineR2(), pipelineLease(context, 'restore'));
   try {
     const maxAgeMs = pipelineAuditAge();
@@ -99,12 +99,6 @@ export async function restorePipeline(context: PipelineContext) {
     await session.close();
   }
 }
-async function pipelineProfile() {
-  const path = requiredPipeline('LEAGUE_COST_PROFILE');
-  if (!/^docs\/measurements\/[a-zA-Z0-9][a-zA-Z0-9_-]*\.json$/.test(path))
-    throw new Error('Expected committed measured cost profile');
-  return LeagueCostProfileSchema.parse(await cloudJson(path));
-}
 export async function preparePipeline(context: PipelineContext) {
   const evidence = await localPipelineEvidence(context, 'restored.gz');
   const root = join(context.root, 'prepared');
@@ -122,7 +116,10 @@ export async function preparePipeline(context: PipelineContext) {
     undefined,
     { evidence, maxInputBytes: 56 * 1024 ** 2 },
   );
-  await writeCloudJson(join(root, 'cost-profile.json'), await pipelineProfile());
+  await writeCloudJson(
+    join(root, 'cost-profile.json'),
+    LeagueCostProfileSchema.parse(await cloudJson(join(context.root, 'cost-profile.json'))),
+  );
   const assignment = assignLeagueRunners(
     outcome.prepared.plan,
     runners,
