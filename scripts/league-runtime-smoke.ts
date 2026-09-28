@@ -12,6 +12,9 @@ import { leagueValidatorDigest } from '../apps/cli/src/league/league-validator.t
 const root = await mkdtemp(join(tmpdir(), 'league-runtime-smoke-'));
 const started = performance.now();
 try {
+  // Exercise the artifact SDK's generated RPC imports in the dependency-only installation.
+  await import('./league-pipeline-upload.ts');
+  await import('./league-pipeline-transfer.ts');
   const source = executionSource();
   const identity = {
     source,

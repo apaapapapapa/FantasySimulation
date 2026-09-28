@@ -105,6 +105,8 @@ const rootDependencies = [
   '@fantasy/engine',
   '@fantasy/samples',
   '@actions/artifact',
+  // Artifact 6.2.1 generated RPC code imports this undeclared runtime dependency.
+  '@protobuf-ts/runtime-rpc',
   '@octokit/core',
   '@octokit/plugin-paginate-rest',
   'tsx',

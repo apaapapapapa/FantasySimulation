@@ -31,6 +31,7 @@ export async function runtimeFixture(root: string) {
   }
   for (const name of [
     '@actions/artifact',
+    '@protobuf-ts/runtime-rpc',
     '@octokit/core',
     '@octokit/plugin-paginate-rest',
     'tsx',
@@ -51,6 +52,10 @@ export async function runtimeFixture(root: string) {
     await mkdir(dirname(link), { recursive: true });
     await symlink(relative(dirname(link), real), link);
   }
+  await write(
+    join(source, 'node_modules/@actions/artifact/index.js'),
+    'export {fixture} from "@protobuf-ts/runtime-rpc";',
+  );
   const git = (...args: string[]) =>
     execFileSync('git', args, { cwd: source, encoding: 'utf8' }).trim();
   git('init', '--quiet');

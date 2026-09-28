@@ -1,7 +1,10 @@
 import { resolve } from 'node:path';
 import { mkdir } from 'node:fs/promises';
 import { measuredCommand } from '@fantasy/api/tooling';
-import { reportLeagueFailure } from '../apps/cli/src/league/league-diagnostics.ts';
+import {
+  reportLeagueFailure,
+  type LeagueFailureContext,
+} from '../apps/cli/src/league/league-diagnostics.ts';
 import { pipelineContext, requiredPipeline } from './league-pipeline-context.ts';
 import { restorePipeline, preparePipeline, admitPipeline } from './league-pipeline-admit.ts';
 import { computePipeline } from './league-pipeline-compute.ts';
@@ -10,6 +13,7 @@ import { transferPipeline } from './league-pipeline-transfer.ts';
 const command = process.argv[2],
   root = resolve('.generated/league-pipeline');
 const controller = new AbortController();
+const failureContext: LeagueFailureContext = { command: 'pipeline-' + command, validating: true };
 const cancel = () => controller.abort();
 process.once('SIGTERM', cancel);
 process.once('SIGINT', cancel);
@@ -24,6 +28,8 @@ await measuredCommand('pipeline-' + command, async () => {
     root,
     command === 'compute' ? 2 : command === 'restore' ? 20 : command === 'admit' ? 10 : 200,
   );
+  failureContext.executionId = context.prefix;
+  failureContext.validating = false;
   if (command === 'restore') return restorePipeline(context);
   if (command === 'prepare') return preparePipeline(context);
   if (command === 'admit') return admitPipeline(context);
@@ -41,12 +47,7 @@ await measuredCommand('pipeline-' + command, async () => {
 })
   .catch(async (error: unknown) => {
     process.exitCode = 1;
-    await reportLeagueFailure(
-      error,
-      { command: 'pipeline-' + command },
-      root,
-      process.env.GITHUB_STEP_SUMMARY,
-    );
+    await reportLeagueFailure(error, failureContext, root, process.env.GITHUB_STEP_SUMMARY);
   })
   .finally(() => {
     clearInterval(sampling);
