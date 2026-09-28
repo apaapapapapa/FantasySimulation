@@ -10,6 +10,7 @@ import { BattleService } from '../jobs/battle-service.ts';
 import { BattlePool } from '../jobs/worker-pool.ts';
 import { Measurements } from '../measurements.ts';
 import { openStore } from '../db/store.ts';
+import { ArtifactStore } from '../replay/artifact-store.ts';
 import { BattleBundles } from './battle-bundle.ts';
 import { createBatchPlan } from './batch-plan.ts';
 import { runBatch, reconcileBatch } from './batch-runner.ts';
@@ -180,6 +181,31 @@ it.each(['save failure', 'abort'] as const)(
   },
   30_000,
 );
+
+it('copies each published replay under one manifest binding, not one per stored file', async () => {
+  await withReplayDirectory(async (root) => {
+    const plan = await createBatchPlan(await batchInput(2), batchSource);
+    const bulk = vi.spyOn(ArtifactStore.prototype, 'files'),
+      single = vi.spyOn(ArtifactStore.prototype, 'file');
+    try {
+      const { index } = await runBatch(plan, root, batchSource);
+      expect(index.complete).toBe(true);
+      const bundles = new BattleBundles(root);
+      let stored = 0;
+      for (const slot of index.slots) {
+        const manifest = await bundles.manifest(slot.receipt!);
+        stored += manifest.chunks.length + manifest.checkpoints.length;
+      }
+      // Each stored file is still read and checksummed; only the manifest is bound once.
+      expect(stored).toBeGreaterThan(index.slots.length);
+      expect(bulk).toHaveBeenCalledTimes(index.slots.length);
+      expect(single).not.toHaveBeenCalled();
+    } finally {
+      bulk.mockRestore();
+      single.mockRestore();
+    }
+  });
+}, 30_000);
 
 it('holds every unpublished result when the real output reservation is exhausted', async () => {
   await withReplayDirectory(async (root) => {

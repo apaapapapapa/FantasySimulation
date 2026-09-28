@@ -35,7 +35,7 @@ try {
     runner: 0,
     runners: 1,
     workers: 1,
-    completed: async (index, directory, pool) => {
+    completed: async (index, directory, pool, bundles) => {
       await sealLeagueProducer(
         await cloudInput(preparedRoot, prepared, index),
         directory,
@@ -43,6 +43,7 @@ try {
         identity,
         0,
         pool,
+        bundles,
       );
     },
   });

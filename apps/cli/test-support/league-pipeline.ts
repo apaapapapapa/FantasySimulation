@@ -8,7 +8,8 @@ import { runCloudLeagueRunner } from '../src/league/league-runner.ts';
 import { sealLeagueProducer, authenticateLeagueProducer } from '../src/league/league-producer.ts';
 import { PublicationEvidence } from '../src/publication/publication-evidence.ts';
 
-export async function pipelineFixture(root: string) {
+/** One prepared four-slot partition, before any runner has claimed it. */
+export async function preparedPipeline(root: string) {
   const identity = {
     source: publicationLeagueSource,
     runId: 123,
@@ -26,16 +27,22 @@ export async function pipelineFixture(root: string) {
     preparedRoot,
     { files: 0, bytes: 0, receipts: 0, usedReadRequests: 10000, usedWriteRequests: 10000 },
   );
+  const input = await cloudInput(preparedRoot, prepared, 0);
+  return { identity, executionId, prepared, preparedRoot, baselineRoot, input };
+}
+
+export async function pipelineFixture(root: string) {
+  const { identity, executionId, prepared, preparedRoot, baselineRoot, input } =
+    await preparedPipeline(root);
   const baseline = await PublicationEvidence.audit(baselineRoot);
   const resultRoot = join(root, 'results'),
     producerRoot = join(root, 'producer');
-  const input = await cloudInput(preparedRoot, prepared, 0);
   await runCloudLeagueRunner(preparedRoot, resultRoot, identity.source, executionId, {
     runner: 0,
     runners: 1,
     workers: 1,
-    completed: async (_, directory, pool) => {
-      await sealLeagueProducer(input, directory, producerRoot, identity, 0, pool);
+    completed: async (_, directory, pool, bundles) => {
+      await sealLeagueProducer(input, directory, producerRoot, identity, 0, pool, bundles);
     },
   });
   const producer = await authenticateLeagueProducer(producerRoot, input, identity, 0, async () => [

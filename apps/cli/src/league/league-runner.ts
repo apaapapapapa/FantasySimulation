@@ -4,7 +4,7 @@ import {
   validateLeagueReservation,
   validateLeaguePlan,
 } from '@fantasy/api/tooling';
-import { OperationError } from '@fantasy/api/artifacts';
+import { BattleBundles, OperationError } from '@fantasy/api/artifacts';
 import { canonicalJson, type ExecutionSource } from '@fantasy/domain/spatial';
 import { join } from 'node:path';
 import { preparedLeague, cloudInput } from './league-cloud-files.ts';
@@ -25,7 +25,13 @@ export async function runCloudLeagueRunner(
     comparisonWorkers?: boolean;
     deadlineMs?: number;
     signal?: AbortSignal;
-    completed?: (index: number, root: string, pool: BattlePool) => Promise<void>;
+    /** The partition's open producer scope stays valid until this callback settles. */
+    completed?: (
+      index: number,
+      root: string,
+      pool: BattlePool,
+      bundles: BattleBundles,
+    ) => Promise<void>;
   },
 ) {
   const started = performance.now();
@@ -48,6 +54,7 @@ export async function runCloudLeagueRunner(
   if (!Number.isInteger(deadline) || deadline < 1 || deadline > 1800000)
     throw new OperationError('INPUT_INVALID', 'Invalid runner deadline');
   // Authenticate every assigned input before claiming or executing the first partition.
+  const outputBytes = new Map<number, number>();
   for (const index of assignment.partitions) {
     const input = await cloudInput(preparedRoot, prepared, index);
     if (
@@ -59,6 +66,7 @@ export async function runCloudLeagueRunner(
       throw new OperationError('IDENTITY_MISMATCH', 'Assigned league input mismatch');
     await validateLeaguePartition(input.plan, input.partition, input.batch);
     await validateLeagueReservation(input.plan, input.partition, input.reservation);
+    outputBytes.set(index, input.batch.maxOutputBytes);
   }
   const pool = new BattlePool(
     options.workers ?? 2,
@@ -72,17 +80,27 @@ export async function runCloudLeagueRunner(
       if (remaining <= 0)
         throw new OperationError('BUDGET_EXCEEDED', 'League runner deadline exceeded');
       const root = join(outputRoot, String(index));
-      results.push(
-        await runCloudLeague(
-          join(preparedRoot, 'inputs', String(index)),
-          root,
-          source,
-          executionId,
-          options.signal,
-          { pool, workers: pool.workers, deadlineMs: remaining },
-        ),
-      );
-      await options.completed?.(index, root, pool);
+      // One public scope spans computation and the seal: each recording is fully verified once,
+      // and every later read in this producer re-hashes its bytes (ADR 0019).
+      const bundles = new BattleBundles(
+        join(root, 'bundles'),
+        outputBytes.get(index)!,
+      ).verificationSession({ publicData: true, pool });
+      try {
+        results.push(
+          await runCloudLeague(
+            join(preparedRoot, 'inputs', String(index)),
+            root,
+            source,
+            executionId,
+            options.signal,
+            { pool, workers: pool.workers, deadlineMs: remaining, bundles },
+          ),
+        );
+        await options.completed?.(index, root, pool, bundles);
+      } finally {
+        bundles.closeVerification();
+      }
     }
     return { assignment, results };
   } finally {

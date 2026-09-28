@@ -41,15 +41,28 @@ export class ArtifactStore {
    * checksum; other files are checked when they are read or the replay is opened again.
    */
   async file(id: string, file: string) {
+    return (await this.files(id)).read(file);
+  }
+  /** A bulk copy binds the DB manifest once instead of re-reading and re-parsing it per file. */
+  async files(id: string) {
     const manifest = await this.bound(id, false);
-    const ref = [...manifest.chunks, ...manifest.checkpoints].find((r) => r.file === file);
-    if (!ref) throw new StoreError('not-found', 'Replay file not found');
-    return this.held(id, async () => {
-      const bytes = await readBoundedFile(join(replayDirectory(this.root, id), file), ref.bytes);
-      if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
-        throw new Error('Replay file size or checksum mismatch');
-      return bytes;
-    });
+    const refs = new Map([...manifest.chunks, ...manifest.checkpoints].map((r) => [r.file, r]));
+    return {
+      manifest,
+      read: async (file: string) => {
+        const ref = refs.get(file);
+        if (!ref) throw new StoreError('not-found', 'Replay file not found');
+        return this.held(id, async () => {
+          const bytes = await readBoundedFile(
+            join(replayDirectory(this.root, id), file),
+            ref.bytes,
+          );
+          if (bytes.length !== ref.bytes || sha256(bytes) !== ref.checksum)
+            throw new Error('Replay file size or checksum mismatch');
+          return bytes;
+        });
+      },
+    };
   }
   private async bound(id: string, full: boolean) {
     const artifact = this.jobs.artifact(id);
