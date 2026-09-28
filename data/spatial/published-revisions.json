@@ -1058,6 +1058,108 @@
       "id": "standard-p6-group2-v1",
       "revision": 1,
       "contentHash": "sha256:7a29dffc918f926dfe030ea3ae9bf488d582abae743179cb60617cbd1c7016d3"
+    },
+    {
+      "kind": "ability",
+      "id": "dash-cut-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:c2f8ba10c3079c8014b00bb3c7fae174e7fd1c240ebb173ac450941f1573df3c"
+    },
+    {
+      "kind": "ability",
+      "id": "return-cut-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:aed5d37a3aaca97a0dfb5b10d4b1e2fb8c974790af1a77b4e6ab391ee866e86a"
+    },
+    {
+      "kind": "ability",
+      "id": "spear-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:71b2885362e5bc0bf2556ae9b03d8244fe9c985f7057942f5dcf4937f12cf346"
+    },
+    {
+      "kind": "ability",
+      "id": "stamina-strike-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:7421cedb639c525baff3788c5dae6383d5b280f8c564b52be16f93f2eac2bc6c"
+    },
+    {
+      "kind": "ability",
+      "id": "sword-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:78731db2ed9ba511a56c6d5d8eb7bf2e5820c9c5501a086e2dd3066667fc5627"
+    },
+    {
+      "kind": "ability",
+      "id": "wide-sweep-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:bab5ea0a1fcd1fc011581c516ec78303c61ba5c7ac7f85dda18e515aa789e76a"
+    },
+    {
+      "kind": "character",
+      "id": "lancer-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:7f0c2760e81138499484a23bb7ba310e496bc793b239c9bbb68d3bc6575711ec"
+    },
+    {
+      "kind": "character",
+      "id": "posture-duelist-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:55cb5ec2dbb28d9d5b9a68f6dd7cee292bbcdb1e5614fe16fd39c375773e366c"
+    },
+    {
+      "kind": "character",
+      "id": "stage-vanguard-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:bfe553d5172679acf5fe47b2d8cb4fcad01b5b1e105ed29e11bd8f2ddaa963be"
+    },
+    {
+      "kind": "character",
+      "id": "staged-duelist-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:9e93220867cd7c628fda844b205b7d81b3062b7a5b526ff8e3bec9e93a54c74d"
+    },
+    {
+      "kind": "character",
+      "id": "swordsman-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:d65898a9c61269834462374cff0c45d8b17aeeb3024799466c317abe271953d9"
+    },
+    {
+      "kind": "equipment",
+      "id": "long-spear-trained-v1",
+      "revision": 1,
+      "contentHash": "sha256:7a890aebf597dd529e69d217b7be9d13f042fc4720910d133fad444335904041"
+    },
+    {
+      "kind": "policy",
+      "id": "lancer-trained-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:845e0172f8db75052eda79c59cf997268c3e05c802579e3d0b0b9d865e975ec1"
+    },
+    {
+      "kind": "policy",
+      "id": "posture-duelist-trained-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:0c2a398895e8e18ff40f225a6fc523c0a017c10a36eece81fe1f68eef0685035"
+    },
+    {
+      "kind": "policy",
+      "id": "stage-vanguard-trained-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:3fa380635645f36d92f9fe994a46bd46cba0266859e0de7145d4d8ecfc0f5751"
+    },
+    {
+      "kind": "policy",
+      "id": "staged-duelist-trained-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:dcd5d7b887400b60db89fd739a06c13b5ac4a1b3ee2ae81c2cb7d7a0d331aaec"
+    },
+    {
+      "kind": "policy",
+      "id": "swordsman-trained-v1-policy",
+      "revision": 1,
+      "contentHash": "sha256:f0719ed62cac1f4b23820ae43073798bcd5c3095f4f4ab6dccb57723e11ace42"
     }
   ]
 }
