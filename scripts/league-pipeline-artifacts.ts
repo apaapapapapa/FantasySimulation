@@ -11,6 +11,7 @@ export type PipelineArtifact = { id: number; name: string; digest: string; bytes
 export class PipelineArtifacts {
   private readonly github: Octokit;
   private calls = 0;
+  private reservedOtherCalls = 0;
   private readonly known = new Map<number, PipelineArtifact>();
   private authenticated = false;
   constructor(
@@ -22,7 +23,8 @@ export class PipelineArtifacts {
     this.github = new Octokit({ auth: token, request: { timeout: 30000 } });
   }
   async request(route: string, parameters: Record<string, string | number> = {}) {
-    if (++this.calls > this.maxCalls) throw new Error('League metadata API budget exhausted');
+    if (++this.calls + this.reservedOtherCalls > this.maxCalls)
+      throw new Error('League metadata API budget exhausted');
     return (
       await this.github.request(route, {
         owner: 'apaapapapapa',
@@ -42,21 +44,32 @@ export class PipelineArtifacts {
       run.head_branch !== 'main' ||
       run.event !== 'workflow_dispatch' ||
       run.path !== `.github/workflows/${this.workflow}` ||
-      run.head_repository?.full_name !== 'apaapapapapapa/FantasySimulation'
+      run.head_repository?.full_name !== 'apaapapapapa/FantasySimulation'
     )
       throw new Error('Untrusted league producer run/source/attempt');
     this.authenticated = true;
     return run;
   }
-  async list() {
+  reserveOtherMetadata(calls: number) {
+    if (!Number.isSafeInteger(calls) || calls < 0 || calls + this.calls > this.maxCalls)
+      throw new Error('League global metadata API budget exhausted');
+    this.reservedOtherCalls = calls;
+  }
+  async list(name?: string) {
     if (!this.authenticated) await this.authenticateRun();
     const artifacts: PipelineArtifact[] = [];
     for (let page = 1; page <= 3; page++) {
       const result = await this.request(
         'GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts',
-        { run_id: this.identity.runId, per_page: 100, page },
+        { run_id: this.identity.runId, per_page: 100, page, ...(name ? { name } : {}) },
       );
       if (result.total_count > 256) throw new Error('League run artifact count exceeded');
+      if (
+        name &&
+        (result.total_count > 1 ||
+          result.artifacts.some((raw: { name: string }) => raw.name !== name))
+      )
+        throw new Error('Ambiguous named artifact');
       for (const raw of result.artifacts) {
         if (!raw.name.startsWith(`league-${this.identity.runId}-${this.identity.runAttempt}-`))
           continue;
@@ -86,7 +99,7 @@ export class PipelineArtifacts {
       throw new Error('Duplicate league artifact name');
     return artifacts;
   }
-  async download(ref: PipelineArtifact, root: string, allow: (key: string) => boolean) {
+  async archive(ref: PipelineArtifact) {
     if (!this.authenticated || JSON.stringify(this.known.get(ref.id)) !== JSON.stringify(ref))
       throw new Error('Artifact is not authenticated by the current run');
     const response = await fetch(
@@ -108,8 +121,51 @@ export class PipelineArtifacts {
     );
     if (bytes.length !== ref.bytes || archiveHash(bytes) !== ref.digest)
       throw new Error('Actual artifact ZIP digest mismatch');
+    return bytes;
+  }
+  async download(ref: PipelineArtifact, root: string, allow: (key: string) => boolean) {
+    const bytes = await this.archive(ref);
     await extractLeagueArchive(bytes, root, allow);
     return ref;
+  }
+  async durableArtifact(id: number, expected: { digest: string; bytes: number }) {
+    await this.authenticateRun();
+    const raw = await this.request('GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}', {
+      artifact_id: id,
+    });
+    if (
+      raw.id !== id ||
+      raw.digest !== expected.digest ||
+      raw.size_in_bytes !== expected.bytes ||
+      raw.workflow_run?.head_sha !== this.identity.source.sha ||
+      raw.workflow_run?.id !== this.identity.runId ||
+      raw.name !== `league-${this.identity.runId}-${this.identity.runAttempt}-checkpoint`
+    )
+      throw new Error('Durable checkpoint artifact provenance mismatch');
+  }
+  async successfulWriter() {
+    const run = await this.authenticateRun();
+    if (run.status !== 'completed' || run.conclusion !== 'success')
+      throw new Error('Checkpoint writer did not complete successfully');
+    const result = await this.request(
+      'GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs',
+      {
+        run_id: this.identity.runId,
+        attempt_number: this.identity.runAttempt,
+        per_page: 100,
+      },
+    );
+    if (
+      result.total_count > 100 ||
+      result.jobs.length !== result.total_count ||
+      result.jobs.filter(
+        (job: { name: string; conclusion: string; head_sha: string }) =>
+          ['transfer', 'recover'].includes(job.name) &&
+          job.conclusion === 'success' &&
+          job.head_sha === this.identity.source.sha,
+      ).length !== 1
+    )
+      throw new Error('Missing successful checkpoint writer job');
   }
   async successfulProducers(runners: number) {
     await this.authenticateRun();
@@ -125,6 +181,13 @@ export class PipelineArtifacts {
     ]) {
       const jobs = response.jobs.filter((job: { name: string }) => job.name === name);
       if (
+        jobs.some(
+          (job: { status: string; conclusion: string }) =>
+            job.status === 'completed' && job.conclusion !== 'success',
+        )
+      )
+        throw new Error('Producer job failed; staged bytes remain unreferenced');
+      if (
         jobs.length !== 1 ||
         jobs[0].status !== 'completed' ||
         jobs[0].conclusion !== 'success' ||
@@ -136,6 +199,10 @@ export class PipelineArtifacts {
     return true;
   }
   metrics() {
-    return { metadataCalls: this.calls, maxMetadataCalls: this.maxCalls };
+    return {
+      metadataCalls: this.calls,
+      reservedOtherMetadataCalls: this.reservedOtherCalls,
+      maxMetadataCalls: this.maxCalls,
+    };
   }
 }

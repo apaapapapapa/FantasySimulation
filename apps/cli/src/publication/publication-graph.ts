@@ -1,4 +1,5 @@
 import { packGraphReader } from './publication-pack-graph.ts';
+import { replayProofValidator } from './publication-proof.ts';
 import { OperationError, operationInput } from '@fantasy/api/tooling';
 import { dirname, join } from 'node:path';
 import {
@@ -116,6 +117,7 @@ export async function publicationGraph(
     return value;
   }
   const packs = packGraphReader(read, add, results);
+  const proofs = replayProofValidator(read);
   const logicalFiles = new Map<string, PublicationFile>();
   const bundles = new Map<string, Promise<{ receipt: BundleReceipt; manifest: ReplayManifest }>>();
   function bundle(ref: PublicReplayRef) {
@@ -126,6 +128,7 @@ export async function publicationGraph(
       promise = (async () => {
         const proof = authenticated?.get(identity);
         if (proof) {
+          await proofs.check(proof);
           if (canonicalJson(proof.ref) !== identity)
             throw new OperationError('DATA_INVALID', 'Authenticated replay reference mismatch');
           const prefix = `objects/${publicHashName(objectHash)}/`;
@@ -427,6 +430,7 @@ export async function publicationGraph(
     latestWork = catalog?.leagueWork ? workStates.get(catalog.leagueWork.hash)! : null;
   }
   packs.finish();
+  proofs.finish();
   // I/O completion order must not leak into downstream traversal or publication output.
   return {
     current,

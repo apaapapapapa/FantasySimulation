@@ -22,6 +22,7 @@ export async function runCloudLeagueRunner(
     runner: number;
     runners: number;
     workers?: number;
+    comparisonWorkers?: boolean;
     deadlineMs?: number;
     signal?: AbortSignal;
     completed?: (index: number, root: string, pool: BattlePool) => Promise<void>;
@@ -59,7 +60,10 @@ export async function runCloudLeagueRunner(
     await validateLeaguePartition(input.plan, input.partition, input.batch);
     await validateLeagueReservation(input.plan, input.partition, input.reservation);
   }
-  const pool = new BattlePool(options.workers ?? 2);
+  const pool = new BattlePool(
+    options.workers ?? 2,
+    options.comparisonWorkers ? { comparison: true } : {},
+  );
   const results = [];
   try {
     for (const index of assignment.partitions) {

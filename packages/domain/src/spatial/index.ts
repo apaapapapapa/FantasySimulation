@@ -31,9 +31,12 @@ export * from './replay-validation/deferred.ts';
 export {
   LeagueCostProfileSchema,
   LeaguePipelineIdentitySchema,
+  LeaguePipelineControlSchema,
   LeaguePipelineFileSchema,
   LeagueReplayProofSchema,
   LeagueEvidenceCheckpointSchema,
   LeagueProducerProofSchema,
   LeagueProducerTerminalSchema,
+  LeagueProducerArtifactSchema,
+  LeagueCheckpointLocatorSchema,
 } from './league-pipeline/publication.ts';

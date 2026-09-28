@@ -38,16 +38,23 @@ export async function pipelineFixture(root: string) {
       await sealLeagueProducer(input, directory, producerRoot, identity, 0, pool);
     },
   });
-  const producer = await authenticateLeagueProducer(
-    producerRoot,
-    input,
-    identity,
-    0,
-    async () => {},
-  );
+  const producer = await authenticateLeagueProducer(producerRoot, input, identity, 0, async () => [
+    {
+      id: 456,
+      digest: 'sha256:' + 'c'.repeat(64),
+      bytes: 128,
+      name: 'league-123-1-runner-0-partition-0-part-0-of-1',
+    },
+  ]);
   const fullRoot = join(root, 'full');
   await cp(baselineRoot, fullRoot, { recursive: true });
-  const terminal = { schemaVersion: 1, identity, runner: 0, partitions: [0], artifacts: [] };
+  const terminal = {
+    schemaVersion: 1,
+    identity,
+    runner: 0,
+    partitions: [0],
+    artifacts: producer.artifacts,
+  };
   return {
     identity,
     executionId,

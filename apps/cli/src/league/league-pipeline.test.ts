@@ -81,7 +81,7 @@ it('refuses foreign producers, incomplete terminals, failed jobs and changed pac
         fixture.input,
         { ...fixture.identity, runAttempt: 2 },
         0,
-        async () => {},
+        async () => fixture.producer.artifacts,
       ),
     ).rejects.toThrow('identity');
     const finish = (terminals: unknown[], barrier = async () => {}) =>
@@ -96,6 +96,16 @@ it('refuses foreign producers, incomplete terminals, failed jobs and changed pac
         fixture.baseline,
       );
     await expect(finish([])).rejects.toThrow('terminal');
+    let invalidBarrier = 0;
+    await expect(
+      finish(
+        [{ ...fixture.terminal, artifacts: [{ ...fixture.terminal.artifacts[0], id: 999 }] }],
+        async () => {
+          invalidBarrier++;
+        },
+      ),
+    ).rejects.toThrow('artifact coverage');
+    expect(invalidBarrier).toBe(0);
     await expect(
       finish([fixture.terminal], async () => {
         throw new Error('compute failure');
@@ -109,7 +119,7 @@ it('refuses foreign producers, incomplete terminals, failed jobs and changed pac
         fixture.input,
         fixture.identity,
         0,
-        async () => {},
+        async () => fixture.producer.artifacts,
       ),
     ).rejects.toThrow('Pack checksum');
   });

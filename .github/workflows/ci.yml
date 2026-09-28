@@ -311,6 +311,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
+      - name: Build the exact-source league dependency distribution
+        run: node scripts/league-runtime.ts build .generated/league-runtime "$GITHUB_SHA"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: league-runtime-${{ github.sha }}
+          path: .generated/league-runtime/
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
       - name: Publish version tag and GitHub release
         run: vp exec semantic-release
         env:

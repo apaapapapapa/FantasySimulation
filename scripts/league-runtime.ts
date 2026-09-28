@@ -266,6 +266,8 @@ export async function buildLeagueRuntime(checkout: string, destination: string, 
     archiveBytes: compressed.length,
     files: inventory,
   });
+  if (compressed.length + Buffer.byteLength(JSON.stringify(manifest)) > 63 * 1024 ** 2)
+    throw new Error('Runtime immutable ZIP capacity exceeded');
   await writeFile(join(output, 'runtime.json'), JSON.stringify(manifest) + '\n', { flag: 'wx' });
   return {
     files: inventory.length,

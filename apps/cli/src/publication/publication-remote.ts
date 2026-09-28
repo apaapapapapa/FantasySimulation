@@ -17,6 +17,7 @@ import {
   PUBLICATION_MAX_BYTES,
   PUBLICATION_MAX_FILES,
   PUBLICATION_CONTROL_KEY,
+  isLeagueCheckpointKey,
   type PublicationFile,
 } from './publication-files.ts';
 import { createHash } from 'node:crypto';
@@ -65,6 +66,7 @@ export interface PublishOptions extends TransferTuning {
   signal?: AbortSignal;
   dryRun?: boolean;
   observe?(report: PublishReport): void;
+  beforeCommit?(): Promise<void>;
 }
 export interface PublishReport {
   catalogHash: string;
@@ -455,6 +457,7 @@ async function publishGraph(
     );
     // Prove actual dual-reader capability before exposing any v2 pointer.
     await verifyReader();
+    await options.beforeCommit?.();
     await compatible();
     if (graph.current.schemaVersion === 2) report.viewerSourceSha = viewerSourceSha;
     await sameGeneration();
@@ -503,7 +506,8 @@ export async function prunePublication(store: PublicationStore, confirm = false)
   });
   const inventory = await store.inventory();
   const keys = [...inventory.keys()].filter(
-    (key) => key !== PUBLICATION_CONTROL_KEY && !graph.files.has(key),
+    (key) =>
+      key !== PUBLICATION_CONTROL_KEY && !isLeagueCheckpointKey(key) && !graph.files.has(key),
   );
   if (keys.length > 10000) throw new Error('Orphan deletion request limit');
   if (confirm && keys.length * 2 > store.remainingRequests())

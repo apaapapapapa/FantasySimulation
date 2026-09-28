@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { dirname } from 'node:path';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import {
   BundleReceiptSchema,
   ReplayManifestSchema,
@@ -8,6 +11,7 @@ import {
   type BundleReceipt,
 } from '@fantasy/domain/spatial';
 import { OperationError, readBoundedFile, sha256, type BundleRead } from '@fantasy/api/artifacts';
+import { BattleBundles, withReplayVerificationPool } from '@fantasy/api/artifacts';
 import { localPublicationGraph, publicationGraph, type ReplayProof } from './publication-graph.ts';
 import { publicationBytes, type PublicationFile } from './publication-files.ts';
 
@@ -78,6 +82,51 @@ export class PublicationEvidence {
   }
   static async audit(root: string) {
     return new PublicationEvidence(await capture(root, await localPublicationGraph(root, 2)));
+  }
+  /** Full legacy audit: bounded disposable replay spool, never an entire history on disk. */
+  static async remoteAudit(read: (key: string, limit: number) => Promise<Buffer>) {
+    const metadata = new Map<string, Buffer>(),
+      md5 = new Map<string, string>();
+    let metadataBytes = 0;
+    const graph = await publicationGraph(async (key, limit) => {
+      const data = await read(key, limit);
+      md5.set(key, createHash('md5').update(data).digest('hex'));
+      if (metadataKey(key) && !metadata.has(key)) {
+        metadataBytes += data.length;
+        if (metadataBytes > 128 * 1024 ** 2)
+          throw new OperationError('BUDGET_EXCEEDED', 'Remote audit metadata bound');
+        metadata.set(key, data);
+      }
+      return data;
+    });
+    await withReplayVerificationPool(2, async (pool) => {
+      for (const proof of graph.replays.values()) {
+        if (proof.physical.reduce((n, file) => n + file.bytes, 0) > 256 * 1024 ** 2)
+          throw new OperationError('BUDGET_EXCEEDED', 'Remote audit replay spool bound');
+        const root = await mkdtemp(join(tmpdir(), 'league-audit-'));
+        try {
+          for (const file of proof.physical) {
+            const data = metadata.get(file.key) ?? (await read(file.key, file.bytes));
+            if (data.length !== file.bytes || sha256(data) !== file.checksum)
+              throw new OperationError('DATA_INVALID', 'Remote audit replay changed');
+            await mkdir(dirname(join(root, file.key)), { recursive: true });
+            await writeFile(join(root, file.key), data, { flag: 'wx' });
+          }
+          const bundles = new BattleBundles(root).verificationSession({
+            ...(pool ? { pool } : {}),
+            publicData: true,
+          });
+          try {
+            await bundles.verify(proof.receipt.objectHash);
+          } finally {
+            bundles.closeVerification();
+          }
+        } finally {
+          await rm(root, { recursive: true, force: true });
+        }
+      }
+    });
+    return new PublicationEvidence(await capture('', graph, md5, metadata));
   }
   static async producer(root: string, authenticate: () => Promise<void>) {
     await authenticate();

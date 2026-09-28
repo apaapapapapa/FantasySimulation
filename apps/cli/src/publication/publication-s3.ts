@@ -13,6 +13,7 @@ import {
   PUBLICATION_MAX_FILES,
   PUBLICATION_CONTROL_KEY,
   PUBLICATION_CONTROL_BYTES,
+  isLeagueCheckpointKey,
 } from './publication-files.ts';
 import type { PublicationStore } from './publication-remote.ts';
 import { startMeasurement, measureAsync } from '@fantasy/api/tooling';
@@ -136,7 +137,10 @@ export class PublicationS3 implements PublicationStore {
   private input(key: string, control = false) {
     return {
       Bucket: this.config.bucket,
-      Key: control && key === PUBLICATION_CONTROL_KEY ? key : PublicKeySchema.parse(key),
+      Key:
+        (control && key === PUBLICATION_CONTROL_KEY) || isLeagueCheckpointKey(key)
+          ? key
+          : PublicKeySchema.parse(key),
     };
   }
   private status(error: unknown) {
@@ -216,8 +220,12 @@ export class PublicationS3 implements PublicationStore {
         ).catch((e) => (e instanceof OperationError ? Promise.reject(e) : this.failure(e))),
       );
       for (const item of page.Contents ?? []) {
+        if (typeof item.Key !== 'string')
+          throw new OperationError('DATA_INVALID', 'Missing S3 inventory key');
         const key =
-            item.Key === PUBLICATION_CONTROL_KEY ? item.Key : PublicKeySchema.parse(item.Key),
+            item.Key === PUBLICATION_CONTROL_KEY || isLeagueCheckpointKey(item.Key)
+              ? item.Key
+              : PublicKeySchema.parse(item.Key),
           size = item.Size;
         if (size === undefined || !Number.isSafeInteger(size) || size < 0 || result.has(key))
           throw new OperationError('DATA_INVALID', 'Invalid S3 inventory');

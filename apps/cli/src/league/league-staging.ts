@@ -17,6 +17,7 @@ import { PublicationS3, type R2Config } from '../publication/publication-s3.ts';
 import type { PublicationStore } from '../publication/publication-remote.ts';
 import { admitLeagueUsage } from './league-budget.ts';
 import { leagueTransport, LEAGUE_TRANSIENT_RETRIES } from './league-transfer.ts';
+import { CHECKPOINT_RESERVE_BYTES } from './league-checkpoint.ts';
 
 /** A single active partition, a bounded payload queue, and an already durably reserved lease. */
 export class LeagueStaging {
@@ -46,8 +47,9 @@ export class LeagueStaging {
       if (
         this.additions + fresh.length > this.maxAddedFiles ||
         this.addedBytes + bytes > this.maxAddedBytes ||
-        this.inventory.size + fresh.length > PUBLICATION_MAX_FILES ||
-        [...this.inventory.values()].reduce((a, b) => a + b, 0) + bytes > PUBLICATION_MAX_BYTES
+        this.inventory.size + fresh.length + 2 > PUBLICATION_MAX_FILES ||
+        [...this.inventory.values()].reduce((a, b) => a + b, 0) + bytes + CHECKPOINT_RESERVE_BYTES >
+          PUBLICATION_MAX_BYTES
       )
         throw new OperationError('BUDGET_EXCEEDED', 'Staging capacity exceeded before PUT');
       this.additions += fresh.length;
@@ -96,6 +98,9 @@ export class LeagueStaging {
     this.failed = true;
     await this.io.close();
   }
+  metrics() {
+    return { addedFiles: this.additions, addedBytes: this.addedBytes };
+  }
 }
 
 export async function openLeagueStaging(
@@ -122,7 +127,7 @@ export async function openLeagueStaging(
       classB: Math.min(1900000, inventory.size * 2 + 10000),
       worker: 1000,
     };
-    await admitLeagueUsage(control, {
+    const usage = await admitLeagueUsage(control, {
       ...identity,
       ...budget,
       classB: budget.classB + budget.worker,
@@ -137,6 +142,7 @@ export async function openLeagueStaging(
       staging,
       store: data,
       inventory,
+      usage,
       async close() {
         await staging.close();
         data?.close();

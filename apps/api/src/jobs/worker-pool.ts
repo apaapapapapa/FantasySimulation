@@ -14,11 +14,14 @@ export class BattlePool {
   readonly pool: Piscina;
   private startupFailure: Error | null = null;
   private closed = false;
-  constructor(readonly workers = 1) {
+  constructor(
+    readonly workers = 1,
+    options: { comparison?: boolean } = {},
+  ) {
     if (
       !Number.isInteger(workers) ||
       workers < 1 ||
-      workers > Math.min(4, Math.max(1, availableParallelism() - 1))
+      workers > Math.min(4, Math.max(1, availableParallelism() - (options.comparison ? 0 : 1)))
     )
       throw new Error('Worker count exceeds the 4-worker/one-reserved-CPU limit');
     const source = import.meta.url.endsWith('.ts');

@@ -29,6 +29,7 @@ import { buildLeagueWork, finishCheckedLeagueWork } from './league-work.ts';
 import { exportLeague } from './league-export.ts';
 import { LEAGUE_PROFILE, probeLeague, requireLeagueProbeBinding } from './league-probe.ts';
 import { PublicReadFailure } from '../publication/publication-http.ts';
+import { evidenceGraph, type PublicationEvidence } from '../publication/publication-evidence.ts';
 import {
   cloudJson,
   writeCloudJson,
@@ -45,14 +46,17 @@ export async function prepareCloudLeague(
   preparedRoot: string,
   inventoryInput: unknown,
   expectedProbe?: unknown,
+  options: { evidence?: PublicationEvidence; maxInputBytes?: number } = {},
 ) {
   const inventory = operationInput(
     () => LeagueCloudInventorySchema.parse(inventoryInput),
     'DATA_INVALID',
   );
-  const graph = (await optionalPublicationFile(join(publicRoot, 'catalog/current.json'), 4000000))
-    ? await localPublicationGraph(publicRoot)
-    : null;
+  const graph = options.evidence
+    ? evidenceGraph(options.evidence)
+    : (await optionalPublicationFile(join(publicRoot, 'catalog/current.json'), 4000000))
+      ? await localPublicationGraph(publicRoot)
+      : null;
   const probe = await probeLeague(
     definition,
     source.sha,
@@ -66,6 +70,7 @@ export async function prepareCloudLeague(
   if (expectedProbe !== undefined) requireLeagueProbeBinding(expectedProbe, probe);
   const history = [...(graph?.latestWork?.records.values() ?? [])];
   const retained = new BattleBundles(publicRoot);
+  const metadata = options.evidence?.bundles() ?? retained;
   const planned = await planLeague(
     definition,
     source,
@@ -77,7 +82,7 @@ export async function prepareCloudLeague(
       usedWriteRequests: inventory.usedWriteRequests,
     },
     history,
-    retained,
+    metadata,
   );
   if (planned.partitions.length > 64)
     throw new OperationError(
@@ -91,7 +96,7 @@ export async function prepareCloudLeague(
       historyMap.has(slot.simulationHash) ? [historyMap.get(slot.simulationHash)!] : [],
     );
     reservations.push(
-      await reserveLeaguePartition(planned.plan, partition, records, executionId, retained),
+      await reserveLeaguePartition(planned.plan, partition, records, executionId, metadata),
     );
   }
   const work = await buildLeagueWork(
@@ -104,8 +109,41 @@ export async function prepareCloudLeague(
       records: history,
     },
     executionId,
-    retained,
+    metadata,
   );
+  if (options.maxInputBytes !== undefined) {
+    let bytes = 65536;
+    for (const [index, { partition, batch }] of planned.partitions.entries()) {
+      const reservation = reservations[index]!;
+      bytes += Buffer.byteLength(
+        canonicalJson({
+          schemaVersion: 1,
+          plan: planned.plan,
+          partition,
+          batch,
+          reservation,
+          work: work.ref,
+        }),
+      );
+      const hashes = new Set(
+        reservation.progress.records.flatMap((record) =>
+          record.attempts.flatMap((attempt) => (attempt.objectHash ? [attempt.objectHash] : [])),
+        ),
+      );
+      for (const hash of hashes) {
+        const proof = [...(graph?.replays.values() ?? [])].find(
+          (p) => p.receipt.objectHash === hash,
+        );
+        if (!proof) throw new OperationError('DATA_INVALID', 'Missing retained input evidence');
+        bytes += proof.logical.reduce((n, file) => n + file.bytes, 0);
+      }
+    }
+    if (!Number.isSafeInteger(options.maxInputBytes) || bytes > options.maxInputBytes)
+      throw new OperationError(
+        'BUDGET_EXCEEDED',
+        'Shared input archive requires the legacy bounded workflow',
+      );
+  }
   await newCloudDirectory(preparedRoot);
   const inputs = [];
   for (const [index, { partition, batch }] of planned.partitions.entries()) {

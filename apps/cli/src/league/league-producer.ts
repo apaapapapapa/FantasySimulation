@@ -5,6 +5,7 @@ import {
   LeagueCloudInputSchema,
   LeaguePartitionResultSchema,
   LeagueProducerProofSchema,
+  LeagueProducerArtifactSchema,
   type LeagueCloudInput,
 } from '@fantasy/domain/spatial';
 import { buildPublication } from '../publication/publication-export.ts';
@@ -71,13 +72,25 @@ export async function authenticateLeagueProducer(
   inputValue: unknown,
   identity: PipelineIdentity,
   runner: number,
-  authenticate: () => Promise<void>,
+  authenticate: () => Promise<readonly ReturnType<typeof LeagueProducerArtifactSchema.parse>[]>,
 ) {
   // Authenticate the actual downloaded ZIPs and trusted Actions producer before using its claims.
-  await authenticate();
+  const artifacts = (await authenticate()).map((ref) => LeagueProducerArtifactSchema.parse(ref));
   const input = LeagueCloudInputSchema.parse(inputValue);
   const proof = LeagueProducerProofSchema.parse(await cloudJson(join(root, 'proof.json')));
   const result = LeaguePartitionResultSchema.parse(await cloudJson(join(root, 'result.json')));
+  const names = artifacts.map((ref) => ref.name).sort();
+  if (
+    artifacts.length < 1 ||
+    artifacts.length > 3 ||
+    new Set(artifacts.map((ref) => ref.id)).size !== artifacts.length ||
+    names.some(
+      (name, index) =>
+        name !==
+        `league-${identity.runId}-${identity.runAttempt}-runner-${runner}-partition-${input.partition.index}-part-${index}-of-${artifacts.length}`,
+    )
+  )
+    throw new OperationError('IDENTITY_MISMATCH', 'Producer artifact identity/coverage mismatch');
   if (
     canonicalJson(proof.identity) !== canonicalJson(identity) ||
     proof.runner !== runner ||
@@ -113,7 +126,7 @@ export async function authenticateLeagueProducer(
     [...inventory].some(([key, bytes]) => graph.files.get(key)?.bytes !== bytes)
   )
     throw new OperationError('DATA_INVALID', 'Unexpected producer payload');
-  return { proof, result, evidence };
+  return { proof, result, evidence, artifacts };
 }
 export type LeagueProducer = Awaited<ReturnType<typeof authenticateLeagueProducer>>;
 

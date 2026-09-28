@@ -1,3 +1,4 @@
+import { MemoryStore } from '../../test-support/remote-store.ts';
 import { mkdtemp, rm, readFile, writeFile, cp } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -11,43 +12,8 @@ import { localPublicationGraph } from './publication-graph.ts';
 import { PublicationIo } from './publication-io.ts';
 import { PUBLICATION_CONTROL_KEY } from './publication-files.ts';
 import { leagueFailure, leagueFailureSummary } from '../league/league-diagnostics.ts';
-import {
-  publishPublication,
-  prunePublication,
-  type PublicationStore,
-  type PublishOptions,
-} from './publication-remote.ts';
+import { publishPublication, prunePublication, type PublishOptions } from './publication-remote.ts';
 
-class MemoryStore implements PublicationStore {
-  listedEtags?: () => ReadonlyMap<string, string>;
-  readonly objects = new Map<string, { data: Buffer; etag: string }>();
-  readonly writes: string[] = [];
-  readonly removed: string[] = [];
-  private version = 0;
-  remainingRequests() {
-    return 100_000;
-  }
-  async inventory() {
-    return new Map([...this.objects].map(([key, value]) => [key, value.data.length]));
-  }
-  async read(key: string) {
-    return this.objects.get(key) ?? null;
-  }
-  async head(key: string) {
-    return this.objects.get(key)?.data.length ?? null;
-  }
-  async put(key: string, data: Buffer, previous: string | null) {
-    const old = this.objects.get(key);
-    if (previous === null ? old !== undefined : old?.etag !== previous)
-      throw new Error('Conditional conflict');
-    this.writes.push(key);
-    this.objects.set(key, { data: Buffer.from(data), etag: String(++this.version) });
-  }
-  async remove(key: string) {
-    this.removed.push(key);
-    this.objects.delete(key);
-  }
-}
 const roots: string[] = [];
 afterEach(async () => {
   vi.restoreAllMocks();

@@ -1,0 +1,197 @@
+name: Bounded league pipeline
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful main CI for this workflow source
+        type: string
+        required: true
+      mode:
+        description: Publish new reservations or recover identical original artifacts
+        type: choice
+        options: [publish, recover]
+        default: publish
+        required: true
+      definition:
+        description: Committed league definition
+        type: string
+        default: data/leagues/official-20-v2.json
+      cost_profile:
+        description: Reviewed committed worker-pilot cost profile (required for new runs)
+        type: string
+      runners:
+        description: Persistent runners (above four requires approved measured account capacity)
+        type: string
+        default: '4'
+      pilot_run_id:
+        description: Successful same-source secret-free artifact pilot
+        type: string
+      source_run_id:
+        description: Original pipeline run for recovery
+        type: string
+      source_attempt:
+        description: Exact original attempt for recovery
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: r2-publication
+  cancel-in-progress: false
+env:
+  FANTASY_MEASUREMENTS_DIR: ${{ github.workspace }}/.generated/league-timing
+  LEAGUE_CI_RUN: ${{ inputs.ci_run_id }}
+  LEAGUE_AUDIT_MAX_AGE_HOURS: ${{ vars.LEAGUE_AUDIT_MAX_AGE_HOURS }}
+  PUBLICATION_VIEWER_URL: https://apaapapapapa.github.io/FantasySimulation/
+  PUBLICATION_WORKER_URL: https://fantasysimulation-replay-reader.tokyojp.workers.dev/
+jobs:
+  admit:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main' && inputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: r2-publication
+    outputs:
+      matrix: ${{ steps.prepare.outputs.matrix }}
+    env:
+      LEAGUE_DEFINITION: ${{ inputs.definition }}
+      LEAGUE_COST_PROFILE: ${{ inputs.cost_profile }}
+      LEAGUE_RUNNERS: ${{ inputs.runners }}
+      LEAGUE_APPROVED_RUNNERS: ${{ vars.LEAGUE_APPROVED_RUNNERS }}
+      LEAGUE_PILOT_RUN: ${{ inputs.pilot_run_id }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Authenticate history and reserve bounded restoration leases
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+          R2_PUBLICATION_ENABLED: ${{ vars.R2_PUBLICATION_ENABLED }}
+          LEAGUE_PIPELINE_ENABLED: ${{ vars.LEAGUE_PIPELINE_ENABLED }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node --import tsx scripts/league-pipeline.ts restore
+      - name: Prepare and upload one input before attempt admission
+        id: prepare
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        run: node --import tsx scripts/league-pipeline.ts prepare
+      - name: Commit reservations and publish authenticated baseline
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+          R2_PUBLICATION_ENABLED: ${{ vars.R2_PUBLICATION_ENABLED }}
+          LEAGUE_PIPELINE_ENABLED: ${{ vars.LEAGUE_PIPELINE_ENABLED }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node --import tsx scripts/league-pipeline.ts admit
+      - uses: ./.github/actions/league-measurements
+        if: always()
+        with:
+          extra-files: |
+            .generated/league-pipeline/reports/failure-*.json
+            .generated/league-pipeline/completion.json
+          suffix: pipeline-admit
+  compute:
+    needs: admit
+    name: compute (${{ matrix.index }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 32
+      matrix: ${{ fromJSON(needs.admit.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Run one fixed assignment with a shared two-Worker pool
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+          LEAGUE_RUNNER: ${{ matrix.index }}
+        run: node --import tsx scripts/league-pipeline.ts compute
+      - uses: ./.github/actions/league-measurements
+        if: always()
+        with:
+          extra-files: |
+            .generated/league-pipeline/reports/failure-*.json
+            .generated/league-pipeline/completion.json
+          suffix: pipeline-compute-${{ matrix.index }}
+  transfer:
+    needs: admit
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: r2-publication
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Stage while producers run, reconcile successful jobs, then conditionally commit
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+          R2_PUBLICATION_ENABLED: ${{ vars.R2_PUBLICATION_ENABLED }}
+          LEAGUE_PIPELINE_ENABLED: ${{ vars.LEAGUE_PIPELINE_ENABLED }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node --import tsx scripts/league-pipeline.ts transfer
+      - uses: ./.github/actions/league-measurements
+        if: always()
+        with:
+          extra-files: |
+            .generated/league-pipeline/reports/failure-*.json
+            .generated/league-pipeline/completion.json
+          suffix: pipeline-transfer
+          collect-actions: 'true'
+  recover:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main' && inputs.mode == 'recover'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: r2-publication
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Authenticate original artifacts and finalize with fresh leases, without simulation
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+          LEAGUE_SOURCE_RUN: ${{ inputs.source_run_id }}
+          LEAGUE_SOURCE_ATTEMPT: ${{ inputs.source_attempt }}
+          R2_PUBLICATION_ENABLED: ${{ vars.R2_PUBLICATION_ENABLED }}
+          LEAGUE_PIPELINE_ENABLED: ${{ vars.LEAGUE_PIPELINE_ENABLED }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          R2_BUCKET: fantasysimulation-replays
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node --import tsx scripts/league-pipeline.ts recover
+      - uses: ./.github/actions/league-measurements
+        if: always()
+        with:
+          extra-files: |
+            .generated/league-pipeline/reports/failure-*.json
+            .generated/league-pipeline/completion.json
+          suffix: pipeline-recover
+          collect-actions: 'true'

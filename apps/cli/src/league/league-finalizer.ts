@@ -57,6 +57,9 @@ export async function finalizeLeaguePipeline(
     new Set(receipts.map((r) => r.runner)).size !== receipts.length
   )
     throw new OperationError('DATA_INVALID', 'Missing or duplicate terminal receipt');
+  const archiveIds = producers.flatMap((producer) => producer.artifacts.map((ref) => ref.id));
+  if (new Set(archiveIds).size !== archiveIds.length)
+    throw new OperationError('DATA_INVALID', 'Duplicate producer artifact');
   for (const receipt of receipts) {
     const assignment = assignments[receipt.runner];
     if (
@@ -65,6 +68,12 @@ export async function finalizeLeaguePipeline(
       canonicalJson(receipt.partitions) !== canonicalJson(assignment.partitions)
     )
       throw new OperationError('DATA_INVALID', 'Terminal assignment mismatch');
+    const expected = producers
+      .filter((producer) => producer.proof.runner === receipt.runner)
+      .flatMap((producer) => producer.artifacts);
+    const ordered = (refs: typeof expected) => [...refs].sort((a, b) => a.id - b.id);
+    if (canonicalJson(ordered(expected)) !== canonicalJson(ordered(receipt.artifacts)))
+      throw new OperationError('DATA_INVALID', 'Terminal immutable artifact coverage mismatch');
   }
   await successfulJobs();
   const byIndex = new Map(producers.map((producer) => [producer.proof.partition, producer]));

@@ -31,6 +31,8 @@ export { assertPublicData } from '@fantasy/api/artifacts';
 export { PUBLICATION_MAX_BYTES, PUBLICATION_MAX_FILES } from '@fantasy/domain/spatial';
 export const PUBLICATION_CONTROL_KEY = 'control/league-usage.json';
 export const PUBLICATION_CONTROL_BYTES = 65536;
+export const isLeagueCheckpointKey = (key: string) =>
+  /^control\/league-checkpoints\/[a-f0-9]{64}\.(json|zip)$/.test(key);
 export type PublicationFile = {
   key: string;
   bytes: number;
