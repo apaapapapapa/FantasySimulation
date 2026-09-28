@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
-import { createWriteStream } from 'node:fs';
+import { constants, createWriteStream } from 'node:fs';
 import {
   lstat,
   mkdir,
+  open,
   readFile,
   readdir,
   readlink,
@@ -136,11 +137,31 @@ function dependencyPath(path: string) {
     throw new Error('Invalid runtime dependency path');
 }
 async function bounded(path: string, limit: number) {
-  const info = await lstat(path);
-  if (!info.isFile() || info.size > limit) throw new Error('Runtime file size/type bound');
-  const data = await readFile(path);
-  if (data.length !== info.size) throw new Error('Runtime file changed while reading');
-  return data;
+  const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  try {
+    const info = await file.stat({ bigint: true });
+    if (!info.isFile() || info.size > BigInt(limit))
+      throw new Error('Runtime file size/type bound');
+    const size = Number(info.size),
+      data = Buffer.alloc(size + 1);
+    let length = 0;
+    while (length < data.length) {
+      const { bytesRead } = await file.read(data, length, data.length - length, length);
+      if (!bytesRead) break;
+      length += bytesRead;
+    }
+    const after = await file.stat({ bigint: true });
+    if (
+      length !== size ||
+      after.size !== info.size ||
+      after.mtimeNs !== info.mtimeNs ||
+      after.ctimeNs !== info.ctimeNs
+    )
+      throw new Error('Runtime file changed while reading');
+    return data.subarray(0, size);
+  } finally {
+    await file.close();
+  }
 }
 async function runtimeIdentity(root: string, sourceSha: string) {
   if (
