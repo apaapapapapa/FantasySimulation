@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { BattleBundles, OperationError, sha256, type ReplayVerifier } from '@fantasy/api/artifacts';
 import {
   canonicalJson,
@@ -22,6 +22,7 @@ export async function sealLeagueProducer(
   identity: PipelineIdentity,
   runner: number,
   pool?: ReplayVerifier,
+  scope?: BattleBundles,
 ) {
   const result = LeaguePartitionResultSchema.parse(
     await cloudJson(join(resultRoot, 'result.json')),
@@ -31,15 +32,24 @@ export async function sealLeagueProducer(
     input.reservation.executionId !== `league-${identity.runId}-${identity.runAttempt}`
   )
     throw new OperationError('IDENTITY_MISMATCH', 'Producer execution mismatch');
+  if (
+    scope &&
+    (!pool ||
+      resolve(scope.root) !== resolve(join(resultRoot, 'bundles')) ||
+      !scope.isPublicScope(pool))
+  )
+    throw new OperationError('INPUT_INVALID', 'Producer scope differs from its partition');
   const publication = join(root, 'public');
-  // Every recording is reopened by the independent engine-free public verifier in this pool.
+  // Every recording is reopened by the independent engine-free public verifier in this pool,
+  // once per producer: the partition's own open scope re-hashes what it already verified.
   const built = await buildPublication(
     input.batch,
-    [{ index: result.index, bundles: new BattleBundles(join(resultRoot, 'bundles')) }],
+    [{ index: result.index, bundles: scope ?? new BattleBundles(join(resultRoot, 'bundles')) }],
     publication,
     pool,
     undefined,
     true,
+    scope !== undefined,
   );
   await commitPublication(publication, built.files, [built.setRef], { schemaVersion: 2 });
   const graph = await PublicationEvidence.producer(publication, async () => {});

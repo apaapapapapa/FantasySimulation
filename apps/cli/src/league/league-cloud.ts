@@ -203,6 +203,7 @@ export async function runCloudLeague(
     pool?: import('@fantasy/api/tooling').BattlePool;
     workers?: number;
     deadlineMs?: number;
+    bundles?: BattleBundles;
   } = {},
 ) {
   const input = LeagueCloudInputSchema.parse(await cloudJson(join(inputRoot, 'input.json')));

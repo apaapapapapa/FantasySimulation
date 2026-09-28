@@ -1,11 +1,10 @@
 import { expect, it, vi } from 'vite-plus/test';
-import { access, open } from 'node:fs/promises';
+import { access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { revisionReference, type LeagueDefinition } from '@fantasy/domain/spatial';
-import { sealRevision } from '@fantasy/engine/spatial';
-import { leagueInput, leagueEstimate } from '../../test-support/leagues.ts';
+import { type LeagueDefinition } from '@fantasy/domain/spatial';
+import { leagueInput, leagueEstimate, privateLeagueInput } from '../../test-support/leagues.ts';
 import { batchSource } from '../../test-support/batches.ts';
-import { withReplayDirectory } from '../../test-support/replays.ts';
+import { flipFirstByte, withReplayDirectory } from '../../test-support/replays.ts';
 import { BattleBundles } from '../batch/battle-bundle.ts';
 import { planLeague } from './league-plan.ts';
 import { reserveLeaguePartition, runLeaguePartition } from './league-runner.ts';
@@ -42,18 +41,7 @@ it.each(['receipt', 'manifest', 'chunk', 'checkpoint'] as const)(
             kind === 'receipt' || kind === 'manifest'
               ? `${kind}.json`
               : (kind === 'chunk' ? manifest.chunks : manifest.checkpoints)[0]!.file;
-          const handle = await open(join(this.root, 'objects', hash.slice(7), filename), 'r+');
-          try {
-            const metadata = await handle.stat();
-            const first = Buffer.alloc(1);
-            await handle.read(first, 0, 1, 0);
-            first[0] = first[0]! ^ 1;
-            await handle.write(first, 0, 1, 0);
-            await handle.utimes(metadata.atime, metadata.mtime);
-            expect((await handle.stat()).size).toBe(metadata.size);
-          } finally {
-            await handle.close();
-          }
+          await flipFirstByte(join(this.root, 'objects', hash.slice(7), filename));
           changedHash = hash;
         }
         return receipt;
@@ -76,20 +64,7 @@ it.each(['receipt', 'manifest', 'chunk', 'checkpoint'] as const)(
 
 it('checks publishability in the producer before issuing a partition result', async () => {
   await withReplayDirectory(async (root) => {
-    const input = await leagueInput();
-    const character = input.revisions.find(
-      (revision) => revision.kind === 'character' && revision.id === input.characters[0]!.id,
-    );
-    if (!character || character.kind !== 'character') throw new Error('Missing fixture character');
-    const privateName = await sealRevision('character', character.id, character.revision, {
-      ...character.definition,
-      name: '/private/profile',
-    });
-    input.revisions = input.revisions.map((revision) =>
-      revision === character ? privateName : revision,
-    );
-    input.characters[0] = revisionReference(privateName);
-    const run = await producer(root, input);
+    const run = await producer(root, await privateLeagueInput());
     await expect(run()).rejects.toMatchObject({
       code: 'DATA_INVALID',
       message: 'Private text is not publishable',

@@ -75,7 +75,7 @@ for (let trial = 0; trial < 6; trial++)
             runners: 1,
             workers: workers!,
             comparisonWorkers: true,
-            completed: async (index, resultRoot, pool) => {
+            completed: async (index, resultRoot, pool, bundles) => {
               const producer = join(directory, 'producer-' + index);
               await sealLeagueProducer(
                 await cloudInput(preparedRoot, prepared, index),
@@ -84,6 +84,7 @@ for (let trial = 0; trial < 6; trial++)
                 context.identity,
                 0,
                 pool,
+                bundles,
               );
               const graph = evidenceGraph(
                 await PublicationEvidence.producer(join(producer, 'public'), async () => {}),

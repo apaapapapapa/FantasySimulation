@@ -1,6 +1,6 @@
 import { OperationError } from '../operation-error.ts';
 import { mkdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import {
   BatchIndexBodySchema,
   canonicalJson,
@@ -120,6 +120,8 @@ export async function runLeaguePartition(
     reverse?: boolean;
     signal?: AbortSignal;
     retained?: BattleBundles;
+    /** Caller-owned open public scope on `root/bundles`, shared with its producer seal. */
+    bundles?: BattleBundles;
   } = {},
 ): Promise<LeaguePartitionResult> {
   const started = performance.now(),
@@ -131,33 +133,44 @@ export async function runLeaguePartition(
     { id } = reservation;
   if (reservation.executionId !== executionId)
     throw new OperationError('IDENTITY_MISMATCH', 'League reservation identity mismatch');
-  const records = await verifyLeagueProgress(reservation.progress.records, options.retained);
   const deadline = options.deadlineMs ?? 1500000;
   if (!Number.isInteger(deadline) || deadline < 1 || deadline > 1800000)
     throw new OperationError('INPUT_INVALID', 'Invalid league deadline');
   const workers = options.workers ?? options.pool?.workers ?? 1;
   if (options.pool && options.pool.workers !== workers)
     throw new OperationError('INPUT_INVALID', 'League worker count differs from borrowed pool');
-  await mkdir(join(root, 'reservations'), { recursive: true });
-  // This create-only claim also blocks concurrent local runners and same-token reruns.
-  await publishImmutableFile(
-    join(root, 'reservations', id.slice(7) + '.json'),
-    canonicalJson(reservation),
-  );
+  const bundleRoot = join(root, 'bundles');
+  if (
+    options.bundles &&
+    (!options.pool ||
+      resolve(options.bundles.root) !== resolve(bundleRoot) ||
+      options.bundles.maxBytes !== batch.maxOutputBytes ||
+      !options.bundles.isPublicScope(options.pool))
+  )
+    throw new OperationError('INPUT_INVALID', 'Borrowed producer scope differs from partition');
   // One producer owns the scope; every later check still reopens and hashes saved bytes.
+  // Retained inputs get their own scope: one full pass each, then imports re-hash them.
   const pool = options.pool ?? new BattlePool(workers),
-    bundleRoot = join(root, 'bundles'),
-    bundles = new BattleBundles(bundleRoot, batch.maxOutputBytes).verificationSession({
-      publicData: true,
-      pool,
-    });
+    bundles =
+      options.bundles ??
+      new BattleBundles(bundleRoot, batch.maxOutputBytes).verificationSession({
+        publicData: true,
+        pool,
+      }),
+    retained = options.retained?.verificationSession({ pool });
   try {
+    const records = await verifyLeagueProgress(reservation.progress.records, retained);
+    await mkdir(join(root, 'reservations'), { recursive: true });
+    // This create-only claim also blocks concurrent local runners and same-token reruns.
+    await publishImmutableFile(
+      join(root, 'reservations', id.slice(7) + '.json'),
+      canonicalJson(reservation),
+    );
     const results = new Map<string, BatchIndex['slots'][number]>();
-    if (options.retained)
+    if (retained)
       for (const record of records.values())
         for (const attempt of record.attempts)
-          if (attempt.objectHash)
-            await bundles.importRecorded(options.retained, attempt.objectHash);
+          if (attempt.objectHash) await bundles.importRecorded(retained, attempt.objectHash);
     for (const slot of batch.slots) {
       const attempts = records.get(slot.simulationHash)!.attempts;
       const latest =
@@ -173,9 +186,9 @@ export async function runLeaguePartition(
         reason: '',
       };
       if (latest && (latest.state === 'win' || latest.state === 'draw')) {
-        if (!options.retained || !latest.objectHash)
+        if (!retained || !latest.objectHash)
           throw new OperationError('DATA_INVALID', 'Reusable result is unavailable');
-        entry.receipt = await bundles.importConfirmed(options.retained, latest.objectHash);
+        entry.receipt = await bundles.importConfirmed(retained, latest.objectHash);
         entry.state = 'complete';
         entry.reused = true;
       } else if (
@@ -252,7 +265,8 @@ export async function runLeaguePartition(
     );
     return result;
   } finally {
-    bundles.closeVerification();
+    retained?.closeVerification();
+    if (!options.bundles) bundles.closeVerification();
     if (!options.pool) await pool.close();
   }
 }

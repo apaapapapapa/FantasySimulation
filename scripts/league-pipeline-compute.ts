@@ -51,7 +51,7 @@ export async function computePipeline(
       runners: control.runners,
       workers: 2,
       signal,
-      completed: async (index, directory, pool) => {
+      completed: async (index, directory, pool, bundles) => {
         const producerRoot = join(root, 'spool', String(index));
         const proof = await sealLeagueProducer(
           await cloudInput(preparedRoot, prepared, index),
@@ -60,6 +60,7 @@ export async function computePipeline(
           identity,
           runner,
           pool,
+          bundles,
         );
         const controls = ['proof.json', 'result.json'].map((name) => join(producerRoot, name));
         const controlBytes = (await Promise.all(controls.map((path) => lstat(path)))).reduce(

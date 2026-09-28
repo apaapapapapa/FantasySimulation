@@ -170,20 +170,34 @@ export class BattleBundles {
       // Receipt -> manifest -> every compressed byte remains authenticated on every access.
       await verifyReplayChecksums(directory, manifest);
     } else {
-      if (scope?.pool) await scope.pool.verify(directory, manifest, scope.publicData);
-      else
-        await verifyReplayDirectory(
-          directory,
-          manifest,
-          scope?.publicData ? assertPublicData : undefined,
-        );
-      if (scope) {
-        if (scope.seen.size >= 256) scope.seen.delete(scope.seen.values().next().value!);
-        scope.seen.add(objectHash);
-      }
+      await this.verifyFully(directory, manifest);
+      this.remember(objectHash);
     }
     scope?.signal?.throwIfAborted();
     return receipt;
+  }
+  /** Borrowers can confirm an open public-data scope on this pool; they can never seed hashes. */
+  isPublicScope(pool: ReplayVerifier) {
+    const scope = this.verification;
+    return scope !== undefined && !scope.closed && scope.publicData && scope.pool === pool;
+  }
+  private async verifyFully(
+    directory: ReplayLocation,
+    manifest: ReplayManifest,
+    fallback?: ReplayVerifier,
+  ) {
+    const scope = this.verification,
+      pool = scope?.pool ?? fallback,
+      publicData = scope?.publicData ?? false;
+    if (pool) await pool.verify(directory, manifest, publicData);
+    else
+      await verifyReplayDirectory(directory, manifest, publicData ? assertPublicData : undefined);
+  }
+  private remember(objectHash: string) {
+    const scope = this.verification;
+    if (!scope) return;
+    if (scope.seen.size >= 256) scope.seen.delete(scope.seen.values().next().value!);
+    scope.seen.add(objectHash);
   }
   /** The checksum still applies when a consumer reads the saved input after full verification. */
   async manifest(receipt: BundleReceipt): Promise<ReplayManifest> {
@@ -334,10 +348,11 @@ export class BattleBundles {
       result: result.result,
     });
     const receipt: BundleReceipt = { ...body, objectHash: await contentHash(body) };
+    const files = await runtime.replayFiles(manifest.id);
     return this.publishObject(
       receipt,
       manifest,
-      (ref) => runtime.replayFile(manifest.id, ref.file),
+      (ref) => files.read(ref.file),
       runtime.replayVerifier,
     );
   }
@@ -424,12 +439,21 @@ export class BattleBundles {
       }
       await writeDurableFile(join(staging, 'manifest.json'), manifestBytes);
       await writeDurableFile(join(staging, 'receipt.json'), receiptBytes);
-      if (pool) await pool.verify(staging, manifest, false);
-      else await verifyReplayDirectory(staging, manifest);
+      // In an open scope this is its first full pass, including public-data inspection of the
+      // original JSON; later scope reads of the renamed object re-hash every byte instead.
+      if (this.verification?.publicData)
+        for (const json of [receiptBytes, manifestBytes])
+          operationInput(
+            () =>
+              assertPublicData(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(json))),
+            'DATA_INVALID',
+          );
+      await this.verifyFully(staging, manifest, pool);
       await syncDirectory(staging);
       try {
         await rename(staging, this.objectPath(receipt.objectHash));
         this.bytes! += bytes;
+        this.remember(receipt.objectHash);
       } catch (error) {
         if (!['EEXIST', 'ENOTEMPTY', 'EPERM'].includes((error as NodeJS.ErrnoException).code ?? ''))
           throw error;

@@ -54,6 +54,7 @@ export async function buildPublication(
   pool?: ReplayVerifier,
   signal?: AbortSignal,
   packs = false,
+  scoped = false,
 ) {
   const root = resolve(directory);
   for (const value of indexes) {
@@ -68,12 +69,15 @@ export async function buildPublication(
       });
     }
   }
-  // New scope: never trust aggregation's earlier pass across the journal callback.
-  const checked = await checkedBatch(input, indexes, {
-      publicData: true,
-      ...(signal ? { signal } : {}),
-      ...(pool ? { pool } : {}),
-    }),
+  // New scope: never trust aggregation's earlier pass across the journal callback. Only a
+  // producer passing its own open public scope (`scoped`) reuses that scope's re-hashed pass.
+  const checked = await checkedBatch(
+      input,
+      indexes,
+      scoped
+        ? undefined
+        : { publicData: true, ...(signal ? { signal } : {}), ...(pool ? { pool } : {}) },
+    ),
     { plan } = checked;
   const files: PublicationFile[] = [],
     objects = new Set<string>(),

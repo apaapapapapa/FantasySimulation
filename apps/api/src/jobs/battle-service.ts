@@ -560,6 +560,9 @@ export class BattleService {
   replayFile(id: string, file: string) {
     return this.artifacts.file(id, file);
   }
+  replayFiles(id: string) {
+    return this.artifacts.files(id);
+  }
   async close() {
     if (this.stopped) return;
     this.stopped = true;
