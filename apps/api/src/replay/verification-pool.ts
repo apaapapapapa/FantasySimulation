@@ -5,6 +5,7 @@ import { Piscina } from 'piscina';
 import type { ReplayManifest } from '@fantasy/domain/spatial';
 import { currentMeasurements, startMeasurement } from '../measurements.ts';
 import { OperationError } from '../operation-error.ts';
+import { PrivateDataError } from './replay-public.ts';
 import type { VerificationResponse, VerificationTask } from './verification-worker.ts';
 
 export type ReplayVerifier = {
@@ -29,6 +30,7 @@ export async function verifyInWorker(
     for (const [name, bytes] of Object.entries(result.memory))
       measured?.capacity(`verification.worker.${name}`, bytes);
     if (!result.success) {
+      if (result.privateData !== null) throw new PrivateDataError(result.privateData);
       if (result.code !== 'UNKNOWN')
         throw new OperationError(result.code, 'Replay Worker validation failed');
       throw new Error('Replay Worker verification failed');

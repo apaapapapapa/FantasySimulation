@@ -143,6 +143,13 @@ jobs:
       - uses: ./.github/actions/league-runtime
         with:
           ci-run: ${{ inputs.ci_run_id }}
+      # Secret-free and ahead of staging: a failed download loses only the acceptance measurement.
+      - name: Install the pinned acceptance browser while producers start
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
+        run: node node_modules/@playwright/test/cli.js install chromium --only-shell
       - name: Stage while producers run, reconcile successful jobs, then conditionally commit
         env:
           LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
@@ -153,6 +160,12 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
         run: node --import tsx scripts/league-pipeline.ts transfer
+      # The #189 end: a fresh browser uses the normal viewer URL, new snapshot and one replay.
+      - name: Accept the new snapshot in a fresh browser
+        timeout-minutes: 5
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
+        run: node --import tsx scripts/league-pages-acceptance.ts
       - uses: ./.github/actions/league-measurements
         if: always()
         with:

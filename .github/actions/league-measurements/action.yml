@@ -18,15 +18,23 @@ runs:
       continue-on-error: true
       with:
         script: |
-          const {mkdir, writeFile} = require('node:fs/promises');
-          const {leagueTiming} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/league-timing.ts`);
+          const {mkdir, readFile, writeFile} = require('node:fs/promises');
+          const {collectLeagueTiming, leagueTiming, leagueTimingSummary} = await import(`${process.env.GITHUB_WORKSPACE}/scripts/league-timing.ts`);
+          const read = async (path) => { try { return JSON.parse(await readFile(path, 'utf8')); } catch { return undefined; } };
+          const evidence = {
+            completion: await read(`${process.env.GITHUB_WORKSPACE}/.generated/league-pipeline/completion.json`),
+            acceptance: await read(`${process.env.FANTASY_MEASUREMENTS_DIR}/pages-acceptance.json`),
+          };
           const request = {...context.repo, run_id: Number(process.env.GITHUB_RUN_ID), attempt_number: Number(process.env.GITHUB_RUN_ATTEMPT)};
           const {data: run} = await github.rest.actions.getWorkflowRunAttempt(request);
-          const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {...request, per_page: 100});
-          const report = leagueTiming(run, jobs, new Date().toISOString());
+          const report = await collectLeagueTiming(
+            () => github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {...request, per_page: 100}),
+            (jobs) => leagueTiming(run, jobs, new Date().toISOString(), evidence),
+            evidence.acceptance?.status === 'accepted',
+          );
           await mkdir(process.env.FANTASY_MEASUREMENTS_DIR, {recursive:true});
           await writeFile(`${process.env.FANTASY_MEASUREMENTS_DIR}/actions.json`, JSON.stringify(report) + '\n');
-          await core.summary.addHeading('League timing observations').addRaw(`Created to observation: ${report.observedWallMs} ms. Created to R2/Worker readback: ${report.createdToR2WorkerReadbackMs ?? 'unmeasured'} ms. Fresh-browser Pages acceptance and separate runner/Environment/concurrency waits remain unmeasured. Inclusive process spans and overlapping jobs must not be added to wall time.`).write();
+          await core.summary.addHeading('League timing observations').addRaw(leagueTimingSummary(report)).write();
     - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       if: always()
       continue-on-error: true

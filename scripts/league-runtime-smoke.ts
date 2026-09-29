@@ -15,6 +15,7 @@ try {
   // Exercise the artifact SDK's generated RPC imports in the dependency-only installation.
   await import('./league-pipeline-upload.ts');
   await import('./league-pipeline-transfer.ts');
+  await import('./league-pages-acceptance.ts');
   const source = executionSource();
   const identity = {
     source,

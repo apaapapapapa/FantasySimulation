@@ -50,11 +50,12 @@ it('measures real Worker/persistence/reverification without changing results or 
         (m) => m.worker && Number(m.worker.computeMs) > 0 && Number(m.worker.dispatchWaitMs) >= 0,
       ),
     ).toBe(true);
-    expect(report.validation.calls).toBe(12); // Writer seal, bundle publish, producer scope; final check rehashes.
+    // Writer seal, then public staging in the producer scope; every later check re-hashes.
+    expect(report.validation.calls).toBe(8);
     expect(report.validation.uniqueReplays).toBe(4);
-    expect(report.validation.repeatedCalls).toBe(8);
+    expect(report.validation.repeatedCalls).toBe(4);
     expect(report.stages['validate.replay']?.count).toBe(4);
-    expect(report.stages['validate.replay.worker']?.count).toBe(8);
+    expect(report.stages['validate.replay.worker']?.count).toBe(4);
     expect(report.capacitySampleMaxBytes['verification.worker.heapUsed']).toBeGreaterThan(0);
     expect(report.stages['db.walCheckpoint']?.count).toBe(4);
     // Every stored record, including each match's deferred terminal record, is one append span.

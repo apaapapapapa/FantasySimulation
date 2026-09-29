@@ -1,11 +1,12 @@
 import { expect, it, vi } from 'vite-plus/test';
-import { access } from 'node:fs/promises';
+import { access, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { type LeagueDefinition } from '@fantasy/domain/spatial';
 import { leagueInput, leagueEstimate, privateLeagueInput } from '../../test-support/leagues.ts';
 import { batchSource } from '../../test-support/batches.ts';
 import { flipFirstByte, withReplayDirectory } from '../../test-support/replays.ts';
 import { BattleBundles } from '../batch/battle-bundle.ts';
+import { PrivateDataError } from '../replay/replay-public.ts';
 import { planLeague } from './league-plan.ts';
 import { reserveLeaguePartition, runLeaguePartition } from './league-runner.ts';
 
@@ -65,10 +66,14 @@ it.each(['receipt', 'manifest', 'chunk', 'checkpoint'] as const)(
 it('checks publishability in the producer before issuing a partition result', async () => {
   await withReplayDirectory(async (root) => {
     const run = await producer(root, await privateLeagueInput());
-    await expect(run()).rejects.toMatchObject({
+    const refused = run();
+    await expect(refused).rejects.toBeInstanceOf(PrivateDataError);
+    await expect(refused).rejects.toMatchObject({
       code: 'DATA_INVALID',
       message: 'Private text is not publishable',
     });
     await expect(access(join(root, 'results'))).rejects.toMatchObject({ code: 'ENOENT' });
+    // Public staging refuses the batch itself: no index records a failed slot to retry later.
+    expect(await readdir(join(root, 'bundles', 'indexes'))).toEqual([]);
   });
 }, 30_000);

@@ -8,6 +8,7 @@ import { pipelineActionsFixture } from './test-support/league-actions.ts';
 import { pipelineCapacity, pipelinePollMs, pipelineRunners } from './league-pipeline-policy.ts';
 import { measuredPipelineProfile } from './league-pipeline-profile.ts';
 import { artifactZip } from './test-support/league-zip.ts';
+import { PAGES_ACCEPTANCE_STEP, READBACK_STEPS } from './league-timing.ts';
 import { archiveHash } from './league-archive.ts';
 
 afterEach(() => {
@@ -128,4 +129,19 @@ it('keeps the two-wave DAG, credential boundary, exclusion and current-code-only
     'utf8',
   );
   expect(pilot).not.toMatch(/R2_|secrets\.|environment:|needs:/);
+  // Timing reads these exact steps; the browser runs only after the committed readback.
+  const legacy = readFileSync(new URL('../.github/workflows/league.yml', import.meta.url), 'utf8');
+  for (const [name, step] of READBACK_STEPS)
+    expect((name === 'publish' ? legacy : job(name)).split('\n')).toContain(
+      `      - name: ${step}`,
+    );
+  const steps = job('transfer').split(/\n      - /),
+    at = (text: string) => steps.findIndex((step) => step.includes(text));
+  expect(at('cli.js install chromium --only-shell')).toBe(at('league-pipeline.ts transfer') - 1);
+  expect(at(`name: ${PAGES_ACCEPTANCE_STEP}`)).toBe(at('league-pipeline.ts transfer') + 1);
+  expect(at('league-measurements')).toBe(at(`name: ${PAGES_ACCEPTANCE_STEP}`) + 1);
+  expect(steps[at('cli.js install')]).toContain('continue-on-error: true');
+  for (const step of [steps[at('cli.js install')], steps[at(PAGES_ACCEPTANCE_STEP)]])
+    expect(step).not.toMatch(/secrets\.|R2_|if:/);
+  expect(steps[at(PAGES_ACCEPTANCE_STEP)]).not.toContain('continue-on-error');
 });
