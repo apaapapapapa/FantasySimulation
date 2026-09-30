@@ -130,14 +130,15 @@ describe('production startup skill catalog', () => {
     expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 2 });
     expect(catalog.nodes).toHaveLength(1_152);
     expect(release).toEqual({
-      lifecycle: { available: 26, implemented: 4, draft: 1_122, retired: 0 },
-      available: 26,
-      verified: 26,
+      lifecycle: { available: 27, implemented: 4, draft: 1_121, retired: 0 },
+      available: 27,
+      verified: 27,
       releaseReady: false,
       issues: [],
     });
     expect(available.filter(({ coordinate }) => coordinate.path === 'sword')).toHaveLength(6);
     expect(available.filter(({ coordinate }) => coordinate.path === 'spear')).toHaveLength(1);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'shield')).toHaveLength(1);
     expect(available.filter(({ coordinate }) => coordinate.path === 'shinto')).toHaveLength(4);
     expect(available.filter(({ coordinate }) => coordinate.path === 'renki')).toHaveLength(4);
     expect(available.filter(({ coordinate }) => coordinate.path === 'magic')).toHaveLength(11);
