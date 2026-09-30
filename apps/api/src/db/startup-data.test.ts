@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vite-plus/test';
 import {
   ReplayState,
+  canonicalJson,
   parseJson,
   replayContext,
   revisionReference,
@@ -8,6 +9,7 @@ import {
   skillCatalogDigest,
   RevisionSchema,
   type Revision,
+  type SkillCatalog,
 } from '@fantasy/domain';
 import { ManifestBuilder, runBattle } from '@fantasy/engine/spatial';
 import { catalogManifest } from '@fantasy/samples';
@@ -27,23 +29,61 @@ import {
 } from './startup-skill-catalog.ts';
 
 const stores: Store[] = [];
+const historicalCatalogSignatures = {
+  2: {
+    digest: 'sha256:5537f45d9be2b1d8d6dbe9d8099db2388f30c6c772694aee693547d2ebad5c69',
+    canonicalBytes: 777_368,
+    lifecycle: { available: 26, implemented: 4, draft: 1_122, retired: 0 },
+  },
+  3: {
+    digest: 'sha256:7567e53cc5639ce9fad3578d81331e8804880758626e7a5cd3bbc755cdf67026',
+    canonicalBytes: 777_476,
+    lifecycle: { available: 27, implemented: 3, draft: 1_122, retired: 0 },
+  },
+  4: {
+    digest: 'sha256:3d6df8e9f07c2bfa492fbfdab80b5acb8937d168826331c6bbdd1f33179ef968',
+    canonicalBytes: 777_669,
+    lifecycle: { available: 28, implemented: 3, draft: 1_121, retired: 0 },
+  },
+} as const;
 afterEach(() => {
   for (const store of stores.splice(0)) store.close();
 });
 
+async function catalogHistorySignature(value: SkillCatalog) {
+  return {
+    digest: await skillCatalogDigest(value),
+    canonicalBytes: new TextEncoder().encode(canonicalJson(value)).byteLength,
+    lifecycle: Object.fromEntries(
+      ['available', 'implemented', 'draft', 'retired'].map((lifecycle) => [
+        lifecycle,
+        value.nodes.filter((node) => node.lifecycle === lifecycle).length,
+      ]),
+    ),
+  };
+}
+
+const changedNodeIds = (left: SkillCatalog, right: SkillCatalog) =>
+  left.nodes
+    .filter((node, index) => canonicalJson(node) !== canonicalJson(right.nodes[index]))
+    .map(({ id }) => id);
+
 async function runAndReplay(
   manifest: Awaited<ReturnType<typeof catalogManifest>>,
-  ability: Extract<Revision, { kind: 'ability' }>,
+  ...abilities: Extract<Revision, { kind: 'ability' }>[]
 ) {
-  const revisions = manifest.revisions.some(
-      (revision) =>
-        revision.kind === ability.kind &&
-        revision.id === ability.id &&
-        revision.revision === ability.revision,
+  const revisions = [...manifest.revisions];
+  for (const ability of abilities)
+    if (
+      !revisions.some(
+        (revision) =>
+          revision.kind === ability.kind &&
+          revision.id === ability.id &&
+          revision.revision === ability.revision,
+      )
     )
-      ? manifest.revisions
-      : [...manifest.revisions, ability],
-    battle = await ManifestBuilder.from(revisions).build({
+      revisions.push(ability);
+  const battle = await ManifestBuilder.from(revisions).build({
       seed: manifest.seed,
       participants: manifest.participants,
       ruleset: manifest.ruleset,
@@ -148,7 +188,16 @@ describe('production startup skill catalog', () => {
     for (const revision of [2, 3, 4]) {
       const previous = await app.inject(`/api/skill-catalogs/skill-catalog-v1/${revision}`);
       expect(previous.statusCode).toBe(200);
-      expect(previous.json().catalog).toMatchObject({ id: 'skill-catalog-v1', revision });
+      expect(previous.json()).toMatchObject({
+        reference: {
+          id: 'skill-catalog-v1',
+          revision,
+          contentHash:
+            historicalCatalogSignatures[revision as keyof typeof historicalCatalogSignatures]
+              .digest,
+        },
+        catalog: { id: 'skill-catalog-v1', revision },
+      });
     }
     const legacy = await app.inject('/api/skill-catalogs/skill-catalog-v1/1');
     expect(legacy.statusCode).toBe(200);
@@ -165,14 +214,28 @@ describe('production startup skill catalog', () => {
       historicalV2Catalog = readIntegratedStartupSkillCatalogV2(revisions),
       historicalV3Catalog = readIntegratedStartupSkillCatalogV3(revisions),
       historicalV4Catalog = readPreviousIntegratedStartupSkillCatalog(revisions);
-    expect(await skillCatalogDigest(historicalV2Catalog)).toBe(
-      'sha256:bfab392a9a68800c5f684dcab0497ade412e28aeb420d4de9caaac5d2e426e2a',
+    expect(await catalogHistorySignature(historicalV2Catalog)).toEqual(
+      historicalCatalogSignatures[2],
     );
-    expect(await skillCatalogDigest(historicalV3Catalog)).toBe(
-      'sha256:7567e53cc5639ce9fad3578d81331e8804880758626e7a5cd3bbc755cdf67026',
+    expect(historicalV2Catalog.nodes.find(({ id }) => id === 'skill.shield.ox.1')).toMatchObject({
+      lifecycle: 'implemented',
+      resolution: [
+        {
+          kind: 'active-ability',
+          ability: {
+            id: 'guard',
+            revision: 1,
+            contentHash: 'sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769',
+          },
+        },
+      ],
+      fixtureIds: ['effects-order-free-shield'],
+    });
+    expect(await catalogHistorySignature(historicalV3Catalog)).toEqual(
+      historicalCatalogSignatures[3],
     );
-    expect(await skillCatalogDigest(historicalV4Catalog)).toBe(
-      'sha256:3d6df8e9f07c2bfa492fbfdab80b5acb8937d168826331c6bbdd1f33179ef968',
+    expect(await catalogHistorySignature(historicalV4Catalog)).toEqual(
+      historicalCatalogSignatures[4],
     );
     const previousV2 = await skills.seedCatalog(historicalV2Catalog),
       previousV3 = await skills.seedCatalog(historicalV3Catalog),
@@ -189,11 +252,21 @@ describe('production startup skill catalog', () => {
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
       count: 5,
     });
+    expect(
+      await catalogHistorySignature((await skills.catalog('skill-catalog-v1', 2))!.catalog),
+    ).toEqual(historicalCatalogSignatures[2]);
+    expect(changedNodeIds(historicalV2Catalog, historicalV3Catalog)).toEqual(['skill.shield.ox.1']);
+    expect(changedNodeIds(historicalV3Catalog, historicalV4Catalog)).toEqual([
+      'skill.aikido.dog.1',
+    ]);
+    expect(changedNodeIds(historicalV4Catalog, seeded.skillCatalog.catalog)).toEqual([
+      'skill.magic.rooster.2',
+    ]);
     const lifecycle = (revision: number, nodeId: string) =>
       skills
         .catalog('skill-catalog-v1', revision)
         .then((record) => record?.catalog.nodes.find(({ id }) => id === nodeId)?.lifecycle);
-    await expect(lifecycle(2, 'skill.shield.ox.1')).resolves.toBe('draft');
+    await expect(lifecycle(2, 'skill.shield.ox.1')).resolves.toBe('implemented');
     await expect(lifecycle(3, 'skill.shield.ox.1')).resolves.toBe('available');
     await expect(lifecycle(3, 'skill.aikido.dog.1')).resolves.toBe('draft');
     await expect(lifecycle(4, 'skill.aikido.dog.1')).resolves.toBe('available');
@@ -390,7 +463,7 @@ describe('production startup skill catalog', () => {
     const seeded = await seedStartupData(store),
       revisions = parseJson(RevisionSchema.array(), readSampleRevisions()),
       character = revisions.find(
-        (revision) => revision.kind === 'character' && revision.id === 'fire-seer',
+        (revision) => revision.kind === 'character' && revision.id === 'swordsman',
       ),
       reveal = revisions.find(
         (revision) => revision.kind === 'ability' && revision.id === 'reveal-fire',
@@ -398,9 +471,30 @@ describe('production startup skill catalog', () => {
       measured = revisions.find(
         (revision) => revision.kind === 'ability' && revision.id === 'measured-fire',
       );
-    if (character?.kind !== 'character') throw new Error('Missing fire seer fixture');
+    if (character?.kind !== 'character') throw new Error('Missing swordsman fixture');
     if (reveal?.kind !== 'ability') throw new Error('Missing reveal fire fixture');
     if (measured?.kind !== 'ability') throw new Error('Missing measured fire fixture');
+    expect(character.definition.abilities.map(({ id }) => id)).not.toContain(reveal.id);
+    expect(character.definition.abilities.map(({ id }) => id)).not.toContain(measured.id);
+
+    const negativeManifest = await catalogManifest('swordsman', 'ember-duelist', 'flat', 400, 228),
+      negative = await runAndReplay(negativeManifest, reveal, measured),
+      negativeActor = negative.context.actors[0];
+    expect(negative.battle.manifest.participants[0]!.skillLoadout).toBeUndefined();
+    expect(negativeActor?.abilities.map(({ id }) => id)).not.toContain(reveal.id);
+    expect(negativeActor?.abilities.map(({ id }) => id)).not.toContain(measured.id);
+    expect(
+      negative.run.records.some(
+        (record) =>
+          'events' in record &&
+          record.events.some(
+            (event) =>
+              event.kind === 'launch' &&
+              event.actorId === 'left' &&
+              (event.abilityId === reveal.id || event.abilityId === measured.id),
+          ),
+      ),
+    ).toBe(false);
 
     const nodeIds = ['skill.magic.rooster.1', 'skill.magic.rooster.2'],
       skills = new SkillStore(store),
@@ -417,9 +511,9 @@ describe('production startup skill catalog', () => {
         },
       }),
       reloaded = await skills.revision(created.latest),
-      manifest = await catalogManifest('fire-seer', 'ember-duelist', 'flat', 400, 228);
+      manifest = await catalogManifest('swordsman', 'ember-duelist', 'flat', 400, 228);
     manifest.participants[0]!.skillLoadout = await skillBattleReceipt(reloaded);
-    const { run, context, restored } = await runAndReplay(manifest, measured);
+    const { run, context, restored } = await runAndReplay(manifest, reveal, measured);
 
     expect(reloaded.resolved).toMatchObject({
       explicitlyEnabledNodeIds: [nodeIds[1]],
@@ -439,6 +533,9 @@ describe('production startup skill catalog', () => {
       catalog: seeded.skillCatalog.reference,
       resolvedNodeIds: nodeIds,
     });
+    expect(context.actors[0]!.abilities.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([reveal.id, measured.id]),
+    );
     expect(
       run.records.some(
         (record) =>

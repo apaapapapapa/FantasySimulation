@@ -260,20 +260,97 @@ function assembleIntegratedStartupSkillCatalog(
   return catalog;
 }
 
-const releaseRevisionByNodeId = new Map([
-  ['skill.shield.ox.1', 3],
-  ['skill.aikido.dog.1', 4],
-  ['skill.magic.rooster.2', 5],
+const historicalReleaseNodes = new Map<string, { releaseRevision: number; prior: SkillNode }>([
+  [
+    'skill.shield.ox.1',
+    {
+      releaseRevision: 3,
+      prior: {
+        id: 'skill.shield.ox.1',
+        coordinate: { path: 'shield', zodiac: 'ox', dan: 1 },
+        name: 'Set shield',
+        description:
+          'A steady guard covers the bearer while facing the incoming line. Lower-dan techniques remain the lower-commitment option.',
+        lifecycle: 'implemented',
+        prerequisites: [],
+        deepening: {
+          kind: 'foundation',
+          explanation: 'Establishes ordinary directional protection as the low-commitment option.',
+          retainsLowerUse: true,
+        },
+        pathRoleTags: ['accumulation', 'guard-protection-displacement', 'zodiac.ox'],
+        resolution: [
+          {
+            kind: 'active-ability',
+            ability: {
+              id: 'guard',
+              revision: 1,
+              contentHash:
+                'sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769',
+            },
+          },
+        ],
+        fixtureIds: ['effects-order-free-shield'],
+      },
+    },
+  ],
+  [
+    'skill.aikido.dog.1',
+    {
+      releaseRevision: 4,
+      prior: {
+        id: 'skill.aikido.dog.1',
+        coordinate: { path: 'aikido', zodiac: 'dog', dan: 1 },
+        name: 'Aikido Protection dan 1',
+        description:
+          'Low-level use: a low-cost flow response that is unavailable without a committed incoming action. Zodiac direction: answer a threat with path-specific defense and response.',
+        lifecycle: 'draft',
+        prerequisites: [],
+        deepening: {
+          kind: 'foundation',
+          explanation:
+            "Foundation exposes a low-cost flow response that is unavailable without a committed incoming action without promising the branch's advanced mechanisms.",
+          retainsLowerUse: true,
+        },
+        pathRoleTags: ['incoming-action', 'reactive-redirect'],
+        resolution: [],
+        fixtureIds: [],
+      },
+    },
+  ],
+  [
+    'skill.magic.rooster.2',
+    {
+      releaseRevision: 5,
+      prior: {
+        id: 'skill.magic.rooster.2',
+        coordinate: { path: 'magic', zodiac: 'rooster', dan: 2 },
+        name: 'Affinity Reading: Condition',
+        description:
+          'reading only delivered and permitted evidence. The earlier techniques remain independently selectable; this dan does not silently replace them.',
+        lifecycle: 'draft',
+        prerequisites: ['skill.magic.rooster.1'],
+        deepening: {
+          kind: 'conditional-effect',
+          explanation:
+            'reading only delivered and permitted evidence; it deepens a bounded reveal of fire resistance without removing that lower-cost use.',
+          retainsLowerUse: true,
+        },
+        pathRoleTags: ['dan.2', 'path.magic', 'zodiac.rooster'],
+        resolution: [],
+        fixtureIds: [],
+      },
+    },
+  ],
 ]);
 
 function integratedNodesAtRevision(revision: number): SkillNode[] {
   return integratedSkillShards
     .flatMap(({ nodes }) => nodes)
-    .map((node): SkillNode =>
-      (releaseRevisionByNodeId.get(node.id) ?? 0) > revision
-        ? { ...node, lifecycle: 'draft', resolution: [], fixtureIds: [] }
-        : node,
-    );
+    .map((node): SkillNode => {
+      const historical = historicalReleaseNodes.get(node.id);
+      return historical && historical.releaseRevision > revision ? historical.prior : node;
+    });
 }
 
 /** Reconstruct immutable catalog v2 before the shield guard release. */
