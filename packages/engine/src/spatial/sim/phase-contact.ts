@@ -32,12 +32,17 @@ export function contactPhase(tx: StepTransaction) {
         ),
   );
   for (const [index, actor] of next.entries()) actor.body.intent = motionPlans[index]!.intent;
+  for (let i = 0; i < next.length * (tx.next.dependents?.length ?? 0); i++) work.candidate();
   const moved = moveActors(
     world,
     next.map((a) => a.body.motion),
     new Map(next.map((a) => [actorId(a), a.body.intent])),
     battle.rules,
     budget.maxMoveSegments,
+    (tx.next.dependents ?? []).map((dependent) => ({
+      position: dependent.position,
+      body: dependent.body,
+    })),
   );
   for (const [index, movement] of moved.entries()) motionPlans[index]!.settle(movement, journal);
   const surviving: MeleeState[] = [];

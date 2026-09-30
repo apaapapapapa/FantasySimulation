@@ -43,6 +43,8 @@ export type EffectApplication = DamageSnapshot & {
   dealtBps?: number;
   damageCancelled?: boolean;
   guards?: readonly { activationId: string; retainedDamageBps: number }[];
+  /** Redirect drain credit to a bounded dependent instead of its owner actor. */
+  drainRecipientId?: string;
 };
 export type DamageDetail = NonNullable<BattleEvent['damage']> & {
   applicationId: string;
@@ -357,17 +359,26 @@ export function resolveEffects(
           continue;
         const source = results.find((r) => r.actorId === app.actorId);
         const sourceTarget = targets.find((t) => t.actor.participant.actorId === app.actorId);
-        if (!source || !sourceTarget || (concept && !source.openingHp)) continue;
+        if (
+          !source ||
+          (!app.drainRecipientId && !sourceTarget) ||
+          (!app.drainRecipientId && concept && !source.openingHp)
+        )
+          continue;
         const n = actual * BigInt(detail.toHp.numerator);
         const d = BigInt(detail.toHp.denominator) * BigInt(result.hpDamage || 1);
         const healing =
           (n *
             BigInt(app.effect.drainBps) *
-            hpRecoveryBps(sourceTarget.statuses, sourceTarget.statusStep ?? step)) /
+            (app.drainRecipientId
+              ? 10000n
+              : hpRecoveryBps(sourceTarget!.statuses, sourceTarget!.statusStep ?? step))) /
           (d * 100000000n);
         detail.drain = { basis: fraction(n, d), healing: checked(healing) };
-        source.unclamped += healing;
-        source.healed += checked(healing);
+        if (!app.drainRecipientId) {
+          source.unclamped += healing;
+          source.healed += checked(healing);
+        }
       }
     }
     const required = results.filter(

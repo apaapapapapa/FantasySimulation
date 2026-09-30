@@ -13,7 +13,7 @@ export const IdSchema = z.string().regex(/^[a-z0-9][a-z0-9._-]{0,63}$/);
 export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 export const MAX_BATTLE_STEPS = 6_000;
 export const MAX_FRAME_BYTES = 4_000_000;
-export const CURRENT_ENGINE_VERSION = 'spatial-v1.22' as const;
+export const CURRENT_ENGINE_VERSION = 'spatial-v1.23' as const;
 export const CURRENT_SKILL_RESOLVER_VERSION = 'skill-resolver-v1' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
@@ -683,8 +683,36 @@ export const AbilitySchema = z
     stages: z.array(StageSchema).min(1).max(16).optional(),
     relocation: RelocationSchema.optional(),
     barrier: BarrierSchema.optional(),
+    summon: z
+      .strictObject({
+        profile: z.literal('scout-rat-v1'),
+        body: BodySchema,
+        hp: positive(1_000_000),
+        spawnOffsetMm: Vec3Schema,
+        lifetimeSteps: positive(MAX_BATTLE_STEPS),
+        upkeep: z.strictObject({ mp: positive(1_000_000), everySteps: positive(1_000) }),
+        commandCostMp: positive(1_000_000),
+        actionEverySteps: positive(1_000),
+        damage: z.strictObject({ amount: positive(1_000_000), drainBps: uint(10_000) }),
+      })
+      .optional(),
   })
   .superRefine((ability, ctx) => {
+    if (
+      ability.summon &&
+      (ability.trigger !== 'action' ||
+        ability.target !== 'self' ||
+        ability.attack.kind !== 'direct' ||
+        ability.effects.length ||
+        ability.stages ||
+        ability.relocation ||
+        ability.barrier ||
+        ability.timeStop)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'A dependent summon is a standalone direct self action',
+      });
     if (
       ability.timeStop &&
       (ability.trigger !== 'action' ||
@@ -741,7 +769,8 @@ export const AbilitySchema = z
       response?.kind !== 'revive' &&
       !ability.relocation &&
       !ability.barrier &&
-      !ability.timeStop
+      !ability.timeStop &&
+      !ability.summon
     )
       ctx.addIssue({
         code: 'custom',
@@ -1345,7 +1374,7 @@ export const PhysicsProfileSchema = z.strictObject({
 /** Saved inputs remain readable; only ManifestSchema admits current execution. */
 export const StoredManifestSchema = z
   .strictObject({
-    schemaVersion: z.union([z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
+    schemaVersion: z.union([z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7)]),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
     engineVersion: IdSchema,
@@ -1391,6 +1420,16 @@ export const StoredManifestSchema = z
       ctx.addIssue({
         code: 'custom',
         message: 'Sensory cues require manifest schema version 6',
+      });
+    if (
+      manifest.schemaVersion < 7 &&
+      manifest.revisions.some(
+        (revision) => revision.kind === 'ability' && revision.definition.summon,
+      )
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Dependent summons require manifest schema version 7',
       });
     if (manifest.participants[0].rngStream === manifest.participants[1].rngStream)
       ctx.addIssue({ code: 'custom', message: 'Actor streams must differ' });

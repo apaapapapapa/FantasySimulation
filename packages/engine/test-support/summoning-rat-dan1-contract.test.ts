@@ -1,8 +1,8 @@
 import { expect, it } from 'vite-plus/test';
 import fixture from '../fixtures/spatial/summoning-rat-dan1.json' with { type: 'json' };
 
-it('keeps the rat dan-one execution contract pending until every runtime boundary exists', () => {
-  expect(fixture.status).toBe('pending-runtime');
+it('keeps the verified rat dan-one runtime separate from catalog availability', () => {
+  expect(fixture.status).toBe('verified-runtime');
   expect(fixture.availableClaim).toBe(false);
   expect(fixture.catalogNodeId).toBe('skill.summoning.rat.1');
   expect(fixture.input.participants.map(({ slot }) => slot)).toEqual(['A', 'B']);
@@ -14,18 +14,11 @@ it('keeps the rat dan-one execution contract pending until every runtime boundar
     canNest: false,
     canWin: false,
   });
-  expect(fixture.missingRuntimeMechanisms).toEqual([
-    'dependent-entity-state',
-    'owner-derived-hostility',
-    'dependent-rng-stream',
-    'dependent-subject-clock',
-    'observed-dependent-command',
-    'dependent-guard-drain-settlement',
-    'owner-revival-and-despawn-settlement',
-    'dependent-record-schema',
-    'dependent-save-api-worker-sqlite',
-    'dependent-replay-seek-reverse',
-    'dependent-viewer-2d-3d',
+  expect(fixture.missingRuntimeMechanisms).toEqual([]);
+  expect(fixture.runtimeEvidence).toEqual([
+    'packages/engine/src/spatial/dependents.test.ts',
+    'apps/api/src/jobs/dependent-persistence.test.ts',
+    'apps/web/src/replay/dependent-display.test.ts',
   ]);
 });
 

@@ -16,6 +16,7 @@ import { type StepTransaction, actorId } from './step-transaction.ts';
 import { effectsOf } from './step-effects.ts';
 import { activateRelocations } from './relocation.ts';
 import { settleSensoryCues } from './sensory-cues.ts';
+import { advanceDependents, settleDefeatedDependents } from './dependents.ts';
 export function boundaryPhase(tx: StepTransaction) {
   expireSpatialObjects(tx);
   if (tx.next.stop?.active && tx.next.stop.active.until <= tx.step)
@@ -24,6 +25,7 @@ export function boundaryPhase(tx: StepTransaction) {
   const { step, journal } = tx;
   const actors = tx.previous.actors,
     next = tx.next.actors;
+  advanceDependents(tx);
   for (const actor of next) settleSensoryCues(actor, step, journal);
   const spatial =
     battle.statuses.some((s) => s.definition.phasing) ||
@@ -120,6 +122,7 @@ export function boundaryPhase(tx: StepTransaction) {
       phase: 'boundary',
       budget,
       world,
+      ...(tx.next.dependents ? { dependents: tx.next.dependents } : {}),
     });
     tx.effects.length = 0;
   }
@@ -179,6 +182,7 @@ export function boundaryPhase(tx: StepTransaction) {
         phase: 'boundary',
         budget,
         world,
+        ...(tx.next.dependents ? { dependents: tx.next.dependents } : {}),
         ...stopEffectHooks(tx, {
           battle,
           journal,
@@ -192,6 +196,7 @@ export function boundaryPhase(tx: StepTransaction) {
       },
       work.reactions,
     );
+  settleDefeatedDependents(tx);
   interruptDamagedStages(next, step, journal, 'boundary');
   for (const actor of next)
     checkStageInterruption(

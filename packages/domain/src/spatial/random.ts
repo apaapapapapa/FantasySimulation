@@ -9,3 +9,17 @@ export function nextRandom(state: number): number {
 export function actorSeed(master: number, stream: 0 | 1): number {
   return ((master >>> 0) ^ Math.imul(0x9e3779b9, stream + 1)) >>> 0 || 0x6d2b79f5;
 }
+
+/** Stable dependent stream identity; enumeration and command order are deliberately absent. */
+export function dependentSeed(
+  master: number,
+  ownerStream: 0 | 1,
+  ordinal: number,
+  entityId: string,
+  purpose: string,
+): number {
+  let state = (actorSeed(master, ownerStream) ^ Math.imul(ordinal + 1, 0x85ebca6b)) >>> 0;
+  for (const code of `${entityId}\0${purpose}`)
+    state = Math.imul(state ^ code.charCodeAt(0), 0x01000193);
+  return nextRandom(state >>> 0 || 0x6d2b79f5);
+}

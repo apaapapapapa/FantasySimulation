@@ -3,7 +3,7 @@
   "id": "fixture.skill.summoning.rat.1.contract",
   "issue": 228,
   "design": "docs/adr/0021-dependent-summons.md",
-  "status": "pending-runtime",
+  "status": "verified-runtime",
   "availableClaim": false,
   "catalogNodeId": "skill.summoning.rat.1",
   "input": {
@@ -150,17 +150,10 @@
     "legacyOmission": "preserve-existing-two-participant-behavior",
     "rollback": "disable-new-execution-and-publication-without-rewriting-saved-data"
   },
-  "missingRuntimeMechanisms": [
-    "dependent-entity-state",
-    "owner-derived-hostility",
-    "dependent-rng-stream",
-    "dependent-subject-clock",
-    "observed-dependent-command",
-    "dependent-guard-drain-settlement",
-    "owner-revival-and-despawn-settlement",
-    "dependent-record-schema",
-    "dependent-save-api-worker-sqlite",
-    "dependent-replay-seek-reverse",
-    "dependent-viewer-2d-3d"
-  ]
+  "runtimeEvidence": [
+    "packages/engine/src/spatial/dependents.test.ts",
+    "apps/api/src/jobs/dependent-persistence.test.ts",
+    "apps/web/src/replay/dependent-display.test.ts"
+  ],
+  "missingRuntimeMechanisms": []
 }

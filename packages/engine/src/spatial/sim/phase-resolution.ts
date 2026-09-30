@@ -10,6 +10,7 @@ import { checkStageInterruption, finishStages, interruptDamagedStages } from '..
 import { commitReactiveEffects } from './reactions.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 import { cancelEndedRelocations } from './relocation.ts';
+import { settleDefeatedDependents } from './dependents.ts';
 export function resolutionPhase(tx: StepTransaction) {
   commitBarrierDamage(tx);
   const { battle, budget, world, work } = tx.context;
@@ -27,6 +28,7 @@ export function resolutionPhase(tx: StepTransaction) {
       phase: 'resolution',
       budget,
       world,
+      ...(tx.next.dependents ? { dependents: tx.next.dependents } : {}),
       ...stopEffectHooks(tx, {
         battle,
         journal,
@@ -41,6 +43,7 @@ export function resolutionPhase(tx: StepTransaction) {
     work.reactions,
     tx.projectileContacts,
   );
+  settleDefeatedDependents(tx);
   interruptDamagedStages(next, step + 1, journal, 'resolution');
   for (const actor of next)
     checkStageInterruption(

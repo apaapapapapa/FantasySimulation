@@ -309,6 +309,19 @@ export function Scene2D({
           />
         </g>
       ))}
+      {model.dependents.map((dependent) => (
+        <g key={dependent.id} data-dependent={dependent.id}>
+          <circle
+            cx={dependent.position[0]}
+            cy={dependent.position[2]}
+            r={Math.max(0.16, dependent.radius)}
+            fill="#a98b69"
+            stroke="#f4dd9b"
+            strokeWidth={outline}
+          />
+          <title>{`summoned scout rat owned by ${dependent.ownerId}`}</title>
+        </g>
+      ))}
       {overlays.vision &&
         model.actors
           .filter((a) => a.vision)

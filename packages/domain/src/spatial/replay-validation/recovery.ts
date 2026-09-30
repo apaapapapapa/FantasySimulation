@@ -40,15 +40,22 @@ export function validateRecovery(
     if (detail.drain) {
       const source = context.actors.find((a) => a.participant.actorId === event.actorId);
       const ability = source?.abilities.find((a) => a.id === event.abilityId);
+      const dependentDamage =
+        !!event.entityId &&
+        !!ability?.definition.summon &&
+        ability.definition.summon.damage.drainBps > 0 &&
+        detail.calculation!.element === 'physical';
       requireReplay(
         !!source &&
           !event.sourceActorId &&
           !event.sourceProjectileId &&
           event.actorId !== event.targetId &&
           !!ability &&
-          abilityEffects(ability.definition).some(
-            (e) => e.kind === 'damage' && !!e.drainBps && e.element === detail.calculation!.element,
-          ),
+          (dependentDamage ||
+            abilityEffects(ability.definition).some(
+              (e) =>
+                e.kind === 'damage' && !!e.drainBps && e.element === detail.calculation!.element,
+            )),
         'drain source definition',
       );
       const n = BigInt(detail.drain.basis.numerator),
@@ -70,6 +77,7 @@ export function validateRecovery(
         !!cause?.damage?.drain &&
         event.actorId === cause.actorId &&
         event.targetId === cause.actorId &&
+        event.entityId === cause.entityId &&
         event.abilityId === cause.abilityId &&
         !event.sourceActorId &&
         !event.sourceProjectileId &&
