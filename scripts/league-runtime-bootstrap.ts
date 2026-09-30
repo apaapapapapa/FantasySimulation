@@ -1,4 +1,4 @@
-import { appendFile } from 'node:fs/promises';
+import { appendFile, lstat, mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { archiveHash, boundedArtifactResponse, extractLeagueArchive } from './league-archive.ts';
@@ -67,7 +67,12 @@ export async function bootstrapLeagueRuntime(
   );
   if (bytes.length !== ref.size_in_bytes || archiveHash(bytes) !== ref.digest)
     throw new Error('Runtime actual ZIP digest mismatch');
-  const distribution = join(root, '.generated/runtime-distribution');
+  // A fresh checkout has no .generated; create it, but never extract through a link.
+  const generated = join(root, '.generated');
+  await mkdir(generated, { recursive: true });
+  if (!(await lstat(generated)).isDirectory())
+    throw new Error('Runtime distribution parent must be a real directory');
+  const distribution = join(generated, 'runtime-distribution');
   await extractLeagueArchive(bytes, distribution, (key) =>
     ['runtime.gz', 'runtime.json'].includes(key),
   );
