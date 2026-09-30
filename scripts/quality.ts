@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { inspectContext } from './harness/context.ts';
 import { architecture } from './quality/architecture.ts';
+import { actionEntryFindings } from './quality/action-entry.ts';
 import {
   firstPartyJavaScript,
   unsupportedTypeScriptModules,
@@ -61,13 +62,14 @@ try {
     details.context = context;
     return context.findings;
   });
-  await run('quality:typescript', () =>
-    [...firstPartyJavaScript(paths), ...unsupportedTypeScriptModules(paths)].map((path) => ({
+  await run('quality:typescript', () => [
+    ...actionEntryFindings(root),
+    ...[...firstPartyJavaScript(paths), ...unsupportedTypeScriptModules(paths)].map((path) => ({
       path,
       correction:
         'Use strict .ts/.tsx source; .mts/.cts module variants are unsupported by this workspace guard.',
     })),
-  );
+  ]);
   await run('quality:architecture', async () => {
     const graph = await architecture(root, paths);
     return [...graph.publicGraph.summary.violations, ...graph.runtimeGraph.summary.violations];

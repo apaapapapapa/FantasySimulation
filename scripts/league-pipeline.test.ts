@@ -122,8 +122,27 @@ it('keeps the two-wave DAG, credential boundary, exclusion and current-code-only
   expect(workflow).not.toMatch(/pull_request|schedule:|secrets: inherit|permissions: write-all/);
   const secretSteps = workflow.split(/\n      - /).filter((step) => step.includes('secrets.'));
   expect(secretSteps).toHaveLength(4);
-  for (const step of secretSteps)
-    expect(step).toMatch(/league-pipeline.ts (restore|admit|transfer|recover)/);
+  expect(
+    secretSteps.map((step) =>
+      step
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => /^(?:run:|uses:|command:)/.test(line)),
+    ),
+  ).toEqual([
+    ['run: node --import tsx scripts/league-pipeline.ts restore'],
+    ['uses: ./.github/actions/league-artifact-command', 'command: admit'],
+    ['uses: ./.github/actions/league-artifact-command', 'command: transfer'],
+    ['uses: ./.github/actions/league-artifact-command', 'command: recover'],
+  ]);
+  for (const name of ['admit', 'transfer', 'recover'])
+    expect(job(name)).toContain('environment: r2-publication');
+  for (const step of secretSteps) {
+    expect(step).toContain('R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}');
+    expect(step).toContain('R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}');
+  }
+  expect(job('recover')).toContain('command: recover');
+  expect(job('recover')).not.toMatch(/command: (?:compute|admit|prepare|restore|transfer)\b/);
   const pilot = readFileSync(
     new URL('../.github/workflows/league-pilot.yml', import.meta.url),
     'utf8',
@@ -137,8 +156,8 @@ it('keeps the two-wave DAG, credential boundary, exclusion and current-code-only
     );
   const steps = job('transfer').split(/\n      - /),
     at = (text: string) => steps.findIndex((step) => step.includes(text));
-  expect(at('cli.js install chromium --only-shell')).toBe(at('league-pipeline.ts transfer') - 1);
-  expect(at(`name: ${PAGES_ACCEPTANCE_STEP}`)).toBe(at('league-pipeline.ts transfer') + 1);
+  expect(at('cli.js install chromium --only-shell')).toBe(at('command: transfer') - 1);
+  expect(at(`name: ${PAGES_ACCEPTANCE_STEP}`)).toBe(at('command: transfer') + 1);
   expect(at('league-measurements')).toBe(at(`name: ${PAGES_ACCEPTANCE_STEP}`) + 1);
   expect(steps[at('cli.js install')]).toContain('continue-on-error: true');
   for (const step of [steps[at('cli.js install')], steps[at(PAGES_ACCEPTANCE_STEP)]])
