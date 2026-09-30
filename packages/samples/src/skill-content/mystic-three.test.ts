@@ -17,12 +17,26 @@ import {
 } from '@fantasy/domain';
 import { ManifestBuilder, reference, runBattle, sealRevision } from '@fantasy/engine/spatial';
 import { catalogManifest, sampleCatalog } from '../index.ts';
-import { MYSTIC_SKILL_FIXTURES, type MysticSkillFixture } from './mystic-three-fixtures.ts';
-import { MYSTIC_AVAILABLE_NODE_IDS, MYSTIC_SKILL_SHARDS } from './mystic-three.ts';
+import { integratedSkillShards } from '../skill-catalog/integrated-v2.ts';
+import {
+  MYSTIC_ROOSTER_DAN2_FIXTURE,
+  MYSTIC_SKILL_FIXTURES,
+  type MysticSkillFixture,
+} from './mystic-three-fixtures.ts';
+import {
+  MYSTIC_AVAILABLE_NODE_IDS,
+  MYSTIC_CATALOG_REVISION,
+  MYSTIC_ROOSTER_DAN2_RELEASE,
+  MYSTIC_SKILL_SHARDS,
+} from './mystic-three.ts';
 
 const repositoryRoot = fileURLToPath(new URL('../../../../', import.meta.url));
 const events = (records: Awaited<ReturnType<typeof runBattle>>['records']) =>
   records.flatMap((record) => ('events' in record ? record.events : []));
+const launched = (records: Awaited<ReturnType<typeof runBattle>>['records'], abilityId: string) =>
+  events(records).some(
+    (event) => event.kind === 'launch' && event.actorId === 'left' && event.abilityId === abilityId,
+  );
 const deepeningByDan = [
   'foundation',
   'conditional-effect',
@@ -57,7 +71,7 @@ function resolverCatalog(): SkillCatalog {
   return SkillCatalogSchema.parse({
     schemaVersion: 1,
     id: 'skill-catalog-v1',
-    revision: 2,
+    revision: MYSTIC_CATALOG_REVISION,
     nodes: [...mysticNodes, ...filler],
   });
 }
@@ -85,7 +99,12 @@ async function forcedFixtureManifest(fixture: MysticSkillFixture) {
     throw new Error(`Missing fixture policy ${actor.definition.policy.id}`);
   const forcedPolicy = await sealRevision('policy', `fixture.policy.${fixture.abilityId}`, 1, {
       ...policy.definition,
-      priorities: [{ abilityId: fixture.abilityId, when: { kind: 'always' as const } }],
+      priorities: [
+        ...(fixture.preserves
+          ? [{ abilityId: fixture.preserves.abilityId, when: { kind: 'always' as const } }]
+          : []),
+        { abilityId: fixture.abilityId, when: { kind: 'always' as const } },
+      ],
     }),
     forcedActor = await sealRevision('character', `fixture.character.${fixture.abilityId}`, 1, {
       ...actor.definition,
@@ -115,8 +134,11 @@ async function savedFixtureManifest(fixture: MysticSkillFixture) {
       id: `loadout.${fixture.id}`,
       version: 1,
       catalog: catalogRef,
-      eligibilityNodeIds: [fixture.nodeId],
-      learnedNodeIds: [fixture.nodeId],
+      eligibilityNodeIds: [
+        ...(fixture.preserves ? [fixture.preserves.nodeId] : []),
+        fixture.nodeId,
+      ],
+      learnedNodeIds: [...(fixture.preserves ? [fixture.preserves.nodeId] : []), fixture.nodeId],
       enabledNodeIds: [fixture.nodeId],
     },
     content = {
@@ -190,7 +212,7 @@ describe('mystic path catalog content', () => {
       available = nodes.filter(({ lifecycle }) => lifecycle === 'available'),
       fixtureByNode = new Map(MYSTIC_SKILL_FIXTURES.map((fixture) => [fixture.nodeId, fixture]));
 
-    expect(available).toHaveLength(19);
+    expect(available).toHaveLength(20);
     expect(MYSTIC_SKILL_FIXTURES).toHaveLength(available.length);
     expect(new Set(MYSTIC_SKILL_FIXTURES.map(({ id }) => id)).size).toBe(
       MYSTIC_SKILL_FIXTURES.length,
@@ -199,7 +221,7 @@ describe('mystic path catalog content', () => {
       const fixture = fixtureByNode.get(node.id),
         resolution = node.resolution[0];
       expect(fixture).toBeDefined();
-      expect(node.coordinate.dan).toBe(1);
+      expect(node.coordinate.dan).toBe(node.id === MYSTIC_ROOSTER_DAN2_RELEASE.nodeId ? 2 : 1);
       expect(node.fixtureIds).toEqual([fixture!.id]);
       expect(node.resolution).toHaveLength(1);
       expect(resolution?.kind).toMatch(/^(active|passive)-ability$/);
@@ -238,6 +260,53 @@ describe('mystic path catalog content', () => {
     }
   });
 
+  it('publishes exact rooster dan two while retaining its lower reveal', async () => {
+    const fixture = MYSTIC_ROOSTER_DAN2_FIXTURE,
+      revisions = await sampleCatalog(),
+      ability = revisions.find(
+        (revision) =>
+          revision.kind === 'ability' &&
+          revision.id === MYSTIC_ROOSTER_DAN2_RELEASE.resolution.ability.id,
+      ),
+      source = MYSTIC_SKILL_SHARDS.magic.nodes.find(({ id }) => id === fixture.nodeId),
+      startup = integratedSkillShards
+        .find(({ path }) => path === 'magic')
+        ?.nodes.find(({ id }) => id === fixture.nodeId);
+    expect(source).toMatchObject({
+      lifecycle: 'available',
+      prerequisites: [fixture.preserves!.nodeId],
+      resolution: [MYSTIC_ROOSTER_DAN2_RELEASE.resolution],
+      fixtureIds: [fixture.id],
+    });
+    expect(startup).toEqual(source);
+    expect(ability).toMatchObject({
+      kind: 'ability',
+      revision: MYSTIC_ROOSTER_DAN2_RELEASE.resolution.ability.revision,
+      contentHash: MYSTIC_ROOSTER_DAN2_RELEASE.resolution.ability.contentHash,
+    });
+    expect(fixture).toMatchObject({
+      nodeId: MYSTIC_ROOSTER_DAN2_RELEASE.nodeId,
+      abilityId: MYSTIC_ROOSTER_DAN2_RELEASE.resolution.ability.id,
+      preserves: { nodeId: MYSTIC_ROOSTER_DAN2_RELEASE.prerequisiteNodeId },
+    });
+    expect(
+      integratedSkillShards
+        .flatMap(({ nodes }) => nodes)
+        .filter(({ lifecycle }) => lifecycle === 'available'),
+    ).toHaveLength(29);
+
+    const { manifest, snapshot } = await savedFixtureManifest(fixture),
+      run = await runBattle(manifest),
+      replay = await replayContext(manifest, run.result.simulationHash);
+    expect(snapshot.resolved.resolvedNodeIds).toEqual([
+      MYSTIC_ROOSTER_DAN2_RELEASE.prerequisiteNodeId,
+      MYSTIC_ROOSTER_DAN2_RELEASE.nodeId,
+    ]);
+    expect(replay.actors[0]!.abilities.map(({ id }) => id)).toContain(fixture.preserves!.abilityId);
+    expect(replay.actors[0]!.abilities.map(({ id }) => id)).toContain(fixture.abilityId);
+    expect(launched(run.records, fixture.abilityId)).toBe(true);
+  });
+
   it.each(MYSTIC_SKILL_FIXTURES.map((fixture) => [fixture.id, fixture] as const))(
     'carries saved loadout %s through AI, battle events and replay provenance',
     async (_id, fixture) => {
@@ -247,9 +316,13 @@ describe('mystic path catalog content', () => {
         restored = new ReplayState(replay);
       for (const record of run.records) restored.apply(record);
 
-      expect(snapshot.resolved.nodeResolutions).toEqual([
-        expect.objectContaining({ nodeId: fixture.nodeId }),
-      ]);
+      expect(snapshot.resolved.nodeResolutions).toEqual(
+        expect.arrayContaining([expect.objectContaining({ nodeId: fixture.nodeId })]),
+      );
+      if (fixture.preserves)
+        expect(snapshot.resolved.nodeResolutions).toEqual(
+          expect.arrayContaining([expect.objectContaining({ nodeId: fixture.preserves.nodeId })]),
+        );
       expect(receipt.loadout).toEqual({
         id: snapshot.id,
         revision: snapshot.revision,
@@ -259,7 +332,8 @@ describe('mystic path catalog content', () => {
       expect(manifest.participants[0]!.skillLoadout).toEqual(receipt);
       expect(replay.manifest.participants[0]!.skillLoadout).toEqual(receipt);
       expect(replay.actors[0]!.abilities.map(({ id }) => id)).toContain(fixture.abilityId);
-      const resolution = receipt.nodeResolutions[0]!.resolution[0]!;
+      const resolution = receipt.nodeResolutions.find(({ nodeId }) => nodeId === fixture.nodeId)!
+        .resolution[0]!;
       if (resolution.kind === 'active-ability') {
         const policy = replay.manifest.revisions.find(
           (revision) =>
@@ -272,14 +346,8 @@ describe('mystic path catalog content', () => {
           when: { kind: 'always' },
         });
       } else expect(resolution.kind).toBe('passive-ability');
-      expect(
-        events(run.records).some(
-          (event) =>
-            event.kind === 'launch' &&
-            event.actorId === 'left' &&
-            event.abilityId === fixture.abilityId,
-        ),
-      ).toBe(true);
+      expect(launched(run.records, fixture.abilityId)).toBe(true);
+      if (fixture.preserves) expect(launched(run.records, fixture.preserves.abilityId)).toBe(true);
       expect(restored).toMatchObject({ ended: true, step: run.result.steps });
       expect(run.result.steps).toBeLessThanOrEqual(200);
     },

@@ -8,7 +8,7 @@ import {
 } from '@fantasy/domain';
 
 export const MYSTIC_CATALOG_ID = 'skill-catalog-v1';
-export const MYSTIC_CATALOG_REVISION = 2;
+export const MYSTIC_CATALOG_REVISION = 3;
 
 type MysticPath = Extract<SkillPathId, 'shinto' | 'renki' | 'magic'>;
 type BranchDesign = {
@@ -455,6 +455,10 @@ const refs = {
     'reveal-fire',
     '1d54c35a5d79ce021d43eb0cc31b6bccd027ad71846ea9f9ce3dbde71f6c3514',
   ],
+  'measured-fire': [
+    'measured-fire',
+    'e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965',
+  ],
   'spatial-beam-v1': [
     'spatial-beam-v1',
     '341fe27a18970c970300ea60d1031fc3b2df2ed8bfb4dd405545939557aad492',
@@ -467,6 +471,12 @@ const abilityRef = (id: MysticAbilityId): RevisionRef => ({
   revision: 1,
   contentHash: `sha256:${refs[id][1]}`,
 });
+
+export const MYSTIC_ROOSTER_DAN2_RELEASE = {
+  nodeId: 'skill.magic.rooster.2',
+  prerequisiteNodeId: 'skill.magic.rooster.1',
+  resolution: { kind: 'active-ability' as const, ability: abilityRef('measured-fire') },
+} as const;
 
 const available: Partial<
   Record<
@@ -518,7 +528,12 @@ function branchNodes(path: MysticPath, design: BranchDesign): SkillNode[] {
     const dan = (index + 1) as SkillDan,
       id = `skill.${path}.${design.zodiac}.${dan}`,
       prior = dan === 1 ? [] : [`skill.${path}.${design.zodiac}.${dan - 1}`],
-      evidence = dan === 1 ? available[`${path}:${design.zodiac}`] : undefined;
+      evidence =
+        dan === 1
+          ? available[`${path}:${design.zodiac}`]
+          : id === MYSTIC_ROOSTER_DAN2_RELEASE.nodeId
+            ? (['measured-fire', 'active-ability'] as const)
+            : undefined;
     return {
       id,
       coordinate: { path, zodiac: design.zodiac, dan },
@@ -538,7 +553,7 @@ function branchNodes(path: MysticPath, design: BranchDesign): SkillNode[] {
       },
       pathRoleTags: [`path.${path}`, `zodiac.${design.zodiac}`, `dan.${dan}`],
       resolution: evidence ? [{ kind: evidence[1], ability: abilityRef(evidence[0]) }] : [],
-      fixtureIds: evidence ? [`fixture.skill.${path}.${design.zodiac}.1.runtime`] : [],
+      fixtureIds: evidence ? [`fixture.skill.${path}.${design.zodiac}.${dan}.runtime`] : [],
     };
   });
 }
