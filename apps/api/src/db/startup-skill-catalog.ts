@@ -212,7 +212,7 @@ export function inspectStartupSkillCatalog(
 
 export const STARTUP_SKILL_ABILITY_IDS = swordRatRelease.map(({ abilityId }) => abilityId);
 
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 2;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 3;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>

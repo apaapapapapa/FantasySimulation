@@ -58,7 +58,7 @@ export const shieldGuardPromotionPlan = {
   loadoutFixture: {
     id: 'loadout.fixture.shield.ox.guard',
     version: 1,
-    catalog: { id: 'skill-catalog-v1', revision: 2 },
+    catalog: { id: 'skill-catalog-v1', revision: 3 },
     characterId: 'shield-guard-fixture-character',
     eligibilityNodeIds: ['skill.shield.ox.1'],
     learnedNodeIds: ['skill.shield.ox.1'],
