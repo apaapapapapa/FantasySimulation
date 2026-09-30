@@ -12,6 +12,7 @@ import revivalSealing from '../../../data/content/p6-revival-sealing-v1.json' wi
 import concepts from '../../../data/content/p6-concepts-v1.json' with { type: 'json' };
 import milestones from '../../../data/content/p6-official-milestones-v1.json' with { type: 'json' };
 import meleeBalance from '../../../data/content/melee-balance-v1.json' with { type: 'json' };
+import martialGuard from '../../../data/content/skill-martial-guard-v1.json' with { type: 'json' };
 import { compileCatalog } from './authoring.ts';
 
 const sources = [
@@ -26,6 +27,7 @@ const sources = [
   ...concepts,
   ...milestones,
   ...meleeBalance,
+  ...martialGuard,
 ];
 
 const copy = (revision: Revision, id: string) => {
