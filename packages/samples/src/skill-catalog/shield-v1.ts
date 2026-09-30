@@ -511,16 +511,22 @@ const branches = [
 const hash = (value: string) => value as `sha256:${string}`;
 const evidence = {
   'skill.shield.ox.1': {
-    status: 'definition-only',
+    status: 'proven',
     ability: {
-      id: 'guard',
+      id: 'shield-set-guard-v1',
       revision: 1,
-      contentHash: hash('sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769'),
+      contentHash: hash('sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d'),
     },
-    fixtureIds: ['effects-order-free-shield'],
-    evidenceFiles: ['packages/engine/src/spatial/effects.test.ts'],
-    releaseBlocker:
-      'Needs shield-path AI selection plus saved battle and replay provenance fixtures.',
+    resolutionKind: 'passive-ability',
+    fixtureIds: [
+      'fixture.skill.shield.ox.1.guard-battle',
+      'fixture.skill.shield.ox.1.guard-replay',
+      'fixture.skill.shield.ox.1.guard-viewer',
+    ],
+    evidenceFiles: [
+      'apps/api/src/http/skill-guard.integration.test.ts',
+      'apps/web/src/replay/guard-display.test.ts',
+    ],
   },
   'skill.shield.dog.1': {
     status: 'definition-only',

@@ -1160,6 +1160,12 @@
       "id": "swordsman-trained-v1-policy",
       "revision": 1,
       "contentHash": "sha256:f0719ed62cac1f4b23820ae43073798bcd5c3095f4f4ab6dccb57723e11ace42"
+    },
+    {
+      "kind": "ability",
+      "id": "shield-set-guard-v1",
+      "revision": 1,
+      "contentHash": "sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d"
     }
   ]
 }

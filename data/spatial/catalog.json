@@ -1718,6 +1718,46 @@
   },
   {
     "kind": "ability",
+    "id": "shield-set-guard-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d",
+    "definition": {
+      "name": "Set shield guard",
+      "originalText": "Brace the shield against one observed physical hit.",
+      "trigger": "before-hit",
+      "reaction": {
+        "response": {
+          "kind": "guard",
+          "retainedDamageBps": 8000
+        },
+        "categories": ["physical"]
+      },
+      "categories": ["technique"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 4,
+        "uses": 0
+      },
+      "castSteps": 0,
+      "recoverySteps": 6,
+      "cooldownSteps": 60,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": []
+    }
+  },
+  {
+    "kind": "ability",
     "id": "spatial-area-v1",
     "revision": 1,
     "schemaVersion": 1,

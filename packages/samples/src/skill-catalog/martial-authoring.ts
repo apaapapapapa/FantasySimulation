@@ -20,12 +20,14 @@ export type NodeEvidence =
   | {
       status: 'proven';
       ability: ExistingAbility;
+      resolutionKind?: 'active-ability' | 'passive-ability';
       fixtureIds: readonly string[];
       evidenceFiles: readonly string[];
     }
   | {
       status: 'definition-only';
       ability: ExistingAbility;
+      resolutionKind?: 'active-ability' | 'passive-ability';
       fixtureIds: readonly string[];
       evidenceFiles: readonly string[];
       releaseBlocker: string;
@@ -99,7 +101,9 @@ export function buildPathShard(
           ...(plan.conditionOrTradeoff ? { conditionOrTradeoff: plan.conditionOrTradeoff } : {}),
         },
         pathRoleTags: [...branch.roleTags, `zodiac.${branch.zodiac}`],
-        resolution: executable ? [{ kind: 'active-ability', ability: proof.ability }] : [],
+        resolution: executable
+          ? [{ kind: proof.resolutionKind ?? 'active-ability', ability: proof.ability }]
+          : [],
         fixtureIds: executable ? [...proof.fixtureIds] : [],
       };
     }),

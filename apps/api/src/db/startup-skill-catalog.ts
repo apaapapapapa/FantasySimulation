@@ -212,7 +212,7 @@ export function inspectStartupSkillCatalog(
 
 export const STARTUP_SKILL_ABILITY_IDS = swordRatRelease.map(({ abilityId }) => abilityId);
 
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 2;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 3;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>
@@ -266,9 +266,9 @@ export function inspectIntegratedStartupSkillCatalog(
       fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
     });
   if (
-    report.available !== 26 ||
-    report.verified !== 26 ||
-    report.lifecycle.implemented !== 4 ||
+    report.available !== 27 ||
+    report.verified !== 27 ||
+    report.lifecycle.implemented !== 3 ||
     report.lifecycle.draft !== 1_122 ||
     report.issues.length
   )

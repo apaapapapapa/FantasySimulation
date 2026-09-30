@@ -108,11 +108,11 @@ describe('production startup skill catalog', () => {
 
     const app = createApp(store);
     stores.pop();
-    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/2');
+    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/3');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       reference: first.skillCatalog.reference,
-      catalog: { id: 'skill-catalog-v1', revision: 2 },
+      catalog: { id: 'skill-catalog-v1', revision: 3 },
     });
     expect(response.json().catalog.nodes).toHaveLength(1_152);
     const legacy = await app.inject('/api/skill-catalogs/skill-catalog-v1/1');
@@ -121,23 +121,47 @@ describe('production startup skill catalog', () => {
     await app.close();
   });
 
+  it('preserves an existing integrated revision when seeding its successor', async () => {
+    const store = openStore(':memory:'),
+      revisions = readSampleRevisions();
+    stores.push(store);
+    await store.seedRevisions(revisions);
+    const skills = new SkillStore(store),
+      historical = readIntegratedStartupSkillCatalog(revisions);
+    historical.revision = 2;
+    historical.nodes.find(({ id }) => id === 'skill.shield.ox.1')!.name =
+      'Previously stored shield revision';
+    const previous = await skills.seedCatalog(historical),
+      seeded = await seedStartupData(store);
+
+    expect(seeded.skillCatalog.reference).toMatchObject({
+      id: 'skill-catalog-v1',
+      revision: 3,
+    });
+    expect(await skills.catalog('skill-catalog-v1', 2)).toEqual(previous);
+    expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
+      count: 3,
+    });
+  });
+
   it('integrates fourteen authored paths while keeping unfinished coordinates unavailable', () => {
     const revisions = readSampleRevisions(),
       catalog = readIntegratedStartupSkillCatalog(revisions),
       release = inspectIntegratedStartupSkillCatalog(catalog, revisions),
       available = catalog.nodes.filter(({ lifecycle }) => lifecycle === 'available');
 
-    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 2 });
+    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 3 });
     expect(catalog.nodes).toHaveLength(1_152);
     expect(release).toEqual({
-      lifecycle: { available: 26, implemented: 4, draft: 1_122, retired: 0 },
-      available: 26,
-      verified: 26,
+      lifecycle: { available: 27, implemented: 3, draft: 1_122, retired: 0 },
+      available: 27,
+      verified: 27,
       releaseReady: false,
       issues: [],
     });
     expect(available.filter(({ coordinate }) => coordinate.path === 'sword')).toHaveLength(6);
     expect(available.filter(({ coordinate }) => coordinate.path === 'spear')).toHaveLength(1);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'shield')).toHaveLength(1);
     expect(available.filter(({ coordinate }) => coordinate.path === 'shinto')).toHaveLength(4);
     expect(available.filter(({ coordinate }) => coordinate.path === 'renki')).toHaveLength(4);
     expect(available.filter(({ coordinate }) => coordinate.path === 'magic')).toHaveLength(11);
