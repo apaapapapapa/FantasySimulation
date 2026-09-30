@@ -91,7 +91,11 @@ export class ManifestBuilder {
         ...request.participants.map((participant) => get('character', participant.character)),
         ...request.participants.flatMap((participant) =>
           (participant.skillLoadout?.nodeResolutions ?? []).flatMap(({ resolution }) =>
-            resolution.map(({ ability }) => get('ability', ability)),
+            resolution.flatMap((item) =>
+              item.kind === 'augment'
+                ? [get('ability', item.baseAbility), get('ability', item.resolvedAbility)]
+                : [get('ability', item.ability)],
+            ),
           ),
         ),
         rules,
@@ -100,7 +104,13 @@ export class ManifestBuilder {
     );
     return prepareBattle({
       ...request,
-      schemaVersion: request.participants.some((participant) => participant.skillLoadout) ? 4 : 3,
+      schemaVersion: request.participants.some(
+        (participant) => participant.skillLoadout?.schemaVersion === 2,
+      )
+        ? 5
+        : request.participants.some((participant) => participant.skillLoadout)
+          ? 4
+          : 3,
       eventSchemaVersion: 1,
       replaySchemaVersion: 1,
       engineVersion: CURRENT_ENGINE_VERSION,

@@ -18,6 +18,7 @@ import {
   parseJson,
   compareIds,
   type Manifest,
+  type Revision,
 } from '@fantasy/domain/spatial/execution';
 import implementation from './implementation.json' with { type: 'json' };
 import profile from './profile.json' with { type: 'json' };
@@ -91,11 +92,58 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     const loadout = characterLoadout(participant.character, get);
     validatePolicyAbilities(loadout);
     const { character, equipment } = loadout,
-      skillAbilities = (participant.skillLoadout?.nodeResolutions ?? []).flatMap(({ resolution }) =>
-        resolution.map(({ ability }) => get('ability', ability)),
-      ),
-      direct = new Map(character.abilities.map((ability) => [ability.id, ability]));
-    for (const ability of skillAbilities) {
+      baseAbilities = new Map(loadout.abilities.map((ability) => [ability.id, ability])),
+      grantedAbilities: Extract<Revision, { kind: 'ability' }>[] = [],
+      augmentations: Array<{
+        base: Extract<Revision, { kind: 'ability' }>;
+        resolved: Extract<Revision, { kind: 'ability' }>;
+      }> = [];
+    for (const { resolution } of participant.skillLoadout?.nodeResolutions ?? [])
+      for (const item of resolution) {
+        if (item.kind === 'augment') {
+          const base = get('ability', item.baseAbility),
+            resolved = get('ability', item.resolvedAbility),
+            equipped = baseAbilities.get(base.id);
+          if (
+            !equipped ||
+            equipped.revision !== base.revision ||
+            equipped.contentHash !== base.contentHash
+          )
+            throw new EngineInputError(
+              'revision-content',
+              `Augment base ability is not in the character loadout: ${base.id}`,
+            );
+          if (
+            resolved.id !== base.id ||
+            (resolved.revision === base.revision && resolved.contentHash === base.contentHash) ||
+            resolved.definition.trigger !== base.definition.trigger
+          )
+            throw new EngineInputError(
+              'revision-content',
+              `Augment must preserve ability identity and trigger: ${base.id}`,
+            );
+          augmentations.push({ base, resolved });
+        } else {
+          const ability = get('ability', item.ability);
+          if (
+            participant.skillLoadout?.schemaVersion === 2 &&
+            item.kind === 'active-ability' &&
+            ability.definition.trigger !== 'action'
+          )
+            throw new EngineInputError(
+              'revision-content',
+              `Active skill ability must use the action trigger: ${ability.id}`,
+            );
+          if (item.kind === 'passive-ability' && ability.definition.trigger === 'action')
+            throw new EngineInputError(
+              'revision-content',
+              `Passive skill ability cannot use the action trigger: ${ability.id}`,
+            );
+          grantedAbilities.push(ability);
+        }
+      }
+    const direct = new Map(character.abilities.map((ability) => [ability.id, ability]));
+    for (const ability of grantedAbilities) {
       const previous = direct.get(ability.id);
       if (
         previous &&
@@ -113,8 +161,8 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     }
     if (direct.size > 32)
       throw new EngineInputError('revision-content', 'Skill loadout exceeds direct ability limit');
-    const abilityById = new Map(loadout.abilities.map((ability) => [ability.id, ability]));
-    for (const ability of skillAbilities) {
+    const abilityById = new Map(baseAbilities);
+    for (const ability of grantedAbilities) {
       const previous = abilityById.get(ability.id);
       if (
         previous &&
@@ -126,9 +174,10 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
         );
       abilityById.set(ability.id, ability);
     }
+    for (const { resolved } of augmentations) abilityById.set(resolved.id, resolved);
     validateAbilityLoadout([...abilityById.values()]);
     const abilities = [...abilityById.values()].map(prepareAbility),
-      skillActionIds = skillAbilities
+      skillActionIds = grantedAbilities
         .filter((ability) => ability.definition.trigger === 'action')
         .map((ability) => ability.id)
         .sort(compareIds),

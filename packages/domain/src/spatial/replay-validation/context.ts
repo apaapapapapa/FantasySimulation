@@ -1,5 +1,6 @@
 import {
   characterLoadout,
+  validateAbilityLoadout,
   revisionHash,
   revisionIndex,
   revisionDependencies,
@@ -39,10 +40,38 @@ export async function replayContext(input: unknown, simulationHash: string) {
     });
     actors = manifest.participants.map((participant) => {
       const { character, abilities } = characterLoadout(participant.character, get);
-      const byId = new Map(abilities.map((ability) => [ability.id, ability]));
-      for (const ability of (participant.skillLoadout?.nodeResolutions ?? []).flatMap(
-        ({ resolution }) => resolution.map(({ ability }) => get('ability', ability)),
+      const originalAbilities = new Map(abilities.map((ability) => [ability.id, ability])),
+        byId = new Map(originalAbilities);
+      for (const item of (participant.skillLoadout?.nodeResolutions ?? []).flatMap(
+        ({ resolution }) => resolution,
       )) {
+        if (item.kind === 'augment') {
+          const base = get('ability', item.baseAbility),
+            resolved = get('ability', item.resolvedAbility),
+            equipped = originalAbilities.get(base.id);
+          requireReplay(
+            !!equipped &&
+              equipped.revision === base.revision &&
+              equipped.contentHash === base.contentHash,
+            'augment base ability',
+          );
+          requireReplay(
+            resolved.id === base.id &&
+              (resolved.revision !== base.revision || resolved.contentHash !== base.contentHash) &&
+              resolved.definition.trigger === base.definition.trigger,
+            'augment identity and trigger',
+          );
+          byId.set(resolved.id, resolved);
+          continue;
+        }
+        const ability = get('ability', item.ability);
+        if (participant.skillLoadout?.schemaVersion === 2)
+          requireReplay(
+            item.kind === 'active-ability'
+              ? ability.definition.trigger === 'action'
+              : ability.definition.trigger !== 'action',
+            'skill ability trigger',
+          );
         const previous = byId.get(ability.id);
         requireReplay(
           !previous ||
@@ -52,6 +81,7 @@ export async function replayContext(input: unknown, simulationHash: string) {
         );
         byId.set(ability.id, ability);
       }
+      validateAbilityLoadout([...byId.values()]);
       return {
         participant,
         character,

@@ -101,23 +101,19 @@ export type SkillLoadoutRevision = z.infer<typeof SkillLoadoutRevisionSchema>;
 export const skillLoadoutRevisionHash = (snapshot: SkillLoadoutRevisionContent) =>
   contentHash(JSON.parse(canonicalJson(SkillLoadoutRevisionContentSchema.parse(snapshot))));
 
-/** Project an immutable resolved loadout into the bounded active-only SK-02 battle receipt. */
+/** Project an immutable resolved loadout into a bounded, versioned battle receipt. */
 export async function skillBattleReceipt(input: unknown): Promise<SkillLoadoutReceipt> {
   const snapshot = SkillLoadoutRevisionSchema.parse(input),
     { contentHash: storedHash, ...content } = snapshot;
   if (storedHash !== (await skillLoadoutRevisionHash(content)))
     throw new SkillLoadoutError('catalog-mismatch', 'Skill loadout revision hash mismatch');
-  if (
-    snapshot.resolved.nodeResolutions.some(({ resolution }) =>
-      resolution.some(({ kind }) => kind !== 'active-ability'),
-    )
+  const schemaVersion = snapshot.resolved.nodeResolutions.some(({ resolution }) =>
+    resolution.some(({ kind }) => kind !== 'active-ability'),
   )
-    throw new SkillLoadoutError(
-      'unavailable-node',
-      'SK-02 battle receipts support active abilities only',
-    );
+    ? 2
+    : 1;
   return SkillLoadoutReceiptSchema.parse({
-    schemaVersion: 1,
+    schemaVersion,
     resolverVersion: snapshot.resolved.resolverVersion,
     character: snapshot.character,
     catalog: snapshot.resolved.catalog,

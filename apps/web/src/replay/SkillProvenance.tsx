@@ -48,7 +48,11 @@ export function SkillProvenance({ context }: { context: ReplayContext }) {
                     <li key={nodeId}>
                       {nodeId} →{' '}
                       {resolution
-                        .map((item) => `${item.ability.id}@${item.ability.revision}`)
+                        .map((item) =>
+                          item.kind === 'augment'
+                            ? `${item.baseAbility.id}@${item.baseAbility.revision}→${item.resolvedAbility.revision}`
+                            : `${item.ability.id}@${item.ability.revision}`,
+                        )
                         .join(', ')}
                     </li>
                   ))}
