@@ -5,6 +5,7 @@ import {
   canonicalJson,
   characterLoadout,
   CURRENT_SKILL_RESOLVER_VERSION,
+  validateAbilityLoadout,
   validatePolicyAbilities,
   revisionHash,
   revisionIndex,
@@ -125,6 +126,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
         );
       abilityById.set(ability.id, ability);
     }
+    validateAbilityLoadout([...abilityById.values()]);
     const abilities = [...abilityById.values()].map(prepareAbility),
       skillActionIds = skillAbilities
         .filter((ability) => ability.definition.trigger === 'action')
