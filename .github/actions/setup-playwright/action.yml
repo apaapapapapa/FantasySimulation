@@ -25,7 +25,10 @@ runs:
       env:
         PLAYWRIGHT_BROWSERS_PATH: .generated/playwright
         BROWSER: ${{ inputs.browser }}
-      run: vp exec playwright install --with-deps "$BROWSER" --only-shell
+      run: |
+        sudo "$(node -p 'process.execPath')" scripts/ci/playwright-apt.ts
+        apt-config dump Acquire::Retries Acquire::http::Timeout Acquire::https::Timeout
+        vp exec playwright install --with-deps "$BROWSER" --only-shell
     - uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25
       if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.browser.outputs.cache-hit != 'true'
       with:
