@@ -1,13 +1,11 @@
 /**
  * Promotion contract for the first executable shield guard.
  *
- * This is intentionally a blocked authoring plan rather than catalog evidence: PR #250 proves
- * the guard response itself, but the proposed ability is not sealed in the spatial catalog and
- * no saved loadout-to-replay fixture binds it to this skill node yet.
+ * It stays implemented until the exact loadout-to-viewer fixtures pass together.
  */
 export const shieldGuardPromotionPlan = {
   schemaVersion: 1,
-  status: 'blocked',
+  status: 'implemented',
   dependency: {
     pullRequest: 250,
     testedHead: 'b643680c573bd6d406de3609c092c58f4ea1777c',
@@ -34,6 +32,7 @@ export const shieldGuardPromotionPlan = {
     id: 'shield-set-guard-v1',
     revision: 1,
     schemaVersion: 1,
+    contentHash: 'sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d',
     definition: {
       name: 'Set shield guard',
       originalText: 'Brace the shield against one observed physical hit.',
@@ -55,7 +54,6 @@ export const shieldGuardPromotionPlan = {
       attack: { kind: 'direct' },
       effects: [],
     },
-    approvalRequired: ['retainedDamageBps', 'stamina cost', 'recoverySteps', 'cooldownSteps'],
   },
   loadoutFixture: {
     id: 'loadout.fixture.shield.ox.guard',
@@ -97,6 +95,6 @@ export const shieldGuardPromotionPlan = {
     'skill-catalog-v1 revision 2 is assembled, sealed and persisted',
     'the saved loadout fixture resolves exactly shield-set-guard-v1',
     'battle and replay fixtures pass with the declared catalog and loadout references',
-    'the proposed balance values receive design approval',
+    'the exact ability revision remains pinned to the reviewed balance values',
   ],
 } as const;

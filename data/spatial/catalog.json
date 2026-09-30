@@ -55,7 +55,9 @@
       "name": "有限の読心",
       "originalText": "視線と鑑定防壁を越えたときだけ、HP比率10%幅と宣言済み行動を遅延して知る。",
       "trigger": "action",
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -127,7 +129,10 @@
       "effects": [
         {
           "kind": "dispel",
-          "statusIds": ["burning", "frost"]
+          "statusIds": [
+            "burning",
+            "frost"
+          ]
         }
       ]
     }
@@ -142,7 +147,9 @@
       "name": "概念弾",
       "originalText": "実験用の有限な即着弾。",
       "trigger": "action",
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -183,7 +190,9 @@
       "name": "即死と時間停止への耐性",
       "originalText": "開幕に自分へ有限状態を付与する。",
       "trigger": "battle-start",
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -439,7 +448,9 @@
       "name": "吸命の火弾",
       "originalText": "火属性の飛翔体。実際のHP損失の50%で回復する。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -488,7 +499,9 @@
       "name": "有限の接触回避",
       "originalText": "開幕に自分へ有限状態を付与する。",
       "trigger": "battle-start",
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -529,7 +542,9 @@
       "name": "終止の接触",
       "originalText": "接触が成立すればHP0を要求する。耐性・有限不死・蘇生に従う。",
       "trigger": "action",
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -566,7 +581,9 @@
       "name": "二度の有限不死",
       "originalText": "開幕に自分へ有限状態を付与する。",
       "trigger": "battle-start",
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -607,7 +624,9 @@
       "name": "火炎吸収",
       "originalText": "戦闘開始時に火炎吸収体質を付与する。",
       "trigger": "battle-start",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -946,7 +965,9 @@
       "name": "無誤差照準",
       "originalText": "照準の乱数誤差がない。届いた観測位置を狙い、壁・射程・移動・接触回避の規則を守る。",
       "trigger": "action",
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -988,7 +1009,9 @@
       "name": "対手の時間停止",
       "originalText": "相手の主体時計を50区間停止。命中効果は解除時に一括解決する。",
       "trigger": "action",
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -1083,9 +1106,13 @@
           "kind": "parry",
           "scope": "all"
         },
-        "categories": ["physical"]
+        "categories": [
+          "physical"
+        ]
       },
-      "categories": ["technique"],
+      "categories": [
+        "technique"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -1118,7 +1145,9 @@
       "name": "壁抜きの射手",
       "originalText": "P6-08。身体と攻撃の透過は別々の明示許可。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -1136,7 +1165,10 @@
       "aimErrorMilliDegrees": 0,
       "attack": {
         "phasing": {
-          "materials": ["stone", "energy"],
+          "materials": [
+            "stone",
+            "energy"
+          ],
           "floor": false
         },
         "kind": "projectile",
@@ -1170,7 +1202,9 @@
       "name": "幽相の旅人",
       "originalText": "P6-08。身体と攻撃の透過は別々の明示許可。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -1220,7 +1254,9 @@
           }
         }
       },
-      "categories": ["special"],
+      "categories": [
+        "special"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -1252,7 +1288,9 @@
       "name": "不死鳥の一撃",
       "originalText": "双方の蘇生を検証する40の即着弾。",
       "trigger": "action",
-      "categories": ["physical"],
+      "categories": [
+        "physical"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -1298,7 +1336,9 @@
           "kind": "deflect"
         }
       },
-      "categories": ["technique"],
+      "categories": [
+        "technique"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -1554,7 +1594,9 @@
           "kind": "counter"
         }
       },
-      "categories": ["technique"],
+      "categories": [
+        "technique"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -1595,7 +1637,9 @@
       "name": "封印の閃光",
       "originalText": "即着弾で特殊封印を付与し、10のダメージ。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -1718,6 +1762,50 @@
   },
   {
     "kind": "ability",
+    "id": "shield-set-guard-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d",
+    "definition": {
+      "name": "Set shield guard",
+      "originalText": "Brace the shield against one observed physical hit.",
+      "trigger": "before-hit",
+      "reaction": {
+        "response": {
+          "kind": "guard",
+          "retainedDamageBps": 8000
+        },
+        "categories": [
+          "physical"
+        ]
+      },
+      "categories": [
+        "technique"
+      ],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 4,
+        "uses": 0
+      },
+      "castSteps": 0,
+      "recoverySteps": 6,
+      "cooldownSteps": 60,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": []
+    }
+  },
+  {
+    "kind": "ability",
     "id": "spatial-area-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -1726,7 +1814,9 @@
       "name": "残響の陣術師",
       "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -1817,7 +1907,9 @@
       "name": "境界の結界術師",
       "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -1906,7 +1998,9 @@
       "name": "光条の照射術師",
       "originalText": "P6-07。保存される空間物体の境界時刻・形状と共通接触規則を用いる。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "enemy",
       "condition": {
         "kind": "always"
@@ -1973,7 +2067,9 @@
       "name": "背後へ渡る術師",
       "originalText": "P6-06。発射時に相対位置を固定し、次の境界で全身の空きを確認して移動する。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "self",
       "condition": {
         "kind": "visible",
@@ -2012,7 +2108,9 @@
       "name": "退避の転移術師",
       "originalText": "P6-06。発射時に相対位置を固定し、次の境界で全身の空きを確認して移動する。",
       "trigger": "action",
-      "categories": ["magic"],
+      "categories": [
+        "magic"
+      ],
       "target": "self",
       "condition": {
         "kind": "always"
@@ -3435,7 +3533,9 @@
       "appearance": {
         "silhouette": "humanoid",
         "surface": "red",
-        "equipment": ["staff"]
+        "equipment": [
+          "staff"
+        ]
       },
       "stats": {
         "hp": 150,
@@ -3669,7 +3769,9 @@
       "appearance": {
         "silhouette": "humanoid",
         "surface": "bright",
-        "equipment": ["staff"]
+        "equipment": [
+          "staff"
+        ]
       },
       "stats": {
         "hp": 120,
@@ -6162,7 +6264,9 @@
       "appearance": {
         "silhouette": "humanoid",
         "surface": "neutral",
-        "equipment": ["staff"]
+        "equipment": [
+          "staff"
+        ]
       },
       "stats": {
         "hp": 130,
@@ -7504,7 +7608,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -7592,7 +7700,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -7681,7 +7793,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -7770,7 +7886,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -8260,7 +8380,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -8338,7 +8462,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -8716,7 +8844,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -8794,7 +8926,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -8872,7 +9008,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "search": {
@@ -8949,7 +9089,11 @@
         },
         "slots": "simultaneous-v1",
         "minimumCandidateWeightBps": 500,
-        "relativeImpactBps": [2500, 7500, 12500],
+        "relativeImpactBps": [
+          2500,
+          7500,
+          12500
+        ],
         "reapplication": "self-observed-v1",
         "groundEvasion": "posture-jump-v1",
         "cover": "observed-threat-v1",
@@ -11163,7 +11307,10 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 250,
-      "categories": ["buff", "permanent"],
+      "categories": [
+        "buff",
+        "permanent"
+      ],
       "adjustments": [
         {
           "target": "damageDealt",
@@ -11195,7 +11342,10 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 250,
-      "categories": ["buff", "permanent"],
+      "categories": [
+        "buff",
+        "permanent"
+      ],
       "adjustments": [
         {
           "target": "staminaRecovery",
@@ -11272,7 +11422,9 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 300,
-      "categories": ["buff"],
+      "categories": [
+        "buff"
+      ],
       "visibility": "visible",
       "modifiers": {
         "attack": 0,
@@ -11298,7 +11450,9 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 300,
-      "categories": ["buff"],
+      "categories": [
+        "buff"
+      ],
       "visibility": "visible",
       "modifiers": {
         "attack": 0,
@@ -11326,7 +11480,9 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 300,
-      "categories": ["buff"],
+      "categories": [
+        "buff"
+      ],
       "visibility": "visible",
       "modifiers": {
         "attack": 0,
@@ -11351,7 +11507,9 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 6000,
-      "categories": ["permanent"],
+      "categories": [
+        "permanent"
+      ],
       "adjustments": [
         {
           "target": "absorption",
@@ -11430,7 +11588,9 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 250,
-      "categories": ["control"],
+      "categories": [
+        "control"
+      ],
       "adjustments": [
         {
           "target": "action",
@@ -11508,7 +11668,10 @@
     "contentHash": "sha256:22bee84dff47845c2bee96aaa77168a857695dd70b951448186eba941cfb482a",
     "definition": {
       "phasing": {
-        "materials": ["stone", "energy"],
+        "materials": [
+          "stone",
+          "energy"
+        ],
         "floor": false
       },
       "name": "石と結界の透過",
@@ -11517,7 +11680,9 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 100,
-      "categories": ["buff"],
+      "categories": [
+        "buff"
+      ],
       "visibility": "visible",
       "modifiers": {
         "attack": 0,
@@ -11543,7 +11708,9 @@
       "stacking": "sum",
       "maxStacks": 3,
       "durationSteps": 250,
-      "categories": ["damage-over-time"],
+      "categories": [
+        "damage-over-time"
+      ],
       "reactions": [
         {
           "element": "water",
@@ -11613,7 +11780,9 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 250,
-      "categories": ["debuff"],
+      "categories": [
+        "debuff"
+      ],
       "reactions": [
         {
           "element": "lightning",
@@ -11666,8 +11835,13 @@
     "contentHash": "sha256:4bd5aefceaa2fe377134afec2bed9bf777a03e8f9f4073f672bcbf3f75d23246",
     "definition": {
       "seals": {
-        "abilityCategories": ["special"],
-        "statusCategories": ["buff", "permanent"]
+        "abilityCategories": [
+          "special"
+        ],
+        "statusCategories": [
+          "buff",
+          "permanent"
+        ]
       },
       "name": "特殊封印",
       "originalText": "特殊分類の技と反応、buffとpermanentの状態効果を100区間停止。期限は進む。",
@@ -11675,7 +11849,9 @@
       "stacking": "refresh",
       "maxStacks": 1,
       "durationSteps": 100,
-      "categories": ["debuff"],
+      "categories": [
+        "debuff"
+      ],
       "visibility": "visible",
       "modifiers": {
         "attack": 0,
@@ -11700,7 +11876,9 @@
       "stacking": "sum",
       "maxStacks": 3,
       "durationSteps": 250,
-      "categories": ["damage-over-time"],
+      "categories": [
+        "damage-over-time"
+      ],
       "reactions": [
         {
           "element": "water",

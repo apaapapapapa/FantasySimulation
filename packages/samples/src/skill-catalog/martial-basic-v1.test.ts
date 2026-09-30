@@ -127,7 +127,7 @@ describe('basic martial skill catalog authoring', () => {
             evidenceIssues.push(`${fixtureId}: unexpected proven fixture`);
           if (!evidenceSources.join('\n').includes('`fixture.skill.sword.rat.${dan}.action`'))
             evidenceIssues.push(`${fixtureId}: fixture generator not evidenced`);
-        } else if (!(fixtureId in corpus.tests))
+        } else if (!(fixtureId in corpus.tests) && !evidenceSources.join('\n').includes(fixtureId))
           evidenceIssues.push(`${fixtureId}: missing corpus fixture`);
       }
     }

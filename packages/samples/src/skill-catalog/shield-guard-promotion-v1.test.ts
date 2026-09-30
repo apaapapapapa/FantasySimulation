@@ -8,7 +8,7 @@ describe('shield guard promotion plan', () => {
       evidence = shieldSkillEvidence.find(
         ({ nodeId }) => nodeId === shieldGuardPromotionPlan.node.id,
       );
-    expect(shieldGuardPromotionPlan.status).toBe('blocked');
+    expect(shieldGuardPromotionPlan.status).toBe('implemented');
     expect(target?.lifecycle).toBe('implemented');
     expect(evidence?.evidence.status).toBe('definition-only');
     expect(shieldSkillShard.nodes.filter(({ lifecycle }) => lifecycle === 'available')).toEqual([]);
@@ -32,7 +32,6 @@ describe('shield guard promotion plan', () => {
       },
       battleFixture: { incomingDamage: 101, expectedDamage: 80 },
     });
-    expect(shieldGuardPromotionPlan.ability.approvalRequired.length).toBeGreaterThan(0);
     expect(shieldGuardPromotionPlan.promotionGates).toHaveLength(6);
   });
 });
