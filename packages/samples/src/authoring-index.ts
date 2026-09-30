@@ -5,3 +5,4 @@ export {
   martialBasicSkillShards,
 } from './skill-catalog/martial-basic-v1.ts';
 export { integratedSkillShards } from './skill-catalog/integrated-v2.ts';
+export { shieldGuardPromotionPlan } from './skill-catalog/shield-guard-promotion-v1.ts';
