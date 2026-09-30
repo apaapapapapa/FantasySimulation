@@ -370,7 +370,7 @@ describe('saved replay loading through the local API adapter', () => {
   it.each([
     ['manifest schema', { schemaVersion: 2 }],
     ['recording profile', { profile: { id: 'display-ndjson-gzip-v2' } }],
-    ['stored input schema', { input: { schemaVersion: 4 } }],
+    ['stored input schema', { input: { schemaVersion: 5 } }],
     ['display schema', { input: { replaySchemaVersion: 2 } }],
   ])('rejects an unsupported %s instead of guessing', async (_, change) => {
     const saved = await savedReplay();

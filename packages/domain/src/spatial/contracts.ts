@@ -14,6 +14,7 @@ export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 export const MAX_BATTLE_STEPS = 6_000;
 export const MAX_FRAME_BYTES = 4_000_000;
 export const CURRENT_ENGINE_VERSION = 'spatial-v1.22' as const;
+export const CURRENT_SKILL_RESOLVER_VERSION = 'skill-resolver-v1' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -1215,7 +1216,7 @@ export const PhysicsProfileSchema = z.strictObject({
 /** Saved inputs remain readable; only ManifestSchema admits current execution. */
 export const StoredManifestSchema = z
   .strictObject({
-    schemaVersion: z.literal(3),
+    schemaVersion: z.union([z.literal(3), z.literal(4)]),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
     engineVersion: IdSchema,
@@ -1234,6 +1235,11 @@ export const StoredManifestSchema = z
     revisions: z.array(RevisionSchema).min(4).max(256),
   })
   .superRefine((manifest, ctx) => {
+    if (
+      manifest.schemaVersion === 3 &&
+      manifest.participants.some((participant) => participant.skillLoadout !== undefined)
+    )
+      ctx.addIssue({ code: 'custom', message: 'Skill loadouts require manifest schema version 4' });
     if (manifest.participants[0].rngStream === manifest.participants[1].rngStream)
       ctx.addIssue({ code: 'custom', message: 'Actor streams must differ' });
     if (manifest.participants[0].actorId === manifest.participants[1].actorId)

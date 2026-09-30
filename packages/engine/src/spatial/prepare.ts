@@ -4,6 +4,7 @@ import {
   DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND,
   canonicalJson,
   characterLoadout,
+  CURRENT_SKILL_RESOLVER_VERSION,
   validatePolicyAbilities,
   revisionHash,
   revisionIndex,
@@ -63,7 +64,7 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
   for (const participant of manifest.participants) {
     const receipt = participant.skillLoadout;
     if (!receipt) continue;
-    if (receipt.resolverVersion !== 'skill-resolver-v1')
+    if (receipt.resolverVersion !== CURRENT_SKILL_RESOLVER_VERSION)
       throw new EngineInputError(
         'revision-content',
         `Unsupported skill resolver: ${receipt.resolverVersion}`,

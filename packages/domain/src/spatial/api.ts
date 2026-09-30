@@ -79,17 +79,19 @@ export const BattleInputSchema = z.union([SpecInputSchema, UnseededSpecInputSche
 export type BattleInput = z.infer<typeof BattleInputSchema>;
 export const SpecSchema = z.strictObject({ simulationHash: HashSchema, manifest: ManifestSchema });
 export type Spec = z.infer<typeof SpecSchema>;
-export const JobRequestSchema = z.strictObject({
-  spec: BattleInputSchema,
-  budget: BudgetSchema.default(DEFAULT_BUDGET),
-}).superRefine(({ spec }, context) => {
-  if (spec.participants.some((participant) => participant.skillLoadout !== undefined))
-    context.addIssue({
-      code: 'custom',
-      path: ['spec', 'participants'],
-      message: 'Skill loadouts require the dedicated skill battle endpoint',
-    });
-});
+export const JobRequestSchema = z
+  .strictObject({
+    spec: BattleInputSchema,
+    budget: BudgetSchema.default(DEFAULT_BUDGET),
+  })
+  .superRefine(({ spec }, context) => {
+    if (spec.participants.some((participant) => participant.skillLoadout !== undefined))
+      context.addIssue({
+        code: 'custom',
+        path: ['spec', 'participants'],
+        message: 'Skill loadouts require the dedicated skill battle endpoint',
+      });
+  });
 export const MAX_STAGED_JOB_PAGE = 100;
 export const StagedJobRequestSchema = z.strictObject({
   jobs: z

@@ -4,6 +4,7 @@ import {
   HashSchema,
   IdSchema,
   RefSchema,
+  CURRENT_SKILL_RESOLVER_VERSION,
   SkillLoadoutReceiptSchema,
   type SkillLoadoutReceipt,
 } from './spatial/contracts.ts';
@@ -15,7 +16,7 @@ import {
   skillCatalogDigest,
 } from './skill-system.ts';
 
-export const SKILL_RESOLVER_VERSION = 'skill-resolver-v1' as const;
+export const SKILL_RESOLVER_VERSION = CURRENT_SKILL_RESOLVER_VERSION;
 export const MAX_ENABLED_SKILL_PATHS = 2;
 export const MAX_ACTIVE_SKILL_NODES = 8;
 export const MAX_PASSIVE_SKILL_NODES = 4;

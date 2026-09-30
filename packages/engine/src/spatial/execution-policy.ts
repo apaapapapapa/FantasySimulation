@@ -1,5 +1,6 @@
 import {
   CURRENT_ENGINE_VERSION,
+  CURRENT_SKILL_RESOLVER_VERSION,
   type Definition,
   type StoredManifest,
   type MechanicId,
@@ -11,6 +12,7 @@ export type EngineInputCode =
   | 'unsupported-engine'
   | 'unsupported-ai'
   | 'unsupported-identity'
+  | 'unsupported-skill-resolver'
   | 'unsupported-rules'
   | 'unsupported-mechanic'
   | 'revision-content'
@@ -59,6 +61,18 @@ export function executionEligibility(manifest: StoredManifest): ExecutionEligibi
       executable: false,
       code: 'unsupported-ai',
       reason: `Unsupported AI profile: ${manifest.aiProfile ?? 'legacy'}`,
+    };
+  const unsupportedResolver = manifest.participants
+    .map((participant) => participant.skillLoadout?.resolverVersion)
+    .find(
+      (resolverVersion) =>
+        resolverVersion !== undefined && resolverVersion !== CURRENT_SKILL_RESOLVER_VERSION,
+    );
+  if (unsupportedResolver)
+    return {
+      executable: false,
+      code: 'unsupported-skill-resolver',
+      reason: `Unsupported skill resolver: saved ${unsupportedResolver}, current ${CURRENT_SKILL_RESOLVER_VERSION}`,
     };
   if (
     manifest.implementationDigest !== implementation.digest ||

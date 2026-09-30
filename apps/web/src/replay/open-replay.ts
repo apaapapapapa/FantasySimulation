@@ -40,17 +40,28 @@ const object = (value: unknown) =>
 /** Name a present but different version; absent fields are left to schema validation. */
 function unsupportedFormat(value: unknown): string | null {
   const manifest = object(value),
-    input = object(manifest?.input);
-  const found: Record<keyof typeof SUPPORTED_REPLAY_FORMAT, unknown> = {
+    input = object(manifest?.input),
+    inputSchema = input?.schemaVersion;
+  if (
+    inputSchema !== undefined &&
+    !SUPPORTED_REPLAY_FORMAT.compatibleInputSchemas.some((version) => version === inputSchema)
+  )
+    return `inputSchema ${JSON.stringify(inputSchema)}`;
+  const found = {
     manifestSchema: manifest?.schemaVersion,
-    inputSchema: input?.schemaVersion,
     eventSchema: input?.eventSchemaVersion,
     replaySchema: input?.replaySchemaVersion,
     profile: object(manifest?.profile)?.id,
   };
-  for (const [key, supported] of Object.entries(SUPPORTED_REPLAY_FORMAT)) {
+  const supported = {
+    manifestSchema: SUPPORTED_REPLAY_FORMAT.manifestSchema,
+    eventSchema: SUPPORTED_REPLAY_FORMAT.eventSchema,
+    replaySchema: SUPPORTED_REPLAY_FORMAT.replaySchema,
+    profile: SUPPORTED_REPLAY_FORMAT.profile,
+  };
+  for (const [key, expected] of Object.entries(supported)) {
     const actual = found[key as keyof typeof found];
-    if (actual !== undefined && actual !== supported) return `${key} ${JSON.stringify(actual)}`;
+    if (actual !== undefined && actual !== expected) return `${key} ${JSON.stringify(actual)}`;
   }
   return null;
 }

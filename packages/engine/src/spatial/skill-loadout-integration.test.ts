@@ -11,6 +11,7 @@ import {
 import { sampleManifest } from '@fantasy/samples';
 import { ManifestBuilder, sealRevision } from './manifest-builder.ts';
 import { prepareBattle, reference } from './prepare.ts';
+import { executionEligibility } from './execution-policy.ts';
 import { runBattle } from './run.ts';
 
 const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
@@ -73,6 +74,7 @@ async function builtSkillBattle() {
 describe('skill loadout battle vertical', () => {
   it('adds only exact active closure, enables AI evaluation and survives replay validation', async () => {
     const { battle, ability } = await builtSkillBattle();
+    expect(battle.manifest.schemaVersion).toBe(4);
     expect(battle.actors[0].abilities.map(({ id }) => id)).toContain(ability.id);
     expect(battle.actors[0].policy.priorities).toContainEqual({
       when: { kind: 'always' },
@@ -88,7 +90,9 @@ describe('skill loadout battle vertical', () => {
     expect(events.some((event) => event.actorId === 'left' && event.abilityId === ability.id)).toBe(
       true,
     );
-    const restored = new ReplayState(await replayContext(battle.manifest, run.result.simulationHash));
+    const restored = new ReplayState(
+      await replayContext(battle.manifest, run.result.simulationHash),
+    );
     for (const record of run.records) restored.apply(record);
     expect(restored).toMatchObject({ ended: true, step: run.result.steps });
     const replayed = new ReplayState(restored.context);
@@ -131,10 +135,14 @@ describe('skill loadout battle vertical', () => {
 
     const future = structuredClone(battle.manifest) as unknown as Manifest;
     future.participants[0].skillLoadout!.resolverVersion = 'skill-resolver-v2';
+    expect(executionEligibility(future)).toMatchObject({
+      executable: false,
+      code: 'unsupported-skill-resolver',
+    });
     await expect(prepareBattle(future)).rejects.toThrow(/Unsupported skill resolver/);
     expect(
-      (await replayContext(future, await contentHash(future))).manifest.participants[0]
-        .skillLoadout?.resolverVersion,
+      (await replayContext(future, await contentHash(future))).manifest.participants[0].skillLoadout
+        ?.resolverVersion,
     ).toBe('skill-resolver-v2');
   });
 });
