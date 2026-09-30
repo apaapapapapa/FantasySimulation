@@ -100,6 +100,14 @@ export const SkillDeepeningSchema = z.enum([
   'specialization',
   'ultimate-tradeoff',
 ]);
+const SKILL_DAN_DEEPENING = [
+  'foundation',
+  'conditional-effect',
+  'combination',
+  'tactical-mode',
+  'specialization',
+  'ultimate-tradeoff',
+] as const;
 
 export const SkillNodeSchema = z
   .strictObject({
@@ -109,7 +117,7 @@ export const SkillNodeSchema = z
     description: z.string().min(1).max(2_000),
     lifecycle: SkillLifecycleSchema,
     prerequisites: z.array(IdSchema).max(32),
-    weaponTags: z.array(IdSchema).max(8).optional(),
+    weaponTags: z.array(IdSchema).min(1).max(8).optional(),
     deepening: z.strictObject({
       kind: SkillDeepeningSchema,
       explanation: z.string().min(1).max(1_000),
@@ -121,8 +129,14 @@ export const SkillNodeSchema = z
     fixtureIds: z.array(IdSchema).max(16),
   })
   .superRefine((node, context) => {
-    if (new Set(node.prerequisites).size !== node.prerequisites.length)
-      context.addIssue({ code: 'custom', message: 'Duplicate skill prerequisite' });
+    for (const [name, values] of [
+      ['prerequisite', node.prerequisites],
+      ['weapon tag', node.weaponTags ?? []],
+      ['path role tag', node.pathRoleTags],
+      ['fixture ID', node.fixtureIds],
+    ] as const)
+      if (new Set(values).size !== values.length)
+        context.addIssue({ code: 'custom', message: `Duplicate skill ${name}` });
     if (node.prerequisites.includes(node.id))
       context.addIssue({ code: 'custom', message: 'Skill cannot require itself' });
     if (node.lifecycle === 'available') {
@@ -137,6 +151,14 @@ export const SkillNodeSchema = z
       context.addIssue({ code: 'custom', message: 'Only first dan may be a foundation' });
     if (node.coordinate.dan >= 5 && !node.deepening.conditionOrTradeoff)
       context.addIssue({ code: 'custom', message: 'Upper dan requires a condition or tradeoff' });
+    if (!node.deepening.retainsLowerUse)
+      context.addIssue({ code: 'custom', message: 'Every dan must retain a use for lower skills' });
+    const expectedDeepening = SKILL_DAN_DEEPENING[node.coordinate.dan - 1]!;
+    if (node.deepening.kind !== expectedDeepening)
+      context.addIssue({
+        code: 'custom',
+        message: `Dan ${node.coordinate.dan} requires ${expectedDeepening} deepening`,
+      });
   });
 export type SkillNode = z.infer<typeof SkillNodeSchema>;
 
@@ -179,13 +201,21 @@ export function parseCompleteSkillCatalog(input: unknown): SkillCatalog {
   for (const node of catalog.nodes) {
     if (nodes.has(node.id))
       throw new SkillCatalogError('duplicate-node', `Duplicate skill node: ${node.id}`);
-    const coordinate = skillCoordinateKey(node.coordinate);
+    const { weaponTags, ...nodeWithoutWeaponTags } = node,
+      normalizedNode: SkillNode = {
+        ...nodeWithoutWeaponTags,
+        prerequisites: [...node.prerequisites].sort(compareIds),
+        ...(weaponTags ? { weaponTags: [...weaponTags].sort(compareIds) } : {}),
+        pathRoleTags: [...node.pathRoleTags].sort(compareIds),
+        fixtureIds: [...node.fixtureIds].sort(compareIds),
+      },
+      coordinate = skillCoordinateKey(normalizedNode.coordinate);
     if (coordinates.has(coordinate))
       throw new SkillCatalogError(
         'duplicate-coordinate',
         `Duplicate skill coordinate: ${coordinate}`,
       );
-    nodes.set(node.id, node);
+    nodes.set(normalizedNode.id, normalizedNode);
     coordinates.add(coordinate);
   }
   const missing = [...expected].filter((coordinate) => !coordinates.has(coordinate));

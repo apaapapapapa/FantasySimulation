@@ -94,6 +94,51 @@ describe('skill system axes', () => {
       parseCompleteSkillCatalog(catalog).nodes.map((node) => node.id),
     );
   });
+
+  it('canonicalizes set-like node fields but preserves recipe order', async () => {
+    const catalog = completeCatalog(),
+      targetIndex = catalog.nodes.findIndex(
+        ({ coordinate }) =>
+          coordinate.path === 'sword' && coordinate.zodiac === 'rat' && coordinate.dan === 3,
+      ),
+      target = catalog.nodes[targetIndex]!;
+    catalog.nodes[targetIndex] = {
+      ...target,
+      prerequisites: [...target.prerequisites, 'skill.sword.ox.1'],
+      weaponTags: ['weapon.sword', 'grip.one-hand'],
+      pathRoleTags: [...target.pathRoleTags, 'role.counter'],
+      fixtureIds: [...target.fixtureIds, 'fixture.sword.counter'],
+      resolution: [
+        ...target.resolution,
+        {
+          kind: 'passive-ability',
+          ability: { id: 'ability.order-sensitive', revision: 1, contentHash: hash },
+        },
+      ],
+    };
+    const permuted = {
+      ...catalog,
+      nodes: [...catalog.nodes].reverse().map((node) =>
+        node.id === target.id
+          ? {
+              ...node,
+              prerequisites: [...node.prerequisites].reverse(),
+              weaponTags: [...node.weaponTags!].reverse(),
+              pathRoleTags: [...node.pathRoleTags].reverse(),
+              fixtureIds: [...node.fixtureIds].reverse(),
+            }
+          : node,
+      ),
+    };
+    expect(await skillCatalogDigest(catalog)).toBe(await skillCatalogDigest(permuted));
+    const recipeReversed = {
+      ...catalog,
+      nodes: catalog.nodes.map((node) =>
+        node.id === target.id ? { ...node, resolution: [...node.resolution].reverse() } : node,
+      ),
+    };
+    expect(await skillCatalogDigest(catalog)).not.toBe(await skillCatalogDigest(recipeReversed));
+  });
 });
 
 describe('skill catalog validation', () => {
@@ -131,6 +176,19 @@ describe('skill catalog validation', () => {
     const catalog = completeCatalog();
     catalog.nodes[0] = { ...catalog.nodes[0]!, resolution: [], fixtureIds: [] };
     expect(() => parseCompleteSkillCatalog(catalog)).toThrow(/requires a resolution/);
+  });
+
+  it('rejects duplicate set entries and dan deepening mismatches', () => {
+    const duplicate = completeCatalog();
+    duplicate.nodes[0] = { ...duplicate.nodes[0]!, fixtureIds: ['fixture.same', 'fixture.same'] };
+    expect(() => parseCompleteSkillCatalog(duplicate)).toThrow(/Duplicate skill fixture ID/);
+
+    const wrongDan = completeCatalog();
+    wrongDan.nodes[1] = {
+      ...wrongDan.nodes[1]!,
+      deepening: { ...wrongDan.nodes[1]!.deepening, kind: 'tactical-mode' },
+    };
+    expect(() => parseCompleteSkillCatalog(wrongDan)).toThrow(/requires conditional-effect/);
   });
 
   it('binds each 72-node shard and the index to every path exactly once', () => {
