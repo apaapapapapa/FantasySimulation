@@ -158,14 +158,23 @@ describe('mystic path catalog content', () => {
           [`skill.${path}.${zodiac}.4`],
           [`skill.${path}.${zodiac}.5`],
         ]);
-        expect(new Set(branch.map(({ name }) => name)).size).toBe(6);
-        expect(new Set(branch.map(({ description }) => description)).size).toBe(6);
-        expect(branch.every(({ deepening }) => deepening.retainsLowerUse)).toBe(true);
-        expect(
-          branch
+        const distinctNames = new Set(branch.map(({ name }) => name)).size,
+          distinctDescriptions = new Set(branch.map(({ description }) => description)).size,
+          retainedLowerUses = branch.every(({ deepening }) => deepening.retainsLowerUse),
+          upperDanCostsAreExplicit = branch
             .filter(({ coordinate }) => coordinate.dan >= 5)
-            .every(({ deepening }) => Boolean(deepening.conditionOrTradeoff)),
-        ).toBe(true);
+            .every(({ deepening }) => Boolean(deepening.conditionOrTradeoff));
+        expect({
+          distinctNames,
+          distinctDescriptions,
+          retainedLowerUses,
+          upperDanCostsAreExplicit,
+        }).toEqual({
+          distinctNames: 6,
+          distinctDescriptions: 6,
+          retainedLowerUses: true,
+          upperDanCostsAreExplicit: true,
+        });
       }
     }
   });
