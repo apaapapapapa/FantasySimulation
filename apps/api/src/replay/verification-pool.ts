@@ -20,12 +20,14 @@ export async function verifyInWorker(
   directory: ReplayLocation,
   manifest: ReplayManifest,
   publicData: boolean,
+  stage: 'validate.replay.worker' | 'validate.replay' = 'validate.replay.worker',
 ) {
   const measured = currentMeasurements(),
-    end = startMeasurement('validate.replay.worker');
+    end = startMeasurement(stage);
   let succeeded = false;
   try {
-    const result = await run({ directory, manifest, publicData });
+    const result = await run({ directory, manifest, publicData, measured: measured !== undefined });
+    if (result.stages) measured?.verificationStages(result.stages);
     if (result.attempted) measured?.validation(manifest.id, result.success);
     for (const [name, bytes] of Object.entries(result.memory))
       measured?.capacity(`verification.worker.${name}`, bytes);

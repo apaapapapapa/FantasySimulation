@@ -23,6 +23,26 @@ export type MatchMeasurement = {
 };
 const context = new AsyncLocalStorage<Measurements>();
 const limit = 20000;
+export const VERIFICATION_WORKER_STAGE_NAMES = [
+  'validate.replay',
+  'save.read',
+  'decompress',
+  'json.checkpoint',
+  'json.records',
+  'hash.bytes',
+  'hash.replayStream',
+] as const;
+export type VerificationWorkerStage = {
+  count: number;
+  failures: number;
+  bytes: number;
+  inclusiveMs: number;
+  busyWallMs: number;
+  incomplete: number;
+};
+export type VerificationWorkerStages = Partial<
+  Record<(typeof VERIFICATION_WORKER_STAGE_NAMES)[number], VerificationWorkerStage>
+>;
 
 export function distribution(values: number[]) {
   const sorted = [...values].sort((a, b) => a - b),
@@ -44,6 +64,10 @@ export class Measurements {
   private readonly matches: MatchMeasurement[] = [];
   private readonly validations = new Map<string, { calls: number; failures: number }>();
   private readonly capacities: Record<string, number> = {};
+  private readonly verificationWorkerStages: Record<
+    string,
+    Omit<VerificationWorkerStage, 'busyWallMs'> & { busyWallSumMs: number }
+  > = {};
   private readonly queues: Record<
     string,
     { admitted: number; totalWaitMs: number; maxWaitMs: number; maxPending: number }
@@ -119,6 +143,39 @@ export class Measurements {
     const stage = this.stages.get(name);
     if (stage) stage.bytes += bytes;
   }
+  /** Worker-local busy intervals cannot be unioned with this process-local timeline. */
+  verificationStages(value: VerificationWorkerStages) {
+    const entries = Object.entries(value);
+    if (entries.length > 64 || Buffer.byteLength(JSON.stringify(value)) > 16384)
+      throw new Error('Verification Worker stage bound');
+    const updates: typeof this.verificationWorkerStages = {};
+    for (const [name, stage] of entries) {
+      if (
+        !VERIFICATION_WORKER_STAGE_NAMES.some((owned) => owned === name) ||
+        Object.keys(stage).sort().join(',') !==
+          'busyWallMs,bytes,count,failures,inclusiveMs,incomplete' ||
+        Object.values(stage).some((n) => !Number.isFinite(n) || n < 0) ||
+        ['count', 'failures', 'bytes', 'incomplete'].some(
+          (key) => !Number.isSafeInteger(stage[key as keyof VerificationWorkerStage]),
+        ) ||
+        stage.failures > stage.count
+      )
+        throw new Error('Invalid verification Worker stage');
+      const prior = this.verificationWorkerStages[name];
+      const next = {
+        count: (prior?.count ?? 0) + stage.count,
+        failures: (prior?.failures ?? 0) + stage.failures,
+        bytes: (prior?.bytes ?? 0) + stage.bytes,
+        inclusiveMs: (prior?.inclusiveMs ?? 0) + stage.inclusiveMs,
+        incomplete: (prior?.incomplete ?? 0) + stage.incomplete,
+        busyWallSumMs: (prior?.busyWallSumMs ?? 0) + stage.busyWallMs,
+      };
+      if (Object.values(next).some((n) => !Number.isFinite(n) || n > Number.MAX_SAFE_INTEGER))
+        throw new Error('Verification Worker stage aggregate bound');
+      updates[name] = next;
+    }
+    Object.assign(this.verificationWorkerStages, updates);
+  }
   queue(name: string, waitMs: number, pending: number) {
     const value = (this.queues[name] ??= {
       admitted: 0,
@@ -173,6 +230,7 @@ export class Measurements {
           },
         ]),
       ),
+      verificationWorkerStages: this.verificationWorkerStages,
       matchWallMs: distribution(this.matches.map((m) => m.wallMs)),
       workerMetrics: Object.fromEntries(
         [...new Set(this.matches.flatMap((m) => Object.keys(m.worker ?? {})))]
