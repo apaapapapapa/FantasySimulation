@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import {
+  DEFAULT_SKILL_CATALOG,
   sameSkillRevisionRef,
   skillLoadoutsForCatalog,
   skillWorkbenchApi,
@@ -7,6 +8,10 @@ import {
 } from './skill-api.ts';
 
 afterEach(() => vi.unstubAllGlobals());
+
+it('targets the integrated immutable startup catalog by default', () => {
+  expect(DEFAULT_SKILL_CATALOG).toEqual({ id: 'skill-catalog-v1', revision: 2 });
+});
 
 it('keeps exact refs and excludes loadouts from another catalog revision', () => {
   const hash = (digit: string) => `sha256:${digit.repeat(64)}` as const,
