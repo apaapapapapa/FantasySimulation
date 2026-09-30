@@ -19,14 +19,14 @@ import { ManifestBuilder, reference, runBattle, sealRevision } from '@fantasy/en
 import { catalogManifest, sampleCatalog } from '../index.ts';
 import { integratedSkillShards } from '../skill-catalog/integrated-v2.ts';
 import {
-  MYSTIC_DAN2_CANDIDATE_FIXTURE,
+  MYSTIC_ROOSTER_DAN2_FIXTURE,
   MYSTIC_SKILL_FIXTURES,
   type MysticSkillFixture,
 } from './mystic-three-fixtures.ts';
 import {
   MYSTIC_AVAILABLE_NODE_IDS,
   MYSTIC_CATALOG_REVISION,
-  MYSTIC_DAN2_CANDIDATE,
+  MYSTIC_ROOSTER_DAN2_RELEASE,
   MYSTIC_SKILL_SHARDS,
 } from './mystic-three.ts';
 
@@ -212,7 +212,7 @@ describe('mystic path catalog content', () => {
       available = nodes.filter(({ lifecycle }) => lifecycle === 'available'),
       fixtureByNode = new Map(MYSTIC_SKILL_FIXTURES.map((fixture) => [fixture.nodeId, fixture]));
 
-    expect(available).toHaveLength(19);
+    expect(available).toHaveLength(20);
     expect(MYSTIC_SKILL_FIXTURES).toHaveLength(available.length);
     expect(new Set(MYSTIC_SKILL_FIXTURES.map(({ id }) => id)).size).toBe(
       MYSTIC_SKILL_FIXTURES.length,
@@ -221,7 +221,7 @@ describe('mystic path catalog content', () => {
       const fixture = fixtureByNode.get(node.id),
         resolution = node.resolution[0];
       expect(fixture).toBeDefined();
-      expect(node.coordinate.dan).toBe(1);
+      expect(node.coordinate.dan).toBe(node.id === MYSTIC_ROOSTER_DAN2_RELEASE.nodeId ? 2 : 1);
       expect(node.fixtureIds).toEqual([fixture!.id]);
       expect(node.resolution).toHaveLength(1);
       expect(resolution?.kind).toMatch(/^(active|passive)-ability$/);
@@ -260,53 +260,49 @@ describe('mystic path catalog content', () => {
     }
   });
 
-  it('keeps the exact rooster dan-two candidate draft in the startup overlay', async () => {
-    const fixture = MYSTIC_DAN2_CANDIDATE_FIXTURE,
+  it('publishes exact rooster dan two while retaining its lower reveal', async () => {
+    const fixture = MYSTIC_ROOSTER_DAN2_FIXTURE,
       revisions = await sampleCatalog(),
       ability = revisions.find(
         (revision) =>
           revision.kind === 'ability' &&
-          revision.id === MYSTIC_DAN2_CANDIDATE.resolution.ability.id,
+          revision.id === MYSTIC_ROOSTER_DAN2_RELEASE.resolution.ability.id,
       ),
       source = MYSTIC_SKILL_SHARDS.magic.nodes.find(({ id }) => id === fixture.nodeId),
       startup = integratedSkillShards
         .find(({ path }) => path === 'magic')
         ?.nodes.find(({ id }) => id === fixture.nodeId);
     expect(source).toMatchObject({
-      lifecycle: 'draft',
+      lifecycle: 'available',
       prerequisites: [fixture.preserves!.nodeId],
-      resolution: [],
-      fixtureIds: [],
+      resolution: [MYSTIC_ROOSTER_DAN2_RELEASE.resolution],
+      fixtureIds: [fixture.id],
     });
     expect(startup).toEqual(source);
     expect(ability).toMatchObject({
       kind: 'ability',
-      revision: MYSTIC_DAN2_CANDIDATE.resolution.ability.revision,
-      contentHash: MYSTIC_DAN2_CANDIDATE.resolution.ability.contentHash,
+      revision: MYSTIC_ROOSTER_DAN2_RELEASE.resolution.ability.revision,
+      contentHash: MYSTIC_ROOSTER_DAN2_RELEASE.resolution.ability.contentHash,
     });
     expect(fixture).toMatchObject({
-      nodeId: MYSTIC_DAN2_CANDIDATE.nodeId,
-      abilityId: MYSTIC_DAN2_CANDIDATE.resolution.ability.id,
-      preserves: { nodeId: MYSTIC_DAN2_CANDIDATE.prerequisiteNodeId },
+      nodeId: MYSTIC_ROOSTER_DAN2_RELEASE.nodeId,
+      abilityId: MYSTIC_ROOSTER_DAN2_RELEASE.resolution.ability.id,
+      preserves: { nodeId: MYSTIC_ROOSTER_DAN2_RELEASE.prerequisiteNodeId },
     });
     expect(
       integratedSkillShards
         .flatMap(({ nodes }) => nodes)
         .filter(({ lifecycle }) => lifecycle === 'available'),
-    ).toHaveLength(26);
-    await expect(savedFixtureManifest(fixture)).rejects.toMatchObject({
-      code: 'unavailable-node',
-    });
+    ).toHaveLength(29);
 
-    const input = await forcedFixtureManifest(fixture),
-      battle = await ManifestBuilder.from(input.revisions).build({
-        seed: input.seed,
-        participants: input.participants,
-        ruleset: input.ruleset,
-        scenario: input.scenario,
-      }),
-      run = await runBattle(battle.manifest),
-      replay = await replayContext(battle.manifest, run.result.simulationHash);
+    const { manifest, snapshot } = await savedFixtureManifest(fixture),
+      run = await runBattle(manifest),
+      replay = await replayContext(manifest, run.result.simulationHash);
+    expect(snapshot.resolved.resolvedNodeIds).toEqual([
+      MYSTIC_ROOSTER_DAN2_RELEASE.prerequisiteNodeId,
+      MYSTIC_ROOSTER_DAN2_RELEASE.nodeId,
+    ]);
+    expect(replay.actors[0]!.abilities.map(({ id }) => id)).toContain(fixture.preserves!.abilityId);
     expect(replay.actors[0]!.abilities.map(({ id }) => id)).toContain(fixture.abilityId);
     expect(launched(run.records, fixture.abilityId)).toBe(true);
   });

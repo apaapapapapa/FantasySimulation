@@ -212,8 +212,10 @@ export function inspectStartupSkillCatalog(
 
 export const STARTUP_SKILL_ABILITY_IDS = swordRatRelease.map(({ abilityId }) => abilityId);
 
-export const PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION = 3;
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 4;
+export const INTEGRATED_STARTUP_CATALOG_V2_REVISION = 2;
+export const INTEGRATED_STARTUP_CATALOG_V3_REVISION = 3;
+export const PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION = 4;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 5;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>
@@ -258,19 +260,46 @@ function assembleIntegratedStartupSkillCatalog(
   return catalog;
 }
 
-/** Reconstruct immutable catalog v3 before the aikido release without copying 1,152 nodes. */
-export function readPreviousIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
-  const authored = integratedSkillShards
+const releaseRevisionByNodeId = new Map([
+  ['skill.shield.ox.1', 3],
+  ['skill.aikido.dog.1', 4],
+  ['skill.magic.rooster.2', 5],
+]);
+
+function integratedNodesAtRevision(revision: number): SkillNode[] {
+  return integratedSkillShards
     .flatMap(({ nodes }) => nodes)
     .map((node): SkillNode =>
-      node.id === 'skill.aikido.dog.1'
+      (releaseRevisionByNodeId.get(node.id) ?? 0) > revision
         ? { ...node, lifecycle: 'draft', resolution: [], fixtureIds: [] }
         : node,
     );
+}
+
+/** Reconstruct immutable catalog v2 before the shield guard release. */
+export function readIntegratedStartupSkillCatalogV2(revisionInput: unknown[]): SkillCatalog {
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    INTEGRATED_STARTUP_CATALOG_V2_REVISION,
+    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V2_REVISION),
+  );
+}
+
+/** Reconstruct immutable catalog v3 before the aikido release. */
+export function readIntegratedStartupSkillCatalogV3(revisionInput: unknown[]): SkillCatalog {
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    INTEGRATED_STARTUP_CATALOG_V3_REVISION,
+    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V3_REVISION),
+  );
+}
+
+/** Reconstruct immutable catalog v4 before the rooster second-dan release. */
+export function readPreviousIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
   return assembleIntegratedStartupSkillCatalog(
     revisionInput,
     PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION,
-    authored,
+    integratedNodesAtRevision(PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION),
   );
 }
 
@@ -279,7 +308,7 @@ export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): Ski
   return assembleIntegratedStartupSkillCatalog(
     revisionInput,
     INTEGRATED_STARTUP_CATALOG_REVISION,
-    integratedSkillShards.flatMap(({ nodes }) => nodes),
+    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_REVISION),
   );
 }
 
@@ -294,10 +323,10 @@ export function inspectIntegratedStartupSkillCatalog(
       fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
     });
   if (
-    report.available !== 28 ||
-    report.verified !== 28 ||
+    report.available !== 29 ||
+    report.verified !== 29 ||
     report.lifecycle.implemented !== 3 ||
-    report.lifecycle.draft !== 1_121 ||
+    report.lifecycle.draft !== 1_120 ||
     report.issues.length
   )
     throw new Error('Integrated startup skill catalog release evidence is incomplete');

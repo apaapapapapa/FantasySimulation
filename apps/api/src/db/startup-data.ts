@@ -4,6 +4,8 @@ import { SkillStore } from './skill-store.ts';
 import {
   inspectIntegratedStartupSkillCatalog,
   readIntegratedStartupSkillCatalog,
+  readIntegratedStartupSkillCatalogV2,
+  readIntegratedStartupSkillCatalogV3,
   readPreviousIntegratedStartupSkillCatalog,
   readStartupSkillCatalog,
 } from './startup-skill-catalog.ts';
@@ -14,10 +16,14 @@ export async function seedStartupData(store: Store) {
   await store.seedRevisions(revisions);
   const skills = new SkillStore(store),
     legacy = readStartupSkillCatalog(revisions),
+    integratedV2 = readIntegratedStartupSkillCatalogV2(revisions),
+    integratedV3 = readIntegratedStartupSkillCatalogV3(revisions),
     previous = readPreviousIntegratedStartupSkillCatalog(revisions),
     catalog = readIntegratedStartupSkillCatalog(revisions),
     release = inspectIntegratedStartupSkillCatalog(catalog, revisions);
   await skills.seedCatalog(legacy);
+  await skills.seedCatalog(integratedV2);
+  await skills.seedCatalog(integratedV3);
   await skills.seedCatalog(previous);
   const record = await skills.seedCatalog(catalog);
   return { skillCatalog: record, skillCatalogRelease: release };

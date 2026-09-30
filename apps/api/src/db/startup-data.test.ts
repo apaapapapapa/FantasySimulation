@@ -20,6 +20,8 @@ import {
   inspectIntegratedStartupSkillCatalog,
   inspectStartupSkillCatalog,
   readIntegratedStartupSkillCatalog,
+  readIntegratedStartupSkillCatalogV2,
+  readIntegratedStartupSkillCatalogV3,
   readPreviousIntegratedStartupSkillCatalog,
   readStartupSkillCatalog,
 } from './startup-skill-catalog.ts';
@@ -33,7 +35,15 @@ async function runAndReplay(
   manifest: Awaited<ReturnType<typeof catalogManifest>>,
   ability: Extract<Revision, { kind: 'ability' }>,
 ) {
-  const battle = await ManifestBuilder.from([...manifest.revisions, ability]).build({
+  const revisions = manifest.revisions.some(
+      (revision) =>
+        revision.kind === ability.kind &&
+        revision.id === ability.id &&
+        revision.revision === ability.revision,
+    )
+      ? manifest.revisions
+      : [...manifest.revisions, ability],
+    battle = await ManifestBuilder.from(revisions).build({
       seed: manifest.seed,
       participants: manifest.participants,
       ruleset: manifest.ruleset,
@@ -118,7 +128,7 @@ describe('production startup skill catalog', () => {
       second = await seedStartupData(store);
     expect(second.skillCatalog.reference).toEqual(first.skillCatalog.reference);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 3,
+      count: 5,
     });
     const changed = structuredClone(first.skillCatalog.catalog);
     changed.nodes[0]!.name = 'Changed immutable startup node';
@@ -128,49 +138,67 @@ describe('production startup skill catalog', () => {
 
     const app = createApp(store);
     stores.pop();
-    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/4');
+    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/5');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       reference: first.skillCatalog.reference,
-      catalog: { id: 'skill-catalog-v1', revision: 4 },
+      catalog: { id: 'skill-catalog-v1', revision: 5 },
     });
     expect(response.json().catalog.nodes).toHaveLength(1_152);
-    const previous = await app.inject('/api/skill-catalogs/skill-catalog-v1/3');
-    expect(previous.statusCode).toBe(200);
-    expect(previous.json().catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 3 });
+    for (const revision of [2, 3, 4]) {
+      const previous = await app.inject(`/api/skill-catalogs/skill-catalog-v1/${revision}`);
+      expect(previous.statusCode).toBe(200);
+      expect(previous.json().catalog).toMatchObject({ id: 'skill-catalog-v1', revision });
+    }
     const legacy = await app.inject('/api/skill-catalogs/skill-catalog-v1/1');
     expect(legacy.statusCode).toBe(200);
     expect(legacy.json().catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 1 });
     await app.close();
   });
 
-  it('preserves existing integrated v2 and immutable v3 when seeding v4', async () => {
+  it('reconstructs immutable v2, v3 and v4 before seeding v5', async () => {
     const store = openStore(':memory:'),
       revisions = readSampleRevisions();
     stores.push(store);
     await store.seedRevisions(revisions);
     const skills = new SkillStore(store),
-      historicalV2 = readPreviousIntegratedStartupSkillCatalog(revisions);
-    historicalV2.revision = 2;
-    historicalV2.nodes.find(({ id }) => id === 'skill.shield.ox.1')!.name =
-      'Previously stored shield revision';
-    const historicalV3Catalog = readPreviousIntegratedStartupSkillCatalog(revisions);
+      historicalV2Catalog = readIntegratedStartupSkillCatalogV2(revisions),
+      historicalV3Catalog = readIntegratedStartupSkillCatalogV3(revisions),
+      historicalV4Catalog = readPreviousIntegratedStartupSkillCatalog(revisions);
+    expect(await skillCatalogDigest(historicalV2Catalog)).toBe(
+      'sha256:bfab392a9a68800c5f684dcab0497ade412e28aeb420d4de9caaac5d2e426e2a',
+    );
     expect(await skillCatalogDigest(historicalV3Catalog)).toBe(
       'sha256:7567e53cc5639ce9fad3578d81331e8804880758626e7a5cd3bbc755cdf67026',
     );
-    const previousV2 = await skills.seedCatalog(historicalV2),
-      historicalV3 = await skills.seedCatalog(historicalV3Catalog),
+    expect(await skillCatalogDigest(historicalV4Catalog)).toBe(
+      'sha256:3d6df8e9f07c2bfa492fbfdab80b5acb8937d168826331c6bbdd1f33179ef968',
+    );
+    const previousV2 = await skills.seedCatalog(historicalV2Catalog),
+      previousV3 = await skills.seedCatalog(historicalV3Catalog),
+      previousV4 = await skills.seedCatalog(historicalV4Catalog),
       seeded = await seedStartupData(store);
 
     expect(seeded.skillCatalog.reference).toMatchObject({
       id: 'skill-catalog-v1',
-      revision: 4,
+      revision: 5,
     });
     expect(await skills.catalog('skill-catalog-v1', 2)).toEqual(previousV2);
-    expect(await skills.catalog('skill-catalog-v1', 3)).toEqual(historicalV3);
+    expect(await skills.catalog('skill-catalog-v1', 3)).toEqual(previousV3);
+    expect(await skills.catalog('skill-catalog-v1', 4)).toEqual(previousV4);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 4,
+      count: 5,
     });
+    const lifecycle = (revision: number, nodeId: string) =>
+      skills
+        .catalog('skill-catalog-v1', revision)
+        .then((record) => record?.catalog.nodes.find(({ id }) => id === nodeId)?.lifecycle);
+    await expect(lifecycle(2, 'skill.shield.ox.1')).resolves.toBe('draft');
+    await expect(lifecycle(3, 'skill.shield.ox.1')).resolves.toBe('available');
+    await expect(lifecycle(3, 'skill.aikido.dog.1')).resolves.toBe('draft');
+    await expect(lifecycle(4, 'skill.aikido.dog.1')).resolves.toBe('available');
+    await expect(lifecycle(4, 'skill.magic.rooster.2')).resolves.toBe('draft');
+    await expect(lifecycle(5, 'skill.magic.rooster.2')).resolves.toBe('available');
   });
 
   it('integrates fourteen authored paths while keeping unfinished coordinates unavailable', () => {
@@ -179,12 +207,12 @@ describe('production startup skill catalog', () => {
       release = inspectIntegratedStartupSkillCatalog(catalog, revisions),
       available = catalog.nodes.filter(({ lifecycle }) => lifecycle === 'available');
 
-    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 4 });
+    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 5 });
     expect(catalog.nodes).toHaveLength(1_152);
     expect(release).toEqual({
-      lifecycle: { available: 28, implemented: 3, draft: 1_121, retired: 0 },
-      available: 28,
-      verified: 28,
+      lifecycle: { available: 29, implemented: 3, draft: 1_120, retired: 0 },
+      available: 29,
+      verified: 29,
       releaseReady: false,
       issues: [],
     });
@@ -194,7 +222,7 @@ describe('production startup skill catalog', () => {
     expect(available.filter(({ coordinate }) => coordinate.path === 'aikido')).toHaveLength(1);
     expect(available.filter(({ coordinate }) => coordinate.path === 'shinto')).toHaveLength(4);
     expect(available.filter(({ coordinate }) => coordinate.path === 'renki')).toHaveLength(4);
-    expect(available.filter(({ coordinate }) => coordinate.path === 'magic')).toHaveLength(11);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'magic')).toHaveLength(12);
     expect(
       catalog.nodes
         .filter(({ coordinate }) => ['illusion-curse', 'summoning'].includes(coordinate.path))
@@ -350,6 +378,76 @@ describe('production startup skill catalog', () => {
               event.ruleId === 'reaction.activated' &&
               event.actorId === 'left' &&
               event.abilityId === parry.id,
+          ),
+      ),
+    ).toBe(true);
+    expect(restored).toMatchObject({ ended: true, step: run.result.steps });
+  });
+
+  it('carries rooster dan two through save, reload, AI, battle and replay', async () => {
+    const store = openStore(':memory:');
+    stores.push(store);
+    const seeded = await seedStartupData(store),
+      revisions = parseJson(RevisionSchema.array(), readSampleRevisions()),
+      character = revisions.find(
+        (revision) => revision.kind === 'character' && revision.id === 'fire-seer',
+      ),
+      reveal = revisions.find(
+        (revision) => revision.kind === 'ability' && revision.id === 'reveal-fire',
+      ),
+      measured = revisions.find(
+        (revision) => revision.kind === 'ability' && revision.id === 'measured-fire',
+      );
+    if (character?.kind !== 'character') throw new Error('Missing fire seer fixture');
+    if (reveal?.kind !== 'ability') throw new Error('Missing reveal fire fixture');
+    if (measured?.kind !== 'ability') throw new Error('Missing measured fire fixture');
+
+    const nodeIds = ['skill.magic.rooster.1', 'skill.magic.rooster.2'],
+      skills = new SkillStore(store),
+      created = await skills.create({
+        character: revisionReference(character),
+        configuration: {
+          schemaVersion: 1,
+          id: 'loadout.integrated.magic.rooster.2',
+          version: 1,
+          catalog: seeded.skillCatalog.reference,
+          eligibilityNodeIds: nodeIds,
+          learnedNodeIds: nodeIds,
+          enabledNodeIds: [nodeIds[1]!],
+        },
+      }),
+      reloaded = await skills.revision(created.latest),
+      manifest = await catalogManifest('fire-seer', 'ember-duelist', 'flat', 400, 228);
+    manifest.participants[0]!.skillLoadout = await skillBattleReceipt(reloaded);
+    const { run, context, restored } = await runAndReplay(manifest, measured);
+
+    expect(reloaded.resolved).toMatchObject({
+      explicitlyEnabledNodeIds: [nodeIds[1]],
+      resolvedNodeIds: nodeIds,
+      nodeResolutions: [
+        {
+          nodeId: nodeIds[0],
+          resolution: [{ kind: 'active-ability', ability: revisionReference(reveal) }],
+        },
+        {
+          nodeId: nodeIds[1],
+          resolution: [{ kind: 'active-ability', ability: revisionReference(measured) }],
+        },
+      ],
+    });
+    expect(context.manifest.participants[0]!.skillLoadout).toMatchObject({
+      catalog: seeded.skillCatalog.reference,
+      resolvedNodeIds: nodeIds,
+    });
+    expect(
+      run.records.some(
+        (record) =>
+          'events' in record &&
+          record.events.some(
+            (event) =>
+              event.kind === 'launch' &&
+              event.actorId === 'left' &&
+              event.abilityId === measured.id,
           ),
       ),
     ).toBe(true);
