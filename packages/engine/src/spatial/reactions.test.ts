@@ -140,6 +140,94 @@ describe('transactional reaction activations', () => {
     ]);
     await recordedCheckpoints(input, full);
   });
+  it('composes martial guards once, preserves contact, and records replay-stable causes', async () => {
+    const input = await reactionManifest({
+      reactions: [
+        { reaction: { response: { kind: 'guard', retainedDamageBps: 8000 } } },
+        { reaction: { response: { kind: 'guard', retainedDamageBps: 5000 } } },
+      ],
+      attack: {
+        effects: [
+          { kind: 'damage', amount: 101, attackScaleBps: 0, element: 'physical' },
+          {
+            kind: 'force',
+            profile: 'linear-v1',
+            direction: 'away',
+            speedMmPerSecond: 500,
+            durationSteps: 2,
+          },
+        ],
+      },
+    });
+    const full = await runBattle(input),
+      events = battleEvents(full.records),
+      guarded = events.filter((event) => event.damage?.guard);
+    expect(guarded).toHaveLength(2);
+    for (const event of guarded) {
+      const guard = event.damage!.guard!;
+      expect(guard.responses.map((response) => response.retainedDamageBps)).toEqual([8000, 5000]);
+      expect(guard.after).toBe(Math.floor((guard.before * 8000 * 5000) / 10000 ** 2));
+      expect(
+        guard.responses.every((response) => event.causes.includes(response.activationId)),
+      ).toBe(true);
+      expect(event.amount).toBe(guard.after);
+    }
+    expect(events.filter((event) => event.kind === 'force')).toHaveLength(2);
+    const saved = await recordedCheckpoints(input, full);
+    const final = saved.checkpoints.at(-1)!;
+    const replay = new ReplayState(saved.context);
+    for (const record of full.records) replay.apply(record);
+    expect(replay.checkpoint()).toEqual(final);
+
+    const reversed = await runBattle({
+      ...input,
+      revisions: [...input.revisions].reverse(),
+      participants: [...input.participants].reverse(),
+    });
+    expect(reversed.records).toEqual(full.records);
+  });
+  it('lets damage parry dominate guard without losing the paid guard evidence', async () => {
+    const input = await reactionManifest({
+      reactions: [
+        { reaction: { response: { kind: 'guard', retainedDamageBps: 5000 } } },
+        { reaction: { response: { kind: 'parry', scope: 'damage' } } },
+      ],
+    });
+    const full = await runBattle(input);
+    for (const event of battleEvents(full.records).filter(
+      (candidate) => candidate.kind === 'damage',
+    )) {
+      expect(event.damage!.guard).toMatchObject({
+        after: 0,
+        responses: [{ retainedDamageBps: 5000 }],
+      });
+      expect(event.amount).toBe(0);
+    }
+    await recordedCheckpoints(input, full);
+  });
+  it('settles guard before lethal revival without changing either reaction contract', async () => {
+    const input = await reactionManifest({
+      reactions: [
+        { reaction: { response: { kind: 'guard', retainedDamageBps: 5000 } } },
+        {
+          trigger: 'before-defeat',
+          costs: { hp: 0, mp: 0, uses: 1 },
+          reaction: { response: { kind: 'revive', health: { kind: 'fixed', amount: 10 } } },
+        },
+      ],
+      attack: {
+        effects: [{ kind: 'damage', amount: 1000, attackScaleBps: 0, element: 'physical' }],
+      },
+    });
+    const full = await runBattle(input),
+      events = battleEvents(full.records);
+    expect(events.filter((event) => event.damage?.guard)).toHaveLength(2);
+    expect(events.filter((event) => event.revival)).toHaveLength(2);
+    expect(events.filter((event) => event.revival).every((event) => event.after?.hp === 10)).toBe(
+      true,
+    );
+    await recordedCheckpoints(input, full);
+  });
   it('reserves all eligible owner reactions together without partial payment', async () => {
     const input = await reactionManifest({
       reactions: [
@@ -225,6 +313,13 @@ describe('transactional reaction activations', () => {
       (r) => r.kind === 'ability' && r.id === 'reaction-0',
     )!.definition;
     expect(AbilitySchema.safeParse({ ...definition, trigger: 'action' }).success).toBe(false);
+    for (const retainedDamageBps of [0, 10000])
+      expect(
+        AbilitySchema.safeParse({
+          ...definition,
+          reaction: { response: { kind: 'guard', retainedDamageBps } },
+        }).success,
+      ).toBe(false);
     expect(
       AbilitySchema.safeParse({
         ...definition,

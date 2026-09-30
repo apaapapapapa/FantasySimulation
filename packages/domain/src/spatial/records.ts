@@ -158,6 +158,21 @@ export const EventSchema = z
         defenseApplied: count,
         afterDefense: count,
         afterResistance: count,
+        guard: z
+          .strictObject({
+            before: count,
+            after: count,
+            responses: z
+              .array(
+                z.strictObject({
+                  activationId: IdSchema,
+                  retainedDamageBps: z.number().int().min(1).max(9999),
+                }),
+              )
+              .min(1)
+              .max(64),
+          })
+          .optional(),
         absorption: z
           .strictObject({ element: ElementSchema, converted: count, healing: count })
           .optional(),
@@ -216,6 +231,19 @@ export const EventSchema = z
     projectileDeflection: ProjectileDeflectionSchema.optional(),
   })
   .superRefine((event, ctx) => {
+    if (event.damage?.guard) {
+      const ids = event.damage.guard.responses.map((response) => response.activationId);
+      if (
+        event.kind !== 'damage' ||
+        event.damage.guard.after > event.damage.guard.before ||
+        new Set(ids).size !== ids.length ||
+        ids.some((id) => !event.causes.includes(id))
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Guard requires unique causal activations and non-increasing damage',
+        });
+    }
     if (
       (event.kind === 'time-stop') !== !!event.timeStop ||
       (event.timeStop && (!event.actorId || !event.targetId || event.actorId === event.targetId))

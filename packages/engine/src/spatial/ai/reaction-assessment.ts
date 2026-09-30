@@ -56,11 +56,19 @@ export function assessReactions(view: DecisionView) {
             (p) => !reaction.elements || !p.element || reaction.elements.includes(p.element),
           )
         : threat;
-    if (reaction.response.kind === 'parry' || reaction.response.kind === 'deflect') {
+    if (
+      reaction.response.kind === 'parry' ||
+      reaction.response.kind === 'guard' ||
+      reaction.response.kind === 'deflect'
+    ) {
       assessment.weight = relevantThreat
         ? boundedWeight(view.rules.actionWeight / (1 + assessment.costBps / 5000))
         : 0;
-      assessment.successBps = relevantThreat ? 5000 : 0;
+      assessment.successBps = relevantThreat
+        ? reaction.response.kind === 'guard'
+          ? 10000 - reaction.response.retainedDamageBps
+          : 5000
+        : 0;
       assessment.confidenceBps = 1000;
       assessment.reason = `own ${reaction.response.kind}/filter/cost; delayed visible threat; contact and eligibility uncertain`;
     } else if (reaction.response.kind === 'revive') {

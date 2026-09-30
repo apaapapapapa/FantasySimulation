@@ -29,6 +29,7 @@ export const attackMechanics = {
 } satisfies Record<Definition<'ability'>['attack']['kind'], MechanicId>;
 export const responseMechanics = {
   parry: 'parry',
+  guard: 'parry',
   effects: 'reaction-effects',
   counter: 'counter',
   deflect: 'projectile-deflection',

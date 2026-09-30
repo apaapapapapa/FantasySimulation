@@ -55,6 +55,12 @@ export function EventEntries({
                 {event.damage.afterDefense} → 耐性後 {event.damage.afterResistance} → Shield吸収{' '}
                 {event.damage.absorbed.numerator}/{event.damage.absorbed.denominator} → HP損失{' '}
                 {event.damage.toHp.numerator}/{event.damage.toHp.denominator}
+                {event.damage.guard && (
+                  <>
+                    {' '}
+                    / Guard {event.damage.guard.before} → {event.damage.guard.after}
+                  </>
+                )}
               </p>
             )}
             {recoveryDisplay([event]).map((item) => (
