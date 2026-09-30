@@ -3,7 +3,7 @@
   "id": "fixture.skill.summoning.rat.1.contract",
   "issue": 228,
   "design": "docs/adr/0021-dependent-summons.md",
-  "status": "verified-runtime",
+  "status": "runtime-pending",
   "availableClaim": false,
   "catalogNodeId": "skill.summoning.rat.1",
   "input": {
@@ -50,35 +50,7 @@
       "expectedNextActionAt": 300,
       "expectedLifetimeEndsAt": 1100,
       "expectedUpkeepSteps": [300, 400]
-    },
-    "settlementWaves": [
-      {
-        "id": "owner-revival-wave",
-        "at": 500,
-        "participantHpBefore": { "A": 30, "B": 900 },
-        "dependentHpBefore": 80,
-        "simultaneous": {
-          "incomingDamageToOwnerA": 50,
-          "guardAbsorbedByOwnerA": 10,
-          "dependentDrainDamageToOwnerB": 20,
-          "dependentDrainHealing": 10
-        },
-        "revival": { "ownerSlot": "A", "healthAfter": 250, "usesRemainingAfter": 0 }
-      },
-      {
-        "id": "terminal-owner-defeat-wave",
-        "at": 800,
-        "participantHpBefore": { "A": 10, "B": 880 },
-        "dependentHpBefore": 90,
-        "simultaneous": {
-          "incomingDamageToOwnerA": 30,
-          "guardAbsorbedByOwnerA": 0,
-          "dependentDrainDamageToOwnerB": 5,
-          "dependentDrainHealing": 2
-        },
-        "revival": null
-      }
-    ]
+    }
   },
   "expected": {
     "participantCount": 2,
@@ -100,31 +72,12 @@
       "reason": "target-present-in-delivered-observation",
       "canonicalHiddenStateRead": false
     },
-    "settlementOrder": [
+    "pendingSettlementOrder": [
       "collect-simultaneous-guard-and-drain",
       "resolve-revival",
       "commit-dependent-and-participant-hp",
       "despawn-dependents-of-terminally-defeated-owner",
       "compute-participant-win-or-draw"
-    ],
-    "waves": [
-      {
-        "id": "owner-revival-wave",
-        "ownerHpAfter": 250,
-        "hostileOwnerHpAfter": 880,
-        "dependentHpAfter": 90,
-        "dependentDespawned": false,
-        "verdict": null
-      },
-      {
-        "id": "terminal-owner-defeat-wave",
-        "ownerHpAfter": 0,
-        "hostileOwnerHpAfter": 875,
-        "dependentHpAfterSettlement": 92,
-        "dependentDespawned": true,
-        "despawnReason": "owner-defeated",
-        "verdict": { "kind": "win", "winnerSlot": "B" }
-      }
     ],
     "records": [
       "dependent-create",
@@ -155,5 +108,10 @@
     "apps/api/src/jobs/dependent-persistence.test.ts",
     "apps/web/src/replay/dependent-display.test.ts"
   ],
-  "missingRuntimeMechanisms": []
+  "missingRuntimeMechanisms": [
+    "dependent-targeting-and-hp-damage",
+    "non-noop-dependent-drain-healing",
+    "same-wave-owner-guard-revival-dependent-hp-settlement",
+    "terminal-owner-defeat-verdict-numeric-fixture"
+  ]
 }

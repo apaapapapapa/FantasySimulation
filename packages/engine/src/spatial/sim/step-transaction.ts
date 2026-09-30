@@ -106,7 +106,13 @@ export class StepTransaction {
       serial: previous.serial,
       ...(previous.objects ? { objects: previous.objects.map((o) => ({ ...o })) } : {}),
       ...(previous.dependents
-        ? { dependents: previous.dependents.map((d) => ({ ...d, position: { ...d.position } })) }
+        ? {
+            dependents: previous.dependents.map((d) => ({
+              ...d,
+              position: { ...d.position },
+              ...(d.clock ? { clock: { ...d.clock } } : {}),
+            })),
+          }
         : {}),
       ...(previous.dependentCreated ? { dependentCreated: { ...previous.dependentCreated } } : {}),
       ...(previous.relocations ? { relocations: [...previous.relocations] } : {}),

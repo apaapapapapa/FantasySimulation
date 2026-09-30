@@ -285,6 +285,14 @@ export function freezeDependent(
   dependent.clock = { controlId, frozenFrom, frozenUntil };
 }
 
+/** Rebase only the dependent's subject-action deadline; lifetime and upkeep stay global. */
+export function thawDependent(dependent: DependentState, controlId: string, global: number) {
+  const clock = dependent.clock;
+  if (!clock || clock.controlId !== controlId) return;
+  dependent.nextActionAt += global - clock.frozenFrom;
+  delete dependent.clock;
+}
+
 /** Called only after before-defeat revival has committed. */
 export function settleDefeatedDependents(tx: StepTransaction) {
   for (const dependent of [...(tx.next.dependents ?? [])]) {

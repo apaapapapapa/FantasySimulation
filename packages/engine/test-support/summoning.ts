@@ -1,5 +1,7 @@
 import { combatManifest } from './fixtures.ts';
 import { ManifestBuilder, sealRevision } from '../src/spatial/manifest-builder.ts';
+import { reference } from '../src/spatial/prepare.ts';
+import { stopManifest } from './time-stop.ts';
 
 export async function summoningManifest(maxSteps = 40) {
   let manifest = await combatManifest(maxSteps, {
@@ -47,5 +49,50 @@ export async function summoningManifest(maxSteps = 40) {
     ...rules.definition,
   });
   manifest = await ManifestBuilder.relink(manifest, [{ from: rules, to: replacement }]);
+  return manifest;
+}
+
+/** One real owner clock stop over a previously-created rat dependent. */
+export async function stoppedSummoningManifest() {
+  const source = await summoningManifest();
+  const summon = source.revisions.find(
+    (revision) => revision.kind === 'ability' && revision.definition.summon,
+  )!;
+  let manifest = await stopManifest({ duration: 5, steps: 60 });
+  const stop = manifest.revisions.find(
+    (revision) => revision.kind === 'ability' && revision.definition.timeStop,
+  )!;
+  if (stop.kind !== 'ability') throw new Error('Missing stop fixture');
+  const delayedStop = await ManifestBuilder.create('ability', stop.id, stop.revision + 1, {
+    ...stop.definition,
+    castSteps: 4,
+  });
+  manifest = await ManifestBuilder.relink(manifest, [{ from: stop, to: delayedStop }]);
+  const character = manifest.revisions.find(
+    (revision) =>
+      revision.kind === 'character' && revision.id === manifest.participants[1].character.id,
+  )!;
+  if (character.kind !== 'character' || summon.kind !== 'ability')
+    throw new Error('Missing stopped summon fixture');
+  const policy = manifest.revisions.find(
+    (revision) => revision.kind === 'policy' && revision.id === character.definition.policy.id,
+  )!;
+  if (policy.kind !== 'policy') throw new Error('Missing target policy');
+  const ownPolicy = await ManifestBuilder.create('policy', 'stopped-summon-policy', 1, {
+    ...policy.definition,
+    priorities: [
+      { abilityId: summon.id, when: { kind: 'always' } },
+      ...policy.definition.priorities,
+    ],
+  });
+  const actor = await ManifestBuilder.create('character', 'stopped-summon-owner', 1, {
+    ...character.definition,
+    abilities: [reference(summon), ...character.definition.abilities],
+    policy: reference(ownPolicy),
+  });
+  manifest = await ManifestBuilder.relink(
+    { ...manifest, revisions: [...manifest.revisions, summon, ownPolicy] },
+    [{ from: character, to: actor }],
+  );
   return manifest;
 }

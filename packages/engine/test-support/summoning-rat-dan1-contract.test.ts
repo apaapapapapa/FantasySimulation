@@ -1,8 +1,8 @@
 import { expect, it } from 'vite-plus/test';
 import fixture from '../fixtures/spatial/summoning-rat-dan1.json' with { type: 'json' };
 
-it('keeps the verified rat dan-one runtime separate from catalog availability', () => {
-  expect(fixture.status).toBe('verified-runtime');
+it('keeps the partial rat dan-one runtime separate from catalog availability', () => {
+  expect(fixture.status).toBe('runtime-pending');
   expect(fixture.availableClaim).toBe(false);
   expect(fixture.catalogNodeId).toBe('skill.summoning.rat.1');
   expect(fixture.input.participants.map(({ slot }) => slot)).toEqual(['A', 'B']);
@@ -14,7 +14,12 @@ it('keeps the verified rat dan-one runtime separate from catalog availability', 
     canNest: false,
     canWin: false,
   });
-  expect(fixture.missingRuntimeMechanisms).toEqual([]);
+  expect(fixture.missingRuntimeMechanisms).toEqual([
+    'dependent-targeting-and-hp-damage',
+    'non-noop-dependent-drain-healing',
+    'same-wave-owner-guard-revival-dependent-hp-settlement',
+    'terminal-owner-defeat-verdict-numeric-fixture',
+  ]);
   expect(fixture.runtimeEvidence).toEqual([
     'packages/engine/src/spatial/dependents.test.ts',
     'apps/api/src/jobs/dependent-persistence.test.ts',
@@ -54,31 +59,14 @@ it('pins ordinal RNG, subject time, and command observation without hidden-state
   });
 });
 
-it('settles revival before owner despawn and verdict while keeping simultaneous guard and drain', () => {
-  expect(fixture.expected.settlementOrder).toEqual([
+it('keeps unresolved simultaneous settlement ordering explicit without fabricated numbers', () => {
+  expect(fixture.expected.pendingSettlementOrder).toEqual([
     'collect-simultaneous-guard-and-drain',
     'resolve-revival',
     'commit-dependent-and-participant-hp',
     'despawn-dependents-of-terminally-defeated-owner',
     'compute-participant-win-or-draw',
   ]);
-  expect(fixture.expected.waves[0]).toMatchObject({
-    id: 'owner-revival-wave',
-    ownerHpAfter: 250,
-    hostileOwnerHpAfter: 880,
-    dependentHpAfter: 90,
-    dependentDespawned: false,
-    verdict: null,
-  });
-  expect(fixture.expected.waves[1]).toMatchObject({
-    id: 'terminal-owner-defeat-wave',
-    ownerHpAfter: 0,
-    hostileOwnerHpAfter: 875,
-    dependentHpAfterSettlement: 92,
-    dependentDespawned: true,
-    despawnReason: 'owner-defeated',
-    verdict: { kind: 'win', winnerSlot: 'B' },
-  });
 });
 
 it('requires the same dependent records through storage and reversible 2D/3D replay', () => {
