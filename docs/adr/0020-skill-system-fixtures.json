@@ -4,10 +4,26 @@
   "baseline": "a9c45d65ddf673aa3683b6882620b8db1d23decd",
   "coverageAssertion": {
     "requiredAcceptanceIds": [
-      "SK-A01", "SK-A02", "SK-A03", "SK-A04", "SK-A05",
-      "SK-A06", "SK-A07", "SK-A08", "SK-A09", "SK-A10",
-      "SK-A11", "SK-A12", "SK-A13", "SK-A14", "SK-A15",
-      "SK-A16", "SK-A17", "SK-A18", "SK-A19", "SK-A20"
+      "SK-A01",
+      "SK-A02",
+      "SK-A03",
+      "SK-A04",
+      "SK-A05",
+      "SK-A06",
+      "SK-A07",
+      "SK-A08",
+      "SK-A09",
+      "SK-A10",
+      "SK-A11",
+      "SK-A12",
+      "SK-A13",
+      "SK-A14",
+      "SK-A15",
+      "SK-A16",
+      "SK-A17",
+      "SK-A18",
+      "SK-A19",
+      "SK-A20"
     ],
     "rule": "the union of suite proves values must equal this set; omissions and unknown IDs fail"
   },
