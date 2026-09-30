@@ -162,6 +162,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
       'recoverySteps',
       'relocation',
       'stages',
+      'summon',
       'target',
       'trigger',
       'movementWhileCasting',
