@@ -179,6 +179,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
       'durationSteps',
       'flightStaminaPerSecond',
       'maxStacks',
+      'mentalImmunity',
       'modifiers',
       'name',
       'originalText',

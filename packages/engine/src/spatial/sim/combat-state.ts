@@ -185,7 +185,7 @@ export function displayActor(
 /** Compact decision state, distinct from display checkpoints and a supported resume snapshot. */
 export function decisionState(state: ActorState) {
   // Preserve the existing compact wire shape and TS-state digest after splitting runtime ownership.
-  const { motion, statuses, action, ...rest } = {
+  const { motion, statuses, action, sensoryCues, ...rest } = {
     ...(state.clock ? { clock: state.clock } : {}),
     ...state.body,
     ...state.vitals,
@@ -195,6 +195,7 @@ export function decisionState(state: ActorState) {
   };
   return {
     ...rest,
+    ...(sensoryCues.length ? { sensoryCues } : {}),
     motion: { ...motion, actor: motion.actor.participant.actorId },
     statuses: statuses.map((s) => ({
       ...s,
