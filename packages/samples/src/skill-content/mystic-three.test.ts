@@ -17,12 +17,26 @@ import {
 } from '@fantasy/domain';
 import { ManifestBuilder, reference, runBattle, sealRevision } from '@fantasy/engine/spatial';
 import { catalogManifest, sampleCatalog } from '../index.ts';
-import { MYSTIC_SKILL_FIXTURES, type MysticSkillFixture } from './mystic-three-fixtures.ts';
-import { MYSTIC_AVAILABLE_NODE_IDS, MYSTIC_SKILL_SHARDS } from './mystic-three.ts';
+import { integratedSkillShards } from '../skill-catalog/integrated-v2.ts';
+import {
+  MYSTIC_DAN2_CANDIDATE_FIXTURE,
+  MYSTIC_SKILL_FIXTURES,
+  type MysticSkillFixture,
+} from './mystic-three-fixtures.ts';
+import {
+  MYSTIC_AVAILABLE_NODE_IDS,
+  MYSTIC_CATALOG_REVISION,
+  MYSTIC_DAN2_CANDIDATE,
+  MYSTIC_SKILL_SHARDS,
+} from './mystic-three.ts';
 
 const repositoryRoot = fileURLToPath(new URL('../../../../', import.meta.url));
 const events = (records: Awaited<ReturnType<typeof runBattle>>['records']) =>
   records.flatMap((record) => ('events' in record ? record.events : []));
+const launched = (records: Awaited<ReturnType<typeof runBattle>>['records'], abilityId: string) =>
+  events(records).some(
+    (event) => event.kind === 'launch' && event.actorId === 'left' && event.abilityId === abilityId,
+  );
 const deepeningByDan = [
   'foundation',
   'conditional-effect',
@@ -57,7 +71,7 @@ function resolverCatalog(): SkillCatalog {
   return SkillCatalogSchema.parse({
     schemaVersion: 1,
     id: 'skill-catalog-v1',
-    revision: 2,
+    revision: MYSTIC_CATALOG_REVISION,
     nodes: [...mysticNodes, ...filler],
   });
 }
@@ -85,7 +99,12 @@ async function forcedFixtureManifest(fixture: MysticSkillFixture) {
     throw new Error(`Missing fixture policy ${actor.definition.policy.id}`);
   const forcedPolicy = await sealRevision('policy', `fixture.policy.${fixture.abilityId}`, 1, {
       ...policy.definition,
-      priorities: [{ abilityId: fixture.abilityId, when: { kind: 'always' as const } }],
+      priorities: [
+        ...(fixture.preserves
+          ? [{ abilityId: fixture.preserves.abilityId, when: { kind: 'always' as const } }]
+          : []),
+        { abilityId: fixture.abilityId, when: { kind: 'always' as const } },
+      ],
     }),
     forcedActor = await sealRevision('character', `fixture.character.${fixture.abilityId}`, 1, {
       ...actor.definition,
@@ -115,8 +134,11 @@ async function savedFixtureManifest(fixture: MysticSkillFixture) {
       id: `loadout.${fixture.id}`,
       version: 1,
       catalog: catalogRef,
-      eligibilityNodeIds: [fixture.nodeId],
-      learnedNodeIds: [fixture.nodeId],
+      eligibilityNodeIds: [
+        ...(fixture.preserves ? [fixture.preserves.nodeId] : []),
+        fixture.nodeId,
+      ],
+      learnedNodeIds: [...(fixture.preserves ? [fixture.preserves.nodeId] : []), fixture.nodeId],
       enabledNodeIds: [fixture.nodeId],
     },
     content = {
@@ -238,6 +260,57 @@ describe('mystic path catalog content', () => {
     }
   });
 
+  it('keeps the exact rooster dan-two candidate draft in the startup overlay', async () => {
+    const fixture = MYSTIC_DAN2_CANDIDATE_FIXTURE,
+      revisions = await sampleCatalog(),
+      ability = revisions.find(
+        (revision) =>
+          revision.kind === 'ability' &&
+          revision.id === MYSTIC_DAN2_CANDIDATE.resolution.ability.id,
+      ),
+      source = MYSTIC_SKILL_SHARDS.magic.nodes.find(({ id }) => id === fixture.nodeId),
+      startup = integratedSkillShards
+        .find(({ path }) => path === 'magic')
+        ?.nodes.find(({ id }) => id === fixture.nodeId);
+    expect(source).toMatchObject({
+      lifecycle: 'draft',
+      prerequisites: [fixture.preserves!.nodeId],
+      resolution: [],
+      fixtureIds: [],
+    });
+    expect(startup).toEqual(source);
+    expect(ability).toMatchObject({
+      kind: 'ability',
+      revision: MYSTIC_DAN2_CANDIDATE.resolution.ability.revision,
+      contentHash: MYSTIC_DAN2_CANDIDATE.resolution.ability.contentHash,
+    });
+    expect(fixture).toMatchObject({
+      nodeId: MYSTIC_DAN2_CANDIDATE.nodeId,
+      abilityId: MYSTIC_DAN2_CANDIDATE.resolution.ability.id,
+      preserves: { nodeId: MYSTIC_DAN2_CANDIDATE.prerequisiteNodeId },
+    });
+    expect(
+      integratedSkillShards
+        .flatMap(({ nodes }) => nodes)
+        .filter(({ lifecycle }) => lifecycle === 'available'),
+    ).toHaveLength(26);
+    await expect(savedFixtureManifest(fixture)).rejects.toMatchObject({
+      code: 'unavailable-node',
+    });
+
+    const input = await forcedFixtureManifest(fixture),
+      battle = await ManifestBuilder.from(input.revisions).build({
+        seed: input.seed,
+        participants: input.participants,
+        ruleset: input.ruleset,
+        scenario: input.scenario,
+      }),
+      run = await runBattle(battle.manifest),
+      replay = await replayContext(battle.manifest, run.result.simulationHash);
+    expect(replay.actors[0]!.abilities.map(({ id }) => id)).toContain(fixture.abilityId);
+    expect(launched(run.records, fixture.abilityId)).toBe(true);
+  });
+
   it.each(MYSTIC_SKILL_FIXTURES.map((fixture) => [fixture.id, fixture] as const))(
     'carries saved loadout %s through AI, battle events and replay provenance',
     async (_id, fixture) => {
@@ -247,9 +320,13 @@ describe('mystic path catalog content', () => {
         restored = new ReplayState(replay);
       for (const record of run.records) restored.apply(record);
 
-      expect(snapshot.resolved.nodeResolutions).toEqual([
-        expect.objectContaining({ nodeId: fixture.nodeId }),
-      ]);
+      expect(snapshot.resolved.nodeResolutions).toEqual(
+        expect.arrayContaining([expect.objectContaining({ nodeId: fixture.nodeId })]),
+      );
+      if (fixture.preserves)
+        expect(snapshot.resolved.nodeResolutions).toEqual(
+          expect.arrayContaining([expect.objectContaining({ nodeId: fixture.preserves.nodeId })]),
+        );
       expect(receipt.loadout).toEqual({
         id: snapshot.id,
         revision: snapshot.revision,
@@ -259,7 +336,8 @@ describe('mystic path catalog content', () => {
       expect(manifest.participants[0]!.skillLoadout).toEqual(receipt);
       expect(replay.manifest.participants[0]!.skillLoadout).toEqual(receipt);
       expect(replay.actors[0]!.abilities.map(({ id }) => id)).toContain(fixture.abilityId);
-      const resolution = receipt.nodeResolutions[0]!.resolution[0]!;
+      const resolution = receipt.nodeResolutions.find(({ nodeId }) => nodeId === fixture.nodeId)!
+        .resolution[0]!;
       if (resolution.kind === 'active-ability') {
         const policy = replay.manifest.revisions.find(
           (revision) =>
@@ -272,14 +350,8 @@ describe('mystic path catalog content', () => {
           when: { kind: 'always' },
         });
       } else expect(resolution.kind).toBe('passive-ability');
-      expect(
-        events(run.records).some(
-          (event) =>
-            event.kind === 'launch' &&
-            event.actorId === 'left' &&
-            event.abilityId === fixture.abilityId,
-        ),
-      ).toBe(true);
+      expect(launched(run.records, fixture.abilityId)).toBe(true);
+      if (fixture.preserves) expect(launched(run.records, fixture.preserves.abilityId)).toBe(true);
       expect(restored).toMatchObject({ ended: true, step: run.result.steps });
       expect(run.result.steps).toBeLessThanOrEqual(200);
     },

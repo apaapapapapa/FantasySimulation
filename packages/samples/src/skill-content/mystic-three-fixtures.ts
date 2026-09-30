@@ -8,6 +8,7 @@ export type MysticSkillFixture = {
   opponent: string;
   scenario: string;
   ruleset?: string;
+  preserves?: { nodeId: string; abilityId: MysticAbilityId };
   mechanisms: string[];
   boundaries: {
     resource: string;
@@ -27,7 +28,7 @@ const fixture = (
   mechanisms: string[],
   boundaries: MysticSkillFixture['boundaries'],
   evidenceTests: string[],
-  options: Pick<MysticSkillFixture, 'scenario' | 'ruleset'> = { scenario: 'flat' },
+  options: Pick<MysticSkillFixture, 'scenario' | 'ruleset' | 'preserves'> = { scenario: 'flat' },
 ): MysticSkillFixture => ({
   id: nodeId.replace('skill.', 'fixture.skill.') + '.runtime',
   nodeId,
@@ -346,3 +347,28 @@ export const MYSTIC_SKILL_FIXTURES: MysticSkillFixture[] = [
     objectEvidence,
   ),
 ];
+
+/** Exact runtime candidate held below available until the integrated startup catalog is versioned. */
+export const MYSTIC_DAN2_CANDIDATE_FIXTURE = fixture(
+  'skill.magic.rooster.2',
+  'measured-fire',
+  'fire-seer',
+  'ember-duelist',
+  ['assessment-probe', 'hitscan', 'fire', 'prerequisite-closure'],
+  {
+    resource: 'Pays 2 MP for each admitted measured probe while retaining the reveal action.',
+    duplicate: 'Each probe is an independent hit and does not duplicate affinity knowledge.',
+    duration: 'The hitscan probe settles immediately and creates no continuing status.',
+    release: 'Damage ends at settlement; the lower reveal remains separately selectable.',
+    interference: 'Visibility and obstruction settle before the measured fire hit is admitted.',
+  },
+  [
+    ...catalogEvidence,
+    'packages/engine/src/spatial/ai-integration.test.ts',
+    'packages/engine/src/spatial/assessment.test.ts',
+  ],
+  {
+    scenario: 'flat',
+    preserves: { nodeId: 'skill.magic.rooster.1', abilityId: 'reveal-fire' },
+  },
+);
