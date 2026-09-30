@@ -12,6 +12,7 @@ import {
 import { api, errorText, reference } from '../api-client.ts';
 import { facingToward, spawnPositions } from './spawn-position.ts';
 import { recentIdentities, rememberIdentity } from './recent-identities.ts';
+import type { SkillRevisionRef, SkillWorkbenchClient } from './skill-api.ts';
 
 function required(items: Revision[], id: string) {
   const value = items.find((r) => r.id === id);
@@ -22,7 +23,11 @@ function required(items: Revision[], id: string) {
 type Status = ReturnType<typeof JobStatusSchema.parse>;
 type Result = ReturnType<typeof BattleResultResponseSchema.parse>;
 import { loadRevisionCatalog } from './revision-catalog.ts';
-export function useBattleJob(revisionTick: number) {
+export function useBattleJob(
+  revisionTick: number,
+  skillLoadout: SkillRevisionRef | null,
+  skillClient: SkillWorkbenchClient,
+) {
   const [catalog, setCatalog] = useState<{
     characters: Revision[];
     rulesets: Revision[];
@@ -145,11 +150,13 @@ export function useBattleJob(revisionTick: number) {
       },
       budget: { ...DEFAULT_BUDGET, maxBytes },
     });
-    const submitted = await api('battle-jobs', JobResponseSchema, {
-      method: 'POST',
-      body: request,
-      headers: { 'x-client-id': 'local-web', 'idempotency-key': crypto.randomUUID() },
-    });
+    const submitted = skillLoadout
+      ? await skillClient.createBattleJob({ job: request, actorId: 'left', skillLoadout })
+      : await api('battle-jobs', JobResponseSchema, {
+          method: 'POST',
+          body: request,
+          headers: { 'x-client-id': 'local-web', 'idempotency-key': crypto.randomUUID() },
+        });
     setResult(null);
     setStatus({ job: submitted.job, attempts: [] });
     setJobId(submitted.job.id);

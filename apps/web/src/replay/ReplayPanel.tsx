@@ -13,6 +13,7 @@ import { shareTimeLabel } from './share.ts';
 import { ReplayEvents, CurrentEvents } from './ReplayEvents.tsx';
 import { NO_OVERLAYS, OVERLAY_LABELS } from './overlays.ts';
 import { ReplayResources } from './ReplayResources.tsx';
+import { SkillProvenance } from './SkillProvenance.tsx';
 
 const Scene = lazy(() => import('./Scene.tsx'));
 
@@ -404,6 +405,7 @@ export function ReplayPanel({
                   視野補正を持つ状態の主体は、補正後の視野が記録されていないため視野を描画しません。
                 </p>
               )}
+              <SkillProvenance context={replay.context} />
               {state && <ReplayResources context={replay.context} checkpoint={state} />}
               {frame && (
                 <CurrentEvents

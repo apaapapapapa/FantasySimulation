@@ -216,6 +216,56 @@ h1 {
   gap: 24px;
   align-items: start;
 }
+.skill-workbench {
+  grid-column: 1 / -1;
+}
+.skill-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.skill-filters select,
+.skill-workbench > fieldset > label select {
+  width: 100%;
+  min-height: 44px;
+}
+.skill-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+  padding: 0;
+}
+.skill-grid li {
+  border: 1px solid #354156;
+  border-radius: 6px;
+  padding: 8px;
+}
+.skill-grid li[data-state='enabled'] {
+  border-color: #dbbf83;
+  background: #302a20;
+}
+.skill-grid button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  text-align: left;
+}
+.skill-grid small,
+.skill-provenance small {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #aeb9cb;
+}
+@media (max-width: 760px) {
+  .skill-filters {
+    grid-template-columns: 1fr;
+  }
+  .skill-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .column {
   display: grid;
   gap: 24px;
