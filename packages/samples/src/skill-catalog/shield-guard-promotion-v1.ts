@@ -59,7 +59,7 @@ export const shieldGuardPromotionPlan = {
     id: 'loadout.fixture.shield.ox.guard',
     version: 1,
     catalog: { id: 'skill-catalog-v1', revision: 2 },
-    characterId: 'stage-vanguard-v1',
+    characterId: 'shield-guard-fixture-character',
     eligibilityNodeIds: ['skill.shield.ox.1'],
     learnedNodeIds: ['skill.shield.ox.1'],
     enabledNodeIds: ['skill.shield.ox.1'],
@@ -69,7 +69,7 @@ export const shieldGuardPromotionPlan = {
   },
   battleFixture: {
     id: 'fixture.skill.shield.ox.1.guard-battle',
-    attackerAbilityId: 'sword',
+    attackerAbilityId: 'reaction-primary',
     incomingDamage: 101,
     expectedDamage: 80,
     expectedForceEvents: 1,

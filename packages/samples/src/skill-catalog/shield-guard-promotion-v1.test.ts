@@ -32,10 +32,15 @@ describe('shield guard promotion plan', () => {
         },
       },
       loadoutFixture: {
+        characterId: 'shield-guard-fixture-character',
         enabledNodeIds: ['skill.shield.ox.1'],
         expectedAbilityIds: ['shield-set-guard-v1'],
       },
-      battleFixture: { incomingDamage: 101, expectedDamage: 80 },
+      battleFixture: {
+        attackerAbilityId: 'reaction-primary',
+        incomingDamage: 101,
+        expectedDamage: 80,
+      },
     });
     expect(shieldGuardPromotionPlan.promotionGates).toHaveLength(6);
   });
