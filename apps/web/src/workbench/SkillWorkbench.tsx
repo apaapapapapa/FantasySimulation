@@ -10,7 +10,11 @@ import {
 } from '@fantasy/domain';
 import { errorText } from '../api-client.ts';
 import { reference } from '../api-client.ts';
-import { sameSkillRevisionRef, skillLoadoutsForCatalog } from './skill-api.ts';
+import {
+  DEFAULT_SKILL_CATALOG,
+  sameSkillRevisionRef,
+  skillLoadoutsForCatalog,
+} from './skill-api.ts';
 import type {
   SkillCharacter,
   SkillLoadoutHead,
@@ -54,8 +58,8 @@ function FilterOptions({ items }: { items: readonly { value: string; label: stri
 
 export function SkillWorkbench({
   client,
-  catalogId = 'skill-catalog-v1',
-  catalogVersion = 1,
+  catalogId = DEFAULT_SKILL_CATALOG.id,
+  catalogVersion = DEFAULT_SKILL_CATALOG.revision,
   onSaved,
 }: {
   client: SkillWorkbenchClient;

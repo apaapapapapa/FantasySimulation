@@ -4,13 +4,16 @@ import {
   compareIds,
   inspectSkillCatalogRelease,
   parseJson,
+  parseCompleteSkillCatalog,
   revisionReference,
+  skillCoordinateKey,
   type Revision,
   type SkillCatalog,
   type SkillCatalogReleaseReport,
   type SkillDan,
   type SkillNode,
 } from '@fantasy/domain';
+import { integratedSkillShards } from '@fantasy/samples/authoring';
 
 const catalogId = 'skill-catalog-v1';
 const swordRatNodeId = (dan: SkillDan) => `skill.sword.rat.${dan}`;
@@ -208,3 +211,67 @@ export function inspectStartupSkillCatalog(
 }
 
 export const STARTUP_SKILL_ABILITY_IDS = swordRatRelease.map(({ abilityId }) => abilityId);
+
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 2;
+
+const definitionRefs = (node: SkillNode) =>
+  node.resolution.flatMap((resolution) =>
+    resolution.kind === 'augment'
+      ? [resolution.baseAbility, resolution.resolvedAbility]
+      : [resolution.ability],
+  );
+
+function validateIntegratedDefinitions(catalog: SkillCatalog, revisionInput: unknown[]) {
+  const revisions = parseJson(RevisionSchema.array(), revisionInput),
+    abilities = new Map(
+      revisions
+        .filter(
+          (revision): revision is Extract<Revision, { kind: 'ability' }> =>
+            revision.kind === 'ability',
+        )
+        .map((revision) => [`${revision.id}@${revision.revision}`, revision]),
+    ),
+    refs = catalog.nodes.flatMap(definitionRefs);
+  for (const ref of refs) {
+    const ability = abilities.get(`${ref.id}@${ref.revision}`);
+    if (!ability || ability.contentHash !== ref.contentHash)
+      throw new Error(`Integrated skill definition is missing or changed: ${ref.id}`);
+  }
+  return refs;
+}
+
+/** Overlay every authored shard on the complete legacy skeleton as immutable catalog v1@2. */
+export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
+  const legacy = readStartupSkillCatalog(revisionInput),
+    authored = integratedSkillShards.flatMap(({ nodes }) => nodes),
+    nodes = new Map(legacy.nodes.map((node) => [skillCoordinateKey(node.coordinate), node]));
+  for (const node of authored) nodes.set(skillCoordinateKey(node.coordinate), node);
+  const catalog = parseCompleteSkillCatalog({
+    ...legacy,
+    revision: INTEGRATED_STARTUP_CATALOG_REVISION,
+    nodes: [...nodes.values()],
+  });
+  validateIntegratedDefinitions(catalog, revisionInput);
+  return catalog;
+}
+
+export function inspectIntegratedStartupSkillCatalog(
+  catalog: SkillCatalog,
+  revisionInput: unknown[],
+): SkillCatalogReleaseReport {
+  const refs = validateIntegratedDefinitions(catalog, revisionInput),
+    available = catalog.nodes.filter(({ lifecycle }) => lifecycle === 'available'),
+    report = inspectSkillCatalogRelease(catalog, {
+      definitionRefs: refs,
+      fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
+    });
+  if (
+    report.available !== 26 ||
+    report.verified !== 26 ||
+    report.lifecycle.implemented !== 4 ||
+    report.lifecycle.draft !== 1_122 ||
+    report.issues.length
+  )
+    throw new Error('Integrated startup skill catalog release evidence is incomplete');
+  return report;
+}
