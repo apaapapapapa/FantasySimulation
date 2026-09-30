@@ -1,27 +1,20 @@
 import {
   JobResponseSchema,
-  SkillCatalogSchema,
+  SkillCatalogRecordSchema,
   SkillConfigurationSchema,
-  SkillLoadoutRevisionSchema,
+  SkillLoadoutHeadSchema,
+  SkillLoadoutPageSchema,
   type SkillCatalog,
   type SkillConfiguration,
-  type SkillLoadoutRevision,
+  type SkillLoadoutHead,
 } from '@fantasy/domain';
 import type { Revision } from '@fantasy/domain/spatial';
 import { api } from '../api-client.ts';
 import { loadRevisionCatalog } from './revision-catalog.ts';
 
-export type SkillRevisionRef = Pick<SkillLoadoutRevision, 'id' | 'revision' | 'contentHash'>;
+export type SkillRevisionRef = SkillLoadoutHead['latest'];
 export type SkillCharacter = Extract<Revision, { kind: 'character' }>;
-export type SkillLoadoutHead = {
-  schemaVersion: 1;
-  id: string;
-  version: number;
-  latest: SkillRevisionRef;
-  snapshot: SkillLoadoutRevision;
-  createdAt: string;
-  updatedAt: string;
-};
+export type { SkillLoadoutHead };
 export type SkillBattleRequest = {
   job: unknown;
   actorId: string;
@@ -47,56 +40,7 @@ export interface SkillWorkbenchClient {
 
 const catalogRecord = {
   parse(value: unknown) {
-    if (!value || typeof value !== 'object' || !('catalog' in value))
-      throw new Error('Invalid skill catalog record');
-    return SkillCatalogSchema.parse(value.catalog);
-  },
-};
-const loadoutHead = {
-  parse(value: unknown): SkillLoadoutHead {
-    if (!value || typeof value !== 'object') throw new Error('Invalid skill loadout head');
-    const source = value as Record<string, unknown>;
-    const snapshot = SkillLoadoutRevisionSchema.parse(source.snapshot);
-    if (
-      source.schemaVersion !== 1 ||
-      typeof source.id !== 'string' ||
-      !Number.isInteger(source.version) ||
-      typeof source.createdAt !== 'string' ||
-      typeof source.updatedAt !== 'string'
-    )
-      throw new Error('Invalid skill loadout head');
-    const latest = source.latest as Record<string, unknown> | undefined;
-    if (
-      !latest ||
-      typeof latest.id !== 'string' ||
-      !Number.isInteger(latest.revision) ||
-      typeof latest.contentHash !== 'string'
-    )
-      throw new Error('Invalid skill loadout reference');
-    return {
-      schemaVersion: 1,
-      id: source.id,
-      version: source.version as number,
-      latest: latest as SkillRevisionRef,
-      snapshot,
-      createdAt: source.createdAt,
-      updatedAt: source.updatedAt,
-    };
-  },
-};
-const loadoutPage = {
-  parse(value: unknown) {
-    if (!value || typeof value !== 'object' || !('items' in value) || !Array.isArray(value.items))
-      throw new Error('Invalid skill loadout page');
-    if (
-      !('nextCursor' in value) ||
-      (value.nextCursor !== null && typeof value.nextCursor !== 'string')
-    )
-      throw new Error('Invalid skill loadout cursor');
-    return {
-      items: value.items.map((item) => loadoutHead.parse(item)),
-      nextCursor: value.nextCursor,
-    };
+    return SkillCatalogRecordSchema.parse(value).catalog;
   },
 };
 
@@ -118,7 +62,7 @@ export const skillWorkbenchApi: SkillWorkbenchClient = {
     do {
       const page: { items: SkillLoadoutHead[]; nextCursor: string | null } = await api(
         `skill-loadouts?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
-        loadoutPage,
+        SkillLoadoutPageSchema,
         { ...(signal ? { signal } : {}), maxBytes: 8 * 1024 * 1024 },
       );
       items.push(...page.items);
@@ -129,12 +73,12 @@ export const skillWorkbenchApi: SkillWorkbenchClient = {
     return items;
   },
   createLoadout: (character, configuration) =>
-    api('skill-loadouts', loadoutHead, {
+    api('skill-loadouts', SkillLoadoutHeadSchema, {
       method: 'POST',
       body: { character, configuration: SkillConfigurationSchema.parse(configuration) },
     }),
   updateLoadout: (id, expectedRevision, character, configuration) =>
-    api(`skill-loadouts/${encodeURIComponent(id)}`, loadoutHead, {
+    api(`skill-loadouts/${encodeURIComponent(id)}`, SkillLoadoutHeadSchema, {
       method: 'PATCH',
       body: {
         expectedVersion: expectedRevision,
