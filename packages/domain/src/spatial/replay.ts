@@ -18,8 +18,16 @@ const recordIndex = z.number().int().min(0).max(12003);
 export const ReplayCheckpointSchema = z.strictObject({
   stop: StopReplaySchema.optional(),
   requiredFeatures: z
-    .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1']))
-    .length(2)
+    .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1', 'sensory-cues-v1']))
+    .min(2)
+    .max(3)
+    .refine(
+      (features) =>
+        features[0] === 'subject-clocks-v1' &&
+        features[1] === 'deferred-contacts-v1' &&
+        (features.length === 2 || features[2] === 'sensory-cues-v1'),
+      'Replay features must use the canonical compatible prefix order',
+    )
     .optional(),
   deferred: z.array(DeferredEffectSchema).max(4096).optional(),
   schemaVersion: z.literal(1),

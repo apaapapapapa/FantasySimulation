@@ -141,6 +141,7 @@ export const EventSchema = z
       'evasion',
       'time-stop',
       'teleport',
+      'sensory-cue',
     ]),
     actorId: IdSchema.nullable(),
     targetId: IdSchema.nullable(),
@@ -225,6 +226,21 @@ export const EventSchema = z
     deferrals: z.array(IdSchema).min(1).max(16).optional(),
     evasion: z.strictObject({ statuses: z.array(RefSchema).min(1).max(64) }).optional(),
     teleport: z.strictObject({ from: PhysicalVectorSchema, to: PhysicalVectorSchema }).optional(),
+    sensoryCue: z
+      .strictObject({
+        id: IdSchema,
+        creatorId: IdSchema,
+        observerId: IdSchema,
+        modality: z.literal('visual'),
+        perceivedOrigin: PhysicalVectorSchema,
+        emittedAt: step,
+        deliveredAt: step,
+        expiresAt: z.number().int().min(1).max(7000),
+        discoveredAt: z.number().int().min(1).max(7000),
+        confidenceBps: z.number().int().min(1).max(10000),
+        transition: z.enum(['emitted', 'delivered', 'discovered', 'cleansed', 'expired']),
+      })
+      .optional(),
     wave: z.number().int().min(0).max(8).optional(),
     sourceActorId: IdSchema.optional(),
     sourceProjectileId: IdSchema.optional(),
@@ -244,6 +260,18 @@ export const EventSchema = z
           message: 'Guard requires unique causal activations and non-increasing damage',
         });
     }
+    if (
+      (event.kind === 'sensory-cue') !== !!event.sensoryCue ||
+      (event.sensoryCue &&
+        (event.entityId !== event.sensoryCue.id ||
+          event.actorId !== event.sensoryCue.creatorId ||
+          event.targetId !== event.sensoryCue.observerId ||
+          event.actorId === event.targetId))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Sensory cue events require bound creator, observer and cue identity',
+      });
     if (
       (event.kind === 'time-stop') !== !!event.timeStop ||
       (event.timeStop && (!event.actorId || !event.targetId || event.actorId === event.targetId))

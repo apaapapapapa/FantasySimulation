@@ -143,6 +143,23 @@ export const ActorDisplaySchema = z.strictObject({
     .optional(),
   statuses: z.array(StatusDisplaySchema).max(8192),
   action: ActionDisplaySchema.nullable(),
+  sensoryCues: z
+    .array(
+      z.strictObject({
+        id: IdSchema,
+        creatorId: IdSchema,
+        observerId: IdSchema,
+        modality: z.literal('visual'),
+        perceivedOrigin: PhysicalVectorSchema,
+        emittedAt: step,
+        deliveredAt: step,
+        expiresAt: z.number().int().min(1).max(7000),
+        discoveredAt: z.number().int().min(1).max(7000),
+        confidenceBps: z.number().int().min(1).max(10000),
+      }),
+    )
+    .max(8)
+    .optional(),
 });
 export type ActorDisplay = z.infer<typeof ActorDisplaySchema>;
 export const ActorDeltaSchema = ActorDisplaySchema.partial().required({ id: true });
@@ -260,8 +277,16 @@ export const StreamRecordSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('initial'),
     requiredFeatures: z
-      .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1']))
-      .length(2)
+      .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1', 'sensory-cues-v1']))
+      .min(2)
+      .max(3)
+      .refine(
+        (features) =>
+          features[0] === 'subject-clocks-v1' &&
+          features[1] === 'deferred-contacts-v1' &&
+          (features.length === 2 || features[2] === 'sensory-cues-v1'),
+        'Replay features must use the canonical compatible prefix order',
+      )
       .optional(),
     schemaVersion: z.literal(1),
     step: z.literal(0),

@@ -11,6 +11,7 @@ import { flightRate } from '../rules/locomotion.ts';
 import { hasForcedMotion } from '../rules/forces.ts';
 import { ownsStageMotion } from '../rules/stage-motion.ts';
 import { postureSpeed } from '../rules/posture.ts';
+import { subjectiveCueMemory } from '../sim/sensory-cues.ts';
 
 /** Own resources and active statuses are proprioception, never a lookup of an opponent. */
 export function selfView(
@@ -42,7 +43,7 @@ export function selfView(
     resources: actor.vitals.resources,
     staminaExhausted: actor.vitals.staminaClock?.exhausted ?? false,
     flightStaminaPerSecond: stats.flight ? flightRate(actor.statuses, step) : 0,
-    memory: actor.mind.memory,
+    memory: subjectiveCueMemory(actor.mind.memory, actor.mind.sensoryCues, step),
     statusIds: active.map((s) => s.revision.id),
     step,
     gravityMmPerSecond2,

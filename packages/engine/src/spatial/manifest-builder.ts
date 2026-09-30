@@ -20,6 +20,7 @@ import {
   type Revision,
   type RevisionLookup,
   type RevisionRef,
+  hasSensoryCues,
 } from '@fantasy/domain/spatial/execution';
 import { prepareBattle, implementation, profile } from './prepare.ts';
 import {
@@ -104,13 +105,13 @@ export class ManifestBuilder {
     );
     return prepareBattle({
       ...request,
-      schemaVersion: request.participants.some(
-        (participant) => participant.skillLoadout?.schemaVersion === 2,
-      )
-        ? 5
-        : request.participants.some((participant) => participant.skillLoadout)
-          ? 4
-          : 3,
+      schemaVersion: hasSensoryCues(revisions)
+        ? 6
+        : request.participants.some((participant) => participant.skillLoadout?.schemaVersion === 2)
+          ? 5
+          : request.participants.some((participant) => participant.skillLoadout)
+            ? 4
+            : 3,
       eventSchemaVersion: 1,
       replaySchemaVersion: 1,
       engineVersion: CURRENT_ENGINE_VERSION,
@@ -221,6 +222,7 @@ export class ManifestBuilder {
     manifest.ruleset = referenceFor('ruleset', manifest.ruleset);
     manifest.scenario = referenceFor('scenario', manifest.scenario);
     manifest.revisions = manifest.revisions.map((revision) => sealed.get(revisionKey(revision))!);
+    if (hasSensoryCues(manifest.revisions)) manifest.schemaVersion = 6;
     revisionIndex(manifest.revisions);
     return manifest;
   }

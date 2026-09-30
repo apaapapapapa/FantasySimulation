@@ -15,6 +15,7 @@ const forceDisplay: EffectHandlers<ForceContribution, boolean> = {
   dispel: noForceDisplay,
   'apply-status': noForceDisplay,
   force: (effect, display) => effect.durationSteps === display.endAt - display.startAt,
+  'sensory-cue': noForceDisplay,
 };
 export function matchesForceDisplay(effect: EffectVariant, display: ForceContribution) {
   return matchEffect(effect, forceDisplay, display);

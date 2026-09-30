@@ -74,6 +74,7 @@ export function buildSceneModel(
   records: readonly StreamRecord[] = checkpoint.lastRecord ? [checkpoint.lastRecord] : [],
   events: readonly BattleEvent[] = records.flatMap((r) => ('events' in r ? r.events : [])),
   eventRecords: readonly StreamRecord[] = records,
+  perspective: 'omniscient' | { actorId: string } = 'omniscient',
 ) {
   const scenario = context.manifest.revisions.find(
     (r) =>
@@ -85,7 +86,7 @@ export function buildSceneModel(
   const min = metres(scenario.definition.bounds.min),
     max = metres(scenario.definition.bounds.max);
   const centre: Point = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
-  const actors = (checkpoint.state?.actors ?? []).map((actor, index) => {
+  let actors = (checkpoint.state?.actors ?? []).map((actor, index) => {
     const loadout = context.actors.find((a) => a.participant.actorId === actor.id);
     const definition = loadout?.character;
     if (!definition) throw new Error('Missing recorded character');
@@ -200,6 +201,34 @@ export function buildSceneModel(
       signature: loadout.abilities.map(abilityTint).find((tint) => tint !== null) ?? null,
     };
   });
+  const visualCues = (checkpoint.state?.actors ?? []).flatMap((actor) =>
+    (actor.sensoryCues ?? []).filter(
+      (cue) =>
+        cue.deliveredAt <= checkpoint.step &&
+        checkpoint.step < cue.discoveredAt &&
+        checkpoint.step < cue.expiresAt,
+    ),
+  );
+  if (perspective !== 'omniscient') {
+    const subjective = visualCues.filter((cue) => cue.observerId === perspective.actorId);
+    actors = actors.map((actor) => {
+      const cue = subjective.find((candidate) => candidate.creatorId === actor.id);
+      if (!cue) return actor;
+      const position = point(cue.perceivedOrigin);
+      const delta = position.map((value, index) => value - actor.position[index]!) as Point;
+      return {
+        ...actor,
+        position,
+        feet: actor.feet + delta[1],
+        vision: actor.vision
+          ? {
+              ...actor.vision,
+              position: actor.vision.position.map((value, index) => value + delta[index]!) as Point,
+            }
+          : null,
+      };
+    });
+  }
   // Recorded forced velocity (m/s) and the requested stage-motion velocity; no path is inferred.
   const arrows = (checkpoint.state?.actors ?? []).flatMap((actor) => {
     const from = point(actor.position),
@@ -344,94 +373,122 @@ export function buildSceneModel(
       };
     }),
     actors,
-    objects: (checkpoint.state?.objects ?? []).map((o) => ({
-      id: o.id,
-      kind: o.kind,
-      position: point(o.position),
-      shape: o.shape ?? null,
-      colour: o.kind === 'barrier' ? '#62c7ee' : o.kind === 'area' ? '#f6a96d' : '#ff87cf',
-      tint: tintOf(context, o.abilityId, o.ownerId),
-      durability: o.durability === undefined ? null : `${o.durability}/${o.maxDurability}`,
-      beams:
-        o.geometry && o.geometry.kind === 'ray'
-          ? o.geometry.segments.map((s, i) => ({
-              id: `${o.id}:${i}`,
-              points: [point(s.start), point(s.end)] as [Point, Point],
-              radius: o.geometry!.radiusMm / 1000,
-            }))
-          : [],
-    })),
-    projectiles: (checkpoint.state?.projectiles ?? []).map((p) => ({
-      id: p.id,
-      position: point(p.position),
-      radius: p.radiusMm / 1000,
-      ownerId: p.ownerId,
-      colour: p.deflection ? '#72e0c1' : '#f0bd67',
-      deflected: !!p.deflection,
-      tint: tintOf(context, p.abilityId, p.ownerId),
-    })),
-    paths,
-    shapes,
-    arrows: [
-      ...arrows,
-      ...events.flatMap((event) =>
-        event.projectileDeflection
-          ? [
-              {
-                id: `${event.id}:deflection`,
-                kind: 'deflection' as const,
-                points: ahead(
-                  point(event.projectileDeflection.position),
-                  point(event.projectileDeflection.velocity),
-                ),
-              },
-            ]
-          : [],
-      ),
-    ],
-    events: hits,
-    rays: [
-      ...shapes.filter((shape) => shape.kind === 'ray'),
-      ...eventRecords.flatMap((record) =>
-        record.kind === 'interval'
-          ? record.events.flatMap((event) =>
-              event.kind === 'hit' &&
-              event.point &&
-              events.some((visible) => visible.id === event.id)
-                ? record.paths
-                    .filter((path) => path.entityId === event.entityId)
-                    .flatMap((path) =>
-                      path.segments
-                        .filter(
-                          (segment) =>
-                            event.subtimeMicros >= Math.round(segment.from * 1_000_000) &&
-                            event.subtimeMicros <= Math.round(segment.to * 1_000_000),
-                        )
-                        .slice(0, 1)
-                        .map((segment, i) => ({
-                          id: `${event.id}:${path.entityId}:${i}`,
-                          points: [point(segment.start), point(event.point!)] as [Point, Point],
-                        })),
-                    )
+    illusions:
+      perspective === 'omniscient'
+        ? visualCues.map((cue) => ({
+            id: cue.id,
+            creatorId: cue.creatorId,
+            observerId: cue.observerId,
+            position: point(cue.perceivedOrigin),
+            confidenceBps: cue.confidenceBps,
+          }))
+        : [],
+    objects:
+      perspective === 'omniscient'
+        ? (checkpoint.state?.objects ?? []).map((o) => ({
+            id: o.id,
+            kind: o.kind,
+            position: point(o.position),
+            shape: o.shape ?? null,
+            colour: o.kind === 'barrier' ? '#62c7ee' : o.kind === 'area' ? '#f6a96d' : '#ff87cf',
+            tint: tintOf(context, o.abilityId, o.ownerId),
+            durability: o.durability === undefined ? null : `${o.durability}/${o.maxDurability}`,
+            beams:
+              o.geometry && o.geometry.kind === 'ray'
+                ? o.geometry.segments.map((s, i) => ({
+                    id: `${o.id}:${i}`,
+                    points: [point(s.start), point(s.end)] as [Point, Point],
+                    radius: o.geometry!.radiusMm / 1000,
+                  }))
                 : [],
-            )
-          : [],
-      ),
-    ],
-    effects: events.flatMap((event) => {
-      if (!['launch', 'hit', 'projectile-deflect'].includes(event.kind)) return [];
-      const position = event.point ? point(event.point) : undefined;
-      return position
+          }))
+        : [],
+    projectiles:
+      perspective === 'omniscient'
+        ? (checkpoint.state?.projectiles ?? []).map((p) => ({
+            id: p.id,
+            position: point(p.position),
+            radius: p.radiusMm / 1000,
+            ownerId: p.ownerId,
+            colour: p.deflection ? '#72e0c1' : '#f0bd67',
+            deflected: !!p.deflection,
+            tint: tintOf(context, p.abilityId, p.ownerId),
+          }))
+        : [],
+    paths: perspective === 'omniscient' ? paths : [],
+    shapes: perspective === 'omniscient' ? shapes : [],
+    arrows:
+      perspective === 'omniscient'
         ? [
-            {
-              id: event.id,
-              kind: event.kind,
-              position,
-              tint: tintOf(context, event.abilityId, event.actorId),
-            },
+            ...arrows,
+            ...events.flatMap((event) =>
+              event.projectileDeflection
+                ? [
+                    {
+                      id: `${event.id}:deflection`,
+                      kind: 'deflection' as const,
+                      points: ahead(
+                        point(event.projectileDeflection.position),
+                        point(event.projectileDeflection.velocity),
+                      ),
+                    },
+                  ]
+                : [],
+            ),
           ]
-        : [];
-    }),
+        : [],
+    events: perspective === 'omniscient' ? hits : [],
+    rays:
+      perspective === 'omniscient'
+        ? [
+            ...shapes.filter((shape) => shape.kind === 'ray'),
+            ...eventRecords.flatMap((record) =>
+              record.kind === 'interval'
+                ? record.events.flatMap((event) =>
+                    event.kind === 'hit' &&
+                    event.point &&
+                    events.some((visible) => visible.id === event.id)
+                      ? record.paths
+                          .filter((path) => path.entityId === event.entityId)
+                          .flatMap((path) =>
+                            path.segments
+                              .filter(
+                                (segment) =>
+                                  event.subtimeMicros >= Math.round(segment.from * 1_000_000) &&
+                                  event.subtimeMicros <= Math.round(segment.to * 1_000_000),
+                              )
+                              .slice(0, 1)
+                              .map((segment, i) => ({
+                                id: `${event.id}:${path.entityId}:${i}`,
+                                points: [point(segment.start), point(event.point!)] as [
+                                  Point,
+                                  Point,
+                                ],
+                              })),
+                          )
+                      : [],
+                  )
+                : [],
+            ),
+          ]
+        : [],
+    effects:
+      perspective === 'omniscient'
+        ? events.flatMap((event) => {
+            if (!['launch', 'hit', 'projectile-deflect'].includes(event.kind)) return [];
+            const position = event.point ? point(event.point) : undefined;
+            return position
+              ? [
+                  {
+                    id: event.id,
+                    kind: event.kind,
+                    position,
+                    tint: tintOf(context, event.abilityId, event.actorId),
+                  },
+                ]
+              : [];
+          })
+        : [],
   };
 }
 export type SceneModel = ReturnType<typeof buildSceneModel>;

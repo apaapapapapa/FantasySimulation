@@ -20,3 +20,4 @@ export * from './spatial-operations.ts';
 export * from './phasing-display.ts';
 export * from './angles.ts';
 export * from './clocks.ts';
+export * from './sensory-cues.ts';
