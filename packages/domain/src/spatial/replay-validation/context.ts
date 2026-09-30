@@ -5,7 +5,7 @@ import {
   revisionDependencies,
   resolveClosure,
 } from '../revision-graph.ts';
-import { contentHash, deepFreeze } from '../canonical.ts';
+import { canonicalJson, compareIds, contentHash, deepFreeze } from '../canonical.ts';
 import { parseJson } from '../contracts.ts';
 import { RecordedManifestSchema } from '../replay.ts';
 import { fail, requireReplay } from './common.ts';
@@ -21,6 +21,24 @@ export async function replayContext(input: unknown, simulationHash: string) {
   }
   for (const revision of manifest.revisions)
     requireReplay(revision.contentHash === (await revisionHash(revision)), 'revision content hash');
+  for (const participant of manifest.participants) {
+    const receipt = participant.skillLoadout;
+    if (!receipt) continue;
+    requireReplay(
+      receipt.resolutionDigest ===
+        (await contentHash(
+          JSON.parse(
+            canonicalJson({
+              resolverVersion: receipt.resolverVersion,
+              catalog: receipt.catalog,
+              resolvedNodeIds: receipt.resolvedNodeIds,
+              nodeResolutions: receipt.nodeResolutions,
+            }),
+          ),
+        )),
+      'skill loadout resolution digest',
+    );
+  }
   // Replay v1 historically checks ability/status references but not status transformation closure.
   // Preserve its acceptance boundary while sharing the graph traversal.
   let actors;
@@ -31,7 +49,24 @@ export async function replayContext(input: unknown, simulationHash: string) {
     });
     actors = manifest.participants.map((participant) => {
       const { character, abilities } = characterLoadout(participant.character, get);
-      return { participant, character, abilities };
+      const byId = new Map(abilities.map((ability) => [ability.id, ability]));
+      for (const ability of (participant.skillLoadout?.nodeResolutions ?? []).flatMap(
+        ({ resolution }) => resolution.map(({ ability }) => get('ability', ability)),
+      )) {
+        const previous = byId.get(ability.id);
+        requireReplay(
+          !previous ||
+            (previous.revision === ability.revision &&
+              previous.contentHash === ability.contentHash),
+          'conflicting skill ability',
+        );
+        byId.set(ability.id, ability);
+      }
+      return {
+        participant,
+        character,
+        abilities: [...byId.values()].sort((a, b) => compareIds(a.id, b.id)),
+      };
     });
   } catch (error) {
     return fail(error instanceof Error ? error.message : 'revision graph');

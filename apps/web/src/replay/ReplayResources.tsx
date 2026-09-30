@@ -33,9 +33,8 @@ export function ReplayResources({
       </thead>
       <tbody>
         {checkpoint.state?.actors.map((actor) => {
-          const definition = context.actors.find(
-            (entry) => entry.participant.actorId === actor.id,
-          )!.character;
+          const loadout = context.actors.find((entry) => entry.participant.actorId === actor.id)!;
+          const definition = loadout.character;
           const limits = {
             hp: definition.stats.hp,
             mp: definition.stats.mp,
@@ -130,7 +129,7 @@ export function ReplayResources({
                 <ul aria-label={`${actor.id} 動作`}>
                   {motionSummary(
                     actor,
-                    actor.action ? stageCount(context, definition, actor.action.abilityId) : null,
+                    actor.action ? stageCount(loadout, actor.action.abilityId) : null,
                   ).map((line) => (
                     <li key={line}>{line}</li>
                   ))}

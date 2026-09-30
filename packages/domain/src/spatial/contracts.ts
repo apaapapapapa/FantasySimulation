@@ -1133,6 +1133,53 @@ export const RevisionSchema = z.discriminatedUnion('kind', [
 export type Revision = z.infer<typeof RevisionSchema>;
 export type DefinitionKind = Revision['kind'];
 export type Definition<K extends DefinitionKind> = Extract<Revision, { kind: K }>['definition'];
+const CanonicalSkillIdsSchema = (maximum: number) =>
+  z
+    .array(IdSchema)
+    .max(maximum)
+    .refine((ids) => new Set(ids).size === ids.length, 'Skill node IDs must be unique')
+    .refine(
+      (ids) => ids.every((id, index) => index === 0 || ids[index - 1]! < id),
+      'Skill node IDs must use canonical ASCII order',
+    );
+const ActiveSkillNodeResolutionSchema = z.strictObject({
+  nodeId: IdSchema,
+  resolution: z
+    .array(z.strictObject({ kind: z.literal('active-ability'), ability: RefSchema }))
+    .min(1)
+    .max(8),
+});
+/** Lightweight execution receipt. Catalog content and resolver code stay outside workers. */
+export const SkillLoadoutReceiptSchema = z
+  .strictObject({
+    schemaVersion: z.literal(1),
+    resolverVersion: z.literal('skill-resolver-v1'),
+    catalog: RefSchema,
+    loadout: RefSchema,
+    explicitlyEnabledNodeIds: CanonicalSkillIdsSchema(8),
+    resolvedNodeIds: CanonicalSkillIdsSchema(8),
+    nodeResolutions: z.array(ActiveSkillNodeResolutionSchema).min(1).max(8),
+    resolutionDigest: HashSchema,
+  })
+  .superRefine((receipt, context) => {
+    const resolved = new Set(receipt.resolvedNodeIds),
+      nodeIds = receipt.nodeResolutions.map(({ nodeId }) => nodeId),
+      abilityIds = receipt.nodeResolutions.flatMap(({ resolution }) =>
+        resolution.map(({ ability }) => ability.id),
+      );
+    if (receipt.explicitlyEnabledNodeIds.some((id) => !resolved.has(id)))
+      context.addIssue({ code: 'custom', message: 'Enabled skill node is outside the closure' });
+    if (
+      nodeIds.length !== receipt.resolvedNodeIds.length ||
+      nodeIds.some((id, index) => id !== receipt.resolvedNodeIds[index])
+    )
+      context.addIssue({ code: 'custom', message: 'Skill resolutions must match resolved nodes' });
+    if (new Set(abilityIds).size !== abilityIds.length)
+      context.addIssue({ code: 'custom', message: 'Resolved skill ability IDs must be unique' });
+    if (abilityIds.length > 32)
+      context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
+  });
+export type SkillLoadoutReceipt = z.infer<typeof SkillLoadoutReceiptSchema>;
 export const ParticipantSchema = z.strictObject({
   actorId: IdSchema.refine(
     (id) => !id.startsWith('projectile.'),
@@ -1143,6 +1190,7 @@ export const ParticipantSchema = z.strictObject({
   facing: DirectionSchema,
   rngSeed: uint(0xffff_ffff),
   rngStream: z.union([z.literal(0), z.literal(1)]),
+  skillLoadout: SkillLoadoutReceiptSchema.optional(),
 });
 export const PhysicsProfileSchema = z.strictObject({
   id: z.literal('spatial-v1'),

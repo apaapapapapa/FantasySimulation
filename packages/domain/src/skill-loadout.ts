@@ -1,7 +1,14 @@
 import { z } from 'zod';
 import { canonicalJson, compareIds, contentHash } from './spatial/canonical.ts';
-import { IdSchema, RefSchema, type RevisionRef } from './spatial/contracts.ts';
 import {
+  HashSchema,
+  IdSchema,
+  RefSchema,
+  SkillLoadoutReceiptSchema,
+  type SkillLoadoutReceipt,
+} from './spatial/contracts.ts';
+import {
+  SkillResolutionSchema,
   type SkillCatalog,
   type SkillNode,
   parseCompleteSkillCatalog,
@@ -45,18 +52,82 @@ export type SkillNodeState = {
   reasons: string[];
 };
 
-export type ResolvedSkillLoadout = {
-  schemaVersion: 1;
-  resolverVersion: typeof SKILL_RESOLVER_VERSION;
-  configurationId: string;
-  configurationVersion: number;
-  catalog: RevisionRef;
-  learnedNodeIds: string[];
-  explicitlyEnabledNodeIds: string[];
-  resolvedNodeIds: string[];
-  nodeResolutions: Array<{ nodeId: string; resolution: SkillNode['resolution'] }>;
-  resolutionDigest: string;
-};
+export const ResolvedSkillLoadoutSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  resolverVersion: z.literal(SKILL_RESOLVER_VERSION),
+  configurationId: IdSchema,
+  configurationVersion: z.number().int().min(1).max(1_000_000),
+  catalog: RefSchema,
+  learnedNodeIds: UniqueNodeIdsSchema(1_152),
+  explicitlyEnabledNodeIds: UniqueNodeIdsSchema(12),
+  resolvedNodeIds: UniqueNodeIdsSchema(12),
+  nodeResolutions: z
+    .array(
+      z.strictObject({
+        nodeId: IdSchema,
+        resolution: z.array(SkillResolutionSchema).min(1).max(8),
+      }),
+    )
+    .max(12),
+  resolutionDigest: HashSchema,
+});
+export type ResolvedSkillLoadout = z.infer<typeof ResolvedSkillLoadoutSchema>;
+
+export const SkillLoadoutRevisionContentSchema = z
+  .strictObject({
+    schemaVersion: z.literal(1),
+    id: IdSchema,
+    revision: z.number().int().min(1).max(1_000_000),
+    character: RefSchema,
+    configuration: SkillConfigurationSchema,
+    resolved: ResolvedSkillLoadoutSchema,
+  })
+  .superRefine((snapshot, context) => {
+    if (
+      snapshot.configuration.id !== snapshot.resolved.configurationId ||
+      snapshot.configuration.version !== snapshot.resolved.configurationVersion
+    )
+      context.addIssue({ code: 'custom', message: 'Resolved loadout configuration mismatch' });
+    if (canonicalJson(snapshot.configuration.catalog) !== canonicalJson(snapshot.resolved.catalog))
+      context.addIssue({ code: 'custom', message: 'Resolved loadout catalog mismatch' });
+  });
+export const SkillLoadoutRevisionSchema = SkillLoadoutRevisionContentSchema.safeExtend({
+  contentHash: HashSchema,
+});
+export type SkillLoadoutRevisionContent = z.infer<typeof SkillLoadoutRevisionContentSchema>;
+export type SkillLoadoutRevision = z.infer<typeof SkillLoadoutRevisionSchema>;
+
+export const skillLoadoutRevisionHash = (snapshot: SkillLoadoutRevisionContent) =>
+  contentHash(JSON.parse(canonicalJson(SkillLoadoutRevisionContentSchema.parse(snapshot))));
+
+/** Project an immutable resolved loadout into the bounded active-only SK-02 battle receipt. */
+export async function skillBattleReceipt(input: unknown): Promise<SkillLoadoutReceipt> {
+  const snapshot = SkillLoadoutRevisionSchema.parse(input),
+    { contentHash: storedHash, ...content } = snapshot;
+  if (storedHash !== (await skillLoadoutRevisionHash(content)))
+    throw new SkillLoadoutError('catalog-mismatch', 'Skill loadout revision hash mismatch');
+  if (
+    snapshot.resolved.nodeResolutions.some(({ resolution }) =>
+      resolution.some(({ kind }) => kind !== 'active-ability'),
+    )
+  )
+    throw new SkillLoadoutError(
+      'unavailable-node',
+      'SK-02 battle receipts support active abilities only',
+    );
+  return SkillLoadoutReceiptSchema.parse({
+    schemaVersion: 1,
+    resolverVersion: snapshot.resolved.resolverVersion,
+    catalog: snapshot.resolved.catalog,
+    loadout: { id: snapshot.id, revision: snapshot.revision, contentHash: storedHash },
+    explicitlyEnabledNodeIds: [...snapshot.resolved.explicitlyEnabledNodeIds].sort(compareIds),
+    resolvedNodeIds: [...snapshot.resolved.resolvedNodeIds].sort(compareIds),
+    nodeResolutions: snapshot.resolved.nodeResolutions
+      .map(({ nodeId, resolution }) => ({ nodeId, resolution }))
+      .sort((a, b) => compareIds(a.nodeId, b.nodeId)),
+    resolutionDigest: snapshot.resolved.resolutionDigest,
+  });
+}
 
 export type SkillLoadoutCode =
   | 'catalog-mismatch'
