@@ -3,11 +3,13 @@ import {
   JobRequestSchema,
   ReplayState,
   SkillLoadoutReceiptSchema,
+  StagedJobRequestSchema,
   canonicalJson,
   contentHash,
   replayContext,
   type Manifest,
 } from '@fantasy/domain/spatial';
+import { SkillBattleJobRequestSchema } from '@fantasy/domain';
 import { sampleManifest } from '@fantasy/samples';
 import { ManifestBuilder, sealRevision } from './manifest-builder.ts';
 import { prepareBattle, reference } from './prepare.ts';
@@ -109,16 +111,37 @@ describe('skill loadout battle vertical', () => {
 
   it('keeps complete receipts off the generic public job endpoint', async () => {
     const { battle } = await builtSkillBattle();
+    const request = {
+      spec: {
+        seed: battle.manifest.seed,
+        participants: battle.manifest.participants,
+        ruleset: battle.manifest.ruleset,
+        scenario: battle.manifest.scenario,
+      },
+    };
+    expect(JobRequestSchema.safeParse(request).success).toBe(false);
     expect(
-      JobRequestSchema.safeParse({
-        spec: {
-          seed: battle.manifest.seed,
-          participants: battle.manifest.participants,
-          ruleset: battle.manifest.ruleset,
-          scenario: battle.manifest.scenario,
-        },
+      StagedJobRequestSchema.safeParse({ jobs: [{ ...request, key: 'skill-job' }] }).success,
+    ).toBe(false);
+    expect(
+      SkillBattleJobRequestSchema.safeParse({
+        ...request,
+        loadouts: [
+          { actorId: 'left', loadout: battle.manifest.participants[0].skillLoadout!.loadout },
+        ],
       }).success,
     ).toBe(false);
+    const [left, right] = request.spec.participants,
+      { skillLoadout: _receipt, ...cleanLeft } = left,
+      cleanRequest = { ...request, spec: { ...request.spec, participants: [cleanLeft, right] } };
+    expect(
+      SkillBattleJobRequestSchema.safeParse({
+        ...cleanRequest,
+        loadouts: [
+          { actorId: 'left', loadout: battle.manifest.participants[0].skillLoadout!.loadout },
+        ],
+      }).success,
+    ).toBe(true);
   });
 
   it('binds the receipt to its character while allowing unknown resolvers to display', async () => {

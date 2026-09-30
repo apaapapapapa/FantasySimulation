@@ -58,7 +58,9 @@ export const SkillLoadoutPageSchema = z.strictObject({
 });
 export type SkillLoadoutPage = z.infer<typeof SkillLoadoutPageSchema>;
 
-export const SkillBattleJobRequestSchema = JobRequestSchema.extend({
+// JobRequestSchema carries the guard that rejects caller-supplied receipts. Keep
+// that refinement when adding the server-resolved loadout references.
+export const SkillBattleJobRequestSchema = JobRequestSchema.safeExtend({
   loadouts: z
     .array(z.strictObject({ actorId: IdSchema, loadout: RefSchema }))
     .min(1)

@@ -95,7 +95,8 @@ export const JobRequestSchema = z
 export const MAX_STAGED_JOB_PAGE = 100;
 export const StagedJobRequestSchema = z.strictObject({
   jobs: z
-    .array(JobRequestSchema.extend({ key: IdSchema }))
+    // Preserve JobRequestSchema's dedicated-endpoint guard for every batch row.
+    .array(JobRequestSchema.safeExtend({ key: IdSchema }))
     .min(1)
     .max(MAX_STAGED_JOB_PAGE),
 });
