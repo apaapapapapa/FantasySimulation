@@ -6,6 +6,7 @@ it('projects immutable catalog, loadout and resolution identities from replay pa
   const receipt = {
     schemaVersion: 1 as const,
     resolverVersion: 'skill-resolver-v1' as const,
+    character: { id: 'fighter', revision: 1, contentHash: `sha256:${'e'.repeat(64)}` },
     catalog: { id: 'catalog', revision: 2, contentHash: `sha256:${'a'.repeat(64)}` },
     loadout: { id: 'loadout', revision: 3, contentHash: `sha256:${'b'.repeat(64)}` },
     explicitlyEnabledNodeIds: ['sword-rat-1'],

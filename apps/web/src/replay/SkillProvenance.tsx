@@ -18,6 +18,7 @@ export function SkillProvenance({ context }: { context: ReplayContext }) {
         <thead>
           <tr>
             <th>参加者</th>
+            <th>character</th>
             <th>catalog</th>
             <th>loadout</th>
             <th>resolver</th>
@@ -28,6 +29,10 @@ export function SkillProvenance({ context }: { context: ReplayContext }) {
           {rows.map((row) => (
             <tr key={row.actorId}>
               <th>{row.actorId}</th>
+              <td>
+                {row.character.id} r{row.character.revision}
+                <small>{row.character.contentHash}</small>
+              </td>
               <td>
                 {row.catalog.id} r{row.catalog.revision}
                 <small>{row.catalog.contentHash}</small>

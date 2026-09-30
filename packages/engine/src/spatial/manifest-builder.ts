@@ -100,7 +100,7 @@ export class ManifestBuilder {
     );
     return prepareBattle({
       ...request,
-      schemaVersion: 4,
+      schemaVersion: request.participants.some((participant) => participant.skillLoadout) ? 4 : 3,
       eventSchemaVersion: 1,
       replaySchemaVersion: 1,
       engineVersion: CURRENT_ENGINE_VERSION,
