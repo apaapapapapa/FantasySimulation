@@ -1,3 +1,5 @@
+import { LeagueDefinitionSchema, leagueSlotCount } from '@fantasy/domain/spatial';
+import { ACCEPTANCE_SLOTS } from './league-timing.ts';
 import { leagueSource } from './pages-policy.ts';
 import type { PipelineArtifacts } from './league-pipeline-artifacts.ts';
 
@@ -24,6 +26,16 @@ export function pipelineRunners(value: string | undefined, approval: string | un
       'Runner count requires measured critical path and explicit account-capacity approval',
     );
   return runners;
+}
+/** Compute scheduling hints cannot prove whole-workflow critical path plus waits <=270s.
+ * Full-size reuse is unknown before restore, so hold it too until a reviewed capacity protocol exists.
+ */
+export function requirePipelineCapacityEvidence(definition: unknown, runners: number) {
+  const slots = leagueSlotCount(LeagueDefinitionSchema.parse(definition));
+  if (runners > 4 || slots >= ACCEPTANCE_SLOTS)
+    throw new Error(
+      'UNKNOWN critical path plus waits: reviewed same-source <=270s capacity evidence required',
+    );
 }
 export function pipelinePollMs(elapsed: number, polls: number) {
   return elapsed >= 300000 ? 60000 : ([1000, 2000, 4000, 8000][polls] ?? 15000);
@@ -114,5 +126,15 @@ export async function requireArtifactPilot(github: PipelineArtifacts, runId: num
     )
   )
     throw new Error('Artifact visibility/quota pilot incomplete');
-  return run;
+  // A finite remeasurement deadline, not a guarantee that performance stays constant.
+  // Use the actual Worker job completion, never mutable workflow updated_at.
+  const completed = jobs.jobs.find((job: { name: string }) => job.name === 'workers')?.completed_at;
+  const measuredAt = typeof completed === 'string' ? Date.parse(completed) : NaN;
+  requireFreshWorkerProfile(measuredAt);
+  return { ...run, workerMeasuredAt: measuredAt };
+}
+export function requireFreshWorkerProfile(measuredAt: number) {
+  const age = Date.now() - measuredAt;
+  if (!Number.isFinite(age) || age < 0 || age > 3600000)
+    throw new Error('Stale or unknown Worker pilot measurement time');
 }

@@ -15,7 +15,19 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-it.each(['valid', 'source', 'measurement', 'pilot', 'worker'] as const)(
+it.each([
+  'valid',
+  'source',
+  'measurement',
+  'pilot',
+  'worker',
+  'fresh-boundary',
+  'stale',
+  'future',
+  'invalid-time',
+  'missing-time',
+  'download-stale',
+] as const)(
   'authenticates Worker cost profile provenance before admission: %s',
   async (variant) => {
     await withReplayDirectory(async (root) => {
@@ -50,6 +62,34 @@ it.each(['valid', 'source', 'measurement', 'pilot', 'worker'] as const)(
         ...['produce', 'consume', 'workers'].map((name) => ({ ...state.jobs[0]!, name })),
       );
       if (variant === 'worker') state.jobs[2]!.conclusion = 'failure';
+      const now = Date.now();
+      const clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+      if (variant === 'download-stale') {
+        const actualFetch = fetch.getMockImplementation()!;
+        fetch.mockImplementation(async (url, options) => {
+          const response = await actualFetch(url, options);
+          if (String(url).includes('signed.example.invalid')) clock.mockReturnValue(now + 3600001);
+          return response;
+        });
+      }
+      Object.assign(state.run, { updated_at: new Date(now).toISOString() });
+      Object.assign(state.jobs[2]!, {
+        completed_at:
+          variant === 'missing-time'
+            ? undefined
+            : variant === 'invalid-time'
+              ? 'invalid'
+              : new Date(
+                  now -
+                    (variant === 'fresh-boundary'
+                      ? 3600000
+                      : variant === 'stale'
+                        ? 3600001
+                        : variant === 'future'
+                          ? -1
+                          : 0),
+                ).toISOString(),
+      });
       state.zip = artifactZip('cost-profile.json', Buffer.from(JSON.stringify(profile)));
       Object.assign(state.artifact, {
         name: 'league-123-1-cost-profile',
@@ -61,9 +101,14 @@ it.each(['valid', 'source', 'measurement', 'pilot', 'worker'] as const)(
         123,
         measurementHash,
       );
-      if (variant === 'valid') await expect(pending).resolves.toEqual(profile);
-      else await expect(pending).rejects.toThrow(/mismatch|Untrusted|incomplete/);
-      if (variant === 'pilot' || variant === 'worker')
+      if (variant === 'valid' || variant === 'fresh-boundary')
+        await expect(pending).resolves.toEqual(profile);
+      else await expect(pending).rejects.toThrow(/mismatch|Untrusted|incomplete|measurement time/);
+      if (
+        variant === 'pilot' ||
+        variant === 'worker' ||
+        ['stale', 'future', 'invalid-time', 'missing-time'].includes(variant)
+      )
         expect(fetch.mock.calls.some(([url]) => String(url).endsWith('/zip'))).toBe(false);
       expect(state.downloadToken).toBe(false);
     });
