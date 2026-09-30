@@ -1150,8 +1150,42 @@ const ActiveSkillNodeResolutionSchema = z.strictObject({
     .min(1)
     .max(8),
 });
+const BattleSkillResolutionSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('active-ability'), ability: RefSchema }),
+  z.strictObject({ kind: z.literal('passive-ability'), ability: RefSchema }),
+  z.strictObject({
+    kind: z.literal('augment'),
+    baseAbility: RefSchema,
+    resolvedAbility: RefSchema,
+  }),
+]);
+const BattleSkillNodeResolutionSchema = z.strictObject({
+  nodeId: IdSchema,
+  resolution: z.array(BattleSkillResolutionSchema).min(1).max(8),
+});
+function validateSkillReceipt(
+  receipt: {
+    explicitlyEnabledNodeIds: string[];
+    resolvedNodeIds: string[];
+    nodeResolutions: {
+      nodeId: string;
+      resolution: z.infer<typeof BattleSkillResolutionSchema>[];
+    }[];
+  },
+  context: z.RefinementCtx,
+) {
+  const resolved = new Set(receipt.resolvedNodeIds),
+    nodeIds = receipt.nodeResolutions.map(({ nodeId }) => nodeId);
+  if (receipt.explicitlyEnabledNodeIds.some((id) => !resolved.has(id)))
+    context.addIssue({ code: 'custom', message: 'Enabled skill node is outside the closure' });
+  if (
+    nodeIds.length !== receipt.resolvedNodeIds.length ||
+    nodeIds.some((id, index) => id !== receipt.resolvedNodeIds[index])
+  )
+    context.addIssue({ code: 'custom', message: 'Skill resolutions must match resolved nodes' });
+}
 /** Lightweight execution receipt. Catalog content and resolver code stay outside workers. */
-export const SkillLoadoutReceiptSchema = z
+export const SkillLoadoutReceiptV1Schema = z
   .strictObject({
     schemaVersion: z.literal(1),
     resolverVersion: IdSchema,
@@ -1164,23 +1198,84 @@ export const SkillLoadoutReceiptSchema = z
     resolutionDigest: HashSchema,
   })
   .superRefine((receipt, context) => {
-    const resolved = new Set(receipt.resolvedNodeIds),
-      nodeIds = receipt.nodeResolutions.map(({ nodeId }) => nodeId),
-      abilityIds = receipt.nodeResolutions.flatMap(({ resolution }) =>
-        resolution.map(({ ability }) => ability.id),
-      );
-    if (receipt.explicitlyEnabledNodeIds.some((id) => !resolved.has(id)))
-      context.addIssue({ code: 'custom', message: 'Enabled skill node is outside the closure' });
-    if (
-      nodeIds.length !== receipt.resolvedNodeIds.length ||
-      nodeIds.some((id, index) => id !== receipt.resolvedNodeIds[index])
-    )
-      context.addIssue({ code: 'custom', message: 'Skill resolutions must match resolved nodes' });
+    validateSkillReceipt(receipt, context);
+    const abilityIds = receipt.nodeResolutions.flatMap(({ resolution }) =>
+      resolution.map(({ ability }) => ability.id),
+    );
     if (new Set(abilityIds).size !== abilityIds.length)
       context.addIssue({ code: 'custom', message: 'Resolved skill ability IDs must be unique' });
     if (abilityIds.length > 32)
       context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
   });
+export const SkillLoadoutReceiptV2Schema = z
+  .strictObject({
+    schemaVersion: z.literal(2),
+    resolverVersion: IdSchema,
+    character: RefSchema,
+    catalog: RefSchema,
+    loadout: RefSchema,
+    explicitlyEnabledNodeIds: CanonicalSkillIdsSchema(12),
+    resolvedNodeIds: CanonicalSkillIdsSchema(12),
+    nodeResolutions: z.array(BattleSkillNodeResolutionSchema).min(1).max(12),
+    resolutionDigest: HashSchema,
+  })
+  .superRefine((receipt, context) => {
+    validateSkillReceipt(receipt, context);
+    let active = 0,
+      passive = 0;
+    const augmented = new Set<string>(),
+      producedAbilities = new Set<string>();
+    let resolutionCount = 0;
+    for (const node of receipt.nodeResolutions) {
+      const hasActive = node.resolution.some(({ kind }) => kind === 'active-ability'),
+        hasPassive = node.resolution.some(({ kind }) => kind !== 'active-ability');
+      if (hasActive && hasPassive)
+        context.addIssue({
+          code: 'custom',
+          message: `Mixed skill resolution node: ${node.nodeId}`,
+        });
+      hasActive ? active++ : passive++;
+      for (const resolution of node.resolution) {
+        resolutionCount++;
+        const producedId =
+          resolution.kind === 'augment' ? resolution.resolvedAbility.id : resolution.ability.id;
+        if (producedAbilities.has(producedId))
+          context.addIssue({
+            code: 'custom',
+            message: 'Resolved skill ability IDs must be unique',
+          });
+        producedAbilities.add(producedId);
+        if (resolution.kind === 'augment') {
+          if (resolution.baseAbility.id !== resolution.resolvedAbility.id)
+            context.addIssue({
+              code: 'custom',
+              message: 'Augments must preserve ability identity',
+            });
+          if (
+            resolution.baseAbility.revision === resolution.resolvedAbility.revision &&
+            resolution.baseAbility.contentHash === resolution.resolvedAbility.contentHash
+          )
+            context.addIssue({
+              code: 'custom',
+              message: 'Augments must change the exact ability ref',
+            });
+          if (augmented.has(resolution.baseAbility.id))
+            context.addIssue({ code: 'custom', message: 'An ability may be augmented only once' });
+          augmented.add(resolution.baseAbility.id);
+        }
+      }
+    }
+    if (active > 8)
+      context.addIssue({ code: 'custom', message: 'Active skill node limit exceeded' });
+    if (passive > 4)
+      context.addIssue({ code: 'custom', message: 'Passive skill node limit exceeded' });
+    if (resolutionCount > 32)
+      context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
+  });
+export const SkillLoadoutReceiptSchema = z.union([
+  SkillLoadoutReceiptV1Schema,
+  SkillLoadoutReceiptV2Schema,
+]);
 export type SkillLoadoutReceipt = z.infer<typeof SkillLoadoutReceiptSchema>;
 export const ParticipantSchema = z.strictObject({
   actorId: IdSchema.refine(
@@ -1216,7 +1311,7 @@ export const PhysicsProfileSchema = z.strictObject({
 /** Saved inputs remain readable; only ManifestSchema admits current execution. */
 export const StoredManifestSchema = z
   .strictObject({
-    schemaVersion: z.union([z.literal(3), z.literal(4)]),
+    schemaVersion: z.union([z.literal(3), z.literal(4), z.literal(5)]),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
     engineVersion: IdSchema,
@@ -1240,6 +1335,14 @@ export const StoredManifestSchema = z
       manifest.participants.some((participant) => participant.skillLoadout !== undefined)
     )
       ctx.addIssue({ code: 'custom', message: 'Skill loadouts require manifest schema version 4' });
+    if (
+      manifest.schemaVersion < 5 &&
+      manifest.participants.some((participant) => participant.skillLoadout?.schemaVersion === 2)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Passive and augment receipts require manifest schema version 5',
+      });
     if (manifest.participants[0].rngStream === manifest.participants[1].rngStream)
       ctx.addIssue({ code: 'custom', message: 'Actor streams must differ' });
     if (manifest.participants[0].actorId === manifest.participants[1].actorId)

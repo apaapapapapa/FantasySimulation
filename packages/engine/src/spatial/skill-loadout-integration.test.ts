@@ -110,6 +110,135 @@ describe('skill loadout battle vertical', () => {
     expect(replayed.checkpoint()).toEqual(restored.checkpoint());
   });
 
+  it('executes a non-action passive through a version 2 receipt and manifest 5 replay', async () => {
+    const manifest = await sampleManifest(),
+      source = manifest.revisions.find(
+        (revision): revision is Extract<Revision, { kind: 'ability' }> =>
+          revision.kind === 'ability',
+      )!;
+    const passiveDefinition = structuredClone(source.definition);
+    Object.assign(passiveDefinition, {
+      name: 'Skill passive test',
+      trigger: 'battle-start',
+      target: 'self',
+      attack: { kind: 'direct' },
+      castSteps: 0,
+    });
+    for (const field of ['reaction', 'accuracy', 'timeStop', 'relocation', 'barrier'])
+      delete (passiveDefinition as Record<string, unknown>)[field];
+    const passive = await sealRevision('ability', 'skill.passive.test', 1, passiveDefinition),
+      catalog = { id: 'skill-catalog-v1', revision: 1, contentHash: hash('4') },
+      resolvedNodeIds = ['skill.renki.rat.1'],
+      nodeResolutions = [
+        {
+          nodeId: resolvedNodeIds[0]!,
+          resolution: [{ kind: 'passive-ability' as const, ability: reference(passive) }],
+        },
+      ],
+      participants = structuredClone(manifest.participants);
+    participants[0].skillLoadout = SkillLoadoutReceiptSchema.parse({
+      schemaVersion: 2,
+      resolverVersion: 'skill-resolver-v1',
+      character: participants[0].character,
+      catalog,
+      loadout: { id: 'skill-loadout-passive', revision: 1, contentHash: hash('5') },
+      explicitlyEnabledNodeIds: resolvedNodeIds,
+      resolvedNodeIds,
+      nodeResolutions,
+      resolutionDigest: await skillResolutionDigest(catalog, resolvedNodeIds, nodeResolutions),
+    });
+    const battle = await ManifestBuilder.from([...manifest.revisions, passive]).build({
+      seed: manifest.seed,
+      participants,
+      ruleset: manifest.ruleset,
+      scenario: manifest.scenario,
+    });
+    expect(battle.manifest.schemaVersion).toBe(5);
+    expect(battle.actors[0].abilities.map(({ id }) => id)).toContain(passive.id);
+    expect(battle.actors[0].policy.priorities.map(({ abilityId }) => abilityId)).not.toContain(
+      passive.id,
+    );
+    expect(
+      (await replayContext(battle.manifest, battle.simulationHash)).actors[0]!.abilities,
+    ).toEqual(expect.arrayContaining([expect.objectContaining({ id: passive.id })]));
+  });
+
+  it('replaces one exact character ability with an identity-preserving augment', async () => {
+    const manifest = await sampleManifest(),
+      character = manifest.revisions.find(
+        (revision) =>
+          revision.kind === 'character' && revision.id === manifest.participants[0]!.character.id,
+      ) as Extract<Revision, { kind: 'character' }>,
+      baseRef = character.definition.abilities[0]!,
+      base = manifest.revisions.find(
+        (revision) =>
+          revision.kind === 'ability' &&
+          revision.id === baseRef.id &&
+          revision.revision === baseRef.revision,
+      ) as Extract<Revision, { kind: 'ability' }>,
+      augmented = await sealRevision('ability', base.id, base.revision + 1, {
+        ...base.definition,
+        name: `${base.definition.name} augmented`,
+      }),
+      catalog = { id: 'skill-catalog-v1', revision: 1, contentHash: hash('6') },
+      resolvedNodeIds = ['skill.magic.rat.1'],
+      nodeResolutions = [
+        {
+          nodeId: resolvedNodeIds[0]!,
+          resolution: [
+            {
+              kind: 'augment' as const,
+              baseAbility: reference(base),
+              resolvedAbility: reference(augmented),
+            },
+          ],
+        },
+      ],
+      participants = structuredClone(manifest.participants);
+    participants[0].skillLoadout = SkillLoadoutReceiptSchema.parse({
+      schemaVersion: 2,
+      resolverVersion: 'skill-resolver-v1',
+      character: participants[0].character,
+      catalog,
+      loadout: { id: 'skill-loadout-augment', revision: 1, contentHash: hash('7') },
+      explicitlyEnabledNodeIds: resolvedNodeIds,
+      resolvedNodeIds,
+      nodeResolutions,
+      resolutionDigest: await skillResolutionDigest(catalog, resolvedNodeIds, nodeResolutions),
+    });
+    expect(
+      SkillLoadoutReceiptSchema.safeParse({
+        ...participants[0].skillLoadout,
+        nodeResolutions: [
+          {
+            nodeId: resolvedNodeIds[0],
+            resolution: [
+              {
+                kind: 'augment',
+                baseAbility: reference(base),
+                resolvedAbility: reference(base),
+              },
+            ],
+          },
+        ],
+      }).success,
+    ).toBe(false);
+    const battle = await ManifestBuilder.from([...manifest.revisions, augmented]).build({
+      seed: manifest.seed,
+      participants,
+      ruleset: manifest.ruleset,
+      scenario: manifest.scenario,
+    });
+    expect(battle.actors[0].abilities.find(({ id }) => id === base.id)?.revision).toBe(
+      augmented.revision,
+    );
+    expect(
+      (await replayContext(battle.manifest, battle.simulationHash)).actors[0]!.abilities.find(
+        ({ id }) => id === base.id,
+      )?.revision,
+    ).toBe(augmented.revision);
+  });
+
   it('rejects a tampered resolution digest before execution', async () => {
     const { battle } = await builtSkillBattle();
     const tampered = structuredClone(battle.manifest) as unknown as Manifest;

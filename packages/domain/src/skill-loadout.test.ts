@@ -169,7 +169,7 @@ describe('skill loadout resolution', () => {
     ).rejects.toThrow(/hash mismatch/);
   });
 
-  it('keeps passive and augment recipes out of the active-only SK-02 receipt', async () => {
+  it('projects passive recipes into the versioned battle receipt', async () => {
     const catalog = completeCatalog(),
       id = 'skill.sword.rat.1';
     catalog.nodes = catalog.nodes.map((node) =>
@@ -188,7 +188,15 @@ describe('skill loadout resolution', () => {
     const { content } = await revisionContent(catalog, id);
     await expect(
       skillBattleReceipt({ ...content, contentHash: await skillLoadoutRevisionHash(content) }),
-    ).rejects.toThrow(/active abilities only/);
+    ).resolves.toMatchObject({
+      schemaVersion: 2,
+      nodeResolutions: [
+        {
+          nodeId: id,
+          resolution: [{ kind: 'passive-ability', ability: { id: 'passive.test' } }],
+        },
+      ],
+    });
   });
 });
 
