@@ -86,7 +86,7 @@ const SkillResolutionSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('passive-ability'), ability: RefSchema }),
   z.strictObject({
     kind: z.literal('augment'),
-    baseAbilityId: IdSchema,
+    baseAbility: RefSchema,
     resolvedAbility: RefSchema,
   }),
 ]);
@@ -270,6 +270,89 @@ export function skillCatalogReport(catalog: SkillCatalog): SkillCatalogReport {
 
 export async function skillCatalogDigest(catalog: SkillCatalog) {
   return contentHash(JSON.parse(canonicalJson(parseCompleteSkillCatalog(catalog))));
+}
+
+export const SkillCatalogReleaseEvidenceSchema = z.strictObject({
+  definitionRefs: z.array(RefSchema).max(16_384),
+  fixtureIds: z.array(IdSchema).max(65_536),
+});
+export type SkillCatalogReleaseEvidence = z.infer<typeof SkillCatalogReleaseEvidenceSchema>;
+export type SkillCatalogReleaseIssue = {
+  code: 'unresolved-definition' | 'unresolved-fixture' | 'duplicate-branch-recipe';
+  nodeId: string;
+  detail: string;
+};
+export type SkillCatalogReleaseReport = {
+  lifecycle: Record<z.infer<typeof SkillLifecycleSchema>, number>;
+  available: number;
+  verified: number;
+  releaseReady: boolean;
+  issues: SkillCatalogReleaseIssue[];
+};
+
+const revisionRefKey = (ref: z.infer<typeof RefSchema>) =>
+  `${ref.id}@${ref.revision}:${ref.contentHash}`;
+const nodeDefinitionRefs = (node: SkillNode) =>
+  node.resolution.flatMap((resolution) =>
+    resolution.kind === 'augment'
+      ? [resolution.baseAbility, resolution.resolvedAbility]
+      : [resolution.ability],
+  );
+
+/** Inspect external definition/fixture evidence; structural catalog validity alone is not release proof. */
+export function inspectSkillCatalogRelease(
+  catalogInput: SkillCatalog,
+  evidenceInput: SkillCatalogReleaseEvidence,
+): SkillCatalogReleaseReport {
+  const catalog = parseCompleteSkillCatalog(catalogInput),
+    evidence = SkillCatalogReleaseEvidenceSchema.parse(evidenceInput),
+    definitionRefs = new Set(evidence.definitionRefs.map(revisionRefKey)),
+    fixtureIds = new Set(evidence.fixtureIds),
+    lifecycle: SkillCatalogReleaseReport['lifecycle'] = {
+      draft: 0,
+      implemented: 0,
+      available: 0,
+      retired: 0,
+    },
+    issues: SkillCatalogReleaseIssue[] = [],
+    verified = new Set<string>(),
+    recipesByBranch = new Map<string, Map<string, string>>();
+  for (const node of catalog.nodes) {
+    lifecycle[node.lifecycle]++;
+    if (node.lifecycle !== 'available') continue;
+    const nodeIssues: SkillCatalogReleaseIssue[] = [];
+    for (const ref of nodeDefinitionRefs(node))
+      if (!definitionRefs.has(revisionRefKey(ref)))
+        nodeIssues.push({
+          code: 'unresolved-definition',
+          nodeId: node.id,
+          detail: revisionRefKey(ref),
+        });
+    for (const fixtureId of node.fixtureIds)
+      if (!fixtureIds.has(fixtureId))
+        nodeIssues.push({ code: 'unresolved-fixture', nodeId: node.id, detail: fixtureId });
+    const branch = `${node.coordinate.path}:${node.coordinate.zodiac}`,
+      recipe = canonicalJson(node.resolution),
+      branchRecipes = recipesByBranch.get(branch) ?? new Map<string, string>(),
+      duplicateOf = branchRecipes.get(recipe);
+    if (duplicateOf)
+      nodeIssues.push({
+        code: 'duplicate-branch-recipe',
+        nodeId: node.id,
+        detail: duplicateOf,
+      });
+    else branchRecipes.set(recipe, node.id);
+    recipesByBranch.set(branch, branchRecipes);
+    if (!nodeIssues.length) verified.add(node.id);
+    issues.push(...nodeIssues);
+  }
+  return {
+    lifecycle,
+    available: lifecycle.available,
+    verified: verified.size,
+    releaseReady: lifecycle.available === 1_152 && verified.size === 1_152 && !issues.length,
+    issues,
+  };
 }
 
 export const SkillCatalogShardSchema = z

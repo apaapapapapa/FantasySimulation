@@ -9,6 +9,7 @@ import {
   SkillCatalogError,
   SkillCatalogIndexSchema,
   SkillCatalogShardSchema,
+  inspectSkillCatalogRelease,
   parseCompleteSkillCatalog,
   skillCatalogDigest,
   skillCatalogReport,
@@ -220,5 +221,41 @@ describe('skill catalog validation', () => {
         shards: shards.map((shard) => ({ ...shard, path: SKILL_PATH_IDS[0] })),
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('skill catalog release evidence', () => {
+  it('does not treat structural completeness as executable completeness', () => {
+    const catalog = completeCatalog(),
+      report = inspectSkillCatalogRelease(catalog, { definitionRefs: [], fixtureIds: [] });
+    expect(report.lifecycle).toEqual({ draft: 0, implemented: 0, available: 1_152, retired: 0 });
+    expect(report.releaseReady).toBe(false);
+    expect(report.issues.some(({ code }) => code === 'unresolved-definition')).toBe(true);
+    expect(report.issues.some(({ code }) => code === 'unresolved-fixture')).toBe(true);
+    expect(report.issues.some(({ code }) => code === 'duplicate-branch-recipe')).toBe(true);
+  });
+
+  it('requires all 1,152 available nodes to have distinct branch recipes and bound evidence', () => {
+    const catalog = completeCatalog();
+    catalog.nodes = catalog.nodes.map((node) => ({
+      ...node,
+      resolution: [
+        {
+          kind: 'active-ability' as const,
+          ability: { id: node.id.replace('skill.', 'ability.'), revision: 1, contentHash: hash },
+        },
+      ],
+      fixtureIds: [node.id.replace('skill.', 'fixture.')],
+    }));
+    const report = inspectSkillCatalogRelease(catalog, {
+      definitionRefs: catalog.nodes.map((node) =>
+        node.resolution[0]!.kind === 'active-ability'
+          ? node.resolution[0]!.ability
+          : { id: 'unreachable', revision: 1, contentHash: hash },
+      ),
+      fixtureIds: catalog.nodes.flatMap((node) => node.fixtureIds),
+    });
+    expect(report).toMatchObject({ available: 1_152, verified: 1_152, releaseReady: true });
+    expect(report.issues).toEqual([]);
   });
 });
