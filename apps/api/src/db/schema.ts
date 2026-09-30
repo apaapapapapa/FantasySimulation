@@ -7,6 +7,7 @@ import {
 import { sql } from 'drizzle-orm';
 import {
   check,
+  foreignKey,
   index,
   integer,
   primaryKey,
@@ -61,6 +62,73 @@ export const definitionDrafts = sqliteTable(
     check(
       'definition_drafts_valid_base',
       sql`${table.baseRevisionJson} IS NULL OR json_valid(${table.baseRevisionJson})`,
+    ),
+  ],
+);
+
+export const skillCatalogRevisions = sqliteTable(
+  'skill_catalog_revisions',
+  {
+    id: text('id').notNull(),
+    revision: integer('revision').notNull(),
+    contentHash: text('content_hash').notNull(),
+    catalogJson: text('catalog_json').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.id, table.revision] }),
+    check('skill_catalog_revisions_positive_revision', sql`${table.revision} > 0`),
+    check('skill_catalog_revisions_valid_json', sql`json_valid(${table.catalogJson})`),
+  ],
+);
+
+export const skillLoadoutRevisions = sqliteTable(
+  'skill_loadout_revisions',
+  {
+    id: text('id').notNull(),
+    revision: integer('revision').notNull(),
+    contentHash: text('content_hash').notNull(),
+    catalogId: text('catalog_id').notNull(),
+    catalogRevision: integer('catalog_revision').notNull(),
+    characterJson: text('character_json').notNull(),
+    configurationJson: text('configuration_json').notNull(),
+    resolvedJson: text('resolved_json').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.id, table.revision] }),
+    foreignKey({
+      columns: [table.catalogId, table.catalogRevision],
+      foreignColumns: [skillCatalogRevisions.id, skillCatalogRevisions.revision],
+    }),
+    check('skill_loadout_revisions_positive_revision', sql`${table.revision} > 0`),
+    check('skill_loadout_revisions_valid_character', sql`json_valid(${table.characterJson})`),
+    check(
+      'skill_loadout_revisions_valid_configuration',
+      sql`json_valid(${table.configurationJson})`,
+    ),
+    check('skill_loadout_revisions_valid_resolved', sql`json_valid(${table.resolvedJson})`),
+  ],
+);
+
+export const skillLoadoutHeads = sqliteTable(
+  'skill_loadout_heads',
+  {
+    id: text('id').primaryKey().notNull(),
+    version: integer('version').notNull(),
+    latestRevision: integer('latest_revision').notNull(),
+    latestContentHash: text('latest_content_hash').notNull(),
+    createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.id, table.latestRevision],
+      foreignColumns: [skillLoadoutRevisions.id, skillLoadoutRevisions.revision],
+    }),
+    check(
+      'skill_loadout_heads_positive_version',
+      sql`${table.version} > 0 AND ${table.latestRevision} > 0`,
     ),
   ],
 );

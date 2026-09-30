@@ -4,6 +4,8 @@ import {
   DEFAULT_FORCED_SPEED_CAP_MM_PER_SECOND,
   canonicalJson,
   characterLoadout,
+  CURRENT_SKILL_RESOLVER_VERSION,
+  validateAbilityLoadout,
   validatePolicyAbilities,
   revisionHash,
   revisionIndex,
@@ -60,13 +62,83 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
       );
   const get = revisionIndex(manifest.revisions);
   resolveClosure(manifest.revisions, get);
+  for (const participant of manifest.participants) {
+    const receipt = participant.skillLoadout;
+    if (!receipt) continue;
+    if (receipt.resolverVersion !== CURRENT_SKILL_RESOLVER_VERSION)
+      throw new EngineInputError(
+        'revision-content',
+        `Unsupported skill resolver: ${receipt.resolverVersion}`,
+      );
+    if (canonicalJson(receipt.character) !== canonicalJson(participant.character))
+      throw new EngineInputError('revision-content', 'Skill loadout character mismatch');
+    const digest = await contentHash(
+      JSON.parse(
+        canonicalJson({
+          resolverVersion: receipt.resolverVersion,
+          catalog: receipt.catalog,
+          resolvedNodeIds: receipt.resolvedNodeIds,
+          nodeResolutions: receipt.nodeResolutions,
+        }),
+      ),
+    );
+    if (digest !== receipt.resolutionDigest)
+      throw new EngineInputError('revision-content', 'Skill loadout resolution digest mismatch');
+  }
   function actor(participant: Manifest['participants'][number]): ResolvedActor {
     if (participant.rngSeed !== actorSeed(manifest.seed, participant.rngStream))
       throw new EngineInputError('actor-seed', 'Actor seed derivation mismatch');
     const loadout = characterLoadout(participant.character, get);
     validatePolicyAbilities(loadout);
-    const { character, equipment, policy } = loadout;
-    const abilities = loadout.abilities.map(prepareAbility);
+    const { character, equipment } = loadout,
+      skillAbilities = (participant.skillLoadout?.nodeResolutions ?? []).flatMap(({ resolution }) =>
+        resolution.map(({ ability }) => get('ability', ability)),
+      ),
+      direct = new Map(character.abilities.map((ability) => [ability.id, ability]));
+    for (const ability of skillAbilities) {
+      const previous = direct.get(ability.id);
+      if (
+        previous &&
+        (previous.revision !== ability.revision || previous.contentHash !== ability.contentHash)
+      )
+        throw new EngineInputError(
+          'revision-content',
+          `Skill ability conflicts with character ability: ${ability.id}`,
+        );
+      direct.set(ability.id, {
+        id: ability.id,
+        revision: ability.revision,
+        contentHash: ability.contentHash,
+      });
+    }
+    if (direct.size > 32)
+      throw new EngineInputError('revision-content', 'Skill loadout exceeds direct ability limit');
+    const abilityById = new Map(loadout.abilities.map((ability) => [ability.id, ability]));
+    for (const ability of skillAbilities) {
+      const previous = abilityById.get(ability.id);
+      if (
+        previous &&
+        (previous.revision !== ability.revision || previous.contentHash !== ability.contentHash)
+      )
+        throw new EngineInputError(
+          'revision-content',
+          `Skill ability conflicts with equipped ability: ${ability.id}`,
+        );
+      abilityById.set(ability.id, ability);
+    }
+    validateAbilityLoadout([...abilityById.values()]);
+    const abilities = [...abilityById.values()].map(prepareAbility),
+      skillActionIds = skillAbilities
+        .filter((ability) => ability.definition.trigger === 'action')
+        .map((ability) => ability.id)
+        .sort(compareIds),
+      priorities = [...loadout.policy.priorities];
+    for (const abilityId of skillActionIds)
+      if (!priorities.some((priority) => priority.abilityId === abilityId))
+        priorities.push({ when: { kind: 'always' }, abilityId });
+    if (priorities.length > 32)
+      throw new EngineInputError('revision-content', 'Skill loadout exceeds policy priority limit');
+    const policy = { ...loadout.policy, priorities };
     const knownStatuses = statusKnowledge(
       abilities.flatMap((a) =>
         abilityPlan(a).effects.flatMap((e) =>

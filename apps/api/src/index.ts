@@ -1,11 +1,12 @@
 import { createApp } from './http/app.ts';
 import { readConfig } from './config.ts';
-import { openStore, readSampleRevisions } from './db/store.ts';
+import { openStore } from './db/store.ts';
+import { seedStartupData } from './db/startup-data.ts';
 import { BattleService } from './jobs/battle-service.ts';
 
 const config = readConfig();
 const store = openStore(config.databasePath);
-await store.seedRevisions(readSampleRevisions());
+await seedStartupData(store);
 const runtime = await BattleService.open(store, config.artifactPath, config.runtime);
 const app = createApp(store, true, runtime);
 

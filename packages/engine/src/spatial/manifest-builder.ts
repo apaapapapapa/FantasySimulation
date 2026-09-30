@@ -89,13 +89,18 @@ export class ManifestBuilder {
     const revisions = structuredClone(
       this.closure([
         ...request.participants.map((participant) => get('character', participant.character)),
+        ...request.participants.flatMap((participant) =>
+          (participant.skillLoadout?.nodeResolutions ?? []).flatMap(({ resolution }) =>
+            resolution.map(({ ability }) => get('ability', ability)),
+          ),
+        ),
         rules,
         get('scenario', request.scenario),
       ]),
     );
     return prepareBattle({
       ...request,
-      schemaVersion: 3,
+      schemaVersion: request.participants.some((participant) => participant.skillLoadout) ? 4 : 3,
       eventSchemaVersion: 1,
       replaySchemaVersion: 1,
       engineVersion: CURRENT_ENGINE_VERSION,

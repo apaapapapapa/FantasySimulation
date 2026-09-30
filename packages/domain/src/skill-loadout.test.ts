@@ -4,7 +4,14 @@ import {
   type SkillCatalog,
   skillCatalogDigest,
 } from './skill-system.ts';
-import { resolveSkillLoadout, skillNodeStates, type SkillConfiguration } from './skill-loadout.ts';
+import {
+  resolveSkillLoadout,
+  skillBattleReceipt,
+  skillLoadoutRevisionHash,
+  skillNodeStates,
+  type SkillConfiguration,
+  type SkillLoadoutRevisionContent,
+} from './skill-loadout.ts';
 import {
   SKILL_TEST_HASH as hash,
   completeSkillTestCatalog as completeCatalog,
@@ -31,6 +38,20 @@ async function configuration(
 }
 const branchIds = (path: string, zodiac: string, throughDan = 6) =>
   Array.from({ length: throughDan }, (_, index) => `skill.${path}.${zodiac}.${index + 1}`);
+async function revisionContent(catalog: SkillCatalog, id: string) {
+  const config = await configuration(catalog, [id], [id]);
+  return {
+    config,
+    content: {
+      schemaVersion: 1,
+      id: config.id,
+      revision: 1,
+      character: { id: 'character.test', revision: 1, contentHash: hash },
+      configuration: config,
+      resolved: await resolveSkillLoadout(catalog, config, []),
+    } satisfies SkillLoadoutRevisionContent,
+  };
+}
 
 describe('skill loadout resolution', () => {
   it('closes prerequisites and canonicalizes set-like configuration order', async () => {
@@ -129,6 +150,45 @@ describe('skill loadout resolution', () => {
     await expect(resolveSkillLoadout(catalog, config, [])).rejects.toMatchObject({
       code: 'catalog-mismatch',
     });
+  });
+
+  it('seals an immutable active-only loadout and projects a bounded battle receipt', async () => {
+    const catalog = completeCatalog(),
+      id = 'skill.sword.rat.1',
+      { config, content } = await revisionContent(catalog, id),
+      snapshot = { ...content, contentHash: await skillLoadoutRevisionHash(content) },
+      receipt = await skillBattleReceipt(snapshot);
+    expect(receipt).toMatchObject({
+      character: content.character,
+      loadout: { id: config.id, revision: 1, contentHash: snapshot.contentHash },
+      resolvedNodeIds: [id],
+      explicitlyEnabledNodeIds: [id],
+    });
+    await expect(
+      skillBattleReceipt({ ...snapshot, contentHash: `sha256:${'3'.repeat(64)}` }),
+    ).rejects.toThrow(/hash mismatch/);
+  });
+
+  it('keeps passive and augment recipes out of the active-only SK-02 receipt', async () => {
+    const catalog = completeCatalog(),
+      id = 'skill.sword.rat.1';
+    catalog.nodes = catalog.nodes.map((node) =>
+      node.id === id
+        ? {
+            ...node,
+            resolution: [
+              {
+                kind: 'passive-ability' as const,
+                ability: { id: 'passive.test', revision: 1, contentHash: hash },
+              },
+            ],
+          }
+        : node,
+    );
+    const { content } = await revisionContent(catalog, id);
+    await expect(
+      skillBattleReceipt({ ...content, contentHash: await skillLoadoutRevisionHash(content) }),
+    ).rejects.toThrow(/active abilities only/);
   });
 });
 

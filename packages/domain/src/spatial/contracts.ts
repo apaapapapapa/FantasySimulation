@@ -14,6 +14,7 @@ export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 export const MAX_BATTLE_STEPS = 6_000;
 export const MAX_FRAME_BYTES = 4_000_000;
 export const CURRENT_ENGINE_VERSION = 'spatial-v1.22' as const;
+export const CURRENT_SKILL_RESOLVER_VERSION = 'skill-resolver-v1' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -1133,6 +1134,54 @@ export const RevisionSchema = z.discriminatedUnion('kind', [
 export type Revision = z.infer<typeof RevisionSchema>;
 export type DefinitionKind = Revision['kind'];
 export type Definition<K extends DefinitionKind> = Extract<Revision, { kind: K }>['definition'];
+const CanonicalSkillIdsSchema = (maximum: number) =>
+  z
+    .array(IdSchema)
+    .max(maximum)
+    .refine((ids) => new Set(ids).size === ids.length, 'Skill node IDs must be unique')
+    .refine(
+      (ids) => ids.every((id, index) => index === 0 || ids[index - 1]! < id),
+      'Skill node IDs must use canonical ASCII order',
+    );
+const ActiveSkillNodeResolutionSchema = z.strictObject({
+  nodeId: IdSchema,
+  resolution: z
+    .array(z.strictObject({ kind: z.literal('active-ability'), ability: RefSchema }))
+    .min(1)
+    .max(8),
+});
+/** Lightweight execution receipt. Catalog content and resolver code stay outside workers. */
+export const SkillLoadoutReceiptSchema = z
+  .strictObject({
+    schemaVersion: z.literal(1),
+    resolverVersion: IdSchema,
+    character: RefSchema,
+    catalog: RefSchema,
+    loadout: RefSchema,
+    explicitlyEnabledNodeIds: CanonicalSkillIdsSchema(8),
+    resolvedNodeIds: CanonicalSkillIdsSchema(8),
+    nodeResolutions: z.array(ActiveSkillNodeResolutionSchema).min(1).max(8),
+    resolutionDigest: HashSchema,
+  })
+  .superRefine((receipt, context) => {
+    const resolved = new Set(receipt.resolvedNodeIds),
+      nodeIds = receipt.nodeResolutions.map(({ nodeId }) => nodeId),
+      abilityIds = receipt.nodeResolutions.flatMap(({ resolution }) =>
+        resolution.map(({ ability }) => ability.id),
+      );
+    if (receipt.explicitlyEnabledNodeIds.some((id) => !resolved.has(id)))
+      context.addIssue({ code: 'custom', message: 'Enabled skill node is outside the closure' });
+    if (
+      nodeIds.length !== receipt.resolvedNodeIds.length ||
+      nodeIds.some((id, index) => id !== receipt.resolvedNodeIds[index])
+    )
+      context.addIssue({ code: 'custom', message: 'Skill resolutions must match resolved nodes' });
+    if (new Set(abilityIds).size !== abilityIds.length)
+      context.addIssue({ code: 'custom', message: 'Resolved skill ability IDs must be unique' });
+    if (abilityIds.length > 32)
+      context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
+  });
+export type SkillLoadoutReceipt = z.infer<typeof SkillLoadoutReceiptSchema>;
 export const ParticipantSchema = z.strictObject({
   actorId: IdSchema.refine(
     (id) => !id.startsWith('projectile.'),
@@ -1143,6 +1192,7 @@ export const ParticipantSchema = z.strictObject({
   facing: DirectionSchema,
   rngSeed: uint(0xffff_ffff),
   rngStream: z.union([z.literal(0), z.literal(1)]),
+  skillLoadout: SkillLoadoutReceiptSchema.optional(),
 });
 export const PhysicsProfileSchema = z.strictObject({
   id: z.literal('spatial-v1'),
@@ -1166,7 +1216,7 @@ export const PhysicsProfileSchema = z.strictObject({
 /** Saved inputs remain readable; only ManifestSchema admits current execution. */
 export const StoredManifestSchema = z
   .strictObject({
-    schemaVersion: z.literal(3),
+    schemaVersion: z.union([z.literal(3), z.literal(4)]),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
     engineVersion: IdSchema,
@@ -1185,6 +1235,11 @@ export const StoredManifestSchema = z
     revisions: z.array(RevisionSchema).min(4).max(256),
   })
   .superRefine((manifest, ctx) => {
+    if (
+      manifest.schemaVersion === 3 &&
+      manifest.participants.some((participant) => participant.skillLoadout !== undefined)
+    )
+      ctx.addIssue({ code: 'custom', message: 'Skill loadouts require manifest schema version 4' });
     if (manifest.participants[0].rngStream === manifest.participants[1].rngStream)
       ctx.addIssue({ code: 'custom', message: 'Actor streams must differ' });
     if (manifest.participants[0].actorId === manifest.participants[1].actorId)

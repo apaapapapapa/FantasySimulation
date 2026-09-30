@@ -13,6 +13,7 @@ import { shareTimeLabel } from './share.ts';
 import { ReplayEvents, CurrentEvents } from './ReplayEvents.tsx';
 import { NO_OVERLAYS, OVERLAY_LABELS } from './overlays.ts';
 import { ReplayResources } from './ReplayResources.tsx';
+import { SkillProvenance } from './SkillProvenance.tsx';
 
 const Scene = lazy(() => import('./Scene.tsx'));
 
@@ -236,6 +237,7 @@ export function ReplayPanel({
           )}
           {end?.kind !== 'result' && <p>{end?.reason}</p>}
           {end?.kind !== 'result' && <p role="status">再生なし: 診断のみを表示しています。</p>}
+          <SkillProvenance context={replay.context} />
           {end?.kind === 'result' &&
             ['unresolved', 'truncated'].includes(end.result.outcome.kind) && (
               <p role="status">部分リプレイ: 記録された範囲まで再生できます。</p>

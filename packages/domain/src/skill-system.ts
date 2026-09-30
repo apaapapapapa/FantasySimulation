@@ -81,7 +81,7 @@ export const EXPECTED_SKILL_COORDINATES = deepFreeze(
   ),
 );
 
-const SkillResolutionSchema = z.discriminatedUnion('kind', [
+export const SkillResolutionSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('active-ability'), ability: RefSchema }),
   z.strictObject({ kind: z.literal('passive-ability'), ability: RefSchema }),
   z.strictObject({

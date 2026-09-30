@@ -108,6 +108,9 @@ describe('Drizzle Kit and spatial persistence integration', () => {
         'battle_results',
         'replay_artifacts',
         'attempt_metrics',
+        'skill_catalog_revisions',
+        'skill_loadout_revisions',
+        'skill_loadout_heads',
         'runtime_owner',
       ])
         expect(tables.find((table) => table.name === name)?.strict).toBe(1);
@@ -156,7 +159,7 @@ describe('Drizzle Kit and spatial persistence integration', () => {
       );
       expect(() => db.prepare('DELETE FROM battle_specs').run()).toThrow(/cannot be deleted/);
       expect(db.prepare("SELECT name FROM sqlite_schema WHERE type='trigger'").all()).toHaveLength(
-        6,
+        10,
       );
       expect(db.pragma('integrity_check', { simple: true })).toBe('ok');
     } finally {

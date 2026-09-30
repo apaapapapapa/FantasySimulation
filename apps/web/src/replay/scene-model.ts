@@ -162,7 +162,7 @@ export function buildSceneModel(
         ? {
             abilityId: actor.action.abilityId,
             index: actor.action.stage.contact.stageIndex,
-            count: stageCount(context, definition, actor.action.abilityId),
+            count: stageCount(loadout, actor.action.abilityId),
             state: actor.action.stage.state,
             shape: actor.action.stage.shape,
             motion: actor.action.stage.motion
@@ -437,15 +437,8 @@ export function buildSceneModel(
 export type SceneModel = ReturnType<typeof buildSceneModel>;
 
 /** Declared stage count of the recorded ability revision; null for legacy single-stage data. */
-export function stageCount(
-  context: ReplayContext,
-  character: ReplayContext['actors'][number]['character'],
-  abilityId: string,
-) {
-  const ref = character.abilities.find((a) => a.id === abilityId);
-  const ability = context.manifest.revisions.find(
-    (r) => r.kind === 'ability' && r.id === ref?.id && r.revision === ref?.revision,
-  );
+export function stageCount(actor: ReplayContext['actors'][number] | undefined, abilityId: string) {
+  const ability = actor?.abilities.find((candidate) => candidate.id === abilityId);
   return ability?.kind === 'ability' ? (ability.definition.stages?.length ?? 1) : null;
 }
 
