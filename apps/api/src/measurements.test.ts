@@ -5,9 +5,45 @@ import {
   measureAsync,
   measureSync,
   currentMeasurements,
+  type VerificationWorkerStages,
 } from './measurements.ts';
 
 afterEach(() => vi.restoreAllMocks());
+it('keeps bounded Worker stages separate from process-local spans and preserves failures', () => {
+  const measured = new Measurements();
+  const stage = {
+    count: 2,
+    failures: 1,
+    bytes: 123,
+    inclusiveMs: 10,
+    busyWallMs: 8,
+    incomplete: 1,
+  };
+  measured.verificationStages({ decompress: stage });
+  measured.verificationStages({ decompress: stage });
+  const report = measured.report();
+  expect(report.verificationWorkerStages.decompress).toEqual({
+    count: 4,
+    failures: 2,
+    bytes: 246,
+    inclusiveMs: 20,
+    busyWallSumMs: 16,
+    incomplete: 2,
+  });
+  expect(report.stages).toEqual({});
+  expect(report.measuredSpanUnionMs).toBe(0);
+  expect(report.incompleteSpans).toBe(0);
+  for (const invalid of [
+    { unknown: stage },
+    { decompress: { ...stage, inclusiveMs: Infinity } },
+    { decompress: { ...stage, count: -1 } },
+    { decompress: { ...stage, extra: 1 } },
+    Object.fromEntries(Array.from({ length: 65 }, (_, i) => ['unknown-' + i, stage])),
+  ]) {
+    expect(() => measured.verificationStages(invalid as VerificationWorkerStages)).toThrow();
+    expect(measured.report().verificationWorkerStages).toEqual(report.verificationWorkerStages);
+  }
+});
 it('unions nested and concurrent intervals instead of adding work to wall time', () => {
   let clock = 0;
   vi.spyOn(performance, 'now').mockImplementation(() => clock);

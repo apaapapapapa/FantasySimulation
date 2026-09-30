@@ -378,7 +378,8 @@ export class BattleService {
       await measureAsync('record.append', () => writer!.append(pendingTerminal!));
       terminal = true;
       const manifest = await measureAsync('record.finish', () =>
-        writer!.finish({ kind: 'result', result }, resultId),
+        // The calculation task and final transfer ACK have settled before borrowing its slot.
+        writer!.finish({ kind: 'result', result }, resultId, this.pool.recordingVerificationPool),
       );
       if (controller.signal.aborted) throw controller.signal.reason;
       const metadata = this.artifacts.metadata(manifest);

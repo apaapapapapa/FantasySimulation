@@ -1,17 +1,27 @@
 import type { ReplayLocation } from './pack-reader.ts';
-import { ReplayManifestSchema, type ReplayManifest } from '@fantasy/domain/spatial';
+import { canonicalJson, ReplayManifestSchema, type ReplayManifest } from '@fantasy/domain/spatial';
 import { artifactOperationCode, operationInput, type OperationCode } from '../operation-error.ts';
-import { verifyReplayDirectory } from './replay-reader.ts';
+import { replayValidationProfile, verifyReplayDirectory } from './replay-reader.ts';
+import { sha256 } from './replay-files.ts';
+import {
+  Measurements,
+  VERIFICATION_WORKER_STAGE_NAMES,
+  type VerificationWorkerStages,
+} from '../measurements.ts';
 import { assertPublicData, PrivateDataError } from './replay-public.ts';
 
 export type VerificationTask = {
   directory: ReplayLocation;
   manifest: ReplayManifest;
   publicData: boolean;
+  measured?: boolean;
 };
 export type VerificationResponse = {
   success: boolean;
   attempted: boolean;
+  manifestHash: string | null;
+  validationProfile: string | null;
+  stages?: VerificationWorkerStages;
   code: OperationCode | 'UNKNOWN';
   /** A publishability failure keeps its classification across the thread boundary. */
   privateData: string | null;
@@ -20,10 +30,25 @@ export type VerificationResponse = {
 
 /** Runs the same validator as the in-process path, never a second acceptance implementation. */
 export default async function verify(task: VerificationTask): Promise<VerificationResponse> {
+  const measurement = task.measured ? new Measurements() : undefined;
+  const response = await (measurement ? measurement.run(() => verifyTask(task)) : verifyTask(task));
+  if (measurement) {
+    const stages = measurement.report().stages;
+    response.stages = Object.fromEntries(
+      VERIFICATION_WORKER_STAGE_NAMES.flatMap((name) =>
+        stages[name] ? [[name, stages[name]]] : [],
+      ),
+    );
+  }
+  return response;
+}
+async function verifyTask(task: VerificationTask): Promise<VerificationResponse> {
   let success = false,
     attempted = false,
     code: VerificationResponse['code'] = 'UNKNOWN',
-    privateData: string | null = null;
+    privateData: string | null = null,
+    manifestHash: string | null = null,
+    validationProfile: string | null = null;
   try {
     const manifest = operationInput(
       () => ReplayManifestSchema.parse(task.manifest),
@@ -35,11 +60,21 @@ export default async function verify(task: VerificationTask): Promise<Verificati
       manifest,
       task.publicData ? assertPublicData : undefined,
     );
+    validationProfile = replayValidationProfile(manifest);
+    manifestHash = sha256(canonicalJson(manifest));
     success = true;
   } catch (error) {
     code = artifactOperationCode(error);
     if (error instanceof PrivateDataError) privateData = error.message;
   }
   const { heapUsed, external, arrayBuffers } = process.memoryUsage();
-  return { success, attempted, code, privateData, memory: { heapUsed, external, arrayBuffers } };
+  return {
+    success,
+    attempted,
+    manifestHash,
+    validationProfile,
+    code,
+    privateData,
+    memory: { heapUsed, external, arrayBuffers },
+  };
 }
