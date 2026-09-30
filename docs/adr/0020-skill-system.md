@@ -110,24 +110,19 @@ same observation boundary. Truth-mode replay and actor-perspective replay render
 from recorded cues; neither recomputes perception. Sound requires explicit range,
 occlusion, delay and memory rules rather than reuse of sight.
 
+Cue identity/RNG derives from match seed, creator, affected observer and emission
+ordinal. Resistance, discovery, cleanse and expiry settle once at an atomic boundary.
+AI may aim an action at a perceived cue position, but physical target validation can
+never resolve a cue ID as an actor. A versioned replay feature pins all cue events.
+
 ### 2.4 Dependent summoned entities
 
-Do not reinterpret old duels. The recommended extension retains exactly two
-participants and adds bounded `DependentEntity` bodies owned by one participant.
-They are targetable, have finite HP/lifetime/upkeep, use deterministic owner-derived
-RNG streams, and may execute only declared commands or a generic approved policy.
-They are not participants or victory eligible. Owner defeat despawns dependents at
-the next atomic boundary. Possession keeps its summon slot
-and upkeep, removes the separate body, and grants only its declared capability
-until release. A summon event/display record must distinguish create, command,
-act, damage, dismiss/despawn and possess/unpossess.
-
-This requires a separately approved amendment to ADR0014 covering hostility,
-target selection, collision, simultaneous resolution, owner defeat, outcome,
-observation, replay camera/state, RNG and bounds. Initial limits are two concurrent
-dependents and eight creations per owner per match; fixture and load evidence may
-lower them, but raising them requires a reviewed decision. General teams, free-for-all and ally
-selection remain out of scope.
+The accepted [ADR0014 amendment](0014-duel-scope.md#dependent-entity-amendment)
+keeps two participants and versions bounded owner-dependent bodies. It fixes
+hostility/targeting, scheduler and command observation, atomic defeat/despawn,
+unchanged guard/drain settlement, RNG identity, possession and replay provenance.
+Initial limits are two concurrent/eight created per owner; evidence may lower them,
+while an increase needs review. Teams/free-for-all remain out of scope.
 
 ## 3. Catalog completeness and anti-placeholder gates
 
