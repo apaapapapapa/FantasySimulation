@@ -6,7 +6,7 @@ import { apiReplaySource } from './replay/api-source.ts';
 import { PublicViewer } from './publication/PublicViewer.tsx';
 import { LocalReplays } from './replay/LocalReplays.tsx';
 import { SkillWorkbench } from './workbench/SkillWorkbench.tsx';
-import { skillWorkbenchApi, type SkillRevisionRef } from './workbench/skill-api.ts';
+import { skillWorkbenchApi, type SkillLoadoutSelection } from './workbench/skill-api.ts';
 export function App() {
   return import.meta.env.VITE_APP_MODE === 'public' ? (
     <PublicViewer root={import.meta.env.VITE_PUBLICATION_ROOT} />
@@ -18,7 +18,7 @@ function LocalApp() {
   const [status, setStatus] = useState('接続を確認しています');
   const [revisionTick, setRevisionTick] = useState(0);
   const [replayId, setReplayId] = useState<string | null>(null);
-  const [skillLoadout, setSkillLoadout] = useState<SkillRevisionRef | null>(null);
+  const [skillLoadout, setSkillLoadout] = useState<SkillLoadoutSelection | null>(null);
   const replaySource = useMemo(() => (replayId ? apiReplaySource(replayId) : null), [replayId]);
   useEffect(() => {
     const controller = new AbortController();

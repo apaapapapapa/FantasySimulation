@@ -12,7 +12,11 @@ import {
 import { api, errorText, reference } from '../api-client.ts';
 import { facingToward, spawnPositions } from './spawn-position.ts';
 import { recentIdentities, rememberIdentity } from './recent-identities.ts';
-import type { SkillRevisionRef, SkillWorkbenchClient } from './skill-api.ts';
+import {
+  sameSkillRevisionRef,
+  type SkillLoadoutSelection,
+  type SkillWorkbenchClient,
+} from './skill-api.ts';
 
 function required(items: Revision[], id: string) {
   const value = items.find((r) => r.id === id);
@@ -25,7 +29,7 @@ type Result = ReturnType<typeof BattleResultResponseSchema.parse>;
 import { loadRevisionCatalog } from './revision-catalog.ts';
 export function useBattleJob(
   revisionTick: number,
-  skillLoadout: SkillRevisionRef | null,
+  skillLoadout: SkillLoadoutSelection | null,
   skillClient: SkillWorkbenchClient,
 ) {
   const [catalog, setCatalog] = useState<{
@@ -64,6 +68,14 @@ export function useBattleJob(
       });
     return () => controller.abort();
   }, [revisionTick]);
+  useEffect(() => {
+    if (!skillLoadout) return;
+    const match = catalog.characters.find((item) => {
+      const candidate = reference(item);
+      return sameSkillRevisionRef(candidate, skillLoadout.character);
+    });
+    if (match) setLeft(match.id);
+  }, [catalog.characters, skillLoadout]);
   useEffect(() => {
     if (!jobId) return;
     const controller = new AbortController();
@@ -150,8 +162,17 @@ export function useBattleJob(
       },
       budget: { ...DEFAULT_BUDGET, maxBytes },
     });
+    if (skillLoadout) {
+      const selectedCharacter = reference(required(catalog.characters, left));
+      if (!sameSkillRevisionRef(selectedCharacter, skillLoadout.character))
+        throw new Error('技構成と参加者Aのキャラクターが一致しません。');
+    }
     const submitted = skillLoadout
-      ? await skillClient.createBattleJob({ job: request, actorId: 'left', skillLoadout })
+      ? await skillClient.createBattleJob({
+          job: request,
+          actorId: 'left',
+          skillLoadout: skillLoadout.loadout,
+        })
       : await api('battle-jobs', JobResponseSchema, {
           method: 'POST',
           body: request,

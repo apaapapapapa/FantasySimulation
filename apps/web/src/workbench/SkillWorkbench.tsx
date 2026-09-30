@@ -10,9 +10,11 @@ import {
 } from '@fantasy/domain';
 import { errorText } from '../api-client.ts';
 import { reference } from '../api-client.ts';
+import { sameSkillRevisionRef, skillLoadoutsForCatalog } from './skill-api.ts';
 import type {
   SkillCharacter,
   SkillLoadoutHead,
+  SkillLoadoutSelection,
   SkillRevisionRef,
   SkillWorkbenchClient,
 } from './skill-api.ts';
@@ -33,6 +35,7 @@ const LABELS = {
 const PATH_OPTIONS = SKILL_PATHS.map(({ id, name }) => ({ value: id, label: name }));
 const ZODIAC_OPTIONS = SKILL_ZODIACS.map(({ id, name }) => ({ value: id, label: name }));
 const DAN_OPTIONS = SKILL_DANS.map(({ dan, name }) => ({ value: String(dan), label: name }));
+const refKey = (value: SkillRevisionRef) => `${value.id}@${value.revision}:${value.contentHash}`;
 
 function FilterOptions({ items }: { items: readonly { value: string; label: string }[] }) {
   return items.map((item) => (
@@ -51,11 +54,11 @@ export function SkillWorkbench({
   client: SkillWorkbenchClient;
   catalogId?: string;
   catalogVersion?: number;
-  onSaved(value: SkillRevisionRef): void;
+  onSaved(value: SkillLoadoutSelection | null): void;
 }) {
   const [catalog, setCatalog] = useState<SkillCatalog | null>(null);
   const [characters, setCharacters] = useState<SkillCharacter[]>([]);
-  const [characterId, setCharacterId] = useState('');
+  const [character, setCharacter] = useState<SkillRevisionRef | null>(null);
   const [saved, setSaved] = useState<SkillLoadoutHead[]>([]);
   const [configuration, setConfiguration] = useState<SkillConfiguration | null>(null);
   const [selectedRevision, setSelectedRevision] = useState<SkillLoadoutHead | null>(null);
@@ -77,19 +80,25 @@ export function SkillWorkbench({
       revision: nextCatalog.revision,
       contentHash: await skillCatalogDigest(nextCatalog),
     };
+    const matchingLoadouts = skillLoadoutsForCatalog(loadouts, catalogRef);
     setCatalog(nextCatalog);
     setCharacters(nextCharacters);
-    setSaved(loadouts);
+    setSaved(matchingLoadouts);
     if (!configuration || replace) {
       const current = replace
-        ? (loadouts.find((item) => item.id === selectedRevision?.id) ?? loadouts[0] ?? null)
-        : (loadouts[0] ?? null);
+        ? (matchingLoadouts.find((item) => item.id === selectedRevision?.id) ??
+          matchingLoadouts[0] ??
+          null)
+        : (matchingLoadouts[0] ?? null);
       setSelectedRevision(current);
-      setCharacterId(
-        current?.snapshot.character.id ??
-          nextCharacters.find((item) => item.id === characterId)?.id ??
-          nextCharacters[0]?.id ??
-          '',
+      setCharacter(
+        current?.snapshot.character ??
+          (character &&
+          nextCharacters.some((item) => sameSkillRevisionRef(reference(item), character))
+            ? character
+            : nextCharacters[0]
+              ? reference(nextCharacters[0])
+              : null),
       );
       setConfiguration(
         current?.snapshot.configuration ?? {
@@ -104,13 +113,13 @@ export function SkillWorkbench({
           enabledNodeIds: [],
         },
       );
-      if (current) onSaved(current.latest);
+      onSaved(current ? { loadout: current.latest, character: current.snapshot.character } : null);
     }
   }
 
   useEffect(() => {
     const controller = new AbortController();
-    void hydrate(controller.signal).catch((cause: unknown) => {
+    void hydrate(controller.signal, true).catch((cause: unknown) => {
       if (!controller.signal.aborted) setError(errorText(cause));
     });
     return () => controller.abort();
@@ -133,6 +142,7 @@ export function SkillWorkbench({
     if (!revision) {
       if (!catalog || !configuration) return;
       setSelectedRevision(null);
+      onSaved(null);
       setConfiguration({
         ...configuration,
         id: `loadout-${crypto.randomUUID()}`,
@@ -148,8 +158,8 @@ export function SkillWorkbench({
     }
     setSelectedRevision(revision);
     setConfiguration(revision.snapshot.configuration);
-    setCharacterId(revision.snapshot.character.id);
-    onSaved(revision.latest);
+    setCharacter(revision.snapshot.character);
+    onSaved({ loadout: revision.latest, character: revision.snapshot.character });
     setMessage(`revision ${revision.latest.revision} を再読込しました。`);
   }
 
@@ -168,7 +178,6 @@ export function SkillWorkbench({
 
   async function save() {
     if (!configuration) return;
-    const character = characters.find((item) => item.id === characterId);
     if (!character) {
       setError('構成を保存するキャラクターを選んでください。');
       return;
@@ -183,14 +192,14 @@ export function SkillWorkbench({
         ? await client.updateLoadout(
             selectedRevision.id,
             selectedRevision.version,
-            reference(character),
+            character,
             nextConfiguration,
           )
-        : await client.createLoadout(reference(character), nextConfiguration);
+        : await client.createLoadout(character, nextConfiguration);
       setSelectedRevision(result);
       setConfiguration(result.snapshot.configuration);
       setSaved((items) => [result, ...items.filter((item) => item.id !== result.id)]);
-      onSaved(result.latest);
+      onSaved({ loadout: result.latest, character: result.snapshot.character });
       setMessage(`revision ${result.latest.revision} を保存しました。`);
     } catch (cause) {
       setError(errorText(cause));
@@ -228,9 +237,30 @@ export function SkillWorkbench({
         </div>
         <label>
           キャラクター
-          <select value={characterId} onChange={(event) => setCharacterId(event.target.value)}>
+          <select
+            disabled={selectedRevision !== null}
+            value={character ? refKey(character) : ''}
+            onChange={(event) => {
+              const selected = characters.find(
+                (item) => refKey(reference(item)) === event.target.value,
+              );
+              if (selected) {
+                setCharacter(reference(selected));
+                if (selectedRevision) {
+                  setSelectedRevision(null);
+                  onSaved(null);
+                }
+              }
+            }}
+          >
+            {character &&
+              !characters.some((item) => sameSkillRevisionRef(reference(item), character)) && (
+                <option value={refKey(character)}>
+                  {character.id} r{character.revision} (saved)
+                </option>
+              )}
             {characters.map((item) => (
-              <option key={`${item.id}:${item.revision}`} value={item.id}>
+              <option key={refKey(reference(item))} value={refKey(reference(item))}>
                 {item.definition.name}・r{item.revision}
               </option>
             ))}

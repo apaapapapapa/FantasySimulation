@@ -237,6 +237,7 @@ export function ReplayPanel({
           )}
           {end?.kind !== 'result' && <p>{end?.reason}</p>}
           {end?.kind !== 'result' && <p role="status">再生なし: 診断のみを表示しています。</p>}
+          <SkillProvenance context={replay.context} />
           {end?.kind === 'result' &&
             ['unresolved', 'truncated'].includes(end.result.outcome.kind) && (
               <p role="status">部分リプレイ: 記録された範囲まで再生できます。</p>
@@ -405,7 +406,6 @@ export function ReplayPanel({
                   視野補正を持つ状態の主体は、補正後の視野が記録されていないため視野を描画しません。
                 </p>
               )}
-              <SkillProvenance context={replay.context} />
               {state && <ReplayResources context={replay.context} checkpoint={state} />}
               {frame && (
                 <CurrentEvents

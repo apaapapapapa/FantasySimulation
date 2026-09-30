@@ -1,7 +1,29 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
-import { skillWorkbenchApi } from './skill-api.ts';
+import {
+  sameSkillRevisionRef,
+  skillLoadoutsForCatalog,
+  skillWorkbenchApi,
+  type SkillLoadoutHead,
+} from './skill-api.ts';
 
 afterEach(() => vi.unstubAllGlobals());
+
+it('keeps exact refs and excludes loadouts from another catalog revision', () => {
+  const hash = (digit: string) => `sha256:${digit.repeat(64)}` as const,
+    catalog = { id: 'skills', revision: 2, contentHash: hash('2') },
+    heads = [
+      { id: 'matching', snapshot: { configuration: { catalog } } },
+      {
+        id: 'old',
+        snapshot: {
+          configuration: { catalog: { ...catalog, revision: 1, contentHash: hash('1') } },
+        },
+      },
+    ] as unknown as SkillLoadoutHead[];
+  expect(skillLoadoutsForCatalog(heads, catalog).map(({ id }) => id)).toEqual(['matching']);
+  expect(sameSkillRevisionRef(catalog, { ...catalog })).toBe(true);
+  expect(sameSkillRevisionRef(catalog, { ...catalog, contentHash: hash('3') })).toBe(false);
+});
 
 it('reads the confirmed bounded cursor pages for saved loadouts', async () => {
   const request = vi

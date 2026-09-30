@@ -1,6 +1,6 @@
 import type { Revision } from '@fantasy/domain/spatial';
 import { useBattleJob } from './useBattleJob.ts';
-import type { SkillRevisionRef, SkillWorkbenchClient } from './skill-api.ts';
+import type { SkillLoadoutSelection, SkillWorkbenchClient } from './skill-api.ts';
 const stateNames = {
   queued: '待機中',
   running: '実行中',
@@ -17,7 +17,7 @@ export function BattlePanel({
 }: {
   revisionTick: number;
   onReplay(id: string): void;
-  skillLoadout: SkillRevisionRef | null;
+  skillLoadout: SkillLoadoutSelection | null;
   skillClient: SkillWorkbenchClient;
 }) {
   const {
@@ -66,7 +66,10 @@ export function BattlePanel({
     <section className="panel arena" aria-label="非同期対戦">
       <h2>対戦を実行</h2>
       <p role="status">
-        技構成: {skillLoadout ? `${skillLoadout.id}・revision ${skillLoadout.revision}` : '未選択'}
+        技構成:{' '}
+        {skillLoadout
+          ? `${skillLoadout.loadout.id}・revision ${skillLoadout.loadout.revision}`
+          : '未選択'}
       </p>
       <fieldset disabled={busy}>
         <div className="matchup">

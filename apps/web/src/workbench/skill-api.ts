@@ -15,6 +15,16 @@ import { loadRevisionCatalog } from './revision-catalog.ts';
 export type SkillRevisionRef = SkillLoadoutHead['latest'];
 export type SkillCharacter = Extract<Revision, { kind: 'character' }>;
 export type { SkillLoadoutHead };
+export type SkillLoadoutSelection = {
+  loadout: SkillRevisionRef;
+  character: SkillRevisionRef;
+};
+export const sameSkillRevisionRef = (left: SkillRevisionRef, right: SkillRevisionRef) =>
+  left.id === right.id &&
+  left.revision === right.revision &&
+  left.contentHash === right.contentHash;
+export const skillLoadoutsForCatalog = (loadouts: SkillLoadoutHead[], catalog: SkillRevisionRef) =>
+  loadouts.filter((item) => sameSkillRevisionRef(item.snapshot.configuration.catalog, catalog));
 export type SkillBattleRequest = {
   job: unknown;
   actorId: string;
