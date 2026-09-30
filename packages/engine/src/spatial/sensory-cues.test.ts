@@ -115,6 +115,7 @@ it('keeps visual cues observer-bounded through delivery, AI choice, cleanse, dis
   const transitions = battleEvents(run.records)
     .filter((event) => event.sensoryCue)
     .map((event) => event.sensoryCue!.transition);
+  expect(battleEvents(run.records).some((event) => event.kind === 'sensory-cue')).toBe(true);
   expect(transitions).toEqual(expect.arrayContaining(['emitted', 'delivered', 'discovered']));
   const emitted = battleEvents(run.records).find(
     (event) => event.sensoryCue?.transition === 'emitted',

@@ -3,11 +3,7 @@ import { MAX_BATTLE_STEPS, MAX_FRAME_BYTES } from './contracts.ts';
 import { z } from 'zod';
 import { HashSchema, IdSchema, StoredManifestSchema } from './contracts.ts';
 import { DeferredEffectSchema, ResultSchema } from './records.ts';
-import {
-  DisplayStateSchema,
-  RequiredReplayFeaturesSchema,
-  StreamRecordSchema,
-} from './stream.ts';
+import { DisplayStateSchema, RequiredReplayFeaturesSchema, StreamRecordSchema } from './stream.ts';
 import { fail } from './replay-validation/common.ts';
 export { ReplayValidationError } from './replay-validation/common.ts';
 

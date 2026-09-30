@@ -239,9 +239,8 @@ export const EventSchema = z
     evasion: z.strictObject({ statuses: z.array(RefSchema).min(1).max(64) }).optional(),
     teleport: z.strictObject({ from: PhysicalVectorSchema, to: PhysicalVectorSchema }).optional(),
     sensoryCue: SensoryCueDisplaySchema.extend({
-        transition: z.enum(['emitted', 'delivered', 'discovered', 'cleansed', 'expired']),
-      })
-      .optional(),
+      transition: z.enum(['emitted', 'delivered', 'discovered', 'cleansed', 'expired']),
+    }).optional(),
     wave: z.number().int().min(0).max(8).optional(),
     sourceActorId: IdSchema.optional(),
     sourceProjectileId: IdSchema.optional(),
