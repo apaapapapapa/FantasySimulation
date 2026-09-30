@@ -52,6 +52,11 @@ export const SkillLoadoutHeadSchema = z
       context.addIssue({ code: 'custom', message: 'Skill loadout head mismatch' });
   });
 export type SkillLoadoutHead = z.infer<typeof SkillLoadoutHeadSchema>;
+export const SkillLoadoutPageSchema = z.strictObject({
+  items: z.array(SkillLoadoutHeadSchema).max(100),
+  nextCursor: IdSchema.nullable(),
+});
+export type SkillLoadoutPage = z.infer<typeof SkillLoadoutPageSchema>;
 
 export const SkillBattleJobRequestSchema = JobRequestSchema.extend({
   loadouts: z

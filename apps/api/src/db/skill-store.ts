@@ -1,9 +1,10 @@
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq, gt } from 'drizzle-orm';
 import {
   SkillCatalogRecordSchema,
   SkillLoadoutCreateSchema,
   SkillLoadoutHeadSchema,
   SkillLoadoutPatchSchema,
+  SkillLoadoutPageSchema,
   SkillLoadoutRevisionSchema,
   canonicalJson,
   parseJson,
@@ -205,6 +206,21 @@ export class SkillStore {
       snapshot,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+    });
+  }
+
+  async list(limit: number, cursor?: string) {
+    const rows = this.store.orm
+        .select({ id: skillLoadoutHeads.id })
+        .from(skillLoadoutHeads)
+        .where(cursor ? gt(skillLoadoutHeads.id, cursor) : undefined)
+        .orderBy(asc(skillLoadoutHeads.id))
+        .limit(limit + 1)
+        .all(),
+      page = rows.slice(0, limit);
+    return SkillLoadoutPageSchema.parse({
+      items: await Promise.all(page.map(({ id }) => this.head(id))),
+      nextCursor: rows.length > limit ? page.at(-1)!.id : null,
     });
   }
 

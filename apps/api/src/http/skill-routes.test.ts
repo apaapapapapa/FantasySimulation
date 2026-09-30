@@ -48,6 +48,10 @@ describe('skill loadout API', () => {
     expect((await app.inject(`/api/skill-loadouts/${configuration.id}`)).json()).toEqual(
       created.json(),
     );
+    expect((await app.inject('/api/skill-loadouts?limit=1')).json()).toMatchObject({
+      items: [{ id: configuration.id, version: 1 }],
+      nextCursor: null,
+    });
     const patched = await app.inject({
       method: 'PATCH',
       url: `/api/skill-loadouts/${configuration.id}`,
