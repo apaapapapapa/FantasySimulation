@@ -177,6 +177,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
   'apply-status': deferredEffect,
   reveal: deferredEffect,
   force: deferredEffect,
+  'sensory-cue': deferredEffect,
 };
 /** Simultaneous defense/resistance/shield resolution with exact attribution and one HP clamp. */
 export function resolveEffects(

@@ -357,6 +357,11 @@ function assessSingle(
     },
     'apply-status': () => {}, // Already assessed together by the status transaction above.
     dispel: () => {},
+    'sensory-cue': (effect) => {
+      utility += (rules.explorationWeight * effect.confidenceBps) / 10000;
+      confidence = Math.min(confidence, 1000);
+      reasons.push('mental eligibility and discovery are opponent-private');
+    },
   };
   for (const effect of effects) {
     if (!stateValue.handled.has(effect)) matchEffect(effect, effectAssessments, undefined);

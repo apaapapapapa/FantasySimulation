@@ -24,6 +24,7 @@ import type { PendingRelocation } from '../state.ts';
 import { displaySpatialObject, type SpatialObject } from '../rules/spatial-objects.ts';
 import type { SpatialObjectChanges } from '@fantasy/domain/spatial/execution';
 import { sameRecordValue } from '../rules/record-values.ts';
+import { hasSensoryCues } from '@fantasy/domain/spatial/execution';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
 export type SimulationState = {
@@ -77,7 +78,8 @@ export class StepTransaction {
     this.context = { ...context };
     this.previous = previous;
     this.step = step;
-    this.before = previous.actors.map((actor) => displayActor(actor, step));
+    const sensoryFeature = hasSensoryCues(context.battle.manifest.revisions);
+    this.before = previous.actors.map((actor) => displayActor(actor, step, sensoryFeature));
     this.frozenAtStart = new Set(
       previous.actors.filter((actor) => actor.clock?.frozen).map(actorId),
     );
@@ -143,7 +145,9 @@ export class StepTransaction {
       ...(objects ? { objects } : {}),
       changes: displayChanges(
         this.before,
-        this.next.actors.map((actor) => displayActor(actor, this.step)),
+        this.next.actors.map((actor) =>
+          displayActor(actor, this.step, hasSensoryCues(this.context.battle.manifest.revisions)),
+        ),
       ),
       events: this.journal.events,
     };
@@ -160,7 +164,13 @@ export class StepTransaction {
       projectiles: this.projectileChanges,
       changes: displayChanges(
         this.before,
-        this.next.actors.map((actor) => displayActor(actor, this.step + 1)),
+        this.next.actors.map((actor) =>
+          displayActor(
+            actor,
+            this.step + 1,
+            hasSensoryCues(this.context.battle.manifest.revisions),
+          ),
+        ),
       ),
       events: this.journal.events,
     };

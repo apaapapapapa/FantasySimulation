@@ -209,6 +209,29 @@ function SpatialObject({
 
 const FIREFLY_CELL = 9,
   FIREFLIES_PER_CELL = 5;
+
+export function SensoryCues3D({ model }: { model: SceneModel }) {
+  return model.illusions.map((cue) => (
+    <group
+      key={cue.id}
+      position={cue.position}
+      data-sensory-cue={cue.id}
+      userData={{ sensoryCue: cue.id }}
+    >
+      <mesh>
+        <sphereGeometry args={[0.55, 12, 8]} />
+        <meshBasicMaterial
+          color="#a789ff"
+          transparent
+          opacity={cue.confidenceBps / 20000}
+          wireframe
+          depthWrite={false}
+        />
+      </mesh>
+      <Glow position={[0, 0, 0]} scale={1.3} colour="#a789ff" opacity={0.45} />
+    </group>
+  ));
+}
 /**
  * Decorative motes in world-anchored cells around the fighters. Their drift is keyed to the
  * displayed step time, so a paused or shared step always shows the same arrangement.
@@ -407,6 +430,7 @@ export function SceneEffects({ model }: { model: SceneModel }) {
       {model.objects.map((o) => (
         <SpatialObject key={o.id} object={o} model={model} />
       ))}
+      <SensoryCues3D model={model} />
       <Fireflies model={model} />
     </>
   );

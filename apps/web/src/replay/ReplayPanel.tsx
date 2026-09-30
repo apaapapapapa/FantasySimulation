@@ -14,6 +14,7 @@ import { ReplayEvents, CurrentEvents } from './ReplayEvents.tsx';
 import { NO_OVERLAYS, OVERLAY_LABELS } from './overlays.ts';
 import { ReplayResources } from './ReplayResources.tsx';
 import { SkillProvenance } from './SkillProvenance.tsx';
+import { hasSensoryCues } from '@fantasy/domain/spatial';
 
 const Scene = lazy(() => import('./Scene.tsx'));
 
@@ -56,6 +57,7 @@ export function ReplayPanel({
   const [zoom, setZoom] = useState(1);
   const [copied, setCopied] = useState('');
   const [notice, setNotice] = useState('');
+  const [perspective, setPerspective] = useState('truth');
   const requested = useRef(initialStep);
   const player = replay?.manifest.end.kind === 'result' ? replay : null;
   const model = useMemo(
@@ -67,9 +69,10 @@ export function ReplayPanel({
             frame.records,
             frame.events,
             frame.eventRecords,
+            perspective === 'truth' ? 'omniscient' : { actorId: perspective },
           )
         : null,
-    [replay, frame],
+    [replay, frame, perspective],
   );
   const panel = useRef<HTMLElement | null>(null);
   const cursor = useRef({ target, loading });
@@ -99,6 +102,7 @@ export function ReplayPanel({
     setTarget(0);
     setError('');
     setNotice('');
+    setPerspective('truth');
     setLoading(true);
     setPlaying(false);
     void openReplaySession(source, controller.signal)
@@ -274,6 +278,23 @@ export function ReplayPanel({
                     <option value="2d">2D（俯瞰図）</option>
                   </select>
                 </label>
+                {hasSensoryCues(replay.context.manifest.revisions) && (
+                  <label>
+                    知覚視点
+                    <select
+                      aria-label="リプレイ知覚視点"
+                      value={perspective}
+                      onChange={(event) => setPerspective(event.target.value)}
+                    >
+                      <option value="truth">真実（全知）</option>
+                      {replay.context.actors.map((actor) => (
+                        <option key={actor.participant.actorId} value={actor.participant.actorId}>
+                          {actor.character.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
                 {NUDGES.map(([kind, label]) => (
                   <button
                     key={kind}

@@ -90,6 +90,33 @@
         "truth and actor-view records differ without leaking canonical hidden state",
         "discovery and cleanse remove the cue exactly once",
         "false targets never collide deal damage or affect victory"
+      ],
+      "runtimeEvidence": [
+        {
+          "id": "SK06-R01",
+          "assertion": "affected AI selects from the delivered visual cue through the subjective observation boundary",
+          "test": "packages/engine/src/spatial/sensory-cues.test.ts#keeps visual cues observer-bounded through delivery, AI choice, cleanse, discovery, replay and display"
+        },
+        {
+          "id": "SK06-R02",
+          "assertion": "truth and actor views use the same recorded cue while actor view hides canonical creator geometry in 2D and 3D",
+          "test": "apps/web/src/replay/sensory-cue-display.test.ts#shows recorded cues in truth view and substitutes position without truth leakage in actor view"
+        },
+        {
+          "id": "SK06-R03",
+          "assertion": "observer-scoped cleanse and discovery-before-expiry remove a cue exactly once",
+          "test": "packages/engine/src/spatial/sensory-cues.test.ts#derives cue identity independently and scopes control cleanse to one observer"
+        },
+        {
+          "id": "SK06-R04",
+          "assertion": "cue IDs never become combat actors and do not directly change damage HP or victory",
+          "test": "packages/engine/src/spatial/sensory-cues.test.ts#keeps visual cues observer-bounded through delivery, AI choice, cleanse, discovery, replay and display"
+        },
+        {
+          "id": "SK06-R05",
+          "assertion": "the cue lifecycle survives Worker SQLite artifact verification and reverse seek",
+          "test": "apps/api/src/jobs/sensory-cue-persistence.test.ts#round-trips sensory cue lifecycle through Worker, SQLite and reverse replay seek"
+        }
       ]
     },
     {

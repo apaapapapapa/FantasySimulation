@@ -155,6 +155,12 @@ export const CAPABILITY_COVERAGE = {
     'connects an authored effect through simulation, durable storage, replay and visible diagnostics',
     owner(engine + 'sim/combat-effects.ts', 'commitEffects'),
   ),
+  'effect:sensory-cue': effect(
+    'sensory-cue',
+    'sensory-cues.test.ts',
+    'keeps visual cues observer-bounded through delivery, AI choice, cleanse, discovery, replay and display',
+    owner(engine + 'sim/combat-effects.ts', 'commitEffects'),
+  ),
   'attack:direct': attack(
     'direct',
     'simulate.test.ts',

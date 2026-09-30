@@ -373,6 +373,24 @@ export const EffectSchema = z.discriminatedUnion('kind', [
     categories: categoryList(StatusCategorySchema).optional(),
   }),
   z.strictObject({ kind: z.literal('water'), extinguish: z.literal(true) }),
+  z
+    .strictObject({
+      kind: z.literal('sensory-cue'),
+      modality: z.literal('visual'),
+      offsetMm: z.strictObject({
+        x: z.number().int().min(-50_000).max(50_000),
+        y: z.number().int().min(-50_000).max(50_000),
+        z: z.number().int().min(-50_000).max(50_000),
+      }),
+      deliverySteps: positive(500),
+      durationSteps: positive(1_000),
+      discoverySteps: positive(1_000),
+      confidenceBps: positive(10_000),
+    })
+    .refine(
+      (cue) => cue.discoverySteps <= cue.durationSteps,
+      'Discovery must not follow sensory cue expiry',
+    ),
   RevealEffectSchema,
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
@@ -454,6 +472,7 @@ export const StatusSchema = z
       })
       .optional(),
     defeatImmunity: z.boolean().optional(),
+    mentalImmunity: z.boolean().optional(),
     stopImmunity: z.boolean().optional(),
     immortality: z.strictObject({ protections: positive(4) }).optional(),
     seals: SealSchema.optional(),
@@ -900,6 +919,16 @@ export const AbilitySchema = z
         message: 'Dispel requires status IDs or status categories',
       });
     if (
+      plans.some((p) => p.effects.some((e) => e.kind === 'sensory-cue')) &&
+      (ability.trigger !== 'action' ||
+        ability.target !== 'enemy' ||
+        plans.some((p) => p.attack?.kind !== 'hitscan' || p.attack.radiusMm !== 0))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Visual sensory cues require an enemy-targeted zero-radius hitscan action',
+      });
+    if (
       plans.some(
         (p) =>
           p.effects.some((e) => e.kind === 'reveal') &&
@@ -961,6 +990,7 @@ export const CharacterSchema = z
   .strictObject({
     name: z.string().min(1).max(100),
     originalText: z.string().max(20_000),
+    mentalEligibility: z.literal('cognitive').optional(),
     appearance: AppearanceSchema.optional(),
     stamina: StaminaSchema.optional(),
     stats: z.strictObject({
@@ -1315,7 +1345,7 @@ export const PhysicsProfileSchema = z.strictObject({
 /** Saved inputs remain readable; only ManifestSchema admits current execution. */
 export const StoredManifestSchema = z
   .strictObject({
-    schemaVersion: z.union([z.literal(3), z.literal(4), z.literal(5)]),
+    schemaVersion: z.union([z.literal(3), z.literal(4), z.literal(5), z.literal(6)]),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
     engineVersion: IdSchema,
@@ -1346,6 +1376,21 @@ export const StoredManifestSchema = z
       ctx.addIssue({
         code: 'custom',
         message: 'Passive and augment receipts require manifest schema version 5',
+      });
+    if (
+      manifest.schemaVersion < 6 &&
+      manifest.revisions.some(
+        (revision) =>
+          revision.kind === 'ability' &&
+          [
+            ...revision.definition.effects,
+            ...(revision.definition.stages ?? []).flatMap((stage) => stage.effects),
+          ].some((effect) => effect.kind === 'sensory-cue'),
+      )
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Sensory cues require manifest schema version 6',
       });
     if (manifest.participants[0].rngStream === manifest.participants[1].rngStream)
       ctx.addIssue({ code: 'custom', message: 'Actor streams must differ' });

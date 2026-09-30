@@ -280,6 +280,21 @@ export type ActorMindState = {
   decision: Decision;
   random: number;
   decisionRandom: DecisionRandom;
+  sensoryCues: SensoryCue[];
+};
+
+export type SensoryCue = {
+  id: string;
+  creatorId: string;
+  observerId: string;
+  modality: 'visual';
+  perceivedOrigin: Vec3;
+  emittedAt: number;
+  deliveredAt: number;
+  expiresAt: number;
+  discoveredAt: number;
+  confidenceBps: number;
+  deliveryRecorded?: true;
 };
 
 export type ActorClock = {

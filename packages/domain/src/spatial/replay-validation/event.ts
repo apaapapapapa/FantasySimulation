@@ -65,7 +65,29 @@ export function validateEvents(
           context.actors.some((a) => a.participant.actorId === id),
           'event actor reference',
         );
-    if (e.entityId !== null) requireReplay(entities.has(e.entityId), 'event entity reference');
+    if (e.entityId !== null)
+      requireReplay(
+        entities.has(e.entityId) || (e.kind === 'sensory-cue' && e.sensoryCue?.id === e.entityId),
+        'event entity reference',
+      );
+    if (e.sensoryCue) {
+      const cue = e.sensoryCue;
+      requireReplay(
+        e.kind === 'sensory-cue' &&
+          e.entityId === cue.id &&
+          e.actorId === cue.creatorId &&
+          e.targetId === cue.observerId &&
+          cue.creatorId !== cue.observerId &&
+          cue.deliveredAt >= cue.emittedAt &&
+          cue.discoveredAt <= cue.expiresAt &&
+          e.step >= cue.emittedAt &&
+          (cue.transition !== 'emitted' || e.step === cue.emittedAt) &&
+          (cue.transition !== 'delivered' || e.step === cue.deliveredAt) &&
+          (cue.transition !== 'discovered' || e.step === cue.discoveredAt) &&
+          (cue.transition !== 'expired' || e.step === cue.expiresAt),
+        'sensory cue transition',
+      );
+    } else requireReplay(e.kind !== 'sensory-cue', 'missing sensory cue event');
     for (const receipt of e.timeStop?.captured ?? []) {
       validateDeferredDefinition(context, receipt);
       requireReplay(
