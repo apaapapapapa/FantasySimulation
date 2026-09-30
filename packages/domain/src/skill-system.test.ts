@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import {
+  EXPECTED_SKILL_COORDINATES,
   SKILL_DANS,
   SKILL_PATH_IDS,
   SKILL_PATHS,
