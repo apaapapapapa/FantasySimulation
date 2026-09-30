@@ -65,8 +65,9 @@ it('measures real Worker/persistence/reverification without changing results or 
       if (slot.receipt) records += (await bundles.manifest(slot.receipt)).records;
     expect(records).toBeGreaterThan(4);
     expect(report.stages['record.append']?.count).toBe(records);
-    expect(report.stages.decompress?.count).toBeGreaterThan(0);
-    expect(report.stages['json.records']?.count).toBeGreaterThan(0);
+    // The writer's full decode runs in the shared Worker; retain its actual local stages separately.
+    expect(report.verificationWorkerStages.decompress?.count).toBeGreaterThan(0);
+    expect(report.verificationWorkerStages['json.records']?.count).toBeGreaterThan(0);
     expect(report.stages['hash.bytes']?.count).toBeGreaterThan(0);
     expect(report.stages['save.write']?.bytes).toBeGreaterThan(0);
     expect(report.capacitySampleMaxBytes.db).toBeGreaterThan(0);

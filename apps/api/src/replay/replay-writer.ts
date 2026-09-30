@@ -22,7 +22,12 @@ import {
   syncDirectory,
   writeDurableFile,
 } from './replay-files.ts';
-import { recordEvents, verifyReplayDirectory } from './replay-reader.ts';
+import {
+  recordEvents,
+  verifyReplayDirectory,
+  verifyReplayDirectoryInWorker,
+} from './replay-reader.ts';
+import type { Piscina } from 'piscina';
 
 type Identity = { id: string; attemptId: string; simulationHash: string; input: unknown };
 /** One writer per attempt. Await append to enforce backpressure; one chunk is retained. */
@@ -129,7 +134,7 @@ export class ReplayWriter {
     this.lines = [];
     this.rawBytes = 0;
   }
-  async finish(end: ReplayManifest['end'], resultId: string | null) {
+  async finish(end: ReplayManifest['end'], resultId: string | null, pool?: Piscina) {
     if (this.busy || this.sealed) throw new Error('Writer is busy/closed');
     this.sealed = true;
     await this.flush();
@@ -147,7 +152,8 @@ export class ReplayWriter {
       checkpoints: this.checkpoints,
       chunks: this.chunks,
     });
-    await verifyReplayDirectory(this.directory, manifest);
+    if (pool) await verifyReplayDirectoryInWorker(this.directory, manifest, pool);
+    else await verifyReplayDirectory(this.directory, manifest);
     await writeDurableFile(join(this.directory, 'manifest.json'), canonicalJson(manifest));
     await syncDirectory(this.directory);
     await rename(this.directory, replayDirectory(this.root, this.identity.id));

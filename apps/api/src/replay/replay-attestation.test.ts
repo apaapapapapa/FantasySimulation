@@ -3,6 +3,8 @@ import { writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { eq } from 'drizzle-orm';
+import { Piscina } from 'piscina';
+import { BattlePool } from '../jobs/worker-pool.ts';
 import { ReplayState, canonicalJson, type ReplayManifest } from '@fantasy/domain/spatial';
 import { withRuntime } from '../../test-support/runtime.ts';
 import { recordedBattle, withReplayDirectory } from '../../test-support/replays.ts';
@@ -14,6 +16,7 @@ import {
   replayValidationProfile,
   REPLAY_VALIDATION_PROFILE,
   verifyReplayDirectory,
+  verifyReplayDirectoryInWorker,
 } from './replay-reader.ts';
 import { readCompressed, sha256 } from './replay-files.ts';
 
@@ -31,6 +34,63 @@ async function withArtifact(
   });
 }
 describe('checksum reuse of semantically verified replay bytes', { timeout: 30_000 }, () => {
+  it('requires a real fixed Worker and ignores a caller-provided success override', async () => {
+    await withReplayDirectory(async (root) => {
+      const { manifest } = await recordedBattle(root, 20),
+        copied = structuredClone(manifest),
+        pool = new BattlePool(1),
+        fake = { verify: vi.fn().mockResolvedValue(undefined), run: vi.fn() };
+      try {
+        await expect(
+          verifyReplayDirectoryInWorker(
+            join(root, manifest.id),
+            copied,
+            fake as unknown as Piscina,
+          ),
+        ).rejects.toMatchObject({ code: 'INPUT_INVALID' });
+        expect(replayValidationProfile(copied)).toBeNull();
+        const override = vi
+          .spyOn(pool.pool, 'run')
+          .mockRejectedValue(new Error('Fake success path'));
+        await verifyReplayDirectoryInWorker(join(root, manifest.id), copied, pool.pool);
+        expect(override).not.toHaveBeenCalled();
+        expect(replayValidationProfile(copied)).toBe(REPLAY_VALIDATION_PROFILE);
+      } finally {
+        await pool.close();
+      }
+    });
+  });
+  it.each(['digest', 'profile', 'mutation'] as const)(
+    'rejects a %s mismatch without attestation',
+    async (damage) => {
+      await withReplayDirectory(async (root) => {
+        const { manifest } = await recordedBattle(root, 20),
+          copied = structuredClone(manifest),
+          pool = new BattlePool(1),
+          run = Piscina.prototype.run;
+        const dispatch = vi.spyOn(Piscina.prototype, 'run').mockImplementation(async function (
+          this: Piscina,
+          task,
+          options,
+        ) {
+          const result = await run.call(this, task, options);
+          if (damage === 'digest') result.manifestHash = 'sha256:' + '0'.repeat(64);
+          else if (damage === 'profile') result.validationProfile = 'unrecognized-profile';
+          else copied.resultId = 'changed-result';
+          return result;
+        });
+        try {
+          await expect(
+            verifyReplayDirectoryInWorker(join(root, manifest.id), copied, pool.pool),
+          ).rejects.toMatchObject({ code: 'DATA_INVALID' });
+          expect(replayValidationProfile(copied)).toBeNull();
+        } finally {
+          dispatch.mockRestore();
+          await pool.close();
+        }
+      });
+    },
+  );
   it('reuses a writer attestation after coordinator restart without replaying records', async () => {
     await withArtifact(async ({ runtime, jobs, store, root, manifest }) => {
       expect(jobs.artifact(manifest.id)?.validationProfile).toBe(REPLAY_VALIDATION_PROFILE);

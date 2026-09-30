@@ -9,6 +9,32 @@ import { readCompressed, sha256 } from './replay-files.ts';
 import { assertPublicData, PrivateDataError } from './replay-public.ts';
 import { ReplayVerificationPool, replayVerificationWorkers } from './verification-pool.ts';
 import { BattlePool } from '../jobs/worker-pool.ts';
+import verifyWorker from './verification-worker.ts';
+
+it('collects detailed verifier stages only when requested, including failed validation', async () => {
+  await withReplayDirectory(async (root) => {
+    const { manifest } = await recordedBattle(root, 20);
+    const task = { directory: join(root, manifest.id), manifest, publicData: false };
+    expect(await verifyWorker(task)).not.toHaveProperty('stages');
+    const measured = await verifyWorker({ ...task, measured: true });
+    expect(measured.success).toBe(true);
+    expect(measured.stages?.decompress?.count).toBe(2 * manifest.chunks.length);
+    expect(measured.stages?.['validate.replay']).toMatchObject({
+      count: 1,
+      failures: 0,
+      incomplete: 0,
+    });
+    await writeFile(join(task.directory, manifest.chunks[0]!.file), 'broken');
+    const failed = await verifyWorker({ ...task, measured: true });
+    expect(failed.success).toBe(false);
+    expect(failed.stages?.['validate.replay']).toMatchObject({
+      count: 1,
+      failures: 1,
+      incomplete: 0,
+    });
+    expect(failed.validationProfile).toBeNull();
+  });
+});
 
 it('inspects the original records in the same bounded decode pass as semantic verification', async () => {
   await withReplayDirectory(async (root) => {

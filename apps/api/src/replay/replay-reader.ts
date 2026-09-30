@@ -3,6 +3,10 @@ import { currentMeasurements, measureSync, startMeasurement } from '../measureme
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { Piscina } from 'piscina';
+import { verifyInWorker } from './verification-pool.ts';
+import type { VerificationResponse } from './verification-worker.ts';
 import { OperationError, operationInput } from '../operation-error.ts';
 import {
   canonicalJson,
@@ -27,6 +31,42 @@ export function replayValidationProfile(manifest: ReplayManifest) {
   return verifiedManifests.get(manifest) === sha256(canonicalJson(manifest))
     ? REPLAY_VALIDATION_PROFILE
     : null;
+}
+/** Full verification owns the fixed Worker dispatch; caller-provided success cannot mint a receipt. */
+export async function verifyReplayDirectoryInWorker(
+  directory: ReplayLocation,
+  manifest: ReplayManifest,
+  pool: Piscina,
+) {
+  if (!(pool instanceof Piscina)) throw new OperationError('INPUT_INVALID', 'Expected a real pool');
+  const snapshot = structuredClone(manifest),
+    digest = sha256(canonicalJson(snapshot)),
+    source = import.meta.url.endsWith('.ts');
+  await verifyInWorker(
+    async (task) => {
+      const result: VerificationResponse = await Piscina.prototype.run.call(pool, task, {
+        filename: fileURLToPath(
+          new URL(
+            source ? './verification-worker.ts' : './verification-worker.mjs',
+            import.meta.url,
+          ),
+        ),
+      });
+      if (
+        result.success &&
+        (result.manifestHash !== digest || result.validationProfile !== REPLAY_VALIDATION_PROFILE)
+      )
+        throw new OperationError('DATA_INVALID', 'Worker validation receipt mismatch');
+      return result;
+    },
+    directory,
+    snapshot,
+    false,
+    'validate.replay',
+  );
+  if (sha256(canonicalJson(manifest)) !== digest)
+    throw new OperationError('DATA_INVALID', 'Manifest changed during verification');
+  verifiedManifests.set(manifest, digest);
 }
 /** Trusted DB receipts bind prior semantic verification to these exact compressed bytes. */
 export async function verifyReplayChecksums(directory: ReplayLocation, manifest: ReplayManifest) {
