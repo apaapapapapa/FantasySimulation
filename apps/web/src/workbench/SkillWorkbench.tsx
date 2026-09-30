@@ -32,6 +32,13 @@ const LABELS = {
   locked: '未解放',
   disabled: '利用不可',
 };
+const ACTIONS = {
+  eligible: '習得する',
+  learned: '編成する',
+  enabled: '編成から外す',
+  locked: '未解放',
+  disabled: '利用不可',
+};
 const PATH_OPTIONS = SKILL_PATHS.map(({ id, name }) => ({ value: id, label: name }));
 const ZODIAC_OPTIONS = SKILL_ZODIACS.map(({ id, name }) => ({ value: id, label: name }));
 const DAN_OPTIONS = SKILL_DANS.map(({ dan, name }) => ({ value: String(dan), label: name }));
@@ -298,6 +305,7 @@ export function SkillWorkbench({
                 <button
                   type="button"
                   disabled={unavailable}
+                  aria-label={`${node.name}: ${ACTIONS[state.status]}`}
                   aria-pressed={state.status === 'enabled'}
                   aria-describedby={`${node.id}-description`}
                   onClick={() => operate(node)}
