@@ -12,7 +12,7 @@ import { readMartialSkillContent } from './martial-skill-content.ts';
 
 beforeAll(initializePhysics);
 
-const fixtureNodes = ['skill.spear.rat.1', 'skill.aikido.dog.1'] as const;
+const fixtureNodes = ['skill.aikido.dog.1'] as const;
 
 async function exactSkillBattle(nodeId: (typeof fixtureNodes)[number]) {
   const content = readMartialSkillContent(),
@@ -36,10 +36,13 @@ async function exactSkillBattle(nodeId: (typeof fixtureNodes)[number]) {
     );
   if (!ability || ability.kind !== 'ability')
     throw new Error(`Missing exact martial ability revision: ${nodeId}`);
-  const reactive = nodeId === 'skill.aikido.dog.1',
-    protagonist = reactive ? 'posture-duelist-v1' : 'swordsman',
-    opponent = reactive ? 'phoenix-duelist-v1' : 'swordsman',
-    manifest = await catalogManifest(protagonist, opponent, 'flat', 800, 228),
+  const manifest = await catalogManifest(
+      'posture-duelist-v1',
+      'phoenix-duelist-v1',
+      'flat',
+      800,
+      228,
+    ),
     catalog = {
       id: content.source.catalogId,
       revision: content.source.catalogRevision,
@@ -114,8 +117,8 @@ describe('SK-04 exact runtime release fixtures', () => {
         (event) =>
           event.actorId === 'left' &&
           event.abilityId === ability.id &&
-          (nodeId === 'skill.spear.rat.1' ||
-            (event.kind === 'reaction' && event.ruleId === 'reaction.activated')),
+          event.kind === 'reaction' &&
+          event.ruleId === 'reaction.activated',
       );
       expect(witnessed).toBe(true);
       const restored = new ReplayState(context);
