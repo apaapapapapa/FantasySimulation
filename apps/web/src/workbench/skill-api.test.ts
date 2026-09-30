@@ -10,7 +10,7 @@ import {
 afterEach(() => vi.unstubAllGlobals());
 
 it('targets the integrated immutable startup catalog by default', () => {
-  expect(DEFAULT_SKILL_CATALOG).toEqual({ id: 'skill-catalog-v1', revision: 3 });
+  expect(DEFAULT_SKILL_CATALOG).toEqual({ id: 'skill-catalog-v1', revision: 4 });
 });
 
 it('keeps exact refs and excludes loadouts from another catalog revision', () => {

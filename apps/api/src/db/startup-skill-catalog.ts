@@ -212,7 +212,8 @@ export function inspectStartupSkillCatalog(
 
 export const STARTUP_SKILL_ABILITY_IDS = swordRatRelease.map(({ abilityId }) => abilityId);
 
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 3;
+export const PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION = 3;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 4;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>
@@ -240,19 +241,46 @@ function validateIntegratedDefinitions(catalog: SkillCatalog, revisionInput: unk
   return refs;
 }
 
-/** Overlay every authored shard on the complete legacy skeleton as immutable catalog v1@2. */
-export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
+function assembleIntegratedStartupSkillCatalog(
+  revisionInput: unknown[],
+  revision: number,
+  authored: SkillNode[],
+): SkillCatalog {
   const legacy = readStartupSkillCatalog(revisionInput),
-    authored = integratedSkillShards.flatMap(({ nodes }) => nodes),
     nodes = new Map(legacy.nodes.map((node) => [skillCoordinateKey(node.coordinate), node]));
   for (const node of authored) nodes.set(skillCoordinateKey(node.coordinate), node);
   const catalog = parseCompleteSkillCatalog({
     ...legacy,
-    revision: INTEGRATED_STARTUP_CATALOG_REVISION,
+    revision,
     nodes: [...nodes.values()],
   });
   validateIntegratedDefinitions(catalog, revisionInput);
   return catalog;
+}
+
+/** Reconstruct immutable catalog v3 before the aikido release without copying 1,152 nodes. */
+export function readPreviousIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
+  const authored = integratedSkillShards
+    .flatMap(({ nodes }) => nodes)
+    .map((node): SkillNode =>
+      node.id === 'skill.aikido.dog.1'
+        ? { ...node, lifecycle: 'draft', resolution: [], fixtureIds: [] }
+        : node,
+    );
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION,
+    authored,
+  );
+}
+
+/** Overlay every current authored shard as the next immutable startup catalog revision. */
+export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    INTEGRATED_STARTUP_CATALOG_REVISION,
+    integratedSkillShards.flatMap(({ nodes }) => nodes),
+  );
 }
 
 export function inspectIntegratedStartupSkillCatalog(
@@ -266,10 +294,10 @@ export function inspectIntegratedStartupSkillCatalog(
       fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
     });
   if (
-    report.available !== 27 ||
-    report.verified !== 27 ||
+    report.available !== 28 ||
+    report.verified !== 28 ||
     report.lifecycle.implemented !== 3 ||
-    report.lifecycle.draft !== 1_122 ||
+    report.lifecycle.draft !== 1_121 ||
     report.issues.length
   )
     throw new Error('Integrated startup skill catalog release evidence is incomplete');

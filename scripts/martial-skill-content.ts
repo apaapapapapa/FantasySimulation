@@ -54,6 +54,8 @@ const ZodiacProfileSchema = z.strictObject({
 });
 const ReleaseSchema = z.strictObject({
   nodeId: IdSchema,
+  resolutionKind: z.enum(['active-ability', 'passive-ability']),
+  proof: z.enum(['long-melee-thrust', 'observed-physical-parry']),
   ability: RefSchema,
   fixtureId: IdSchema,
 });
@@ -115,6 +117,8 @@ export const MartialSkillFixturesSchema = z.strictObject({
     z.strictObject({
       fixtureId: IdSchema,
       nodeId: IdSchema,
+      resolutionKind: z.enum(['active-ability', 'passive-ability']),
+      proof: z.enum(['long-melee-thrust', 'observed-physical-parry']),
       definition: RefSchema,
       assertions: z.array(z.string().min(1).max(1_000)).min(1).max(8),
     }),
@@ -176,7 +180,7 @@ function authoredNode(
         : {}),
     },
     pathRoleTags: [...path.roleTags],
-    resolution: release ? [{ kind: 'active-ability', ability: release.ability }] : [],
+    resolution: release ? [{ kind: release.resolutionKind, ability: release.ability }] : [],
     fixtureIds: release ? [release.fixtureId] : [],
   };
 }
@@ -195,13 +199,27 @@ function requireReleasedDefinitions(
     const ability = abilities.get(`${release.ability.id}@${release.ability.revision}`);
     if (!ability || ability.contentHash !== release.ability.contentHash)
       throw new Error(`Missing exact martial release definition: ${release.nodeId}`);
-    if (
-      ability.definition.trigger !== 'action' ||
-      ability.definition.attack.kind !== 'melee' ||
-      ability.definition.attack.reachMm < 3_000 ||
-      !ability.definition.effects.some((effect) => effect.kind === 'damage')
+    if (release.proof === 'long-melee-thrust') {
+      if (
+        release.resolutionKind !== 'active-ability' ||
+        ability.definition.trigger !== 'action' ||
+        ability.definition.attack.kind !== 'melee' ||
+        ability.definition.attack.reachMm < 3_000 ||
+        !ability.definition.effects.some((effect) => effect.kind === 'damage')
+      )
+        throw new Error(`Martial release lacks executable long-thrust evidence: ${release.nodeId}`);
+    } else if (
+      release.resolutionKind !== 'passive-ability' ||
+      ability.definition.trigger !== 'before-hit' ||
+      ability.definition.reaction?.response.kind !== 'parry' ||
+      ability.definition.reaction.response.scope !== 'all' ||
+      ability.definition.target !== 'self' ||
+      !ability.definition.categories?.includes('technique') ||
+      !ability.definition.reaction.categories?.includes('physical') ||
+      !ability.definition.costs.stamina ||
+      !ability.definition.cooldownSteps
     )
-      throw new Error(`Martial release lacks executable long-thrust evidence: ${release.nodeId}`);
+      throw new Error(`Martial release lacks observed physical parry evidence: ${release.nodeId}`);
   }
 }
 
@@ -222,7 +240,12 @@ export function compileMartialSkillContent(authoringInput: unknown, spatialInput
       ),
     }),
   );
-  const supported = new Set(['explicit-reach', 'linear-thrust']),
+  const supported = new Set([
+      'explicit-reach',
+      'linear-thrust',
+      'observed-action-reaction',
+      'redirect',
+    ]),
     branches = source.paths.flatMap((path) =>
       source.zodiacs.map((zodiac) => {
         const nodeIds = [1, 2, 3, 4, 5, 6].map((dan) => nodeId(path.id, zodiac.id, dan)),
@@ -276,12 +299,23 @@ export function compileMartialSkillContent(authoringInput: unknown, spatialInput
     evidence: source.releases.map((release) => ({
       fixtureId: release.fixtureId,
       nodeId: release.nodeId,
+      resolutionKind: release.resolutionKind,
+      proof: release.proof,
       definition: release.ability,
-      assertions: [
-        'exact immutable action ability revision',
-        'melee reach is at least 3000mm',
-        'real battle emits the selected ability',
-      ],
+      assertions:
+        release.proof === 'long-melee-thrust'
+          ? [
+              'exact immutable action ability revision',
+              'melee reach is at least 3000mm',
+              'exact loadout battle emits the selected ability',
+              'recorded replay reaches the same final checkpoint',
+            ]
+          : [
+              'exact immutable before-hit physical parry revision',
+              'parry costs stamina and has a cooldown',
+              'exact loadout battle records whole-contact parry activation',
+              'recorded replay reaches the same final checkpoint',
+            ],
     })),
   });
   return { source, shards, fixtures };

@@ -311,7 +311,7 @@
         "reduced certainty when used after the opening has passed; patient opponents, feints and attacks that are not observed in time; countered by delay, spacing or a false start."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: begin the path action before the opponent establishes control.",
       "counterplay": "delay, spacing or a false start; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -335,7 +335,7 @@
         "lost buildup when preparation or maintenance is broken; patient opponents, feints and attacks that are not observed in time; countered by interrupt preparation or force disengagement."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: build and retain path-specific readiness over time.",
       "counterplay": "interrupt preparation or force disengagement; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -359,7 +359,7 @@
         "greater recovery and a clearer counter window; patient opponents, feints and attacks that are not observed in time; countered by evade the commitment or counter during recovery."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: apply stronger path-specific break pressure.",
       "counterplay": "evade the commitment or counter during recovery; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -383,7 +383,7 @@
         "cedes ground and may abandon accumulated readiness; patient opponents, feints and attacks that are not observed in time; countered by deny the exit lane or delay the threat."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: leave danger while retaining the path's low-level option.",
       "counterplay": "deny the exit lane or delay the threat; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -407,7 +407,7 @@
         "higher commitment and weaker focused effect; patient opponents, feints and attacks that are not observed in time; countered by leave the bounded area or use obstruction."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
       "counterplay": "leave the bounded area or use obstruction; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -431,7 +431,7 @@
         "upkeep, exposure and an explicit escape opportunity; patient opponents, feints and attacks that are not observed in time; countered by break contact, cleanse the control or exhaust upkeep."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: maintain path-specific pressure that limits escape.",
       "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -455,7 +455,7 @@
         "movement resource use and predictable pursuit direction; patient opponents, feints and attacks that are not observed in time; countered by obstacles, route changes or a prepared interception."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: move with the path action and continue a legal pursuit.",
       "counterplay": "obstacles, route changes or a prepared interception; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -479,7 +479,7 @@
         "lower immediate pressure and time spent stabilizing; patient opponents, feints and attacks that are not observed in time; countered by force a decisive exchange before stabilization."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: stabilize path-specific resources and recovery.",
       "counterplay": "force a decisive exchange before stabilization; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -503,7 +503,7 @@
         "the switch consumes time or resources and can be baited; patient opponents, feints and attacks that are not observed in time; countered by feint the observed response or change after the switch."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: switch between two declared path modes after observation.",
       "counterplay": "feint the observed response or change after the switch; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -527,7 +527,7 @@
         "delayed action and failure against concealed or false cues; patient opponents, feints and attacks that are not observed in time; countered by conceal, vary or falsify the relevant cue."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: improve a path action using delivered, legal observation.",
       "counterplay": "conceal, vary or falsify the relevant cue; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -535,7 +535,7 @@
       "id": "fixture.plan.aikido.dog",
       "path": "aikido",
       "zodiac": "dog",
-      "status": "blocked",
+      "status": "partial",
       "nodeIds": [
         "skill.aikido.dog.1",
         "skill.aikido.dog.2",
@@ -544,14 +544,14 @@
         "skill.aikido.dog.5",
         "skill.aikido.dog.6"
       ],
-      "availableNodeIds": [],
+      "availableNodeIds": ["skill.aikido.dog.1"],
       "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
       "upperDanTradeoffs": [
         "depends on the incoming threat and yields initiative when unused; patient opponents, feints and attacks that are not observed in time.",
         "depends on the incoming threat and yields initiative when unused; patient opponents, feints and attacks that are not observed in time; countered by wait, feint or attack outside the response contract."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: answer a threat with path-specific defense and response.",
       "counterplay": "wait, feint or attack outside the response contract; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -575,7 +575,7 @@
         "high consumption, long recovery and punishable failure; patient opponents, feints and attacks that are not observed in time; countered by survive, evade or invalidate the finishing condition."
       ],
       "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
-      "missingMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
       "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
       "counterplay": "survive, evade or invalidate the finishing condition; path weakness: patient opponents, feints and attacks that are not observed in time."
     },
@@ -2357,6 +2357,8 @@
     {
       "fixtureId": "fixture.skill.spear.rat.1.action",
       "nodeId": "skill.spear.rat.1",
+      "resolutionKind": "active-ability",
+      "proof": "long-melee-thrust",
       "definition": {
         "id": "spear",
         "revision": 1,
@@ -2365,7 +2367,25 @@
       "assertions": [
         "exact immutable action ability revision",
         "melee reach is at least 3000mm",
-        "real battle emits the selected ability"
+        "exact loadout battle emits the selected ability",
+        "recorded replay reaches the same final checkpoint"
+      ]
+    },
+    {
+      "fixtureId": "fixture.skill.aikido.dog.1.parry",
+      "nodeId": "skill.aikido.dog.1",
+      "resolutionKind": "passive-ability",
+      "proof": "observed-physical-parry",
+      "definition": {
+        "id": "parry-v1",
+        "revision": 1,
+        "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980"
+      },
+      "assertions": [
+        "exact immutable before-hit physical parry revision",
+        "parry costs stamina and has a cooldown",
+        "exact loadout battle records whole-contact parry activation",
+        "recorded replay reaches the same final checkpoint"
       ]
     }
   ]

@@ -213,12 +213,25 @@
   "releases": [
     {
       "nodeId": "skill.spear.rat.1",
+      "resolutionKind": "active-ability",
+      "proof": "long-melee-thrust",
       "ability": {
         "id": "spear",
         "revision": 1,
         "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3"
       },
       "fixtureId": "fixture.skill.spear.rat.1.action"
+    },
+    {
+      "nodeId": "skill.aikido.dog.1",
+      "resolutionKind": "passive-ability",
+      "proof": "observed-physical-parry",
+      "ability": {
+        "id": "parry-v1",
+        "revision": 1,
+        "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980"
+      },
+      "fixtureId": "fixture.skill.aikido.dog.1.parry"
     }
   ]
 }
