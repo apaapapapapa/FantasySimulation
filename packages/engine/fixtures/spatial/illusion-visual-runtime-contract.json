@@ -88,8 +88,8 @@
       "sensors": ["visual"]
     },
     "mentalEffect": { "admission": "ineligible", "reason": "mindless-target" },
-    "visualCue": { "admission": "eligible", "reason": "visual-sensor-present" },
-    "rule": "Mental eligibility gates mental effects, not modality delivery."
+    "visualCue": { "admission": "ineligible", "reason": "mindless-target" },
+    "rule": "A cognitive illusion fails closed on mental eligibility before modality delivery. Sensor-only environmental holograms require a future distinct mechanism."
   },
   "aiNoninterference": {
     "controlComparison": {
@@ -170,6 +170,7 @@
   },
   "implementationBoundary": {
     "directTargetMentalInterference": "out-of-scope-pending-review",
+    "sensorOnlyEnvironmentalHologram": "out-of-scope-future-mechanism",
     "approvedRuntimeNumbers": false,
     "fixturePurpose": "contract-input-only"
   }

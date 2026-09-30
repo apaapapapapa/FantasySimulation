@@ -46,6 +46,7 @@ describe('pending visual illusion runtime contract', () => {
     );
     expect(record(contract.implementationBoundary)).toEqual({
       directTargetMentalInterference: 'out-of-scope-pending-review',
+      sensorOnlyEnvironmentalHologram: 'out-of-scope-future-mechanism',
       approvedRuntimeNumbers: false,
       fixturePurpose: 'contract-input-only',
     });
@@ -65,7 +66,7 @@ describe('pending visual illusion runtime contract', () => {
     expect(array(expiry.expectedStates).map(record).at(-1)).toEqual({ step: 9, state: 'absent' });
   });
 
-  it('does not confuse mindlessness with inability to receive a visual cue', () => {
+  it('fails cognitive illusion delivery closed for a non-mental target', () => {
     const target = record(contract.nonMentalTargetCase);
     expect(record(target.observer)).toMatchObject({
       mentalEligibility: 'mindless',
@@ -73,9 +74,10 @@ describe('pending visual illusion runtime contract', () => {
     });
     expect(target.mentalEffect).toEqual({ admission: 'ineligible', reason: 'mindless-target' });
     expect(target.visualCue).toEqual({
-      admission: 'eligible',
-      reason: 'visual-sensor-present',
+      admission: 'ineligible',
+      reason: 'mindless-target',
     });
+    expect(target.rule).toContain('future distinct mechanism');
   });
 
   it('limits false evidence to the affected observer cognition without creating an actor', () => {
