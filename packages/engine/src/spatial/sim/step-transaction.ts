@@ -32,7 +32,7 @@ import { displaySpatialObject, type SpatialObject } from '../rules/spatial-objec
 import type { SpatialObjectChanges } from '@fantasy/domain/spatial/execution';
 import { sameRecordValue } from '../rules/record-values.ts';
 import { hasSensoryCues } from '@fantasy/domain/spatial/execution';
-import { displayDependent } from './dependents.ts';
+import { displayDependent } from '../rules/dependent-display.ts';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
 export type SimulationState = {

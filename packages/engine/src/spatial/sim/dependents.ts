@@ -1,8 +1,4 @@
-import {
-  dependentSeed,
-  nextRandom,
-  type DependentDisplay,
-} from '@fantasy/domain/spatial/execution';
+import { dependentSeed, nextRandom } from '@fantasy/domain/spatial/execution';
 import type { AbilityRevision, ActorState, DependentState } from '../state.ts';
 import { capsulesOverlap } from '../rules/relocation.ts';
 import { capsuleShape } from '../world/physics.ts';
@@ -12,25 +8,6 @@ import { actorId } from './step-transaction.ts';
 
 const MAX_ACTIVE_PER_OWNER = 2;
 const MAX_CREATED_PER_OWNER = 8;
-
-export const displayDependent = (dependent: DependentState): DependentDisplay => ({
-  id: dependent.id,
-  profile: dependent.profile,
-  ownerId: dependent.ownerId,
-  hostileOwnerId: dependent.hostileOwnerId,
-  abilityId: dependent.ability.id,
-  ordinal: dependent.ordinal,
-  position: { ...dependent.position },
-  body: dependent.body,
-  hp: dependent.hp,
-  maxHp: dependent.maxHp,
-  createdAt: dependent.createdAt,
-  expiresAt: dependent.expiresAt,
-  nextActionAt: dependent.nextActionAt,
-  nextUpkeepAt: dependent.nextUpkeepAt,
-  rngState: dependent.rngState,
-  ...(dependent.clock ? { clock: { ...dependent.clock } } : {}),
-});
 
 const ownerSlot = (tx: StepTransaction, ownerId: string) =>
   tx.context.battle.manifest.participants.findIndex((p) => p.actorId === ownerId) === 0 ? 'a' : 'b';

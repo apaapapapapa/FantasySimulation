@@ -32,7 +32,8 @@ import { releasePhase } from './sim/phase-release.ts';
 import { contactPhase } from './sim/phase-contact.ts';
 import { resolutionPhase } from './sim/phase-resolution.ts';
 import type { PendingRelocation } from './state.ts';
-import { displayDependent } from './sim/dependents.ts';
+import { displayDependent } from './rules/dependent-display.ts';
+import { settleDefeatedDependents } from './sim/dependents.ts';
 export type SimulationEnd = {
   steps: number;
   outcome: Outcome;
@@ -272,6 +273,7 @@ export function* simulate(
           },
           work.reactions,
         );
+        settleDefeatedDependents(tx);
         const record = tx.boundaryRecord();
         const committed = tx.journal.finish(record);
         ({ actors, melees, dependents, dependentCreated, stop } = tx.next);
