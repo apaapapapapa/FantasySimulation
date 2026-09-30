@@ -3,7 +3,7 @@ import {
   sensoryCueId,
   type BattleEvent,
 } from '@fantasy/domain/spatial/execution';
-import type { ActorState, PerceptionMemory, SensoryCue } from '../state.ts';
+import type { ActorState, SensoryCue } from '../state.ts';
 import type { Journal } from '../rules/journal.ts';
 
 export function recordedCue(cue: SensoryCue): NonNullable<BattleEvent['sensoryCue']> {
@@ -92,30 +92,4 @@ export function settleSensoryCues(actor: ActorState, step: number, journal: Jour
     } else retained.push(cue);
   }
   actor.mind.sensoryCues = retained;
-}
-
-/** Overlay only the observer's delivered, undiscovered cue; canonical bodies stay untouched. */
-export function subjectiveCueMemory(
-  memory: PerceptionMemory,
-  cues: readonly SensoryCue[],
-  step: number,
-): PerceptionMemory {
-  const cue = [...cues]
-    .filter(
-      (candidate) =>
-        candidate.deliveredAt <= step &&
-        step < candidate.discoveredAt &&
-        step < candidate.expiresAt,
-    )
-    .sort((a, b) => a.id.localeCompare(b.id))[0];
-  if (!cue) return memory;
-  const observation = memory.observation;
-  const enemy = observation?.enemy ?? memory.lastSeen;
-  if (!enemy || enemy.id !== cue.creatorId) return memory;
-  const perceived = { ...enemy, position: { ...cue.perceivedOrigin } };
-  return {
-    ...memory,
-    observation: observation ? { ...observation, enemy: perceived } : observation,
-    lastSeen: perceived,
-  };
 }

@@ -1,6 +1,12 @@
 import { domainSnapshotStep, frozen } from '../rules/subject-clocks.ts';
 import { effectiveStatuses, sealedAbilityCategories } from '@fantasy/domain/spatial/execution';
-import type { ActorState, DecisionView, StatusRevision } from '../state.ts';
+import type {
+  ActorState,
+  DecisionView,
+  PerceptionMemory,
+  SensoryCue,
+  StatusRevision,
+} from '../state.ts';
 import profile from '../profile.json' with { type: 'json' };
 import type { DeepReadonly, Definition } from '@fantasy/domain/spatial/execution';
 import { effectiveStats, statusKnowledge } from '../rules/status.ts';
@@ -11,7 +17,32 @@ import { flightRate } from '../rules/locomotion.ts';
 import { hasForcedMotion } from '../rules/forces.ts';
 import { ownsStageMotion } from '../rules/stage-motion.ts';
 import { postureSpeed } from '../rules/posture.ts';
-import { subjectiveCueMemory } from '../sim/sensory-cues.ts';
+
+/** Overlay only the observer's delivered, undiscovered cue; canonical bodies stay untouched. */
+export function subjectiveCueMemory(
+  memory: PerceptionMemory,
+  cues: readonly SensoryCue[],
+  step: number,
+): PerceptionMemory {
+  const cue = [...cues]
+    .filter(
+      (candidate) =>
+        candidate.deliveredAt <= step &&
+        step < candidate.discoveredAt &&
+        step < candidate.expiresAt,
+    )
+    .sort((a, b) => a.id.localeCompare(b.id))[0];
+  if (!cue) return memory;
+  const observation = memory.observation;
+  const enemy = observation?.enemy ?? memory.lastSeen;
+  if (!enemy || enemy.id !== cue.creatorId) return memory;
+  const perceived = { ...enemy, position: { ...cue.perceivedOrigin } };
+  return {
+    ...memory,
+    observation: observation ? { ...observation, enemy: perceived } : observation,
+    lastSeen: perceived,
+  };
+}
 
 /** Own resources and active statuses are proprioception, never a lookup of an opponent. */
 export function selfView(

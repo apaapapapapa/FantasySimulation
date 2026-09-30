@@ -14,8 +14,8 @@ import {
   cognitiveCueEligibility,
   cueIdentity,
   settleSensoryCues,
-  subjectiveCueMemory,
 } from './sim/sensory-cues.ts';
+import { subjectiveCueMemory } from './ai/self-view.ts';
 import { Journal } from './rules/journal.ts';
 import type { ActorState, SensoryCue } from './state.ts';
 import { sampleManifest } from '@fantasy/samples';
@@ -99,7 +99,7 @@ it('derives cue identity independently and scopes control cleanse to one observe
   expect(tieJournal.events.map((event) => event.sensoryCue?.transition)).toEqual(['discovered']);
 });
 
-it('runs a bounded cognitive visual cue through battle records and engine-free replay', async () => {
+it('keeps visual cues observer-bounded through delivery, AI choice, cleanse, discovery, replay and display', async () => {
   const manifest = await sensoryCueManifest();
   const battle = await prepareBattle(manifest);
   expect(battle.manifest.schemaVersion).toBe(6);

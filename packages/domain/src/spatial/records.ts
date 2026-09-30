@@ -21,6 +21,18 @@ export const PhysicalVectorSchema = z.strictObject({
   y: z.number().min(-2000).max(2000),
   z: z.number().min(-2000).max(2000),
 });
+export const SensoryCueDisplaySchema = z.strictObject({
+  id: IdSchema,
+  creatorId: IdSchema,
+  observerId: IdSchema,
+  modality: z.literal('visual'),
+  perceivedOrigin: PhysicalVectorSchema,
+  emittedAt: step,
+  deliveredAt: step,
+  expiresAt: z.number().int().min(1).max(7000),
+  discoveredAt: z.number().int().min(1).max(7000),
+  confidenceBps: z.number().int().min(1).max(10000),
+});
 export const ResourceStateSchema = z.strictObject({
   hp: count,
   mp: count,
@@ -226,18 +238,7 @@ export const EventSchema = z
     deferrals: z.array(IdSchema).min(1).max(16).optional(),
     evasion: z.strictObject({ statuses: z.array(RefSchema).min(1).max(64) }).optional(),
     teleport: z.strictObject({ from: PhysicalVectorSchema, to: PhysicalVectorSchema }).optional(),
-    sensoryCue: z
-      .strictObject({
-        id: IdSchema,
-        creatorId: IdSchema,
-        observerId: IdSchema,
-        modality: z.literal('visual'),
-        perceivedOrigin: PhysicalVectorSchema,
-        emittedAt: step,
-        deliveredAt: step,
-        expiresAt: z.number().int().min(1).max(7000),
-        discoveredAt: z.number().int().min(1).max(7000),
-        confidenceBps: z.number().int().min(1).max(10000),
+    sensoryCue: SensoryCueDisplaySchema.extend({
         transition: z.enum(['emitted', 'delivered', 'discovered', 'cleansed', 'expired']),
       })
       .optional(),
