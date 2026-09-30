@@ -1,0 +1,67 @@
+{
+  "status": "accepted-design-fixtures",
+  "issue": 228,
+  "baseline": "a9c45d65ddf673aa3683b6882620b8db1d23decd",
+  "suites": [
+    {
+      "id": "catalog-exact-set",
+      "proves": ["SK-A01", "SK-A02", "SK-A03", "SK-A04"],
+      "cases": [
+        "exact 16x12x6 coordinates and 192 branches",
+        "reject duplicate, missing, extra, broken and cyclic nodes",
+        "reject available nodes without executable recipes",
+        "reject six-level numeric-only copies and missing deepening evidence"
+      ]
+    },
+    {
+      "id": "resolver-order-and-invalid-input",
+      "proves": ["SK-A05", "SK-A07", "SK-A08", "SK-A17", "SK-A18"],
+      "cases": [
+        "permuted learned and enabled sets resolve to identical digest and refs",
+        "reject locked, unlearned, conflicting, weapon-invalid and unsupported nodes",
+        "resolved closure alone enters the battle and stays within existing limits",
+        "catalog or loadout revision change changes provenance without mutating old specs"
+      ]
+    },
+    {
+      "id": "saved-compatibility",
+      "proves": ["SK-A08", "SK-A15", "SK-A16"],
+      "cases": [
+        "pre-skill database and omitted manifest fields read unchanged",
+        "saved battle survives catalog rename or newer defaults",
+        "unsupported resolver or execution identity rejects retry but permits display",
+        "API Worker SQLite artifact and 2D/3D seek reverse loop preserve recorded state"
+      ]
+    },
+    {
+      "id": "subjective-illusion",
+      "proves": ["SK-A11", "SK-A13", "SK-A14", "SK-A15"],
+      "cases": [
+        "affected AI selects from delivered false cue while unaffected observer does not",
+        "truth and actor-view records differ without leaking canonical hidden state",
+        "discovery and cleanse remove the cue exactly once",
+        "false targets never collide deal damage or affect victory"
+      ]
+    },
+    {
+      "id": "dependent-summon",
+      "proves": ["SK-A12", "SK-A13", "SK-A14", "SK-A15", "SK-A17", "SK-A18"],
+      "cases": [
+        "owner command and generic policy are deterministic under input permutation",
+        "cap upkeep expiry dismissal owner defeat and possession settle atomically",
+        "dependent target selection and collision do not widen duel victory semantics",
+        "bounded entity log memory CPU and replay sizes pass measured limits"
+      ]
+    },
+    {
+      "id": "vertical-ui",
+      "proves": ["SK-A06", "SK-A07", "SK-A19", "SK-A20"],
+      "cases": [
+        "browse search explain select save reload prepare battle and replay one branch",
+        "keyboard headers focus disabled reasons non-colour states zoom and phone viewport",
+        "public catalog remains read-only and local edits require existing local boundary",
+        "full verification clean-source Linux PR/main CI and app evidence remain required"
+      ]
+    }
+  ]
+}
