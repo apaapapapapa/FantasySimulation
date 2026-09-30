@@ -7,7 +7,6 @@ import {
   DraftPatchSchema,
   ExpectedVersionSchema,
   IdSchema,
-  parseJson,
   CURRENT_ENGINE_VERSION,
   RevisionGraphError,
   revisionReference,
@@ -16,6 +15,8 @@ import { EngineInputError, rulesExecutionEligibility } from '@fantasy/engine/spa
 import { StoreError, type Store } from '../db/store.ts';
 import type { BattleService } from '../jobs/battle-service.ts';
 import { addJobRoutes } from './job-routes.ts';
+import { body } from './request-body.ts';
+import { addSkillRoutes } from './skill-routes.ts';
 
 const idParams = z.strictObject({ id: IdSchema });
 const pageQuery = z.strictObject({
@@ -25,16 +26,6 @@ const pageQuery = z.strictObject({
 const revisionQuery = z.strictObject({
   revision: z.coerce.number().int().min(1).max(2147483647).optional(),
 });
-function body<S extends z.ZodType>(schema: S, input: unknown): z.infer<S> {
-  try {
-    return parseJson(schema, input);
-  } catch (error) {
-    throw new StoreError(
-      'invalid-input',
-      (error instanceof Error ? error.message : 'Invalid JSON').slice(0, 1000),
-    );
-  }
-}
 export function createApp(store: Store, logger = false, runtime?: BattleService) {
   const app = Fastify({ logger, bodyLimit: 512 * 1024 });
   app.addHook('onClose', async () => {
@@ -144,6 +135,7 @@ export function createApp(store: Store, logger = false, runtime?: BattleService)
       input = body(ExpectedVersionSchema, request.body);
     return reply.code(201).send(await store.publishDraft(id, input.expectedVersion));
   });
+  addSkillRoutes(app, store, runtime);
   if (runtime) addJobRoutes(app, runtime);
   return app;
 }
