@@ -1,0 +1,9 @@
+name: League artifact command
+description: Run a fixed league command with action-scoped artifact credentials
+inputs:
+  command:
+    description: Fixed league operation
+    required: true
+runs:
+  using: node24
+  main: dist/main.mjs
