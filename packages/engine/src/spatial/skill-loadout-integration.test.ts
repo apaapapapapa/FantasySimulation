@@ -19,6 +19,21 @@ import { executionEligibility } from './execution-policy.ts';
 import { runBattle } from './run.ts';
 
 const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
+const skillResolutionDigest = (
+  catalog: object,
+  resolvedNodeIds: string[],
+  nodeResolutions: object[],
+) =>
+  contentHash(
+    JSON.parse(
+      canonicalJson({
+        resolverVersion: 'skill-resolver-v1',
+        catalog,
+        resolvedNodeIds,
+        nodeResolutions,
+      }),
+    ),
+  );
 
 async function skillFixture() {
   const manifest = await sampleManifest(),
@@ -39,16 +54,7 @@ async function skillFixture() {
         resolution: [{ kind: 'active-ability' as const, ability: reference(ability) }],
       },
     ],
-    resolutionDigest = await contentHash(
-      JSON.parse(
-        canonicalJson({
-          resolverVersion: 'skill-resolver-v1',
-          catalog,
-          resolvedNodeIds,
-          nodeResolutions,
-        }),
-      ),
-    ),
+    resolutionDigest = await skillResolutionDigest(catalog, resolvedNodeIds, nodeResolutions),
     receipt = SkillLoadoutReceiptSchema.parse({
       schemaVersion: 1,
       resolverVersion: 'skill-resolver-v1',
@@ -129,16 +135,7 @@ describe('skill loadout battle vertical', () => {
           resolution: [{ kind: 'active-ability' as const, ability: reference(ability) }],
         },
       ],
-      resolutionDigest = await contentHash(
-        JSON.parse(
-          canonicalJson({
-            resolverVersion: 'skill-resolver-v1',
-            catalog,
-            resolvedNodeIds,
-            nodeResolutions,
-          }),
-        ),
-      ),
+      resolutionDigest = await skillResolutionDigest(catalog, resolvedNodeIds, nodeResolutions),
       participants = structuredClone(manifest.participants);
     participants[0].skillLoadout = SkillLoadoutReceiptSchema.parse({
       schemaVersion: 1,
