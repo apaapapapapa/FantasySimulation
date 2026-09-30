@@ -268,8 +268,8 @@ export function inspectIntegratedStartupSkillCatalog(
   if (
     report.available !== 27 ||
     report.verified !== 27 ||
-    report.lifecycle.implemented !== 4 ||
-    report.lifecycle.draft !== 1_121 ||
+    report.lifecycle.implemented !== 3 ||
+    report.lifecycle.draft !== 1_122 ||
     report.issues.length
   )
     throw new Error('Integrated startup skill catalog release evidence is incomplete');
