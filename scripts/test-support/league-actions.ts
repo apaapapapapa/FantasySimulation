@@ -38,6 +38,7 @@ export function pipelineActionsFixture() {
     name,
     status: 'completed',
     conclusion: 'success',
+    completed_at: new Date().toISOString(),
     head_sha: identity.source.sha,
     run_attempt: 1,
   }));
