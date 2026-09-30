@@ -25,18 +25,8 @@ export async function replayContext(input: unknown, simulationHash: string) {
     const receipt = participant.skillLoadout;
     if (!receipt) continue;
     requireReplay(
-      receipt.resolutionDigest ===
-        (await contentHash(
-          JSON.parse(
-            canonicalJson({
-              resolverVersion: receipt.resolverVersion,
-              catalog: receipt.catalog,
-              resolvedNodeIds: receipt.resolvedNodeIds,
-              nodeResolutions: receipt.nodeResolutions,
-            }),
-          ),
-        )),
-      'skill loadout resolution digest',
+      canonicalJson(receipt.character) === canonicalJson(participant.character),
+      'skill loadout character',
     );
   }
   // Replay v1 historically checks ability/status references but not status transformation closure.

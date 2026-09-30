@@ -118,6 +118,7 @@ export async function skillBattleReceipt(input: unknown): Promise<SkillLoadoutRe
   return SkillLoadoutReceiptSchema.parse({
     schemaVersion: 1,
     resolverVersion: snapshot.resolved.resolverVersion,
+    character: snapshot.character,
     catalog: snapshot.resolved.catalog,
     loadout: { id: snapshot.id, revision: snapshot.revision, contentHash: storedHash },
     explicitlyEnabledNodeIds: [...snapshot.resolved.explicitlyEnabledNodeIds].sort(compareIds),

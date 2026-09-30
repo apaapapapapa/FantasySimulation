@@ -1153,7 +1153,8 @@ const ActiveSkillNodeResolutionSchema = z.strictObject({
 export const SkillLoadoutReceiptSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
-    resolverVersion: z.literal('skill-resolver-v1'),
+    resolverVersion: IdSchema,
+    character: RefSchema,
     catalog: RefSchema,
     loadout: RefSchema,
     explicitlyEnabledNodeIds: CanonicalSkillIdsSchema(8),

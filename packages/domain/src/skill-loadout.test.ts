@@ -159,6 +159,7 @@ describe('skill loadout resolution', () => {
       snapshot = { ...content, contentHash: await skillLoadoutRevisionHash(content) },
       receipt = await skillBattleReceipt(snapshot);
     expect(receipt).toMatchObject({
+      character: content.character,
       loadout: { id: config.id, revision: 1, contentHash: snapshot.contentHash },
       resolvedNodeIds: [id],
       explicitlyEnabledNodeIds: [id],

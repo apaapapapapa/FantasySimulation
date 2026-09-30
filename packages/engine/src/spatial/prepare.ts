@@ -63,6 +63,13 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
   for (const participant of manifest.participants) {
     const receipt = participant.skillLoadout;
     if (!receipt) continue;
+    if (receipt.resolverVersion !== 'skill-resolver-v1')
+      throw new EngineInputError(
+        'revision-content',
+        `Unsupported skill resolver: ${receipt.resolverVersion}`,
+      );
+    if (canonicalJson(receipt.character) !== canonicalJson(participant.character))
+      throw new EngineInputError('revision-content', 'Skill loadout character mismatch');
     const digest = await contentHash(
       JSON.parse(
         canonicalJson({
