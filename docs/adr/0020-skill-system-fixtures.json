@@ -2,6 +2,15 @@
   "status": "accepted-design-fixtures",
   "issue": 228,
   "baseline": "a9c45d65ddf673aa3683b6882620b8db1d23decd",
+  "coverageAssertion": {
+    "requiredAcceptanceIds": [
+      "SK-A01", "SK-A02", "SK-A03", "SK-A04", "SK-A05",
+      "SK-A06", "SK-A07", "SK-A08", "SK-A09", "SK-A10",
+      "SK-A11", "SK-A12", "SK-A13", "SK-A14", "SK-A15",
+      "SK-A16", "SK-A17", "SK-A18", "SK-A19", "SK-A20"
+    ],
+    "rule": "the union of suite proves values must equal this set; omissions and unknown IDs fail"
+  },
   "suites": [
     {
       "id": "catalog-exact-set",
@@ -31,6 +40,30 @@
         "saved battle survives catalog rename or newer defaults",
         "unsupported resolver or execution identity rejects retry but permits display",
         "API Worker SQLite artifact and 2D/3D seek reverse loop preserve recorded state"
+      ]
+    },
+    {
+      "id": "martial-mechanism-differences",
+      "proves": ["SK-A09"],
+      "cases": [
+        "sword continuous attack-defense differs from axe committed heavy break",
+        "judo contact capture differs from aikido redirecting an observed incoming action",
+        "staff route control differs from spear thrust reach and interception",
+        "archery aim sightline and projectile differ from dagger entry and brief opening",
+        "karate body strike-break differs from shield guard ally protection and displacement",
+        "draw-sword preparation and decisive release remains distinct from sword continuity",
+        "all eleven martial paths have executable path-specific fixtures, AI decisions, logs and replay assertions"
+      ]
+    },
+    {
+      "id": "support-and-magic-interactions",
+      "proves": ["SK-A10"],
+      "cases": [
+        "shinto healing protection and purification consume bounded resources and cannot loop indefinitely",
+        "renki physical and mental buffs exercise explicit stack key cap duration expiry and dispel policy",
+        "magic projectile area and placed formation exercise element affinity terrain and obstruction",
+        "healing buff and magic fixtures cover resource use duplicate application duration release interference and counters",
+        "cross-path interactions remain deterministic through AI log saved artifact and 2D/3D replay"
       ]
     },
     {
