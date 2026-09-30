@@ -1233,7 +1233,7 @@
       },
       "name": "Aikido Protection dan 1",
       "description": "Low-level use: a low-cost flow response that is unavailable without a committed incoming action. Zodiac direction: answer a threat with path-specific defense and response.",
-      "lifecycle": "draft",
+      "lifecycle": "available",
       "prerequisites": [],
       "deepening": {
         "kind": "foundation",
@@ -1241,8 +1241,17 @@
         "retainsLowerUse": true
       },
       "pathRoleTags": ["reactive-redirect", "incoming-action"],
-      "resolution": [],
-      "fixtureIds": []
+      "resolution": [
+        {
+          "kind": "passive-ability",
+          "ability": {
+            "id": "parry-v1",
+            "revision": 1,
+            "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980"
+          }
+        }
+      ],
+      "fixtureIds": ["fixture.skill.aikido.dog.1.parry"]
     },
     {
       "id": "skill.aikido.dog.2",

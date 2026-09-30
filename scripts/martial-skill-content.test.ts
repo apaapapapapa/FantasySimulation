@@ -31,7 +31,7 @@ const expectedContrasts = [
 ];
 
 describe('SK-04 martial path content', () => {
-  it('keeps eight exact 72-node shards and one honestly available foundation', () => {
+  it('keeps eight exact 72-node shards and only runtime-proven foundations available', () => {
     const content = readMartialSkillContent(),
       nodes = content.shards.flatMap((shard) => shard.nodes),
       available = nodes.filter((node) => node.lifecycle === 'available');
@@ -39,25 +39,44 @@ describe('SK-04 martial path content', () => {
     expect(content.shards.every((shard) => shard.nodes.length === 72)).toBe(true);
     expect(nodes).toHaveLength(576);
     expect(new Set(nodes.map(({ id }) => id)).size).toBe(576);
-    expect(available).toMatchObject([
-      {
-        id: 'skill.spear.rat.1',
-        coordinate: { path: 'spear', zodiac: 'rat', dan: 1 },
-        resolution: [
-          {
-            kind: 'active-ability',
-            ability: {
-              id: 'spear',
-              revision: 1,
-              contentHash:
-                'sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3',
+    expect(available).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'skill.spear.rat.1',
+          coordinate: { path: 'spear', zodiac: 'rat', dan: 1 },
+          resolution: [
+            {
+              kind: 'active-ability',
+              ability: {
+                id: 'spear',
+                revision: 1,
+                contentHash:
+                  'sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3',
+              },
             },
-          },
-        ],
-        fixtureIds: ['fixture.skill.spear.rat.1.action'],
-      },
-    ]);
-    expect(nodes.filter((node) => node.lifecycle === 'draft')).toHaveLength(575);
+          ],
+          fixtureIds: ['fixture.skill.spear.rat.1.action'],
+        }),
+        expect.objectContaining({
+          id: 'skill.aikido.dog.1',
+          coordinate: { path: 'aikido', zodiac: 'dog', dan: 1 },
+          resolution: [
+            {
+              kind: 'passive-ability',
+              ability: {
+                id: 'parry-v1',
+                revision: 1,
+                contentHash:
+                  'sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980',
+              },
+            },
+          ],
+          fixtureIds: ['fixture.skill.aikido.dog.1.parry'],
+        }),
+      ]),
+    );
+    expect(available).toHaveLength(2);
+    expect(nodes.filter((node) => node.lifecycle === 'draft')).toHaveLength(574);
     expect(
       nodes
         .filter((node) => node.lifecycle === 'draft')
@@ -86,7 +105,10 @@ describe('SK-04 martial path content', () => {
       expect(fixture.lowLevelUse).not.toContain('TODO');
       expect(fixture.upperDanTradeoffs.every((tradeoff) => tradeoff.length > 40)).toBe(true);
       expect(fixture.status).toBe(
-        fixture.path === 'spear' && fixture.zodiac === 'rat' ? 'partial' : 'blocked',
+        (fixture.path === 'spear' && fixture.zodiac === 'rat') ||
+          (fixture.path === 'aikido' && fixture.zodiac === 'dog')
+          ? 'partial'
+          : 'blocked',
       );
     }
   });
