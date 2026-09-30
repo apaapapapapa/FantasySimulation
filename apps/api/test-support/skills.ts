@@ -11,8 +11,13 @@ export async function skillPersistenceFixture(store: Store, id: string) {
       ...source.definition,
       name: `Stored ${id} skill strike`,
     }),
+    alternateAbility = await sealRevision('ability', `skill.${id}.guard`, 1, {
+      ...source.definition,
+      name: `Stored ${id} skill guard`,
+    }),
     character = manifest.revisions.find((revision) => revision.kind === 'character')!,
     target = 'skill.sword.rat.1',
+    alternate = 'skill.judo.rat.1',
     catalog = completeSkillTestCatalog();
   catalog.nodes = catalog.nodes.map((node) =>
     node.id === target
@@ -21,9 +26,21 @@ export async function skillPersistenceFixture(store: Store, id: string) {
           prerequisites: [],
           resolution: [{ kind: 'active-ability' as const, ability: reference(ability) }],
         }
-      : { ...node, lifecycle: 'draft' as const, prerequisites: [], resolution: [], fixtureIds: [] },
+      : node.id === alternate
+        ? {
+            ...node,
+            prerequisites: [],
+            resolution: [{ kind: 'active-ability' as const, ability: reference(alternateAbility) }],
+          }
+        : {
+            ...node,
+            lifecycle: 'draft' as const,
+            prerequisites: [],
+            resolution: [],
+            fixtureIds: [],
+          },
   );
-  await store.seedRevisions([...manifest.revisions, ability]);
+  await store.seedRevisions([...manifest.revisions, ability, alternateAbility]);
   const skills = new SkillStore(store),
     catalogRecord = await skills.seedCatalog(catalog),
     configuration = {
@@ -35,5 +52,14 @@ export async function skillPersistenceFixture(store: Store, id: string) {
       learnedNodeIds: [target],
       enabledNodeIds: [target],
     };
-  return { skills, manifest, character, catalog, catalogRecord, configuration, target };
+  return {
+    skills,
+    manifest,
+    character,
+    catalog,
+    catalogRecord,
+    configuration,
+    target,
+    alternate,
+  };
 }

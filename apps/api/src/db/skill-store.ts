@@ -7,6 +7,7 @@ import {
   SkillLoadoutPageSchema,
   SkillLoadoutRevisionSchema,
   canonicalJson,
+  compareIds,
   parseJson,
   parseCompleteSkillCatalog,
   resolveSkillLoadout,
@@ -103,7 +104,14 @@ export class SkillStore {
     configurationInput: unknown,
     revision: number,
   ): Promise<SkillLoadoutRevision> {
-    const configuration = SkillLoadoutCreateSchema.shape.configuration.parse(configurationInput);
+    const parsedConfiguration =
+        SkillLoadoutCreateSchema.shape.configuration.parse(configurationInput),
+      configuration = {
+        ...parsedConfiguration,
+        eligibilityNodeIds: [...parsedConfiguration.eligibilityNodeIds].sort(compareIds),
+        learnedNodeIds: [...parsedConfiguration.learnedNodeIds].sort(compareIds),
+        enabledNodeIds: [...parsedConfiguration.enabledNodeIds].sort(compareIds),
+      };
     this.store.requireRevision('character', character);
     const catalog = await this.requireCatalog(configuration.catalog);
     let resolved;

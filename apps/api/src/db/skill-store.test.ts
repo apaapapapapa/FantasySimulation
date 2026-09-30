@@ -5,6 +5,7 @@ import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 import { afterEach, describe, expect, it } from 'vite-plus/test';
+import { compareIds } from '@fantasy/domain';
 import { reference } from '@fantasy/engine/spatial';
 import { skillPersistenceFixture } from '../../test-support/skills.ts';
 import { repositoryRoot } from '../config.ts';
@@ -23,6 +24,12 @@ function temporary() {
 async function fixture() {
   const store = openStore(':memory:');
   return { store, ...(await skillPersistenceFixture(store, 'api')) };
+}
+function loadoutCounts(store: ReturnType<typeof openStore>) {
+  return {
+    heads: store.db.prepare('SELECT count(*) count FROM skill_loadout_heads').get(),
+    revisions: store.db.prepare('SELECT count(*) count FROM skill_loadout_revisions').get(),
+  };
 }
 
 describe('skill persistence', () => {
@@ -70,11 +77,69 @@ describe('skill persistence', () => {
           },
         }),
       ).rejects.toMatchObject({ code: 'conflict' });
-      expect(store.db.prepare('SELECT count(*) count FROM skill_loadout_heads').get()).toEqual({
-        count: 0,
+      expect(loadoutCounts(store)).toEqual({
+        heads: { count: 0 },
+        revisions: { count: 0 },
       });
-      expect(store.db.prepare('SELECT count(*) count FROM skill_loadout_revisions').get()).toEqual({
-        count: 0,
+    } finally {
+      store.close();
+    }
+  });
+
+  it('gives set-equivalent loadouts one canonical snapshot hash across stores', async () => {
+    const firstStore = openStore(':memory:'),
+      secondStore = openStore(':memory:');
+    try {
+      const first = await skillPersistenceFixture(firstStore, 'permutation'),
+        second = await skillPersistenceFixture(secondStore, 'permutation'),
+        ascending = [first.target, first.alternate].sort(compareIds),
+        descending = [...ascending].reverse(),
+        firstHead = await first.skills.create({
+          character: reference(first.character),
+          configuration: {
+            ...first.configuration,
+            eligibilityNodeIds: ascending,
+            learnedNodeIds: ascending,
+            enabledNodeIds: ascending,
+          },
+        }),
+        secondHead = await second.skills.create({
+          character: reference(second.character),
+          configuration: {
+            ...second.configuration,
+            eligibilityNodeIds: descending,
+            learnedNodeIds: descending,
+            enabledNodeIds: descending,
+          },
+        });
+      expect(firstHead.latest.contentHash).toBe(secondHead.latest.contentHash);
+      expect(secondHead.snapshot.configuration).toEqual(firstHead.snapshot.configuration);
+      expect(firstHead.snapshot.configuration).toMatchObject({
+        eligibilityNodeIds: ascending,
+        learnedNodeIds: ascending,
+        enabledNodeIds: ascending,
+      });
+    } finally {
+      firstStore.close();
+      secondStore.close();
+    }
+  });
+
+  it('rejects duplicate node IDs instead of silently canonicalizing them away', async () => {
+    const { store, skills, character, configuration, target } = await fixture();
+    try {
+      await expect(
+        skills.create({
+          character: reference(character),
+          configuration: {
+            ...configuration,
+            learnedNodeIds: [target, target],
+          },
+        }),
+      ).rejects.toThrow('Skill node IDs must be unique');
+      expect(loadoutCounts(store)).toEqual({
+        heads: { count: 0 },
+        revisions: { count: 0 },
       });
     } finally {
       store.close();
