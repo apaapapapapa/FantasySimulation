@@ -152,6 +152,20 @@ export function validateEvents(
               .abilities.some((a) => a.id === e.abilityId),
         'event ability reference',
       );
+    for (const guard of e.damage?.guard?.responses ?? []) {
+      const activation = events.find((candidate) => candidate.id === guard.activationId);
+      const ability = context.actors
+        .find((actor) => actor.participant.actorId === e.targetId)
+        ?.abilities.find((candidate) => candidate.id === activation?.abilityId);
+      requireReplay(
+        activation?.kind === 'reaction' &&
+          activation.ruleId === 'reaction.activated' &&
+          activation.actorId === e.targetId &&
+          ability?.definition.reaction?.response.kind === 'guard' &&
+          ability.definition.reaction.response.retainedDamageBps === guard.retainedDamageBps,
+        'guard activation provenance',
+      );
+    }
     if (e.stage) {
       const ability = context.actors
         .find((a) => a.participant.actorId === (e.sourceActorId ?? e.actorId))

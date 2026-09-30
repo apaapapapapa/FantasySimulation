@@ -29,6 +29,22 @@ it('suppresses an explosive payload until the returned projectile contacts again
   await recordedCheckpoints(input, output);
 });
 
+it('gives deflection the original contact and does not guard the reflected return', async () => {
+  const input = await deflectionManifest({
+    leftReactions: true,
+    reactions: [
+      deflectionResponse,
+      { reaction: { response: { kind: 'guard', retainedDamageBps: 5000 } } },
+    ],
+  });
+  const output = await runBattle(input);
+  const events = battleEvents(output.records);
+  expect(events.filter((event) => event.kind === 'projectile-deflect')).toHaveLength(1);
+  expect(events.filter((event) => event.kind === 'damage')).toHaveLength(1);
+  expect(events.some((event) => event.damage?.guard)).toBe(false);
+  await recordedCheckpoints(input, output);
+});
+
 it.each([false, true])(
   'preserves launch stats, force and status payloads with hidden attacker=%s',
   async (hidden) => {

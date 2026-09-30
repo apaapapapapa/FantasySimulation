@@ -126,7 +126,9 @@ export function commitEffects(
         app.event.ruleId = 'damage.defense-resistance-shield';
         app.event.reason = app.damageCancelled
           ? 'parried-damage-retains-element-contact'
-          : 'shared-shield-and-single-hp-clamp';
+          : app.guards?.length
+            ? 'guarded-damage-retains-contact-and-effects'
+            : 'shared-shield-and-single-hp-clamp';
       } else if (app.effect.kind === 'heal') {
         app.event.amount = result.healing.find((h) => h.applicationId === app.id)!.amount;
       } else if (app.effect.kind === 'shield') {
@@ -248,6 +250,7 @@ export function commitEffects(
                     partial:
                       !!app.sourceActorId ||
                       !!app.damageCancelled ||
+                      !!app.guards?.length ||
                       (app.scaleBps ?? 10000) !== 10000,
                     statuses: actor.statuses,
                     statusStep:

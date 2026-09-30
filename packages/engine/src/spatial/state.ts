@@ -360,6 +360,7 @@ export type PendingEffect = DamageSnapshot & {
   stage?: StageContact;
   reaction?: ReactionContext;
   damageCancelled?: boolean;
+  guards?: readonly { activationId: string; retainedDamageBps: number }[];
   sourceAbility?: AbilityRevision;
   sourceActorId?: string;
   sourceProjectileId?: string;

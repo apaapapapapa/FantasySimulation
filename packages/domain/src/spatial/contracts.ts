@@ -166,7 +166,7 @@ export const ObservedPhaseSchema = z.enum(['idle', 'cast', 'active', 'recovery']
 export const ReactionPointSchema = z.enum(['before-hit', 'after-damage', 'before-defeat']);
 export const ObservedReactionSchema = z.strictObject({
   point: ReactionPointSchema,
-  response: z.enum(['parry', 'effects', 'counter', 'deflect', 'revive']),
+  response: z.enum(['parry', 'guard', 'effects', 'counter', 'deflect', 'revive']),
 });
 export type ObservedReaction = z.infer<typeof ObservedReactionSchema>;
 export const ObservedStageSchema = z.strictObject({
@@ -627,6 +627,7 @@ export function abilityEffects<T>(ability: {
 export const ReactionSchema = z.strictObject({
   response: z.discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('parry'), scope: z.enum(['all', 'damage']) }),
+    z.strictObject({ kind: z.literal('guard'), retainedDamageBps: positive(9999) }),
     z.strictObject({ kind: z.literal('effects') }),
     z.strictObject({ kind: z.literal('counter') }),
     z.strictObject({ kind: z.literal('deflect'), powerBps: uint(30000).optional() }),
@@ -716,6 +717,7 @@ export const AbilitySchema = z
     if (
       !ability.effects.length &&
       response?.kind !== 'parry' &&
+      response?.kind !== 'guard' &&
       response?.kind !== 'deflect' &&
       response?.kind !== 'revive' &&
       !ability.relocation &&
@@ -761,12 +763,14 @@ export const AbilitySchema = z
             message: 'Defensive reactions require direct self targeting',
           });
         if (
-          (response?.kind === 'parry' || response?.kind === 'deflect') &&
+          (response?.kind === 'parry' ||
+            response?.kind === 'guard' ||
+            response?.kind === 'deflect') &&
           (ability.trigger !== 'before-hit' || ability.effects.length)
         )
           ctx.addIssue({
             code: 'custom',
-            message: 'Parry/deflect is a before-hit reducer without a payload',
+            message: 'Parry/guard/deflect is a before-hit reducer without a payload',
           });
         if (
           ability.effects.some(
