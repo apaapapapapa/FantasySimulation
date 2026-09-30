@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-runtime",
+  "feature": "sensory-cue-visual-v1",
+  "baseline": "8345e55bca3560e2405e1e49cb88faf85ffa6480",
+  "skillCoordinate": {
+    "pathId": "illusion-curse",
+    "zodiac": "rat",
+    "dan": 3,
+    "plannedFixtureId": "fixture.skill.illusion-curse.rat.3"
+  },
+  "requiredMechanisms": [
+    "illusion-curse-definition-v1",
+    "mental-eligibility-v1",
+    "perceived-target-ai-v1",
+    "sensory-cue-counter-v1",
+    "sensory-cue-record-replay-v1",
+    "sensory-cue-visual-v1"
+  ],
+  "contractInput": {
+    "seed": 228063,
+    "maxSteps": 12,
+    "participants": [
+      {
+        "id": "caster",
+        "team": "left",
+        "mentalEligibility": "sentient",
+        "sensors": ["visual"]
+      },
+      {
+        "id": "observer",
+        "team": "right",
+        "mentalEligibility": "sentient",
+        "sensors": ["visual"]
+      }
+    ],
+    "cue": {
+      "id": "cue:caster:observer:visual:1",
+      "creatorId": "caster",
+      "observerId": "observer",
+      "modality": "visual",
+      "emittedStep": 1,
+      "deliveredStep": 3,
+      "expiresStep": 9,
+      "perceivedOriginMm": { "x": 12000, "y": 0, "z": -4000 }
+    }
+  },
+  "lifecycleCases": [
+    {
+      "id": "discover-then-cleanse",
+      "actions": [
+        { "step": 1, "kind": "emit" },
+        { "step": 3, "kind": "deliver" },
+        { "step": 5, "kind": "discover" },
+        { "step": 6, "kind": "cleanse" }
+      ],
+      "expectedStates": [
+        { "step": 0, "state": "absent" },
+        { "step": 1, "state": "in-flight" },
+        { "step": 3, "state": "trusted" },
+        { "step": 5, "state": "known-false" },
+        { "step": 6, "state": "absent" },
+        { "step": 9, "state": "absent" }
+      ],
+      "exactlyOnceEvents": ["emit", "deliver", "discover", "cleanse"],
+      "forbiddenEvents": ["expire-after-cleanse"]
+    },
+    {
+      "id": "natural-expiry",
+      "actions": [
+        { "step": 1, "kind": "emit" },
+        { "step": 3, "kind": "deliver" },
+        { "step": 9, "kind": "expire" }
+      ],
+      "expectedStates": [
+        { "step": 3, "state": "trusted" },
+        { "step": 8, "state": "trusted" },
+        { "step": 9, "state": "absent" }
+      ],
+      "exactlyOnceEvents": ["emit", "deliver", "expire"],
+      "forbiddenEvents": ["cleanse", "expire-after-cleanse"]
+    }
+  ],
+  "nonMentalTargetCase": {
+    "observer": {
+      "id": "construct",
+      "mentalEligibility": "mindless",
+      "sensors": ["visual"]
+    },
+    "mentalEffect": { "admission": "ineligible", "reason": "mindless-target" },
+    "visualCue": { "admission": "eligible", "reason": "visual-sensor-present" },
+    "rule": "Mental eligibility gates mental effects, not modality delivery."
+  },
+  "aiNoninterference": {
+    "controlComparison": {
+      "beforeDeliveryThroughStep": 2,
+      "mustMatch": ["decision-candidates", "selection", "rng-cursor", "resources"]
+    },
+    "affectedObserver": {
+      "trustedStateMayAimAt": "perceivedOriginMm",
+      "knownFalseStateMustExcludeCue": true,
+      "absentStateMustExcludeCue": true
+    },
+    "invariants": {
+      "cueIsCombatActor": false,
+      "cueHasCollision": false,
+      "cueCanReceiveDamage": false,
+      "cueChangesVictoryMembership": false,
+      "creatorDecisionStateChanges": false,
+      "canonicalResourcesChangeFromCueAlone": false
+    },
+    "forbiddenActorEvidence": ["creatorId", "sourceAbilityRevision", "truthOriginMm", "futureRng"]
+  },
+  "observationViews": {
+    "truth": {
+      "seesCueLifecycle": true,
+      "seesCreatorId": true,
+      "seesTruthOrigin": true
+    },
+    "observer": {
+      "beforeDelivery": "absent",
+      "afterDelivery": "trusted",
+      "afterDiscovery": "known-false",
+      "afterCleanse": "absent",
+      "hiddenUntilDiscovery": ["creatorId", "sourceAbilityRevision", "truthOriginMm"]
+    },
+    "creator": {
+      "falseCueIsTrustedTarget": false
+    }
+  },
+  "persistenceReplay": {
+    "requiredFeature": "sensory-cues-v1",
+    "roundTrips": ["api", "worker", "database", "artifact"],
+    "immutableFields": [
+      "cue.id",
+      "cue.observerId",
+      "cue.modality",
+      "cue.emittedStep",
+      "cue.deliveredStep",
+      "cue.expiresStep",
+      "cue.perceivedOriginMm"
+    ],
+    "viewer2d": {
+      "step4": "trusted-visual-cue",
+      "step5": "known-false-visual-cue",
+      "step6": "absent"
+    },
+    "viewer3d": {
+      "step4": "trusted-visual-cue",
+      "step5": "known-false-visual-cue",
+      "step6": "absent"
+    },
+    "navigation": {
+      "seekStep4": "trusted",
+      "seekStep5": "known-false",
+      "seekStep6": "absent",
+      "reverseStep6To5": "known-false",
+      "loopStep3Through7LeavesResidue": false
+    },
+    "replayRunsEngine": false,
+    "replayRunsAi": false,
+    "tamperMustReject": [
+      "unknown-feature",
+      "cue-id-change",
+      "observer-id-change",
+      "timeline-change",
+      "perceived-origin-change",
+      "record-order-change"
+    ]
+  },
+  "implementationBoundary": {
+    "directTargetMentalInterference": "out-of-scope-pending-review",
+    "approvedRuntimeNumbers": false,
+    "fixturePurpose": "contract-input-only"
+  }
+}
