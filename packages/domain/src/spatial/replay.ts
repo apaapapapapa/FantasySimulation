@@ -3,7 +3,7 @@ import { MAX_BATTLE_STEPS, MAX_FRAME_BYTES } from './contracts.ts';
 import { z } from 'zod';
 import { HashSchema, IdSchema, StoredManifestSchema } from './contracts.ts';
 import { DeferredEffectSchema, ResultSchema } from './records.ts';
-import { DisplayStateSchema, StreamRecordSchema } from './stream.ts';
+import { DisplayStateSchema, RequiredReplayFeaturesSchema, StreamRecordSchema } from './stream.ts';
 import { fail } from './replay-validation/common.ts';
 export { ReplayValidationError } from './replay-validation/common.ts';
 
@@ -17,10 +17,7 @@ const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
 const recordIndex = z.number().int().min(0).max(12003);
 export const ReplayCheckpointSchema = z.strictObject({
   stop: StopReplaySchema.optional(),
-  requiredFeatures: z
-    .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1']))
-    .length(2)
-    .optional(),
+  requiredFeatures: RequiredReplayFeaturesSchema.optional(),
   deferred: z.array(DeferredEffectSchema).max(4096).optional(),
   schemaVersion: z.literal(1),
   simulationHash: HashSchema,

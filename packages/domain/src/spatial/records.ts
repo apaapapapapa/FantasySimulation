@@ -21,6 +21,18 @@ export const PhysicalVectorSchema = z.strictObject({
   y: z.number().min(-2000).max(2000),
   z: z.number().min(-2000).max(2000),
 });
+export const SensoryCueDisplaySchema = z.strictObject({
+  id: IdSchema,
+  creatorId: IdSchema,
+  observerId: IdSchema,
+  modality: z.literal('visual'),
+  perceivedOrigin: PhysicalVectorSchema,
+  emittedAt: step,
+  deliveredAt: step,
+  expiresAt: z.number().int().min(1).max(7000),
+  discoveredAt: z.number().int().min(1).max(7000),
+  confidenceBps: z.number().int().min(1).max(10000),
+});
 export const ResourceStateSchema = z.strictObject({
   hp: count,
   mp: count,
@@ -141,6 +153,7 @@ export const EventSchema = z
       'evasion',
       'time-stop',
       'teleport',
+      'sensory-cue',
     ]),
     actorId: IdSchema.nullable(),
     targetId: IdSchema.nullable(),
@@ -158,6 +171,21 @@ export const EventSchema = z
         defenseApplied: count,
         afterDefense: count,
         afterResistance: count,
+        guard: z
+          .strictObject({
+            before: count,
+            after: count,
+            responses: z
+              .array(
+                z.strictObject({
+                  activationId: IdSchema,
+                  retainedDamageBps: z.number().int().min(1).max(9999),
+                }),
+              )
+              .min(1)
+              .max(64),
+          })
+          .optional(),
         absorption: z
           .strictObject({ element: ElementSchema, converted: count, healing: count })
           .optional(),
@@ -210,12 +238,40 @@ export const EventSchema = z
     deferrals: z.array(IdSchema).min(1).max(16).optional(),
     evasion: z.strictObject({ statuses: z.array(RefSchema).min(1).max(64) }).optional(),
     teleport: z.strictObject({ from: PhysicalVectorSchema, to: PhysicalVectorSchema }).optional(),
+    sensoryCue: SensoryCueDisplaySchema.extend({
+      transition: z.enum(['emitted', 'delivered', 'discovered', 'cleansed', 'expired']),
+    }).optional(),
     wave: z.number().int().min(0).max(8).optional(),
     sourceActorId: IdSchema.optional(),
     sourceProjectileId: IdSchema.optional(),
     projectileDeflection: ProjectileDeflectionSchema.optional(),
   })
   .superRefine((event, ctx) => {
+    if (event.damage?.guard) {
+      const ids = event.damage.guard.responses.map((response) => response.activationId);
+      if (
+        event.kind !== 'damage' ||
+        event.damage.guard.after > event.damage.guard.before ||
+        new Set(ids).size !== ids.length ||
+        ids.some((id) => !event.causes.includes(id))
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Guard requires unique causal activations and non-increasing damage',
+        });
+    }
+    if (
+      (event.kind === 'sensory-cue') !== !!event.sensoryCue ||
+      (event.sensoryCue &&
+        (event.entityId !== event.sensoryCue.id ||
+          event.actorId !== event.sensoryCue.creatorId ||
+          event.targetId !== event.sensoryCue.observerId ||
+          event.actorId === event.targetId))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Sensory cue events require bound creator, observer and cue identity',
+      });
     if (
       (event.kind === 'time-stop') !== !!event.timeStop ||
       (event.timeStop && (!event.actorId || !event.targetId || event.actorId === event.targetId))

@@ -187,6 +187,21 @@ export function Scene2D({
           ))}
         </g>
       ))}
+      {model.illusions.map((cue) => (
+        <g key={cue.id} data-sensory-cue={cue.id}>
+          <circle
+            cx={cue.position[0]}
+            cy={cue.position[2]}
+            r={0.55}
+            fill="#a789ff"
+            fillOpacity={cue.confidenceBps / 20000}
+            stroke="#d9ccff"
+            strokeDasharray="0.18 0.12"
+            strokeWidth={outline}
+          />
+          <title>{`visual cue for ${cue.observerId}`}</title>
+        </g>
+      ))}
       {model.actors.map((a, index) => {
         const hp = a.hp && Math.max(0, Math.min(1, a.hp.value / Math.max(1, a.hp.max)));
         const label = Math.max(0.5, width / 60);

@@ -42,6 +42,7 @@ export type EffectApplication = DamageSnapshot & {
   powerBps?: number;
   dealtBps?: number;
   damageCancelled?: boolean;
+  guards?: readonly { activationId: string; retainedDamageBps: number }[];
 };
 export type DamageDetail = NonNullable<BattleEvent['damage']> & {
   applicationId: string;
@@ -73,6 +74,7 @@ type DamageEntry = ReturnType<typeof calculateDamage> & {
   statusModified: boolean;
   afterAbsorption: bigint;
   absorption?: NonNullable<BattleEvent['damage']>['absorption'];
+  guard?: NonNullable<NonNullable<BattleEvent['damage']>['guard']>;
 };
 type ResolutionContext = {
   target: EffectTarget;
@@ -116,6 +118,17 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       Number(scale),
       { dealtBps, receivedBps, powerBps: application.powerBps ?? 10000 },
     );
+    const beforeGuard = amounts.afterModifiers;
+    const guards = [...(application.guards ?? [])].sort((a, b) =>
+      compareIds(a.activationId, b.activationId),
+    );
+    if (guards.length) {
+      const numerator = guards.reduce(
+        (value, guard) => value * BigInt(guard.retainedDamageBps),
+        beforeGuard,
+      );
+      amounts.afterModifiers = numerator / 10000n ** BigInt(guards.length);
+    }
     if (application.damageCancelled) amounts.afterModifiers = 0n;
     const converted =
       (amounts.afterModifiers * BigInt(absorptionBps(target.statuses, step, effect.element))) /
@@ -127,6 +140,13 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       effect,
       ...amounts,
       afterAbsorption: amounts.afterModifiers - converted,
+      ...(guards.length && {
+        guard: {
+          before: checked(beforeGuard),
+          after: checked(amounts.afterModifiers),
+          responses: guards,
+        },
+      }),
       ...(converted > 0n && {
         absorption: {
           element: effect.element,
@@ -136,6 +156,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       }),
       statusModified:
         !!application.damageCancelled ||
+        guards.length > 0 ||
         (application.powerBps ?? 10000) !== 10000 ||
         dealtBps !== 10000 ||
         receivedBps !== 10000 ||
@@ -156,6 +177,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
   'apply-status': deferredEffect,
   reveal: deferredEffect,
   force: deferredEffect,
+  'sensory-cue': deferredEffect,
 };
 /** Simultaneous defense/resistance/shield resolution with exact attribution and one HP clamp. */
 export function resolveEffects(
@@ -228,6 +250,7 @@ export function resolveEffects(
             defenseApplied: damage.defenseApplied,
             afterDefense: checked(damage.afterDefense),
             afterResistance: checked(damage.afterResistance),
+            ...(damage.guard && { guard: damage.guard }),
             ...(damage.absorption && { absorption: damage.absorption }),
             ...((hasDamageFormula(damage.effect) ||
               damage.statusModified ||

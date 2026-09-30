@@ -13,10 +13,22 @@ import {
   MotionProjectionSchema,
   ReactionContextSchema,
   ProjectileDeflectionSchema,
+  SensoryCueDisplaySchema,
 } from './records.ts';
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
 const fraction = z.number().min(0).max(1);
+export const RequiredReplayFeaturesSchema = z
+  .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1', 'sensory-cues-v1']))
+  .min(2)
+  .max(3)
+  .refine(
+    (features) =>
+      features[0] === 'subject-clocks-v1' &&
+      features[1] === 'deferred-contacts-v1' &&
+      (features.length === 2 || features[2] === 'sensory-cues-v1'),
+    'Replay features must use the canonical compatible prefix order',
+  );
 export const SegmentSchema = z
   .strictObject({
     start: PhysicalVectorSchema,
@@ -143,6 +155,7 @@ export const ActorDisplaySchema = z.strictObject({
     .optional(),
   statuses: z.array(StatusDisplaySchema).max(8192),
   action: ActionDisplaySchema.nullable(),
+  sensoryCues: z.array(SensoryCueDisplaySchema).max(8).optional(),
 });
 export type ActorDisplay = z.infer<typeof ActorDisplaySchema>;
 export const ActorDeltaSchema = ActorDisplaySchema.partial().required({ id: true });
@@ -259,10 +272,7 @@ export type DisplayState = z.infer<typeof DisplayStateSchema>;
 export const StreamRecordSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('initial'),
-    requiredFeatures: z
-      .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1']))
-      .length(2)
-      .optional(),
+    requiredFeatures: RequiredReplayFeaturesSchema.optional(),
     schemaVersion: z.literal(1),
     step: z.literal(0),
     state: DisplayStateSchema,

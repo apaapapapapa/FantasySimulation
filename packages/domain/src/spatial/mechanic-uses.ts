@@ -16,6 +16,7 @@ export const effectMechanics = {
   water: 'elemental-reaction',
   reveal: 'reveal',
   force: 'force',
+  'sensory-cue': 'mind-read',
 } satisfies Record<Effect['kind'], MechanicId>;
 export const attackMechanics = {
   direct: 'contact',
@@ -29,6 +30,7 @@ export const attackMechanics = {
 } satisfies Record<Definition<'ability'>['attack']['kind'], MechanicId>;
 export const responseMechanics = {
   parry: 'parry',
+  guard: 'parry',
   effects: 'reaction-effects',
   counter: 'counter',
   deflect: 'projectile-deflection',
@@ -56,6 +58,17 @@ export const motionMechanics = {
   NonNullable<NonNullable<Definition<'ability'>['stages']>[number]['selfMotion']>['kind'],
   MechanicId
 >;
+
+export function hasSensoryCues(revisions: readonly DeepReadonly<Revision>[]) {
+  return revisions.some(
+    (revision) =>
+      revision.kind === 'ability' &&
+      [
+        ...revision.definition.effects,
+        ...(revision.definition.stages ?? []).flatMap((stage) => stage.effects),
+      ].some((effect) => effect.kind === 'sensory-cue'),
+  );
+}
 
 /** Visit the resolved revision closure, including dormant branches and transformed/granted states. */
 export function closureMechanics(revisions: readonly DeepReadonly<Revision>[]): MechanicUse[] {
@@ -103,6 +116,7 @@ export function closureMechanics(revisions: readonly DeepReadonly<Revision>[]): 
       const status = owner.definition;
       if (status.evasion) add('absolute-evasion');
       if (status.stopImmunity !== undefined) add('time-stop');
+      if (status.mentalImmunity !== undefined) add('mind-read');
       if (status.immortality) add('immortality');
       if (status.defeatImmunity !== undefined) add('instant-death');
       if (status.phasing) add('phasing');

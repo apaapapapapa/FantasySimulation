@@ -1,12 +1,23 @@
 import { afterEach, describe, expect, it } from 'vite-plus/test';
-import { parseJson, revisionReference, RevisionSchema } from '@fantasy/domain';
+import {
+  ReplayState,
+  parseJson,
+  replayContext,
+  revisionReference,
+  skillBattleReceipt,
+  RevisionSchema,
+} from '@fantasy/domain';
+import { ManifestBuilder, runBattle } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
 import { createApp } from '../http/app.ts';
 import { SkillStore } from './skill-store.ts';
 import { openStore, readSampleRevisions, type Store } from './store.ts';
 import { seedStartupData } from './startup-data.ts';
 import {
   STARTUP_SKILL_ABILITY_IDS,
+  inspectIntegratedStartupSkillCatalog,
   inspectStartupSkillCatalog,
+  readIntegratedStartupSkillCatalog,
   readStartupSkillCatalog,
 } from './startup-skill-catalog.ts';
 
@@ -87,7 +98,7 @@ describe('production startup skill catalog', () => {
       second = await seedStartupData(store);
     expect(second.skillCatalog.reference).toEqual(first.skillCatalog.reference);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 1,
+      count: 2,
     });
     const changed = structuredClone(first.skillCatalog.catalog);
     changed.nodes[0]!.name = 'Changed immutable startup node';
@@ -97,14 +108,47 @@ describe('production startup skill catalog', () => {
 
     const app = createApp(store);
     stores.pop();
-    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/1');
+    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/2');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       reference: first.skillCatalog.reference,
-      catalog: { id: 'skill-catalog-v1', revision: 1 },
+      catalog: { id: 'skill-catalog-v1', revision: 2 },
     });
     expect(response.json().catalog.nodes).toHaveLength(1_152);
+    const legacy = await app.inject('/api/skill-catalogs/skill-catalog-v1/1');
+    expect(legacy.statusCode).toBe(200);
+    expect(legacy.json().catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 1 });
     await app.close();
+  });
+
+  it('integrates fourteen authored paths while keeping unfinished coordinates unavailable', () => {
+    const revisions = readSampleRevisions(),
+      catalog = readIntegratedStartupSkillCatalog(revisions),
+      release = inspectIntegratedStartupSkillCatalog(catalog, revisions),
+      available = catalog.nodes.filter(({ lifecycle }) => lifecycle === 'available');
+
+    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 2 });
+    expect(catalog.nodes).toHaveLength(1_152);
+    expect(release).toEqual({
+      lifecycle: { available: 26, implemented: 4, draft: 1_122, retired: 0 },
+      available: 26,
+      verified: 26,
+      releaseReady: false,
+      issues: [],
+    });
+    expect(available.filter(({ coordinate }) => coordinate.path === 'sword')).toHaveLength(6);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'spear')).toHaveLength(1);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'shinto')).toHaveLength(4);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'renki')).toHaveLength(4);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'magic')).toHaveLength(11);
+    expect(
+      catalog.nodes
+        .filter(({ coordinate }) => ['illusion-curse', 'summoning'].includes(coordinate.path))
+        .every(
+          ({ lifecycle, resolution, fixtureIds }) =>
+            lifecycle === 'draft' && !resolution.length && !fixtureIds.length,
+        ),
+    ).toBe(true);
   });
 
   it('resolves sixth dan through all six production prerequisites', async () => {
@@ -140,5 +184,61 @@ describe('production startup skill catalog', () => {
         return selected.ability.id;
       }),
     ).toEqual(STARTUP_SKILL_ABILITY_IDS);
+  });
+
+  it('carries an integrated selection through saved loadout, battle AI, and replay', async () => {
+    const store = openStore(':memory:');
+    stores.push(store);
+    const seeded = await seedStartupData(store),
+      revisions = parseJson(RevisionSchema.array(), readSampleRevisions()),
+      character = revisions.find(
+        (revision) => revision.kind === 'character' && revision.id === 'swordsman',
+      ),
+      spear = revisions.find((revision) => revision.kind === 'ability' && revision.id === 'spear');
+    if (character?.kind !== 'character') throw new Error('Missing swordsman fixture');
+    if (spear?.kind !== 'ability') throw new Error('Missing spear fixture');
+
+    const nodeId = 'skill.spear.rat.1',
+      created = await new SkillStore(store).create({
+        character: revisionReference(character),
+        configuration: {
+          schemaVersion: 1,
+          id: 'loadout.integrated.spear',
+          version: 1,
+          catalog: seeded.skillCatalog.reference,
+          eligibilityNodeIds: [nodeId],
+          learnedNodeIds: [nodeId],
+          enabledNodeIds: [nodeId],
+        },
+      }),
+      manifest = await catalogManifest('swordsman', 'swordsman', 'flat', 200, 42);
+    manifest.participants[0]!.skillLoadout = await skillBattleReceipt(created.snapshot);
+    const battle = await ManifestBuilder.from([...manifest.revisions, spear]).build({
+        seed: manifest.seed,
+        participants: manifest.participants,
+        ruleset: manifest.ruleset,
+        scenario: manifest.scenario,
+      }),
+      run = await runBattle(battle.manifest),
+      context = await replayContext(battle.manifest, run.result.simulationHash),
+      restored = new ReplayState(context);
+    for (const record of run.records) restored.apply(record);
+
+    expect(created.snapshot.resolved.resolvedNodeIds).toEqual([nodeId]);
+    expect(battle.manifest.participants[0]!.skillLoadout?.catalog).toEqual(
+      seeded.skillCatalog.reference,
+    );
+    expect(context.manifest.participants[0]!.skillLoadout?.resolvedNodeIds).toEqual([nodeId]);
+    expect(
+      run.records.some(
+        (record) =>
+          'events' in record &&
+          record.events.some(
+            (event) =>
+              event.kind === 'launch' && event.actorId === 'left' && event.abilityId === 'spear',
+          ),
+      ),
+    ).toBe(true);
+    expect(restored).toMatchObject({ ended: true, step: run.result.steps });
   });
 });

@@ -1,4 +1,4 @@
-import { closureMechanics } from './mechanic-uses.ts';
+import { closureMechanics, hasSensoryCues } from './mechanic-uses.ts';
 import {
   advanceDeferred,
   advanceStopReplay,
@@ -32,6 +32,7 @@ import { validateAction } from './replay-validation/action.ts';
 import { validateProjectile, validateProjectileUpdate } from './replay-validation/projectile.ts';
 import { validateEvents } from './replay-validation/event.ts';
 import { validateInterferences } from './replay-validation/interference.ts';
+import { validateSensoryCues } from './replay-validation/sensory-cue.ts';
 
 /** Atomic display restoration. This is not an engine resume snapshot or combat re-simulation. */
 export class ReplayState {
@@ -86,6 +87,11 @@ export class ReplayState {
           v.requiredFeatures?.includes('subject-clocks-v1') === true &&
             v.requiredFeatures.includes('deferred-contacts-v1'),
           'missing checkpoint features',
+        );
+      if (hasSensoryCues(context.manifest.revisions))
+        requireReplay(
+          v.requiredFeatures?.includes('sensory-cues-v1') === true,
+          'missing sensory cue checkpoint feature',
         );
       requireReplay(
         v.nextRecord >= v.step + 1 && v.nextRecord <= 2 * v.step + 3,
@@ -258,6 +264,11 @@ export class ReplayState {
             record.requiredFeatures.includes('deferred-contacts-v1'),
           'missing clock/release features',
         );
+      if (hasSensoryCues(this.context.manifest.revisions))
+        requireReplay(
+          record.requiredFeatures?.includes('sensory-cues-v1') === true,
+          'missing sensory cue replay feature',
+        );
       requireReplay(
         prior.state === null &&
           record.state.projectiles.length === 0 &&
@@ -375,6 +386,7 @@ export class ReplayState {
       if (record.kind !== 'terminal') validatePhasingTransition(prior, state, record);
       validateEvents(this.context, this.value, record, entities);
     }
+    validateSensoryCues(this.context, prior, state, record);
     validateRevivalCounts(prior.state?.actors, state.actors, record);
     validateImmortalityCounts(prior.state?.actors, state.actors, record);
     validateClocks(

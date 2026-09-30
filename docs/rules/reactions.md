@@ -1,13 +1,13 @@
-# Reactions (spatial-v1.21)
+# Reactions (spatial-v1.22)
 
-Refs #61 G-08, #155 P6-01; [design](../adr/0012-stages-and-reactions.md),
-[P6 foundation](../adr/0016-p6-foundation.md). Omitted reactions retain existing
-results/events/PRNG. Published definitions remain readable; old execution is rejected.
+Refs #61 G-08, #155 P6-01, [design](../adr/0012-stages-and-reactions.md). Omitted
+reactions retain results/events/PRNG; published definitions remain readable.
 
 ## Responses and eligibility
 
 - `before-hit`: direct self effects (shield/heal/status/dispel/water), `parry`
-  (`all` or `damage`, empty payload), or `deflect` (empty payload).
+  (`all` or `damage`, empty payload), `guard` (empty payload and retained damage
+  1..9999 bps), or `deflect` (empty payload).
 - `after-damage`: non-restorative self effects or deferred enemy hitscan `counter`.
   Trigger on positive hostile post-shield rational damage, before HP clipping or
   simultaneous healing. Costs/environment/self damage and full shields cannot trigger.
@@ -24,6 +24,10 @@ Recovery/cooldown begin at activation; readiness is their maximum, separate from
 Whole parry cancels every matching contact payload, including force/status/element
 reactions. Damage parry cancels matching damage components only; element contacts
 remain and zero-damage events retain causes. Accepted contacts consume hit ledgers.
+Guard keeps contact/effects and multiplies post-modifier damage by all matching factors,
+exactly with one floor. Damage parry dominates; guard precedes absorption/shield/drain/
+revival and rejects reflected contacts. Optional activation/factor/before/after evidence
+is replay-validated and shown by the viewer.
 Counters keep paid activation/depth, never refund, and release no earlier than the
 next interval. Recheck life, silence/incapacity, condition, observed range/facing;
 shared hitscan checks actual geometry. Two aim draws occur only on release. Defeat
@@ -31,9 +35,8 @@ cancels paid queues. No parallel main action slot or new resource implementation
 
 ## Projectile deflection
 
-P6-01 retains its [complete recorded deflection contract](https://github.com/apaapapapapa/FantasySimulation/blob/43c6ddd365094de9e73e3b008191f91beaecc4fe/docs/rules/reactions.md#projectile-deflection):
-one body-contact replacement per projectile, delayed observed aim, original launch snapshot,
-new ownership, no homing/re-deflection/drain, next-boundary flight and bounded saved paths.
+One recorded body-contact replacement per projectile: delayed observed aim, original launch
+snapshot, new ownership, no homing/re-deflection/drain and bounded saved paths.
 
 ## Revival and sealing (P6-03/04)
 
@@ -57,14 +60,10 @@ but contribute no modifiers, periodic effects or elemental responses. No missed-
 Seals cannot suppress any seal, preventing cycles. Dispel/permanent protection stays unchanged.
 Suppressed flight falls normally; suppressed phasing invokes the accepted safe-exit contract.
 
-Own AI estimates defined restoration/cost/remaining uses and sealing selectors; sealed choices
-are logged. Enemy revival knowledge comes only from delayed visible activation, never remaining
-uses/costs/conditions. It discounts later kill estimates until knowledge expiry. Visible sealed
-statuses disappear from effective public effects, delivered through the existing observation delay.
-Both viewers show recorded revival and seal rings; HP/use counts and temporarily suppressed
-cohorts remain inspectable, including reverse/loop seeks. New samples: phoenix-duelist-v1,
-seal-mage-v1. Additive spatial-v1.22 identity restamp; existing corpus/140 published definitions
-remain unchanged. 124 ordered fixtures extend the matrix; first-group league publication is separate.
+Own AI estimates restoration/cost/uses and sealing selectors. Enemy revival knowledge is delayed
+visible activation only and expires normally. Viewers record revival/seal state through reverse/
+loop seeks. Samples: phoenix-duelist-v1 and seal-mage-v1. The additive spatial-v1.22 identity
+restamp leaves published definitions unchanged; league publication is separate.
 
 ## Atomic settlement and observation
 

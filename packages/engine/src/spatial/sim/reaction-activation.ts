@@ -66,8 +66,9 @@ export function matchesReaction(
   if (!app.actorId || app.actorId === app.targetId) return false;
   const reaction = ability.definition.reaction!;
   if (
-    reaction.response.kind === 'deflect' &&
-    (!app.projectileContact?.direct || app.projectileContact.reflected)
+    (reaction.response.kind === 'deflect' && !app.projectileContact?.direct) ||
+    ((reaction.response.kind === 'deflect' || reaction.response.kind === 'guard') &&
+      app.projectileContact?.reflected)
   )
     return false;
   const source =
@@ -91,7 +92,7 @@ export function matchesReaction(
 }
 
 /** Pure eligibility shared by cost planning and activation. A deflection owns its
- * contact; competing parries retain only their other matches before reservation. */
+ * contact; competing parries/guards retain only their other matches before reservation. */
 export function reactionCandidates(
   actor: ActorState,
   actors: ActorState[],
@@ -140,7 +141,8 @@ export function reactionCandidates(
     );
     eligible = eligible
       .map((e) =>
-        e.ability.definition.reaction!.response.kind === 'parry'
+        e.ability.definition.reaction!.response.kind === 'parry' ||
+        e.ability.definition.reaction!.response.kind === 'guard'
           ? {
               ...e,
               matches: e.matches.filter(

@@ -13,6 +13,7 @@ const effectNames = {
   water: '水',
   dispel: '解除',
   'apply-status': '状態付与',
+  'sensory-cue': '視覚幻惑',
 };
 
 export function ReplayResources({

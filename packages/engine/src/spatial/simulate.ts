@@ -11,6 +11,7 @@ import {
   type Outcome,
   type StreamRecord,
   type BattleResult,
+  hasSensoryCues,
 } from '@fantasy/domain/spatial/execution';
 import { initialActor, decisionState, displayActor } from './sim/combat-state.ts';
 import { Journal, recordBytes } from './rules/journal.ts';
@@ -109,17 +110,22 @@ export function* simulate(
     world.castLimit = budget.maxCasts;
     const initial: StreamRecord = {
       kind: 'initial',
-      ...(battle.rules.experimental?.mechanics.includes('time-stop')
+      ...(battle.rules.experimental?.mechanics.includes('time-stop') ||
+      hasSensoryCues(battle.manifest.revisions)
         ? {
-            requiredFeatures: ['subject-clocks-v1', 'deferred-contacts-v1'] as [
+            requiredFeatures: [
               'subject-clocks-v1',
               'deferred-contacts-v1',
+              ...(hasSensoryCues(battle.manifest.revisions) ? (['sensory-cues-v1'] as const) : []),
             ],
           }
         : {}),
       schemaVersion: 1,
       step: 0,
-      state: { actors: actors.map((a) => displayActor(a, 0)), projectiles: [] },
+      state: {
+        actors: actors.map((a) => displayActor(a, 0, hasSensoryCues(battle.manifest.revisions))),
+        projectiles: [],
+      },
     };
     // Initial/terminal control envelopes are bounded separately from game records (32 KiB reserve).
     const controlBytes = recordBytes(initial);

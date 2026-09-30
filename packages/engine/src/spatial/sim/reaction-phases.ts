@@ -33,11 +33,12 @@ export function beforeHitApplications(
 ): PendingEffect[] {
   const cancelled = new Set<PendingEffect>();
   const damageCancelled = new Map<PendingEffect, string[]>();
+  const guards = new Map<PendingEffect, { activationId: string; retainedDamageBps: number }[]>();
   const extra: PendingEffect[] = [];
   for (const reaction of reactions) {
     const response = reaction.response;
     if (response.kind === 'deflect') continue;
-    if (response.kind === 'parry') {
+    if (response.kind === 'parry' || response.kind === 'guard') {
       for (const matched of reaction.matches) {
         const contact = effects.filter(
           (app) =>
@@ -49,12 +50,29 @@ export function beforeHitApplications(
                 app.projectileContact.id === matched.projectileContact?.id)),
         );
         for (const app of contact)
-          if (response.scope === 'all') cancelled.add(app);
-          else if (app.effect.kind === 'damage' && matchesReaction(reaction.ability, app, actors))
-            damageCancelled.set(app, [
-              ...(damageCancelled.get(app) ?? []),
-              reaction.display.context.activationId,
-            ]);
+          if (response.kind === 'parry' && response.scope === 'all') cancelled.add(app);
+          else if (app.effect.kind === 'damage' && matchesReaction(reaction.ability, app, actors)) {
+            if (response.kind === 'parry')
+              damageCancelled.set(app, [
+                ...(damageCancelled.get(app) ?? []),
+                reaction.display.context.activationId,
+              ]);
+            else
+              guards.set(
+                app,
+                (guards.get(app) ?? []).some(
+                  (guard) => guard.activationId === reaction.display.context.activationId,
+                )
+                  ? guards.get(app)!
+                  : [
+                      ...(guards.get(app) ?? []),
+                      {
+                        activationId: reaction.display.context.activationId,
+                        retainedDamageBps: response.retainedDamageBps,
+                      },
+                    ],
+              );
+          }
       }
     } else
       extra.push(
@@ -71,9 +89,16 @@ export function beforeHitApplications(
     ...effects
       .filter((app) => !cancelled.has(app))
       .map((app) => {
-        const causes = damageCancelled.get(app);
-        return causes
-          ? { ...app, damageCancelled: true, causes: [...(app.causes ?? []), ...causes] }
+        const cancelledCauses = damageCancelled.get(app) ?? [];
+        const appliedGuards = guards.get(app) ?? [];
+        const causes = [...cancelledCauses, ...appliedGuards.map((guard) => guard.activationId)];
+        return causes.length
+          ? {
+              ...app,
+              ...(cancelledCauses.length && { damageCancelled: true }),
+              ...(appliedGuards.length && { guards: appliedGuards }),
+              causes: [...(app.causes ?? []), ...causes],
+            }
           : app;
       }),
     ...extra,

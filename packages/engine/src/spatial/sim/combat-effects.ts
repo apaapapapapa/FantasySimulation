@@ -16,6 +16,7 @@ import { sub, unit } from '../math.ts';
 import { recordInterference } from './interference.ts';
 import { readMind } from './mind-reading.ts';
 import { evadeContacts } from './contact-evasion.ts';
+import { cleanseSensoryCues, cognitiveCueEligibility, cueIdentity } from './sensory-cues.ts';
 const effectEventKinds = {
   defeat: 'defeat',
   damage: 'damage',
@@ -26,6 +27,7 @@ const effectEventKinds = {
   water: 'diagnostic',
   reveal: 'diagnostic',
   force: 'force',
+  'sensory-cue': 'sensory-cue',
 } satisfies Record<Effect['kind'], BattleEvent['kind']>;
 import type { PendingEffect } from '../state.ts';
 export type { PendingEffect } from '../state.ts';
@@ -115,7 +117,26 @@ export function commitEffects(
   }
   for (const result of resolved) {
     const actor = actors.find((a) => a.body.motion.actor.participant.actorId === result.actorId)!;
-    for (const app of applications.filter((a) => a.targetId === result.actorId)) {
+    const incoming = applications.filter((a) => a.targetId === result.actorId);
+    // A control dispel cleans only cues owned by this observer. Expiry/discovery already ran at
+    // the boundary; cleanse precedes same-wave emission so a newly emitted cue is not erased.
+    if (
+      incoming.some(
+        (a) => a.effect.kind === 'dispel' && a.effect.categories?.includes('control'),
+      ) &&
+      actor.mind.sensoryCues.length
+    ) {
+      cleanseSensoryCues(
+        actor,
+        activationStep,
+        phase,
+        journal,
+        incoming
+          .filter((a) => a.effect.kind === 'dispel' && a.effect.categories?.includes('control'))
+          .map((a) => a.id),
+      );
+    }
+    for (const app of incoming) {
       app.event.before = { ...actor.vitals.resources };
       app.event.after = { ...result.resources };
       const detail = result.damage.find((d) => d.applicationId === app.id);
@@ -126,7 +147,9 @@ export function commitEffects(
         app.event.ruleId = 'damage.defense-resistance-shield';
         app.event.reason = app.damageCancelled
           ? 'parried-damage-retains-element-contact'
-          : 'shared-shield-and-single-hp-clamp';
+          : app.guards?.length
+            ? 'guarded-damage-retains-contact-and-effects'
+            : 'shared-shield-and-single-hp-clamp';
       } else if (app.effect.kind === 'heal') {
         app.event.amount = result.healing.find((h) => h.applicationId === app.id)!.amount;
       } else if (app.effect.kind === 'shield') {
@@ -137,6 +160,49 @@ export function commitEffects(
         )!.detail;
         app.event.ruleId = 'concept.defeat';
         app.event.reason = app.event.defeat.reason;
+      } else if (app.effect.kind === 'sensory-cue') {
+        const eligibility = cognitiveCueEligibility(
+          actor,
+          context.statusSteps?.get(result.actorId) ?? domainSnapshotStep(actor, step),
+        );
+        if (!eligibility.eligible || actor.mind.sensoryCues.length >= 8 || !app.actorId) {
+          app.event.kind = 'fizzle';
+          app.event.ruleId = 'sensory-cue.eligibility';
+          app.event.reason = !eligibility.eligible
+            ? eligibility.reason
+            : !app.actorId
+              ? 'missing-creator'
+              : 'observer-cue-cap';
+        } else {
+          const ordinal = app.event.sequence;
+          const identity = cueIdentity(battle.manifest.seed, app.actorId, result.actorId, ordinal);
+          const source =
+            app.observation?.self.position ??
+            actors.find(
+              (candidate) => candidate.body.motion.actor.participant.actorId === app.actorId,
+            )!.body.motion.position;
+          const cue = {
+            id: identity,
+            creatorId: app.actorId,
+            observerId: result.actorId,
+            modality: 'visual' as const,
+            perceivedOrigin: {
+              x: source.x + app.effect.offsetMm.x / 1000,
+              y: source.y + app.effect.offsetMm.y / 1000,
+              z: source.z + app.effect.offsetMm.z / 1000,
+            },
+            emittedAt: activationStep,
+            deliveredAt: activationStep + app.effect.deliverySteps,
+            expiresAt: activationStep + app.effect.durationSteps,
+            discoveredAt: activationStep + app.effect.discoverySteps,
+            confidenceBps: app.effect.confidenceBps,
+          };
+          actor.mind.sensoryCues.push(cue);
+          app.event.entityId = cue.id;
+          app.event.ruleId = 'sensory-cue.emit';
+          app.event.reason = 'bounded-observer-visual-cue';
+          app.event.sensoryCue = { ...cue, transition: 'emitted' };
+        }
       }
       const observer = actors.find((a) => a.body.motion.actor.participant.actorId === app.actorId);
       if (app.effect.kind === 'defeat' && observer)
@@ -248,6 +314,7 @@ export function commitEffects(
                     partial:
                       !!app.sourceActorId ||
                       !!app.damageCancelled ||
+                      !!app.guards?.length ||
                       (app.scaleBps ?? 10000) !== 10000,
                     statuses: actor.statuses,
                     statusStep:
@@ -344,6 +411,7 @@ export function commitEffects(
   }
   return { applications, resolved };
 }
+
 function emitStatusChanges(
   result: Pick<ReturnType<typeof resolveEffects>[number], 'actorId' | 'changes' | 'reactions'>,
   journal: Journal,

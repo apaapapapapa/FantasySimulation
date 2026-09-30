@@ -15,6 +15,7 @@ import { advancePosture } from '../rules/posture.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 import { effectsOf } from './step-effects.ts';
 import { activateRelocations } from './relocation.ts';
+import { settleSensoryCues } from './sensory-cues.ts';
 export function boundaryPhase(tx: StepTransaction) {
   expireSpatialObjects(tx);
   if (tx.next.stop?.active && tx.next.stop.active.until <= tx.step)
@@ -23,6 +24,7 @@ export function boundaryPhase(tx: StepTransaction) {
   const { step, journal } = tx;
   const actors = tx.previous.actors,
     next = tx.next.actors;
+  for (const actor of next) settleSensoryCues(actor, step, journal);
   const spatial =
     battle.statuses.some((s) => s.definition.phasing) ||
     battle.actors.some((a) =>
