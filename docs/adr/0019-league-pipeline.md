@@ -19,6 +19,11 @@ GO for design/pilots only. CPU floors:processCPU/(4N), WorkerCPU/(NW) for N runn
 at16/3:152.2/78.8s, excluding serial/I/O tails. Match wall includes waits, not pure task CPU.
 Re-measure; scale-up requires critical path plus waits<=270s, not summed inclusive spans.
 
+Admission holds >4 runners or >=7,600 slots before R2; reuse is unknown before restore.
+Compute-only hints cannot authorize capacity. Release requires a reviewed exact-source <=270s
+whole-wall/waits protocol. Profiles expire one hour after
+Worker completion (checkpoint default): a deadline, no promise.
+
 ## Jobs and verification boundary
 
 Two waves: **admit -> {compute[N], transfer+finalize}**. Merge probe/prepare; one
