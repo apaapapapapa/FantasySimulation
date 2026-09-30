@@ -87,14 +87,13 @@ describe('basic martial skill catalog authoring', () => {
     expect(evidenceIssues).toEqual([]);
 
     const available = [...nodes.values()].filter(({ lifecycle }) => lifecycle === 'available');
-    expect(available.map(({ id }) => id)).toEqual(
-      SKILL_DANS.map(({ dan }) => `skill.sword.rat.${dan}`),
-    );
+    expect(available.map(({ id }) => id)).toEqual([
+      ...SKILL_DANS.map(({ dan }) => `skill.sword.rat.${dan}`),
+      'skill.shield.ox.1',
+    ]);
     expect(
       [...nodes.values()].filter(
-        ({ coordinate, lifecycle }) =>
-          (coordinate.path === 'archery' || coordinate.path === 'shield') &&
-          lifecycle === 'available',
+        ({ coordinate, lifecycle }) => coordinate.path === 'archery' && lifecycle === 'available',
       ),
     ).toEqual([]);
   });
@@ -123,10 +122,18 @@ describe('basic martial skill catalog authoring', () => {
       );
       for (const fixtureId of evidence.fixtureIds) {
         if (evidence.status === 'proven') {
-          if (!/^fixture\.skill\.sword\.rat\.[1-6]\.action$/.test(fixtureId))
+          const swordFixture = /^fixture\.skill\.sword\.rat\.[1-6]\.action$/.test(fixtureId),
+            shieldGuardFixture =
+              /^fixture\.skill\.shield\.ox\.1\.guard-(?:battle|replay|viewer)$/.test(fixtureId);
+          if (!swordFixture && !shieldGuardFixture)
             evidenceIssues.push(`${fixtureId}: unexpected proven fixture`);
-          if (!evidenceSources.join('\n').includes('`fixture.skill.sword.rat.${dan}.action`'))
+          if (
+            swordFixture &&
+            !evidenceSources.join('\n').includes('`fixture.skill.sword.rat.${dan}.action`')
+          )
             evidenceIssues.push(`${fixtureId}: fixture generator not evidenced`);
+          if (shieldGuardFixture && !evidenceSources.join('\n').includes(fixtureId))
+            evidenceIssues.push(`${fixtureId}: exact fixture not evidenced`);
         } else if (!(fixtureId in corpus.tests) && !evidenceSources.join('\n').includes(fixtureId))
           evidenceIssues.push(`${fixtureId}: missing corpus fixture`);
       }

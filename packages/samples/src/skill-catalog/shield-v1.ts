@@ -511,7 +511,7 @@ const branches = [
 const hash = (value: string) => value as `sha256:${string}`;
 const evidence = {
   'skill.shield.ox.1': {
-    status: 'definition-only',
+    status: 'proven',
     ability: {
       id: 'shield-set-guard-v1',
       revision: 1,
@@ -527,8 +527,6 @@ const evidence = {
       'apps/api/src/http/skill-guard.integration.test.ts',
       'apps/web/src/replay/guard-display.test.ts',
     ],
-    releaseBlocker:
-      'The exact loadout, battle, replay and viewer fixtures must pass before promotion.',
   },
   'skill.shield.dog.1': {
     status: 'definition-only',

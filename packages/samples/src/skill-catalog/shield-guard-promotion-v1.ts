@@ -1,11 +1,11 @@
 /**
  * Promotion contract for the first executable shield guard.
  *
- * It stays implemented until the exact loadout-to-viewer fixtures pass together.
+ * This is an available candidate on a stacked branch until both dependencies land on main.
  */
 export const shieldGuardPromotionPlan = {
   schemaVersion: 1,
-  status: 'implemented',
+  status: 'stacked-available-candidate',
   dependency: {
     pullRequest: 250,
     testedHead: 'b643680c573bd6d406de3609c092c58f4ea1777c',
@@ -24,7 +24,7 @@ export const shieldGuardPromotionPlan = {
   },
   node: {
     id: 'skill.shield.ox.1',
-    currentLifecycle: 'implemented',
+    currentLifecycle: 'available',
     promotedLifecycle: 'available',
     replacesDefinitionOnlyAbility: 'guard',
   },
@@ -90,7 +90,7 @@ export const shieldGuardPromotionPlan = {
     ],
   },
   promotionGates: [
-    'PR #250 is merged and its guard capability remains release eligible',
+    'the pinned PR #250 guard head is in this stacked branch and remains release eligible',
     'shield-set-guard-v1 is schema-validated, sealed and committed to the ability catalog',
     'skill-catalog-v1 revision 2 is assembled, sealed and persisted',
     'the saved loadout fixture resolves exactly shield-set-guard-v1',

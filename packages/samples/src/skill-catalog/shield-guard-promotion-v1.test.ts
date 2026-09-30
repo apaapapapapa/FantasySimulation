@@ -3,15 +3,20 @@ import { shieldGuardPromotionPlan } from './shield-guard-promotion-v1.ts';
 import { shieldSkillEvidence, shieldSkillShard } from './shield-v1.ts';
 
 describe('shield guard promotion plan', () => {
-  it('targets one implemented node without prematurely promoting it', () => {
+  it('promotes exactly one proven node after its vertical fixtures pass', () => {
     const target = shieldSkillShard.nodes.find(({ id }) => id === shieldGuardPromotionPlan.node.id),
       evidence = shieldSkillEvidence.find(
         ({ nodeId }) => nodeId === shieldGuardPromotionPlan.node.id,
       );
-    expect(shieldGuardPromotionPlan.status).toBe('implemented');
-    expect(target?.lifecycle).toBe('implemented');
-    expect(evidence?.evidence.status).toBe('definition-only');
-    expect(shieldSkillShard.nodes.filter(({ lifecycle }) => lifecycle === 'available')).toEqual([]);
+    expect(shieldGuardPromotionPlan.status).toBe('stacked-available-candidate');
+    expect(target?.lifecycle).toBe('available');
+    expect(target?.resolution).toMatchObject([
+      { kind: 'passive-ability', ability: { id: 'shield-set-guard-v1', revision: 1 } },
+    ]);
+    expect(evidence?.evidence.status).toBe('proven');
+    expect(shieldSkillShard.nodes.filter(({ lifecycle }) => lifecycle === 'available')).toEqual([
+      target,
+    ]);
   });
 
   it('pins exact ability and vertical fixture identities behind explicit gates', () => {
