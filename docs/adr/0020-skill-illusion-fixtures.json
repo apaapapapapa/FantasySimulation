@@ -1,0 +1,89 @@
+{
+  "status": "catalog-design-implemented-runtime-blocked",
+  "issue": 228,
+  "baseline": "78eddc5181a6abdf975f56428f000b16644ae580",
+  "path": "illusion-curse",
+  "nodeDesignEvidence": {
+    "fixtureIdTemplate": "fixture.skill.illusion-curse.{zodiac}.{dan}",
+    "coordinates": 72,
+    "test": "packages/domain/src/illusion-curse-catalog.test.ts",
+    "rule": "Every coordinate is a meaningful draft with a distinct deepening, retained lower-dan use, upper-dan tradeoff and explicit missing mechanisms. Draft nodes have no executable resolution or release fixture evidence."
+  },
+  "runtimeSuites": [
+    {
+      "id": "illusion-cue-delivery",
+      "status": "blocked",
+      "requires": ["sensory-cue-visual-v1", "sensory-cue-audio-v1", "sensory-cue-presence-v1"],
+      "cases": [
+        "visual, audio and presence use separate range, occlusion, delay and memory profiles",
+        "delivery changes only the affected observer after its delivery boundary",
+        "cues never gain collision, HP, damage, victory eligibility or actor identity"
+      ]
+    },
+    {
+      "id": "illusion-resistance-discovery-cleanse",
+      "status": "blocked",
+      "requires": ["curse-defense-v1", "mental-defense-v1", "sensory-cue-counter-v1"],
+      "cases": [
+        "curse resistance, mental resistance and illusion discovery are distinct",
+        "resistance prevents delivery, discovery marks known false and cleanse removes",
+        "resist, discover, cleanse and expiry each settle and record exactly once",
+        "same-boundary discovery, cleanse and expiry use a reviewed deterministic precedence"
+      ]
+    },
+    {
+      "id": "illusion-mindless-targets",
+      "status": "blocked",
+      "requires": ["mental-eligibility-v1"],
+      "cases": [
+        "mindless eligibility is explicit and never inferred from appearance or character ID",
+        "mental effects reject mindless targets with a recorded reason",
+        "visual or audio sensors may still receive their supported modality independently of mind"
+      ]
+    },
+    {
+      "id": "illusion-ai-use-and-counter",
+      "status": "blocked",
+      "requires": ["perceived-target-ai-v1", "sensory-cue-counter-v1"],
+      "cases": [
+        "affected AI may select a delivered cue position while an unaffected control does not",
+        "cue selection never resolves a cue ID as a combat actor or leaks the true target",
+        "AI chooses detection or cleanse from legal evidence without path, node or character branches",
+        "direct enemy effects have an explicitly reviewed cue-target rule"
+      ]
+    },
+    {
+      "id": "illusion-information-noninterference",
+      "status": "blocked",
+      "requires": ["perceived-target-ai-v1", "sensory-cue-record-replay-v1"],
+      "cases": [
+        "delivery-before, unaffected-observer and hidden-source variants retain identical cognition and weights",
+        "actor view omits creator, source ability, truth origin, hidden skills and future RNG until legally learned",
+        "canonical HP, collision and victory remain equal when only subjective cue delivery differs"
+      ]
+    },
+    {
+      "id": "illusion-interference-and-bounds",
+      "status": "blocked",
+      "requires": ["sensory-cue-counter-v1", "sensory-cue-record-replay-v1"],
+      "cases": [
+        "seal, visibility, status stacking, cleanse, target validation and simultaneous application are classified",
+        "active and pending cue caps terminate overflow with an explicit diagnostic",
+        "input and revision permutation preserve result, event and trajectory hashes",
+        "CPU, memory, cognition bytes, event bytes and artifact size remain measured and bounded"
+      ]
+    },
+    {
+      "id": "illusion-persistence-replay-viewers",
+      "status": "blocked",
+      "requires": ["sensory-cue-record-replay-v1"],
+      "cases": [
+        "API, worker, database and artifact round-trip the exact feature and cue records",
+        "truth and affected-actor views differ only by recorded perspective data",
+        "2D and 3D seek, reverse and loop restore cue lifecycle without residue or engine execution",
+        "tampered observer, ordinal, lifecycle or hidden truth fails validation without state mutation",
+        "old artifacts omit the feature and retain existing read and display behavior"
+      ]
+    }
+  ]
+}
