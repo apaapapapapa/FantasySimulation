@@ -259,11 +259,21 @@ export async function buildLeagueRuntime(checkout: string, destination: string, 
       ...(workspace && value.devDependencies?.tsx ? { tsx: value.devDependencies.tsx } : {}),
     };
     for (const name of Object.keys(dependencies).sort())
-      await dependency(
-        directory,
-        name,
-        name in optional || value.peerDependenciesMeta?.[name]?.optional === true,
-      );
+      // The pinned artifact SDK ships generated JS; protoc's TS generator is not
+      // imported by that JS. Keep this exception version/edge-specific: a new SDK
+      // version must include its declared closure until reviewed again.
+      if (
+        !(
+          value.name === '@actions/artifact' &&
+          value.version === '6.2.1' &&
+          name === '@protobuf-ts/plugin'
+        )
+      )
+        await dependency(
+          directory,
+          name,
+          name in optional || value.peerDependenciesMeta?.[name]?.optional === true,
+        );
   }
   for (const name of rootDependencies) await dependency(root, name, false);
   const inventory = [...files.values()].sort((a, b) => a.path.localeCompare(b.path));
