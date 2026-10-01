@@ -44,6 +44,15 @@ it('reads the confirmed bounded cursor pages for saved loadouts', async () => {
   ]);
 });
 
+it('loads actual ability revisions used by node detail instead of inferring runtime fields', async () => {
+  const request = vi.fn(async () => Response.json({ items: [], nextCursor: null }));
+  vi.stubGlobal('fetch', request);
+  await expect(skillWorkbenchApi.listAbilities()).resolves.toEqual([]);
+  expect(request).toHaveBeenCalledOnce();
+  const calls = request.mock.calls as unknown as [string, RequestInit][];
+  expect(calls[0]?.[0]).toBe('/api/revisions/ability?limit=10');
+});
+
 it('isolates the skill battle endpoint and binds the saved revision to the selected actor', async () => {
   const response = {
     job: {

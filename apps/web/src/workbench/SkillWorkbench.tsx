@@ -8,14 +8,14 @@ import {
   type SkillConfiguration,
   type SkillNode,
 } from '@fantasy/domain';
-import { errorText } from '../api-client.ts';
-import { reference } from '../api-client.ts';
+import { errorText, reference } from '../api-client.ts';
 import {
   DEFAULT_SKILL_CATALOG,
   sameSkillRevisionRef,
   skillLoadoutsForCatalog,
 } from './skill-api.ts';
 import type {
+  SkillAbility,
   SkillCharacter,
   SkillLoadoutHead,
   SkillLoadoutSelection,
@@ -23,30 +23,38 @@ import type {
   SkillWorkbenchClient,
 } from './skill-api.ts';
 import {
+  abilitiesForNode,
+  filterSkillNodes,
+  formatAbilityConstraints,
+  formatAbilityCosts,
+  workbenchReasonTexts,
+} from './skill-workbench-view.ts';
+import {
   learnNode,
   loadoutCounts,
   toggleEnabledNode,
   workbenchNodeState,
+  type WorkbenchStatus,
 } from './skill-workbench-state.ts';
 
-const LABELS = {
+const LABELS: Record<WorkbenchStatus, string> = {
   eligible: '習得可能',
   learned: '習得済み',
   enabled: '編成中',
   locked: '未解放',
   disabled: '利用不可',
 };
-const ACTIONS = {
+const ACTIONS: Record<WorkbenchStatus, string> = {
   eligible: '習得する',
   learned: '編成する',
   enabled: '編成から外す',
-  locked: '未解放',
-  disabled: '利用不可',
+  locked: '選択できません',
+  disabled: '選択できません',
 };
-const PATH_OPTIONS = SKILL_PATHS.map(({ id, name }) => ({ value: id, label: name }));
 const ZODIAC_OPTIONS = SKILL_ZODIACS.map(({ id, name }) => ({ value: id, label: name }));
 const DAN_OPTIONS = SKILL_DANS.map(({ dan, name }) => ({ value: String(dan), label: name }));
 const refKey = (value: SkillRevisionRef) => `${value.id}@${value.revision}:${value.contentHash}`;
+const coordinateKey = (node: SkillNode) => `${node.coordinate.dan}:${node.coordinate.zodiac}`;
 
 function FilterOptions({ items }: { items: readonly { value: string; label: string }[] }) {
   return items.map((item) => (
@@ -54,6 +62,21 @@ function FilterOptions({ items }: { items: readonly { value: string; label: stri
       {item.label}
     </option>
   ));
+}
+
+function resolutionLabel(node: SkillNode) {
+  if (!node.resolution.length) return '実行定義なし';
+  return node.resolution
+    .map((item) => {
+      if (item.kind === 'augment')
+        return `強化: ${item.baseAbility.id} → ${item.resolvedAbility.id}`;
+      return `${item.kind === 'active-ability' ? '発動技' : '常時効果'}: ${item.ability.id}`;
+    })
+    .join(' / ');
+}
+
+function targetLabel(target: SkillAbility['definition']['target']) {
+  return target === 'self' ? '自分' : '相手';
 }
 
 export function SkillWorkbench({
@@ -68,12 +91,15 @@ export function SkillWorkbench({
   onSaved(value: SkillLoadoutSelection | null): void;
 }) {
   const [catalog, setCatalog] = useState<SkillCatalog | null>(null);
+  const [abilities, setAbilities] = useState<SkillAbility[]>([]);
   const [characters, setCharacters] = useState<SkillCharacter[]>([]);
   const [character, setCharacter] = useState<SkillRevisionRef | null>(null);
   const [saved, setSaved] = useState<SkillLoadoutHead[]>([]);
   const [configuration, setConfiguration] = useState<SkillConfiguration | null>(null);
   const [selectedRevision, setSelectedRevision] = useState<SkillLoadoutHead | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [path, setPath] = useState(SKILL_PATHS[0].id as string);
+  const [query, setQuery] = useState('');
   const [zodiac, setZodiac] = useState('all');
   const [dan, setDan] = useState('all');
   const [busy, setBusy] = useState(false);
@@ -81,8 +107,9 @@ export function SkillWorkbench({
   const [error, setError] = useState('');
 
   async function hydrate(signal?: AbortSignal, replace = false) {
-    const [nextCatalog, nextCharacters, loadouts] = await Promise.all([
+    const [nextCatalog, nextAbilities, nextCharacters, loadouts] = await Promise.all([
       client.getCatalog(catalogId, catalogVersion, signal),
+      client.listAbilities(signal),
       client.listCharacters(signal),
       client.listLoadouts(signal),
     ]);
@@ -93,8 +120,16 @@ export function SkillWorkbench({
     };
     const matchingLoadouts = skillLoadoutsForCatalog(loadouts, catalogRef);
     setCatalog(nextCatalog);
+    setAbilities(nextAbilities);
     setCharacters(nextCharacters);
     setSaved(matchingLoadouts);
+    setSelectedNodeId((current) =>
+      current && nextCatalog.nodes.some((node) => node.id === current)
+        ? current
+        : (nextCatalog.nodes.find(
+            (node) => node.coordinate.path === path && node.coordinate.dan === 6,
+          )?.id ?? null),
+    );
     if (!configuration || replace) {
       const current = replace
         ? (matchingLoadouts.find((item) => item.id === selectedRevision?.id) ??
@@ -136,17 +171,30 @@ export function SkillWorkbench({
     return () => controller.abort();
   }, [catalogId, catalogVersion]);
 
-  const visible = useMemo(
-    () =>
-      (catalog?.nodes ?? []).filter(
-        (node) =>
-          node.coordinate.path === path &&
-          (zodiac === 'all' || node.coordinate.zodiac === zodiac) &&
-          (dan === 'all' || node.coordinate.dan === Number(dan)),
-      ),
-    [catalog, path, zodiac, dan],
+  const pathNodes = useMemo(
+    () => (catalog?.nodes ?? []).filter((node) => node.coordinate.path === path),
+    [catalog, path],
   );
+  const nodesByCoordinate = useMemo(
+    () => new Map(pathNodes.map((node) => [coordinateKey(node), node])),
+    [pathNodes],
+  );
+  const visible = useMemo(
+    () => filterSkillNodes(catalog?.nodes ?? [], { query, path, zodiac, dan }),
+    [catalog, query, path, zodiac, dan],
+  );
+  const visibleIds = useMemo(() => new Set(visible.map((node) => node.id)), [visible]);
+  const selectedNode = catalog?.nodes.find((node) => node.id === selectedNodeId) ?? null;
+  const selectedPath = SKILL_PATHS.find((item) => item.id === path)!;
   const counts = catalog && configuration ? loadoutCounts(catalog.nodes, configuration) : null;
+
+  function selectPath(nextPath: string) {
+    setPath(nextPath);
+    const nextNode = catalog?.nodes.find(
+      (node) => node.coordinate.path === nextPath && node.coordinate.dan === 6,
+    );
+    setSelectedNodeId(nextNode?.id ?? null);
+  }
 
   function choose(savedId: string) {
     const revision = saved.find((item) => `${item.id}:${item.latest.revision}` === savedId) ?? null;
@@ -211,7 +259,7 @@ export function SkillWorkbench({
       setConfiguration(result.snapshot.configuration);
       setSaved((items) => [result, ...items.filter((item) => item.id !== result.id)]);
       onSaved({ loadout: result.latest, character: result.snapshot.character });
-      setMessage(`revision ${result.latest.revision} を保存しました。`);
+      setMessage(`revision ${result.latest.revision} を保存しました。下の対戦画面で使用できます。`);
     } catch (cause) {
       setError(errorText(cause));
     } finally {
@@ -219,17 +267,51 @@ export function SkillWorkbench({
     }
   }
 
+  const detailState =
+    selectedNode && configuration ? workbenchNodeState(selectedNode, configuration) : null;
+  const detailReasons =
+    detailState && catalog ? workbenchReasonTexts(detailState, catalog.nodes) : [];
+  const detailAbilities = selectedNode ? abilitiesForNode(selectedNode, abilities) : [];
+
   return (
     <section className="panel skill-workbench" aria-labelledby="skill-workbench-heading">
       <h2 id="skill-workbench-heading">技の習得・編成</h2>
-      <p>カタログの定義を絞り込み、習得後に戦闘へ持ち込む技を編成します。</p>
+      <p className="local-note">
+        <strong>ローカル専用:</strong>{' '}
+        この画面は端末内APIへ保存する開発用WorkBenchです。公開Pagesからの編集はできません。
+      </p>
+      <p>
+        道を選び、六段から初段・子から亥の72枠を確認します。保存した構成は下の対戦へ渡り、完了後に保存リプレイを開けます。
+      </p>
       <fieldset disabled={busy || !catalog || !configuration}>
-        <div className="skill-filters">
+        <nav className="skill-paths" aria-label="道一覧">
+          {SKILL_PATHS.map((item) => {
+            const nodes = catalog?.nodes.filter((node) => node.coordinate.path === item.id) ?? [];
+            const available = nodes.filter((node) => node.lifecycle === 'available').length;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={path === item.id}
+                onClick={() => selectPath(item.id)}
+              >
+                <strong>{item.name}</strong>
+                <span>{item.role}</span>
+                <small>{available}/72 利用可能</small>
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="skill-filters" role="search" aria-label="技を検索">
           <label>
-            道
-            <select value={path} onChange={(event) => setPath(event.target.value)}>
-              <FilterOptions items={PATH_OPTIONS} />
-            </select>
+            名前・効果・道を検索
+            <input
+              type="search"
+              value={query}
+              placeholder="例: 防護、盾道、shield"
+              onChange={(event) => setQuery(event.target.value)}
+            />
           </label>
           <label>
             十二支
@@ -246,87 +328,226 @@ export function SkillWorkbench({
             </select>
           </label>
         </div>
-        <label>
-          キャラクター
-          <select
-            disabled={selectedRevision !== null}
-            value={character ? refKey(character) : ''}
-            onChange={(event) => {
-              const selected = characters.find(
-                (item) => refKey(reference(item)) === event.target.value,
-              );
-              if (selected) {
-                setCharacter(reference(selected));
-                if (selectedRevision) {
-                  setSelectedRevision(null);
-                  onSaved(null);
-                }
-              }
-            }}
-          >
-            {character &&
-              !characters.some((item) => sameSkillRevisionRef(reference(item), character)) && (
-                <option value={refKey(character)}>
-                  {character.id} r{character.revision} (saved)
-                </option>
-              )}
-            {characters.map((item) => (
-              <option key={refKey(reference(item))} value={refKey(reference(item))}>
-                {item.definition.name}・r{item.revision}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          保存済み構成
-          <select
-            value={
-              selectedRevision ? `${selectedRevision.id}:${selectedRevision.latest.revision}` : ''
-            }
-            onChange={(event) => choose(event.target.value)}
-          >
-            <option value="">新規構成</option>
-            {saved.map((item) => (
-              <option
-                key={`${item.id}:${item.latest.revision}`}
-                value={`${item.id}:${item.latest.revision}`}
-              >
-                {item.id}・revision {item.latest.revision}
-              </option>
-            ))}
-          </select>
-        </label>
-        <p aria-live="polite">
-          編成: 道 {counts?.paths ?? 0}/2、能動 {counts?.active ?? 0}/8、受動 {counts?.passive ?? 0}
-          /4
+        <p role="status" aria-label="検索結果">
+          {selectedPath.name}: {visible.length}/72 枠が検索条件に一致
         </p>
-        <ul className="skill-grid" aria-label="技一覧">
-          {visible.map((node) => {
-            const state = workbenchNodeState(node, configuration!);
-            const unavailable = state.status === 'locked' || state.status === 'disabled';
-            return (
-              <li key={node.id} data-state={state.status}>
-                <button
-                  type="button"
-                  disabled={unavailable}
-                  aria-label={`${node.name}: ${ACTIONS[state.status]}`}
-                  aria-pressed={state.status === 'enabled'}
-                  aria-describedby={`${node.id}-description`}
-                  onClick={() => operate(node)}
+
+        <div className="skill-matrix-scroll" tabIndex={0} aria-label={`${selectedPath.name} 72枠`}>
+          <table className="skill-matrix">
+            <caption>
+              {selectedPath.name} — {selectedPath.role}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">段</th>
+                {SKILL_ZODIACS.map((item) => (
+                  <th scope="col" key={item.id} title={item.tendency}>
+                    {item.name}
+                    <small>{item.tendency}</small>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {[...SKILL_DANS].reverse().map((rank) => (
+                <tr key={rank.dan}>
+                  <th scope="row">
+                    {rank.name}
+                    <small>{rank.deepening}</small>
+                  </th>
+                  {SKILL_ZODIACS.map((animal) => {
+                    const node = nodesByCoordinate.get(`${rank.dan}:${animal.id}`);
+                    if (!node) return <td key={animal.id}>欠落</td>;
+                    const state = workbenchNodeState(node, configuration!);
+                    return (
+                      <td
+                        key={animal.id}
+                        data-state={state.status}
+                        data-match={visibleIds.has(node.id)}
+                      >
+                        <button
+                          type="button"
+                          aria-pressed={selectedNodeId === node.id}
+                          onClick={() => setSelectedNodeId(node.id)}
+                        >
+                          <strong>{node.name}</strong>
+                          <span>{LABELS[state.status]}</span>
+                        </button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {selectedNode && detailState && (
+          <article className="skill-detail" aria-labelledby="skill-detail-heading">
+            <header>
+              <div>
+                <p className="eyebrow">
+                  {SKILL_PATHS.find((item) => item.id === selectedNode.coordinate.path)?.name}・
+                  {SKILL_ZODIACS.find((item) => item.id === selectedNode.coordinate.zodiac)?.name}・
+                  {SKILL_DANS.find((item) => item.dan === selectedNode.coordinate.dan)?.name}
+                </p>
+                <h3 id="skill-detail-heading">{selectedNode.name}</h3>
+              </div>
+              <span className="skill-state" data-state={detailState.status}>
+                {LABELS[detailState.status]}
+              </span>
+            </header>
+            <dl>
+              <div>
+                <dt>効果</dt>
+                <dd>{selectedNode.description}</dd>
+              </div>
+              <div>
+                <dt>前提</dt>
+                <dd>
+                  {selectedNode.prerequisites.length
+                    ? selectedNode.prerequisites
+                        .map(
+                          (id) =>
+                            catalog?.nodes.find((candidate) => candidate.id === id)?.name ?? id,
+                        )
+                        .join(' / ')
+                    : 'なし'}
+                </dd>
+              </div>
+              <div>
+                <dt>対象</dt>
+                <dd>
+                  {detailAbilities.length
+                    ? detailAbilities
+                        .map(({ reference, ability }) =>
+                          ability
+                            ? `${ability.definition.name}: ${targetLabel(ability.definition.target)}`
+                            : `${reference.id}: 参照定義を取得できません`,
+                        )
+                        .join(' / ')
+                    : '実行定義なし（戦闘対象なし）'}
+                </dd>
+              </div>
+              <div>
+                <dt>消耗</dt>
+                <dd>
+                  {detailAbilities.length
+                    ? detailAbilities
+                        .map(({ reference, ability }) =>
+                          ability
+                            ? `${ability.definition.name}: ${formatAbilityCosts(ability)}`
+                            : `${reference.id}: 不明`,
+                        )
+                        .join(' / ')
+                    : '実行定義なし'}
+                </dd>
+              </div>
+              <div>
+                <dt>制約</dt>
+                <dd>
+                  {[
+                    ...(selectedNode.weaponTags?.length
+                      ? [`武器 ${selectedNode.weaponTags.join(', ')}`]
+                      : []),
+                    ...(selectedNode.deepening.conditionOrTradeoff
+                      ? [selectedNode.deepening.conditionOrTradeoff]
+                      : []),
+                    ...detailAbilities.flatMap(({ ability }) =>
+                      ability ? [formatAbilityConstraints(ability)] : [],
+                    ),
+                  ].join(' / ') || 'カタログ上の追加制約なし'}
+                </dd>
+              </div>
+              <div>
+                <dt>深化</dt>
+                <dd>
+                  {selectedNode.deepening.explanation}
+                  {selectedNode.deepening.retainsLowerUse ? '（下位段の用途を維持）' : ''}
+                </dd>
+              </div>
+              <div>
+                <dt>実行対応</dt>
+                <dd>{resolutionLabel(selectedNode)}</dd>
+              </div>
+            </dl>
+            {detailReasons.length > 0 && (
+              <div className="skill-blockers" role="note" aria-label="選べない理由">
+                <strong>選べない理由</strong>
+                <ul>
+                  {detailReasons.map((reason) => (
+                    <li key={reason}>{reason}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <button
+              type="button"
+              className="skill-node-action"
+              disabled={detailState.status === 'locked' || detailState.status === 'disabled'}
+              onClick={() => operate(selectedNode)}
+            >
+              {ACTIONS[detailState.status]}
+            </button>
+          </article>
+        )}
+
+        <div className="skill-loadout-controls">
+          <label>
+            キャラクター
+            <select
+              disabled={selectedRevision !== null}
+              value={character ? refKey(character) : ''}
+              onChange={(event) => {
+                const selected = characters.find(
+                  (item) => refKey(reference(item)) === event.target.value,
+                );
+                if (selected) {
+                  setCharacter(reference(selected));
+                  if (selectedRevision) {
+                    setSelectedRevision(null);
+                    onSaved(null);
+                  }
+                }
+              }}
+            >
+              {character &&
+                !characters.some((item) => sameSkillRevisionRef(reference(item), character)) && (
+                  <option value={refKey(character)}>
+                    {character.id} r{character.revision} (saved)
+                  </option>
+                )}
+              {characters.map((item) => (
+                <option key={refKey(reference(item))} value={refKey(reference(item))}>
+                  {item.definition.name}・r{item.revision}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            保存済み構成
+            <select
+              value={
+                selectedRevision ? `${selectedRevision.id}:${selectedRevision.latest.revision}` : ''
+              }
+              onChange={(event) => choose(event.target.value)}
+            >
+              <option value="">新規構成</option>
+              {saved.map((item) => (
+                <option
+                  key={`${item.id}:${item.latest.revision}`}
+                  value={`${item.id}:${item.latest.revision}`}
                 >
-                  <strong>{node.name}</strong>
-                  <span>
-                    {LABELS[state.status]}・{node.coordinate.dan}段
-                  </span>
-                </button>
-                <small id={`${node.id}-description`}>
-                  {node.description}
-                  {state.reasons.length ? `（${state.reasons.join('、')}）` : ''}
-                </small>
-              </li>
-            );
-          })}
-        </ul>
+                  {item.id}・revision {item.latest.revision}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <p aria-live="polite">
+          編成: 道 {counts?.paths ?? 0}/2、発動技 {counts?.active ?? 0}/8、常時効果{' '}
+          {counts?.passive ?? 0}/4
+        </p>
         <div className="actions">
           <button type="button" className="primary" onClick={() => void save()}>
             構成を保存

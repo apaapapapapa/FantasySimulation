@@ -10,10 +10,11 @@ import {
 } from '@fantasy/domain';
 import type { Revision } from '@fantasy/domain/spatial';
 import { api } from '../api-client.ts';
-import { loadRevisionCatalog } from './revision-catalog.ts';
+import { loadRevisionCatalog, loadRevisionKind } from './revision-catalog.ts';
 
 export type SkillRevisionRef = SkillLoadoutHead['latest'];
 export type SkillCharacter = Extract<Revision, { kind: 'character' }>;
+export type SkillAbility = Extract<Revision, { kind: 'ability' }>;
 export type { SkillLoadoutHead };
 export type SkillLoadoutSelection = {
   loadout: SkillRevisionRef;
@@ -35,6 +36,7 @@ export type SkillBattleRequest = {
 export interface SkillWorkbenchClient {
   getCatalog(id: string, version: number, signal?: AbortSignal): Promise<SkillCatalog>;
   listCharacters(signal?: AbortSignal): Promise<SkillCharacter[]>;
+  listAbilities(signal?: AbortSignal): Promise<SkillAbility[]>;
   listLoadouts(signal?: AbortSignal): Promise<SkillLoadoutHead[]>;
   createLoadout(
     character: SkillRevisionRef,
@@ -65,6 +67,10 @@ export const skillWorkbenchApi: SkillWorkbenchClient = {
   listCharacters: async (signal) => {
     const [characters] = await loadRevisionCatalog(signal ?? new AbortController().signal);
     return characters.filter((item): item is SkillCharacter => item.kind === 'character');
+  },
+  listAbilities: async (signal) => {
+    const abilities = await loadRevisionKind('ability', signal ?? new AbortController().signal);
+    return abilities.filter((item): item is SkillAbility => item.kind === 'ability');
   },
   listLoadouts: async (signal) => {
     const items: SkillLoadoutHead[] = [],
