@@ -67,8 +67,7 @@ export function applyDependents(
     ...(state.dependents ?? []),
     ...changes.spawn,
   ];
-  const strongObservationBinding =
-    prior.requiredFeatures?.includes('dependent-observation-v2') === true;
+  const strongObservationBinding = context.manifest.schemaVersion >= 9;
   const isHostileTarget = (dependent: DependentDisplay, targetId: string | null) =>
     targetId === dependent.hostileOwnerId ||
     knownDependents.some(
@@ -134,6 +133,71 @@ export function applyDependents(
       delta?.resources ?? prior.state?.actors.find((actor) => actor.id === ownerId)?.resources;
     requireReplay(!!result && same(result, recorded), 'dependent owner resource result');
   }
+  const validateObservedAction = (
+    dependent: DependentDisplay,
+    expectedActionAt: number,
+    expectedRng: number,
+    command: (typeof record.events)[number],
+    act: (typeof record.events)[number],
+  ) => {
+    const spec = ownerAbility(context, dependent)?.definition.summon;
+    const targetDependent = knownDependents.find((candidate) => candidate.id === command.targetId);
+    const targetsDependent = !!targetDependent;
+    const observedTargets = command.dependent?.observedTargetIds ?? [];
+    const observedDependents = observedTargets.slice(1);
+    const selectedRng = nextRandom(expectedRng);
+    const observedTargetBinding = strongObservationBinding
+      ? observedTargets.length > 0 &&
+        observedTargets[0] === dependent.hostileOwnerId &&
+        new Set(observedTargets).size === observedTargets.length &&
+        same(observedDependents, [...observedDependents].sort(compareIds)) &&
+        observedDependents.every((id) =>
+          knownDependents.some(
+            (candidate) => candidate.id === id && candidate.ownerId === dependent.hostileOwnerId,
+          ),
+        ) &&
+        same(act.dependent?.observedTargetIds, observedTargets) &&
+        command.targetId === observedTargets[selectedRng % observedTargets.length]
+      : command.dependent?.observedTargetIds === undefined &&
+        act.dependent?.observedTargetIds === undefined &&
+        command.targetId === dependent.hostileOwnerId;
+    const step = transitionStep(record);
+    requireReplay(
+      !!spec &&
+        command.step === step &&
+        command.step === expectedActionAt &&
+        command.phase === 'boundary' &&
+        command.ruleId === 'dependent.observed-command' &&
+        command.targetId === act.targetId &&
+        observedTargetBinding &&
+        command.reason ===
+          (strongObservationBinding && targetsDependent
+            ? 'owner-delivered-dependent-observation'
+            : 'owner-delivered-enemy-observation') &&
+        (targetsDependent
+          ? targetDependent.ownerId === dependent.hostileOwnerId
+          : command.targetId === dependent.hostileOwnerId) &&
+        command.dependent?.nextActionAt === expectedActionAt &&
+        !!command.before &&
+        !!command.after &&
+        same(command.before, resourcesBefore(dependent.ownerId, command.sequence)) &&
+        command.before.mp - command.after.mp === spec.commandCostMp &&
+        command.before.hp === command.after.hp &&
+        command.before.shield === command.after.shield &&
+        command.before.stamina === command.after.stamina &&
+        act.step === command.step &&
+        act.phase === 'boundary' &&
+        act.parentEventId === command.id &&
+        act.ruleId === 'dependent.subject-clock' &&
+        act.reason ===
+          (strongObservationBinding && targetsDependent
+            ? 'stable-ordinal-visible-hostile-dependent'
+            : 'stable-ordinal-policy') &&
+        act.dependent?.nextActionAt === expectedActionAt + spec.actionEverySteps,
+      'dependent observed command timing',
+    );
+    return selectedRng;
+  };
   requireReplay(
     new Set(changes.spawn.map((d) => d.id)).size === changes.spawn.length &&
       new Set(changes.update.map((d) => d.id)).size === changes.update.length &&
@@ -260,62 +324,7 @@ export function applyDependents(
     if (commands.length) {
       const command = commands[0]!;
       const act = acts[0]!;
-      const targetDependent = knownDependents.find(
-        (candidate) => candidate.id === command.targetId,
-      );
-      const targetsDependent = !!targetDependent;
-      const observedTargets = command.dependent?.observedTargetIds ?? [];
-      const observedDependents = observedTargets.slice(1);
-      const selectedRng = nextRandom(expectedRng);
-      const observedTargetBinding = strongObservationBinding
-        ? observedTargets.length > 0 &&
-          observedTargets[0] === dependent.hostileOwnerId &&
-          new Set(observedTargets).size === observedTargets.length &&
-          same(observedDependents, [...observedDependents].sort(compareIds)) &&
-          observedDependents.every((id) =>
-            knownDependents.some(
-              (candidate) => candidate.id === id && candidate.ownerId === dependent.hostileOwnerId,
-            ),
-          ) &&
-          same(act.dependent?.observedTargetIds, observedTargets) &&
-          command.targetId === observedTargets[selectedRng % observedTargets.length]
-        : command.dependent?.observedTargetIds === undefined &&
-          act.dependent?.observedTargetIds === undefined &&
-          command.targetId === dependent.hostileOwnerId;
-      requireReplay(
-        command.step === step &&
-          command.step === expectedActionAt &&
-          command.phase === 'boundary' &&
-          command.ruleId === 'dependent.observed-command' &&
-          command.targetId === act.targetId &&
-          observedTargetBinding &&
-          command.reason ===
-            (strongObservationBinding && targetsDependent
-              ? 'owner-delivered-dependent-observation'
-              : 'owner-delivered-enemy-observation') &&
-          (targetsDependent
-            ? targetDependent.ownerId === dependent.hostileOwnerId
-            : command.targetId === dependent.hostileOwnerId) &&
-          command.dependent?.nextActionAt === expectedActionAt &&
-          !!command.before &&
-          !!command.after &&
-          same(command.before, resourcesBefore(dependent.ownerId, command.sequence)) &&
-          command.before.mp - command.after.mp === spec!.commandCostMp &&
-          command.before.hp === command.after.hp &&
-          command.before.shield === command.after.shield &&
-          command.before.stamina === command.after.stamina &&
-          act.step === command.step &&
-          act.phase === 'boundary' &&
-          act.parentEventId === command.id &&
-          act.ruleId === 'dependent.subject-clock' &&
-          act.reason ===
-            (strongObservationBinding && targetsDependent
-              ? 'stable-ordinal-visible-hostile-dependent'
-              : 'stable-ordinal-policy') &&
-          act.dependent?.nextActionAt === expectedActionAt + spec!.actionEverySteps,
-        'dependent observed command timing',
-      );
-      expectedRng = selectedRng;
+      expectedRng = validateObservedAction(dependent, expectedActionAt, expectedRng, command, act);
     }
     if (due) expectedActionAt += spec!.actionEverySteps;
 
@@ -449,6 +458,36 @@ export function applyDependents(
     const spec = existing && ownerAbility(context, existing)?.definition.summon;
     const owner = existing && prior.state?.actors.find((actor) => actor.id === existing.ownerId);
     const ownerDelta = existing && record.changes.find((change) => change.id === existing.ownerId);
+    if (existing && !changes.update.some((dependent) => dependent.id === existing.id)) {
+      const commands = record.events.filter(
+        (candidate) => candidate.kind === 'dependent-command' && candidate.entityId === existing.id,
+      );
+      const acts = record.events.filter(
+        (candidate) => candidate.kind === 'dependent-act' && candidate.entityId === existing.id,
+      );
+      requireReplay(
+        commands.length <= 1 && acts.length === commands.length,
+        'removed dependent command/act count',
+      );
+      if (commands.length) {
+        const release = existing.clock
+          ? record.events.find(
+              (candidate) =>
+                candidate.timeStop?.state === 'release' &&
+                candidate.timeStop.controlId === existing.clock?.controlId,
+            )
+          : undefined;
+        const expectedActionAt =
+          existing.nextActionAt + (release ? release.step - existing.clock!.frozenFrom : 0);
+        validateObservedAction(
+          existing,
+          expectedActionAt,
+          existing.rngState,
+          commands[0]!,
+          acts[0]!,
+        );
+      }
+    }
     const common =
       !!existing &&
       !!spec &&

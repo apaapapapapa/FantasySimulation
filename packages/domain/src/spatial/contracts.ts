@@ -1406,6 +1406,7 @@ export const StoredManifestSchema = z
       z.literal(6),
       z.literal(7),
       z.literal(8),
+      z.literal(9),
     ]),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),

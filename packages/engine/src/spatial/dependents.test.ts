@@ -119,7 +119,7 @@ function followedDependent(record: Exclude<StreamRecord, { kind: 'initial' | 'te
 
 it('executes a bounded observed rat dependent through replay with ordinal RNG identity', async () => {
   const battle = await prepareBattle(await summoningManifest());
-  expect(battle.manifest.schemaVersion).toBe(8);
+  expect(battle.manifest.schemaVersion).toBe(9);
   const run = await runPreparedBattle(battle);
   for (const record of run.records) {
     const parsed = StreamRecordSchema.safeParse(record);
@@ -296,6 +296,16 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     const command = record.events.find((event) => event.kind === 'dependent-command');
     if (!command?.dependent) throw new Error('Missing dependent command');
     delete command.dependent.observedTargetIds;
+  });
+  rejects((records) => {
+    const initial = records[0];
+    if (initial?.kind !== 'initial' || !initial.requiredFeatures)
+      throw new Error('Missing initial features');
+    initial.requiredFeatures = initial.requiredFeatures.filter(
+      (feature) => feature !== 'dependent-observation-v2',
+    );
+    for (const event of battleEvents(records))
+      if (event.dependent) delete event.dependent.observedTargetIds;
   });
   rejects((records) => {
     const record = actionRecord(records);
@@ -570,6 +580,69 @@ it('commits simultaneous dependent hits as one replay-bound HP wave', async () =
   const resumedAfterDespawn = new ReplayState(context, afterDespawn);
   for (const candidate of run.records.slice(staleDespawnRecord + 1, staleActRecord + 1))
     resumedAfterDespawn.apply(candidate);
+
+  const removedSourceRecordIndex = run.records.findIndex(
+    (candidate) =>
+      'dependents' in candidate &&
+      candidate.dependents?.remove.some(
+        (removed) =>
+          removed.reason === 'owner-defeated' &&
+          candidate.events.some(
+            (event) => event.kind === 'dependent-command' && event.entityId === removed.id,
+          ) &&
+          !candidate.dependents?.update.some((updated) => updated.id === removed.id),
+      ),
+  );
+  expect(removedSourceRecordIndex).toBeGreaterThanOrEqual(0);
+  for (const mutation of ['reason', 'next-action', 'candidate'] as const) {
+    const records = structuredClone(run.records);
+    const candidate = records[removedSourceRecordIndex];
+    if (!candidate || !('dependents' in candidate) || !candidate.dependents)
+      throw new Error('Missing remove-only source record');
+    const removed = candidate.dependents.remove.find(
+      (entry) =>
+        entry.reason === 'owner-defeated' &&
+        candidate.events.some(
+          (event) => event.kind === 'dependent-command' && event.entityId === entry.id,
+        ),
+    );
+    const command = candidate.events.find(
+      (event) => event.kind === 'dependent-command' && event.entityId === removed?.id,
+    );
+    const act = candidate.events.find((event) => event.parentEventId === command?.id);
+    if (!command?.dependent?.observedTargetIds || !act?.dependent)
+      throw new Error('Missing remove-only source action');
+    if (mutation === 'reason')
+      command.reason =
+        command.reason === 'owner-delivered-enemy-observation'
+          ? 'owner-delivered-dependent-observation'
+          : 'owner-delivered-enemy-observation';
+    if (mutation === 'next-action') {
+      if (command.dependent.nextActionAt === undefined || act.dependent.nextActionAt === undefined)
+        throw new Error('Missing remove-only action deadline');
+      command.dependent.nextActionAt += 1;
+      act.dependent.nextActionAt += 1;
+    }
+    if (mutation === 'candidate') {
+      const alternate = command.dependent.observedTargetIds.find(
+        (targetId) => targetId !== command.targetId,
+      );
+      if (!alternate) throw new Error('Missing remove-only alternate candidate');
+      command.targetId = alternate;
+      act.targetId = alternate;
+      const dependentTarget = alternate.startsWith('dependent.');
+      command.reason = dependentTarget
+        ? 'owner-delivered-dependent-observation'
+        : 'owner-delivered-enemy-observation';
+      act.reason = dependentTarget
+        ? 'stable-ordinal-visible-hostile-dependent'
+        : 'stable-ordinal-policy';
+    }
+    const invalidRemovedSource = new ReplayState(context);
+    expect(() => records.forEach((record) => invalidRemovedSource.apply(record))).toThrow(
+      /dependent/,
+    );
+  }
 
   const unknownStale = structuredClone(run.records);
   const unknownEvents = battleEvents(unknownStale);

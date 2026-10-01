@@ -6,8 +6,8 @@ import { ReplayManifestSchema, RECORDING_PROFILE } from './spatial/replay.ts';
 /** Versions understood by both the viewer and the publication preflight. */
 export const SUPPORTED_REPLAY_FORMAT = Object.freeze({
   manifestSchema: ReplayManifestSchema.shape.schemaVersion.value,
-  inputSchema: 7,
-  compatibleInputSchemas: Object.freeze([3, 4, 5, 6, 7] as const),
+  inputSchema: 9,
+  compatibleInputSchemas: Object.freeze([3, 4, 5, 6, 7, 8, 9] as const),
   eventSchema: StoredManifestSchema.shape.eventSchemaVersion.value,
   replaySchema: StoredManifestSchema.shape.replaySchemaVersion.value,
   profile: RECORDING_PROFILE.id,
@@ -25,6 +25,8 @@ export const ViewerBuildSchema = z.strictObject({
       z.literal(5),
       z.literal(6),
       z.literal(7),
+      z.literal(8),
+      z.literal(9),
     ]),
     eventSchema: z.literal(SUPPORTED_REPLAY_FORMAT.eventSchema),
     replaySchema: z.literal(SUPPORTED_REPLAY_FORMAT.replaySchema),

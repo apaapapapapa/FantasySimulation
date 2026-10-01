@@ -230,8 +230,8 @@ export class ManifestBuilder {
     manifest.ruleset = referenceFor('ruleset', manifest.ruleset);
     manifest.scenario = referenceFor('scenario', manifest.scenario);
     manifest.revisions = manifest.revisions.map((revision) => sealed.get(revisionKey(revision))!);
-    if (hasEnvironmentalHolograms(manifest.revisions)) manifest.schemaVersion = 8;
-    else if (hasDependentSummons(manifest.revisions)) manifest.schemaVersion = 8;
+    if (hasDependentSummons(manifest.revisions)) manifest.schemaVersion = 9;
+    else if (hasEnvironmentalHolograms(manifest.revisions)) manifest.schemaVersion = 8;
     else if (hasSensoryCues(manifest.revisions)) manifest.schemaVersion = 6;
     revisionIndex(manifest.revisions);
     return manifest;

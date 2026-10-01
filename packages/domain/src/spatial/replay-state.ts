@@ -128,7 +128,9 @@ export class ReplayState {
         );
       if (hasDependentSummons(context.manifest.revisions))
         requireReplay(
-          v.requiredFeatures?.includes('dependent-entities-v1') === true,
+          v.requiredFeatures?.includes('dependent-entities-v1') === true &&
+            (context.manifest.schemaVersion < 9 ||
+              v.requiredFeatures.includes('dependent-observation-v2')),
           'missing dependent checkpoint feature',
         );
       if (hasEnvironmentalHolograms(context.manifest.revisions))
@@ -327,7 +329,9 @@ export class ReplayState {
         );
       if (hasDependentSummons(this.context.manifest.revisions))
         requireReplay(
-          record.requiredFeatures?.includes('dependent-entities-v1') === true,
+          record.requiredFeatures?.includes('dependent-entities-v1') === true &&
+            (this.context.manifest.schemaVersion < 9 ||
+              record.requiredFeatures.includes('dependent-observation-v2')),
           'missing dependent replay feature',
         );
       if (hasEnvironmentalHolograms(this.context.manifest.revisions))
