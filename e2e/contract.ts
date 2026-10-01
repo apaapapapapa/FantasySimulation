@@ -12,6 +12,7 @@ export const UI_CASES = [
   'battle-api-error',
   'skill-workbench-desktop',
   'skill-workbench-mobile',
+  'rabbit hologram saves, battles and replays through both viewers',
 ] as const;
 export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
 export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics', 'ui:static-replay'] as const;
