@@ -128,9 +128,14 @@ enabling this changed detection boundary. Preserve old history/leases.
 
 Amend ADR0008's four-stage DAG,4-job/2-Worker caps,25-minute computation budget,
 full-graph-before-transfer and central full replay validation. Retain64 partitions,
-1000 slots/plan,8GB/500k retention,900k A/9M B monthly,90k Worker/day,1000 readbacks/run,
+1000 slots/plan,8GB/500k retention,900k A/9M B per billing cycle,90k Worker/day,1000 readbacks/run,
 two attempts and workflow exclusion.300s acceptance does not shorten safe recovery
 deadlines or change failed/cancelled outcomes. Other changes need a reviewed diff.
+
+Usage v2 retains v1 leases (256 cap). LEAGUE_BILLING_OBSERVATION binds account,
+exact UTC cycle and fresh1h usage/reserves; unknown declines before R2.
+Observed usage plus leases count conservatively; no refunds. Worker allowance
+is day-bound; storage/CPU proof separate. Cycle updates must be adjacent.
 
 2026-09-27: [public Linux](https://docs.github.com/en/actions/reference/runners/github-hosted-runners)
 4CPU/16GB; [limits](https://docs.github.com/en/actions/reference/limits)

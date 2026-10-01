@@ -1,4 +1,5 @@
-import { afterEach, expect, it, vi } from 'vite-plus/test';
+import { beforeEach, afterEach, expect, it, vi } from 'vite-plus/test';
+import { billingObservation } from '../../test-support/league-billing.ts';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -17,11 +18,13 @@ import { exportPublication } from '../publication/publication-export.ts';
 import { SUPPORTED_REPLAY_FORMAT } from '@fantasy/domain';
 
 afterEach(() => vi.restoreAllMocks());
+beforeEach(() => vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-25T12:00:00Z')));
 const config = {
   accountId: 'a'.repeat(32),
   bucket: 'fixture-bucket',
   accessKeyId: 'fixture',
   secretAccessKey: 'fixture',
+  billingObservation: billingObservation(),
 };
 const identity = { id: 'fixture-restore', sourceSha: 'b'.repeat(40), day: '2026-09-25' };
 it.each(['catalog', 'source', 'definition', 'mode', 'hold', 'checksum'])(

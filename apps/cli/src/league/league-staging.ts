@@ -15,7 +15,7 @@ import { PublicationIo } from '../publication/publication-io.ts';
 import { publicationPool } from '../publication/publication-pool.ts';
 import { PublicationS3, type R2Config } from '../publication/publication-s3.ts';
 import type { PublicationStore } from '../publication/publication-remote.ts';
-import { admitLeagueUsage } from './league-budget.ts';
+import { admitLeagueUsage, requireLeagueBillingObservation } from './league-budget.ts';
 import { leagueTransport, LEAGUE_TRANSIENT_RETRIES } from './league-transfer.ts';
 import { CHECKPOINT_RESERVE_BYTES } from './league-checkpoint.ts';
 
@@ -107,18 +107,30 @@ export async function openLeagueStaging(
   config: R2Config,
   identity: Pick<LeagueUsageLease, 'id' | 'day' | 'sourceSha'>,
 ) {
+  const observation = requireLeagueBillingObservation(
+    config.billingObservation,
+    identity.day,
+    1000,
+    3600000,
+  );
+  if (observation.accountId !== config.accountId || observation.bucket !== config.bucket)
+    throw new OperationError('USAGE_UNVERIFIED', 'Billing observation account or bucket mismatch');
   const control = new PublicationS3(config, leagueTransport(601, 20, 3600000), 1);
   let data: PublicationS3 | undefined;
   try {
     if (!(await control.readControl()))
       throw new OperationError('DATA_INVALID', 'Existing durable usage ledger required');
-    await admitLeagueUsage(control, {
-      ...identity,
-      id: identity.id + '-inventory',
-      classA: 600,
-      classB: 20,
-      worker: 0,
-    });
+    await admitLeagueUsage(
+      control,
+      {
+        ...identity,
+        id: identity.id + '-inventory',
+        classA: 600,
+        classB: 20,
+        worker: 0,
+      },
+      observation,
+    );
     const inventory = await control.inventory();
     inventory.set(PUBLICATION_CONTROL_KEY, PUBLICATION_CONTROL_BYTES);
     // Includes uncertain writes/retries and final pointer/readback headroom. Never refunded.
@@ -127,11 +139,16 @@ export async function openLeagueStaging(
       classB: Math.min(1900000, inventory.size * 2 + 10000),
       worker: 1000,
     };
-    const usage = await admitLeagueUsage(control, {
-      ...identity,
-      ...budget,
-      classB: budget.classB + budget.worker,
-    });
+    const usage = await admitLeagueUsage(
+      control,
+      {
+        ...identity,
+        ...budget,
+        classB: budget.classB + budget.worker,
+      },
+      observation,
+    );
+    requireLeagueBillingObservation(observation, identity.day, budget.worker, 3600000);
     data = new PublicationS3(
       config,
       leagueTransport(budget.classA, budget.classB, 3600000, LEAGUE_TRANSIENT_RETRIES),

@@ -7,7 +7,11 @@ import {
   ListObjectsV2Command,
   DeleteObjectCommand,
 } from '@aws-sdk/client-s3';
-import { PublicKeySchema, LeagueUsageSchema } from '@fantasy/domain/spatial';
+import {
+  PublicKeySchema,
+  LeagueUsageSchema,
+  type LeagueBillingObservation,
+} from '@fantasy/domain/spatial';
 import {
   PUBLICATION_MAX_BYTES,
   PUBLICATION_MAX_FILES,
@@ -24,6 +28,7 @@ export interface R2Config {
   bucket: string;
   accessKeyId: string;
   secretAccessKey: string;
+  billingObservation?: LeagueBillingObservation;
 }
 export interface S3PublicationBudget {
   maxRequests: number;
