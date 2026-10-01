@@ -2,6 +2,8 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it } from 'vite-plus/test';
 import {
   canonicalJson,
@@ -18,12 +20,19 @@ import {
 } from '../../../../packages/engine/src/spatial/manifest-builder.ts';
 import type { OpenedReplay } from './open-replay.ts';
 import { expandArtifact } from './artifacts.ts';
+import { EnvironmentalHolograms3D } from './SceneEffects.tsx';
+import { Scene2D } from './Scene2D.tsx';
+import { NO_OVERLAYS } from './overlays.ts';
 import { ReplayPlayer } from './replay-player.ts';
+import { buildSceneModel } from './scene-model.ts';
 
 type SavedProjection = {
   id: string;
+  creatorId: string;
+  observerId: string;
   sourcePosition: { x: number; y: number; z: number };
   perceivedPosition: { x: number; y: number; z: number };
+  state: 'active-unobserved' | 'observed' | 'invalidated';
   activatedAt: number;
   observedAt: number;
   invalidatedAt: number;
@@ -38,7 +47,7 @@ type SavedCheckpoint = {
 it('restores an actual multi-chunk hologram recording forward, reverse and across a loop', async () => {
   const root = await mkdtemp(join(tmpdir(), 'hologram-replay-'));
   try {
-    let input = await environmentalHologramManifest(300);
+    let input = await environmentalHologramManifest(350);
     const oldAbility = input.revisions.find(
       (revision) => revision.kind === 'ability' && revision.id === 'sk07-hologram',
     );
@@ -152,6 +161,117 @@ it('restores an actual multi-chunk hologram recording forward, reverse and acros
     const actual = [];
     for (const step of sequence) actual.push(canonicalJson((await player.frame(step)).checkpoint));
     expect(actual).toEqual(sequence.map((step) => expected.get(step)));
+
+    const lifecycle = output.records
+      .flatMap((record) => ('events' in record ? record.events : []))
+      .flatMap((event) => (event.environmentalHologram ? [event.environmentalHologram] : []));
+    const firstId = lifecycle[0]?.id;
+    const transitions = lifecycle.filter((hologram) => hologram.id === firstId);
+    const activeStep = transitions.find(
+      (hologram) => hologram.transition === 'activated',
+    )?.activatedAt;
+    const invalidatedStep = transitions.find(
+      (hologram) => hologram.transition === 'invalidated',
+    )?.invalidatedAt;
+    const absentStep = transitions.find((hologram) => hologram.transition === 'expired')?.expiresAt;
+    if (
+      firstId === undefined ||
+      activeStep === undefined ||
+      invalidatedStep === undefined ||
+      absentStep === undefined
+    )
+      throw new Error('Missing complete hologram lifecycle');
+    const activeProjection = transitions[0]!;
+    const displaySequence = [activeStep, invalidatedStep, absentStep, activeStep, absentStep];
+    for (const step of displaySequence) {
+      const frame = await player.frame(step);
+      const truth = buildSceneModel(
+        opened.context,
+        frame.checkpoint,
+        frame.records,
+        frame.events,
+        frame.eventRecords,
+      );
+      const observer = buildSceneModel(
+        opened.context,
+        frame.checkpoint,
+        frame.records,
+        frame.events,
+        frame.eventRecords,
+        { actorId: activeProjection.observerId },
+      );
+      const creator = buildSceneModel(
+        opened.context,
+        frame.checkpoint,
+        frame.records,
+        frame.events,
+        frame.eventRecords,
+        { actorId: activeProjection.creatorId },
+      );
+      const expectedState =
+        step === activeStep ? 'active-unobserved' : step === invalidatedStep ? 'invalidated' : null;
+      const truthProjection = truth.environmentalHolograms.find(
+        (hologram) => hologram.id === firstId,
+      );
+      const observerProjection = observer.environmentalHolograms.find(
+        (hologram) => hologram.id === firstId,
+      );
+      const creatorProjection = creator.environmentalHolograms.find(
+        (hologram) => hologram.id === firstId,
+      );
+      expect(truthProjection).toEqual(
+        expectedState === null
+          ? undefined
+          : {
+              id: firstId,
+              creatorId: activeProjection.creatorId,
+              observerId: activeProjection.observerId,
+              position: [
+                activeProjection.perceivedPosition.x,
+                activeProjection.perceivedPosition.y,
+                activeProjection.perceivedPosition.z,
+              ],
+              state: expectedState,
+            },
+      );
+      expect(observerProjection).toEqual(truthProjection);
+      expect(creatorProjection).toBeUndefined();
+      expect(truth.environmentalHolograms).toHaveLength(
+        frame.checkpoint.state!.actors.flatMap(
+          (actor) => actor.sensorView?.environmentalHolograms ?? [],
+        ).length,
+      );
+      expect(observer.environmentalHolograms).toHaveLength(
+        frame.checkpoint.state!.actors.find((actor) => actor.id === activeProjection.observerId)!
+          .sensorView!.environmentalHolograms.length,
+      );
+      expect(creator.environmentalHolograms).toHaveLength(
+        frame.checkpoint.state!.actors.find((actor) => actor.id === activeProjection.creatorId)!
+          .sensorView!.environmentalHolograms.length,
+      );
+      expect(truthProjection).not.toEqual(
+        expect.objectContaining({
+          position: [
+            activeProjection.sourcePosition.x,
+            activeProjection.sourcePosition.y,
+            activeProjection.sourcePosition.z,
+          ],
+        }),
+      );
+      const two = renderToStaticMarkup(
+        createElement(Scene2D, { model: truth, overlays: NO_OVERLAYS }),
+      );
+      const three = renderToStaticMarkup(createElement(EnvironmentalHolograms3D, { model: truth }));
+      const expectedCount = truth.environmentalHolograms.length;
+      expect((two.match(/data-environmental-hologram=/g) ?? []).length).toBe(expectedCount);
+      expect((three.match(/data-environmental-hologram=/g) ?? []).length).toBe(expectedCount);
+      expect((two.match(/data-hologram-state="invalidated"/g) ?? []).length).toBe(
+        truth.environmentalHolograms.filter((hologram) => hologram.state === 'invalidated').length,
+      );
+      expect((three.match(/data-hologram-state="invalidated"/g) ?? []).length).toBe(
+        truth.environmentalHolograms.filter((hologram) => hologram.state === 'invalidated').length,
+      );
+    }
   } finally {
     await rm(root, { recursive: true, force: true });
   }

@@ -209,6 +209,21 @@ export function buildSceneModel(
         checkpoint.step < cue.expiresAt,
     ),
   );
+  const hologramObservers =
+    perspective === 'omniscient'
+      ? (checkpoint.state?.actors ?? [])
+      : (checkpoint.state?.actors ?? []).filter((actor) => actor.id === perspective.actorId);
+  const environmentalHolograms = hologramObservers.flatMap((actor) =>
+    (actor.sensorView?.environmentalHolograms ?? [])
+      .filter((hologram) => hologram.modality === 'visual')
+      .map((hologram) => ({
+        id: hologram.id,
+        creatorId: hologram.creatorId,
+        observerId: hologram.observerId,
+        position: point(hologram.perceivedPosition),
+        state: hologram.state,
+      })),
+  );
   if (perspective !== 'omniscient') {
     const subjective = visualCues.filter((cue) => cue.observerId === perspective.actorId);
     actors = actors.map((actor) => {
@@ -399,6 +414,7 @@ export function buildSceneModel(
             confidenceBps: cue.confidenceBps,
           }))
         : [],
+    environmentalHolograms,
     objects:
       perspective === 'omniscient'
         ? (checkpoint.state?.objects ?? []).map((o) => ({

@@ -202,6 +202,37 @@ export function Scene2D({
           <title>{`visual cue for ${cue.observerId}`}</title>
         </g>
       ))}
+      {model.environmentalHolograms.map((hologram) => {
+        const invalidated = hologram.state === 'invalidated';
+        return (
+          <g
+            key={hologram.id}
+            data-environmental-hologram={hologram.id}
+            data-hologram-state={hologram.state}
+          >
+            <circle
+              cx={hologram.position[0]}
+              cy={hologram.position[2]}
+              r={0.72}
+              fill={invalidated ? '#7b587f' : '#54d9d5'}
+              fillOpacity={invalidated ? 0.12 : 0.3}
+              stroke={invalidated ? '#c19ac7' : '#bffcff'}
+              strokeDasharray={invalidated ? '0.08 0.18' : '0.22 0.1'}
+              strokeWidth={outline * 1.5}
+            />
+            <circle
+              cx={hologram.position[0]}
+              cy={hologram.position[2]}
+              r={invalidated ? 0.32 : 0.45}
+              fill="none"
+              stroke={invalidated ? '#c19ac7' : '#e8ffff'}
+              strokeWidth={outline}
+              opacity={invalidated ? 0.45 : 0.9}
+            />
+            <title>{`environmental hologram for ${hologram.observerId}`}</title>
+          </g>
+        );
+      })}
       {model.actors.map((a, index) => {
         const hp = a.hp && Math.max(0, Math.min(1, a.hp.value / Math.max(1, a.hp.max)));
         const label = Math.max(0.5, width / 60);
