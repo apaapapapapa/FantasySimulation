@@ -258,7 +258,8 @@ export function applyDependents(
           act.phase === 'boundary' &&
           act.parentEventId === command.id &&
           act.ruleId === 'dependent.subject-clock' &&
-          act.reason === 'stable-ordinal-policy' &&
+          (act.reason === 'stable-ordinal-policy' ||
+            act.reason === 'stable-ordinal-visible-hostile-dependent') &&
           act.dependent?.nextActionAt === expectedActionAt + spec!.actionEverySteps,
         'dependent observed command timing',
       );
@@ -295,10 +296,40 @@ export function applyDependents(
     const heals = ownEvents.filter(
       (event) => event.kind === 'heal' && event.reason === 'same-wave-hp-loss-dependent-drain',
     );
-    const expectedHp = Math.min(
-      before.maxHp,
-      before.hp + heals.reduce((total, event) => total + (event.amount ?? 0), 0),
+    const damage = record.events.filter(
+      (event) => event.kind === 'damage' && event.targetId === dependent.id,
     );
+    let expectedHp = before.hp;
+    for (const event of [...damage, ...heals].sort((a, b) => a.sequence - b.sequence)) {
+      if (!event.before || !event.after) {
+        requireReplay(false, 'dependent hp resource chain');
+        continue;
+      }
+      requireReplay(
+        event.before.hp === expectedHp &&
+          event.before.mp === 0 &&
+          event.before.shield === 0 &&
+          event.after.mp === 0 &&
+          event.after.shield === 0,
+        'dependent hp resource chain',
+      );
+      if (event.kind === 'damage')
+        requireReplay(
+          event.ruleId === 'damage.dependent-hp' &&
+            event.reason === 'same-wave-dependent-hp-clamp' &&
+            event.after.hp < event.before.hp &&
+            event.before.hp - event.after.hp === event.amount,
+          'dependent damage settlement',
+        );
+      else
+        requireReplay(
+          event.targetId === dependent.id &&
+            event.after.hp >= event.before.hp &&
+            event.after.hp === Math.min(before.maxHp, event.before.hp + (event.amount ?? 0)),
+          'dependent drain settlement',
+        );
+      expectedHp = event.after.hp;
+    }
     requireReplay(
       dependent.hp === expectedHp &&
         dependent.rngState === expectedRng &&
@@ -375,7 +406,10 @@ export function applyDependents(
     requireReplay(
       !!dependent &&
         event.actorId === dependent.ownerId &&
-        event.targetId === dependent.hostileOwnerId &&
+        (event.targetId === dependent.hostileOwnerId ||
+          [...priorDependents, ...(state.dependents ?? [])].some(
+            (target) => target.id === event.targetId && target.ownerId === dependent.hostileOwnerId,
+          )) &&
         event.abilityId === dependent.abilityId &&
         event.parentEventId !== null &&
         record.events.some(

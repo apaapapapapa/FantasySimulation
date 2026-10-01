@@ -82,27 +82,68 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
   );
   expect(dependentDamage).toHaveLength(acts.length);
   const eventsById = new Map(events.map((event) => [event.id, event]));
+  const spawnedDependents = run.records.flatMap((record) =>
+    'dependents' in record ? (record.dependents?.spawn ?? []) : [],
+  );
+  let dependentTargetDamage = 0;
   for (const damage of dependentDamage) {
     const act = damage.parentEventId ? eventsById.get(damage.parentEventId) : undefined;
-    const dependent = run.records
-      .flatMap((record) => ('dependents' in record ? (record.dependents?.spawn ?? []) : []))
-      .find((candidate) => candidate.id === damage.entityId);
+    const dependent = spawnedDependents.find((candidate) => candidate.id === damage.entityId);
+    const target = spawnedDependents.find((candidate) => candidate.id === damage.targetId);
     expect(act).toMatchObject({
       kind: 'dependent-act',
       actorId: dependent?.ownerId,
-      targetId: dependent?.hostileOwnerId,
       entityId: dependent?.id,
     });
-    expect(damage).toMatchObject({
-      actorId: dependent?.ownerId,
-      targetId: dependent?.hostileOwnerId,
-    });
+    if (target) {
+      dependentTargetDamage++;
+      expect(damage).toMatchObject({
+        actorId: dependent?.ownerId,
+        targetId: target.id,
+        ruleId: 'damage.dependent-hp',
+        reason: 'same-wave-dependent-hp-clamp',
+      });
+      expect(act?.reason).toBe('stable-ordinal-visible-hostile-dependent');
+      expect(target.ownerId).toBe(dependent?.hostileOwnerId);
+      expect(target.id).not.toBe(dependent?.id);
+    } else {
+      expect(damage).toMatchObject({
+        actorId: dependent?.ownerId,
+        targetId: dependent?.hostileOwnerId,
+      });
+    }
     if (!damage.before || !damage.after || damage.amount === null)
       throw new Error('Missing dependent damage resources');
     expect(damage.amount).toBeGreaterThan(0);
     expect(damage.before.hp - damage.after.hp).toBe(damage.amount);
   }
-  expect(events.some((event) => event.reason === 'same-wave-hp-loss-dependent-drain')).toBe(true);
+  expect(dependentTargetDamage).toBeGreaterThan(0);
+  const nonNoopDrain = events.find(
+    (event) =>
+      event.kind === 'heal' &&
+      event.reason === 'same-wave-hp-loss-dependent-drain' &&
+      !!event.before &&
+      !!event.after &&
+      event.after.hp > event.before.hp,
+  );
+  expect(nonNoopDrain).toBeDefined();
+  if (!nonNoopDrain?.before || !nonNoopDrain.after || nonNoopDrain.amount === null)
+    throw new Error('Missing dependent drain resources');
+  const drainRecipient = spawnedDependents.find(
+    (dependent) => dependent.id === nonNoopDrain.entityId,
+  );
+  expect(nonNoopDrain.targetId).toBe(drainRecipient?.id);
+  expect(nonNoopDrain.after.hp).toBe(
+    Math.min(drainRecipient!.maxHp, nonNoopDrain.before.hp + nonNoopDrain.amount),
+  );
+  const drainParent = nonNoopDrain.parentEventId
+    ? eventsById.get(nonNoopDrain.parentEventId)
+    : undefined;
+  expect(drainParent).toMatchObject({
+    kind: 'damage',
+    actorId: drainRecipient?.ownerId,
+    entityId: drainRecipient?.id,
+  });
   expect(events.filter((event) => event.kind === 'dependent-despawn')).toEqual(
     expect.arrayContaining([expect.objectContaining({ reason: 'expired' })]),
   );
@@ -111,13 +152,11 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
   const replay = new ReplayState(context);
   for (const record of run.records) {
     replay.apply(record);
-    if (!('changes' in record)) continue;
-    for (const damage of record.events.filter(
-      (event) => event.kind === 'damage' && event.entityId?.startsWith('dependent.'),
-    )) {
-      const actor = replay.checkpoint().state?.actors.find(({ id }) => id === damage.targetId);
-      expect(actor?.resources).toEqual(damage.after);
-    }
+    if (!('dependents' in record)) continue;
+    for (const update of record.dependents?.update ?? [])
+      expect(replay.checkpoint().state?.dependents?.find(({ id }) => id === update.id)?.hp).toBe(
+        update.hp,
+      );
   }
   expect(replay.checkpoint().state?.dependents ?? []).toHaveLength(0);
 

@@ -5,6 +5,7 @@ import { capsuleShape } from '../world/physics.ts';
 import { bodyCapsule } from '../world/terrain.ts';
 import type { StepTransaction } from './step-transaction.ts';
 import { actorId } from './step-transaction.ts';
+import { canSee } from '../world/visibility.ts';
 
 const MAX_ACTIVE_PER_OWNER = 2;
 const MAX_CREATED_PER_OWNER = 8;
@@ -213,6 +214,21 @@ export function advanceDependents(tx: StepTransaction) {
       dependent.nextActionAt += spec.actionEverySteps;
       continue;
     }
+    const hostileCandidate = (tx.next.dependents ?? [])
+      .filter(
+        (candidate) =>
+          candidate.ownerId === dependent.hostileOwnerId &&
+          candidate.hp > 0 &&
+          canSee(tx.context.world, owner.body.motion, {
+            x: candidate.position.x,
+            y: candidate.position.y + candidate.body.heightMm / 2000,
+            z: candidate.position.z,
+          }),
+      )
+      .sort((a, b) => a.id.localeCompare(b.id))[0];
+    const policyRoll = nextRandom(dependent.rngState);
+    const hostileDependent = policyRoll & 1 ? hostileCandidate : undefined;
+    const targetId = hostileDependent?.id ?? dependent.hostileOwnerId;
     const before = { ...owner.vitals.resources };
     owner.vitals.resources.mp -= spec.commandCostMp;
     const command = tx.journal.emit({
@@ -235,7 +251,7 @@ export function advanceDependents(tx: StepTransaction) {
         nextActionAt: dependent.nextActionAt,
       },
     });
-    dependent.rngState = nextRandom(dependent.rngState);
+    dependent.rngState = policyRoll;
     dependent.nextActionAt += spec.actionEverySteps;
     const act = tx.journal.emit({
       kind: 'dependent-act',
@@ -247,7 +263,9 @@ export function advanceDependents(tx: StepTransaction) {
       abilityId: dependent.ability.id,
       parentEventId: command.id,
       ruleId: 'dependent.subject-clock',
-      reason: 'stable-ordinal-policy',
+      reason: hostileDependent
+        ? 'stable-ordinal-visible-hostile-dependent'
+        : 'stable-ordinal-policy',
       dependent: {
         transition: 'act',
         ownerId: dependent.ownerId,
@@ -258,7 +276,7 @@ export function advanceDependents(tx: StepTransaction) {
     });
     tx.effects.push({
       actorId: dependent.ownerId,
-      targetId: dependent.hostileOwnerId,
+      targetId,
       effect: {
         kind: 'damage',
         amount: spec.damage.amount,

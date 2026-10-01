@@ -76,7 +76,7 @@ export function validateRecovery(
       event.kind === 'heal' &&
         !!cause?.damage?.drain &&
         event.actorId === cause.actorId &&
-        event.targetId === cause.actorId &&
+        event.targetId === (cause.entityId ?? cause.actorId) &&
         event.entityId === cause.entityId &&
         event.abilityId === cause.abilityId &&
         !event.sourceActorId &&
