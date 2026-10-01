@@ -81,6 +81,27 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     (event) => event.kind === 'damage' && event.entityId?.startsWith('dependent.'),
   );
   expect(dependentDamage).toHaveLength(acts.length);
+  const eventsById = new Map(events.map((event) => [event.id, event]));
+  for (const damage of dependentDamage) {
+    const act = damage.parentEventId ? eventsById.get(damage.parentEventId) : undefined;
+    const dependent = run.records
+      .flatMap((record) => ('dependents' in record ? (record.dependents?.spawn ?? []) : []))
+      .find((candidate) => candidate.id === damage.entityId);
+    expect(act).toMatchObject({
+      kind: 'dependent-act',
+      actorId: dependent?.ownerId,
+      targetId: dependent?.hostileOwnerId,
+      entityId: dependent?.id,
+    });
+    expect(damage).toMatchObject({
+      actorId: dependent?.ownerId,
+      targetId: dependent?.hostileOwnerId,
+    });
+    if (!damage.before || !damage.after || damage.amount === null)
+      throw new Error('Missing dependent damage resources');
+    expect(damage.amount).toBeGreaterThan(0);
+    expect(damage.before.hp - damage.after.hp).toBe(damage.amount);
+  }
   expect(events.some((event) => event.reason === 'same-wave-hp-loss-dependent-drain')).toBe(true);
   expect(events.filter((event) => event.kind === 'dependent-despawn')).toEqual(
     expect.arrayContaining([expect.objectContaining({ reason: 'expired' })]),
@@ -88,7 +109,16 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
 
   const context = await replayContext(battle.manifest, run.result.simulationHash);
   const replay = new ReplayState(context);
-  for (const record of run.records) replay.apply(record);
+  for (const record of run.records) {
+    replay.apply(record);
+    if (!('changes' in record)) continue;
+    for (const damage of record.events.filter(
+      (event) => event.kind === 'damage' && event.entityId?.startsWith('dependent.'),
+    )) {
+      const actor = replay.checkpoint().state?.actors.find(({ id }) => id === damage.targetId);
+      expect(actor?.resources).toEqual(damage.after);
+    }
+  }
   expect(replay.checkpoint().state?.dependents ?? []).toHaveLength(0);
 
   const rejects = (mutate: (records: typeof run.records) => void) => {
