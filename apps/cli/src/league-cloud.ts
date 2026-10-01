@@ -111,6 +111,9 @@ async function main() {
         bucket: required('R2_BUCKET'),
         accessKeyId: required('R2_ACCESS_KEY_ID'),
         secretAccessKey: required('R2_SECRET_ACCESS_KEY'),
+        billingObservation: process.env.LEAGUE_BILLING_OBSERVATION
+          ? JSON.parse(process.env.LEAGUE_BILLING_OBSERVATION)
+          : undefined,
       },
       join(root, 'public'),
       join(root, 'reports'),

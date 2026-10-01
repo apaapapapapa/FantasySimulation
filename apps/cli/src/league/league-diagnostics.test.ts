@@ -7,6 +7,7 @@ import { LeagueCloudInputSchema, ReplayValidationError } from '@fantasy/domain/s
 import { PublicationFailure } from '../publication/publication-remote.ts';
 import { leagueFailure, leagueFailureSummary, reportLeagueFailure } from './league-diagnostics.ts';
 import { reserveLeagueUsage } from './league-budget.ts';
+import { billingObservation } from '../../test-support/league-billing.ts';
 import { cloudJson, writeCloudJson } from './league-cloud-files.ts';
 
 const secret = 'TEST_SECRET_DO_NOT_PRINT';
@@ -37,16 +38,21 @@ it.each([
 );
 
 it('retains source codes from admission and checksum verification', async () => {
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-09-26T12:00:00Z'));
   let failure: unknown;
   try {
-    reserveLeagueUsage(null, {
-      id: 'fixture',
-      sourceSha: 'a'.repeat(40),
-      day: '2026-09-26',
-      classA: 900000,
-      classB: 0,
-      worker: 0,
-    });
+    reserveLeagueUsage(
+      null,
+      {
+        id: 'fixture',
+        sourceSha: 'a'.repeat(40),
+        day: '2026-09-26',
+        classA: 900000,
+        classB: 0,
+        worker: 0,
+      },
+      billingObservation('2026-09-26'),
+    );
   } catch (error) {
     failure = error;
   }

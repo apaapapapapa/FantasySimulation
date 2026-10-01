@@ -1,8 +1,19 @@
-import { expect, it, vi } from 'vite-plus/test';
+import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { PublicKeySchema, type LeagueUsageLease } from '@fantasy/domain/spatial';
-import { reserveLeagueUsage, admitLeagueUsage } from './league-budget.ts';
+import { reserveLeagueUsage as reserve, admitLeagueUsage as admit } from './league-budget.ts';
+import { billingObservation } from '../../test-support/league-billing.ts';
 import { PUBLICATION_CONTROL_KEY } from '../publication/publication-files.ts';
 import { leagueTransferBudget } from './league-transfer.ts';
+
+afterEach(() => vi.restoreAllMocks());
+const observe = (input: LeagueUsageLease) => {
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse(input.day + 'T12:00:00Z'));
+  return billingObservation(input.day);
+};
+const reserveLeagueUsage = (previous: unknown, input: LeagueUsageLease) =>
+  reserve(previous, input, observe(input));
+const admitLeagueUsage = (store: Parameters<typeof admit>[0], input: LeagueUsageLease) =>
+  admit(store, input, observe(input));
 
 const lease = (id: string, values: Partial<LeagueUsageLease> = {}): LeagueUsageLease => ({
   id,
@@ -13,7 +24,7 @@ const lease = (id: string, values: Partial<LeagueUsageLease> = {}): LeagueUsageL
   worker: 1000,
   ...values,
 });
-it('retains consumed budgets across runs/days, rejects exhaustion and resets only in a later month', () => {
+it('retains consumed budgets across calendar months within the same billing cycle', () => {
   const first = reserveLeagueUsage(null, lease('run-1'));
   const second = reserveLeagueUsage(first, lease('run-2', { day: '2026-09-26' }));
   expect(second.leases.map((entry) => entry.id)).toEqual(['run-1', 'run-2']);
@@ -23,11 +34,11 @@ it('retains consumed budgets across runs/days, rejects exhaustion and resets onl
   expect(() => reserveLeagueUsage(second, lease('run-2', { day: '2026-09-26' }))).toThrow(
     'already consumed',
   );
-  expect(() => reserveLeagueUsage(second, lease('run-3'))).toThrow('date history');
-  const next = reserveLeagueUsage(second, lease('run-3', { day: '2026-10-01' }));
-  expect(next).toMatchObject({ month: '2026-10', sequence: 3 });
-  expect(next.leases).toHaveLength(1);
-  expect(() => reserveLeagueUsage(next, lease('run-4'))).toThrow('backwards');
+  expect(() => reserveLeagueUsage(second, lease('run-3'))).toThrow('backwards');
+  expect(() => reserveLeagueUsage(second, lease('run-3', { day: '2026-10-01' }))).toThrow(
+    'budget exhausted',
+  );
+  expect(second.leases).toHaveLength(2);
 });
 it('bounds monthly reads, per-day worker requests and calendar dates', () => {
   const first = reserveLeagueUsage(

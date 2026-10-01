@@ -61,6 +61,7 @@ jobs:
         env:
           R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
           R2_BUCKET: fantasysimulation-replays
+          LEAGUE_BILLING_OBSERVATION: ${{ vars.LEAGUE_BILLING_OBSERVATION }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
         run: node --import tsx src/league-cloud.ts publish .generated/league
