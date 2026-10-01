@@ -12,6 +12,9 @@ import { computePipeline } from './league-pipeline-compute.ts';
 import { receivePipeline, receivePartitionPilot } from './league-pipeline-receive.ts';
 import * as uploads from './league-pipeline-upload.ts';
 import { pipelineActionsFixture } from './test-support/league-actions.ts';
+import * as transport from '../apps/cli/src/league/league-producer-transport.ts';
+import * as producers from '../apps/cli/src/league/league-producer.ts';
+import * as cloudFiles from '../apps/cli/src/league/league-cloud-files.ts';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -21,6 +24,32 @@ const signal = () => new AbortController().signal;
 const unusedStaging = () => ({ stage: vi.fn() }) as unknown as LeagueStaging;
 const receiverStageNames = (measurement: Measurements) =>
   Object.keys(measurement.report().stages).filter((name) => name.startsWith('receiver.'));
+async function writeReceiverProfile(
+  fixture: Pick<
+    Awaited<ReturnType<typeof preparedPipeline>>,
+    'preparedRoot' | 'identity' | 'input'
+  >,
+  measurementHash: string,
+) {
+  const slot = fixture.input.batch.slots[0]!;
+  await writeFile(
+    join(fixture.preparedRoot, 'cost-profile.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      source: fixture.identity.source,
+      measurementHash,
+      metric: 'worker-compute-elapsed-ms',
+      samples: [
+        {
+          simulationHash: slot.simulationHash,
+          scenario: slot.spec.scenario.id,
+          characters: slot.spec.participants.map((p) => p.character.id),
+          elapsedMs: 1,
+        },
+      ],
+    }),
+  );
+}
 
 async function diagnosticPrepared(root: string) {
   const fixture = await preparedPipeline(root);
@@ -60,32 +89,161 @@ async function diagnosticPrepared(root: string) {
   expect(prepared.plan.partitions.map((partition) => partition.slots)).toEqual([128, 128, 124]);
   return {
     prepared,
+    input: fixture.input,
     preparedRoot: fixture.preparedRoot,
     github: new PipelineArtifacts('test', fixture.identity),
   };
 }
 
+// Protocol mocks below isolate receiver adoption ordering. They are not full packed authentication
+// or fresh-computation evidence; real original-input and transport validation have separate tests.
+async function packedReceiverProtocol(root: string) {
+  const fixture = await diagnosticPrepared(root);
+  const pack = {
+    id: 801,
+    name: 'league-123-1-runner-0-pack-0',
+    digest: 'sha256:' + 'a'.repeat(64),
+    bytes: 128,
+  };
+  const legacy = {
+    id: 802,
+    name: 'league-123-1-runner-0-partition-0-part-0-of-1',
+    digest: 'sha256:' + 'b'.repeat(64),
+    bytes: 128,
+  };
+  const staged: number[] = [];
+  const producer = (partition: number) =>
+    ({ proof: { partition }, evidence: {} }) as Awaited<
+      ReturnType<typeof producers.authenticatePackedLeagueProducer>
+    >;
+  vi.spyOn(cloudFiles, 'cloudInput').mockResolvedValue(fixture.input);
+  vi.spyOn(transport, 'authenticatePackedGroup').mockResolvedValue({
+    artifact: pack,
+    partitions: [0, 1],
+  });
+  const authenticate = vi
+    .spyOn(producers, 'authenticatePackedLeagueProducer')
+    .mockImplementation(async (path) => producer(Number(path.split(/[\\/]/).at(-1))));
+  vi.spyOn(producers, 'authenticateLeagueProducer').mockResolvedValue(producer(0));
+  const download = vi.spyOn(fixture.github, 'download').mockImplementation(async (ref, target) => {
+    await mkdir(join(target, 'public'), { recursive: true });
+    await writeFile(join(target, 'proof.json'), '{}');
+    await writeFile(join(target, 'result.json'), '{}');
+    return ref;
+  });
+  const jobs = vi.spyOn(fixture.github, 'successfulProducers').mockResolvedValue(false);
+  const staging = unusedStaging();
+  vi.mocked(staging.stage).mockImplementation(async (_evidence, path) => {
+    const partition = Number(path.split(/[\\/]/).at(-2));
+    staged.push(Number.isNaN(partition) ? 0 : partition);
+    return { files: 0, bytes: 0 };
+  });
+  return { ...fixture, pack, legacy, authenticate, download, jobs, staging, staged };
+}
+
+it.each(['authenticate', 'stage'] as const)(
+  'does not adopt a packed group after its second partition %s fails',
+  async (failure) => {
+    await withReplayDirectory(async (root) => {
+      const fixture = await packedReceiverProtocol(root);
+      vi.spyOn(fixture.github, 'list').mockResolvedValue([fixture.pack]);
+      if (failure === 'authenticate')
+        fixture.authenticate.mockImplementation(async (path) => {
+          const partition = Number(path.split(/[\\/]/).at(-1));
+          if (partition === 1) throw new Error('second partition authentication failed');
+          return { proof: { partition }, evidence: {} } as Awaited<
+            ReturnType<typeof producers.authenticatePackedLeagueProducer>
+          >;
+        });
+      else
+        vi.mocked(fixture.staging.stage).mockImplementation(async () => {
+          if (vi.mocked(fixture.staging.stage).mock.calls.length === 2)
+            throw new Error('second partition staging failed');
+          return { files: 0, bytes: 0 };
+        });
+      await expect(
+        receivePartitionPilot(
+          root,
+          fixture.preparedRoot,
+          fixture.github,
+          1,
+          fixture.staging,
+          signal(),
+          async () => {},
+        ),
+      ).rejects.toThrow('second partition');
+      expect(fixture.authenticate).toHaveBeenCalledTimes(2);
+      expect(fixture.staging.stage).toHaveBeenCalledTimes(failure === 'authenticate' ? 0 : 2);
+      expect(fixture.jobs).not.toHaveBeenCalled();
+      expect(fixture.download).toHaveBeenCalledTimes(1);
+      await expect(access(join(root, 'receive-packed-801'))).rejects.toMatchObject({
+        code: 'ENOENT',
+      });
+    });
+  },
+);
+
+it.each(['packed-first', 'legacy-first'] as const)(
+  'rejects cross-poll packed/legacy overlap: %s',
+  async (order) => {
+    await withReplayDirectory(async (root) => {
+      const fixture = await packedReceiverProtocol(root);
+      const first = order === 'packed-first' ? fixture.pack : fixture.legacy;
+      const second = order === 'packed-first' ? fixture.legacy : fixture.pack;
+      const list = vi
+        .spyOn(fixture.github, 'list')
+        .mockResolvedValueOnce([first])
+        .mockResolvedValueOnce([first, second]);
+      // Exercise the real first 1000ms poll wait; do not replace the Node ESM timer export.
+      const measurement = new Measurements();
+      await expect(
+        measurement.run(() =>
+          receivePartitionPilot(
+            root,
+            fixture.preparedRoot,
+            fixture.github,
+            1,
+            fixture.staging,
+            signal(),
+            async () => {},
+          ),
+        ),
+      ).rejects.toThrow('Duplicate packed/legacy partition coverage');
+      expect(list).toHaveBeenCalledTimes(2);
+      expect(measurement.report().stages['receiver.pollWait']).toMatchObject({
+        count: 1,
+        failures: 0,
+        incomplete: 0,
+      });
+      expect(fixture.staging.stage).toHaveBeenCalledTimes(order === 'packed-first' ? 2 : 1);
+      expect(fixture.jobs).toHaveBeenCalledOnce();
+    });
+  },
+);
+
+it('keeps production profile preflight ahead of packed artifacts and rejects packs with a measured profile', async () => {
+  await withReplayDirectory(async (root) => {
+    const fixture = await packedReceiverProtocol(root);
+    // Production uses its real small plan, not the diagnostic's synthetic three-partition metadata.
+    const production = await preparedPipeline(join(root, 'production'));
+    const list = vi.spyOn(fixture.github, 'list').mockResolvedValue([fixture.pack]);
+    await expect(
+      receivePipeline(root, production.preparedRoot, fixture.github, 1, fixture.staging, signal()),
+    ).rejects.toThrow('Measured league cost profile required');
+    expect(list).not.toHaveBeenCalled();
+    await writeReceiverProfile(production, 'sha256:' + 'c'.repeat(64));
+    await expect(
+      receivePipeline(root, production.preparedRoot, fixture.github, 1, fixture.staging, signal()),
+    ).rejects.toThrow('Unexpected packed pipeline artifact');
+    expect(fixture.download).not.toHaveBeenCalled();
+    expect(fixture.staging.stage).not.toHaveBeenCalled();
+  });
+});
+
 it('observes authenticated receipt, staging and job stages without changing receiver results', async () => {
   await withReplayDirectory(async (root) => {
     const fixture = await pipelineFixture(root);
-    const slot = fixture.input.batch.slots[0]!;
-    await writeFile(
-      join(fixture.preparedRoot, 'cost-profile.json'),
-      JSON.stringify({
-        schemaVersion: 1,
-        source: fixture.identity.source,
-        measurementHash: 'sha256:' + 'a'.repeat(64),
-        metric: 'worker-compute-elapsed-ms',
-        samples: [
-          {
-            simulationHash: slot.simulationHash,
-            scenario: slot.spec.scenario.id,
-            characters: slot.spec.participants.map((p) => p.character.id),
-            elapsedMs: 1,
-          },
-        ],
-      }),
-    );
+    await writeReceiverProfile(fixture, 'sha256:' + 'a'.repeat(64));
     const terminalRef = {
       id: 457,
       name: 'league-123-1-terminal-0',

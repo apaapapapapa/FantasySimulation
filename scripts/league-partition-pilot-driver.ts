@@ -149,6 +149,7 @@ export async function computePartitionPilot(
             throw new Error('Foreign pilot control');
           await validatePartitionPilotPrepared(root, context.identity, runners);
         },
+        true,
       ),
     );
     const { prepared } = await validatePartitionPilotPrepared(

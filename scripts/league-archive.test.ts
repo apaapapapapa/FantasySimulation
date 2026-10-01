@@ -2,7 +2,7 @@ import { expect, it } from 'vite-plus/test';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { withReplayDirectory } from '@fantasy/api/testing';
-import { artifactZip } from './test-support/league-zip.ts';
+import { artifactZip, artifactZipEntries } from './test-support/league-zip.ts';
 import { extractLeagueArchive, LEAGUE_ARCHIVE_BYTES } from './league-archive.ts';
 
 it('extracts exact allowlisted bytes and rejects CRC changes, links and traversal before publication', async () => {
@@ -29,5 +29,28 @@ it('extracts exact allowlisted bytes and rejects CRC changes, links and traversa
     await expect(extractLeagueArchive(bomb, join(root, 'bomb'), () => true)).rejects.toThrow(
       'bound',
     );
+  });
+});
+
+it('keeps legacy directory entries while packed archives require exact file entries', async () => {
+  await withReplayDirectory(async (root) => {
+    const bytes = Buffer.from('{}');
+    const file = { name: 'partitions/0/proof.json', payload: bytes };
+    const archive = artifactZipEntries([
+      { name: 'partitions/', payload: Buffer.alloc(0), mode: 0o40755 },
+      file,
+    ]);
+    await extractLeagueArchive(archive, join(root, 'legacy'), () => true);
+    expect(await readFile(join(root, 'legacy', file.name))).toEqual(bytes);
+    await expect(
+      extractLeagueArchive(archive, join(root, 'packed-invalid'), () => true, false),
+    ).rejects.toThrow('Unsafe');
+    await extractLeagueArchive(
+      artifactZipEntries([file]),
+      join(root, 'packed-valid'),
+      () => true,
+      false,
+    );
+    expect(await readFile(join(root, 'packed-valid', file.name))).toEqual(bytes);
   });
 });

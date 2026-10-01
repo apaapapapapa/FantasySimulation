@@ -13,6 +13,7 @@ import { commitPublication } from '../publication/publication-catalog.ts';
 import { publicationInventory, type PublicationFile } from '../publication/publication-files.ts';
 import { PublicationEvidence, evidenceGraph } from '../publication/publication-evidence.ts';
 import { cloudJson, writeCloudJson } from './league-cloud-files.ts';
+import { packedPartitionArtifact, type PackedBinding } from './league-producer-transport.ts';
 
 export type PipelineIdentity = ReturnType<typeof LeagueProducerProofSchema.parse>['identity'];
 export async function sealLeagueProducer(
@@ -83,12 +84,10 @@ export async function authenticateLeagueProducer(
   identity: PipelineIdentity,
   runner: number,
   authenticate: () => Promise<readonly ReturnType<typeof LeagueProducerArtifactSchema.parse>[]>,
-) {
+): Promise<LeagueProducer> {
   // Authenticate the actual downloaded ZIPs and trusted Actions producer before using its claims.
   const artifacts = (await authenticate()).map((ref) => LeagueProducerArtifactSchema.parse(ref));
   const input = LeagueCloudInputSchema.parse(inputValue);
-  const proof = LeagueProducerProofSchema.parse(await cloudJson(join(root, 'proof.json')));
-  const result = LeaguePartitionResultSchema.parse(await cloudJson(join(root, 'result.json')));
   const names = artifacts.map((ref) => ref.name).sort();
   if (
     artifacts.length < 1 ||
@@ -101,6 +100,38 @@ export async function authenticateLeagueProducer(
     )
   )
     throw new OperationError('IDENTITY_MISMATCH', 'Producer artifact identity/coverage mismatch');
+  return authenticateProducerContents(root, input, identity, runner, artifacts);
+}
+
+/** Packed authentication requires a process-local witness of the actual immutable archive. */
+export async function authenticatePackedLeagueProducer(
+  root: string,
+  inputValue: unknown,
+  identity: PipelineIdentity,
+  runner: number,
+  binding: PackedBinding,
+): Promise<LeagueProducer> {
+  const input = LeagueCloudInputSchema.parse(inputValue);
+  const artifact = await packedPartitionArtifact(
+    binding,
+    root,
+    input.partition.index,
+    identity,
+    runner,
+  );
+  const producer = await authenticateProducerContents(root, input, identity, runner, [artifact]);
+  return { ...producer, packed: binding };
+}
+
+async function authenticateProducerContents(
+  root: string,
+  input: LeagueCloudInput,
+  identity: PipelineIdentity,
+  runner: number,
+  artifacts: readonly ReturnType<typeof LeagueProducerArtifactSchema.parse>[],
+) {
+  const proof = LeagueProducerProofSchema.parse(await cloudJson(join(root, 'proof.json')));
+  const result = LeaguePartitionResultSchema.parse(await cloudJson(join(root, 'result.json')));
   if (
     canonicalJson(proof.identity) !== canonicalJson(identity) ||
     proof.runner !== runner ||
@@ -138,7 +169,9 @@ export async function authenticateLeagueProducer(
     throw new OperationError('DATA_INVALID', 'Unexpected producer payload');
   return { proof, result, evidence, artifacts };
 }
-export type LeagueProducer = Awaited<ReturnType<typeof authenticateLeagueProducer>>;
+export type LeagueProducer = Awaited<ReturnType<typeof authenticateProducerContents>> & {
+  packed?: PackedBinding;
+};
 
 /** Fixed bounded archive groups, with immutable proof/result repeated to bind multipart transfers. */
 export function producerArtifactGroups(files: readonly PublicationFile[], controlBytes: number) {
