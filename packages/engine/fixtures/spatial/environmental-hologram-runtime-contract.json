@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-runtime",
+  "feature": "environmental-hologram-visual-v1",
+  "purpose": "design-and-evidence-boundary-only",
+  "existingMechanism": {
+    "effect": "sensory-cue",
+    "scope": "cognitive-observer-mind",
+    "nonCognitiveAdmission": "rejected",
+    "maySatisfyThisContract": false
+  },
+  "requiredRuntimeBoundary": {
+    "proposedEffect": "environmental-hologram",
+    "scope": "visual-sensor-observers",
+    "mentalEligibilityRequired": false,
+    "canonicalCombatActor": false,
+    "collision": false,
+    "damageable": false,
+    "victoryMember": false,
+    "stateOwner": "observer-sensor-view-not-mind-state",
+    "requiresNewSchemaFeature": true
+  },
+  "acceptanceObservers": [
+    {
+      "id": "cognitive-visual",
+      "mentalEligibility": "cognitive",
+      "sensors": ["visual"],
+      "expectedObservation": "hologram-visible"
+    },
+    {
+      "id": "mindless-visual",
+      "mentalEligibility": "non-cognitive",
+      "sensors": ["visual"],
+      "expectedObservation": "hologram-visible"
+    },
+    {
+      "id": "cognitive-no-visual",
+      "mentalEligibility": "cognitive",
+      "sensors": [],
+      "expectedObservation": "hologram-absent"
+    }
+  ],
+  "requiredLifecycle": {
+    "states": ["absent", "active-unobserved", "observed", "invalidated", "absent"],
+    "terminalTransitionsExactlyOnce": true,
+    "expiryAfterDeactivationForbidden": true,
+    "runtimeMustRecordActualTransitions": true
+  },
+  "requiredEvidence": {
+    "observerAi": [
+      "mindless visual observer can select the recorded hologram position",
+      "observer without a visual sensor has the same candidates selection RNG cursor and resources as control",
+      "hologram never becomes a targetable combat actor",
+      "invalidation removes the hologram from later decisions"
+    ],
+    "apiRoundTrip": [
+      "API job response validates and returns the actual observer sensor state",
+      "API replay response round-trips hologram identity observer set lifecycle and perceived position"
+    ],
+    "persistence": [
+      "worker SQLite and artifact round-trip the actual observer sensor state",
+      "identity observer set lifecycle and perceived position are immutable under replay validation",
+      "legacy recordings remain byte and digest compatible"
+    ],
+    "replay": [
+      "ReplayState reconstructs active invalidated and absent states without running engine or AI",
+      "tampering with identity observer set lifecycle position or record order is rejected"
+    ],
+    "viewer2d3d": [
+      "truth view and eligible observer view render the same recorded lifecycle with their permitted geometry",
+      "sensor-ineligible observer view renders no hologram in either 2D or 3D",
+      "2D and 3D consume the same replay scene model"
+    ],
+    "seek": [
+      "forward seek reaches active invalidated and absent states",
+      "reverse seek restores the prior recorded state",
+      "looping across activation and removal leaves no residue"
+    ]
+  },
+  "implementationGate": {
+    "approvedRuntimeNumbers": false,
+    "catalogAvailabilityAllowed": false,
+    "expectationOnlyPromotionAllowed": false,
+    "requiredBeforePromotion": [
+      "actual engine state assertions",
+      "actual event assertions",
+      "actual API response and round-trip assertions",
+      "actual persisted replay assertions",
+      "actual 2D and 3D render assertions",
+      "actual forward reverse and loop seek assertions",
+      "independent review"
+    ]
+  },
+  "ownershipBoundary": {
+    "commonEngineAndSchema": "defer-until-dependent-summon-merge",
+    "publicationBudgetSchema": "issue-189-owned-do-not-edit",
+    "leagueBudget": "issue-189-owned-do-not-edit"
+  }
+}
