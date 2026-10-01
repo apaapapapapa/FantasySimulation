@@ -25,6 +25,7 @@ import {
   readIntegratedStartupSkillCatalogV2,
   readIntegratedStartupSkillCatalogV3,
   readIntegratedStartupSkillCatalogV5,
+  readIntegratedStartupSkillCatalogV6,
   readPreviousIntegratedStartupSkillCatalog,
   readStartupSkillCatalog,
 } from './startup-skill-catalog.ts';
@@ -50,6 +51,11 @@ const historicalCatalogSignatures = {
     digest: 'sha256:153c28b31dc5dceb759210ed23bd80d38d3d6a2573bfb7f40feabf273bbc3e47',
     canonicalBytes: 777_871,
     lifecycle: { available: 29, implemented: 3, draft: 1_120, retired: 0 },
+  },
+  6: {
+    digest: 'sha256:b479659ce5d1cef32818323185b09a1484b9868bbc76d20c8f16d9f7e150afaf',
+    canonicalBytes: 777_861,
+    lifecycle: { available: 30, implemented: 2, draft: 1_120, retired: 0 },
   },
 } as const;
 afterEach(() => {
@@ -190,7 +196,7 @@ describe('production startup skill catalog', () => {
       second = await seedStartupData(store);
     expect(second.skillCatalog.reference).toEqual(first.skillCatalog.reference);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 6,
+      count: 7,
     });
     const changed = structuredClone(first.skillCatalog.catalog);
     changed.nodes[0]!.name = 'Changed immutable startup node';
@@ -200,14 +206,14 @@ describe('production startup skill catalog', () => {
 
     const app = createApp(store);
     stores.pop();
-    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/6');
+    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/7');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       reference: first.skillCatalog.reference,
-      catalog: { id: 'skill-catalog-v1', revision: 6 },
+      catalog: { id: 'skill-catalog-v1', revision: 7 },
     });
     expect(response.json().catalog.nodes).toHaveLength(1_152);
-    for (const revision of [2, 3, 4, 5]) {
+    for (const revision of [2, 3, 4, 5, 6]) {
       const previous = await app.inject(`/api/skill-catalogs/skill-catalog-v1/${revision}`);
       expect(previous.statusCode).toBe(200);
       expect(previous.json()).toMatchObject({
@@ -227,7 +233,7 @@ describe('production startup skill catalog', () => {
     await app.close();
   });
 
-  it('preserves immutable v2 through v5 before seeding v6', async () => {
+  it('preserves immutable v2 through v6 before seeding v7', async () => {
     const store = openStore(':memory:'),
       revisions = readSampleRevisions();
     stores.push(store);
@@ -236,7 +242,8 @@ describe('production startup skill catalog', () => {
       historicalV2Catalog = readIntegratedStartupSkillCatalogV2(revisions),
       historicalV3Catalog = readIntegratedStartupSkillCatalogV3(revisions),
       historicalV4Catalog = readPreviousIntegratedStartupSkillCatalog(revisions),
-      historicalV5Catalog = readIntegratedStartupSkillCatalogV5(revisions);
+      historicalV5Catalog = readIntegratedStartupSkillCatalogV5(revisions),
+      historicalV6Catalog = readIntegratedStartupSkillCatalogV6(revisions);
     expect(await catalogHistorySignature(historicalV2Catalog)).toEqual(
       historicalCatalogSignatures[2],
     );
@@ -263,22 +270,27 @@ describe('production startup skill catalog', () => {
     expect(await catalogHistorySignature(historicalV5Catalog)).toEqual(
       historicalCatalogSignatures[5],
     );
+    expect(await catalogHistorySignature(historicalV6Catalog)).toEqual(
+      historicalCatalogSignatures[6],
+    );
     const previousV2 = await skills.seedCatalog(historicalV2Catalog),
       previousV3 = await skills.seedCatalog(historicalV3Catalog),
       previousV4 = await skills.seedCatalog(historicalV4Catalog),
       previousV5 = await skills.seedCatalog(historicalV5Catalog),
+      previousV6 = await skills.seedCatalog(historicalV6Catalog),
       seeded = await seedStartupData(store);
 
     expect(seeded.skillCatalog.reference).toMatchObject({
       id: 'skill-catalog-v1',
-      revision: 6,
+      revision: 7,
     });
     expect(await skills.catalog('skill-catalog-v1', 2)).toEqual(previousV2);
     expect(await skills.catalog('skill-catalog-v1', 3)).toEqual(previousV3);
     expect(await skills.catalog('skill-catalog-v1', 4)).toEqual(previousV4);
     expect(await skills.catalog('skill-catalog-v1', 5)).toEqual(previousV5);
+    expect(await skills.catalog('skill-catalog-v1', 6)).toEqual(previousV6);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 6,
+      count: 7,
     });
     expect(
       await catalogHistorySignature((await skills.catalog('skill-catalog-v1', 2))!.catalog),
@@ -286,6 +298,9 @@ describe('production startup skill catalog', () => {
     expect(
       await catalogHistorySignature((await skills.catalog('skill-catalog-v1', 5))!.catalog),
     ).toEqual(historicalCatalogSignatures[5]);
+    expect(
+      await catalogHistorySignature((await skills.catalog('skill-catalog-v1', 6))!.catalog),
+    ).toEqual(historicalCatalogSignatures[6]);
     expect(changedNodeIds(historicalV2Catalog, historicalV3Catalog)).toEqual(['skill.shield.ox.1']);
     expect(changedNodeIds(historicalV3Catalog, historicalV4Catalog)).toEqual([
       'skill.aikido.dog.1',
@@ -293,8 +308,11 @@ describe('production startup skill catalog', () => {
     expect(changedNodeIds(historicalV4Catalog, historicalV5Catalog)).toEqual([
       'skill.magic.rooster.2',
     ]);
-    expect(changedNodeIds(historicalV5Catalog, seeded.skillCatalog.catalog)).toEqual([
+    expect(changedNodeIds(historicalV5Catalog, historicalV6Catalog)).toEqual([
       'skill.archery.rat.1',
+    ]);
+    expect(changedNodeIds(historicalV6Catalog, seeded.skillCatalog.catalog)).toEqual([
+      'skill.illusion-curse.rabbit.1',
     ]);
     const lifecycle = (revision: number, nodeId: string) =>
       skills
@@ -308,6 +326,8 @@ describe('production startup skill catalog', () => {
     await expect(lifecycle(5, 'skill.magic.rooster.2')).resolves.toBe('available');
     await expect(lifecycle(5, 'skill.archery.rat.1')).resolves.toBe('implemented');
     await expect(lifecycle(6, 'skill.archery.rat.1')).resolves.toBe('available');
+    await expect(lifecycle(6, 'skill.illusion-curse.rabbit.1')).resolves.toBe('draft');
+    await expect(lifecycle(7, 'skill.illusion-curse.rabbit.1')).resolves.toBe('available');
   });
 
   it('integrates fourteen authored paths while keeping unfinished coordinates unavailable', () => {
@@ -316,12 +336,12 @@ describe('production startup skill catalog', () => {
       release = inspectIntegratedStartupSkillCatalog(catalog, revisions),
       available = catalog.nodes.filter(({ lifecycle }) => lifecycle === 'available');
 
-    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 6 });
+    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 7 });
     expect(catalog.nodes).toHaveLength(1_152);
     expect(release).toEqual({
-      lifecycle: { available: 30, implemented: 2, draft: 1_120, retired: 0 },
-      available: 30,
-      verified: 30,
+      lifecycle: { available: 31, implemented: 2, draft: 1_119, retired: 0 },
+      available: 31,
+      verified: 31,
       releaseReady: false,
       issues: [],
     });
@@ -333,9 +353,20 @@ describe('production startup skill catalog', () => {
     expect(available.filter(({ coordinate }) => coordinate.path === 'shinto')).toHaveLength(4);
     expect(available.filter(({ coordinate }) => coordinate.path === 'renki')).toHaveLength(4);
     expect(available.filter(({ coordinate }) => coordinate.path === 'magic')).toHaveLength(12);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'illusion-curse')).toHaveLength(
+      1,
+    );
+    expect(
+      [5, 6].map((dan) =>
+        catalog.nodes.find(({ id }) => id === `skill.illusion-curse.rabbit.${dan}`),
+      ),
+    ).toEqual([
+      expect.objectContaining({ lifecycle: 'draft', resolution: [], fixtureIds: [] }),
+      expect.objectContaining({ lifecycle: 'draft', resolution: [], fixtureIds: [] }),
+    ]);
     expect(
       catalog.nodes
-        .filter(({ coordinate }) => ['illusion-curse', 'summoning'].includes(coordinate.path))
+        .filter(({ coordinate }) => coordinate.path === 'summoning')
         .every(
           ({ lifecycle, resolution, fixtureIds }) =>
             lifecycle === 'draft' && !resolution.length && !fixtureIds.length,
@@ -493,6 +524,68 @@ describe('production startup skill catalog', () => {
             Boolean(deepening.conditionOrTradeoff),
         ),
     ).toBe(true);
+  });
+
+  it('runs the saved rabbit hologram recipe under an explicitly selected production ruleset', async () => {
+    const {
+      store,
+      seeded,
+      character,
+      ability: hologram,
+    } = await seededCharacterAbility('swordsman', 'side-step-image-v1');
+    const nodeId = 'skill.illusion-curse.rabbit.1',
+      skills = new SkillStore(store),
+      created = await skills.create({
+        character: revisionReference(character),
+        configuration: {
+          schemaVersion: 1,
+          id: 'loadout.integrated.illusion-curse-rabbit-foundation',
+          version: 1,
+          catalog: seeded.skillCatalog.reference,
+          eligibilityNodeIds: [nodeId],
+          learnedNodeIds: [nodeId],
+          enabledNodeIds: [nodeId],
+        },
+      }),
+      reloaded = await skills.revision(created.latest),
+      receipt = await skillBattleReceipt(reloaded),
+      manifest = await catalogManifest(
+        'swordsman',
+        'swordsman',
+        'flat',
+        6000,
+        228,
+        'standard-p6-group2-v1',
+      );
+    manifest.participants[0]!.skillLoadout = receipt;
+    const { run, context, restored } = await runAndReplay(manifest, hologram),
+      events = run.records.flatMap((record) => ('events' in record ? record.events : [])),
+      lifecycle = events.filter(
+        (event) =>
+          event.kind === 'environmental-hologram' &&
+          event.abilityId === hologram.id &&
+          event.environmentalHologram,
+      ),
+      firstId = lifecycle[0]?.environmentalHologram?.id,
+      first = lifecycle.filter((event) => event.environmentalHologram?.id === firstId);
+
+    expect(reloaded.resolved).toMatchObject({
+      explicitlyEnabledNodeIds: [nodeId],
+      resolvedNodeIds: [nodeId],
+      nodeResolutions: [
+        {
+          nodeId,
+          resolution: [{ kind: 'active-ability', ability: revisionReference(hologram) }],
+        },
+      ],
+    });
+    expect(context.manifest.ruleset).toEqual({
+      id: 'standard-p6-group2-v1',
+      revision: 1,
+      contentHash: 'sha256:7a29dffc918f926dfe030ea3ae9bf488d582abae743179cb60617cbd1c7016d3',
+    });
+    expect(first.map((event) => event.environmentalHologram!.transition)).toContain('activated');
+    expect(restored.checkpoint().state!.actors).toHaveLength(2);
   });
 
   it('carries the existing spear selection through saved loadout, battle AI, and replay', async () => {

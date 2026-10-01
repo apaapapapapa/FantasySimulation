@@ -1166,6 +1166,12 @@
       "id": "shield-set-guard-v1",
       "revision": 1,
       "contentHash": "sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d"
+    },
+    {
+      "kind": "ability",
+      "id": "side-step-image-v1",
+      "revision": 1,
+      "contentHash": "sha256:96e42f32200a1d27beffa1a185a79206b847ce2a1ff162b680150bab6a0aa1fa"
     }
   ]
 }

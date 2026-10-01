@@ -10,6 +10,20 @@ async function readyWorkbench(page: import('@playwright/test').Page) {
   return workbench;
 }
 
+async function saveSelectedSkill(
+  page: import('@playwright/test').Page,
+  workbench: import('@playwright/test').Locator,
+) {
+  const nodeAction = workbench.locator('.skill-node-action');
+  await nodeAction.click();
+  await nodeAction.click();
+  await workbench.locator('.actions .primary').click();
+  await expect(workbench.locator('.message[role="status"]')).toContainText(/revision \d+/);
+  const battle = page.locator('.arena');
+  await expect(battle.locator(':scope > p[role="status"]').first()).toContainText(/revision \d+/);
+  return battle;
+}
+
 test('skill-workbench-desktop', async ({ page }) => {
   const workbench = await readyWorkbench(page);
 
@@ -55,13 +69,7 @@ test('skill-workbench-desktop', async ({ page }) => {
 
   const foundation = workbench.locator('.skill-matrix tbody td > button').nth(60);
   await foundation.click();
-  const nodeAction = workbench.locator('.skill-node-action');
-  await nodeAction.click();
-  await nodeAction.click();
-  await workbench.locator('.actions .primary').click();
-  await expect(workbench.locator('.message[role="status"]')).toContainText(/revision \d+/);
-  const battle = page.locator('.arena');
-  await expect(battle.locator(':scope > p[role="status"]').first()).toContainText(/revision \d+/);
+  const battle = await saveSelectedSkill(page, workbench);
   await battle.locator(':scope > fieldset > button.primary').click();
   await expect(battle.locator('.result')).toBeVisible({ timeout: 15_000 });
   await battle.locator('.result button').click();
@@ -97,4 +105,81 @@ test('skill-workbench-mobile', async ({ page }) => {
       .locator('.skill-loadout-controls')
       .evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length),
   ).toBe(1);
+});
+
+test('rabbit hologram saves, battles and replays through both viewers', async ({ page }) => {
+  const workbench = await readyWorkbench(page);
+  await workbench
+    .locator('.skill-paths > button')
+    .filter({ hasText: 'debuff, mind and perception' })
+    .click();
+  const rabbitFoundation = workbench.getByRole('button', { name: /Side-Step Image/ });
+  await rabbitFoundation.click();
+  await expect(workbench.locator('.skill-detail h3')).toHaveText('Side-Step Image');
+  const savedResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && response.url().endsWith('/api/skill-loadouts'),
+  );
+  const battle = await saveSelectedSkill(page, workbench);
+  const saved = await (await savedResponse).json();
+  expect(saved.snapshot.resolved).toMatchObject({
+    resolvedNodeIds: ['skill.illusion-curse.rabbit.1'],
+    nodeResolutions: [
+      {
+        nodeId: 'skill.illusion-curse.rabbit.1',
+        resolution: [
+          {
+            kind: 'active-ability',
+            ability: {
+              id: 'side-step-image-v1',
+              revision: 1,
+              contentHash:
+                'sha256:96e42f32200a1d27beffa1a185a79206b847ce2a1ff162b680150bab6a0aa1fa',
+            },
+          },
+        ],
+      },
+    ],
+  });
+  await battle.locator('select').nth(3).selectOption('standard-p6-group2-v1');
+  await expect(battle.locator('select').nth(3)).toHaveValue('standard-p6-group2-v1');
+  const battleRequest = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/skill-battle-jobs'),
+  );
+  await battle.locator(':scope > fieldset > button.primary').click();
+  const submitted = (await battleRequest).postDataJSON();
+  expect(submitted.spec.ruleset).toEqual({
+    id: 'standard-p6-group2-v1',
+    revision: 1,
+    contentHash: 'sha256:7a29dffc918f926dfe030ea3ae9bf488d582abae743179cb60617cbd1c7016d3',
+  });
+  expect(submitted.loadouts).toEqual([{ actorId: 'left', loadout: saved.latest }]);
+  await expect(battle.locator('.result')).toBeVisible({ timeout: 15_000 });
+  const replayResponse = page.waitForResponse((response) =>
+    /\/api\/replays\/[^/]+$/.test(response.url()),
+  );
+  await battle.locator('.result button').click();
+  const replayManifest = await (await replayResponse).json();
+  expect(replayManifest.input.ruleset).toEqual(submitted.spec.ruleset);
+  expect(replayManifest.input.participants[0].skillLoadout).toMatchObject({
+    loadout: saved.latest,
+    catalog: saved.snapshot.resolved.catalog,
+    resolvedNodeIds: saved.snapshot.resolved.resolvedNodeIds,
+    nodeResolutions: saved.snapshot.resolved.nodeResolutions,
+    resolutionDigest: saved.snapshot.resolved.resolutionDigest,
+  });
+
+  const replay = page.locator('section').filter({ has: page.locator('input[type="range"]') });
+  await expect(replay.locator('canvas')).toBeVisible();
+  const view = replay
+    .locator('.actions select')
+    .filter({ has: page.locator('option[value="2d"]') });
+  await view.selectOption('2d');
+  const slider = replay.locator('input[type="range"]');
+  await expect(slider).toBeVisible();
+  await slider.fill((await slider.getAttribute('max'))!);
+  const projections = replay.locator('[data-environmental-hologram]');
+  await expect(projections.first()).toBeVisible();
+  const id = await projections.first().getAttribute('data-environmental-hologram');
+  expect(id).toBeTruthy();
 });

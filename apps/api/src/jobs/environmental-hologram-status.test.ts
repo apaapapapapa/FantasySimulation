@@ -8,39 +8,103 @@ import {
   JobStatusSchema,
   ReplayManifestSchema,
   ReplayState,
+  RevisionSchema,
+  parseJson,
   replayChunkRecords,
   replayContext,
   type ActorDisplay,
   type ReplayManifest,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
-import { environmentalHologramSummoningManifest } from '../../../../packages/engine/test-support/environmental-holograms.ts';
+import { reference, sealRevision } from '@fantasy/engine/spatial';
+import { catalogManifest } from '@fantasy/samples';
+import { summoningManifest } from '../../../../packages/engine/test-support/summoning.ts';
 import { withReplayDirectory } from '../../test-support/replays.ts';
 import { specInput } from '../../test-support/runtime.ts';
-import { openStore } from '../db/store.ts';
+import { openStore, readSampleRevisions, type Store } from '../db/store.ts';
+import { seedStartupData } from '../db/startup-data.ts';
 import { createApp } from '../http/app.ts';
 import { ArtifactStore } from '../replay/artifact-store.ts';
 import { sanitizeEnvironmentalHologramSensorProjection } from '../replay/sensor-projection.ts';
 import { BattleService } from './battle-service.ts';
 import { JobStore } from './job-store.ts';
 
-async function activeHologramManifest() {
-  return environmentalHologramSummoningManifest(40, 300);
+async function activeHologramRequest(store: Store, app: ReturnType<typeof createApp>) {
+  const seeded = await seedStartupData(store),
+    revisions = parseJson(RevisionSchema.array(), readSampleRevisions()),
+    character = revisions.find(
+      (revision) => revision.kind === 'character' && revision.id === 'swordsman',
+    ),
+    policy = revisions.find(
+      (revision) => revision.kind === 'policy' && revision.id === 'swordsman-policy',
+    ),
+    summonSource = await summoningManifest(40),
+    summon = summonSource.revisions.find(
+      (revision) => revision.kind === 'ability' && revision.definition.summon,
+    );
+  if (character?.kind !== 'character' || policy?.kind !== 'policy' || summon?.kind !== 'ability')
+    throw new Error('Missing production character, policy or dormant summon fixture');
+  const dormantSummon = await sealRevision('ability', 'test-only-dormant-hologram-summon', 1, {
+      ...summon.definition,
+      condition: { kind: 'status', id: 'test-only-never-present', present: true },
+    }),
+    utilityPolicy = await sealRevision('policy', 'test-only-hologram-utility-policy', 1, {
+      ...policy.definition,
+      priorities: [],
+    }),
+    combined = await sealRevision('character', 'test-only-hologram-workbench-character', 1, {
+      ...character.definition,
+      abilities: [...character.definition.abilities, reference(dormantSummon)],
+      policy: reference(utilityPolicy),
+    });
+  await store.seedRevisions([dormantSummon, utilityPolicy, combined]);
+
+  const nodeId = 'skill.illusion-curse.rabbit.1',
+    saved = await app.inject({
+      method: 'POST',
+      url: '/api/skill-loadouts',
+      payload: {
+        character: reference(combined),
+        configuration: {
+          schemaVersion: 1,
+          id: 'loadout.production.hologram.rabbit.1',
+          version: 1,
+          catalog: seeded.skillCatalog.reference,
+          eligibilityNodeIds: [nodeId],
+          learnedNodeIds: [nodeId],
+          enabledNodeIds: [nodeId],
+        },
+      },
+    });
+  expect(saved.statusCode).toBe(201);
+  const input = await catalogManifest(
+      'swordsman',
+      'swordsman',
+      'flat',
+      6000,
+      228,
+      'standard-p6-group2-v1',
+    ),
+    spec = specInput(input);
+  await store.seedRevisions(input.revisions);
+  spec.participants[0]!.character = reference(combined);
+  return {
+    spec,
+    budget: DEFAULT_BUDGET,
+    loadouts: [{ actorId: 'left', loadout: saved.json().latest }],
+  };
 }
 
 function sanitizedProjection(replayId: string, replay: ReplayState) {
   const checkpoint = replay.checkpoint();
   if (!checkpoint.state) throw new Error('Missing final replay state');
-  return BattleSensorProjectionSchema.parse({
-    replayId,
-    step: checkpoint.step,
-    observers: checkpoint.state.actors.map((actor) => ({
-      observerId: actor.id,
-      environmentalHolograms: (actor.sensorView?.environmentalHolograms ?? []).map(
-        ({ sourcePosition: _, ...hologram }) => hologram,
-      ),
-    })),
-  });
+  return BattleSensorProjectionSchema.parse(
+    sanitizeEnvironmentalHologramSensorProjection(
+      replayId,
+      checkpoint.step,
+      checkpoint.state.actors,
+    ),
+  );
 }
 
 async function replayFromApi(app: ReturnType<typeof createApp>, replayId: string) {
@@ -58,7 +122,7 @@ async function replayFromApi(app: ReturnType<typeof createApp>, replayId: string
       saved.push(replay.apply(record));
     }
   }
-  return { manifest, replay, records: saved };
+  return { manifest, context, replay, records: saved };
 }
 
 it(
@@ -92,18 +156,23 @@ it(
           };
         });
       try {
-        const input = await activeHologramManifest();
-        await store.seedRevisions(input.revisions);
+        const request = await activeHologramRequest(store, app);
+        expect(request.spec.ruleset).toEqual({
+          id: 'standard-p6-group2-v1',
+          revision: 1,
+          contentHash: 'sha256:7a29dffc918f926dfe030ea3ae9bf488d582abae743179cb60617cbd1c7016d3',
+        });
         const submitted = await app.inject({
           method: 'POST',
-          url: '/api/battle-jobs',
+          url: '/api/skill-battle-jobs',
           headers: { 'x-client-id': 'hologram-status', 'idempotency-key': 'actual-worker' },
-          payload: { spec: specInput(input), budget: DEFAULT_BUDGET },
+          payload: request,
         });
-        expect(submitted.statusCode).toBe(202);
+        if (submitted.statusCode !== 202)
+          throw new Error(`${submitted.statusCode}: ${submitted.body}`);
         const id: string = submitted.json().job.id;
         const done = await runtime.wait(id);
-        expect(done.state).toBe('completed');
+        if (done.state !== 'completed') throw new Error(JSON.stringify(done));
         const replayId = new JobStore(store).result(done.resultId!)!.replayId;
         const savedManifest = await runtime.replay(replayId);
         expect(savedManifest.input.schemaVersion).toBe(9);
@@ -139,6 +208,21 @@ it(
 
         const opened = await replayFromApi(app, replayId);
         expect(opened.manifest.input.schemaVersion).toBe(9);
+        expect(opened.manifest.input.ruleset).toEqual(request.spec.ruleset);
+        expect(opened.manifest.input.participants[0]?.skillLoadout).toMatchObject({
+          resolvedNodeIds: ['skill.illusion-curse.rabbit.1'],
+          nodeResolutions: [
+            {
+              nodeId: 'skill.illusion-curse.rabbit.1',
+              resolution: [
+                {
+                  kind: 'active-ability',
+                  ability: { id: 'side-step-image-v1', revision: 1 },
+                },
+              ],
+            },
+          ],
+        });
         expect(sanitizedProjection(replayId, opened.replay)).toEqual(projection);
         const lifecycle = opened.records
           .flatMap((record) => ('events' in record ? record.events : []))
@@ -203,7 +287,7 @@ it(
         );
         expect(JSON.stringify(bounded)).not.toContain('sourcePosition');
 
-        const otherSpec = structuredClone(specInput(input));
+        const otherSpec = structuredClone(request.spec);
         otherSpec.participants[0].position.x += 250;
         const otherSubmitted = await app.inject({
           method: 'POST',
@@ -280,10 +364,9 @@ it(
       const runtime = await BattleService.open(store, join(directory, 'replays'), { timeoutMs: 1 });
       const app = createApp(store, false, runtime);
       try {
-        const input = await activeHologramManifest();
-        await store.seedRevisions(input.revisions);
+        const request = await activeHologramRequest(store, app);
         const job = await runtime.submit(
-          specInput(input),
+          request.spec,
           'hologram-status-failed',
           'actual-worker',
           DEFAULT_BUDGET,
