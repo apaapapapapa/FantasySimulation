@@ -9,7 +9,7 @@ import { sealLeagueProducer, authenticateLeagueProducer } from '../src/league/le
 import { PublicationEvidence } from '../src/publication/publication-evidence.ts';
 
 /** One prepared four-slot partition, before any runner has claimed it. */
-export async function preparedPipeline(root: string) {
+export async function preparedPipeline(root: string, characters = 2) {
   const identity = {
     source: publicationLeagueSource,
     runId: 123,
@@ -20,7 +20,7 @@ export async function preparedPipeline(root: string) {
     preparedRoot = join(root, 'prepared'),
     baselineRoot = join(root, 'baseline');
   const { prepared } = await prepareCloudLeague(
-    await leagueFixture(2, 1),
+    await leagueFixture(characters, 1),
     identity.source,
     executionId,
     baselineRoot,

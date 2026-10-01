@@ -12,6 +12,7 @@ export async function extractLeagueArchive(
   data: Buffer,
   destination: string,
   allow: (key: string) => boolean,
+  allowDirectories = true,
 ) {
   if (data.length < 22 || data.length > LEAGUE_ARCHIVE_BYTES)
     throw new Error('Artifact archive size bound');
@@ -61,6 +62,7 @@ export async function extractLeagueArchive(
       kind = mode & 0xf000;
     if (
       names.has(key) ||
+      (directory && !allowDirectories) ||
       !key ||
       key.includes('\\') ||
       key.split('/').some((part) => !part || part === '.' || part === '..') ||

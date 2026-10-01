@@ -124,10 +124,17 @@ export class PipelineArtifacts {
       throw new Error('Actual artifact ZIP digest mismatch');
     return bytes;
   }
-  async download(ref: PipelineArtifact, root: string, allow: (key: string) => boolean) {
+  async download(
+    ref: PipelineArtifact,
+    root: string,
+    allow: (key: string) => boolean,
+    allowDirectories = true,
+  ) {
     const bytes = await measureAsync('artifact.download.transfer', () => this.archive(ref));
     currentMeasurements()?.addBytes('artifact.download.transfer', bytes.length);
-    await measureAsync('artifact.download.extract', () => extractLeagueArchive(bytes, root, allow));
+    await measureAsync('artifact.download.extract', () =>
+      extractLeagueArchive(bytes, root, allow, allowDirectories),
+    );
     return ref;
   }
   async durableArtifact(id: number, expected: { digest: string; bytes: number }) {

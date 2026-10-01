@@ -20,8 +20,13 @@ import {
 import { preparedLeagueCosts } from '../apps/cli/src/league/league-cost-profile.ts';
 import {
   authenticateLeagueProducer,
+  authenticatePackedLeagueProducer,
   type LeagueProducer,
 } from '../apps/cli/src/league/league-producer.ts';
+import {
+  authenticatePackedGroup,
+  packedPath,
+} from '../apps/cli/src/league/league-producer-transport.ts';
 import { PublicationEvidence } from '../apps/cli/src/publication/publication-evidence.ts';
 import { decodeLeagueCheckpoint } from '../apps/cli/src/league/league-checkpoint.ts';
 import { publicationInventory } from '../apps/cli/src/publication/publication-files.ts';
@@ -145,7 +150,16 @@ export async function receivePartitionPilot(
     assignLeagueRunners(prepared.plan, runners),
     runners,
   );
-  return receiveAssignedPipeline(root, preparedRoot, github, runners, staging, signal, assignments);
+  return receiveAssignedPipeline(
+    root,
+    preparedRoot,
+    github,
+    runners,
+    staging,
+    signal,
+    assignments,
+    true,
+  );
 }
 
 async function receiveAssignedPipeline(
@@ -156,6 +170,7 @@ async function receiveAssignedPipeline(
   staging: LeagueStaging,
   signal: AbortSignal,
   assignments: ReturnType<typeof assignLeagueRunners>,
+  packed = false,
 ) {
   const started = performance.now(),
     prefix = `league-${github.identity.runId}-${github.identity.runAttempt}`;
@@ -172,6 +187,7 @@ async function receiveAssignedPipeline(
   pipelineCapacity(prepared.inputs.length, assignments);
   const producers: LeagueProducer[] = [],
     completed = new Set<number>(),
+    packedCompleted = new Set<number>(),
     adopted = new Map<number, PipelineArtifact>();
   const terminals = new Map<number, ReturnType<typeof LeagueProducerTerminalSchema.parse>>();
   let lastJobCheck = -60000;
@@ -183,8 +199,16 @@ async function receiveAssignedPipeline(
       groups = new Map<
         number,
         { runner: number; total: number; parts: Map<number, PipelineArtifact> }
-      >();
+      >(),
+      packedRefs: { runner: number; ref: PipelineArtifact }[] = [];
     for (const ref of all) {
+      const pack = /-runner-(\d+)-pack-(\d+)$/.exec(ref.name);
+      if (pack) {
+        const runner = Number(pack[1]);
+        if (!packed || !assignments[runner]) throw new Error('Unexpected packed pipeline artifact');
+        packedRefs.push({ runner, ref });
+        continue;
+      }
       const match = partPattern.exec(ref.name);
       if (!match) {
         if (!new RegExp(`^${prefix}-(inputs|baseline|checkpoint|terminal-\\d+)$`).test(ref.name))
@@ -198,6 +222,8 @@ async function receiveAssignedPipeline(
         partition = Number(match[2]),
         part = Number(match[3]),
         total = Number(match[4]);
+      if (packedCompleted.has(partition))
+        throw new Error('Duplicate packed/legacy partition coverage');
       if (
         !assignments[runner]?.partitions.includes(partition) ||
         part >= total ||
@@ -209,6 +235,55 @@ async function receiveAssignedPipeline(
         throw new Error('Ambiguous multipart producer');
       group.parts.set(part, ref);
       groups.set(partition, group);
+    }
+    for (const { runner, ref } of packedRefs) {
+      if (adopted.has(ref.id)) continue;
+      const spool = join(root, 'receive-packed-' + ref.id);
+      await mkdir(spool);
+      try {
+        const downloaded = join(spool, 'archive');
+        await github.download(ref, downloaded, packedPath, false);
+        const binding = await measureAsync('receiver.authenticateGroup', () =>
+          authenticatePackedGroup(
+            downloaded,
+            ref,
+            github.identity,
+            runner,
+            assignments[runner]!.partitions,
+          ),
+        );
+        if (binding.partitions.some((index) => completed.has(index) || groups.has(index)))
+          throw new Error('Duplicate packed/legacy partition coverage');
+        const incoming: LeagueProducer[] = [];
+        for (const index of binding.partitions)
+          incoming.push(
+            await measureAsync('receiver.authenticatePartition', async () =>
+              authenticatePackedLeagueProducer(
+                join(downloaded, 'partitions', String(index)),
+                await cloudInput(preparedRoot, prepared, index),
+                github.identity,
+                runner,
+                binding,
+              ),
+            ),
+          );
+        // No adoption until every partition in the immutable group is fully verified and staged.
+        for (const producer of incoming)
+          await measureAsync('receiver.stage', () =>
+            staging.stage(
+              producer.evidence,
+              join(downloaded, 'partitions', String(producer.proof.partition), 'public'),
+            ),
+          );
+        producers.push(...incoming);
+        binding.partitions.forEach((index) => {
+          completed.add(index);
+          packedCompleted.add(index);
+        });
+        adopted.set(ref.id, ref);
+      } finally {
+        await rm(spool, { recursive: true, force: true });
+      }
     }
     for (const [partition, group] of [...groups].sort(([a], [b]) => a - b)) {
       if (completed.has(partition) || group.parts.size !== group.total) continue;
