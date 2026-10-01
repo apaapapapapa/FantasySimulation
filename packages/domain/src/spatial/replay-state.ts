@@ -70,6 +70,22 @@ export class ReplayState {
       v.simulationHash === context.simulationHash && v.step <= context.rules.maxSteps,
       'checkpoint binding/range',
     );
+    const owners = context.manifest.participants.map((participant) => participant.actorId);
+    requireReplay(
+      new Set(v.dependentHistory?.map((dependent) => dependent.id)).size ===
+        (v.dependentHistory?.length ?? 0) &&
+        (v.dependentHistory ?? []).every((dependent) => {
+          const ownerIndex = owners.indexOf(dependent.ownerId);
+          return (
+            ownerIndex >= 0 &&
+            dependent.hostileOwnerId === owners[ownerIndex === 0 ? 1 : 0] &&
+            new RegExp(`^dependent\\.${ownerIndex === 0 ? 'a' : 'b'}\\.[0-7]\\.scout-rat$`).test(
+              dependent.id,
+            )
+          );
+        }),
+      'dependent history binding',
+    );
     if (v.state === null)
       requireReplay(
         v.nextRecord === 0 &&
@@ -385,7 +401,15 @@ export class ReplayState {
         if (record.objects)
           applySpatialObjects(this.context, prior, state, record.objects, record, entities);
         if (record.dependents)
-          applyDependents(this.context, prior, state, record.dependents, record, entities);
+          applyDependents(
+            this.context,
+            prior,
+            state,
+            record.dependents,
+            record,
+            entities,
+            prior.dependentHistory,
+          );
         const changed = new Set<string>();
         for (const delta of record.changes) {
           const index = state.actors.findIndex((a) => a.id === delta.id);
@@ -469,6 +493,16 @@ export class ReplayState {
     const stop = advanceStopReplay(prior.stop, 'events' in record ? record.events : []);
     const requiredFeatures =
       record.kind === 'initial' ? record.requiredFeatures : prior.requiredFeatures;
+    const dependentHistory = [
+      ...(prior.dependentHistory ?? []),
+      ...('dependents' in record
+        ? (record.dependents?.spawn ?? []).map(({ id, ownerId, hostileOwnerId }) => ({
+            id,
+            ownerId,
+            hostileOwnerId,
+          }))
+        : []),
+    ];
     if (record.kind === 'terminal' && ['win', 'draw'].includes(record.outcome.kind))
       requireReplay(
         !deferred?.length && !stop?.controls.some((control) => control.releasedAt === undefined),
@@ -478,6 +512,7 @@ export class ReplayState {
       ...(deferred ? { deferred } : {}),
       ...(stop ? { stop } : {}),
       ...(requiredFeatures ? { requiredFeatures } : {}),
+      ...(dependentHistory.length ? { dependentHistory } : {}),
       schemaVersion: 1,
       simulationHash: prior.simulationHash,
       step,

@@ -3,6 +3,8 @@ import {
   ReplayState,
   StreamRecordSchema,
   DEFAULT_BUDGET,
+  actorSeed,
+  contentHash,
   dependentSeed,
   replayContext,
 } from '@fantasy/domain/spatial';
@@ -54,7 +56,7 @@ async function revivalWaveSummoningManifest() {
 }
 
 async function multiHitSummoningManifest() {
-  const manifest = await summoningManifest(12);
+  const manifest = await summoningManifest(35);
   const summon = manifest.revisions.find(
     (revision) => revision.kind === 'ability' && revision.definition.summon,
   );
@@ -64,7 +66,7 @@ async function multiHitSummoningManifest() {
     ...summon.definition,
     costs: { ...summon.definition.costs, uses: 2 },
     cooldownSteps: 1,
-    summon: { ...summon.definition.summon, actionEverySteps: 1 },
+    summon: { ...summon.definition.summon, hp: 12, actionEverySteps: 1 },
   });
   return ManifestBuilder.relink(manifest, [{ from: summon, to: replacement }]);
 }
@@ -90,7 +92,7 @@ function followedDependent(record: Exclude<StreamRecord, { kind: 'initial' | 'te
 
 it('executes a bounded observed rat dependent through replay with ordinal RNG identity', async () => {
   const battle = await prepareBattle(await summoningManifest());
-  expect(battle.manifest.schemaVersion).toBe(7);
+  expect(battle.manifest.schemaVersion).toBe(8);
   const run = await runPreparedBattle(battle);
   for (const record of run.records) {
     const parsed = StreamRecordSchema.safeParse(record);
@@ -263,6 +265,13 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
   rejects((records) => {
     const record = actionRecord(records);
     if (!record || !('events' in record)) throw new Error('Missing action record');
+    const command = record.events.find((event) => event.kind === 'dependent-command');
+    if (!command?.dependent) throw new Error('Missing dependent command');
+    delete command.dependent.observedTargetIds;
+  });
+  rejects((records) => {
+    const record = actionRecord(records);
+    if (!record || !('events' in record)) throw new Error('Missing action record');
     const command = record?.events.find((event) => event.kind === 'dependent-command');
     if (!command?.after) throw new Error('Missing command cost');
     command.after.mp += 1;
@@ -367,6 +376,64 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
   });
 });
 
+it('keeps schema-7 participant-only summon records replayable without target observations', async () => {
+  let selected:
+    | {
+        battle: Awaited<ReturnType<typeof prepareBattle>>;
+        run: Awaited<ReturnType<typeof runPreparedBattle>>;
+      }
+    | undefined;
+  for (let seed = 1; seed <= 32 && !selected; seed++) {
+    const input = await summoningManifest(8);
+    input.seed = seed;
+    for (const participant of input.participants)
+      participant.rngSeed = actorSeed(seed, participant.rngStream);
+    const battle = await prepareBattle(input);
+    const run = await runPreparedBattle(battle);
+    const commands = battleEvents(run.records).filter(
+      (event) => event.kind === 'dependent-command',
+    );
+    if (
+      commands.length > 0 &&
+      commands.every((event) => event.targetId === event.dependent?.hostileOwnerId)
+    )
+      selected = { battle, run };
+  }
+  if (!selected) throw new Error('Missing participant-only legacy summon fixture');
+  const legacyManifest = {
+    ...structuredClone(selected.battle.manifest),
+    schemaVersion: 7 as const,
+  };
+  const legacyHash = await contentHash(legacyManifest);
+  const legacyRecords = structuredClone(selected.run.records).map((record) => ({
+    ...record,
+    ...('simulationHash' in record ? { simulationHash: legacyHash } : {}),
+  }));
+  for (const event of battleEvents(legacyRecords))
+    if (event.dependent) delete event.dependent.observedTargetIds;
+  const context = await replayContext(legacyManifest, legacyHash);
+  const replay = new ReplayState(context);
+  const checkpoints = legacyRecords.map((record) => {
+    replay.apply(record);
+    return replay.checkpoint();
+  });
+  for (const checkpoint of checkpoints.toReversed())
+    expect(new ReplayState(context, checkpoint).checkpoint()).toEqual(checkpoint);
+
+  const tampered = structuredClone(legacyRecords);
+  const events = battleEvents(tampered);
+  const command = events.find((event) => event.kind === 'dependent-command');
+  const act = events.find((event) => event.parentEventId === command?.id);
+  const target = tampered
+    .flatMap((record) => ('dependents' in record ? (record.dependents?.spawn ?? []) : []))
+    .find((dependent) => dependent.ownerId === command?.dependent?.hostileOwnerId);
+  if (!command || !act || !target) throw new Error('Missing legacy target tamper fixture');
+  command.targetId = target.id;
+  act.targetId = target.id;
+  const invalid = new ReplayState(context);
+  expect(() => tampered.forEach((record) => invalid.apply(record))).toThrow(/dependent/);
+});
+
 it('commits simultaneous dependent hits as one replay-bound HP wave', async () => {
   const battle = await prepareBattle(await multiHitSummoningManifest());
   const run = await runPreparedBattle(battle);
@@ -399,9 +466,61 @@ it('commits simultaneous dependent hits as one replay-bound HP wave', async () =
   expect(hits.reduce((sum, event) => sum + (event.amount ?? 0), 0)).toBe(
     hits[0]!.before!.hp - hits[0]!.after!.hp,
   );
+  expect(hits.map((event) => event.amount)).toEqual([1, 0]);
+  let remainingCommittedLoss = hits[0]!.before!.hp - hits[0]!.after!.hp;
+  for (const hit of hits.toSorted((left, right) => left.sequence - right.sequence)) {
+    const expected = Math.min(
+      hit.damage?.calculation?.afterModifiers ?? -1,
+      remainingCommittedLoss,
+    );
+    expect(hit.amount).toBe(expected);
+    remainingCommittedLoss -= expected;
+  }
+  expect(remainingCommittedLoss).toBe(0);
   const context = await replayContext(battle.manifest, run.result.simulationHash);
   const replay = new ReplayState(context);
   run.records.forEach((candidate) => replay.apply(candidate));
+  const allEvents = battleEvents(run.records);
+  const staleAct = allEvents.find(
+    (event) =>
+      event.kind === 'dependent-act' &&
+      event.targetId?.startsWith('dependent.') &&
+      allEvents.some(
+        (candidate) =>
+          candidate.kind === 'dependent-despawn' &&
+          candidate.entityId === event.targetId &&
+          candidate.sequence < event.sequence,
+      ) &&
+      !allEvents.some((candidate) => candidate.parentEventId === event.id),
+  );
+  const staleCommand = allEvents.find((event) => event.id === staleAct?.parentEventId);
+  const staleDespawn = allEvents.find(
+    (event) =>
+      event.kind === 'dependent-despawn' &&
+      event.entityId === staleAct?.targetId &&
+      event.sequence < (staleAct?.sequence ?? -1),
+  );
+  expect(staleCommand?.dependent?.observedTargetIds).toContain(staleAct?.targetId);
+  expect(staleDespawn).toBeDefined();
+
+  const unknownStale = structuredClone(run.records);
+  const unknownEvents = battleEvents(unknownStale);
+  const unknownAct = unknownEvents.find((event) => event.id === staleAct?.id);
+  const unknownCommand = unknownEvents.find((event) => event.id === staleCommand?.id);
+  if (!unknownAct || !unknownCommand?.dependent?.observedTargetIds || !staleAct?.targetId)
+    throw new Error('Missing stale dependent action');
+  const unknownId = staleAct.targetId.replace(/\.[0-7]\./, '.7.');
+  unknownAct.targetId = unknownId;
+  unknownCommand.targetId = unknownId;
+  unknownCommand.dependent.observedTargetIds = unknownCommand.dependent.observedTargetIds.map(
+    (id) => (id === staleAct.targetId ? unknownId : id),
+  );
+  if (unknownAct.dependent)
+    unknownAct.dependent.observedTargetIds = unknownCommand.dependent.observedTargetIds;
+  const unknownReplay = new ReplayState(context);
+  expect(() => unknownStale.forEach((candidate) => unknownReplay.apply(candidate))).toThrow(
+    /dependent/,
+  );
 
   const tampered = structuredClone(run.records);
   const altered = tampered
@@ -410,6 +529,30 @@ it('commits simultaneous dependent hits as one replay-bound HP wave', async () =
   altered.amount = (altered.amount ?? 0) + 1;
   const invalid = new ReplayState(context);
   expect(() => tampered.forEach((candidate) => invalid.apply(candidate))).toThrow(/dependent/);
+
+  const redistributed = structuredClone(run.records);
+  const redistributedHits = redistributed
+    .flatMap((candidate) => ('events' in candidate ? candidate.events : []))
+    .filter((event) => hits.some((hit) => hit.id === event.id));
+  redistributedHits[0]!.amount = 0;
+  redistributedHits[1]!.amount = 1;
+  const redistributedReplay = new ReplayState(context);
+  expect(() => redistributed.forEach((candidate) => redistributedReplay.apply(candidate))).toThrow(
+    /dependent/,
+  );
+
+  const reordered = structuredClone(run.records);
+  const reorderedHits = reordered
+    .flatMap((candidate) => ('events' in candidate ? candidate.events : []))
+    .filter((event) => hits.some((hit) => hit.id === event.id));
+  [reorderedHits[0]!.amount, reorderedHits[1]!.amount] = [
+    reorderedHits[1]!.amount,
+    reorderedHits[0]!.amount,
+  ];
+  const reorderedReplay = new ReplayState(context);
+  expect(() => reordered.forEach((candidate) => reorderedReplay.apply(candidate))).toThrow(
+    /dependent/,
+  );
 
   const coTampered = structuredClone(run.records);
   const actionRecord = coTampered.find(

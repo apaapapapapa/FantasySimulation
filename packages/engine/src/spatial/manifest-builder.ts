@@ -110,7 +110,7 @@ export class ManifestBuilder {
       schemaVersion: hasEnvironmentalHolograms(revisions)
         ? 8
         : hasDependentSummons(revisions)
-          ? 7
+          ? 8
           : hasSensoryCues(revisions)
             ? 6
             : request.participants.some(
@@ -231,7 +231,7 @@ export class ManifestBuilder {
     manifest.scenario = referenceFor('scenario', manifest.scenario);
     manifest.revisions = manifest.revisions.map((revision) => sealed.get(revisionKey(revision))!);
     if (hasEnvironmentalHolograms(manifest.revisions)) manifest.schemaVersion = 8;
-    else if (hasDependentSummons(manifest.revisions)) manifest.schemaVersion = 7;
+    else if (hasDependentSummons(manifest.revisions)) manifest.schemaVersion = 8;
     else if (hasSensoryCues(manifest.revisions)) manifest.schemaVersion = 6;
     revisionIndex(manifest.revisions);
     return manifest;

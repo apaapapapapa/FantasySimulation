@@ -161,34 +161,40 @@ export function advanceDependents(tx: StepTransaction) {
       a.ownerId.localeCompare(b.ownerId) ||
       a.ordinal - b.ordinal,
   );
+  // Settle every global removal/cost before any subject action. This prevents
+  // an earlier-sorted subject from queuing damage against a target that is due
+  // to despawn later in the same boundary.
   for (const dependent of due) {
     if (tx.step >= dependent.expiresAt) {
       removeDependent(tx, dependent, 'expired', tx.step, 'boundary');
       continue;
     }
     const owner = tx.next.actors.find((actor) => actorId(actor) === dependent.ownerId)!;
-    if (tx.step >= dependent.nextUpkeepAt) {
-      const mp = owner.vitals.resources.mp;
-      if (mp < dependent.ability.definition.summon!.upkeep.mp) {
-        removeDependent(tx, dependent, 'upkeep', tx.step, 'boundary');
-        continue;
-      }
-      owner.vitals.resources.mp -= dependent.ability.definition.summon!.upkeep.mp;
-      dependent.nextUpkeepAt += dependent.ability.definition.summon!.upkeep.everySteps;
-      tx.journal.emit({
-        kind: 'cost',
-        phase: 'boundary',
-        step: tx.step,
-        actorId: dependent.ownerId,
-        targetId: dependent.hostileOwnerId,
-        entityId: dependent.id,
-        abilityId: dependent.ability.id,
-        before: { ...owner.vitals.resources, mp },
-        after: { ...owner.vitals.resources },
-        ruleId: 'dependent.upkeep',
-        reason: 'global-lifetime-upkeep',
-      });
+    if (tx.step < dependent.nextUpkeepAt) continue;
+    const mp = owner.vitals.resources.mp;
+    if (mp < dependent.ability.definition.summon!.upkeep.mp) {
+      removeDependent(tx, dependent, 'upkeep', tx.step, 'boundary');
+      continue;
     }
+    owner.vitals.resources.mp -= dependent.ability.definition.summon!.upkeep.mp;
+    dependent.nextUpkeepAt += dependent.ability.definition.summon!.upkeep.everySteps;
+    tx.journal.emit({
+      kind: 'cost',
+      phase: 'boundary',
+      step: tx.step,
+      actorId: dependent.ownerId,
+      targetId: dependent.hostileOwnerId,
+      entityId: dependent.id,
+      abilityId: dependent.ability.id,
+      before: { ...owner.vitals.resources, mp },
+      after: { ...owner.vitals.resources },
+      ruleId: 'dependent.upkeep',
+      reason: 'global-lifetime-upkeep',
+    });
+  }
+  for (const dependent of due) {
+    if (!(tx.next.dependents ?? []).some((candidate) => candidate.id === dependent.id)) continue;
+    const owner = tx.next.actors.find((actor) => actorId(actor) === dependent.ownerId)!;
     const clockFrozen =
       dependent.clock &&
       dependent.clock.frozenFrom <= tx.step &&
