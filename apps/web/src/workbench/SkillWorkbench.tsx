@@ -184,7 +184,9 @@ export function SkillWorkbench({
     [catalog, query, path, zodiac, dan],
   );
   const visibleIds = useMemo(() => new Set(visible.map((node) => node.id)), [visible]);
-  const selectedNode = catalog?.nodes.find((node) => node.id === selectedNodeId) ?? null;
+  const selectedCandidate = catalog?.nodes.find((node) => node.id === selectedNodeId) ?? null;
+  const selectedNode =
+    selectedCandidate && visibleIds.has(selectedCandidate.id) ? selectedCandidate : null;
   const selectedPath = SKILL_PATHS.find((item) => item.id === path)!;
   const counts = catalog && configuration ? loadoutCounts(catalog.nodes, configuration) : null;
 
@@ -331,6 +333,9 @@ export function SkillWorkbench({
         <p role="status" aria-label="検索結果">
           {selectedPath.name}: {visible.length}/72 枠が検索条件に一致
         </p>
+        <p className="muted">
+          非該当の枠は座標確認のため薄く表示し、操作できません。条件を解除すると再び選べます。
+        </p>
 
         <div className="skill-matrix-scroll" tabIndex={0} aria-label={`${selectedPath.name} 72枠`}>
           <table className="skill-matrix">
@@ -359,15 +364,19 @@ export function SkillWorkbench({
                     const node = nodesByCoordinate.get(`${rank.dan}:${animal.id}`);
                     if (!node) return <td key={animal.id}>欠落</td>;
                     const state = workbenchNodeState(node, configuration!);
+                    const matches = visibleIds.has(node.id);
                     return (
                       <td
                         key={animal.id}
                         data-state={state.status}
-                        data-match={visibleIds.has(node.id)}
+                        data-match={matches}
                       >
                         <button
                           type="button"
                           aria-pressed={selectedNodeId === node.id}
+                          aria-disabled={!matches}
+                          disabled={!matches}
+                          tabIndex={matches ? 0 : -1}
                           onClick={() => setSelectedNodeId(node.id)}
                         >
                           <strong>{node.name}</strong>

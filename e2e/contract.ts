@@ -10,6 +10,8 @@ export const UI_CASES = [
   'battle-cancel-retry',
   'battle-truncated-result',
   'battle-api-error',
+  'skill-workbench-desktop',
+  'skill-workbench-mobile',
 ] as const;
 export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
 export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics', 'ui:static-replay'] as const;

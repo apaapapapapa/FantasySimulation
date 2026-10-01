@@ -298,6 +298,9 @@ h1 {
 .skill-matrix td[data-match='false'] {
   opacity: 0.32;
 }
+.skill-matrix td[data-match='false'] > button {
+  pointer-events: none;
+}
 .skill-matrix td[data-state='enabled'] {
   background: #302a20;
 }
