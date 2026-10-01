@@ -94,7 +94,10 @@ export function applyDependents(
     );
     let result = final?.after;
     let simultaneous:
-      | { before: NonNullable<(typeof anchors)[number]['before']>; after: NonNullable<(typeof anchors)[number]['after']> }
+      | {
+          before: NonNullable<(typeof anchors)[number]['before']>;
+          after: NonNullable<(typeof anchors)[number]['after']>;
+        }
       | undefined;
     for (const anchor of anchors) {
       const continues = !!result && same(anchor.before, result);
@@ -102,7 +105,10 @@ export function applyDependents(
         !!simultaneous &&
         same(anchor.before, simultaneous.before) &&
         same(anchor.after, simultaneous.after);
-      requireReplay(continues || repeatsSimultaneousResult, 'dependent owner resource continuation');
+      requireReplay(
+        continues || repeatsSimultaneousResult,
+        'dependent owner resource continuation',
+      );
       if (continues) {
         simultaneous = { before: anchor.before!, after: anchor.after! };
         result = anchor.after;
@@ -111,10 +117,7 @@ export function applyDependents(
     const delta = record.changes.find((change) => change.id === ownerId);
     const recorded =
       delta?.resources ?? prior.state?.actors.find((actor) => actor.id === ownerId)?.resources;
-    requireReplay(
-      !!result && same(result, recorded),
-      'dependent owner resource result',
-    );
+    requireReplay(!!result && same(result, recorded), 'dependent owner resource result');
   }
   requireReplay(
     new Set(changes.spawn.map((d) => d.id)).size === changes.spawn.length &&

@@ -159,13 +159,15 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     const record = records[recordIndex];
     if (!record || !('changes' in record)) throw new Error('Missing followed resource record');
     const dependent = record.events.find((event, index, events) =>
-      events.slice(index + 1).some(
-        (later) =>
-          !!later.before &&
-          !!later.after &&
-          later.targetId === event.actorId &&
-          !['cost', 'resource', 'dependent-command'].includes(later.kind),
-      ),
+      events
+        .slice(index + 1)
+        .some(
+          (later) =>
+            !!later.before &&
+            !!later.after &&
+            later.targetId === event.actorId &&
+            !['cost', 'resource', 'dependent-command'].includes(later.kind),
+        ),
     );
     const anchor = record.events.find(
       (event) =>
