@@ -64,9 +64,7 @@ export function executionEligibility(manifest: StoredManifest): ExecutionEligibi
     };
   if (
     manifest.schemaVersion < 9 &&
-    manifest.revisions.some(
-      (revision) => revision.kind === 'ability' && revision.definition.summon,
-    )
+    manifest.revisions.some((revision) => revision.kind === 'ability' && revision.definition.summon)
   )
     return {
       executable: false,
