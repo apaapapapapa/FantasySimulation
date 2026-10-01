@@ -24,6 +24,7 @@ import {
   readIntegratedStartupSkillCatalog,
   readIntegratedStartupSkillCatalogV2,
   readIntegratedStartupSkillCatalogV3,
+  readIntegratedStartupSkillCatalogV5,
   readPreviousIntegratedStartupSkillCatalog,
   readStartupSkillCatalog,
 } from './startup-skill-catalog.ts';
@@ -44,6 +45,11 @@ const historicalCatalogSignatures = {
     digest: 'sha256:3d6df8e9f07c2bfa492fbfdab80b5acb8937d168826331c6bbdd1f33179ef968',
     canonicalBytes: 777_669,
     lifecycle: { available: 28, implemented: 3, draft: 1_121, retired: 0 },
+  },
+  5: {
+    digest: 'sha256:153c28b31dc5dceb759210ed23bd80d38d3d6a2573bfb7f40feabf273bbc3e47',
+    canonicalBytes: 777_871,
+    lifecycle: { available: 29, implemented: 3, draft: 1_120, retired: 0 },
   },
 } as const;
 afterEach(() => {
@@ -94,6 +100,22 @@ async function runAndReplay(
     restored = new ReplayState(context);
   for (const record of run.records) restored.apply(record);
   return { battle, run, context, restored };
+}
+
+async function seededCharacterAbility(characterId: string, abilityId: string) {
+  const store = openStore(':memory:');
+  stores.push(store);
+  const seeded = await seedStartupData(store),
+    revisions = parseJson(RevisionSchema.array(), readSampleRevisions()),
+    character = revisions.find(
+      (revision) => revision.kind === 'character' && revision.id === characterId,
+    ),
+    ability = revisions.find(
+      (revision) => revision.kind === 'ability' && revision.id === abilityId,
+    );
+  if (character?.kind !== 'character') throw new Error(`Missing ${characterId} fixture`);
+  if (ability?.kind !== 'ability') throw new Error(`Missing ${abilityId} fixture`);
+  return { store, seeded, revisions, character, ability };
 }
 
 describe('production startup skill catalog', () => {
@@ -168,7 +190,7 @@ describe('production startup skill catalog', () => {
       second = await seedStartupData(store);
     expect(second.skillCatalog.reference).toEqual(first.skillCatalog.reference);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 5,
+      count: 6,
     });
     const changed = structuredClone(first.skillCatalog.catalog);
     changed.nodes[0]!.name = 'Changed immutable startup node';
@@ -178,14 +200,14 @@ describe('production startup skill catalog', () => {
 
     const app = createApp(store);
     stores.pop();
-    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/5');
+    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/6');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       reference: first.skillCatalog.reference,
-      catalog: { id: 'skill-catalog-v1', revision: 5 },
+      catalog: { id: 'skill-catalog-v1', revision: 6 },
     });
     expect(response.json().catalog.nodes).toHaveLength(1_152);
-    for (const revision of [2, 3, 4]) {
+    for (const revision of [2, 3, 4, 5]) {
       const previous = await app.inject(`/api/skill-catalogs/skill-catalog-v1/${revision}`);
       expect(previous.statusCode).toBe(200);
       expect(previous.json()).toMatchObject({
@@ -205,7 +227,7 @@ describe('production startup skill catalog', () => {
     await app.close();
   });
 
-  it('reconstructs immutable v2, v3 and v4 before seeding v5', async () => {
+  it('preserves immutable v2 through v5 before seeding v6', async () => {
     const store = openStore(':memory:'),
       revisions = readSampleRevisions();
     stores.push(store);
@@ -213,7 +235,8 @@ describe('production startup skill catalog', () => {
     const skills = new SkillStore(store),
       historicalV2Catalog = readIntegratedStartupSkillCatalogV2(revisions),
       historicalV3Catalog = readIntegratedStartupSkillCatalogV3(revisions),
-      historicalV4Catalog = readPreviousIntegratedStartupSkillCatalog(revisions);
+      historicalV4Catalog = readPreviousIntegratedStartupSkillCatalog(revisions),
+      historicalV5Catalog = readIntegratedStartupSkillCatalogV5(revisions);
     expect(await catalogHistorySignature(historicalV2Catalog)).toEqual(
       historicalCatalogSignatures[2],
     );
@@ -237,30 +260,41 @@ describe('production startup skill catalog', () => {
     expect(await catalogHistorySignature(historicalV4Catalog)).toEqual(
       historicalCatalogSignatures[4],
     );
+    expect(await catalogHistorySignature(historicalV5Catalog)).toEqual(
+      historicalCatalogSignatures[5],
+    );
     const previousV2 = await skills.seedCatalog(historicalV2Catalog),
       previousV3 = await skills.seedCatalog(historicalV3Catalog),
       previousV4 = await skills.seedCatalog(historicalV4Catalog),
+      previousV5 = await skills.seedCatalog(historicalV5Catalog),
       seeded = await seedStartupData(store);
 
     expect(seeded.skillCatalog.reference).toMatchObject({
       id: 'skill-catalog-v1',
-      revision: 5,
+      revision: 6,
     });
     expect(await skills.catalog('skill-catalog-v1', 2)).toEqual(previousV2);
     expect(await skills.catalog('skill-catalog-v1', 3)).toEqual(previousV3);
     expect(await skills.catalog('skill-catalog-v1', 4)).toEqual(previousV4);
+    expect(await skills.catalog('skill-catalog-v1', 5)).toEqual(previousV5);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 5,
+      count: 6,
     });
     expect(
       await catalogHistorySignature((await skills.catalog('skill-catalog-v1', 2))!.catalog),
     ).toEqual(historicalCatalogSignatures[2]);
+    expect(
+      await catalogHistorySignature((await skills.catalog('skill-catalog-v1', 5))!.catalog),
+    ).toEqual(historicalCatalogSignatures[5]);
     expect(changedNodeIds(historicalV2Catalog, historicalV3Catalog)).toEqual(['skill.shield.ox.1']);
     expect(changedNodeIds(historicalV3Catalog, historicalV4Catalog)).toEqual([
       'skill.aikido.dog.1',
     ]);
-    expect(changedNodeIds(historicalV4Catalog, seeded.skillCatalog.catalog)).toEqual([
+    expect(changedNodeIds(historicalV4Catalog, historicalV5Catalog)).toEqual([
       'skill.magic.rooster.2',
+    ]);
+    expect(changedNodeIds(historicalV5Catalog, seeded.skillCatalog.catalog)).toEqual([
+      'skill.archery.rat.1',
     ]);
     const lifecycle = (revision: number, nodeId: string) =>
       skills
@@ -272,6 +306,8 @@ describe('production startup skill catalog', () => {
     await expect(lifecycle(4, 'skill.aikido.dog.1')).resolves.toBe('available');
     await expect(lifecycle(4, 'skill.magic.rooster.2')).resolves.toBe('draft');
     await expect(lifecycle(5, 'skill.magic.rooster.2')).resolves.toBe('available');
+    await expect(lifecycle(5, 'skill.archery.rat.1')).resolves.toBe('implemented');
+    await expect(lifecycle(6, 'skill.archery.rat.1')).resolves.toBe('available');
   });
 
   it('integrates fourteen authored paths while keeping unfinished coordinates unavailable', () => {
@@ -280,16 +316,17 @@ describe('production startup skill catalog', () => {
       release = inspectIntegratedStartupSkillCatalog(catalog, revisions),
       available = catalog.nodes.filter(({ lifecycle }) => lifecycle === 'available');
 
-    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 5 });
+    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 6 });
     expect(catalog.nodes).toHaveLength(1_152);
     expect(release).toEqual({
-      lifecycle: { available: 29, implemented: 3, draft: 1_120, retired: 0 },
-      available: 29,
-      verified: 29,
+      lifecycle: { available: 30, implemented: 2, draft: 1_120, retired: 0 },
+      available: 30,
+      verified: 30,
       releaseReady: false,
       issues: [],
     });
     expect(available.filter(({ coordinate }) => coordinate.path === 'sword')).toHaveLength(6);
+    expect(available.filter(({ coordinate }) => coordinate.path === 'archery')).toHaveLength(1);
     expect(available.filter(({ coordinate }) => coordinate.path === 'spear')).toHaveLength(1);
     expect(available.filter(({ coordinate }) => coordinate.path === 'shield')).toHaveLength(1);
     expect(available.filter(({ coordinate }) => coordinate.path === 'aikido')).toHaveLength(1);
@@ -341,17 +378,130 @@ describe('production startup skill catalog', () => {
     ).toEqual(STARTUP_SKILL_ABILITY_IDS);
   });
 
-  it('carries the existing spear selection through saved loadout, battle AI, and replay', async () => {
-    const store = openStore(':memory:');
-    stores.push(store);
-    const seeded = await seedStartupData(store),
-      revisions = parseJson(RevisionSchema.array(), readSampleRevisions()),
-      character = revisions.find(
-        (revision) => revision.kind === 'character' && revision.id === 'swordsman',
+  it('runs fixture.skill.archery.rat.1.runtime only after saved selection and replays its damage', async () => {
+    const {
+      store,
+      seeded,
+      revisions,
+      character,
+      ability: arrow,
+    } = await seededCharacterAbility('swordsman', 'arrow');
+    const policy = revisions.find(
+      (revision) =>
+        revision.kind === 'policy' &&
+        revision.id === character.definition.policy.id &&
+        revision.revision === character.definition.policy.revision,
+    );
+    if (policy?.kind !== 'policy') throw new Error('Missing swordsman policy fixture');
+    expect(character.definition.abilities.map(({ id }) => id)).not.toContain(arrow.id);
+    expect(policy.definition.priorities.map(({ abilityId }) => abilityId)).not.toContain(arrow.id);
+
+    const negativeManifest = await catalogManifest('swordsman', 'swordsman', 'flat', 400, 228),
+      negative = await runAndReplay(negativeManifest, arrow),
+      negativeEvents = negative.run.records.flatMap((record) =>
+        'events' in record ? record.events : [],
+      );
+    expect(negative.context.actors[0]!.abilities.map(({ id }) => id)).not.toContain(arrow.id);
+    expect(
+      negativeEvents.some(
+        (event) =>
+          event.kind === 'launch' && event.actorId === 'left' && event.abilityId === arrow.id,
       ),
-      spear = revisions.find((revision) => revision.kind === 'ability' && revision.id === 'spear');
-    if (character?.kind !== 'character') throw new Error('Missing swordsman fixture');
-    if (spear?.kind !== 'ability') throw new Error('Missing spear fixture');
+    ).toBe(false);
+    expect(
+      negativeEvents.some(
+        (event) =>
+          event.kind === 'damage' && event.actorId === 'left' && event.abilityId === arrow.id,
+      ),
+    ).toBe(false);
+
+    const nodeId = 'skill.archery.rat.1',
+      skills = new SkillStore(store),
+      created = await skills.create({
+        character: revisionReference(character),
+        configuration: {
+          schemaVersion: 1,
+          id: 'loadout.integrated.archery-rat-foundation',
+          version: 1,
+          catalog: seeded.skillCatalog.reference,
+          eligibilityNodeIds: [nodeId],
+          learnedNodeIds: [nodeId],
+          enabledNodeIds: [nodeId],
+        },
+      }),
+      reloaded = await skills.revision(created.latest),
+      manifest = await catalogManifest('swordsman', 'swordsman', 'flat', 400, 228);
+    manifest.participants[0]!.skillLoadout = await skillBattleReceipt(reloaded);
+    const actual = await runAndReplay(manifest, arrow),
+      actualEvents = actual.run.records.flatMap((record) =>
+        'events' in record ? record.events : [],
+      ),
+      arrowLaunches = actualEvents.filter(
+        (event) =>
+          event.kind === 'launch' && event.actorId === 'left' && event.abilityId === arrow.id,
+      ),
+      arrowDamage = actualEvents.filter(
+        (event) =>
+          event.kind === 'damage' && event.actorId === 'left' && event.abilityId === arrow.id,
+      );
+
+    expect(reloaded.resolved).toMatchObject({
+      explicitlyEnabledNodeIds: [nodeId],
+      resolvedNodeIds: [nodeId],
+      nodeResolutions: [
+        {
+          nodeId,
+          resolution: [{ kind: 'active-ability', ability: revisionReference(arrow) }],
+        },
+      ],
+    });
+    expect(actual.context.manifest.participants[0]!.skillLoadout).toMatchObject({
+      catalog: seeded.skillCatalog.reference,
+      resolvedNodeIds: [nodeId],
+    });
+    expect(actual.context.actors[0]!.abilities.map(({ id }) => id)).toContain(arrow.id);
+    expect(arrowLaunches.length).toBeGreaterThan(0);
+    expect(arrowDamage.length).toBeGreaterThan(0);
+    const replayedRight = actual.restored
+      .checkpoint()
+      .state!.actors.find(({ id }) => id === 'right')!;
+    expect(replayedRight.resources.hp).toBeLessThan(100);
+    expect(replayedRight.resources.hp).toBe(
+      100 -
+        actualEvents
+          .filter((event) => event.kind === 'damage' && event.targetId === 'right')
+          .reduce((total, event) => total + (event.amount ?? 0), 0),
+    );
+    expect(actual.restored).toMatchObject({ ended: true, step: actual.run.result.steps });
+
+    const archeryRat = seeded.skillCatalog.catalog.nodes.filter(
+      ({ coordinate }) => coordinate.path === 'archery' && coordinate.zodiac === 'rat',
+    );
+    expect(archeryRat[0]).toMatchObject({
+      id: nodeId,
+      lifecycle: 'available',
+      deepening: { retainsLowerUse: true },
+    });
+    expect(archeryRat.slice(4)).toHaveLength(2);
+    expect(
+      archeryRat
+        .slice(4)
+        .every(
+          ({ lifecycle, deepening }) =>
+            lifecycle === 'draft' &&
+            deepening.retainsLowerUse &&
+            Boolean(deepening.conditionOrTradeoff),
+        ),
+    ).toBe(true);
+  });
+
+  it('carries the existing spear selection through saved loadout, battle AI, and replay', async () => {
+    const {
+      store,
+      seeded,
+      character,
+      ability: spear,
+    } = await seededCharacterAbility('swordsman', 'spear');
 
     const nodeId = 'skill.spear.rat.1',
       created = await new SkillStore(store).create({

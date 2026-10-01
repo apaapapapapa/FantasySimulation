@@ -505,19 +505,14 @@ const branches = [
 
 const evidence = {
   'skill.archery.rat.1': {
-    status: 'definition-only',
+    status: 'proven',
     ability: {
       id: 'arrow',
       revision: 1,
       contentHash: 'sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81',
     },
-    fixtureIds: ['projectile-golden', 'stage-single-projectile'],
-    evidenceFiles: [
-      'packages/engine/src/spatial/projectiles.test.ts',
-      'packages/engine/src/spatial/stages.test.ts',
-    ],
-    releaseBlocker:
-      'Needs an archery-specific AI, saved battle and replay fixture before availability.',
+    fixtureIds: ['fixture.skill.archery.rat.1.runtime'],
+    evidenceFiles: ['apps/api/src/db/startup-data.test.ts'],
   },
 } as const satisfies PathEvidence;
 

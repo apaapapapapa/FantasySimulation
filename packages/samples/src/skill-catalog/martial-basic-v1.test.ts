@@ -89,13 +89,16 @@ describe('basic martial skill catalog authoring', () => {
     const available = [...nodes.values()].filter(({ lifecycle }) => lifecycle === 'available');
     expect(available.map(({ id }) => id)).toEqual([
       ...SKILL_DANS.map(({ dan }) => `skill.sword.rat.${dan}`),
+      'skill.archery.rat.1',
       'skill.shield.ox.1',
     ]);
     expect(
-      [...nodes.values()].filter(
-        ({ coordinate, lifecycle }) => coordinate.path === 'archery' && lifecycle === 'available',
-      ),
-    ).toEqual([]);
+      [...nodes.values()]
+        .filter(
+          ({ coordinate, lifecycle }) => coordinate.path === 'archery' && lifecycle === 'available',
+        )
+        .map(({ id }) => id),
+    ).toEqual(['skill.archery.rat.1']);
   });
 
   it('pins executable references to the current catalog and named fixtures', () => {
@@ -123,9 +126,10 @@ describe('basic martial skill catalog authoring', () => {
       for (const fixtureId of evidence.fixtureIds) {
         if (evidence.status === 'proven') {
           const swordFixture = /^fixture\.skill\.sword\.rat\.[1-6]\.action$/.test(fixtureId),
+            archeryFixture = fixtureId === 'fixture.skill.archery.rat.1.runtime',
             shieldGuardFixture =
               /^fixture\.skill\.shield\.ox\.1\.guard-(?:battle|replay|viewer)$/.test(fixtureId);
-          if (!swordFixture && !shieldGuardFixture)
+          if (!swordFixture && !archeryFixture && !shieldGuardFixture)
             evidenceIssues.push(`${fixtureId}: unexpected proven fixture`);
           if (
             swordFixture &&
@@ -133,6 +137,8 @@ describe('basic martial skill catalog authoring', () => {
           )
             evidenceIssues.push(`${fixtureId}: fixture generator not evidenced`);
           if (shieldGuardFixture && !evidenceSources.join('\n').includes(fixtureId))
+            evidenceIssues.push(`${fixtureId}: exact fixture not evidenced`);
+          if (archeryFixture && !evidenceSources.join('\n').includes(fixtureId))
             evidenceIssues.push(`${fixtureId}: exact fixture not evidenced`);
         } else if (!(fixtureId in corpus.tests) && !evidenceSources.join('\n').includes(fixtureId))
           evidenceIssues.push(`${fixtureId}: missing corpus fixture`);

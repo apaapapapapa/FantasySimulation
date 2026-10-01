@@ -293,7 +293,7 @@ describe('mystic path catalog content', () => {
       integratedSkillShards
         .flatMap(({ nodes }) => nodes)
         .filter(({ lifecycle }) => lifecycle === 'available'),
-    ).toHaveLength(29);
+    ).toHaveLength(30);
 
     const { manifest, snapshot } = await savedFixtureManifest(fixture),
       run = await runBattle(manifest),

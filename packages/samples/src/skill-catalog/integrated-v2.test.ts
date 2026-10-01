@@ -12,8 +12,8 @@ describe('integrated startup skill shards', () => {
     expect(nodes).toHaveLength(1_008);
     expect(new Set(nodes.map(({ id }) => id)).size).toBe(1_008);
     expect(new Set(nodes.map(({ coordinate }) => skillCoordinateKey(coordinate))).size).toBe(1_008);
-    expect(nodes.filter(({ lifecycle }) => lifecycle === 'available')).toHaveLength(29);
-    expect(nodes.filter(({ lifecycle }) => lifecycle === 'implemented')).toHaveLength(3);
+    expect(nodes.filter(({ lifecycle }) => lifecycle === 'available')).toHaveLength(30);
+    expect(nodes.filter(({ lifecycle }) => lifecycle === 'implemented')).toHaveLength(2);
     expect(nodes.filter(({ lifecycle }) => lifecycle === 'draft')).toHaveLength(976);
   });
 
@@ -27,6 +27,7 @@ describe('integrated startup skill shards', () => {
     expect(available).toEqual(
       [
         ...[1, 2, 3, 4, 5, 6].map((dan) => `skill.sword.rat.${dan}`),
+        'skill.archery.rat.1',
         'skill.aikido.dog.1',
         'skill.spear.rat.1',
         'skill.shield.ox.1',
