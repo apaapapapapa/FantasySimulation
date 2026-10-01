@@ -13,6 +13,7 @@ import {
   type BattleResult,
   hasSensoryCues,
   hasDependentSummons,
+  hasEnvironmentalHolograms,
 } from '@fantasy/domain/spatial/execution';
 import { initialActor, decisionState, displayActor } from './sim/combat-state.ts';
 import { Journal, recordBytes } from './rules/journal.ts';
@@ -117,7 +118,8 @@ export function* simulate(
       kind: 'initial',
       ...(battle.rules.experimental?.mechanics.includes('time-stop') ||
       hasSensoryCues(battle.manifest.revisions) ||
-      hasDependentSummons(battle.manifest.revisions)
+      hasDependentSummons(battle.manifest.revisions) ||
+      hasEnvironmentalHolograms(battle.manifest.revisions)
         ? {
             requiredFeatures: [
               'subject-clocks-v1',
@@ -126,13 +128,23 @@ export function* simulate(
               ...(hasDependentSummons(battle.manifest.revisions)
                 ? (['dependent-entities-v1'] as const)
                 : []),
+              ...(hasEnvironmentalHolograms(battle.manifest.revisions)
+                ? (['environmental-holograms-v1'] as const)
+                : []),
             ],
           }
         : {}),
       schemaVersion: 1,
       step: 0,
       state: {
-        actors: actors.map((a) => displayActor(a, 0, hasSensoryCues(battle.manifest.revisions))),
+        actors: actors.map((a) =>
+          displayActor(
+            a,
+            0,
+            hasSensoryCues(battle.manifest.revisions),
+            hasEnvironmentalHolograms(battle.manifest.revisions),
+          ),
+        ),
         projectiles: [],
         ...(hasDependentSummons(battle.manifest.revisions) ? { dependents: [] } : {}),
       },

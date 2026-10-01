@@ -162,6 +162,7 @@ export type DecisionView = {
   staminaExhausted: boolean;
   statusIds: readonly string[];
   memory: PerceptionMemory;
+  sensorView?: { environmentalHolograms: readonly EnvironmentalHologram[] };
   step: number;
   gravityMmPerSecond2: number;
   used: Readonly<Record<string, number>>;
@@ -297,6 +298,24 @@ export type SensoryCue = {
   deliveryRecorded?: true;
 };
 
+export type EnvironmentalHologram = {
+  id: string;
+  creatorId: string;
+  observerId: string;
+  observerIds: [string];
+  modality: 'visual';
+  perceivedPosition: Vec3;
+  state: 'active-unobserved' | 'observed' | 'invalidated';
+  activatedAt: number;
+  observedAt: number;
+  invalidatedAt: number;
+  expiresAt: number;
+};
+
+export type ActorSensorState = {
+  environmentalHolograms: EnvironmentalHologram[];
+};
+
 export type ActorClock = {
   pausedSteps: number;
   periods: { from: number; to: number }[];
@@ -309,6 +328,7 @@ export type ActorState = {
   statuses: StatusCohort[];
   actions: ActorActionState;
   mind: ActorMindState;
+  sensors: ActorSensorState;
 };
 export type DependentState = {
   id: string;

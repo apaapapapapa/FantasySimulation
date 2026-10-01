@@ -180,6 +180,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
   reveal: deferredEffect,
   force: deferredEffect,
   'sensory-cue': deferredEffect,
+  'environmental-hologram': deferredEffect,
 };
 /** Simultaneous defense/resistance/shield resolution with exact attribution and one HP clamp. */
 export function resolveEffects(

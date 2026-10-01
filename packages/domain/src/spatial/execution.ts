@@ -21,3 +21,4 @@ export * from './phasing-display.ts';
 export * from './angles.ts';
 export * from './clocks.ts';
 export * from './sensory-cues.ts';
+export * from './environmental-holograms.ts';

@@ -76,6 +76,9 @@ export function choosePolicy(
     : view;
   const actor = view.self.actor,
     target = view.memory.observation?.enemy ?? view.memory.lastSeen;
+  const sensorGoal = [...(view.sensorView?.environmentalHolograms ?? [])].sort((a, b) =>
+    compareIds(a.id, b.id),
+  )[0];
   const toward = target ? sub(target.position, view.self.position) : { ...ZERO };
   let facing = length(toward) > 1e-12 ? unit(toward) : { ...view.self.facing };
   const candidates: CandidateAssessment[] = [],
@@ -128,6 +131,11 @@ export function choosePolicy(
   let directions = dodgeOptions(view, flight, clear);
   if (!simultaneous && directions.some((d) => d.weight > 0)) candidates.push(dodgeAssessment(view));
   let goal = movementGoal(view, facing, flight);
+  if (sensorGoal && actor.policy.movement !== 'hold') {
+    goal = { ...sensorGoal.perceivedPosition };
+    const direction = sub(goal, view.self.position);
+    if (length(direction) > 1e-12) facing = unit(direction);
+  }
   const search = chooseSearch(view, random.search);
   if (search?.goal) {
     goal = search.goal;
@@ -316,6 +324,14 @@ export function choosePolicy(
             z: Math.round(target.position.z * 1000),
           }
         : null,
+      ...(sensorGoal
+        ? {
+            sensorGoal: {
+              entityId: sensorGoal.id,
+              positionMm: vectorUnits(sensorGoal.perceivedPosition, 1000),
+            },
+          }
+        : {}),
       observedProjectiles: (observation?.projectiles ?? []).map((p) => p.id).sort(compareIds),
       ...(observation?.spatial
         ? {

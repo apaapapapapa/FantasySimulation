@@ -1,4 +1,9 @@
-import { closureMechanics, hasDependentSummons, hasSensoryCues } from './mechanic-uses.ts';
+import {
+  closureMechanics,
+  hasDependentSummons,
+  hasEnvironmentalHolograms,
+  hasSensoryCues,
+} from './mechanic-uses.ts';
 import {
   advanceDeferred,
   advanceStopReplay,
@@ -34,6 +39,7 @@ import { validateEvents } from './replay-validation/event.ts';
 import { validateInterferences } from './replay-validation/interference.ts';
 import { validateSensoryCues } from './replay-validation/sensory-cue.ts';
 import { applyDependents, validateDependent } from './replay-validation/dependent.ts';
+import { validateEnvironmentalHolograms } from './replay-validation/environmental-hologram.ts';
 
 /** Atomic display restoration. This is not an engine resume snapshot or combat re-simulation. */
 export class ReplayState {
@@ -98,6 +104,11 @@ export class ReplayState {
         requireReplay(
           v.requiredFeatures?.includes('dependent-entities-v1') === true,
           'missing dependent checkpoint feature',
+        );
+      if (hasEnvironmentalHolograms(context.manifest.revisions))
+        requireReplay(
+          v.requiredFeatures?.includes('environmental-holograms-v1') === true,
+          'missing environmental hologram checkpoint feature',
         );
       requireReplay(
         v.nextRecord >= v.step + 1 && v.nextRecord <= 2 * v.step + 3,
@@ -293,6 +304,11 @@ export class ReplayState {
           record.requiredFeatures?.includes('dependent-entities-v1') === true,
           'missing dependent replay feature',
         );
+      if (hasEnvironmentalHolograms(this.context.manifest.revisions))
+        requireReplay(
+          record.requiredFeatures?.includes('environmental-holograms-v1') === true,
+          'missing environmental hologram replay feature',
+        );
       requireReplay(
         prior.state === null &&
           record.state.projectiles.length === 0 &&
@@ -419,6 +435,7 @@ export class ReplayState {
       validateEvents(this.context, this.value, record, entities);
     }
     validateSensoryCues(this.context, prior, state, record);
+    validateEnvironmentalHolograms(this.context, prior, state, record);
     validateRevivalCounts(prior.state?.actors, state.actors, record);
     validateImmortalityCounts(prior.state?.actors, state.actors, record);
     validateClocks(

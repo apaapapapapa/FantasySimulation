@@ -33,6 +33,28 @@ export const SensoryCueDisplaySchema = z.strictObject({
   discoveredAt: z.number().int().min(1).max(7000),
   confidenceBps: z.number().int().min(1).max(10000),
 });
+export const EnvironmentalHologramDisplaySchema = z
+  .strictObject({
+    id: IdSchema,
+    creatorId: IdSchema,
+    observerId: IdSchema,
+    observerIds: z.array(IdSchema).length(1),
+    modality: z.literal('visual'),
+    perceivedPosition: PhysicalVectorSchema,
+    state: z.enum(['active-unobserved', 'observed', 'invalidated']),
+    activatedAt: step,
+    observedAt: z.number().int().min(1).max(7000),
+    invalidatedAt: z.number().int().min(1).max(7000),
+    expiresAt: z.number().int().min(1).max(7000),
+  })
+  .refine(
+    (hologram) =>
+      hologram.observerIds[0] === hologram.observerId &&
+      hologram.activatedAt < hologram.observedAt &&
+      hologram.observedAt < hologram.invalidatedAt &&
+      hologram.invalidatedAt < hologram.expiresAt,
+    'Environmental hologram observer and lifecycle binding',
+  );
 export const ResourceStateSchema = z.strictObject({
   hp: count,
   mp: count,
@@ -154,6 +176,7 @@ export const EventSchema = z
       'time-stop',
       'teleport',
       'sensory-cue',
+      'environmental-hologram',
       'dependent-create',
       'dependent-command',
       'dependent-act',
@@ -245,6 +268,9 @@ export const EventSchema = z
     sensoryCue: SensoryCueDisplaySchema.extend({
       transition: z.enum(['emitted', 'delivered', 'discovered', 'cleansed', 'expired']),
     }).optional(),
+    environmentalHologram: EnvironmentalHologramDisplaySchema.extend({
+      transition: z.enum(['activated', 'observed', 'invalidated', 'expired']),
+    }).optional(),
     dependent: z
       .strictObject({
         transition: z.enum(['create', 'command', 'act', 'despawn']),
@@ -302,6 +328,18 @@ export const EventSchema = z
       ctx.addIssue({
         code: 'custom',
         message: 'Sensory cue events require bound creator, observer and cue identity',
+      });
+    if (
+      (event.kind === 'environmental-hologram') !== !!event.environmentalHologram ||
+      (event.environmentalHologram &&
+        (event.entityId !== event.environmentalHologram.id ||
+          event.actorId !== event.environmentalHologram.creatorId ||
+          event.targetId !== event.environmentalHologram.observerId ||
+          event.actorId === event.targetId))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Environmental hologram events require bound creator, observer and identity',
       });
     if (
       (event.kind === 'time-stop') !== !!event.timeStop ||

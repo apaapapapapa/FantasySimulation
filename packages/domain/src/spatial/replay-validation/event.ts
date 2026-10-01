@@ -67,7 +67,9 @@ export function validateEvents(
         );
     if (e.entityId !== null)
       requireReplay(
-        entities.has(e.entityId) || (e.kind === 'sensory-cue' && e.sensoryCue?.id === e.entityId),
+        entities.has(e.entityId) ||
+          (e.kind === 'sensory-cue' && e.sensoryCue?.id === e.entityId) ||
+          (e.kind === 'environmental-hologram' && e.environmentalHologram?.id === e.entityId),
         'event entity reference',
       );
     if (e.sensoryCue) {
@@ -88,6 +90,30 @@ export function validateEvents(
         'sensory cue transition',
       );
     } else requireReplay(e.kind !== 'sensory-cue', 'missing sensory cue event');
+    if (e.environmentalHologram) {
+      const hologram = e.environmentalHologram;
+      requireReplay(
+        e.kind === 'environmental-hologram' &&
+          e.entityId === hologram.id &&
+          e.actorId === hologram.creatorId &&
+          e.targetId === hologram.observerId &&
+          hologram.creatorId !== hologram.observerId &&
+          hologram.observerIds.length === 1 &&
+          hologram.observerIds[0] === hologram.observerId &&
+          e.step >= hologram.activatedAt &&
+          (hologram.transition === 'activated'
+            ? hologram.state === 'active-unobserved'
+            : hologram.transition === 'observed'
+              ? hologram.state === 'observed'
+              : hologram.state === 'invalidated') &&
+          (hologram.transition !== 'activated' || e.step === hologram.activatedAt) &&
+          (hologram.transition !== 'observed' || e.step === hologram.observedAt) &&
+          (hologram.transition !== 'invalidated' || e.step === hologram.invalidatedAt) &&
+          (hologram.transition !== 'expired' || e.step === hologram.expiresAt),
+        'environmental hologram transition',
+      );
+    } else
+      requireReplay(e.kind !== 'environmental-hologram', 'missing environmental hologram event');
     for (const receipt of e.timeStop?.captured ?? []) {
       validateDeferredDefinition(context, receipt);
       requireReplay(
