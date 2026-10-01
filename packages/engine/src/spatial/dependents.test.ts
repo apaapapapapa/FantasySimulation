@@ -135,7 +135,7 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     if (!owner?.resources) throw new Error('Missing owner resource delta');
     owner.resources.mp += 1;
   });
-  {
+  for (const mutation of ['delta', 'anchor-and-delta'] as const) {
     const records = structuredClone(run.records);
     const recordIndex = records.findIndex((candidate) => {
       if (!('changes' in candidate)) return false;
@@ -158,11 +158,31 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     });
     const record = records[recordIndex];
     if (!record || !('changes' in record)) throw new Error('Missing followed resource record');
-    const dependent = record.events.find(
-      (event) => event.kind === 'dependent-command' || event.ruleId === 'dependent.upkeep',
+    const dependent = record.events.find((event, index, events) =>
+      events.slice(index + 1).some(
+        (later) =>
+          !!later.before &&
+          !!later.after &&
+          later.targetId === event.actorId &&
+          !['cost', 'resource', 'dependent-command'].includes(later.kind),
+      ),
+    );
+    const anchor = record.events.find(
+      (event) =>
+        !!dependent &&
+        event.sequence > dependent.sequence &&
+        !!event.before &&
+        !!event.after &&
+        event.targetId === dependent.actorId &&
+        !['cost', 'resource', 'dependent-command'].includes(event.kind),
     );
     const owner = record.changes.find((change) => change.id === dependent?.actorId);
-    if (!owner?.resources) throw new Error('Missing followed owner resource delta');
+    if (!anchor?.before || !anchor.after || !owner?.resources)
+      throw new Error('Missing followed owner resource delta');
+    if (mutation === 'anchor-and-delta') {
+      anchor.before.mp += 1;
+      anchor.after.mp += 1;
+    }
     owner.resources.mp += 1;
     const invalid = new ReplayState(context);
     for (const prior of records.slice(0, recordIndex)) invalid.apply(prior);

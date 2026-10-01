@@ -84,19 +84,35 @@ export function applyDependents(
       : event.targetId;
   for (const ownerId of new Set(resourceEvents.flatMap((event) => event.actorId ?? []))) {
     const final = resourceEvents.findLast((event) => event.actorId === ownerId);
-    const anchor = record.events.findLast(
+    const anchors = record.events.filter(
       (event) =>
         !!final &&
-        event.sequence >= final.sequence &&
+        event.sequence > final.sequence &&
         !!event.before &&
         !!event.after &&
         resourceSubject(event) === ownerId,
     );
+    let result = final?.after;
+    let simultaneous:
+      | { before: NonNullable<(typeof anchors)[number]['before']>; after: NonNullable<(typeof anchors)[number]['after']> }
+      | undefined;
+    for (const anchor of anchors) {
+      const continues = !!result && same(anchor.before, result);
+      const repeatsSimultaneousResult =
+        !!simultaneous &&
+        same(anchor.before, simultaneous.before) &&
+        same(anchor.after, simultaneous.after);
+      requireReplay(continues || repeatsSimultaneousResult, 'dependent owner resource continuation');
+      if (continues) {
+        simultaneous = { before: anchor.before!, after: anchor.after! };
+        result = anchor.after;
+      }
+    }
     const delta = record.changes.find((change) => change.id === ownerId);
     const recorded =
       delta?.resources ?? prior.state?.actors.find((actor) => actor.id === ownerId)?.resources;
     requireReplay(
-      !!final?.after && !!anchor?.after && same(anchor.after, recorded),
+      !!result && same(result, recorded),
       'dependent owner resource result',
     );
   }
