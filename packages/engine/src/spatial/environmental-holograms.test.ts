@@ -4,6 +4,7 @@ import {
   StoredManifestSchema,
   StreamRecordSchema,
   DEFAULT_BUDGET,
+  environmentalHologramId,
   replayContext,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
@@ -53,11 +54,12 @@ function mutateHologramEverywhere(
 function expectReplayRejected(
   context: ConstructorParameters<typeof ReplayState>[0],
   records: StreamRecord[],
+  message: RegExp = /[Ee]nvironmental hologram/,
 ) {
   expect(() => {
     const replay = new ReplayState(context);
     records.forEach((record) => replay.apply(record));
-  }).toThrow(/[Ee]nvironmental hologram/);
+  }).toThrow(message);
 }
 
 function finalResources(records: StreamRecord[]) {
@@ -81,13 +83,70 @@ const decisionTrace = (records: StreamRecord[]) =>
           {
             actorId: event.actorId,
             step: event.step,
-            candidates: event.cognition.candidates,
+            candidates: event.cognition.candidates.map((value) => {
+              const { reason, ...candidate } = value;
+              void reason;
+              return candidate;
+            }),
             selection: event.cognition.selection,
             draws: event.cognition.draws,
           },
         ]
       : [],
   );
+
+async function enableVisibility(manifest: Awaited<ReturnType<typeof stopManifest>>) {
+  const oldRules = manifest.revisions.find(
+    (revision) => revision.kind === 'ruleset' && revision.id === manifest.ruleset.id,
+  );
+  if (!oldRules || oldRules.kind !== 'ruleset') throw new Error('Missing rules');
+  const rules = await sealRevision('ruleset', oldRules.id, oldRules.revision, {
+    ...oldRules.definition,
+    experimental: {
+      mechanics: [...oldRules.definition.experimental!.mechanics, 'visibility' as const].sort(),
+    },
+  });
+  return {
+    manifest: await ManifestBuilder.relink({ ...manifest, schemaVersion: 8 }, [
+      { from: oldRules, to: rules },
+    ]),
+    relink: { from: oldRules, to: rules },
+  };
+}
+
+async function environmentalStopManifest(hologramFirst: boolean) {
+  const effect = {
+    kind: 'environmental-hologram' as const,
+    modality: 'visual' as const,
+    offsetMm: { x: 12_000, y: 0, z: 4_000 },
+    observationSteps: 2,
+    invalidationSteps: 7,
+    durationSteps: 15,
+  };
+  let manifest = await stopManifest({
+    duration: hologramFirst ? 5 : 50,
+    steps: hologramFirst ? 40 : 80,
+    sourceAttack: {
+      effects: [effect],
+      costs: { hp: 0, mp: 0, uses: 1 },
+      cooldownSteps: 100,
+    },
+  });
+  const visibility = await enableVisibility(manifest);
+  const changes: Parameters<typeof ManifestBuilder.relink>[1][number][] = [visibility.relink];
+  if (hologramFirst) {
+    const oldPolicy = manifest.revisions.find(
+      (revision) => revision.kind === 'policy' && revision.id === 'stop-policy-0',
+    );
+    if (!oldPolicy || oldPolicy.kind !== 'policy') throw new Error('Missing source policy');
+    const policy = await sealRevision('policy', oldPolicy.id, oldPolicy.revision, {
+      ...oldPolicy.definition,
+      priorities: [...oldPolicy.definition.priorities].reverse(),
+    });
+    changes.push({ from: oldPolicy, to: policy });
+  }
+  return ManifestBuilder.relink(visibility.manifest, changes.slice(1));
+}
 
 it('records one observer sensor projection through runtime, AI and replay without an actor target', async () => {
   const battle = await prepareBattle(await environmentalHologramManifest());
@@ -251,9 +310,34 @@ it('records one observer sensor projection through runtime, AI and replay withou
     .flatMap((actor) => actor.sensorView?.environmentalHolograms ?? [])
     .find((hologram) => hologram.id === firstId);
   if (!checkpointProjection) throw new Error('Missing checkpoint projection');
+  checkpointProjection.sourcePosition.x += 1;
   checkpointProjection.perceivedPosition.x += 1;
+  const checkpointProof = checkpoint.environmentalHolograms?.find((proof) => proof.id === firstId);
+  if (!checkpointProof) throw new Error('Missing checkpoint proof');
+  checkpointProof.sourcePosition.x += 1;
   expect(() => new ReplayState(context, checkpoint)).toThrow(
-    /environmental hologram authored position/,
+    /environmental hologram checkpoint provenance binding/,
+  );
+
+  const checkpointIdentity = activeReplay.checkpoint();
+  const identityProjection = checkpointIdentity.state?.actors
+    .flatMap((actor) => actor.sensorView?.environmentalHolograms ?? [])
+    .find((hologram) => hologram.id === firstId);
+  const identityProof = checkpointIdentity.environmentalHolograms?.find(
+    (proof) => proof.id === firstId,
+  );
+  if (!identityProjection || !identityProof) throw new Error('Missing identity proof');
+  const forgedId = environmentalHologramId(
+    battle.manifest.seed,
+    identityProjection.creatorId,
+    identityProjection.observerId,
+    999,
+  );
+  identityProjection.id = forgedId;
+  identityProof.id = forgedId;
+  identityProof.activationSequence = 999;
+  expect(() => new ReplayState(context, checkpointIdentity)).toThrow(
+    /environmental hologram checkpoint provenance binding/,
   );
 
   const checkpointLifecycle = activeReplay.checkpoint();
@@ -316,22 +400,33 @@ it('fizzles an actual no-visual projection without changing AI choice, RNG, or r
     ...oldAbility.definition,
     effects: [
       {
-        kind: 'damage',
-        amount: 0,
-        attackScaleBps: 0,
-        element: 'physical',
-        defense: 'none',
+        kind: 'sensory-cue',
+        modality: 'visual',
+        offsetMm: { x: 12_000, y: 0, z: 4_000 },
+        deliverySteps: 2,
+        discoverySteps: 6,
+        durationSteps: 10,
+        confidenceBps: 10_000,
       },
     ],
   });
-  const control = await ManifestBuilder.relink(attempted, [{ from: oldAbility, to: noEffect }]);
+  let control = await ManifestBuilder.relink(attempted, [{ from: oldAbility, to: noEffect }]);
+  const controlRules = control.revisions.find(
+    (revision) => revision.kind === 'ruleset' && revision.id === control.ruleset.id,
+  );
+  if (!controlRules || controlRules.kind !== 'ruleset') throw new Error('Missing control rules');
+  const mindReadRules = await sealRevision('ruleset', controlRules.id, controlRules.revision, {
+    ...controlRules.definition,
+    experimental: {
+      mechanics: [...controlRules.definition.experimental!.mechanics, 'mind-read' as const].sort(),
+    },
+  });
+  control = await ManifestBuilder.relink(control, [{ from: controlRules, to: mindReadRules }]);
   const blind = initialStatus({
     adjustments: [{ target: 'vision', operation: 'multiply', amount: 0 }],
   });
-  for (const index of [0, 1] as const) {
-    await withInitialStatus(attempted, index, blind);
-    await withInitialStatus(control, index, blind);
-  }
+  await withInitialStatus(attempted, 1, blind);
+  await withInitialStatus(control, 1, blind);
   const fixture = await spatialTransaction({ manifest: attempted });
   try {
     const source = fixture.tx.next.actors.find(
@@ -402,6 +497,14 @@ it('fizzles an actual no-visual projection without changing AI choice, RNG, or r
   }
   const attemptedRun = await runPreparedBattle(await prepareBattle(attempted));
   const controlRun = await runPreparedBattle(await prepareBattle(control));
+  expect(
+    battleEvents(attemptedRun.records).some(
+      (event) =>
+        event.kind === 'fizzle' &&
+        event.abilityId === 'sk07-hologram' &&
+        event.reason === 'visual-sensor-disabled',
+    ),
+  ).toBe(true);
   expect(battleEvents(attemptedRun.records).some((event) => event.environmentalHologram)).toBe(
     false,
   );
@@ -479,20 +582,9 @@ it('retains the authored contact source through time-stop deferral', async () =>
     invalidationSteps: 7,
     durationSteps: 10,
   };
-  let manifest = await stopManifest({ sourceAttack: { effects: [effect] } });
-  const oldRules = manifest.revisions.find(
-    (revision) => revision.kind === 'ruleset' && revision.id === manifest.ruleset.id,
+  const { manifest } = await enableVisibility(
+    await stopManifest({ sourceAttack: { effects: [effect] } }),
   );
-  if (!oldRules || oldRules.kind !== 'ruleset') throw new Error('Missing rules');
-  const rules = await sealRevision('ruleset', oldRules.id, oldRules.revision, {
-    ...oldRules.definition,
-    experimental: {
-      mechanics: [...oldRules.definition.experimental!.mechanics, 'visibility'],
-    },
-  });
-  manifest = await ManifestBuilder.relink({ ...manifest, schemaVersion: 8 }, [
-    { from: oldRules, to: rules },
-  ]);
   const fixture = await stoppedTransaction(manifest);
   try {
     const [source, observer] = fixture.tx.next.actors;
@@ -525,6 +617,127 @@ it('retains the authored contact source through time-stop deferral', async () =>
   } finally {
     fixture.world.free();
   }
+});
+
+it('rejects coordinated capture receipt and deferred projection geometry tampering', async () => {
+  const battle = await prepareBattle(await environmentalStopManifest(false));
+  const run = await runPreparedBattle(battle);
+  const context = await replayContext(battle.manifest, run.result.simulationHash);
+  const replay = new ReplayState(context);
+  run.records.forEach((record) => replay.apply(record));
+  const events = battleEvents(run.records);
+  const receipt = events
+    .flatMap((event) => event.timeStop?.captured ?? [])
+    .find((candidate) => candidate.effect.kind === 'environmental-hologram');
+  const activated = events.find(
+    (event) => receipt && event.deferrals?.includes(receipt.id) && event.environmentalHologram,
+  );
+  expect(receipt?.sourcePosition).toEqual(activated?.environmentalHologram?.sourcePosition);
+  if (!receipt || !activated?.environmentalHologram) throw new Error('Missing deferred hologram');
+  const tampered = structuredClone(run.records);
+  for (const record of tampered)
+    if ('events' in record)
+      for (const event of record.events) {
+        const captured = event.timeStop?.captured?.find((candidate) => candidate.id === receipt.id);
+        if (captured?.sourcePosition) captured.sourcePosition.x += 1;
+        if (event.environmentalHologram?.id === activated.environmentalHologram!.id && event.point)
+          event.point.x += 1;
+      }
+  mutateHologramEverywhere(tampered, activated.environmentalHologram.id, (hologram) => {
+    hologram.sourcePosition.x += 1;
+    hologram.perceivedPosition.x += 1;
+  });
+  expectReplayRejected(context, tampered);
+});
+
+it('replays actual freeze, thaw and future-only observer lifecycle deadlines', async () => {
+  const battle = await prepareBattle(await environmentalStopManifest(true));
+  const run = await runPreparedBattle(battle);
+  const events = battleEvents(run.records);
+  const lifecycle = events.filter((event) => event.environmentalHologram);
+  const activated = lifecycle.find(
+    (event) => event.environmentalHologram?.transition === 'activated',
+  );
+  if (!activated?.environmentalHologram) throw new Error('Missing lifecycle activation');
+  const ownLifecycle = lifecycle.filter(
+    (event) => event.environmentalHologram?.id === activated.environmentalHologram!.id,
+  );
+  expect(ownLifecycle.map((event) => event.environmentalHologram!.transition)).toEqual([
+    'activated',
+    'observed',
+    'invalidated',
+    'expired',
+  ]);
+  const stopped = events.find(
+    (event) =>
+      event.timeStop?.state === 'activated' &&
+      event.targetId === activated.environmentalHologram!.observerId,
+  );
+  const released = events.find(
+    (event) =>
+      event.timeStop?.state === 'release' &&
+      event.timeStop.controlId === stopped?.timeStop?.controlId,
+  );
+  if (!stopped || !released) throw new Error('Missing observer freeze');
+  const pause = released.step - stopped.step;
+  const base = activated.step;
+  const shifted = (deadline: number) => deadline + Number(stopped.step < deadline) * pause;
+  expect(ownLifecycle.slice(1).map((event) => event.step)).toEqual([
+    shifted(base + 2),
+    shifted(base + 7),
+    shifted(base + 15),
+  ]);
+  const context = await replayContext(battle.manifest, run.result.simulationHash);
+  const replay = new ReplayState(context);
+  run.records.forEach((record) => replay.apply(record));
+  const observer = replay
+    .checkpoint()
+    .state?.actors.find((actor) => actor.id === activated.environmentalHologram!.observerId);
+  expect(observer?.clock?.periods).toContainEqual({ from: stopped.step, to: released.step });
+  expect(observer?.sensorView?.environmentalHolograms).toEqual([]);
+
+  const deadlineTampered = structuredClone(run.records);
+  mutateHologramEverywhere(deadlineTampered, activated.environmentalHologram.id, (hologram) => {
+    hologram.invalidatedAt += 1;
+    hologram.expiresAt += 1;
+  });
+  expectReplayRejected(context, deadlineTampered);
+
+  const clockTampered = structuredClone(run.records);
+  const clock = clockTampered
+    .flatMap((record) => ('changes' in record ? record.changes : []))
+    .find(
+      (actor) =>
+        actor.id === activated.environmentalHologram!.observerId &&
+        (actor.clock?.periods?.length ?? 0) > 0,
+    )?.clock;
+  const period = clock?.periods?.[0];
+  if (!period) throw new Error('Missing completed observer clock period');
+  period.to += 1;
+  expectReplayRejected(context, clockTampered, /Invalid replay/);
+
+  const coordinatedClockTampered = structuredClone(run.records);
+  for (const record of coordinatedClockTampered) {
+    const recordStep = record.kind === 'interval' ? record.toStep : record.step;
+    if ('changes' in record)
+      for (const actor of record.changes) {
+        if (actor.id !== activated.environmentalHologram.observerId) continue;
+        if (actor.clock?.periods?.[0]) actor.clock.periods[0].to += 1;
+        if (recordStep < released.step) continue;
+        for (const hologram of actor.sensorView?.environmentalHolograms ?? [])
+          if (hologram.id === activated.environmentalHologram.id) {
+            hologram.invalidatedAt += 1;
+            hologram.expiresAt += 1;
+          }
+      }
+    if ('events' in record && recordStep >= released.step)
+      for (const event of record.events)
+        if (event.environmentalHologram?.id === activated.environmentalHologram.id) {
+          event.environmentalHologram.invalidatedAt += 1;
+          event.environmentalHologram.expiresAt += 1;
+        }
+  }
+  expectReplayRejected(context, coordinatedClockTampered, /Invalid replay/);
 });
 
 it('preserves legacy replay bytes by omitting the feature and sensor view', async () => {

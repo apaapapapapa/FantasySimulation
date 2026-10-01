@@ -10,10 +10,18 @@ export function validateDeferredDefinition(context: ReplayContext, receipt: Defe
     (actor) => actor.participant.actorId === (receipt.sourceActorId ?? receipt.actorId),
   );
   const ability = source?.abilities.find((a) => a.id === receipt.abilityId);
+  const authored =
+    receipt.effect.kind === 'environmental-hologram' && receipt.effectIndex !== undefined
+      ? receipt.stageIndex === undefined
+        ? ability?.definition.effects[receipt.effectIndex]
+        : ability?.definition.stages?.[receipt.stageIndex]?.effects[receipt.effectIndex]
+      : undefined;
   requireReplay(
     !!ability &&
       context.actors.some((actor) => actor.participant.actorId === receipt.targetId) &&
-      abilityEffects(ability.definition).some((effect) => same(effect, receipt.effect)),
+      (receipt.effect.kind === 'environmental-hologram'
+        ? authored?.kind === 'environmental-hologram' && same(authored, receipt.effect)
+        : abilityEffects(ability.definition).some((effect) => same(effect, receipt.effect))),
     'deferred effect definition',
   );
 }

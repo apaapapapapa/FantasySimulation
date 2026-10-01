@@ -40,6 +40,7 @@ import { validateInterferences } from './replay-validation/interference.ts';
 import { validateSensoryCues } from './replay-validation/sensory-cue.ts';
 import { applyDependents, validateDependent } from './replay-validation/dependent.ts';
 import {
+  advanceEnvironmentalHologramProvenance,
   validateEnvironmentalHologramCheckpoint,
   validateEnvironmentalHolograms,
 } from './replay-validation/environmental-hologram.ts';
@@ -88,6 +89,7 @@ export class ReplayState {
         v.step,
         v.boundaryApplied,
         v.requiredFeatures,
+        v.environmentalHolograms ?? [],
       );
       const last = v.lastRecord!;
       validateClocks(
@@ -467,6 +469,11 @@ export class ReplayState {
     state.dependents?.sort((a, b) => compareIds(a.id, b.id));
     const deferred = advanceDeferred(prior.deferred, 'events' in record ? record.events : []);
     const stop = advanceStopReplay(prior.stop, 'events' in record ? record.events : []);
+    const environmentalHolograms = advanceEnvironmentalHologramProvenance(
+      prior.simulationHash,
+      prior.environmentalHolograms,
+      record,
+    );
     const requiredFeatures =
       record.kind === 'initial' ? record.requiredFeatures : prior.requiredFeatures;
     if (record.kind === 'terminal' && ['win', 'draw'].includes(record.outcome.kind))
@@ -477,6 +484,7 @@ export class ReplayState {
     const next: ReplayCheckpoint = {
       ...(deferred ? { deferred } : {}),
       ...(stop ? { stop } : {}),
+      ...(environmentalHolograms ? { environmentalHolograms } : {}),
       ...(requiredFeatures ? { requiredFeatures } : {}),
       schemaVersion: 1,
       simulationHash: prior.simulationHash,

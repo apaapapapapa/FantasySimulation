@@ -116,6 +116,11 @@ export function validateEvents(
       requireReplay(e.kind !== 'environmental-hologram', 'missing environmental hologram event');
     for (const receipt of e.timeStop?.captured ?? []) {
       validateDeferredDefinition(context, receipt);
+      const capturedSource =
+        ('changes' in record
+          ? record.changes.find((actor) => actor.id === receipt.actorId)?.position
+          : undefined) ??
+        prior.state?.actors.find((actor) => actor.id === receipt.actorId)?.position;
       requireReplay(
         e.timeStop?.state === 'capture' &&
           receipt.controlId === e.timeStop.controlId &&
@@ -124,6 +129,13 @@ export function validateEvents(
           receipt.actorId !== receipt.targetId,
         'capture receipt context',
       );
+      if (receipt.effect.kind === 'environmental-hologram')
+        requireReplay(
+          !!receipt.sourcePosition &&
+            !!capturedSource &&
+            same(receipt.sourcePosition, capturedSource),
+          'captured environmental hologram source geometry',
+        );
       if (receipt.deflection) {
         const projectile = prior.state?.projectiles.find(
           (p) => p.id === receipt.sourceProjectileId,

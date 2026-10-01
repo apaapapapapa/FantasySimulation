@@ -39,6 +39,8 @@ export function stopEffectHooks(tx: StepTransaction, context: EffectContext) {
           effect: EffectSchema.parse(effect.effect),
           ...(effect.effect.kind === 'environmental-hologram'
             ? {
+                effectIndex: effect.effectIndex!,
+                ...(effect.stage ? { stageIndex: effect.stage.stageIndex } : {}),
                 sourcePosition: {
                   ...(effect.observation?.self.position ??
                     tx.next.actors.find(

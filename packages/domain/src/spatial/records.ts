@@ -134,6 +134,8 @@ export const DeferredEffectSchema = z.strictObject({
   targetId: IdSchema,
   abilityId: IdSchema,
   effect: EffectSchema,
+  effectIndex: z.number().int().min(0).max(31).optional(),
+  stageIndex: z.number().int().min(0).max(15).optional(),
   sourcePosition: PhysicalVectorSchema.optional(),
   sourceActorId: IdSchema.optional(),
   sourceProjectileId: IdSchema.optional(),
