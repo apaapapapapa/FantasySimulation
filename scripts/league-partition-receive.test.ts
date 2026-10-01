@@ -2,9 +2,7 @@ import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { cp, readFile, writeFile, access, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { withReplayDirectory } from '@fantasy/api/testing';
-import { leagueFixture } from '@fantasy/samples/testing';
-import { prepareCloudLeague } from '../apps/cli/src/league/league-cloud.ts';
-import { assignLeagueRunners } from '../apps/cli/src/league/league-assignment.ts';
+import { LeagueCloudPreparedSchema } from '@fantasy/domain/spatial';
 import { preparedPipeline } from '../apps/cli/test-support/league-pipeline.ts';
 import * as runner from '../apps/cli/src/league/league-runner.ts';
 import type { LeagueStaging } from '../apps/cli/src/league/league-staging.ts';
@@ -22,20 +20,46 @@ const signal = () => new AbortController().signal;
 const unusedStaging = () => ({ stage: vi.fn() }) as unknown as LeagueStaging;
 
 async function diagnosticPrepared(root: string) {
-  const { identity } = pipelineActionsFixture();
-  const definition = { ...(await leagueFixture(20, 1)), trials: 1 };
-  const preparedRoot = join(root, 'prepared');
-  const { prepared } = await prepareCloudLeague(
-    definition,
-    identity.source,
-    'league-123-1',
-    join(root, 'baseline'),
-    preparedRoot,
-    { files: 0, bytes: 0, receipts: 0, usedReadRequests: 10000, usedWriteRequests: 10000 },
-  );
+  const fixture = await preparedPipeline(root);
+  // Receiver-only protocol metadata: original-input verification is stubbed in these
+  // rejection cases. Actual 380 manifests remain verified by the partition pilot tests.
+  // Literal IDs are independent of the assignment algorithm and are never adopted.
+  const prepared = LeagueCloudPreparedSchema.parse({
+    ...fixture.prepared,
+    plan: {
+      ...fixture.prepared.plan,
+      partitions: [
+        {
+          partitionId: 'sha256:' + '1'.repeat(64),
+          batchPlanId: 'sha256:' + '4'.repeat(64),
+          slots: 128,
+        },
+        {
+          partitionId: 'sha256:' + '2'.repeat(64),
+          batchPlanId: 'sha256:' + '5'.repeat(64),
+          slots: 128,
+        },
+        {
+          partitionId: 'sha256:' + '3'.repeat(64),
+          batchPlanId: 'sha256:' + '6'.repeat(64),
+          slots: 124,
+        },
+      ],
+    },
+    inputs: [
+      { hash: 'sha256:' + '7'.repeat(64), bytes: 128 },
+      { hash: 'sha256:' + '8'.repeat(64), bytes: 128 },
+      { hash: 'sha256:' + '9'.repeat(64), bytes: 128 },
+    ],
+  });
+  await writeFile(join(fixture.preparedRoot, 'prepared.json'), JSON.stringify(prepared));
   expect(prepared.inputs).toHaveLength(3);
   expect(prepared.plan.partitions.map((partition) => partition.slots)).toEqual([128, 128, 124]);
-  return { prepared, preparedRoot, github: new PipelineArtifacts('test', identity) };
+  return {
+    prepared,
+    preparedRoot: fixture.preparedRoot,
+    github: new PipelineArtifacts('test', fixture.identity),
+  };
 }
 
 it('keeps measured costs mandatory for production before listing artifacts', async () => {
@@ -144,7 +168,7 @@ it.each(['source', 'attempt', 'runner', 'partitions'] as const)(
   'rejects foreign terminal %s binding before adopting results',
   async (variant) => {
     await withReplayDirectory(async (root) => {
-      const { preparedRoot, prepared, github } = await diagnosticPrepared(root);
+      const { preparedRoot, github } = await diagnosticPrepared(root);
       vi.spyOn(github, 'list').mockResolvedValue([
         {
           id: 456,
@@ -164,8 +188,7 @@ it.each(['source', 'attempt', 'runner', 'partitions'] as const)(
             schemaVersion: 1,
             identity,
             runner: variant === 'runner' ? 1 : 0,
-            partitions:
-              variant === 'partitions' ? [0] : assignLeagueRunners(prepared.plan, 1)[0]!.partitions,
+            partitions: variant === 'partitions' ? [0] : [0, 1, 2],
             artifacts: [
               {
                 id: 789,
