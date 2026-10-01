@@ -126,7 +126,7 @@ export function* simulate(
               'deferred-contacts-v1',
               ...(hasSensoryCues(battle.manifest.revisions) ? (['sensory-cues-v1'] as const) : []),
               ...(hasDependentSummons(battle.manifest.revisions)
-                ? (['dependent-entities-v1'] as const)
+                ? (['dependent-entities-v1', 'dependent-observation-v2'] as const)
                 : []),
               ...(hasEnvironmentalHolograms(battle.manifest.revisions)
                 ? (['environmental-holograms-v1'] as const)

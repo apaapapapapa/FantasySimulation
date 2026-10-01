@@ -26,11 +26,12 @@ export const RequiredReplayFeaturesSchema = z
       'deferred-contacts-v1',
       'sensory-cues-v1',
       'dependent-entities-v1',
+      'dependent-observation-v2',
       'environmental-holograms-v1',
     ]),
   )
   .min(2)
-  .max(5)
+  .max(6)
   .refine(
     (features) =>
       features[0] === 'subject-clocks-v1' &&
@@ -39,11 +40,15 @@ export const RequiredReplayFeaturesSchema = z
         '',
         'sensory-cues-v1',
         'dependent-entities-v1',
+        'dependent-entities-v1,dependent-observation-v2',
         'sensory-cues-v1,dependent-entities-v1',
+        'sensory-cues-v1,dependent-entities-v1,dependent-observation-v2',
         'environmental-holograms-v1',
         'sensory-cues-v1,environmental-holograms-v1',
         'dependent-entities-v1,environmental-holograms-v1',
+        'dependent-entities-v1,dependent-observation-v2,environmental-holograms-v1',
         'sensory-cues-v1,dependent-entities-v1,environmental-holograms-v1',
+        'sensory-cues-v1,dependent-entities-v1,dependent-observation-v2,environmental-holograms-v1',
       ].includes(features.slice(2).join(',')),
     'Replay features must use the canonical compatible prefix order',
   );

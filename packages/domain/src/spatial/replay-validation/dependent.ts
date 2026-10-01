@@ -67,6 +67,8 @@ export function applyDependents(
     ...(state.dependents ?? []),
     ...changes.spawn,
   ];
+  const strongObservationBinding =
+    prior.requiredFeatures?.includes('dependent-observation-v2') === true;
   const isHostileTarget = (dependent: DependentDisplay, targetId: string | null) =>
     targetId === dependent.hostileOwnerId ||
     knownDependents.some(
@@ -139,7 +141,12 @@ export function applyDependents(
     'duplicate dependent transition',
   );
   for (const dependent of changes.spawn) {
-    requireReplay(!entities.has(dependent.id), 'dependent spawn identity');
+    requireReplay(
+      !entities.has(dependent.id) &&
+        !dependentHistory.some((known) => known.id === dependent.id) &&
+        dependentHistory.length + changes.spawn.length <= 16,
+      'dependent spawn identity/history',
+    );
     validateDependent(context, dependent, record.kind === 'interval' ? record.toStep : record.step);
     const event = record.events.find(
       (candidate) => candidate.kind === 'dependent-create' && candidate.entityId === dependent.id,
@@ -260,23 +267,21 @@ export function applyDependents(
       const observedTargets = command.dependent?.observedTargetIds ?? [];
       const observedDependents = observedTargets.slice(1);
       const selectedRng = nextRandom(expectedRng);
-      const observedTargetBinding =
-        context.manifest.schemaVersion >= 8
-          ? observedTargets.length > 0 &&
-            observedTargets[0] === dependent.hostileOwnerId &&
-            new Set(observedTargets).size === observedTargets.length &&
-            same(observedDependents, [...observedDependents].sort(compareIds)) &&
-            observedDependents.every((id) =>
-              knownDependents.some(
-                (candidate) =>
-                  candidate.id === id && candidate.ownerId === dependent.hostileOwnerId,
-              ),
-            ) &&
-            same(act.dependent?.observedTargetIds, observedTargets) &&
-            command.targetId === observedTargets[selectedRng % observedTargets.length]
-          : command.dependent?.observedTargetIds === undefined &&
-            act.dependent?.observedTargetIds === undefined &&
-            command.targetId === dependent.hostileOwnerId;
+      const observedTargetBinding = strongObservationBinding
+        ? observedTargets.length > 0 &&
+          observedTargets[0] === dependent.hostileOwnerId &&
+          new Set(observedTargets).size === observedTargets.length &&
+          same(observedDependents, [...observedDependents].sort(compareIds)) &&
+          observedDependents.every((id) =>
+            knownDependents.some(
+              (candidate) => candidate.id === id && candidate.ownerId === dependent.hostileOwnerId,
+            ),
+          ) &&
+          same(act.dependent?.observedTargetIds, observedTargets) &&
+          command.targetId === observedTargets[selectedRng % observedTargets.length]
+        : command.dependent?.observedTargetIds === undefined &&
+          act.dependent?.observedTargetIds === undefined &&
+          command.targetId === dependent.hostileOwnerId;
       requireReplay(
         command.step === step &&
           command.step === expectedActionAt &&
@@ -285,7 +290,7 @@ export function applyDependents(
           command.targetId === act.targetId &&
           observedTargetBinding &&
           command.reason ===
-            (context.manifest.schemaVersion >= 8 && targetsDependent
+            (strongObservationBinding && targetsDependent
               ? 'owner-delivered-dependent-observation'
               : 'owner-delivered-enemy-observation') &&
           (targetsDependent
@@ -304,7 +309,7 @@ export function applyDependents(
           act.parentEventId === command.id &&
           act.ruleId === 'dependent.subject-clock' &&
           act.reason ===
-            (context.manifest.schemaVersion >= 8 && targetsDependent
+            (strongObservationBinding && targetsDependent
               ? 'stable-ordinal-visible-hostile-dependent'
               : 'stable-ordinal-policy') &&
           act.dependent?.nextActionAt === expectedActionAt + spec!.actionEverySteps,
@@ -487,7 +492,8 @@ export function applyDependents(
     (candidate) => candidate.kind === 'dependent-command' || candidate.kind === 'dependent-act',
   ))
     requireReplay(
-      changes.update.some((dependent) => dependent.id === event.entityId),
+      changes.update.some((dependent) => dependent.id === event.entityId) ||
+        changes.remove.some((dependent) => dependent.id === event.entityId),
       'dependent event state transition',
     );
   for (const event of record.events.filter(

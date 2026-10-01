@@ -73,9 +73,13 @@ export function validateEvents(
             )
           : []),
       ]);
+      const historicalDependentTarget =
+        (e.kind === 'dependent-command' || e.kind === 'dependent-act') &&
+        prior.dependentHistory?.some((dependent) => dependent.id === e.targetId) === true;
       requireReplay(
         context.actors.some((a) => a.participant.actorId === e.targetId) ||
-          dependentIds.has(e.targetId),
+          dependentIds.has(e.targetId) ||
+          historicalDependentTarget,
         'event target reference',
       );
     }
