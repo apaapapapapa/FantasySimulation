@@ -18,6 +18,7 @@ import type { DependentState } from './state.ts';
 import type { StepTransaction } from './sim/step-transaction.ts';
 import { Journal } from './rules/journal.ts';
 import type { StreamRecord } from '@fantasy/domain/spatial';
+import fixture from '../../fixtures/spatial/summoning-rat-dan1.json' with { type: 'json' };
 
 async function lethalPulseSummoningManifest() {
   const manifest = await summoningManifest(10);
@@ -137,6 +138,14 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     expect(damage.before.hp - damage.after.hp).toBe(damage.amount);
   }
   expect(dependentTargetDamage).toBeGreaterThan(0);
+  const measuredDependentDamage = dependentDamage.find((event) =>
+    spawnedDependents.some((dependent) => dependent.id === event.targetId),
+  );
+  expect({
+    beforeHp: measuredDependentDamage?.before?.hp,
+    afterHp: measuredDependentDamage?.after?.hp,
+    amount: measuredDependentDamage?.amount,
+  }).toEqual(fixture.runtimeSettlementEvidence.dependentTargetDamage);
   const nonNoopDrain = events.find(
     (event) =>
       event.kind === 'heal' &&
@@ -152,6 +161,12 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     (dependent) => dependent.id === nonNoopDrain.entityId,
   );
   expect(nonNoopDrain.targetId).toBe(drainRecipient?.id);
+  expect({
+    beforeHp: nonNoopDrain.before.hp,
+    afterHp: nonNoopDrain.after.hp,
+    amount: nonNoopDrain.amount,
+    maxHp: drainRecipient?.maxHp,
+  }).toEqual(fixture.runtimeSettlementEvidence.dependentDrain);
   expect(nonNoopDrain.after.hp).toBe(
     Math.min(drainRecipient!.maxHp, nonNoopDrain.before.hp + nonNoopDrain.amount),
   );
@@ -343,13 +358,25 @@ it('settles dependent HP and drain in the owner revival wave before the verdict'
     after: { hp: 73, mp: 0, shield: 0 },
     amount: 1,
   });
+  expect({
+    beforeHp: dependentDrain?.before?.hp,
+    afterHp: dependentDrain?.after?.hp,
+    amount: dependentDrain?.amount,
+  }).toEqual(fixture.runtimeSettlementEvidence.revivalWave.guardedDrain);
   expect(cappedDrain).toMatchObject({
     targetId: cappedDrain?.entityId,
     before: { hp: 80, mp: 0, shield: 0 },
     after: { hp: 80, mp: 0, shield: 0 },
     amount: 4,
   });
-  expect(revival).toMatchObject({ before: { hp: 0 }, after: { hp: 7 } });
+  expect({
+    beforeHp: cappedDrain?.before?.hp,
+    afterHp: cappedDrain?.after?.hp,
+    amount: cappedDrain?.amount,
+  }).toEqual(fixture.runtimeSettlementEvidence.revivalWave.cappedDrain);
+  expect({ beforeHp: revival?.before?.hp, afterHp: revival?.after?.hp }).toEqual(
+    fixture.runtimeSettlementEvidence.revivalWave.ownerRevival,
+  );
   expect(dependentDamage!.sequence).toBeLessThan(dependentDrain!.sequence);
   expect(dependentDrain!.sequence).toBeLessThan(guard!.sequence);
   expect(guard!.sequence).toBeLessThan(revival!.sequence);
@@ -409,7 +436,7 @@ it('records boundary pulse owner defeat at the actual boundary and replays it', 
     record.dependents.remove.map(() => ({
       step: record.step,
       phase: 'boundary',
-      reason: 'owner-defeated',
+      reason: fixture.runtimeSettlementEvidence.terminalOwnerDefeat.despawnReason,
     })),
   );
   for (const removal of record.dependents.remove) {
@@ -437,13 +464,15 @@ it('records boundary pulse owner defeat at the actual boundary and replays it', 
   expect(terminal).toMatchObject({
     kind: 'terminal',
     step: record.step,
-    outcome: { kind: 'draw', reason: 'mutual-defeat' },
+    outcome: fixture.runtimeSettlementEvidence.terminalOwnerDefeat.outcome,
   });
-  expect(run.result.outcome).toEqual({ kind: 'draw', reason: 'mutual-defeat' });
+  expect(run.result.outcome).toEqual(fixture.runtimeSettlementEvidence.terminalOwnerDefeat.outcome);
   const replay = new ReplayState(await replayContext(battle.manifest, run.result.simulationHash));
   for (const candidate of run.records) replay.apply(candidate);
   expect(replay.checkpoint().state?.dependents ?? []).toHaveLength(0);
-  expect(replay.checkpoint().state?.actors.map((actor) => actor.resources.hp)).toEqual([0, 0]);
+  expect(replay.checkpoint().state?.actors.map((actor) => actor.resources.hp)).toEqual(
+    fixture.runtimeSettlementEvidence.terminalOwnerDefeat.participantHp,
+  );
 });
 
 it('propagates an owner time stop to its dependent subject clock and rebases only actions', async () => {
