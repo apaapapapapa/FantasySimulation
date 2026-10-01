@@ -260,8 +260,7 @@ export function applyDependents(
           same(observedDependents, [...observedDependents].sort(compareIds)) &&
           observedDependents.every((id) =>
             [...priorDependents, ...(state.dependents ?? [])].some(
-              (candidate) =>
-                candidate.id === id && candidate.ownerId === dependent.hostileOwnerId,
+              (candidate) => candidate.id === id && candidate.ownerId === dependent.hostileOwnerId,
             ),
           ) &&
           same(act.dependent?.observedTargetIds, observedTargets) &&
@@ -456,8 +455,7 @@ export function applyDependents(
         event.actorId === dependent.ownerId &&
         (event.targetId === dependent.hostileOwnerId ||
           [...priorDependents, ...(state.dependents ?? [])].some(
-            (target) =>
-              target.id === event.targetId && target.ownerId === dependent.hostileOwnerId,
+            (target) => target.id === event.targetId && target.ownerId === dependent.hostileOwnerId,
           )) &&
         event.abilityId === dependent.abilityId &&
         event.dependent?.ordinal === dependent.ordinal,

@@ -120,9 +120,9 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     expect(command.actorId).toBe(command.dependent?.ownerId);
     if (target) expect(target.ownerId).toBe(command.dependent?.hostileOwnerId);
     else expect(command.targetId).toBe(command.dependent?.hostileOwnerId);
-    expect(
-      acts.find((act) => act.parentEventId === command.id),
-    ).toMatchObject({ targetId: command.targetId });
+    expect(acts.find((act) => act.parentEventId === command.id)).toMatchObject({
+      targetId: command.targetId,
+    });
   }
   const dependentDamage = events.filter(
     (event) => event.kind === 'damage' && event.entityId?.startsWith('dependent.'),
@@ -375,9 +375,7 @@ it('commits simultaneous dependent hits as one replay-bound HP wave', async () =
       'events' in candidate &&
       Object.values(
         candidate.events
-          .filter(
-            (event) => event.kind === 'damage' && event.targetId?.startsWith('dependent.'),
-          )
+          .filter((event) => event.kind === 'damage' && event.targetId?.startsWith('dependent.'))
           .reduce<Record<string, number>>((counts, event) => {
             counts[event.targetId!] = (counts[event.targetId!] ?? 0) + 1;
             return counts;
@@ -422,9 +420,9 @@ it('commits simultaneous dependent hits as one replay-bound HP wave', async () =
         const act = candidate.events.find((parent) => parent.id === event.parentEventId);
         const command = candidate.events.find((parent) => parent.id === act?.parentEventId);
         return (
-          command?.dependent?.observedTargetIds?.filter((id) => id.startsWith('dependent.'))
-            .length ?? 0
-        ) >= 2;
+          (command?.dependent?.observedTargetIds?.filter((id) => id.startsWith('dependent.'))
+            .length ?? 0) >= 2
+        );
       }),
   );
   if (!actionRecord || !('events' in actionRecord))
@@ -434,9 +432,9 @@ it('commits simultaneous dependent hits as one replay-bound HP wave', async () =
     const act = actionRecord.events.find((parent) => parent.id === event.parentEventId);
     const command = actionRecord.events.find((parent) => parent.id === act?.parentEventId);
     return (
-      command?.dependent?.observedTargetIds?.filter((id) => id.startsWith('dependent.')).length ??
-      0
-    ) >= 2;
+      (command?.dependent?.observedTargetIds?.filter((id) => id.startsWith('dependent.')).length ??
+        0) >= 2
+    );
   });
   const act = actionRecord.events.find((event) => event.id === damage?.parentEventId);
   const command = actionRecord.events.find((event) => event.id === act?.parentEventId);
