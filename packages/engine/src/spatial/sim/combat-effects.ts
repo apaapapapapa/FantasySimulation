@@ -163,6 +163,7 @@ export function commitEffects(
     const dependent = context.dependents?.find((candidate) => candidate.id === result.actorId);
     if (dependent) {
       const incoming = applications.filter((application) => application.targetId === dependent.id);
+      let remainingCommittedLoss = dependent.hp - result.resources.hp;
       for (const app of incoming) {
         if (app.effect.kind !== 'damage')
           throw new Error('Dependents accept only bounded damage effects');
@@ -173,7 +174,10 @@ export function commitEffects(
         if (!detail) throw new Error('Missing dependent damage detail');
         const { applicationId: _, ...damage } = detail;
         app.event.damage = damage;
-        app.event.amount = detail.calculation?.afterModifiers ?? detail.afterResistance;
+        const resolvedDamage = detail.calculation?.afterModifiers ?? detail.afterResistance;
+        const committedDamage = Math.min(resolvedDamage, remainingCommittedLoss);
+        app.event.amount = committedDamage;
+        remainingCommittedLoss -= committedDamage;
         app.event.ruleId = 'damage.dependent-hp';
         app.event.reason = 'same-wave-dependent-hp-clamp';
       }

@@ -18,6 +18,7 @@ import type { DependentState } from './state.ts';
 import type { StepTransaction } from './sim/step-transaction.ts';
 import { Journal } from './rules/journal.ts';
 import type { StreamRecord } from '@fantasy/domain/spatial';
+import { ManifestBuilder, sealRevision } from './manifest-builder.ts';
 import fixture from '../../fixtures/spatial/summoning-rat-dan1.json' with { type: 'json' };
 
 async function lethalPulseSummoningManifest() {
@@ -50,6 +51,22 @@ async function revivalWaveSummoningManifest() {
     );
   }
   return manifest;
+}
+
+async function multiHitSummoningManifest() {
+  const manifest = await summoningManifest(12);
+  const summon = manifest.revisions.find(
+    (revision) => revision.kind === 'ability' && revision.definition.summon,
+  );
+  if (!summon || summon.kind !== 'ability' || !summon.definition.summon)
+    throw new Error('Missing summon ability');
+  const replacement = await sealRevision('ability', summon.id, summon.revision, {
+    ...summon.definition,
+    costs: { ...summon.definition.costs, uses: 2 },
+    cooldownSteps: 1,
+    summon: { ...summon.definition.summon, actionEverySteps: 1 },
+  });
+  return ManifestBuilder.relink(manifest, [{ from: summon, to: replacement }]);
 }
 
 function followedDependent(record: Exclude<StreamRecord, { kind: 'initial' | 'terminal' }>) {
@@ -90,21 +107,28 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
   ).toEqual(['dependent.a.0.scout-rat', 'dependent.b.0.scout-rat']);
   const commands = events.filter((event) => event.kind === 'dependent-command');
   const acts = events.filter((event) => event.kind === 'dependent-act');
+  const spawnedDependents = run.records.flatMap((record) =>
+    'dependents' in record ? (record.dependents?.spawn ?? []) : [],
+  );
   expect(commands.length).toBeGreaterThan(0);
   expect(acts.length).toBe(commands.length);
   for (const command of commands) {
-    expect(command.reason).toBe('owner-delivered-enemy-observation');
+    const target = spawnedDependents.find((dependent) => dependent.id === command.targetId);
+    expect(command.reason).toBe(
+      target ? 'owner-delivered-dependent-observation' : 'owner-delivered-enemy-observation',
+    );
     expect(command.actorId).toBe(command.dependent?.ownerId);
-    expect(command.targetId).toBe(command.dependent?.hostileOwnerId);
+    if (target) expect(target.ownerId).toBe(command.dependent?.hostileOwnerId);
+    else expect(command.targetId).toBe(command.dependent?.hostileOwnerId);
+    expect(
+      acts.find((act) => act.parentEventId === command.id),
+    ).toMatchObject({ targetId: command.targetId });
   }
   const dependentDamage = events.filter(
     (event) => event.kind === 'damage' && event.entityId?.startsWith('dependent.'),
   );
   expect(dependentDamage).toHaveLength(acts.length);
   const eventsById = new Map(events.map((event) => [event.id, event]));
-  const spawnedDependents = run.records.flatMap((record) =>
-    'dependents' in record ? (record.dependents?.spawn ?? []) : [],
-  );
   let dependentTargetDamage = 0;
   for (const damage of dependentDamage) {
     const act = damage.parentEventId ? eventsById.get(damage.parentEventId) : undefined;
@@ -114,6 +138,7 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
       kind: 'dependent-act',
       actorId: dependent?.ownerId,
       entityId: dependent?.id,
+      targetId: damage.targetId,
     });
     if (target) {
       dependentTargetDamage++;
@@ -267,6 +292,16 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
   });
   rejects((records) => {
     const record = actionRecord(records);
+    if (!record || !('events' in record)) throw new Error('Missing action record');
+    const act = record.events.find((event) => event.kind === 'dependent-act');
+    if (!act) throw new Error('Missing dependent act');
+    act.reason =
+      act.reason === 'stable-ordinal-policy'
+        ? 'stable-ordinal-visible-hostile-dependent'
+        : 'stable-ordinal-policy';
+  });
+  rejects((records) => {
+    const record = actionRecord(records);
     if (!record || !('changes' in record)) throw new Error('Missing action record');
     const command = record.events.find((event) => event.kind === 'dependent-command');
     const owner = record.changes.find((change) => change.id === command?.actorId);
@@ -330,6 +365,91 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     despawn.reason = 'owner-defeated';
     despawn.dependent.reason = 'owner-defeated';
   });
+});
+
+it('commits simultaneous dependent hits as one replay-bound HP wave', async () => {
+  const battle = await prepareBattle(await multiHitSummoningManifest());
+  const run = await runPreparedBattle(battle);
+  const record = run.records.find(
+    (candidate) =>
+      'events' in candidate &&
+      Object.values(
+        candidate.events
+          .filter(
+            (event) => event.kind === 'damage' && event.targetId?.startsWith('dependent.'),
+          )
+          .reduce<Record<string, number>>((counts, event) => {
+            counts[event.targetId!] = (counts[event.targetId!] ?? 0) + 1;
+            return counts;
+          }, {}),
+      ).some((count) => count >= 2),
+  );
+  if (!record || !('events' in record)) throw new Error('Missing simultaneous dependent hits');
+  const targetId = record.events.find(
+    (event) =>
+      event.kind === 'damage' &&
+      event.targetId?.startsWith('dependent.') &&
+      record.events.filter(
+        (candidate) => candidate.kind === 'damage' && candidate.targetId === event.targetId,
+      ).length >= 2,
+  )!.targetId;
+  const hits = record.events.filter(
+    (event) => event.kind === 'damage' && event.targetId === targetId,
+  );
+  expect(new Set(hits.map((event) => event.before?.hp))).toHaveLength(1);
+  expect(new Set(hits.map((event) => event.after?.hp))).toHaveLength(1);
+  expect(hits.reduce((sum, event) => sum + (event.amount ?? 0), 0)).toBe(
+    hits[0]!.before!.hp - hits[0]!.after!.hp,
+  );
+  const context = await replayContext(battle.manifest, run.result.simulationHash);
+  const replay = new ReplayState(context);
+  run.records.forEach((candidate) => replay.apply(candidate));
+
+  const tampered = structuredClone(run.records);
+  const altered = tampered
+    .flatMap((candidate) => ('events' in candidate ? candidate.events : []))
+    .find((event) => event.id === hits[0]!.id)!;
+  altered.amount = (altered.amount ?? 0) + 1;
+  const invalid = new ReplayState(context);
+  expect(() => tampered.forEach((candidate) => invalid.apply(candidate))).toThrow(/dependent/);
+
+  const coTampered = structuredClone(run.records);
+  const actionRecord = coTampered.find(
+    (candidate) =>
+      'events' in candidate &&
+      candidate.events.some((event) => {
+        if (event.kind !== 'damage' || !event.targetId?.startsWith('dependent.')) return false;
+        const act = candidate.events.find((parent) => parent.id === event.parentEventId);
+        const command = candidate.events.find((parent) => parent.id === act?.parentEventId);
+        return (
+          command?.dependent?.observedTargetIds?.filter((id) => id.startsWith('dependent.'))
+            .length ?? 0
+        ) >= 2;
+      }),
+  );
+  if (!actionRecord || !('events' in actionRecord))
+    throw new Error('Missing dependent co-tamper action');
+  const damage = actionRecord.events.find((event) => {
+    if (event.kind !== 'damage' || !event.targetId?.startsWith('dependent.')) return false;
+    const act = actionRecord.events.find((parent) => parent.id === event.parentEventId);
+    const command = actionRecord.events.find((parent) => parent.id === act?.parentEventId);
+    return (
+      command?.dependent?.observedTargetIds?.filter((id) => id.startsWith('dependent.')).length ??
+      0
+    ) >= 2;
+  });
+  const act = actionRecord.events.find((event) => event.id === damage?.parentEventId);
+  const command = actionRecord.events.find((event) => event.id === act?.parentEventId);
+  const alternate = command?.dependent?.observedTargetIds?.find(
+    (id) => id.startsWith('dependent.') && id !== damage?.targetId,
+  );
+  if (!damage || !act || !command || !alternate)
+    throw new Error('Missing multi-dependent co-tamper fixture');
+  command.targetId = alternate;
+  act.targetId = alternate;
+  damage.targetId = alternate;
+  const coInvalid = new ReplayState(context);
+  expect(() => coTampered.forEach((candidate) => coInvalid.apply(candidate))).toThrow(/dependent/);
 });
 
 it('settles dependent HP and drain in the owner revival wave before the verdict', async () => {

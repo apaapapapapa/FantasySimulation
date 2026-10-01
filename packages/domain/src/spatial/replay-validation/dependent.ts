@@ -3,6 +3,7 @@ import type { ReplayCheckpoint } from '../replay.ts';
 import type { DependentChanges, DependentDisplay, DisplayState, StreamRecord } from '../stream.ts';
 import { requireReplay, same } from './common.ts';
 import { dependentSeed, nextRandom } from '../random.ts';
+import { compareIds } from '../canonical.ts';
 
 const ownerAbility = (context: ReplayContext, dependent: DependentDisplay) =>
   context.actors
@@ -240,12 +241,38 @@ export function applyDependents(
     if (commands.length) {
       const command = commands[0]!;
       const act = acts[0]!;
+      const targetDependent = [...priorDependents, ...(state.dependents ?? [])].find(
+        (candidate) => candidate.id === command.targetId,
+      );
+      const targetsDependent = !!targetDependent;
+      const observedTargets = command.dependent?.observedTargetIds ?? [];
+      const observedDependents = observedTargets.slice(1);
+      const selectedRng = nextRandom(expectedRng);
       requireReplay(
         command.step === step &&
           command.step === expectedActionAt &&
           command.phase === 'boundary' &&
           command.ruleId === 'dependent.observed-command' &&
-          command.reason === 'owner-delivered-enemy-observation' &&
+          command.targetId === act.targetId &&
+          observedTargets.length > 0 &&
+          observedTargets[0] === dependent.hostileOwnerId &&
+          new Set(observedTargets).size === observedTargets.length &&
+          same(observedDependents, [...observedDependents].sort(compareIds)) &&
+          observedDependents.every((id) =>
+            [...priorDependents, ...(state.dependents ?? [])].some(
+              (candidate) =>
+                candidate.id === id && candidate.ownerId === dependent.hostileOwnerId,
+            ),
+          ) &&
+          same(act.dependent?.observedTargetIds, observedTargets) &&
+          command.targetId === observedTargets[selectedRng % observedTargets.length] &&
+          command.reason ===
+            (targetsDependent
+              ? 'owner-delivered-dependent-observation'
+              : 'owner-delivered-enemy-observation') &&
+          (targetsDependent
+            ? targetDependent.ownerId === dependent.hostileOwnerId
+            : command.targetId === dependent.hostileOwnerId) &&
           command.dependent?.nextActionAt === expectedActionAt &&
           !!command.before &&
           !!command.after &&
@@ -258,12 +285,14 @@ export function applyDependents(
           act.phase === 'boundary' &&
           act.parentEventId === command.id &&
           act.ruleId === 'dependent.subject-clock' &&
-          (act.reason === 'stable-ordinal-policy' ||
-            act.reason === 'stable-ordinal-visible-hostile-dependent') &&
+          act.reason ===
+            (targetsDependent
+              ? 'stable-ordinal-visible-hostile-dependent'
+              : 'stable-ordinal-policy') &&
           act.dependent?.nextActionAt === expectedActionAt + spec!.actionEverySteps,
         'dependent observed command timing',
       );
-      expectedRng = nextRandom(expectedRng);
+      expectedRng = selectedRng;
     }
     if (due) expectedActionAt += spec!.actionEverySteps;
 
@@ -300,7 +329,57 @@ export function applyDependents(
       (event) => event.kind === 'damage' && event.targetId === dependent.id,
     );
     let expectedHp = before.hp;
-    for (const event of [...damage, ...heals].sort((a, b) => a.sequence - b.sequence)) {
+    const waves = new Map<number, typeof damage>();
+    for (const event of damage) {
+      const wave = event.wave ?? -1;
+      waves.set(wave, [...(waves.get(wave) ?? []), event]);
+    }
+    const orderedWaves = [...waves.values()].sort(
+      (left, right) => left[0]!.sequence - right[0]!.sequence,
+    );
+    for (const wave of orderedWaves) {
+      const opening = wave[0]!.before;
+      const closing = wave[0]!.after;
+      if (!opening || !closing) {
+        requireReplay(false, 'dependent hp resource chain');
+        continue;
+      }
+      let committedDamage = 0;
+      for (const event of wave) {
+        const source = [...priorDependents, ...(state.dependents ?? [])].find(
+          (candidate) => candidate.id === event.entityId,
+        );
+        requireReplay(
+          !!event.before &&
+            !!event.after &&
+            same(event.before, opening) &&
+            same(event.after, closing) &&
+            event.ruleId === 'damage.dependent-hp' &&
+            event.reason === 'same-wave-dependent-hp-clamp' &&
+            !!source &&
+            source.ownerId === event.actorId &&
+            source.hostileOwnerId === dependent.ownerId &&
+            event.damage?.calculation?.basePower ===
+              ownerAbility(context, source)?.definition.summon?.damage.amount &&
+            event.amount !== null &&
+            event.amount >= 0,
+          'dependent damage settlement',
+        );
+        committedDamage += event.amount ?? 0;
+      }
+      requireReplay(
+        opening.hp === expectedHp &&
+          opening.mp === 0 &&
+          opening.shield === 0 &&
+          closing.mp === 0 &&
+          closing.shield === 0 &&
+          closing.hp <= opening.hp &&
+          opening.hp - closing.hp === committedDamage,
+        'dependent same-wave damage settlement',
+      );
+      expectedHp = closing.hp;
+    }
+    for (const event of heals.sort((a, b) => a.sequence - b.sequence)) {
       if (!event.before || !event.after) {
         requireReplay(false, 'dependent hp resource chain');
         continue;
@@ -313,29 +392,12 @@ export function applyDependents(
           event.after.shield === 0,
         'dependent hp resource chain',
       );
-      if (event.kind === 'damage') {
-        const source = [...priorDependents, ...(state.dependents ?? [])].find(
-          (candidate) => candidate.id === event.entityId,
-        );
-        requireReplay(
-          event.ruleId === 'damage.dependent-hp' &&
-            event.reason === 'same-wave-dependent-hp-clamp' &&
-            !!source &&
-            source.ownerId === event.actorId &&
-            source.hostileOwnerId === dependent.ownerId &&
-            event.damage?.calculation?.basePower ===
-              ownerAbility(context, source)?.definition.summon?.damage.amount &&
-            event.after.hp < event.before.hp &&
-            event.before.hp - event.after.hp === event.amount,
-          'dependent damage settlement',
-        );
-      } else
-        requireReplay(
-          event.targetId === dependent.id &&
-            event.after.hp >= event.before.hp &&
-            event.after.hp === Math.min(before.maxHp, event.before.hp + (event.amount ?? 0)),
-          'dependent drain settlement',
-        );
+      requireReplay(
+        event.targetId === dependent.id &&
+          event.after.hp >= event.before.hp &&
+          event.after.hp === Math.min(before.maxHp, event.before.hp + (event.amount ?? 0)),
+        'dependent drain settlement',
+      );
       expectedHp = event.after.hp;
     }
     requireReplay(
@@ -392,7 +454,11 @@ export function applyDependents(
     requireReplay(
       !!dependent &&
         event.actorId === dependent.ownerId &&
-        event.targetId === dependent.hostileOwnerId &&
+        (event.targetId === dependent.hostileOwnerId ||
+          [...priorDependents, ...(state.dependents ?? [])].some(
+            (target) =>
+              target.id === event.targetId && target.ownerId === dependent.hostileOwnerId,
+          )) &&
         event.abilityId === dependent.abilityId &&
         event.dependent?.ordinal === dependent.ordinal,
       'dependent event provenance',
@@ -424,7 +490,8 @@ export function applyDependents(
           (candidate) =>
             candidate.id === event.parentEventId &&
             candidate.kind === 'dependent-act' &&
-            candidate.entityId === dependent.id,
+            candidate.entityId === dependent.id &&
+            candidate.targetId === event.targetId,
         ) &&
         event.damage?.calculation?.basePower ===
           ownerAbility(context, dependent)?.definition.summon?.damage.amount,

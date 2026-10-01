@@ -5,7 +5,6 @@ import { capsuleShape } from '../world/physics.ts';
 import { bodyCapsule } from '../world/terrain.ts';
 import type { StepTransaction } from './step-transaction.ts';
 import { actorId } from './step-transaction.ts';
-import { canSee } from '../world/visibility.ts';
 
 const MAX_ACTIVE_PER_OWNER = 2;
 const MAX_CREATED_PER_OWNER = 8;
@@ -214,22 +213,17 @@ export function advanceDependents(tx: StepTransaction) {
       dependent.nextActionAt += spec.actionEverySteps;
       continue;
     }
-    const hostileCandidate = (tx.next.dependents ?? [])
-      .filter(
-        (candidate) =>
-          candidate.ownerId === dependent.hostileOwnerId &&
-          candidate.hostileOwnerId === dependent.ownerId &&
-          candidate.hp > 0 &&
-          canSee(tx.context.world, owner.body.motion, {
-            x: candidate.position.x,
-            y: candidate.position.y + candidate.body.heightMm / 2000,
-            z: candidate.position.z,
-          }),
-      )
-      .sort((a, b) => a.id.localeCompare(b.id))[0];
     const policyRoll = nextRandom(dependent.rngState);
-    const hostileDependent = policyRoll & 1 ? hostileCandidate : undefined;
-    const targetId = hostileDependent?.id ?? dependent.hostileOwnerId;
+    const observedTargets = [observation.enemy.id, ...(observation.dependentIds ?? [])];
+    const targetId = observedTargets[policyRoll % observedTargets.length]!;
+    const targetsDependent = targetId !== dependent.hostileOwnerId;
+    const hostileDependent = (tx.next.dependents ?? []).find(
+      (candidate) =>
+        candidate.id === targetId &&
+        candidate.ownerId === dependent.hostileOwnerId &&
+        candidate.hostileOwnerId === dependent.ownerId &&
+        candidate.hp > 0,
+    );
     const before = { ...owner.vitals.resources };
     owner.vitals.resources.mp -= spec.commandCostMp;
     const command = tx.journal.emit({
@@ -237,19 +231,22 @@ export function advanceDependents(tx: StepTransaction) {
       phase: 'boundary',
       step: tx.step,
       actorId: dependent.ownerId,
-      targetId: dependent.hostileOwnerId,
+      targetId,
       entityId: dependent.id,
       abilityId: dependent.ability.id,
       before,
       after: { ...owner.vitals.resources },
       ruleId: 'dependent.observed-command',
-      reason: 'owner-delivered-enemy-observation',
+      reason: targetsDependent
+        ? 'owner-delivered-dependent-observation'
+        : 'owner-delivered-enemy-observation',
       dependent: {
         transition: 'command',
         ownerId: dependent.ownerId,
         hostileOwnerId: dependent.hostileOwnerId,
         ordinal: dependent.ordinal,
         nextActionAt: dependent.nextActionAt,
+        observedTargetIds: observedTargets,
       },
     });
     dependent.rngState = policyRoll;
@@ -259,12 +256,12 @@ export function advanceDependents(tx: StepTransaction) {
       phase: 'boundary',
       step: tx.step,
       actorId: dependent.ownerId,
-      targetId: dependent.hostileOwnerId,
+      targetId,
       entityId: dependent.id,
       abilityId: dependent.ability.id,
       parentEventId: command.id,
       ruleId: 'dependent.subject-clock',
-      reason: hostileDependent
+      reason: targetsDependent
         ? 'stable-ordinal-visible-hostile-dependent'
         : 'stable-ordinal-policy',
       dependent: {
@@ -273,8 +270,13 @@ export function advanceDependents(tx: StepTransaction) {
         hostileOwnerId: dependent.hostileOwnerId,
         ordinal: dependent.ordinal,
         nextActionAt: dependent.nextActionAt,
+        observedTargetIds: observedTargets,
       },
     });
+    // The recorded observation owns target selection. A selected dependent can
+    // disappear before this subject clock runs; that legal stale observation
+    // fizzles instead of consulting canonical state for a replacement target.
+    if (targetsDependent && !hostileDependent) continue;
     tx.effects.push({
       actorId: dependent.ownerId,
       targetId,

@@ -312,7 +312,7 @@ export const DependentDisplaySchema = z.strictObject({
 export type DependentDisplay = z.infer<typeof DependentDisplaySchema>;
 export const DependentChangesSchema = z.strictObject({
   spawn: z.array(DependentDisplaySchema).max(2),
-  update: z.array(DependentDisplaySchema).max(2),
+  update: z.array(DependentDisplaySchema).max(4),
   remove: z
     .array(
       z.strictObject({
