@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { withReplayDirectory } from '@fantasy/api/testing';
+import { Measurements } from '@fantasy/api/tooling';
 import { PipelineArtifacts } from './league-pipeline-artifacts.ts';
 import { pipelineActionsFixture } from './test-support/league-actions.ts';
 import { pipelineCapacity, pipelinePollMs, pipelineRunners } from './league-pipeline-policy.ts';
@@ -119,11 +120,28 @@ it('authenticates actual immutable ZIPs, never forwards GitHub credentials and r
     const { identity, state } = pipelineActionsFixture(),
       github = new PipelineArtifacts('private-test-token', identity);
     const [ref] = await github.list();
-    await github.download(ref!, join(root, 'good'), (key) => key === 'control.json');
+    const measured = new Measurements();
+    await measured.run(() =>
+      github.download(ref!, join(root, 'good'), (key) => key === 'control.json'),
+    );
     expect(await readFile(join(root, 'good/control.json'), 'utf8')).toBe('exact bytes');
     expect(state.downloadToken).toBe(false);
     state.zip[40] = state.zip[40]! ^ 1;
-    await expect(github.download(ref!, join(root, 'bad'), () => true)).rejects.toThrow('digest');
+    await expect(
+      measured.run(() => github.download(ref!, join(root, 'bad'), () => true)),
+    ).rejects.toThrow('digest');
+    const report = measured.report();
+    expect(report.stages['artifact.download.transfer']).toMatchObject({
+      count: 2,
+      failures: 1,
+      bytes: state.zip.length,
+      incomplete: 0,
+    });
+    expect(report.stages['artifact.download.extract']).toMatchObject({
+      count: 1,
+      failures: 0,
+      incomplete: 0,
+    });
     expect(await github.successfulProducers(1)).toBe(true);
     state.jobs[1]!.conclusion = 'failure';
     await expect(github.successfulProducers(1)).rejects.toThrow('failed');

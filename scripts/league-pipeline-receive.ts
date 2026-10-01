@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
+import { measureAsync } from '@fantasy/api/tooling';
 import {
   canonicalJson,
   PublicKeySchema,
@@ -178,7 +179,7 @@ async function receiveAssignedPipeline(
     signal.throwIfAborted();
     if (performance.now() - started > 2400000)
       throw new Error('Pipeline receiver deadline exceeded');
-    const all = await github.list(),
+    const all = await measureAsync('receiver.list', () => github.list()),
       groups = new Map<
         number,
         { runner: number; total: number; parts: Map<number, PipelineArtifact> }
@@ -215,15 +216,21 @@ async function receiveAssignedPipeline(
       const spool = join(root, 'receive-' + partition);
       await mkdir(spool);
       try {
-        const assembled = await assemblePartition(spool, github, parts);
-        const producer = await authenticateLeagueProducer(
-          assembled,
-          await cloudInput(preparedRoot, prepared, partition),
-          github.identity,
-          group.runner,
-          async () => parts,
+        const assembled = await measureAsync('receiver.assemble', () =>
+          assemblePartition(spool, github, parts),
         );
-        await staging.stage(producer.evidence, join(assembled, 'public'));
+        const producer = await measureAsync('receiver.authenticatePartition', async () =>
+          authenticateLeagueProducer(
+            assembled,
+            await cloudInput(preparedRoot, prepared, partition),
+            github.identity,
+            group.runner,
+            async () => parts,
+          ),
+        );
+        await measureAsync('receiver.stage', () =>
+          staging.stage(producer.evidence, join(assembled, 'public')),
+        );
         producers.push(producer);
         completed.add(partition);
         parts.forEach((ref) => adopted.set(ref.id, ref));
@@ -251,7 +258,10 @@ async function receiveAssignedPipeline(
     const elapsed = performance.now() - started;
     const checkJobs = terminals.size === assignments.length || elapsed - lastJobCheck >= 60000;
     if (checkJobs) lastJobCheck = elapsed;
-    if (checkJobs && (await github.successfulProducers(assignments.length))) {
+    if (
+      checkJobs &&
+      (await measureAsync('receiver.jobs', () => github.successfulProducers(assignments.length)))
+    ) {
       if (completed.size !== prepared.inputs.length || terminals.size !== assignments.length)
         throw new Error('Successful jobs have incomplete artifact coverage');
       const refs = [...terminals.values()].flatMap((terminal) => terminal.artifacts);
@@ -263,6 +273,8 @@ async function receiveAssignedPipeline(
         throw new Error('Terminal immutable artifact coverage mismatch');
       return { producers, terminals: [...terminals.values()], metadata: github.metrics() };
     }
-    await setTimeout(pipelinePollMs(performance.now() - started, polls), undefined, { signal });
+    await measureAsync('receiver.pollWait', () =>
+      setTimeout(pipelinePollMs(performance.now() - started, polls), undefined, { signal }),
+    );
   }
 }

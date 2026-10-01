@@ -1,4 +1,5 @@
 import { Octokit } from '@octokit/core';
+import { measureAsync, currentMeasurements } from '@fantasy/api/tooling';
 import {
   archiveHash,
   boundedArtifactResponse,
@@ -124,8 +125,9 @@ export class PipelineArtifacts {
     return bytes;
   }
   async download(ref: PipelineArtifact, root: string, allow: (key: string) => boolean) {
-    const bytes = await this.archive(ref);
-    await extractLeagueArchive(bytes, root, allow);
+    const bytes = await measureAsync('artifact.download.transfer', () => this.archive(ref));
+    currentMeasurements()?.addBytes('artifact.download.transfer', bytes.length);
+    await measureAsync('artifact.download.extract', () => extractLeagueArchive(bytes, root, allow));
     return ref;
   }
   async durableArtifact(id: number, expected: { digest: string; bytes: number }) {
