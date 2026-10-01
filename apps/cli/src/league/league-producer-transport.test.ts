@@ -3,16 +3,13 @@ import { cp, readFile, writeFile, rm, symlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { canonicalJson } from '@fantasy/domain/spatial';
-import { pipelineFixture, preparedPipeline } from '../../test-support/league-pipeline.ts';
+import { pipelineFixture, sealedTwoPartitionFixture } from '../../test-support/league-pipeline.ts';
 import { cloudInput, writeCloudJson } from './league-cloud-files.ts';
 import {
-  sealLeagueProducer,
   authenticatePackedLeagueProducer,
   authenticateLeagueProducer,
   type LeagueProducer,
 } from './league-producer.ts';
-import { runCloudLeagueRunner } from './league-runner.ts';
-import { PublicationEvidence } from '../publication/publication-evidence.ts';
 import { finalizeLeaguePipeline } from './league-finalizer.ts';
 import {
   packedProducerDescriptor,
@@ -144,34 +141,16 @@ it('rejects missing, extra, corrupt, foreign and mutated packed claims with fres
 });
 it('finalizes two real partitions sharing one authenticated artifact exactly once', async () => {
   await withReplayDirectory(async (root) => {
-    const f = await preparedPipeline(root, 9),
+    const f = await sealedTwoPartitionFixture(root),
       packedRoot = join(root, 'packed');
-    const baseline = await PublicationEvidence.audit(f.baselineRoot),
+    const baseline = f.baseline,
       descriptors: PackedDescriptor[] = [];
-    await runCloudLeagueRunner(
-      f.preparedRoot,
-      join(root, 'results'),
-      f.identity.source,
-      f.executionId,
-      {
-        runner: 0,
-        runners: 1,
-        workers: 2,
-        completed: async (index, directory, pool, bundles) => {
-          const destination = join(packedRoot, 'partitions', String(index));
-          const proof = await sealLeagueProducer(
-            await cloudInput(f.preparedRoot, f.prepared, index),
-            directory,
-            destination,
-            f.identity,
-            0,
-            pool,
-            bundles,
-          );
-          descriptors.push(await packedProducerDescriptor(destination, proof));
-        },
-      },
-    );
+    for (const producer of f.sealed) {
+      await cp(producer.root, join(packedRoot, 'partitions', String(producer.proof.partition)), {
+        recursive: true,
+      });
+      descriptors.push(await packedProducerDescriptor(producer.root, producer.proof));
+    }
     expect(descriptors.map((p) => p.partition)).toEqual([0, 1]);
     await writeCloudJson(
       join(packedRoot, 'index.json'),

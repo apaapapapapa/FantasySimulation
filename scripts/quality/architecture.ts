@@ -307,8 +307,8 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         mkdirSync(dirname(file), { recursive: true });
         writeFileSync(file, readFileSync(join(root, path)));
       }
-      for (const path of paths.filter((path) =>
-        /^(apps|packages)\/[^/]+\/package\.json$/.test(path),
+      for (const path of paths.filter(
+        (path) => path === 'package.json' || /^(apps|packages)\/[^/]+\/package\.json$/.test(path),
       )) {
         const modules = join(root, dirname(path), 'node_modules');
         if (existsSync(modules)) {
