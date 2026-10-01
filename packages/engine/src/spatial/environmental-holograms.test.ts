@@ -1,6 +1,7 @@
 import { expect, it } from 'vite-plus/test';
 import {
   ReplayState,
+  StoredManifestSchema,
   StreamRecordSchema,
   DEFAULT_BUDGET,
   replayContext,
@@ -9,6 +10,7 @@ import {
 import { sampleManifest } from '@fantasy/samples';
 import { battleEvents } from '../../test-support/fixtures.ts';
 import { environmentalHologramManifest } from '../../test-support/environmental-holograms.ts';
+import { initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { prepareBattle } from './prepare.ts';
 import { runPreparedBattle } from './run.ts';
 import { initialActor } from './sim/combat-state.ts';
@@ -19,6 +21,11 @@ import {
 import { createBattleWorld } from './world/terrain.ts';
 import { freezeActor, rebaseActorTimers } from './rules/subject-clocks.ts';
 import { Journal } from './rules/journal.ts';
+import { ManifestBuilder, sealRevision } from './manifest-builder.ts';
+import { spatialTransaction } from '../../test-support/spatial-objects.ts';
+import { stopManifest, stoppedTransaction } from '../../test-support/time-stop.ts';
+import { commitEffects } from './sim/combat-effects.ts';
+import { releaseStop } from './sim/time-stop-control.ts';
 
 type Hologram = NonNullable<
   StreamRecord extends infer _Record
@@ -53,6 +60,35 @@ function expectReplayRejected(
   }).toThrow(/[Ee]nvironmental hologram/);
 }
 
+function finalResources(records: StreamRecord[]) {
+  const initial = records[0];
+  if (initial?.kind !== 'initial') throw new Error('Missing initial display');
+  const actors = structuredClone(initial.state.actors);
+  for (const record of records)
+    if ('changes' in record)
+      for (const change of record.changes)
+        Object.assign(
+          actors.find((actor) => actor.id === change.id)!,
+          change,
+        );
+  return actors.map((actor) => actor.resources);
+}
+
+const decisionTrace = (records: StreamRecord[]) =>
+  battleEvents(records).flatMap((event) =>
+    event.cognition?.kind === 'decision'
+      ? [
+          {
+            actorId: event.actorId,
+            step: event.step,
+            candidates: event.cognition.candidates,
+            selection: event.cognition.selection,
+            draws: event.cognition.draws,
+          },
+        ]
+      : [],
+  );
+
 it('records one observer sensor projection through runtime, AI and replay without an actor target', async () => {
   const battle = await prepareBattle(await environmentalHologramManifest());
   expect(battle.manifest.schemaVersion).toBe(8);
@@ -83,6 +119,22 @@ it('records one observer sensor projection through runtime, AI and replay withou
     'expired',
   ]);
   const activated = firstLifecycle[0]!.environmentalHologram!;
+  const invalidatedAt = firstLifecycle[2]!.step;
+  const expiredAt = firstLifecycle[3]!.step;
+  const decisionsAfterInvalidation = events.filter(
+    (event) =>
+      event.kind === 'decision' &&
+      event.actorId === activated.observerId &&
+      event.step >= invalidatedAt &&
+      event.step < expiredAt &&
+      event.cognition?.kind === 'decision',
+  );
+  expect(decisionsAfterInvalidation.length).toBeGreaterThan(0);
+  expect(
+    decisionsAfterInvalidation.every(
+      (event) => event.cognition?.kind === 'decision' && event.cognition.sensorGoal === undefined,
+    ),
+  ).toBe(true);
   expect(activated.observerIds).toEqual([activated.observerId]);
   expect(events.some((event) => event.kind === 'damage')).toBe(false);
   expect(events.every((event) => event.targetId !== activated.id)).toBe(true);
@@ -254,6 +306,109 @@ it('fails closed when the observer visual sensor is disabled without changing re
   }
 });
 
+it('fizzles an actual no-visual projection without changing AI choice, RNG, or resources', async () => {
+  const attempted = await environmentalHologramManifest();
+  const oldAbility = attempted.revisions.find(
+    (revision) => revision.kind === 'ability' && revision.id === 'sk07-hologram',
+  );
+  if (!oldAbility || oldAbility.kind !== 'ability') throw new Error('Missing hologram ability');
+  const noEffect = await sealRevision('ability', oldAbility.id, oldAbility.revision, {
+    ...oldAbility.definition,
+    effects: [
+      {
+        kind: 'damage',
+        amount: 0,
+        attackScaleBps: 0,
+        element: 'physical',
+        defense: 'none',
+      },
+    ],
+  });
+  const control = await ManifestBuilder.relink(attempted, [{ from: oldAbility, to: noEffect }]);
+  const blind = initialStatus({
+    adjustments: [{ target: 'vision', operation: 'multiply', amount: 0 }],
+  });
+  for (const index of [0, 1] as const) {
+    await withInitialStatus(attempted, index, blind);
+    await withInitialStatus(control, index, blind);
+  }
+  const fixture = await spatialTransaction({ manifest: attempted });
+  try {
+    const source = fixture.tx.next.actors.find(
+      (actor) => actor.body.motion.actor.participant.actorId === 'left',
+    )!;
+    const observer = fixture.tx.next.actors.find(
+      (actor) => actor.body.motion.actor.participant.actorId === 'right',
+    )!;
+    const blindRevision = fixture.battle.statuses.find(
+      (revision) => revision.id === 'initial-status-1',
+    )!;
+    observer.statuses.push({
+      revision: blindRevision,
+      startStep: 0,
+      endStep: 200,
+      stacks: 1,
+      causes: ['fixture'],
+    });
+    const ability = source.body.motion.actor.abilities.find(
+      (candidate) => candidate.id === 'sk07-hologram',
+    )!;
+    const before = fixture.tx.next.actors.map((actor) => ({
+      resources: structuredClone(actor.vitals.resources),
+      random: actor.mind.random,
+      decisionRandom: structuredClone(actor.mind.decisionRandom),
+      sensors: structuredClone(actor.sensors),
+    }));
+    commitEffects(
+      fixture.tx.next.actors,
+      [
+        {
+          actorId: 'left',
+          targetId: 'right',
+          abilityId: ability.id,
+          effectIndex: 0,
+          parentEventId: 'e.0',
+          attack: 0,
+          effect: ability.definition.effects[0]!,
+        },
+      ],
+      {
+        ...fixture.context,
+        journal: fixture.tx.journal,
+        step: 1,
+        activationStep: 1,
+        phase: 'boundary',
+      },
+    );
+    expect(fixture.tx.journal.events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'fizzle',
+          abilityId: 'sk07-hologram',
+          reason: 'visual-sensor-disabled',
+        }),
+      ]),
+    );
+    expect(
+      fixture.tx.next.actors.map((actor) => ({
+        resources: actor.vitals.resources,
+        random: actor.mind.random,
+        decisionRandom: actor.mind.decisionRandom,
+        sensors: actor.sensors,
+      })),
+    ).toEqual(before);
+  } finally {
+    fixture.world.free();
+  }
+  const attemptedRun = await runPreparedBattle(await prepareBattle(attempted));
+  const controlRun = await runPreparedBattle(await prepareBattle(control));
+  expect(battleEvents(attemptedRun.records).some((event) => event.environmentalHologram)).toBe(
+    false,
+  );
+  expect(decisionTrace(attemptedRun.records)).toEqual(decisionTrace(controlRun.records));
+  expect(finalResources(attemptedRun.records)).toEqual(finalResources(controlRun.records));
+});
+
 it('pauses only future observer lifecycle deadlines on its subject clock', async () => {
   const battle = await prepareBattle(await environmentalHologramManifest());
   const world = createBattleWorld(battle);
@@ -315,6 +470,63 @@ it('pauses only future observer lifecycle deadlines on its subject clock', async
   }
 });
 
+it('retains the authored contact source through time-stop deferral', async () => {
+  const effect = {
+    kind: 'environmental-hologram' as const,
+    modality: 'visual' as const,
+    offsetMm: { x: 12_000, y: 0, z: 4_000 },
+    observationSteps: 2,
+    invalidationSteps: 7,
+    durationSteps: 10,
+  };
+  let manifest = await stopManifest({ sourceAttack: { effects: [effect] } });
+  const oldRules = manifest.revisions.find(
+    (revision) => revision.kind === 'ruleset' && revision.id === manifest.ruleset.id,
+  );
+  if (!oldRules || oldRules.kind !== 'ruleset') throw new Error('Missing rules');
+  const rules = await sealRevision('ruleset', oldRules.id, oldRules.revision, {
+    ...oldRules.definition,
+    experimental: {
+      mechanics: [...oldRules.definition.experimental!.mechanics, 'visibility'],
+    },
+  });
+  manifest = await ManifestBuilder.relink({ ...manifest, schemaVersion: 8 }, [
+    { from: oldRules, to: rules },
+  ]);
+  const fixture = await stoppedTransaction(manifest);
+  try {
+    const [source, observer] = fixture.tx.next.actors;
+    const captured = fixture.hooks.capture!([
+      {
+        actorId: 'left',
+        targetId: 'right',
+        abilityId: 'stop-shot-0',
+        effectIndex: 0,
+        parentEventId: 'e.0',
+        attack: 0,
+        effect,
+        observation: { self: source!.body.motion, target: observer!.body.motion },
+      },
+    ]);
+    expect(captured).toEqual([]);
+    const receipt = fixture.tx.journal.events.flatMap(
+      (event) => event.timeStop?.captured ?? [],
+    )[0]!;
+    expect(receipt.sourcePosition).toEqual(source!.body.motion.position);
+    source!.body.motion.position.x += 30;
+    const released = releaseStop(fixture.tx, 2, 'fixture release', 'resolution');
+    commitEffects(fixture.tx.next.actors, released, fixture.effectContext);
+    const activated = fixture.tx.journal.events.find(
+      (event) => event.environmentalHologram?.transition === 'activated',
+    );
+    expect(activated?.deferrals).toEqual([receipt.id]);
+    expect(activated?.point).toEqual(receipt.sourcePosition);
+    expect(activated?.environmentalHologram?.sourcePosition).toEqual(receipt.sourcePosition);
+  } finally {
+    fixture.world.free();
+  }
+});
+
 it('preserves legacy replay bytes by omitting the feature and sensor view', async () => {
   const run = await runPreparedBattle(await prepareBattle(await sampleManifest(1)));
   const initial = run.records[0];
@@ -322,4 +534,13 @@ it('preserves legacy replay bytes by omitting the feature and sensor view', asyn
   if (initial?.kind !== 'initial') throw new Error('Missing initial');
   expect(initial.requiredFeatures).toBeUndefined();
   expect(initial.state.actors.every((actor) => actor.sensorView === undefined)).toBe(true);
+});
+
+it('admits legacy schemas 3 through 7 but requires schema 8 for holograms', async () => {
+  const legacy = await sampleManifest(1);
+  for (const schemaVersion of [3, 4, 5, 6, 7] as const)
+    expect(StoredManifestSchema.safeParse({ ...legacy, schemaVersion }).success).toBe(true);
+  const hologram = await environmentalHologramManifest();
+  expect(StoredManifestSchema.safeParse(hologram).success).toBe(true);
+  expect(StoredManifestSchema.safeParse({ ...hologram, schemaVersion: 7 }).success).toBe(false);
 });
