@@ -322,6 +322,19 @@ export function perceive(
       lastSeen?.statuses !== undefined ||
       previous.pending.some((s) => s.enemy?.statuses !== undefined);
     const spatial = observeSpatial(world, self, objects);
+    const dependentIds = dependents
+      .filter(
+        (dependent) =>
+          dependent.ownerId !== self.actor.participant.actorId &&
+          dependent.hp > 0 &&
+          canSee(world, self, {
+            x: dependent.position.x,
+            y: dependent.position.y + dependent.body.heightMm / 2000,
+            z: dependent.position.z,
+          }),
+      )
+      .map((dependent) => dependent.id)
+      .sort(compareIds);
     pending.push({
       sampledAt: step,
       availableAt: step + interval,
@@ -367,19 +380,7 @@ export function perceive(
             },
           }
         : null,
-      dependentIds: dependents
-        .filter(
-          (dependent) =>
-            dependent.ownerId !== self.actor.participant.actorId &&
-            dependent.hp > 0 &&
-            canSee(world, self, {
-              x: dependent.position.x,
-              y: dependent.position.y + dependent.body.heightMm / 2000,
-              z: dependent.position.z,
-            }),
-        )
-        .map((dependent) => dependent.id)
-        .sort(compareIds),
+      ...(dependentIds.length ? { dependentIds } : {}),
       ...(spatial.length || previous.observation?.spatial || previous.pending.some((s) => s.spatial)
         ? { spatial }
         : {}),
