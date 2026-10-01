@@ -10,6 +10,7 @@ import { battleEvents } from '../../test-support/fixtures.ts';
 import { stoppedSummoningManifest, summoningManifest } from '../../test-support/summoning.ts';
 import { initialStatus, withInitialStatus } from '../../test-support/ai.ts';
 import { withStopReactions } from '../../test-support/time-stop.ts';
+import { reviveAbility } from '../../test-support/revival.ts';
 import { prepareBattle } from './prepare.ts';
 import { runPreparedBattle } from './run.ts';
 import { freezeDependent, settleDefeatedDependents } from './sim/dependents.ts';
@@ -29,6 +30,24 @@ async function lethalPulseSummoningManifest() {
         periodic: [{ kind: 'damage', element: 'fire', amount: 50, everySteps: 1 }],
       }),
     );
+  return manifest;
+}
+
+async function revivalWaveSummoningManifest() {
+  let manifest = await summoningManifest(12);
+  manifest = await withStopReactions(manifest, 0, [
+    reviveAbility({ costs: { hp: 0, mp: 2, uses: 4 } }),
+  ]);
+  for (const index of [0, 1] as const) {
+    await withInitialStatus(
+      manifest,
+      index,
+      initialStatus({
+        durationSteps: 6,
+        periodic: [{ kind: 'damage', element: 'fire', amount: 60, everySteps: 5 }],
+      }),
+    );
+  }
   return manifest;
 }
 
@@ -281,6 +300,80 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     despawn.reason = 'owner-defeated';
     despawn.dependent.reason = 'owner-defeated';
   });
+});
+
+it('settles dependent HP and drain in the owner revival wave before the verdict', async () => {
+  const battle = await prepareBattle(await revivalWaveSummoningManifest());
+  const run = await runPreparedBattle(battle);
+  const record = run.records.find(
+    (candidate) =>
+      'dependents' in candidate &&
+      candidate.events.some((event) => event.ruleId === 'damage.dependent-hp') &&
+      candidate.events.some((event) => !!event.revival),
+  );
+  expect(record).toBeDefined();
+  if (!record || !('dependents' in record)) throw new Error('Missing revival dependent wave');
+  const dependentDamage = record.events.find((event) => event.ruleId === 'damage.dependent-hp');
+  const dependentDrain = record.events.find(
+    (event) =>
+      event.ruleId === 'damage.drain' &&
+      event.reason === 'same-wave-hp-loss-dependent-drain' &&
+      event.entityId === dependentDamage?.targetId &&
+      !!event.before &&
+      !!event.after &&
+      event.after.hp > event.before.hp,
+  );
+  const cappedDrain = record.events.find(
+    (event) =>
+      event.ruleId === 'damage.drain' &&
+      event.reason === 'same-wave-hp-loss-dependent-drain' &&
+      event.entityId !== dependentDamage?.targetId,
+  );
+  const guard = record.events.find(
+    (event) => event.ruleId === 'reaction.activated' && event.reaction?.point === 'before-defeat',
+  );
+  const revival = record.events.find((event) => !!event.revival);
+  expect(dependentDamage?.before?.hp).toBeGreaterThan(dependentDamage?.after?.hp ?? Infinity);
+  expect(dependentDrain?.after?.hp).toBeGreaterThan(dependentDrain?.before?.hp ?? Infinity);
+  expect(dependentDrain).toMatchObject({
+    actorId: expect.any(String),
+    targetId: dependentDamage?.targetId,
+    entityId: dependentDamage?.targetId,
+    before: { hp: 72, mp: 0, shield: 0 },
+    after: { hp: 73, mp: 0, shield: 0 },
+    amount: 1,
+  });
+  expect(cappedDrain).toMatchObject({
+    targetId: cappedDrain?.entityId,
+    before: { hp: 80, mp: 0, shield: 0 },
+    after: { hp: 80, mp: 0, shield: 0 },
+    amount: 4,
+  });
+  expect(revival).toMatchObject({ before: { hp: 0 }, after: { hp: 7 } });
+  expect(dependentDamage!.sequence).toBeLessThan(dependentDrain!.sequence);
+  expect(dependentDrain!.sequence).toBeLessThan(guard!.sequence);
+  expect(guard!.sequence).toBeLessThan(revival!.sequence);
+  expect(
+    record.dependents?.update.find((dependent) => dependent.id === dependentDrain?.entityId)?.hp,
+  ).toBe(dependentDrain?.after?.hp);
+
+  const context = await replayContext(battle.manifest, run.result.simulationHash);
+  const replay = new ReplayState(context);
+  for (const candidate of run.records) {
+    replay.apply(candidate);
+    if (candidate !== record) continue;
+    expect(
+      replay
+        .checkpoint()
+        .state?.dependents?.find((dependent) => dependent.id === dependentDrain?.entityId)?.hp,
+    ).toBe(73);
+    expect(
+      replay.checkpoint().state?.actors.find((actor) => actor.id === revival?.targetId)?.resources
+        .hp,
+    ).toBe(7);
+  }
+  expect(replay.checkpoint().state?.dependents?.every((dependent) => dependent.hp > 0)).toBe(true);
+  expect(run.result.outcome).toEqual({ kind: 'draw', reason: 'time-limit' });
 });
 
 it('keeps dependent action clock frozen while lifetime/upkeep remain global', () => {
