@@ -78,24 +78,27 @@ export function applyDependents(
         same(event.before, resourcesBefore(event.actorId, event.sequence)),
       'dependent owner resource chain',
     );
+  const resourceSubject = (event: (typeof record.events)[number]) =>
+    event.kind === 'cost' || event.kind === 'resource' || event.kind === 'dependent-command'
+      ? event.actorId
+      : event.targetId;
   for (const ownerId of new Set(resourceEvents.flatMap((event) => event.actorId ?? []))) {
     const final = resourceEvents.findLast((event) => event.actorId === ownerId);
-    const followedByOwnerResourceEvent = record.events.some(
+    const anchor = record.events.findLast(
       (event) =>
         !!final &&
-        event.sequence > final.sequence &&
+        event.sequence >= final.sequence &&
+        !!event.before &&
         !!event.after &&
-        (event.actorId === ownerId || event.targetId === ownerId),
+        resourceSubject(event) === ownerId,
     );
-    if (!followedByOwnerResourceEvent) {
-      const delta = record.changes.find((change) => change.id === ownerId);
-      const recorded =
-        delta?.resources ?? prior.state?.actors.find((actor) => actor.id === ownerId)?.resources;
-      requireReplay(
-        !!final?.after && same(final.after, recorded),
-        'dependent owner resource result',
-      );
-    }
+    const delta = record.changes.find((change) => change.id === ownerId);
+    const recorded =
+      delta?.resources ?? prior.state?.actors.find((actor) => actor.id === ownerId)?.resources;
+    requireReplay(
+      !!final?.after && !!anchor?.after && same(anchor.after, recorded),
+      'dependent owner resource result',
+    );
   }
   requireReplay(
     new Set(changes.spawn.map((d) => d.id)).size === changes.spawn.length &&
