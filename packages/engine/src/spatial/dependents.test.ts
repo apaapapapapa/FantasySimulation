@@ -32,9 +32,7 @@ async function lethalPulseSummoningManifest() {
   return manifest;
 }
 
-function followedDependent(
-  record: Exclude<StreamRecord, { kind: 'initial' | 'terminal' }>,
-) {
+function followedDependent(record: Exclude<StreamRecord, { kind: 'initial' | 'terminal' }>) {
   return record.events.find((event, index, events) => {
     if (
       (event.kind !== 'dependent-command' && event.ruleId !== 'dependent.upkeep') ||
