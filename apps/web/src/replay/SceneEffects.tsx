@@ -233,6 +233,43 @@ export function SensoryCues3D({ model }: { model: SceneModel }) {
   ));
 }
 
+export function EnvironmentalHolograms3D({ model }: { model: SceneModel }) {
+  return model.environmentalHolograms.map((hologram) => {
+    const invalidated = hologram.state === 'invalidated';
+    return (
+      <group
+        key={hologram.id}
+        position={hologram.position}
+        data-environmental-hologram={hologram.id}
+        data-hologram-state={hologram.state}
+        userData={{
+          environmentalHologram: hologram.id,
+          observerId: hologram.observerId,
+          state: hologram.state,
+        }}
+      >
+        <mesh>
+          <icosahedronGeometry args={[invalidated ? 0.36 : 0.55, 1]} />
+          <meshBasicMaterial
+            color={invalidated ? '#c19ac7' : '#54d9d5'}
+            transparent
+            opacity={invalidated ? 0.22 : 0.5}
+            wireframe
+            depthWrite={false}
+          />
+        </mesh>
+        <Glow
+          position={[0, 0, 0]}
+          kind={invalidated ? 'ring' : 'soft'}
+          scale={invalidated ? 0.7 : 1.45}
+          colour={invalidated ? '#c19ac7' : '#8dfffb'}
+          opacity={invalidated ? 0.2 : 0.6}
+        />
+      </group>
+    );
+  });
+}
+
 export function Dependents3D({ model }: { model: SceneModel }) {
   return model.dependents.map((dependent) => (
     <group
@@ -454,6 +491,7 @@ export function SceneEffects({ model }: { model: SceneModel }) {
       ))}
       <Dependents3D model={model} />
       <SensoryCues3D model={model} />
+      <EnvironmentalHolograms3D model={model} />
       <Fireflies model={model} />
     </>
   );
