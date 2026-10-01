@@ -492,7 +492,11 @@ export class ReplayState {
     return structuredClone(record);
   }
 }
-/** Loads one independent checkpoint/chunk; the caller owns transport, sizes and checksums. */
+/**
+ * Loads one independent checkpoint/chunk after the caller authenticated its manifest reference,
+ * compressed size and checksum. Arbitrary implementations are semantic-test adapters, not an
+ * authenticity boundary; production readers own the verified bytes.
+ */
 export interface ReplaySeekSource {
   checkpoint(index: number): Promise<unknown>;
   records(index: number): Promise<readonly unknown[]>;
@@ -522,28 +526,6 @@ export async function seekReplayState(
     replay.nextRecord === chunk.firstRecord && replay.step === chunk.fromStep,
     'seek checkpoint index',
   );
-  // Schema 8 can carry sensor-only projections. This gate is trusted catalog input, never
-  // checkpoint content: deleting every projection from an untrusted checkpoint must not bypass it.
-  if (context.manifest.schemaVersion === 8 && index > 0) {
-    requireReplay(manifest.chunks[0]?.firstRecord === 0, 'seek hologram prefix');
-    const canonical = new ReplayState(context, await source.checkpoint(0));
-    requireReplay(
-      canonical.nextRecord === 0 && canonical.step === manifest.chunks[0]!.fromStep,
-      'seek prefix checkpoint',
-    );
-    for (let chunkIndex = 0; chunkIndex < index; chunkIndex++) {
-      const prefixChunk = manifest.chunks[chunkIndex]!;
-      requireReplay(canonical.nextRecord === prefixChunk.firstRecord, 'seek prefix continuity');
-      const records = await source.records(chunkIndex);
-      requireReplay(records.length === prefixChunk.records, 'seek chunk record count');
-      for (const record of records) canonical.apply(record);
-    }
-    requireReplay(
-      canonical.nextRecord === chunk.firstRecord &&
-        same(canonical.checkpoint(), replay.checkpoint()),
-      'seek hologram checkpoint history',
-    );
-  }
   if (nextRecord > chunk.firstRecord) {
     const records = await source.records(index);
     requireReplay(records.length === chunk.records, 'seek chunk record count');

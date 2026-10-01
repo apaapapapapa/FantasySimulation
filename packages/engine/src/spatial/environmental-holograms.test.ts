@@ -6,7 +6,6 @@ import {
   StoredManifestSchema,
   StreamRecordSchema,
   DEFAULT_BUDGET,
-  environmentalHologramId,
   replayContext,
   seekReplayState,
   type StreamRecord,
@@ -353,40 +352,6 @@ it('records one observer sensor projection through runtime, AI and replay withou
   expect(
     (await seekReplayState(context, replayManifest, activeIndex + 1, seekSource())).checkpoint(),
   ).toEqual(activeReplay.checkpoint());
-  const checkpoint = activeReplay.checkpoint();
-  const checkpointProjection = checkpoint.state?.actors
-    .flatMap((actor) => actor.sensorView?.environmentalHolograms ?? [])
-    .find((hologram) => hologram.id === firstId);
-  if (!checkpointProjection) throw new Error('Missing checkpoint projection');
-  checkpointProjection.sourcePosition.x += 1;
-  checkpointProjection.perceivedPosition.x += 1;
-  await expect(
-    seekReplayState(context, replayManifest, activeIndex + 1, seekSource(checkpoint)),
-  ).rejects.toThrow(/seek hologram checkpoint history/);
-
-  const checkpointDeleted = activeReplay.checkpoint();
-  for (const actor of checkpointDeleted.state?.actors ?? [])
-    if (actor.sensorView) actor.sensorView.environmentalHolograms = [];
-  await expect(
-    seekReplayState(context, replayManifest, activeIndex + 1, seekSource(checkpointDeleted)),
-  ).rejects.toThrow(/seek hologram checkpoint history/);
-
-  const checkpointIdentity = activeReplay.checkpoint();
-  const identityProjection = checkpointIdentity.state?.actors
-    .flatMap((actor) => actor.sensorView?.environmentalHolograms ?? [])
-    .find((hologram) => hologram.id === firstId);
-  if (!identityProjection) throw new Error('Missing identity projection');
-  const forgedId = environmentalHologramId(
-    battle.manifest.seed,
-    identityProjection.creatorId,
-    identityProjection.observerId,
-    999,
-  );
-  identityProjection.id = forgedId;
-  await expect(
-    seekReplayState(context, replayManifest, activeIndex + 1, seekSource(checkpointIdentity)),
-  ).rejects.toThrow(/seek hologram checkpoint history/);
-
   const checkpointLifecycle = activeReplay.checkpoint();
   const lifecycleProjection = checkpointLifecycle.state?.actors
     .flatMap((actor) => actor.sensorView?.environmentalHolograms ?? [])

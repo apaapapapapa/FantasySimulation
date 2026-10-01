@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { gunzipSync } from 'node:zlib';
+import { gzipSync } from 'node:zlib';
 import { expect, it } from 'vite-plus/test';
 import {
   canonicalJson,
@@ -17,7 +17,23 @@ import {
   sealRevision,
 } from '../../../../packages/engine/src/spatial/manifest-builder.ts';
 import type { OpenedReplay } from './open-replay.ts';
+import { expandArtifact } from './artifacts.ts';
 import { ReplayPlayer } from './replay-player.ts';
+
+type SavedProjection = {
+  id: string;
+  sourcePosition: { x: number; y: number; z: number };
+  perceivedPosition: { x: number; y: number; z: number };
+  activatedAt: number;
+  observedAt: number;
+  invalidatedAt: number;
+  expiresAt: number;
+};
+type SavedCheckpoint = {
+  state?: {
+    actors: { sensorView?: { environmentalHolograms: SavedProjection[] } }[];
+  };
+};
 
 it('restores an actual multi-chunk hologram recording forward, reverse and across a loop', async () => {
   const root = await mkdtemp(join(tmpdir(), 'hologram-replay-'));
@@ -47,14 +63,19 @@ it('restores an actual multi-chunk hologram recording forward, reverse and acros
     expect(manifest.chunks.length).toBeGreaterThan(1);
     const directory = join(root, 'hologram-player');
     const context = await replayContext(battle.manifest, manifest.simulationHash);
-    const checkpoints = (index: number) =>
-      readFile(join(directory, manifest.checkpoints[index]!.file)).then((bytes) =>
-        JSON.parse(gunzipSync(bytes).toString()),
-      );
-    const records = (index: number) =>
-      readFile(join(directory, manifest.chunks[index]!.file)).then((bytes) =>
-        replayChunkRecords(gunzipSync(bytes).toString(), manifest.chunks[index]!),
-      );
+    const loads: string[] = [];
+    const checkpoints = async (index: number) => {
+      const ref = manifest.checkpoints[index]!;
+      loads.push(ref.file);
+      const bytes = new Uint8Array(await readFile(join(directory, ref.file)));
+      return JSON.parse(await expandArtifact(bytes, ref));
+    };
+    const records = async (index: number) => {
+      const ref = manifest.chunks[index]!;
+      loads.push(ref.file);
+      const bytes = new Uint8Array(await readFile(join(directory, ref.file)));
+      return replayChunkRecords(await expandArtifact(bytes, ref), ref);
+    };
     const opened: OpenedReplay = {
       manifest,
       context,
@@ -62,6 +83,67 @@ it('restores an actual multi-chunk hologram recording forward, reverse and acros
       seek: (nextRecord) =>
         seekReplayState(context, manifest, nextRecord, { checkpoint: checkpoints, records }),
     };
+    const last = manifest.chunks.length - 1;
+    loads.length = 0;
+    await opened.seek(manifest.chunks[last]!.firstRecord);
+    expect(loads).toEqual([manifest.checkpoints[last]!.file]);
+    loads.length = 0;
+    await opened.seek(manifest.chunks[last]!.firstRecord + 1);
+    expect(loads).toEqual([manifest.checkpoints[last]!.file, manifest.chunks[last]!.file]);
+
+    const activeIndex = (
+      await Promise.all(
+        manifest.checkpoints.map(async (ref, index) => ({
+          index,
+          value: JSON.parse(
+            await expandArtifact(new Uint8Array(await readFile(join(directory, ref.file))), ref),
+          ) as SavedCheckpoint,
+        })),
+      )
+    ).find(({ value }) =>
+      value.state?.actors.some(
+        (actor) => (actor.sensorView?.environmentalHolograms.length ?? 0) > 0,
+      ),
+    )?.index;
+    if (activeIndex === undefined) throw new Error('Missing active saved checkpoint');
+    const activeRef = manifest.checkpoints[activeIndex]!;
+    const activeBytes = new Uint8Array(await readFile(join(directory, activeRef.file)));
+    const activeRaw = await expandArtifact(activeBytes, activeRef);
+    const variants: ((checkpoint: SavedCheckpoint) => void)[] = [
+      (checkpoint) => {
+        const projection = checkpoint.state!.actors.flatMap(
+          (actor) => actor.sensorView?.environmentalHolograms ?? [],
+        )[0]!;
+        projection.id += '.tampered';
+      },
+      (checkpoint) => {
+        const projection = checkpoint.state!.actors.flatMap(
+          (actor) => actor.sensorView?.environmentalHolograms ?? [],
+        )[0]!;
+        projection.sourcePosition.x++;
+        projection.perceivedPosition.x++;
+      },
+      (checkpoint) => {
+        for (const actor of checkpoint.state!.actors)
+          if (actor.sensorView) actor.sensorView.environmentalHolograms = [];
+      },
+      (checkpoint) => {
+        const projection = checkpoint.state!.actors.flatMap(
+          (actor) => actor.sensorView?.environmentalHolograms ?? [],
+        )[0]!;
+        projection.activatedAt++;
+        projection.observedAt++;
+        projection.invalidatedAt++;
+        projection.expiresAt++;
+      },
+    ];
+    for (const mutate of variants) {
+      const checkpoint = JSON.parse(activeRaw) as SavedCheckpoint;
+      mutate(checkpoint);
+      const tampered = new Uint8Array(gzipSync(JSON.stringify(checkpoint)));
+      await expect(expandArtifact(tampered, activeRef)).rejects.toThrow(/size and checksum/);
+    }
+
     const player = new ReplayPlayer(opened);
     const expected = new Map<number, string>();
     for (const step of [0, 100, 275])
