@@ -103,6 +103,41 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     if (!command?.after) throw new Error('Missing command cost');
     command.after.mp += 1;
   });
+  rejects((records) => {
+    const record = actionRecord(records);
+    if (!record || !('events' in record)) throw new Error('Missing action record');
+    const command = record.events.find((event) => event.kind === 'dependent-command');
+    if (!command?.before || !command.after) throw new Error('Missing command cost');
+    command.before.mp += 1;
+    command.after.mp += 1;
+  });
+  rejects((records) => {
+    const record = records.find(
+      (candidate) =>
+        'events' in candidate &&
+        candidate.events.some((event) => event.ruleId === 'dependent.upkeep'),
+    );
+    if (!record || !('events' in record)) throw new Error('Missing upkeep record');
+    const upkeep = record.events.find((event) => event.ruleId === 'dependent.upkeep');
+    if (!upkeep?.before || !upkeep.after) throw new Error('Missing upkeep cost');
+    upkeep.before.mp += 1;
+    upkeep.after.mp += 1;
+  });
+  rejects((records) => {
+    const record = records.find(
+      (candidate) => 'dependents' in candidate && candidate.dependents?.remove.length,
+    );
+    if (!record || !('dependents' in record) || !record.dependents || !('events' in record))
+      throw new Error('Missing removal record');
+    const removal = record.dependents.remove[0]!;
+    const despawn = record.events.find(
+      (event) => event.kind === 'dependent-despawn' && event.entityId === removal.id,
+    );
+    if (!despawn?.dependent) throw new Error('Missing despawn');
+    removal.reason = 'owner-defeated';
+    despawn.reason = 'owner-defeated';
+    despawn.dependent.reason = 'owner-defeated';
+  });
 });
 
 it('keeps dependent action clock frozen while lifetime/upkeep remain global', () => {

@@ -59,6 +59,25 @@ export function applyDependents(
 ) {
   const dependents = (state.dependents ??= []);
   const priorDependents = prior.state?.dependents ?? [];
+  const resourceEvents = record.events.filter(
+    (event) => event.kind === 'dependent-command' || event.ruleId === 'dependent.upkeep',
+  );
+  const resourcesBefore = (ownerId: string, sequence: number) => {
+    let resources = prior.state?.actors.find((actor) => actor.id === ownerId)?.resources;
+    for (const event of resourceEvents) {
+      if (event.sequence >= sequence || event.actorId !== ownerId) continue;
+      resources = event.after ?? resources;
+    }
+    return resources;
+  };
+  for (const event of resourceEvents)
+    requireReplay(
+      !!event.before &&
+        !!event.after &&
+        event.actorId !== null &&
+        same(event.before, resourcesBefore(event.actorId, event.sequence)),
+      'dependent owner resource chain',
+    );
   requireReplay(
     new Set(changes.spawn.map((d) => d.id)).size === changes.spawn.length &&
       new Set(changes.update.map((d) => d.id)).size === changes.update.length &&
@@ -189,6 +208,7 @@ export function applyDependents(
           command.dependent?.nextActionAt === expectedActionAt &&
           !!command.before &&
           !!command.after &&
+          same(command.before, resourcesBefore(dependent.ownerId, command.sequence)) &&
           command.before.mp - command.after.mp === spec!.commandCostMp &&
           command.before.hp === command.after.hp &&
           command.before.shield === command.after.shield &&
@@ -221,6 +241,7 @@ export function applyDependents(
           cost.abilityId === dependent.abilityId &&
           !!cost.before &&
           !!cost.after &&
+          same(cost.before, resourcesBefore(dependent.ownerId, cost.sequence)) &&
           cost.before.mp - cost.after.mp === spec!.upkeep.mp &&
           cost.before.hp === cost.after.hp &&
           cost.before.shield === cost.after.shield &&
@@ -254,13 +275,34 @@ export function applyDependents(
     const event = record.events.find(
       (candidate) => candidate.kind === 'dependent-despawn' && candidate.entityId === removal.id,
     );
-    requireReplay(
+    const step = transitionStep(record);
+    const spec = existing && ownerAbility(context, existing)?.definition.summon;
+    const owner = existing && prior.state?.actors.find((actor) => actor.id === existing.ownerId);
+    const ownerDelta = existing && record.changes.find((change) => change.id === existing.ownerId);
+    const common =
       !!existing &&
-        event?.actorId === existing.ownerId &&
-        event.targetId === existing.hostileOwnerId &&
-        event.dependent?.reason === removal.reason,
-      'dependent removal event binding',
-    );
+      !!spec &&
+      event?.actorId === existing.ownerId &&
+      event.targetId === existing.hostileOwnerId &&
+      event.abilityId === existing.abilityId &&
+      event.entityId === existing.id &&
+      event.ruleId === 'dependent.lifecycle' &&
+      event.reason === removal.reason &&
+      event.dependent?.reason === removal.reason &&
+      event.step === step;
+    const reasonValid =
+      removal.reason === 'expired'
+        ? event?.phase === 'boundary' && step === existing!.expiresAt
+        : removal.reason === 'upkeep'
+          ? event?.phase === 'boundary' &&
+            step >= existing!.nextUpkeepAt &&
+            (resourcesBefore(existing!.ownerId, event.sequence)?.mp ?? Number.MAX_SAFE_INTEGER) <
+              spec!.upkeep.mp
+          : removal.reason === 'owner-defeated'
+            ? event?.phase === 'resolution' &&
+              (owner?.resources.hp === 0 || ownerDelta?.resources?.hp === 0)
+            : false;
+    requireReplay(common && reasonValid, 'dependent removal event binding');
     state.dependents = state.dependents!.filter((dependent) => dependent.id !== removal.id);
   }
   for (const event of record.events.filter((candidate) => candidate.dependent)) {
