@@ -27,6 +27,7 @@ export async function computePipeline(
   identity: PipelineIdentity,
   runner: number,
   signal: AbortSignal,
+  beforeCompute?: (preparedRoot: string) => Promise<void>,
 ) {
   const prefix = `league-${identity.runId}-${identity.runAttempt}`;
   const all = await github.list(prefix + '-inputs'),
@@ -39,6 +40,7 @@ export async function computePipeline(
   );
   if (canonicalJson(control.identity) !== canonicalJson(identity))
     throw new Error('Shared input identity mismatch');
+  await beforeCompute?.(preparedRoot);
   const prepared = await preparedLeague(preparedRoot),
     artifacts: PipelineArtifact[] = [];
   const outcome = await runCloudLeagueRunner(

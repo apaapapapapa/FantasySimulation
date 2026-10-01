@@ -1,0 +1,113 @@
+name: League partition diagnostic
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful exact-source main CI
+        type: string
+        required: true
+      runners:
+        description: Bounded diagnostic width
+        type: choice
+        options: ['1', '2']
+        default: '1'
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: league-partition-diagnostic
+  cancel-in-progress: false
+env:
+  LEAGUE_CI_RUN: ${{ inputs.ci_run_id }}
+  LEAGUE_RUNNERS: ${{ inputs.runners }}
+jobs:
+  admit:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.prepare.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Prepare original380 diagnostic inputs
+        id: prepare
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: partition-prepare
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: partition-pilot-${{ github.run_id }}-${{ github.run_attempt }}-prepare
+          path: .generated/league-partition-pilot/*.json
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+  compute:
+    needs: admit
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix: ${{ fromJSON(needs.admit.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Compute validate save and transfer partition
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+          LEAGUE_RUNNER: ${{ matrix.index }}
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: partition-compute
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: partition-pilot-${{ github.run_id }}-${{ github.run_attempt }}-runner-${{ matrix.index }}
+          path: .generated/league-partition-pilot/*.json
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+  consume:
+    needs: admit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+      - name: Receive authenticate fixture-stage and aggregate
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: partition-consume
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: partition-pilot-${{ github.run_id }}-${{ github.run_attempt }}-consume
+          path: .generated/league-partition-pilot/*.json
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7

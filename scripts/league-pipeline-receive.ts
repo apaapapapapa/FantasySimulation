@@ -12,7 +12,10 @@ import {
   cloudJson,
   preparedLeague,
 } from '../apps/cli/src/league/league-cloud-files.ts';
-import { assignLeagueRunners } from '../apps/cli/src/league/league-assignment.ts';
+import {
+  assignLeagueRunners,
+  requireLeagueAssignment,
+} from '../apps/cli/src/league/league-assignment.ts';
 import { preparedLeagueCosts } from '../apps/cli/src/league/league-cost-profile.ts';
 import {
   authenticateLeagueProducer,
@@ -108,14 +111,63 @@ export async function receivePipeline(
   staging: LeagueStaging,
   signal: AbortSignal,
 ) {
-  const started = performance.now(),
-    prefix = `league-${github.identity.runId}-${github.identity.runAttempt}`;
   const prepared = await preparedLeague(preparedRoot);
   const assignments = assignLeagueRunners(
     prepared.plan,
     runners,
     await preparedLeagueCosts(preparedRoot, prepared, true),
   );
+  return receiveAssignedPipeline(root, preparedRoot, github, runners, staging, signal, assignments);
+}
+
+/** Diagnostic only: original-input binding is checked before any artifact receive. */
+export async function receivePartitionPilot(
+  root: string,
+  preparedRoot: string,
+  github: PipelineArtifacts,
+  runners: number,
+  staging: LeagueStaging,
+  signal: AbortSignal,
+  originalInputs: (preparedRoot: string) => Promise<void>,
+) {
+  await originalInputs(preparedRoot);
+  const prepared = await preparedLeague(preparedRoot);
+  if (
+    ![1, 2].includes(runners) ||
+    prepared.inputs.length !== 3 ||
+    prepared.plan.partitions.length !== 3 ||
+    prepared.plan.partitions.reduce((n, p) => n + p.slots, 0) !== 380
+  )
+    throw new Error('Partition pilot scope mismatch');
+  const assignments = requireLeagueAssignment(
+    prepared.plan,
+    assignLeagueRunners(prepared.plan, runners),
+    runners,
+  );
+  return receiveAssignedPipeline(root, preparedRoot, github, runners, staging, signal, assignments);
+}
+
+async function receiveAssignedPipeline(
+  root: string,
+  preparedRoot: string,
+  github: PipelineArtifacts,
+  runners: number,
+  staging: LeagueStaging,
+  signal: AbortSignal,
+  assignments: ReturnType<typeof assignLeagueRunners>,
+) {
+  const started = performance.now(),
+    prefix = `league-${github.identity.runId}-${github.identity.runAttempt}`;
+  const prepared = await preparedLeague(preparedRoot);
+  const coverage = assignments.flatMap((a) => a.partitions);
+  if (
+    assignments.length !== runners ||
+    assignments.some((a, i) => a.runner !== i) ||
+    coverage.length !== prepared.inputs.length ||
+    new Set(coverage).size !== coverage.length ||
+    coverage.some((p) => !Number.isInteger(p) || p < 0 || p >= prepared.inputs.length)
+  )
+    throw new Error('Incomplete receiver assignment coverage');
   pipelineCapacity(prepared.inputs.length, assignments);
   const producers: LeagueProducer[] = [],
     completed = new Set<number>(),

@@ -5,6 +5,9 @@ import { join } from 'node:path';
 const commands: Record<string, string[]> = {
   'pilot-produce': ['scripts/league-artifact-pilot.ts', 'produce'],
   'pilot-consume': ['scripts/league-artifact-pilot.ts', 'consume'],
+  'partition-prepare': ['scripts/league-partition-pilot.ts', 'prepare'],
+  'partition-compute': ['scripts/league-partition-pilot.ts', 'compute'],
+  'partition-consume': ['scripts/league-partition-pilot.ts', 'consume'],
   prepare: ['scripts/league-pipeline.ts', 'prepare'],
   admit: ['scripts/league-pipeline.ts', 'admit'],
   compute: ['scripts/league-pipeline.ts', 'compute'],
