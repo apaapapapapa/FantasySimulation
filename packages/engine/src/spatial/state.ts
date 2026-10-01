@@ -303,7 +303,11 @@ export type EnvironmentalHologram = {
   creatorId: string;
   observerId: string;
   observerIds: [string];
+  abilityId: string;
+  effectIndex: number;
+  stageIndex?: number;
   modality: 'visual';
+  sourcePosition: Vec3;
   perceivedPosition: Vec3;
   state: 'active-unobserved' | 'observed' | 'invalidated';
   activatedAt: number;
@@ -405,6 +409,7 @@ export type PendingEffect = DamageSnapshot & {
   actorId: string | null;
   targetId: string;
   effect: DeepReadonly<Effect>;
+  effectIndex?: number;
   parentEventId: string | null;
   abilityId: string | null;
   causes?: readonly string[];

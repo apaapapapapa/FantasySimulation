@@ -1,4 +1,7 @@
-import { environmentalHologramId } from '../environmental-holograms.ts';
+import {
+  environmentalHologramId,
+  environmentalHologramOrdinal,
+} from '../environmental-holograms.ts';
 import type { BattleEvent } from '../records.ts';
 import type { ReplayCheckpoint } from '../replay.ts';
 import type { ActorDisplay, StreamRecord } from '../stream.ts';
@@ -15,8 +18,131 @@ const hologramMap = (actors: readonly ActorDisplay[]) =>
       (actor.sensorView?.environmentalHolograms ?? []).map((hologram) => [hologram.id, hologram]),
     ),
   );
-const immutableProjection = ({ state: _, ...hologram }: ReturnType<typeof withoutTransition>) =>
-  hologram;
+const immutableProjection = (hologram: ReturnType<typeof withoutTransition>) => {
+  const { state, ...projection } = hologram;
+  void state;
+  return projection;
+};
+
+type EnvironmentalHologram = NonNullable<
+  ActorDisplay['sensorView']
+>['environmentalHolograms'][number];
+
+function pausedBefore(actor: ActorDisplay, hologram: EnvironmentalHologram, deadline: number) {
+  const completed = (actor.clock?.periods ?? []).reduce(
+    (total, period) =>
+      period.from < deadline
+        ? total + Math.max(0, period.to - Math.max(period.from, hologram.activatedAt))
+        : total,
+    0,
+  );
+  return completed;
+}
+
+function validateProjection(
+  context: ReplayContext,
+  actor: ActorDisplay,
+  hologram: EnvironmentalHologram,
+  step: number,
+  boundaryApplied: boolean,
+) {
+  const creator = context.actors.find(
+    (candidate) => candidate.participant.actorId === hologram.creatorId,
+  );
+  const ability = creator?.abilities.find((candidate) => candidate.id === hologram.abilityId);
+  const effects =
+    hologram.stageIndex === undefined
+      ? ability?.definition.effects
+      : ability?.definition.stages?.[hologram.stageIndex]?.effects;
+  const effect = effects?.[hologram.effectIndex];
+  requireReplay(
+    effect?.kind === 'environmental-hologram',
+    'environmental hologram authored effect',
+  );
+  if (effect?.kind !== 'environmental-hologram') return;
+  const ordinal = environmentalHologramOrdinal(hologram.id);
+  requireReplay(
+    ordinal !== null &&
+      hologram.id ===
+        environmentalHologramId(
+          context.manifest.seed,
+          hologram.creatorId,
+          hologram.observerId,
+          ordinal,
+        ),
+    'environmental hologram identity',
+  );
+  requireReplay(
+    same(hologram.perceivedPosition, {
+      x: hologram.sourcePosition.x + effect.offsetMm.x / 1000,
+      y: hologram.sourcePosition.y + effect.offsetMm.y / 1000,
+      z: hologram.sourcePosition.z + effect.offsetMm.z / 1000,
+    }),
+    'environmental hologram authored position',
+  );
+  requireReplay(
+    hologram.observedAt ===
+      hologram.activatedAt +
+        effect.observationSteps +
+        pausedBefore(actor, hologram, hologram.observedAt) &&
+      hologram.invalidatedAt ===
+        hologram.activatedAt +
+          effect.invalidationSteps +
+          pausedBefore(actor, hologram, hologram.invalidatedAt) &&
+      hologram.expiresAt ===
+        hologram.activatedAt +
+          effect.durationSteps +
+          pausedBefore(actor, hologram, hologram.expiresAt),
+    'environmental hologram authored schedule',
+  );
+  const lifecycleStep = actor.clock?.frozen?.from ?? step;
+  const lifecycleBoundaryApplied = actor.clock?.frozen ? true : boundaryApplied;
+  const after = (deadline: number) =>
+    lifecycleStep > deadline || (lifecycleStep === deadline && lifecycleBoundaryApplied);
+  requireReplay(
+    hologram.state ===
+      (after(hologram.invalidatedAt)
+        ? 'invalidated'
+        : after(hologram.observedAt)
+          ? 'observed'
+          : 'active-unobserved'),
+    'environmental hologram checkpoint lifecycle',
+  );
+}
+
+export function validateEnvironmentalHologramCheckpoint(
+  context: ReplayContext,
+  state: { actors: ActorDisplay[] },
+  step: number,
+  boundaryApplied: boolean,
+  requiredFeatures: readonly string[] | undefined,
+) {
+  const enabled = requiredFeatures?.includes('environmental-holograms-v1') === true;
+  const all = state.actors.flatMap((actor) => actor.sensorView?.environmentalHolograms ?? []);
+  requireReplay(
+    state.actors.every((actor) => (actor.sensorView !== undefined) === enabled),
+    'environmental hologram sensor view',
+  );
+  requireReplay(
+    new Set(all.map((hologram) => hologram.id)).size === all.length,
+    'duplicate environmental hologram',
+  );
+  const actorIds = new Set(state.actors.map((actor) => actor.id));
+  for (const actor of state.actors)
+    for (const hologram of actor.sensorView?.environmentalHolograms ?? []) {
+      requireReplay(
+        hologram.observerId === actor.id &&
+          hologram.observerIds.length === 1 &&
+          hologram.observerIds[0] === actor.id &&
+          hologram.creatorId !== actor.id &&
+          actorIds.has(hologram.creatorId) &&
+          hologram.activatedAt <= step &&
+          (step < hologram.expiresAt || (step === hologram.expiresAt && !boundaryApplied)),
+        'environmental hologram observer/time',
+      );
+      validateProjection(context, actor, hologram, step, boundaryApplied);
+    }
+}
 
 export function validateEnvironmentalHolograms(
   context: ReplayContext,
@@ -27,32 +153,10 @@ export function validateEnvironmentalHolograms(
   const required = record.kind === 'initial' ? record.requiredFeatures : prior.requiredFeatures;
   const before = hologramMap(prior.state?.actors ?? []);
   const after = hologramMap(state.actors);
-  const all = state.actors.flatMap((actor) => actor.sensorView?.environmentalHolograms ?? []);
-  requireReplay(after.size === all.length, 'duplicate environmental hologram');
-  const enabled = required?.includes('environmental-holograms-v1') === true;
-  requireReplay(
-    state.actors.every((actor) => (actor.sensorView !== undefined) === enabled),
-    'environmental hologram sensor view',
-  );
-  if (all.length)
-    requireReplay(
-      required?.includes('environmental-holograms-v1') === true,
-      'environmental hologram feature',
-    );
-  const actorIds = new Set(state.actors.map((actor) => actor.id));
   const step = record.kind === 'interval' ? record.toStep : record.step;
-  for (const actor of state.actors)
-    for (const hologram of actor.sensorView?.environmentalHolograms ?? [])
-      requireReplay(
-        hologram.observerId === actor.id &&
-          hologram.observerIds.length === 1 &&
-          hologram.observerIds[0] === actor.id &&
-          hologram.creatorId !== actor.id &&
-          actorIds.has(hologram.creatorId) &&
-          hologram.activatedAt <= step &&
-          step <= hologram.expiresAt,
-        'environmental hologram observer/time',
-      );
+  const boundaryApplied =
+    record.kind === 'boundary' ? true : record.kind === 'terminal' ? prior.boundaryApplied : false;
+  validateEnvironmentalHologramCheckpoint(context, state, step, boundaryApplied, required);
   if (!('events' in record)) return;
   for (const [id, hologram] of after) {
     const old = before.get(id);
@@ -66,6 +170,11 @@ export function validateEnvironmentalHolograms(
         !!event &&
           event.environmentalHologram !== undefined &&
           same(withoutTransition(event.environmentalHologram), hologram) &&
+          event.abilityId === hologram.abilityId &&
+          same(event.point, hologram.sourcePosition) &&
+          (hologram.stageIndex === undefined
+            ? event.stage === undefined
+            : event.stage?.stageIndex === hologram.stageIndex) &&
           id ===
             environmentalHologramId(
               context.manifest.seed,
@@ -74,6 +183,13 @@ export function validateEnvironmentalHolograms(
               event.sequence,
             ),
         'environmental hologram activation identity',
+      );
+      const source = event?.deferrals?.length
+        ? prior.deferred?.find((receipt) => event.deferrals!.includes(receipt.id))?.sourcePosition
+        : prior.state?.actors.find((candidate) => candidate.id === hologram.creatorId)?.position;
+      requireReplay(
+        !!source && same(source, hologram.sourcePosition),
+        'environmental hologram runtime source position',
       );
       continue;
     }

@@ -12,3 +12,10 @@ export function environmentalHologramId(
   }
   return `hologram.${seed.toString(16)}.${emissionOrdinal.toString(16)}.${hash.toString(16)}`;
 }
+
+export function environmentalHologramOrdinal(id: string) {
+  const match = /^hologram\.[0-9a-f]+\.([0-9a-f]+)\.[0-9a-f]+$/.exec(id);
+  if (!match) return null;
+  const ordinal = Number.parseInt(match[1]!, 16);
+  return Number.isSafeInteger(ordinal) && ordinal >= 0 ? ordinal : null;
+}

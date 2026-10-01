@@ -39,7 +39,10 @@ import { validateEvents } from './replay-validation/event.ts';
 import { validateInterferences } from './replay-validation/interference.ts';
 import { validateSensoryCues } from './replay-validation/sensory-cue.ts';
 import { applyDependents, validateDependent } from './replay-validation/dependent.ts';
-import { validateEnvironmentalHolograms } from './replay-validation/environmental-hologram.ts';
+import {
+  validateEnvironmentalHologramCheckpoint,
+  validateEnvironmentalHolograms,
+} from './replay-validation/environmental-hologram.ts';
 
 /** Atomic display restoration. This is not an engine resume snapshot or combat re-simulation. */
 export class ReplayState {
@@ -79,6 +82,13 @@ export class ReplayState {
     else {
       requireReplay(v.nextRecord > 0 && v.lastRecord !== null, 'checkpoint cursor');
       this.validateState(v.state, v.step);
+      validateEnvironmentalHologramCheckpoint(
+        context,
+        v.state,
+        v.step,
+        v.boundaryApplied,
+        v.requiredFeatures,
+      );
       const last = v.lastRecord!;
       validateClocks(
         context,

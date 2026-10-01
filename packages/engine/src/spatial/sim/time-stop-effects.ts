@@ -37,6 +37,16 @@ export function stopEffectHooks(tx: StepTransaction, context: EffectContext) {
           targetId: effect.targetId,
           abilityId: effect.abilityId!,
           effect: EffectSchema.parse(effect.effect),
+          ...(effect.effect.kind === 'environmental-hologram'
+            ? {
+                sourcePosition: {
+                  ...(effect.observation?.self.position ??
+                    tx.next.actors.find(
+                      (actor) => actor.body.motion.actor.participant.actorId === effect.actorId,
+                    )!.body.motion.position),
+                },
+              }
+            : {}),
           ...(effect.sourceActorId
             ? {
                 sourceActorId: effect.sourceActorId,

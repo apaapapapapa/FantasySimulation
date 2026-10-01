@@ -214,7 +214,9 @@ export function commitEffects(
         if (
           !eligibility.eligible ||
           actor.sensors.environmentalHolograms.length >= 8 ||
-          !app.actorId
+          !app.actorId ||
+          !app.abilityId ||
+          app.effectIndex === undefined
         ) {
           app.event.kind = 'fizzle';
           app.event.ruleId = 'environmental-hologram.eligibility';
@@ -222,7 +224,9 @@ export function commitEffects(
             ? eligibility.reason
             : !app.actorId
               ? 'missing-creator'
-              : 'observer-hologram-cap';
+              : !app.abilityId || app.effectIndex === undefined
+                ? 'missing-authored-effect'
+                : 'observer-hologram-cap';
         } else {
           const identity = hologramIdentity(
             battle.manifest.seed,
@@ -240,7 +244,11 @@ export function commitEffects(
             creatorId: app.actorId,
             observerId: result.actorId,
             observerIds: [result.actorId] as [string],
+            abilityId: app.abilityId,
+            effectIndex: app.effectIndex,
+            ...(app.stage ? { stageIndex: app.stage.stageIndex } : {}),
             modality: 'visual' as const,
+            sourcePosition: { ...source },
             perceivedPosition: {
               x: source.x + app.effect.offsetMm.x / 1000,
               y: source.y + app.effect.offsetMm.y / 1000,
@@ -254,6 +262,7 @@ export function commitEffects(
           };
           actor.sensors.environmentalHolograms.push(hologram);
           app.event.entityId = hologram.id;
+          app.event.point = { ...source };
           app.event.ruleId = 'environmental-hologram.activated';
           app.event.reason = 'bounded-observer-visual-sensor-projection';
           app.event.environmentalHologram = { ...hologram, transition: 'activated' };

@@ -2,6 +2,7 @@ import { environmentalHologramId, type BattleEvent } from '@fantasy/domain/spati
 import type { ActorState, EnvironmentalHologram } from '../state.ts';
 import type { Journal } from '../rules/journal.ts';
 import { adjustedStatusValue } from '../rules/status-modifiers.ts';
+import { frozen } from '../rules/subject-clocks.ts';
 
 export function hologramIdentity(
   seed: number,
@@ -26,6 +27,7 @@ export function recordedHologram(
 
 /** Lifecycle changes occur only at boundaries; terminal removal makes each transition one-shot. */
 export function settleEnvironmentalHolograms(actor: ActorState, step: number, journal: Journal) {
+  if (frozen(actor)) return;
   const retained: EnvironmentalHologram[] = [];
   for (const hologram of actor.sensors.environmentalHolograms) {
     if (hologram.state === 'active-unobserved' && hologram.observedAt <= step) {
