@@ -215,7 +215,8 @@ export const STARTUP_SKILL_ABILITY_IDS = swordRatRelease.map(({ abilityId }) => 
 export const INTEGRATED_STARTUP_CATALOG_V2_REVISION = 2;
 export const INTEGRATED_STARTUP_CATALOG_V3_REVISION = 3;
 export const PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION = 4;
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 5;
+export const INTEGRATED_STARTUP_CATALOG_V5_REVISION = 5;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 6;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>
@@ -342,6 +343,39 @@ const historicalReleaseNodes = new Map<string, { releaseRevision: number; prior:
       },
     },
   ],
+  [
+    'skill.archery.rat.1',
+    {
+      releaseRevision: 6,
+      prior: {
+        id: 'skill.archery.rat.1',
+        coordinate: { path: 'archery', zodiac: 'rat', dan: 1 },
+        name: 'First loose',
+        description:
+          'A simple arrow is loosed before a longer aiming exchange develops. Lower-dan techniques remain the lower-commitment option.',
+        lifecycle: 'implemented',
+        prerequisites: [],
+        deepening: {
+          kind: 'foundation',
+          explanation: 'Establishes the ordinary projectile shot as the low-preparation option.',
+          retainsLowerUse: true,
+        },
+        pathRoleTags: ['initiative', 'range-sightline-aim', 'zodiac.rat'],
+        resolution: [
+          {
+            kind: 'active-ability',
+            ability: {
+              id: 'arrow',
+              revision: 1,
+              contentHash:
+                'sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81',
+            },
+          },
+        ],
+        fixtureIds: ['projectile-golden', 'stage-single-projectile'],
+      },
+    },
+  ],
 ]);
 
 function integratedNodesAtRevision(revision: number): SkillNode[] {
@@ -380,6 +414,15 @@ export function readPreviousIntegratedStartupSkillCatalog(revisionInput: unknown
   );
 }
 
+/** Reconstruct immutable catalog v5 before the archery runtime release. */
+export function readIntegratedStartupSkillCatalogV5(revisionInput: unknown[]): SkillCatalog {
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    INTEGRATED_STARTUP_CATALOG_V5_REVISION,
+    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V5_REVISION),
+  );
+}
+
 /** Overlay every current authored shard as the next immutable startup catalog revision. */
 export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
   return assembleIntegratedStartupSkillCatalog(
@@ -400,9 +443,9 @@ export function inspectIntegratedStartupSkillCatalog(
       fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
     });
   if (
-    report.available !== 29 ||
-    report.verified !== 29 ||
-    report.lifecycle.implemented !== 3 ||
+    report.available !== 30 ||
+    report.verified !== 30 ||
+    report.lifecycle.implemented !== 2 ||
     report.lifecycle.draft !== 1_120 ||
     report.issues.length
   )
