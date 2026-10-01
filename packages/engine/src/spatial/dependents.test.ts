@@ -145,13 +145,15 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
           !event.actorId
         )
           return false;
-        return events.slice(index + 1).some(
-          (later) =>
-            !!later.before &&
-            !!later.after &&
-            later.targetId === event.actorId &&
-            !['cost', 'resource', 'dependent-command'].includes(later.kind),
-        );
+        return events
+          .slice(index + 1)
+          .some(
+            (later) =>
+              !!later.before &&
+              !!later.after &&
+              later.targetId === event.actorId &&
+              !['cost', 'resource', 'dependent-command'].includes(later.kind),
+          );
       });
     });
     const record = records[recordIndex];
