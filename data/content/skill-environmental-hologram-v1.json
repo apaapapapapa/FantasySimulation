@@ -1,0 +1,32 @@
+{
+  "kind": "ability",
+  "id": "side-step-image-v1",
+  "revision": 1,
+  "schemaVersion": 1,
+  "definition": {
+    "name": "Side-Step Image",
+    "originalText": "Project one short-lived visual sensor image beside the caster to cover a withdrawal.",
+    "trigger": "action",
+    "categories": ["special"],
+    "target": "enemy",
+    "condition": { "kind": "always" },
+    "costs": { "hp": 0, "mp": 2, "uses": 3 },
+    "castSteps": 0,
+    "recoverySteps": 10,
+    "cooldownSteps": 100,
+    "movementWhileCasting": "allow",
+    "rangeMm": 200000,
+    "aimErrorMilliDegrees": 0,
+    "attack": { "kind": "hitscan", "radiusMm": 0 },
+    "effects": [
+      {
+        "kind": "environmental-hologram",
+        "modality": "visual",
+        "offsetMm": { "x": 12000, "y": 0, "z": 4000 },
+        "observationSteps": 2,
+        "invalidationSteps": 7,
+        "durationSteps": 300
+      }
+    ]
+  }
+}

@@ -11,7 +11,8 @@ import {
   replayContext,
   seekReplayState,
 } from '@fantasy/domain/spatial';
-import { prepareBattle, runPreparedBattle } from '@fantasy/engine/spatial';
+import { ManifestBuilder, prepareBattle, runPreparedBattle } from '@fantasy/engine/spatial';
+import { sampleCatalog } from '@fantasy/samples';
 import { ReplayWriter } from '../../../api/src/replay/replay-writer.ts';
 import { environmentalHologramManifest } from '../../../../packages/engine/test-support/environmental-holograms.ts';
 import type { OpenedReplay } from './open-replay.ts';
@@ -43,7 +44,27 @@ type SavedCheckpoint = {
 it('restores an actual multi-chunk hologram recording forward, reverse and across a loop', async () => {
   const root = await mkdtemp(join(tmpdir(), 'hologram-replay-'));
   try {
-    const input = await environmentalHologramManifest(350, 300);
+    const fixture = await environmentalHologramManifest(350, 300),
+      fixtureAbility = fixture.revisions.find(
+        (revision) => revision.kind === 'ability' && revision.id === 'sk07-hologram',
+      ),
+      productionAbility = (await sampleCatalog()).find(
+        (revision) => revision.kind === 'ability' && revision.id === 'side-step-image-v1',
+      );
+    if (fixtureAbility?.kind !== 'ability' || productionAbility?.kind !== 'ability')
+      throw new Error('Missing hologram abilities');
+    const input = await ManifestBuilder.relink(fixture, [
+      { from: fixtureAbility, to: productionAbility },
+    ]);
+    expect(input.participants[0]!.character).not.toEqual(fixture.participants[0]!.character);
+    expect(input.revisions).toContainEqual(
+      expect.objectContaining({
+        kind: 'ability',
+        id: 'side-step-image-v1',
+        revision: 1,
+        contentHash: 'sha256:96e42f32200a1d27beffa1a185a79206b847ce2a1ff162b680150bab6a0aa1fa',
+      }),
+    );
     const battle = await prepareBattle(input);
     const output = await runPreparedBattle(battle);
     const writer = await ReplayWriter.create(root, {

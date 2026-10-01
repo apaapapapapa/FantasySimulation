@@ -13,7 +13,10 @@ import {
   type SkillDan,
   type SkillNode,
 } from '@fantasy/domain';
-import { integratedSkillShards } from '@fantasy/samples/authoring';
+import {
+  ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
+  integratedSkillShards,
+} from '@fantasy/samples/authoring';
 
 const catalogId = 'skill-catalog-v1';
 const swordRatNodeId = (dan: SkillDan) => `skill.sword.rat.${dan}`;
@@ -216,7 +219,8 @@ export const INTEGRATED_STARTUP_CATALOG_V2_REVISION = 2;
 export const INTEGRATED_STARTUP_CATALOG_V3_REVISION = 3;
 export const PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION = 4;
 export const INTEGRATED_STARTUP_CATALOG_V5_REVISION = 5;
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 6;
+export const INTEGRATED_STARTUP_CATALOG_V6_REVISION = 6;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 7;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>
@@ -423,13 +427,21 @@ export function readIntegratedStartupSkillCatalogV5(revisionInput: unknown[]): S
   );
 }
 
-/** Overlay every current authored shard as the next immutable startup catalog revision. */
-export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
+/** Reconstruct immutable catalog v6 before the environmental hologram release. */
+export function readIntegratedStartupSkillCatalogV6(revisionInput: unknown[]): SkillCatalog {
   return assembleIntegratedStartupSkillCatalog(
     revisionInput,
-    INTEGRATED_STARTUP_CATALOG_REVISION,
-    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_REVISION),
+    INTEGRATED_STARTUP_CATALOG_V6_REVISION,
+    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V6_REVISION),
   );
+}
+
+/** Overlay every current authored shard as the next immutable startup catalog revision. */
+export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
+  return assembleIntegratedStartupSkillCatalog(revisionInput, INTEGRATED_STARTUP_CATALOG_REVISION, [
+    ...integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V6_REVISION),
+    ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
+  ]);
 }
 
 export function inspectIntegratedStartupSkillCatalog(
@@ -443,10 +455,10 @@ export function inspectIntegratedStartupSkillCatalog(
       fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
     });
   if (
-    report.available !== 30 ||
-    report.verified !== 30 ||
+    report.available !== 31 ||
+    report.verified !== 31 ||
     report.lifecycle.implemented !== 2 ||
-    report.lifecycle.draft !== 1_120 ||
+    report.lifecycle.draft !== 1_119 ||
     report.issues.length
   )
     throw new Error('Integrated startup skill catalog release evidence is incomplete');
