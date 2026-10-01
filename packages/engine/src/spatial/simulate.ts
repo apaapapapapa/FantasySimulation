@@ -2,7 +2,7 @@ import { releaseStop } from './sim/time-stop-control.ts';
 import { commitReactiveEffects } from './sim/reactions.ts';
 import type { StopState } from './sim/time-stop-state.ts';
 import type { SpatialObject } from './rules/spatial-objects.ts';
-import type { ActorState, MeleeState, PreparedBattle } from './state.ts';
+import type { ActorState, DependentState, MeleeState, PreparedBattle } from './state.ts';
 import {
   BudgetSchema,
   DEFAULT_BUDGET,
@@ -12,6 +12,7 @@ import {
   type StreamRecord,
   type BattleResult,
   hasSensoryCues,
+  hasDependentSummons,
 } from '@fantasy/domain/spatial/execution';
 import { initialActor, decisionState, displayActor } from './sim/combat-state.ts';
 import { Journal, recordBytes } from './rules/journal.ts';
@@ -31,6 +32,8 @@ import { releasePhase } from './sim/phase-release.ts';
 import { contactPhase } from './sim/phase-contact.ts';
 import { resolutionPhase } from './sim/phase-resolution.ts';
 import type { PendingRelocation } from './state.ts';
+import { displayDependent } from './rules/dependent-display.ts';
+import { settleDefeatedDependents } from './sim/dependents.ts';
 export type SimulationEnd = {
   steps: number;
   outcome: Outcome;
@@ -89,6 +92,8 @@ export function* simulate(
   let ledger = new HitLedger();
   let relocations: PendingRelocation[] | undefined;
   let objects: SpatialObject[] | undefined;
+  let dependents: DependentState[] | undefined;
+  let dependentCreated: Record<string, number> | undefined;
   let stop: StopState | undefined;
   const work = new WorkMeter(budget);
   try {
@@ -111,12 +116,16 @@ export function* simulate(
     const initial: StreamRecord = {
       kind: 'initial',
       ...(battle.rules.experimental?.mechanics.includes('time-stop') ||
-      hasSensoryCues(battle.manifest.revisions)
+      hasSensoryCues(battle.manifest.revisions) ||
+      hasDependentSummons(battle.manifest.revisions)
         ? {
             requiredFeatures: [
               'subject-clocks-v1',
               'deferred-contacts-v1',
               ...(hasSensoryCues(battle.manifest.revisions) ? (['sensory-cues-v1'] as const) : []),
+              ...(hasDependentSummons(battle.manifest.revisions)
+                ? (['dependent-entities-v1'] as const)
+                : []),
             ],
           }
         : {}),
@@ -125,6 +134,7 @@ export function* simulate(
       state: {
         actors: actors.map((a) => displayActor(a, 0, hasSensoryCues(battle.manifest.revisions))),
         projectiles: [],
+        ...(hasDependentSummons(battle.manifest.revisions) ? { dependents: [] } : {}),
       },
     };
     // Initial/terminal control envelopes are bounded separately from game records (32 KiB reserve).
@@ -140,6 +150,8 @@ export function* simulate(
         serial,
         ...(relocations ? { relocations } : {}),
         ...(objects ? { objects } : {}),
+        ...(dependents ? { dependents } : {}),
+        ...(dependentCreated ? { dependentCreated } : {}),
         ...(stop ? { stop } : {}),
       });
       let transaction: StepTransaction | undefined;
@@ -150,7 +162,10 @@ export function* simulate(
         boundaryPhase(tx);
         const record = tx.boundaryRecord();
         const publish =
-          record.changes.length > 0 || tx.journal.events.length > 0 || !!record.objects;
+          record.changes.length > 0 ||
+          tx.journal.events.length > 0 ||
+          !!record.objects ||
+          !!record.dependents;
         if (publish) {
           const committed = tx.journal.finish(record);
           actors = tx.next.actors;
@@ -158,7 +173,7 @@ export function* simulate(
           sequence += tx.journal.events.length;
           melees = tx.next.melees.filter((m) => attachedStageAlive(m, actors, step));
         } else actors = tx.next.actors;
-        ({ relocations, objects, ledger, serial, stop } = tx.next);
+        ({ relocations, objects, dependents, dependentCreated, ledger, serial, stop } = tx.next);
         const oldWorld = world;
         world = tx.commitWorld(world);
         context.world = world;
@@ -195,7 +210,18 @@ export function* simulate(
         const record = tx.intervalRecord();
         const committed = tx.journal.finish(record);
         tx.finishInterval();
-        ({ actors, melees, projectiles, ledger, serial, relocations, objects, stop } = tx.next);
+        ({
+          actors,
+          melees,
+          projectiles,
+          ledger,
+          serial,
+          relocations,
+          objects,
+          dependents,
+          dependentCreated,
+          stop,
+        } = tx.next);
         step++;
         bytes += committed.bytes;
         sequence += tx.journal.events.length;
@@ -219,6 +245,8 @@ export function* simulate(
             serial,
             stop,
             ...(objects ? { objects } : {}),
+            ...(dependents ? { dependents } : {}),
+            ...(dependentCreated ? { dependentCreated } : {}),
             ...(relocations ? { relocations } : {}),
           },
           step,
@@ -237,6 +265,7 @@ export function* simulate(
             battle,
             budget,
             world,
+            ...(tx.next.dependents ? { dependents: tx.next.dependents } : {}),
             journal: tx.journal,
             step,
             activationStep: step,
@@ -244,9 +273,10 @@ export function* simulate(
           },
           work.reactions,
         );
+        settleDefeatedDependents(tx, step, 'boundary');
         const record = tx.boundaryRecord();
         const committed = tx.journal.finish(record);
-        ({ actors, melees, stop } = tx.next);
+        ({ actors, melees, dependents, dependentCreated, stop } = tx.next);
         bytes += committed.bytes;
         sequence += tx.journal.events.length;
         yield structuredClone(record);
@@ -307,6 +337,8 @@ export function* simulate(
             }
           : {}),
         actors: actors.map(decisionState),
+        ...(dependents?.length ? { dependents: dependents.map(displayDependent) } : {}),
+        ...(dependentCreated ? { dependentCreated } : {}),
         melees: melees.map((m) => ({
           ...m,
           ability: {

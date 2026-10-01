@@ -12,8 +12,8 @@ it('limits public connections and emits source-bound compatible metadata with co
     publicationSchema: 2,
     replay: {
       manifestSchema: 1,
-      inputSchema: 5,
-      compatibleInputSchemas: [3, 4, 5, 6],
+      inputSchema: 7,
+      compatibleInputSchemas: [3, 4, 5, 6, 7],
       eventSchema: 1,
       replaySchema: 1,
       profile: 'display-ndjson-gzip-v1',

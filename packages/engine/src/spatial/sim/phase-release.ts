@@ -12,6 +12,7 @@ import { releaseCounters } from './counter-release.ts';
 import { postureAllows } from '../rules/posture.ts';
 import { type StepTransaction, actorId } from './step-transaction.ts';
 import { releaseAttack } from './attack-release.ts';
+import { summonDependent } from './dependents.ts';
 export function releasePhase(tx: StepTransaction) {
   const { battle, world, work } = tx.context;
   const { step, journal, effects, resourceBudgets, forcePlans, previousMovement } = tx;
@@ -67,7 +68,8 @@ export function releasePhase(tx: StepTransaction) {
       ruleId: 'action.release',
       ...(staged ? { stage: staged.contact } : {}),
     });
-    releaseAttack({ tx, actor, action, ability, staged, launch });
+    if (definition.summon) summonDependent(tx, actor, ability, launch.id);
+    else releaseAttack({ tx, actor, action, ability, staged, launch });
   }
   for (const actor of next) {
     if (frozen(actor)) continue;

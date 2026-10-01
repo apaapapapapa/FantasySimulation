@@ -154,6 +154,10 @@ export const EventSchema = z
       'time-stop',
       'teleport',
       'sensory-cue',
+      'dependent-create',
+      'dependent-command',
+      'dependent-act',
+      'dependent-despawn',
     ]),
     actorId: IdSchema.nullable(),
     targetId: IdSchema.nullable(),
@@ -241,12 +245,39 @@ export const EventSchema = z
     sensoryCue: SensoryCueDisplaySchema.extend({
       transition: z.enum(['emitted', 'delivered', 'discovered', 'cleansed', 'expired']),
     }).optional(),
+    dependent: z
+      .strictObject({
+        transition: z.enum(['create', 'command', 'act', 'despawn']),
+        ownerId: IdSchema,
+        hostileOwnerId: IdSchema,
+        ordinal: z.number().int().min(0).max(7),
+        nextActionAt: z.number().int().min(0).max(12300).optional(),
+        reason: z.enum(['expired', 'dismissed', 'owner-defeated', 'upkeep']).optional(),
+      })
+      .optional(),
     wave: z.number().int().min(0).max(8).optional(),
     sourceActorId: IdSchema.optional(),
     sourceProjectileId: IdSchema.optional(),
     projectileDeflection: ProjectileDeflectionSchema.optional(),
   })
   .superRefine((event, ctx) => {
+    const dependentKinds = [
+      'dependent-create',
+      'dependent-command',
+      'dependent-act',
+      'dependent-despawn',
+    ] as const;
+    if (
+      dependentKinds.includes(event.kind as (typeof dependentKinds)[number]) !==
+        !!event.dependent ||
+      (event.dependent &&
+        (!event.entityId ||
+          event.actorId !== event.dependent.ownerId ||
+          event.targetId !== event.dependent.hostileOwnerId ||
+          event.dependent.ownerId === event.dependent.hostileOwnerId ||
+          event.dependent.transition !== event.kind.slice('dependent-'.length)))
+    )
+      ctx.addIssue({ code: 'custom', message: 'Dependent event identity/transition mismatch' });
     if (event.damage?.guard) {
       const ids = event.damage.guard.responses.map((response) => response.activationId);
       if (

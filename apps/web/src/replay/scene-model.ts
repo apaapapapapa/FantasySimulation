@@ -373,6 +373,22 @@ export function buildSceneModel(
       };
     }),
     actors,
+    dependents:
+      perspective === 'omniscient'
+        ? (checkpoint.state?.dependents ?? []).map((dependent) => ({
+            id: dependent.id,
+            ownerId: dependent.ownerId,
+            hostileOwnerId: dependent.hostileOwnerId,
+            position: point(dependent.position),
+            radius: dependent.body.radiusMm / 1000,
+            length: Math.max(
+              0,
+              dependent.body.heightMm / 1000 - (dependent.body.radiusMm * 2) / 1000,
+            ),
+            hp: { value: dependent.hp, max: dependent.maxHp },
+            profile: dependent.profile,
+          }))
+        : [],
     illusions:
       perspective === 'omniscient'
         ? visualCues.map((cue) => ({

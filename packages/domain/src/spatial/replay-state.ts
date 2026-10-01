@@ -1,4 +1,4 @@
-import { closureMechanics, hasSensoryCues } from './mechanic-uses.ts';
+import { closureMechanics, hasDependentSummons, hasSensoryCues } from './mechanic-uses.ts';
 import {
   advanceDeferred,
   advanceStopReplay,
@@ -33,6 +33,7 @@ import { validateProjectile, validateProjectileUpdate } from './replay-validatio
 import { validateEvents } from './replay-validation/event.ts';
 import { validateInterferences } from './replay-validation/interference.ts';
 import { validateSensoryCues } from './replay-validation/sensory-cue.ts';
+import { applyDependents, validateDependent } from './replay-validation/dependent.ts';
 
 /** Atomic display restoration. This is not an engine resume snapshot or combat re-simulation. */
 export class ReplayState {
@@ -92,6 +93,11 @@ export class ReplayState {
         requireReplay(
           v.requiredFeatures?.includes('sensory-cues-v1') === true,
           'missing sensory cue checkpoint feature',
+        );
+      if (hasDependentSummons(context.manifest.revisions))
+        requireReplay(
+          v.requiredFeatures?.includes('dependent-entities-v1') === true,
+          'missing dependent checkpoint feature',
         );
       requireReplay(
         v.nextRecord >= v.step + 1 && v.nextRecord <= 2 * v.step + 3,
@@ -172,6 +178,11 @@ export class ReplayState {
           'beam owner pose',
         );
     }
+    for (const dependent of state.dependents ?? []) {
+      requireReplay(!ids.has(dependent.id), 'duplicate entity');
+      ids.add(dependent.id);
+      validateDependent(this.context, dependent, step);
+    }
     for (const p of state.projectiles) {
       requireReplay(!ids.has(p.id), 'duplicate entity');
       ids.add(p.id);
@@ -211,6 +222,14 @@ export class ReplayState {
           ? state.actors.every((a) => a.resources.hp === 0)
           : step === this.context.rules.maxSteps && state.actors.every((a) => a.resources.hp > 0),
         'draw/final state',
+      );
+    if (outcome.kind === 'win' || outcome.kind === 'draw')
+      requireReplay(
+        !(state.dependents ?? []).some(
+          (dependent) =>
+            state.actors.find((actor) => actor.id === dependent.ownerId)?.resources.hp === 0,
+        ),
+        'defeated owner dependent finality',
       );
   }
   private paths(
@@ -269,10 +288,16 @@ export class ReplayState {
           record.requiredFeatures?.includes('sensory-cues-v1') === true,
           'missing sensory cue replay feature',
         );
+      if (hasDependentSummons(this.context.manifest.revisions))
+        requireReplay(
+          record.requiredFeatures?.includes('dependent-entities-v1') === true,
+          'missing dependent replay feature',
+        );
       requireReplay(
         prior.state === null &&
           record.state.projectiles.length === 0 &&
-          !record.state.objects?.length,
+          !record.state.objects?.length &&
+          !record.state.dependents?.length,
         'duplicate/nonempty initial',
       );
       state = record.state;
@@ -302,7 +327,12 @@ export class ReplayState {
       if (!prior.state) return fail('missing initial');
       state = structuredClone(prior.state);
       const entities = new Set(
-        [...state.actors, ...state.projectiles, ...(state.objects ?? [])].map((e) => e.id),
+        [
+          ...state.actors,
+          ...state.projectiles,
+          ...(state.objects ?? []),
+          ...(state.dependents ?? []),
+        ].map((e) => e.id),
       );
       if (record.kind === 'terminal') {
         requireReplay(record.step === step, 'terminal step');
@@ -328,6 +358,8 @@ export class ReplayState {
         }
         if (record.objects)
           applySpatialObjects(this.context, prior, state, record.objects, record, entities);
+        if (record.dependents)
+          applyDependents(this.context, prior, state, record.dependents, record, entities);
         const changed = new Set<string>();
         for (const delta of record.changes) {
           const index = state.actors.findIndex((a) => a.id === delta.id);
@@ -405,6 +437,7 @@ export class ReplayState {
     state.actors.sort((a, b) => compareIds(a.id, b.id));
     state.projectiles.sort((a, b) => compareIds(a.id, b.id));
     state.objects?.sort((a, b) => compareIds(a.id, b.id));
+    state.dependents?.sort((a, b) => compareIds(a.id, b.id));
     const deferred = advanceDeferred(prior.deferred, 'events' in record ? record.events : []);
     const stop = advanceStopReplay(prior.stop, 'events' in record ? record.events : []);
     const requiredFeatures =

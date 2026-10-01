@@ -310,6 +310,24 @@ export type ActorState = {
   actions: ActorActionState;
   mind: ActorMindState;
 };
+export type DependentState = {
+  id: string;
+  profile: 'scout-rat-v1';
+  ownerId: string;
+  hostileOwnerId: string;
+  ordinal: number;
+  ability: AbilityRevision;
+  position: Vec3;
+  body: NonNullable<Definition<'ability'>['summon']>['body'];
+  hp: number;
+  maxHp: number;
+  createdAt: number;
+  expiresAt: number;
+  nextActionAt: number;
+  nextUpkeepAt: number;
+  rngState: number;
+  clock?: { controlId: string; frozenFrom: number; frozenUntil: number };
+};
 export type PreviousMovement = Pick<ActorBodyState, 'intent'> & Pick<ActorMindState, 'decision'>;
 
 export type MeleeState = DamageSnapshot & {
@@ -379,6 +397,8 @@ export type PendingEffect = DamageSnapshot & {
   sourceAbility?: AbilityRevision;
   sourceActorId?: string;
   sourceProjectileId?: string;
+  sourceDependentId?: string;
+  drainRecipientId?: string;
   ancestry?: ReactionContext;
   projectileContact?: { id: string; direct: boolean; reflected: boolean };
 

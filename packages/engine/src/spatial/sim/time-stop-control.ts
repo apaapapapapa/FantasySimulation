@@ -12,6 +12,7 @@ import {
   stopDescriptor,
   type StopRequest,
 } from './time-stop-state.ts';
+import { freezeDependent, thawDependent } from './dependents.ts';
 
 export function stopEvent(
   tx: StepTransaction,
@@ -123,6 +124,9 @@ export function activateStops(tx: StepTransaction) {
     stop.active = { ...request, from: tx.step, until: tx.step + request.duration };
     const target = tx.next.actors.find((actor) => actorId(actor) === request.targetId)!;
     freezeActor(target, request.id, tx.step, tx.step + request.duration);
+    for (const dependent of tx.next.dependents ?? [])
+      if (dependent.ownerId === request.targetId)
+        freezeDependent(dependent, request.id, tx.step, tx.step + request.duration);
     target.vitals.conceptCue = { kind: 'time-stop', at: tx.step };
     stopEvent(
       tx,
@@ -145,6 +149,8 @@ export function releaseStop(
   if (!stop || !active) return [];
   const target = tx.next.actors.find((actor) => actorId(actor) === active.targetId)!;
   const amount = thawActor(target, step);
+  for (const dependent of tx.next.dependents ?? [])
+    if (dependent.ownerId === active.targetId) thawDependent(dependent, active.id, step);
   for (const melee of tx.next.melees)
     if (melee.actorId === active.targetId) melee.launchStep += amount;
   stop.executed += amount;

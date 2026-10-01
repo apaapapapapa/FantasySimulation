@@ -70,6 +70,12 @@ export function hasSensoryCues(revisions: readonly DeepReadonly<Revision>[]) {
   );
 }
 
+export function hasDependentSummons(revisions: readonly DeepReadonly<Revision>[]) {
+  return revisions.some(
+    (revision) => revision.kind === 'ability' && revision.definition.summon !== undefined,
+  );
+}
+
 /** Visit the resolved revision closure, including dormant branches and transformed/granted states. */
 export function closureMechanics(revisions: readonly DeepReadonly<Revision>[]): MechanicUse[] {
   const uses: MechanicUse[] = [];

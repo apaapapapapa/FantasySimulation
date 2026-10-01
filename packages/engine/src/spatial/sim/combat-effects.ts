@@ -70,6 +70,7 @@ export function commitEffects(
       ruleId: 'effect.application',
       actorId: effect.actorId,
       targetId: effect.targetId,
+      ...(effect.sourceDependentId ? { entityId: effect.sourceDependentId } : {}),
       abilityId: effect.abilityId,
       ...(effect.deferral ? { deferrals: [effect.deferral.id] } : {}),
       ...(effect.sourceActorId
@@ -387,6 +388,18 @@ export function commitEffects(
     actor.vitals.resources = result.resources;
     actor.statuses = result.statuses;
   }
+  for (const application of applications) {
+    if (!application.drainRecipientId) continue;
+    const detail = resolved
+      .flatMap((result) => result.damage)
+      .find((damage) => damage.applicationId === application.id);
+    if (!detail?.drain) continue;
+    const dependent = context.dependents?.find(
+      (candidate) => candidate.id === application.drainRecipientId,
+    );
+    if (!dependent) throw new Error('Missing dependent drain recipient');
+    dependent.hp = Math.min(dependent.maxHp, dependent.hp + detail.drain.healing);
+  }
   for (const result of resolved) {
     for (const detail of result.damage) {
       if (!detail.drain?.healing) continue;
@@ -399,12 +412,15 @@ export function commitEffects(
         ruleId: 'damage.drain',
         actorId: app.actorId,
         targetId: app.actorId,
+        ...(app.drainRecipientId ? { entityId: app.drainRecipientId } : {}),
         abilityId: app.abilityId,
         parentEventId: app.id,
         causes: [app.id],
         amount: detail.drain.healing,
-        after: { ...source.resources },
-        reason: 'same-wave-hp-loss-drain',
+        ...(app.drainRecipientId ? {} : { after: { ...source.resources } }),
+        reason: app.drainRecipientId
+          ? 'same-wave-hp-loss-dependent-drain'
+          : 'same-wave-hp-loss-drain',
         ...(deferStatuses ? { wave: waveIndex } : {}),
       });
     }

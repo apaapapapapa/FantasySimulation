@@ -157,6 +157,10 @@ export function moveActors(
   intents: ReadonlyMap<string, MotionIntent>,
   rules: DeepReadonly<Definition<'ruleset'>>,
   maxSegments = 8,
+  staticBodies: readonly {
+    position: Vec3;
+    body: DeepReadonly<Definition<'character'>['body']>;
+  }[] = [],
 ): MovedActor[] {
   if (
     states.length > 2 ||
@@ -268,6 +272,22 @@ export function moveActors(
       b.trace = stopAt(b.trace, time);
       a.contactTime = time;
       b.contactTime = time;
+    }
+  }
+  for (const plan of plans) {
+    let earliest = plan.contactTime;
+    for (const body of staticBodies) {
+      const time = firstContact(
+        plan.trace,
+        capsuleShape(bodyCapsule(plan.state.actor.character.body)),
+        straight(body.position, body.position),
+        capsuleShape(bodyCapsule(body.body)),
+      );
+      if (time !== undefined && (earliest === undefined || time < earliest)) earliest = time;
+    }
+    if (earliest !== undefined && earliest !== plan.contactTime) {
+      plan.trace = stopAt(plan.trace, earliest);
+      plan.contactTime = earliest;
     }
   }
   return plans.map((plan) => {

@@ -172,6 +172,12 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
                 <meshBasicMaterial color="#e5f3ff" wireframe depthTest={false} />
               </mesh>
             ))}
+            {model.dependents.map((dependent) => (
+              <mesh key={dependent.id} position={dependent.position}>
+                <capsuleGeometry args={[dependent.radius, dependent.length, 4, 10]} />
+                <meshBasicMaterial color="#f4dd9b" wireframe depthTest={false} />
+              </mesh>
+            ))}
           </>
         )}
         <SceneOverlays model={model} overlays={overlays} />

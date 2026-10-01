@@ -232,6 +232,28 @@ export function SensoryCues3D({ model }: { model: SceneModel }) {
     </group>
   ));
 }
+
+export function Dependents3D({ model }: { model: SceneModel }) {
+  return model.dependents.map((dependent) => (
+    <group
+      key={dependent.id}
+      position={dependent.position}
+      data-dependent={dependent.id}
+      userData={{ dependent: dependent.id, ownerId: dependent.ownerId }}
+    >
+      <mesh>
+        <capsuleGeometry args={[dependent.radius, dependent.length, 4, 10]} />
+        <meshStandardMaterial color="#a98b69" roughness={0.8} />
+      </mesh>
+      <Glow
+        position={[0, dependent.length / 2 + dependent.radius, 0]}
+        scale={0.35}
+        colour="#f4dd9b"
+        opacity={0.5}
+      />
+    </group>
+  ));
+}
 /**
  * Decorative motes in world-anchored cells around the fighters. Their drift is keyed to the
  * displayed step time, so a paused or shared step always shows the same arrangement.
@@ -430,6 +452,7 @@ export function SceneEffects({ model }: { model: SceneModel }) {
       {model.objects.map((o) => (
         <SpatialObject key={o.id} object={o} model={model} />
       ))}
+      <Dependents3D model={model} />
       <SensoryCues3D model={model} />
       <Fireflies model={model} />
     </>

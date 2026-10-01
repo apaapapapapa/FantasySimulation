@@ -1,10 +1,17 @@
 import { cloneStopState, type StopState } from './time-stop-state.ts';
-import type { PreviousMovement, ActorState, MeleeState, PreparedBattle } from '../state.ts';
+import type {
+  PreviousMovement,
+  ActorState,
+  DependentState,
+  MeleeState,
+  PreparedBattle,
+} from '../state.ts';
 import type {
   Budget,
   DisplayPath,
   ProjectileChanges,
   ProjectileDisplay,
+  DependentChanges,
   StreamRecord,
 } from '@fantasy/domain/spatial/execution';
 import { cloneActor, displayActor } from './combat-state.ts';
@@ -25,6 +32,7 @@ import { displaySpatialObject, type SpatialObject } from '../rules/spatial-objec
 import type { SpatialObjectChanges } from '@fantasy/domain/spatial/execution';
 import { sameRecordValue } from '../rules/record-values.ts';
 import { hasSensoryCues } from '@fantasy/domain/spatial/execution';
+import { displayDependent } from '../rules/dependent-display.ts';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
 export type SimulationState = {
@@ -36,6 +44,8 @@ export type SimulationState = {
   serial: number;
   relocations?: PendingRelocation[];
   objects?: SpatialObject[];
+  dependents?: DependentState[];
+  dependentCreated?: Record<string, number>;
 };
 type StepContext = {
   battle: PreparedBattle;
@@ -58,6 +68,7 @@ export class StepTransaction {
   readonly effects: PendingEffect[] = [];
   readonly barrierDamage = new Map<string, number>();
   readonly objectRemovals = new Map<string, SpatialObjectChanges['remove'][number]['reason']>();
+  readonly dependentRemovals = new Map<string, DependentChanges['remove'][number]['reason']>();
   projectileContacts: ProjectileContacts | undefined;
   readonly spawns: ProjectileDisplay[] = [];
   forcePlans = new Map<string, ReturnType<typeof beginForcedInterval>>();
@@ -94,11 +105,36 @@ export class StepTransaction {
       ledger: previous.ledger.clone(),
       serial: previous.serial,
       ...(previous.objects ? { objects: previous.objects.map((o) => ({ ...o })) } : {}),
+      ...(previous.dependents
+        ? {
+            dependents: previous.dependents.map((d) => ({
+              ...d,
+              position: { ...d.position },
+              ...(d.clock ? { clock: { ...d.clock } } : {}),
+            })),
+          }
+        : {}),
+      ...(previous.dependentCreated ? { dependentCreated: { ...previous.dependentCreated } } : {}),
       ...(previous.relocations ? { relocations: [...previous.relocations] } : {}),
     };
     this.journal = new Journal(sequence, bytes, context.budget);
     this.aiBoundary =
       step % (context.battle.manifest.physicsProfile.aiMs / context.battle.rules.stepMs) === 0;
+  }
+  dependentChanges(): DependentChanges | undefined {
+    const previous = (this.previous.dependents ?? []).map(displayDependent),
+      next = (this.next.dependents ?? []).map(displayDependent);
+    if (!previous.length && !next.length) return undefined;
+    const changes: DependentChanges = {
+      spawn: next.filter((d) => !previous.some((p) => p.id === d.id)),
+      update: next.filter((d) => previous.some((p) => p.id === d.id && !sameRecordValue(p, d))),
+      remove: previous
+        .filter((d) => !next.some((p) => p.id === d.id))
+        .map((d) => ({ id: d.id, reason: this.dependentRemovals.get(d.id) ?? 'dismissed' })),
+    };
+    return changes.spawn.length + changes.update.length + changes.remove.length
+      ? changes
+      : undefined;
   }
   replaceGeometry(obstacles: Obstacle[]) {
     const candidate = this.context.world.rebuild(obstacles);
@@ -138,11 +174,13 @@ export class StepTransaction {
   }
   boundaryRecord(): Extract<StreamRecord, { kind: 'boundary' }> {
     const objects = this.objectChanges();
+    const dependents = this.dependentChanges();
     return {
       kind: 'boundary',
       schemaVersion: 1,
       step: this.step,
       ...(objects ? { objects } : {}),
+      ...(dependents ? { dependents } : {}),
       changes: displayChanges(
         this.before,
         this.next.actors.map((actor) =>
@@ -154,10 +192,12 @@ export class StepTransaction {
   }
   intervalRecord(): Extract<StreamRecord, { kind: 'interval' }> {
     const objects = this.objectChanges();
+    const dependents = this.dependentChanges();
     return {
       kind: 'interval',
       schemaVersion: 1,
       ...(objects ? { objects } : {}),
+      ...(dependents ? { dependents } : {}),
       fromStep: this.step,
       toStep: this.step + 1,
       paths: this.paths,
