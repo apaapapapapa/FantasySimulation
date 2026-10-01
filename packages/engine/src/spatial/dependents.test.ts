@@ -136,6 +136,32 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     owner.resources.mp += 1;
   });
   rejects((records) => {
+    const record = records.find((candidate) => {
+      if (!('changes' in candidate)) return false;
+      return candidate.events.some((event, index, events) => {
+        if (
+          (event.kind !== 'dependent-command' && event.ruleId !== 'dependent.upkeep') ||
+          !event.actorId
+        )
+          return false;
+        return events.slice(index + 1).some(
+          (later) =>
+            !!later.before &&
+            !!later.after &&
+            later.targetId === event.actorId &&
+            !['cost', 'resource', 'dependent-command'].includes(later.kind),
+        );
+      });
+    });
+    if (!record || !('changes' in record)) throw new Error('Missing followed resource record');
+    const dependent = record.events.find(
+      (event) => event.kind === 'dependent-command' || event.ruleId === 'dependent.upkeep',
+    );
+    const owner = record.changes.find((change) => change.id === dependent?.actorId);
+    if (!owner?.resources) throw new Error('Missing followed owner resource delta');
+    owner.resources.mp += 1;
+  });
+  rejects((records) => {
     const record = records.find(
       (candidate) =>
         'events' in candidate &&
