@@ -132,10 +132,8 @@ export function SkillWorkbench({
     );
     if (!configuration || replace) {
       const current = replace
-        ? (matchingLoadouts.find((item) => item.id === selectedRevision?.id) ??
-          matchingLoadouts[0] ??
-          null)
-        : (matchingLoadouts[0] ?? null);
+        ? (matchingLoadouts.find((item) => item.id === selectedRevision?.id) ?? null)
+        : null;
       setSelectedRevision(current);
       setCharacter(
         current?.snapshot.character ??

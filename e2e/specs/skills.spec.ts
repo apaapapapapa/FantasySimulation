@@ -47,10 +47,15 @@ test('skill-workbench-desktop', async ({ page }) => {
   await firstNode.click();
   await expect(workbench.locator('.skill-detail')).toBeVisible();
 
+  const foundation = workbench.locator('.skill-matrix tbody td > button').nth(60);
+  await foundation.click();
+  const nodeAction = workbench.locator('.skill-node-action');
+  await nodeAction.click();
+  await nodeAction.click();
   await workbench.locator('.actions .primary').click();
   await expect(workbench.locator('.message[role="status"]')).toContainText(/revision \d+/);
   const battle = page.locator('.arena');
-  await expect(battle.locator(':scope > p[role="status"]')).toContainText(/revision \d+/);
+  await expect(battle.locator(':scope > p[role="status"]').first()).toContainText(/revision \d+/);
   await battle.locator(':scope > fieldset > button.primary').click();
   await expect(battle.locator('.result')).toBeVisible({ timeout: 15_000 });
   await battle.locator('.result button').click();
