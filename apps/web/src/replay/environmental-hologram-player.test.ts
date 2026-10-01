@@ -1,0 +1,158 @@
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { gzipSync } from 'node:zlib';
+import { expect, it } from 'vite-plus/test';
+import {
+  canonicalJson,
+  replayChunkRecords,
+  replayContext,
+  seekReplayState,
+} from '@fantasy/domain/spatial';
+import { prepareBattle, runPreparedBattle } from '@fantasy/engine/spatial';
+import { ReplayWriter } from '../../../api/src/replay/replay-writer.ts';
+import { environmentalHologramManifest } from '../../../../packages/engine/test-support/environmental-holograms.ts';
+import {
+  ManifestBuilder,
+  sealRevision,
+} from '../../../../packages/engine/src/spatial/manifest-builder.ts';
+import type { OpenedReplay } from './open-replay.ts';
+import { expandArtifact } from './artifacts.ts';
+import { ReplayPlayer } from './replay-player.ts';
+
+type SavedProjection = {
+  id: string;
+  sourcePosition: { x: number; y: number; z: number };
+  perceivedPosition: { x: number; y: number; z: number };
+  activatedAt: number;
+  observedAt: number;
+  invalidatedAt: number;
+  expiresAt: number;
+};
+type SavedCheckpoint = {
+  state?: {
+    actors: { sensorView?: { environmentalHolograms: SavedProjection[] } }[];
+  };
+};
+
+it('restores an actual multi-chunk hologram recording forward, reverse and across a loop', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'hologram-replay-'));
+  try {
+    let input = await environmentalHologramManifest(300);
+    const oldAbility = input.revisions.find(
+      (revision) => revision.kind === 'ability' && revision.id === 'sk07-hologram',
+    );
+    if (!oldAbility || oldAbility.kind !== 'ability') throw new Error('Missing hologram ability');
+    const ability = await sealRevision('ability', oldAbility.id, oldAbility.revision, {
+      ...oldAbility.definition,
+      effects: oldAbility.definition.effects.map((effect) =>
+        effect.kind === 'environmental-hologram' ? { ...effect, durationSteps: 300 } : effect,
+      ),
+    });
+    input = await ManifestBuilder.relink(input, [{ from: oldAbility, to: ability }]);
+    const battle = await prepareBattle(input);
+    const output = await runPreparedBattle(battle);
+    const writer = await ReplayWriter.create(root, {
+      id: 'hologram-player',
+      attemptId: 'attempt-1',
+      simulationHash: output.result.simulationHash,
+      input: battle.manifest,
+    });
+    for (const record of output.records) await writer.append(record);
+    const manifest = await writer.finish({ kind: 'result', result: output.result }, 'result-1');
+    expect(manifest.chunks.length).toBeGreaterThan(1);
+    const directory = join(root, 'hologram-player');
+    const context = await replayContext(battle.manifest, manifest.simulationHash);
+    const loads: string[] = [];
+    const checkpoints = async (index: number) => {
+      const ref = manifest.checkpoints[index]!;
+      loads.push(ref.file);
+      const bytes = new Uint8Array(await readFile(join(directory, ref.file)));
+      return JSON.parse(await expandArtifact(bytes, ref));
+    };
+    const records = async (index: number) => {
+      const ref = manifest.chunks[index]!;
+      loads.push(ref.file);
+      const bytes = new Uint8Array(await readFile(join(directory, ref.file)));
+      return replayChunkRecords(await expandArtifact(bytes, ref), ref);
+    };
+    const opened: OpenedReplay = {
+      manifest,
+      context,
+      records,
+      seek: (nextRecord) =>
+        seekReplayState(context, manifest, nextRecord, { checkpoint: checkpoints, records }),
+    };
+    const last = manifest.chunks.length - 1;
+    loads.length = 0;
+    await opened.seek(manifest.chunks[last]!.firstRecord);
+    expect(loads).toEqual([manifest.checkpoints[last]!.file]);
+    loads.length = 0;
+    await opened.seek(manifest.chunks[last]!.firstRecord + 1);
+    expect(loads).toEqual([manifest.checkpoints[last]!.file, manifest.chunks[last]!.file]);
+
+    const activeIndex = (
+      await Promise.all(
+        manifest.checkpoints.map(async (ref, index) => ({
+          index,
+          value: JSON.parse(
+            await expandArtifact(new Uint8Array(await readFile(join(directory, ref.file))), ref),
+          ) as SavedCheckpoint,
+        })),
+      )
+    ).find(({ value }) =>
+      value.state?.actors.some(
+        (actor) => (actor.sensorView?.environmentalHolograms.length ?? 0) > 0,
+      ),
+    )?.index;
+    if (activeIndex === undefined) throw new Error('Missing active saved checkpoint');
+    const activeRef = manifest.checkpoints[activeIndex]!;
+    const activeBytes = new Uint8Array(await readFile(join(directory, activeRef.file)));
+    const activeRaw = await expandArtifact(activeBytes, activeRef);
+    const variants: ((checkpoint: SavedCheckpoint) => void)[] = [
+      (checkpoint) => {
+        const projection = checkpoint.state!.actors.flatMap(
+          (actor) => actor.sensorView?.environmentalHolograms ?? [],
+        )[0]!;
+        projection.id += '.tampered';
+      },
+      (checkpoint) => {
+        const projection = checkpoint.state!.actors.flatMap(
+          (actor) => actor.sensorView?.environmentalHolograms ?? [],
+        )[0]!;
+        projection.sourcePosition.x++;
+        projection.perceivedPosition.x++;
+      },
+      (checkpoint) => {
+        for (const actor of checkpoint.state!.actors)
+          if (actor.sensorView) actor.sensorView.environmentalHolograms = [];
+      },
+      (checkpoint) => {
+        const projection = checkpoint.state!.actors.flatMap(
+          (actor) => actor.sensorView?.environmentalHolograms ?? [],
+        )[0]!;
+        projection.activatedAt++;
+        projection.observedAt++;
+        projection.invalidatedAt++;
+        projection.expiresAt++;
+      },
+    ];
+    for (const mutate of variants) {
+      const checkpoint = JSON.parse(activeRaw) as SavedCheckpoint;
+      mutate(checkpoint);
+      const tampered = new Uint8Array(gzipSync(JSON.stringify(checkpoint)));
+      await expect(expandArtifact(tampered, activeRef)).rejects.toThrow(/size and checksum/);
+    }
+
+    const player = new ReplayPlayer(opened);
+    const expected = new Map<number, string>();
+    for (const step of [0, 100, 275])
+      expected.set(step, canonicalJson((await player.frame(step)).checkpoint));
+    const sequence = [0, 100, 275, 0, 275, 100];
+    const actual = [];
+    for (const step of sequence) actual.push(canonicalJson((await player.frame(step)).checkpoint));
+    expect(actual).toEqual(sequence.map((step) => expected.get(step)));
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

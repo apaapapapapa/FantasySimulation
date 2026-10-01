@@ -17,6 +17,7 @@ export const effectMechanics = {
   reveal: 'reveal',
   force: 'force',
   'sensory-cue': 'mind-read',
+  'environmental-hologram': 'visibility',
 } satisfies Record<Effect['kind'], MechanicId>;
 export const attackMechanics = {
   direct: 'contact',
@@ -59,21 +60,29 @@ export const motionMechanics = {
   MechanicId
 >;
 
-export function hasSensoryCues(revisions: readonly DeepReadonly<Revision>[]) {
+function hasEffect(revisions: readonly DeepReadonly<Revision>[], kind: Effect['kind']) {
   return revisions.some(
     (revision) =>
       revision.kind === 'ability' &&
       [
         ...revision.definition.effects,
         ...(revision.definition.stages ?? []).flatMap((stage) => stage.effects),
-      ].some((effect) => effect.kind === 'sensory-cue'),
+      ].some((effect) => effect.kind === kind),
   );
+}
+
+export function hasSensoryCues(revisions: readonly DeepReadonly<Revision>[]) {
+  return hasEffect(revisions, 'sensory-cue');
 }
 
 export function hasDependentSummons(revisions: readonly DeepReadonly<Revision>[]) {
   return revisions.some(
     (revision) => revision.kind === 'ability' && revision.definition.summon !== undefined,
   );
+}
+
+export function hasEnvironmentalHolograms(revisions: readonly DeepReadonly<Revision>[]) {
+  return hasEffect(revisions, 'environmental-hologram');
 }
 
 /** Visit the resolved revision closure, including dormant branches and transformed/granted states. */

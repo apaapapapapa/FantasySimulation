@@ -22,6 +22,7 @@ import {
   type RevisionRef,
   hasSensoryCues,
   hasDependentSummons,
+  hasEnvironmentalHolograms,
 } from '@fantasy/domain/spatial/execution';
 import { prepareBattle, implementation, profile } from './prepare.ts';
 import {
@@ -106,17 +107,19 @@ export class ManifestBuilder {
     );
     return prepareBattle({
       ...request,
-      schemaVersion: hasDependentSummons(revisions)
-        ? 7
-        : hasSensoryCues(revisions)
-          ? 6
-          : request.participants.some(
-                (participant) => participant.skillLoadout?.schemaVersion === 2,
-              )
-            ? 5
-            : request.participants.some((participant) => participant.skillLoadout)
-              ? 4
-              : 3,
+      schemaVersion: hasEnvironmentalHolograms(revisions)
+        ? 8
+        : hasDependentSummons(revisions)
+          ? 7
+          : hasSensoryCues(revisions)
+            ? 6
+            : request.participants.some(
+                  (participant) => participant.skillLoadout?.schemaVersion === 2,
+                )
+              ? 5
+              : request.participants.some((participant) => participant.skillLoadout)
+                ? 4
+                : 3,
       eventSchemaVersion: 1,
       replaySchemaVersion: 1,
       engineVersion: CURRENT_ENGINE_VERSION,
@@ -227,7 +230,8 @@ export class ManifestBuilder {
     manifest.ruleset = referenceFor('ruleset', manifest.ruleset);
     manifest.scenario = referenceFor('scenario', manifest.scenario);
     manifest.revisions = manifest.revisions.map((revision) => sealed.get(revisionKey(revision))!);
-    if (hasDependentSummons(manifest.revisions)) manifest.schemaVersion = 7;
+    if (hasEnvironmentalHolograms(manifest.revisions)) manifest.schemaVersion = 8;
+    else if (hasDependentSummons(manifest.revisions)) manifest.schemaVersion = 7;
     else if (hasSensoryCues(manifest.revisions)) manifest.schemaVersion = 6;
     revisionIndex(manifest.revisions);
     return manifest;

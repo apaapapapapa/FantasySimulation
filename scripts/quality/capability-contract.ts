@@ -161,6 +161,12 @@ export const CAPABILITY_COVERAGE = {
     'keeps visual cues observer-bounded through delivery, AI choice, cleanse, discovery, replay and display',
     owner(engine + 'sim/combat-effects.ts', 'commitEffects'),
   ),
+  'effect:environmental-hologram': effect(
+    'environmental-hologram',
+    'environmental-holograms.test.ts',
+    'records one observer sensor projection through runtime, AI and replay without an actor target',
+    owner(engine + 'sim/combat-effects.ts', 'commitEffects'),
+  ),
   'attack:direct': attack(
     'direct',
     'simulate.test.ts',

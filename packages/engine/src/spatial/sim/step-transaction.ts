@@ -31,7 +31,7 @@ import type { PendingRelocation } from '../state.ts';
 import { displaySpatialObject, type SpatialObject } from '../rules/spatial-objects.ts';
 import type { SpatialObjectChanges } from '@fantasy/domain/spatial/execution';
 import { sameRecordValue } from '../rules/record-values.ts';
-import { hasSensoryCues } from '@fantasy/domain/spatial/execution';
+import { hasEnvironmentalHolograms, hasSensoryCues } from '@fantasy/domain/spatial/execution';
 import { displayDependent } from '../rules/dependent-display.ts';
 
 export const actorId = (actor: ActorState) => actor.body.motion.actor.participant.actorId;
@@ -90,7 +90,10 @@ export class StepTransaction {
     this.previous = previous;
     this.step = step;
     const sensoryFeature = hasSensoryCues(context.battle.manifest.revisions);
-    this.before = previous.actors.map((actor) => displayActor(actor, step, sensoryFeature));
+    const hologramFeature = hasEnvironmentalHolograms(context.battle.manifest.revisions);
+    this.before = previous.actors.map((actor) =>
+      displayActor(actor, step, sensoryFeature, hologramFeature),
+    );
     this.frozenAtStart = new Set(
       previous.actors.filter((actor) => actor.clock?.frozen).map(actorId),
     );
@@ -184,7 +187,12 @@ export class StepTransaction {
       changes: displayChanges(
         this.before,
         this.next.actors.map((actor) =>
-          displayActor(actor, this.step, hasSensoryCues(this.context.battle.manifest.revisions)),
+          displayActor(
+            actor,
+            this.step,
+            hasSensoryCues(this.context.battle.manifest.revisions),
+            hasEnvironmentalHolograms(this.context.battle.manifest.revisions),
+          ),
         ),
       ),
       events: this.journal.events,
@@ -209,6 +217,7 @@ export class StepTransaction {
             actor,
             this.step + 1,
             hasSensoryCues(this.context.battle.manifest.revisions),
+            hasEnvironmentalHolograms(this.context.battle.manifest.revisions),
           ),
         ),
       ),

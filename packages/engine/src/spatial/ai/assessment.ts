@@ -380,6 +380,11 @@ function assessSingle(
       confidence = Math.min(confidence, 1000);
       reasons.push('mental eligibility and discovery are opponent-private');
     },
+    'environmental-hologram': () => {
+      utility += rules.explorationWeight;
+      confidence = Math.min(confidence, 1000);
+      reasons.push('visual sensor projection is opponent-private');
+    },
   };
   for (const effect of effects) {
     if (!stateValue.handled.has(effect)) matchEffect(effect, effectAssessments, undefined);

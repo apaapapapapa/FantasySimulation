@@ -14,6 +14,7 @@ import {
   ReactionContextSchema,
   ProjectileDeflectionSchema,
   SensoryCueDisplaySchema,
+  EnvironmentalHologramDisplaySchema,
 } from './records.ts';
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
@@ -25,10 +26,11 @@ export const RequiredReplayFeaturesSchema = z
       'deferred-contacts-v1',
       'sensory-cues-v1',
       'dependent-entities-v1',
+      'environmental-holograms-v1',
     ]),
   )
   .min(2)
-  .max(4)
+  .max(5)
   .refine(
     (features) =>
       features[0] === 'subject-clocks-v1' &&
@@ -38,6 +40,10 @@ export const RequiredReplayFeaturesSchema = z
         'sensory-cues-v1',
         'dependent-entities-v1',
         'sensory-cues-v1,dependent-entities-v1',
+        'environmental-holograms-v1',
+        'sensory-cues-v1,environmental-holograms-v1',
+        'dependent-entities-v1,environmental-holograms-v1',
+        'sensory-cues-v1,dependent-entities-v1,environmental-holograms-v1',
       ].includes(features.slice(2).join(',')),
     'Replay features must use the canonical compatible prefix order',
   );
@@ -168,6 +174,9 @@ export const ActorDisplaySchema = z.strictObject({
   statuses: z.array(StatusDisplaySchema).max(8192),
   action: ActionDisplaySchema.nullable(),
   sensoryCues: z.array(SensoryCueDisplaySchema).max(8).optional(),
+  sensorView: z
+    .strictObject({ environmentalHolograms: z.array(EnvironmentalHologramDisplaySchema).max(8) })
+    .optional(),
 });
 export type ActorDisplay = z.infer<typeof ActorDisplaySchema>;
 export const ActorDeltaSchema = ActorDisplaySchema.partial().required({ id: true });

@@ -17,6 +17,7 @@ import { recordInterference } from './interference.ts';
 import { readMind } from './mind-reading.ts';
 import { evadeContacts } from './contact-evasion.ts';
 import { cleanseSensoryCues, cognitiveCueEligibility, cueIdentity } from './sensory-cues.ts';
+import { hologramIdentity, visualSensorEligibility } from './environmental-holograms.ts';
 const effectEventKinds = {
   defeat: 'defeat',
   damage: 'damage',
@@ -28,6 +29,7 @@ const effectEventKinds = {
   reveal: 'diagnostic',
   force: 'force',
   'sensory-cue': 'sensory-cue',
+  'environmental-hologram': 'environmental-hologram',
 } satisfies Record<Effect['kind'], BattleEvent['kind']>;
 import type { PendingEffect } from '../state.ts';
 export type { PendingEffect } from '../state.ts';
@@ -203,6 +205,67 @@ export function commitEffects(
           app.event.ruleId = 'sensory-cue.emit';
           app.event.reason = 'bounded-observer-visual-cue';
           app.event.sensoryCue = { ...cue, transition: 'emitted' };
+        }
+      } else if (app.effect.kind === 'environmental-hologram') {
+        const eligibility = visualSensorEligibility(
+          actor,
+          context.statusSteps?.get(result.actorId) ?? domainSnapshotStep(actor, step),
+        );
+        if (
+          !eligibility.eligible ||
+          actor.sensors.environmentalHolograms.length >= 8 ||
+          !app.actorId ||
+          !app.abilityId ||
+          app.effectIndex === undefined
+        ) {
+          app.event.kind = 'fizzle';
+          app.event.ruleId = 'environmental-hologram.eligibility';
+          app.event.reason = !eligibility.eligible
+            ? eligibility.reason
+            : !app.actorId
+              ? 'missing-creator'
+              : !app.abilityId || app.effectIndex === undefined
+                ? 'missing-authored-effect'
+                : 'observer-hologram-cap';
+        } else {
+          const identity = hologramIdentity(
+            battle.manifest.seed,
+            app.actorId,
+            result.actorId,
+            app.event.sequence,
+          );
+          const source =
+            app.observation?.self.position ??
+            actors.find(
+              (candidate) => candidate.body.motion.actor.participant.actorId === app.actorId,
+            )!.body.motion.position;
+          const hologram = {
+            id: identity,
+            creatorId: app.actorId,
+            observerId: result.actorId,
+            observerIds: [result.actorId] as [string],
+            abilityId: app.abilityId,
+            effectIndex: app.effectIndex,
+            ...(app.stage ? { stageIndex: app.stage.stageIndex } : {}),
+            modality: 'visual' as const,
+            sourcePosition: { ...source },
+            perceivedPosition: {
+              x: source.x + app.effect.offsetMm.x / 1000,
+              y: source.y + app.effect.offsetMm.y / 1000,
+              z: source.z + app.effect.offsetMm.z / 1000,
+            },
+            state: 'active-unobserved' as const,
+            activatedAt: activationStep,
+            observedAt: activationStep + app.effect.observationSteps,
+            invalidatedAt: activationStep + app.effect.invalidationSteps,
+            expiresAt: activationStep + app.effect.durationSteps,
+          };
+          actor.sensors.environmentalHolograms.push(hologram);
+          app.event.entityId = hologram.id;
+          app.event.point = { ...source };
+          app.event.ruleId = 'environmental-hologram.activated';
+          app.event.reason = 'bounded-observer-visual-sensor-projection';
+          app.event.environmentalHologram = { ...hologram, transition: 'activated' };
         }
       }
       const observer = actors.find((a) => a.body.motion.actor.participant.actorId === app.actorId);

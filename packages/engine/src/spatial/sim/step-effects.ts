@@ -12,10 +12,11 @@ export function effectsOf(
   stage?: StageContact,
 ): PendingEffect[] {
   const source = statusDamageSource(actor, ability, step);
-  return ability.definition.effects.map((effect) => ({
+  return ability.definition.effects.map((effect, effectIndex) => ({
     actorId: actorId(actor),
     targetId,
     effect,
+    effectIndex,
     ...source,
     parentEventId,
     abilityId: ability.id,

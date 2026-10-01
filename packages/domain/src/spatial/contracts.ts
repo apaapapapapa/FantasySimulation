@@ -391,6 +391,25 @@ export const EffectSchema = z.discriminatedUnion('kind', [
       (cue) => cue.discoverySteps <= cue.durationSteps,
       'Discovery must not follow sensory cue expiry',
     ),
+  z
+    .strictObject({
+      kind: z.literal('environmental-hologram'),
+      modality: z.literal('visual'),
+      offsetMm: z.strictObject({
+        x: z.number().int().min(-50_000).max(50_000),
+        y: z.number().int().min(-50_000).max(50_000),
+        z: z.number().int().min(-50_000).max(50_000),
+      }),
+      observationSteps: positive(500),
+      invalidationSteps: positive(1_000),
+      durationSteps: positive(1_000),
+    })
+    .refine(
+      (hologram) =>
+        hologram.observationSteps < hologram.invalidationSteps &&
+        hologram.invalidationSteps < hologram.durationSteps,
+      'Hologram observation, invalidation and expiry must be ordered',
+    ),
   RevealEffectSchema,
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
@@ -947,15 +966,21 @@ export const AbilitySchema = z
         code: 'custom',
         message: 'Dispel requires status IDs or status categories',
       });
+    const observerProjection = plans
+      .flatMap((plan) => plan.effects)
+      .find((effect) => effect.kind === 'sensory-cue' || effect.kind === 'environmental-hologram');
     if (
-      plans.some((p) => p.effects.some((e) => e.kind === 'sensory-cue')) &&
+      observerProjection &&
       (ability.trigger !== 'action' ||
         ability.target !== 'enemy' ||
         plans.some((p) => p.attack?.kind !== 'hitscan' || p.attack.radiusMm !== 0))
     )
       ctx.addIssue({
         code: 'custom',
-        message: 'Visual sensory cues require an enemy-targeted zero-radius hitscan action',
+        message:
+          observerProjection.kind === 'sensory-cue'
+            ? 'Visual sensory cues require an enemy-targeted zero-radius hitscan action'
+            : 'Environmental holograms require an enemy-targeted zero-radius hitscan action',
       });
     if (
       plans.some(
@@ -1374,7 +1399,14 @@ export const PhysicsProfileSchema = z.strictObject({
 /** Saved inputs remain readable; only ManifestSchema admits current execution. */
 export const StoredManifestSchema = z
   .strictObject({
-    schemaVersion: z.union([z.literal(3), z.literal(4), z.literal(5), z.literal(6), z.literal(7)]),
+    schemaVersion: z.union([
+      z.literal(3),
+      z.literal(4),
+      z.literal(5),
+      z.literal(6),
+      z.literal(7),
+      z.literal(8),
+    ]),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
     engineVersion: IdSchema,
@@ -1393,6 +1425,14 @@ export const StoredManifestSchema = z
     revisions: z.array(RevisionSchema).min(4).max(256),
   })
   .superRefine((manifest, ctx) => {
+    const effects = manifest.revisions.flatMap((revision) =>
+      revision.kind === 'ability'
+        ? [
+            ...revision.definition.effects,
+            ...(revision.definition.stages ?? []).flatMap((stage) => stage.effects),
+          ]
+        : [],
+    );
     if (
       manifest.schemaVersion === 3 &&
       manifest.participants.some((participant) => participant.skillLoadout !== undefined)
@@ -1406,17 +1446,7 @@ export const StoredManifestSchema = z
         code: 'custom',
         message: 'Passive and augment receipts require manifest schema version 5',
       });
-    if (
-      manifest.schemaVersion < 6 &&
-      manifest.revisions.some(
-        (revision) =>
-          revision.kind === 'ability' &&
-          [
-            ...revision.definition.effects,
-            ...(revision.definition.stages ?? []).flatMap((stage) => stage.effects),
-          ].some((effect) => effect.kind === 'sensory-cue'),
-      )
-    )
+    if (manifest.schemaVersion < 6 && effects.some((effect) => effect.kind === 'sensory-cue'))
       ctx.addIssue({
         code: 'custom',
         message: 'Sensory cues require manifest schema version 6',
@@ -1430,6 +1460,14 @@ export const StoredManifestSchema = z
       ctx.addIssue({
         code: 'custom',
         message: 'Dependent summons require manifest schema version 7',
+      });
+    if (
+      manifest.schemaVersion < 8 &&
+      effects.some((effect) => effect.kind === 'environmental-hologram')
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Environmental holograms require manifest schema version 8',
       });
     if (manifest.participants[0].rngStream === manifest.participants[1].rngStream)
       ctx.addIssue({ code: 'custom', message: 'Actor streams must differ' });

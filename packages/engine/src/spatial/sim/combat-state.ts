@@ -40,6 +40,7 @@ export function initialActor(world: SpatialWorld, actor: ResolvedActor): ActorSt
       decisionRandom: initialDecisionRandom(actor.participant.rngSeed),
       sensoryCues: [],
     },
+    sensors: { environmentalHolograms: [] },
     actions: { action: null, readyAt: 0, used: {}, cooldowns: {} },
   };
 }
@@ -83,12 +84,14 @@ export const cloneActor = (state: ActorState): ActorState => ({
       : null,
   },
   mind: { ...state.mind, sensoryCues: structuredClone(state.mind.sensoryCues) },
+  sensors: { environmentalHolograms: structuredClone(state.sensors.environmentalHolograms) },
   statuses: state.statuses.map((status) => ({ ...status, causes: [...status.causes] })),
 });
 export function displayActor(
   state: ActorState,
   step: number,
   sensoryFeature = false,
+  environmentalHologramFeature = false,
 ): ActorDisplay {
   const clock = clockDisplay(state, step);
   if (state.clock?.frozen && step > state.clock.frozen.from) {
@@ -180,6 +183,13 @@ export function displayActor(
           ),
         }
       : {}),
+    ...(environmentalHologramFeature
+      ? {
+          sensorView: {
+            environmentalHolograms: structuredClone(state.sensors.environmentalHolograms),
+          },
+        }
+      : {}),
   };
 }
 /** Compact decision state, distinct from display checkpoints and a supported resume snapshot. */
@@ -196,6 +206,9 @@ export function decisionState(state: ActorState) {
   return {
     ...rest,
     ...(sensoryCues.length ? { sensoryCues } : {}),
+    ...(state.sensors.environmentalHolograms.length
+      ? { sensors: structuredClone(state.sensors) }
+      : {}),
     motion: { ...motion, actor: motion.actor.participant.actorId },
     statuses: statuses.map((s) => ({
       ...s,

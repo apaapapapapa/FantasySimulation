@@ -4,6 +4,7 @@ import { stageCount } from './scene-model.ts';
 import { sealDisplay } from './seal-display.ts';
 import { recoveryDisplay } from './recovery-display.ts';
 const effectNames = {
+  'environmental-hologram': 'Environmental hologram',
   damage: 'ダメージ',
   heal: '回復',
   shield: 'シールド',

@@ -70,6 +70,11 @@ export function selfView(
   );
   return {
     self,
+    sensorView: {
+      environmentalHolograms: actor.sensors.environmentalHolograms
+        .filter((hologram) => self.vision?.enabled !== false && hologram.state === 'observed')
+        .map((hologram) => structuredClone(hologram)),
+    },
     ...(actor.clock ? { clock: actor.clock } : {}),
     resources: actor.vitals.resources,
     staminaExhausted: actor.vitals.staminaClock?.exhausted ?? false,
