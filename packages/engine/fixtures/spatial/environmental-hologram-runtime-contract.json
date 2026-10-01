@@ -53,6 +53,10 @@
       "hologram never becomes a targetable combat actor",
       "invalidation removes the hologram from later decisions"
     ],
+    "apiRoundTrip": [
+      "API job response validates and returns the actual observer sensor state",
+      "API replay response round-trips hologram identity observer set lifecycle and perceived position"
+    ],
     "persistence": [
       "worker SQLite and artifact round-trip the actual observer sensor state",
       "identity observer set lifecycle and perceived position are immutable under replay validation",
@@ -80,6 +84,7 @@
     "requiredBeforePromotion": [
       "actual engine state assertions",
       "actual event assertions",
+      "actual API response and round-trip assertions",
       "actual persisted replay assertions",
       "actual 2D and 3D render assertions",
       "actual forward reverse and loop seek assertions",

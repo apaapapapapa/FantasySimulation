@@ -40,8 +40,12 @@ describe('pending environmental hologram runtime contract', () => {
   it('binds promotion to actual runtime state event replay display and seek evidence', () => {
     const evidence = contract.requiredEvidence;
     expect(Object.keys(evidence).toSorted()).toEqual(
-      ['observerAi', 'persistence', 'replay', 'seek', 'viewer2d3d'].toSorted(),
+      ['apiRoundTrip', 'observerAi', 'persistence', 'replay', 'seek', 'viewer2d3d'].toSorted(),
     );
+    expect(evidence.apiRoundTrip).toEqual([
+      'API job response validates and returns the actual observer sensor state',
+      'API replay response round-trips hologram identity observer set lifecycle and perceived position',
+    ]);
     const gate = contract.implementationGate;
     expect(gate).toMatchObject({
       approvedRuntimeNumbers: false,
@@ -51,6 +55,7 @@ describe('pending environmental hologram runtime contract', () => {
     expect(gate.requiredBeforePromotion).toEqual([
       'actual engine state assertions',
       'actual event assertions',
+      'actual API response and round-trip assertions',
       'actual persisted replay assertions',
       'actual 2D and 3D render assertions',
       'actual forward reverse and loop seek assertions',
