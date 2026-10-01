@@ -76,3 +76,37 @@ export async function pipelineFixture(root: string) {
     terminal,
   };
 }
+
+/** Real bounded 144-match/2-partition fixture, sealed before transport timers start. */
+export async function sealedTwoPartitionFixture(root: string) {
+  const fixture = await preparedPipeline(root, 9);
+  const baseline = await PublicationEvidence.audit(fixture.baselineRoot);
+  const sealed: { root: string; proof: Awaited<ReturnType<typeof sealLeagueProducer>> }[] = [];
+  await runCloudLeagueRunner(
+    fixture.preparedRoot,
+    join(root, 'results'),
+    fixture.identity.source,
+    fixture.executionId,
+    {
+      runner: 0,
+      runners: 1,
+      workers: 2,
+      completed: async (index, directory, pool, bundles) => {
+        const producerRoot = join(root, 'sealed', String(index));
+        const proof = await sealLeagueProducer(
+          await cloudInput(fixture.preparedRoot, fixture.prepared, index),
+          directory,
+          producerRoot,
+          fixture.identity,
+          0,
+          pool,
+          bundles,
+        );
+        sealed.push({ root: producerRoot, proof });
+      },
+    },
+  );
+  if (sealed.length !== 2 || sealed.some((value, index) => value.proof.partition !== index))
+    throw new Error('Expected real two-partition fixture');
+  return { ...fixture, baseline, sealed };
+}

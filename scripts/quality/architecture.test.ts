@@ -490,3 +490,41 @@ it.each([
     result.publicGraph.summary.violations.some((v) => v.rule.name === 'batch-application-boundary'),
   ).toBe(!allowed);
 });
+
+it('resolves explicit root installed files while rejecting missing dependency files', async () => {
+  const f = fixture({
+    'package.json': '{"private":true}',
+    'scripts/probe.ts': "export { value } from '../node_modules/sdk/internal.js';",
+    'node_modules/sdk/package.json': '{"name":"sdk","exports":{".":"./index.js"}}',
+    'node_modules/sdk/index.js': 'export const value = 0;',
+    'node_modules/sdk/internal.js': 'export const value = 1;',
+  });
+  const result = await architecture(f.root, f.paths);
+  expect(result.publicGraph.summary.violations).toEqual([]);
+  expect(result.runtimeGraph.summary.violations).toEqual([]);
+  const missing = fixture({
+    'package.json': '{"private":true}',
+    'scripts/probe.ts': "export { value } from '../node_modules/sdk/missing.js';",
+    'node_modules/sdk/package.json': '{"name":"sdk","exports":{".":"./index.js"}}',
+    'node_modules/sdk/index.js': 'export const value = 0;',
+  });
+  expect(
+    (await architecture(missing.root, missing.paths)).publicGraph.summary.violations.map(
+      (v) => v.rule.name,
+    ),
+  ).toContain('unresolved');
+});
+it('retains runtime development SDK boundaries for root filesystem imports', async () => {
+  const f = fixture({
+    'package.json': '{"private":true}',
+    'packages/domain/src/probe.ts':
+      "export { value } from '../../../node_modules/@octokit/example/internal.js';",
+    'node_modules/@octokit/example/package.json':
+      '{"name":"@octokit/example","exports":{".":"./index.js"}}',
+    'node_modules/@octokit/example/index.js': 'export const value = 0;',
+    'node_modules/@octokit/example/internal.js': 'export const value = 1;',
+  });
+  expect(
+    (await architecture(f.root, f.paths)).publicGraph.summary.violations.map((v) => v.rule.name),
+  ).toContain('development-tools-stay-outside-runtime');
+});
