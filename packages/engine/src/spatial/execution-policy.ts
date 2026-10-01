@@ -62,6 +62,17 @@ export function executionEligibility(manifest: StoredManifest): ExecutionEligibi
       code: 'unsupported-ai',
       reason: `Unsupported AI profile: ${manifest.aiProfile ?? 'legacy'}`,
     };
+  if (
+    manifest.schemaVersion < 9 &&
+    manifest.revisions.some(
+      (revision) => revision.kind === 'ability' && revision.definition.summon,
+    )
+  )
+    return {
+      executable: false,
+      code: 'unsupported-mechanic',
+      reason: 'Current dependent summon execution requires manifest schema version 9',
+    };
   const unsupportedResolver = manifest.participants
     .map((participant) => participant.skillLoadout?.resolverVersion)
     .find(

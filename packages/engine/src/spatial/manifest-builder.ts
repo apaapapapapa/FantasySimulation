@@ -107,9 +107,9 @@ export class ManifestBuilder {
     );
     return prepareBattle({
       ...request,
-      schemaVersion: hasEnvironmentalHolograms(revisions)
-        ? 8
-        : hasDependentSummons(revisions)
+      schemaVersion: hasDependentSummons(revisions)
+        ? 9
+        : hasEnvironmentalHolograms(revisions)
           ? 8
           : hasSensoryCues(revisions)
             ? 6
