@@ -251,6 +251,21 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     command.after.mp += 1;
   });
   rejects((records) => {
+    const record = records.find(
+      (candidate) =>
+        (candidate.kind === 'boundary' || candidate.kind === 'interval') &&
+        candidate.events.some(
+          (event) => event.kind === 'damage' && event.targetId?.startsWith('dependent.'),
+        ),
+    );
+    if (!record || !('events' in record)) throw new Error('Missing dependent damage record');
+    const damage = record.events.find(
+      (event) => event.kind === 'damage' && event.targetId?.startsWith('dependent.'),
+    );
+    if (!damage) throw new Error('Missing dependent target damage');
+    damage.entityId = null;
+  });
+  rejects((records) => {
     const record = actionRecord(records);
     if (!record || !('changes' in record)) throw new Error('Missing action record');
     const command = record.events.find((event) => event.kind === 'dependent-command');

@@ -313,15 +313,23 @@ export function applyDependents(
           event.after.shield === 0,
         'dependent hp resource chain',
       );
-      if (event.kind === 'damage')
+      if (event.kind === 'damage') {
+        const source = [...priorDependents, ...(state.dependents ?? [])].find(
+          (candidate) => candidate.id === event.entityId,
+        );
         requireReplay(
           event.ruleId === 'damage.dependent-hp' &&
             event.reason === 'same-wave-dependent-hp-clamp' &&
+            !!source &&
+            source.ownerId === event.actorId &&
+            source.hostileOwnerId === dependent.ownerId &&
+            event.damage?.calculation?.basePower ===
+              ownerAbility(context, source)?.definition.summon?.damage.amount &&
             event.after.hp < event.before.hp &&
             event.before.hp - event.after.hp === event.amount,
           'dependent damage settlement',
         );
-      else
+      } else
         requireReplay(
           event.targetId === dependent.id &&
             event.after.hp >= event.before.hp &&

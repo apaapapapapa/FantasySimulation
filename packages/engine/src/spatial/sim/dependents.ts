@@ -218,6 +218,7 @@ export function advanceDependents(tx: StepTransaction) {
       .filter(
         (candidate) =>
           candidate.ownerId === dependent.hostileOwnerId &&
+          candidate.hostileOwnerId === dependent.ownerId &&
           candidate.hp > 0 &&
           canSee(tx.context.world, owner.body.motion, {
             x: candidate.position.x,
