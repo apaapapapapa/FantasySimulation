@@ -332,7 +332,7 @@ export function SkillWorkbench({
           {selectedPath.name}: {visible.length}/72 枠が検索条件に一致
         </p>
         <p className="muted">
-          非該当の枠は座標確認のため薄く表示し、操作できません。条件を解除すると再び選べます。
+          非該当の枠は座標だけを残して内容を隠し、操作できません。条件を解除すると再び選べます。
         </p>
 
         <div className="skill-matrix-scroll" tabIndex={0} aria-label={`${selectedPath.name} 72枠`}>
@@ -369,6 +369,7 @@ export function SkillWorkbench({
                           type="button"
                           aria-pressed={selectedNodeId === node.id}
                           aria-disabled={!matches}
+                          aria-hidden={!matches}
                           disabled={!matches}
                           tabIndex={matches ? 0 : -1}
                           onClick={() => setSelectedNodeId(node.id)}

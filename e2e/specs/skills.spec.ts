@@ -30,6 +30,12 @@ test('skill-workbench-desktop', async ({ page }) => {
   ).toBeDisabled();
   await expect(
     workbench.locator('.skill-matrix tbody td[data-match="false"] > button').first(),
+  ).toBeHidden();
+  await expect(
+    workbench.locator('.skill-matrix tbody td[data-match="false"] > button').first(),
+  ).toHaveAttribute('aria-hidden', 'true');
+  await expect(
+    workbench.locator('.skill-matrix tbody td[data-match="false"] > button').first(),
   ).toHaveAttribute('tabindex', '-1');
 
   await firstNode.click();

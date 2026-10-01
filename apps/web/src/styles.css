@@ -300,6 +300,7 @@ h1 {
 }
 .skill-matrix td[data-match='false'] > button {
   pointer-events: none;
+  visibility: hidden;
 }
 .skill-matrix td[data-state='enabled'] {
   background: #302a20;
