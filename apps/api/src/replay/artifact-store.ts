@@ -44,8 +44,8 @@ export class ArtifactStore {
     return (await this.files(id)).read(file);
   }
   /** A bulk copy binds the DB manifest once instead of re-reading and re-parsing it per file. */
-  async files(id: string) {
-    const manifest = await this.bound(id, false);
+  async files(id: string, expectedAttemptId?: string) {
+    const manifest = await this.bound(id, false, expectedAttemptId);
     const refs = new Map([...manifest.chunks, ...manifest.checkpoints].map((r) => [r.file, r]));
     return {
       manifest,
@@ -64,11 +64,15 @@ export class ArtifactStore {
       },
     };
   }
-  private async bound(id: string, full: boolean) {
+  private async bound(id: string, full: boolean, expectedAttemptId?: string) {
     const artifact = this.jobs.artifact(id);
     if (!artifact) throw new StoreError('not-found', 'Replay not found');
     if (artifact.state !== 'ready')
       throw new StoreError('unavailable', `Replay is ${artifact.state}; result held`);
+    // A valid artifact belonging to another attempt is not corrupt, but must never be projected
+    // through a swapped simulation_attempts.replay_id pointer.
+    if (expectedAttemptId !== undefined && artifact.attemptId !== expectedAttemptId)
+      throw new StoreError('unavailable', 'Replay/attempt binding mismatch');
     return this.held(id, async () => {
       const manifest = await readReplayManifest(this.root, id, artifact.manifestChecksum);
       if (full) {

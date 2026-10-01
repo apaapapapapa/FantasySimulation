@@ -525,7 +525,11 @@ export class BattleService {
         const metrics = this.jobs.metrics(attempt.id);
         const sensorProjection =
           attempt.state === 'completed' && attempt.replayId
-            ? await environmentalHologramSensorProjection(this.artifacts, attempt.replayId)
+            ? await environmentalHologramSensorProjection(
+                this.artifacts,
+                attempt.replayId,
+                attempt.id,
+              )
             : undefined;
         return {
           ...publicAttempt,

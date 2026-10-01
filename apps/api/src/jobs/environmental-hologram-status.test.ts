@@ -14,11 +14,7 @@ import {
   type ReplayManifest,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
-import {
-  ManifestBuilder,
-  sealRevision,
-} from '../../../../packages/engine/src/spatial/manifest-builder.ts';
-import { environmentalHologramManifest } from '../../../../packages/engine/test-support/environmental-holograms.ts';
+import { environmentalHologramSummoningManifest } from '../../../../packages/engine/test-support/environmental-holograms.ts';
 import { withReplayDirectory } from '../../test-support/replays.ts';
 import { specInput } from '../../test-support/runtime.ts';
 import { openStore } from '../db/store.ts';
@@ -29,19 +25,7 @@ import { BattleService } from './battle-service.ts';
 import { JobStore } from './job-store.ts';
 
 async function activeHologramManifest() {
-  let input = await environmentalHologramManifest(40);
-  const oldAbility = input.revisions.find(
-    (revision) => revision.kind === 'ability' && revision.id === 'sk07-hologram',
-  );
-  if (!oldAbility || oldAbility.kind !== 'ability') throw new Error('Missing hologram ability');
-  const ability = await sealRevision('ability', oldAbility.id, oldAbility.revision, {
-    ...oldAbility.definition,
-    effects: oldAbility.definition.effects.map((effect) =>
-      effect.kind === 'environmental-hologram' ? { ...effect, durationSteps: 300 } : effect,
-    ),
-  });
-  input = await ManifestBuilder.relink(input, [{ from: oldAbility, to: ability }]);
-  return input;
+  return environmentalHologramSummoningManifest(40, 300);
 }
 
 function sanitizedProjection(replayId: string, replay: ReplayState) {
@@ -92,9 +76,13 @@ it(
       const files = ArtifactStore.prototype.files;
       const filesSpy = vi
         .spyOn(ArtifactStore.prototype, 'files')
-        .mockImplementation(async function (this: ArtifactStore, replayId: string) {
+        .mockImplementation(async function (
+          this: ArtifactStore,
+          replayId: string,
+          expectedAttemptId?: string,
+        ) {
           manifestReads++;
-          const opened = await files.call(this, replayId);
+          const opened = await files.call(this, replayId, expectedAttemptId);
           return {
             ...opened,
             read: async (file: string) => {
@@ -118,6 +106,7 @@ it(
         expect(done.state).toBe('completed');
         const replayId = new JobStore(store).result(done.resultId!)!.replayId;
         const savedManifest = await runtime.replay(replayId);
+        expect(savedManifest.input.schemaVersion).toBe(9);
 
         reads.length = 0;
         manifestReads = 0;
@@ -149,6 +138,7 @@ it(
         ]);
 
         const opened = await replayFromApi(app, replayId);
+        expect(opened.manifest.input.schemaVersion).toBe(9);
         expect(sanitizedProjection(replayId, opened.replay)).toEqual(projection);
         const lifecycle = opened.records
           .flatMap((record) => ('events' in record ? record.events : []))
@@ -212,6 +202,37 @@ it(
           [8, 8],
         );
         expect(JSON.stringify(bounded)).not.toContain('sourcePosition');
+
+        const otherSpec = structuredClone(specInput(input));
+        otherSpec.participants[0].position.x += 250;
+        const otherSubmitted = await app.inject({
+          method: 'POST',
+          url: '/api/battle-jobs',
+          headers: { 'x-client-id': 'hologram-status', 'idempotency-key': 'other-attempt' },
+          payload: { spec: otherSpec, budget: DEFAULT_BUDGET },
+        });
+        expect(otherSubmitted.statusCode).toBe(202);
+        const otherDone = await runtime.wait(otherSubmitted.json().job.id);
+        expect(otherDone.state).toBe('completed');
+        const jobs = new JobStore(store);
+        const attempt = jobs.attempts(id)[0]!;
+        const otherAttempt = jobs.attempts(otherDone.id)[0]!;
+        expect(otherAttempt.replayId).not.toBe(replayId);
+        expect(
+          store.db
+            .prepare('UPDATE simulation_attempts SET replay_id = ? WHERE id = ?')
+            .run(otherAttempt.replayId, attempt.id).changes,
+        ).toBe(1);
+        const swapped = await app.inject(`/api/battle-jobs/${id}`);
+        expect(swapped.statusCode).toBe(503);
+        expect(swapped.json().error).toMatch(/attempt binding/);
+        expect(jobs.artifact(replayId)?.state).toBe('ready');
+        expect(jobs.artifact(otherAttempt.replayId!)?.state).toBe('ready');
+        expect(
+          store.db
+            .prepare('UPDATE simulation_attempts SET replay_id = ? WHERE id = ?')
+            .run(replayId, attempt.id).changes,
+        ).toBe(1);
 
         await app.close();
         await runtime.close();

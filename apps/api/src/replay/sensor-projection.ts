@@ -44,8 +44,11 @@ export function sanitizeEnvironmentalHologramSensorProjection(
 export async function environmentalHologramSensorProjection(
   artifacts: ArtifactStore,
   replayId: string,
+  expectedAttemptId: string,
 ) {
-  const files = await artifacts.files(replayId);
+  const files = await artifacts.files(replayId, expectedAttemptId);
+  if (files.manifest.attemptId !== expectedAttemptId)
+    throw new Error('Replay/attempt manifest binding mismatch');
   if (files.manifest.input.schemaVersion < 8) return undefined;
   const context = await replayContext(files.manifest.input, files.manifest.simulationHash);
   const expand = (ref: CompressedRef) => readCompressed('', ref, (file) => files.read(file));
