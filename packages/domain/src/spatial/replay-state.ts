@@ -40,7 +40,6 @@ import { validateInterferences } from './replay-validation/interference.ts';
 import { validateSensoryCues } from './replay-validation/sensory-cue.ts';
 import { applyDependents, validateDependent } from './replay-validation/dependent.ts';
 import {
-  advanceEnvironmentalHologramProvenance,
   validateEnvironmentalHologramCheckpoint,
   validateEnvironmentalHolograms,
 } from './replay-validation/environmental-hologram.ts';
@@ -89,7 +88,6 @@ export class ReplayState {
         v.step,
         v.boundaryApplied,
         v.requiredFeatures,
-        v.environmentalHolograms ?? [],
       );
       const last = v.lastRecord!;
       validateClocks(
@@ -469,11 +467,6 @@ export class ReplayState {
     state.dependents?.sort((a, b) => compareIds(a.id, b.id));
     const deferred = advanceDeferred(prior.deferred, 'events' in record ? record.events : []);
     const stop = advanceStopReplay(prior.stop, 'events' in record ? record.events : []);
-    const environmentalHolograms = advanceEnvironmentalHologramProvenance(
-      prior.simulationHash,
-      prior.environmentalHolograms,
-      record,
-    );
     const requiredFeatures =
       record.kind === 'initial' ? record.requiredFeatures : prior.requiredFeatures;
     if (record.kind === 'terminal' && ['win', 'draw'].includes(record.outcome.kind))
@@ -484,7 +477,6 @@ export class ReplayState {
     const next: ReplayCheckpoint = {
       ...(deferred ? { deferred } : {}),
       ...(stop ? { stop } : {}),
-      ...(environmentalHolograms ? { environmentalHolograms } : {}),
       ...(requiredFeatures ? { requiredFeatures } : {}),
       schemaVersion: 1,
       simulationHash: prior.simulationHash,
@@ -524,11 +516,37 @@ export async function seekReplayState(
   // Without chunks the manifest records nothing, so only the empty cursor 0 is valid.
   if (index < 0) return new ReplayState(context);
   const chunk = manifest.chunks[index]!;
-  const replay = new ReplayState(context, await source.checkpoint(index));
+  const checkpoint = await source.checkpoint(index);
+  const replay = new ReplayState(context, checkpoint);
   requireReplay(
     replay.nextRecord === chunk.firstRecord && replay.step === chunk.fromStep,
     'seek checkpoint index',
   );
+  const hasActiveHologram =
+    context.manifest.schemaVersion === 8 &&
+    replay
+      .checkpoint()
+      .state?.actors.some((actor) => (actor.sensorView?.environmentalHolograms.length ?? 0) > 0);
+  if (hasActiveHologram) {
+    requireReplay(index > 0 && manifest.chunks[0]?.firstRecord === 0, 'seek hologram prefix');
+    const canonical = new ReplayState(context, await source.checkpoint(0));
+    requireReplay(
+      canonical.nextRecord === 0 && canonical.step === manifest.chunks[0]!.fromStep,
+      'seek prefix checkpoint',
+    );
+    for (let chunkIndex = 0; chunkIndex < index; chunkIndex++) {
+      const prefixChunk = manifest.chunks[chunkIndex]!;
+      requireReplay(canonical.nextRecord === prefixChunk.firstRecord, 'seek prefix continuity');
+      const records = await source.records(chunkIndex);
+      requireReplay(records.length === prefixChunk.records, 'seek chunk record count');
+      for (const record of records) canonical.apply(record);
+    }
+    requireReplay(
+      canonical.nextRecord === chunk.firstRecord &&
+        same(canonical.checkpoint(), replay.checkpoint()),
+      'seek hologram checkpoint history',
+    );
+  }
   if (nextRecord > chunk.firstRecord) {
     const records = await source.records(index);
     requireReplay(records.length === chunk.records, 'seek chunk record count');

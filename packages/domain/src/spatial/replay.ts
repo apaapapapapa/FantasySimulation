@@ -2,7 +2,7 @@ import { StopReplaySchema } from './clocks.ts';
 import { MAX_BATTLE_STEPS, MAX_FRAME_BYTES } from './contracts.ts';
 import { z } from 'zod';
 import { HashSchema, IdSchema, StoredManifestSchema } from './contracts.ts';
-import { DeferredEffectSchema, PhysicalVectorSchema, ResultSchema } from './records.ts';
+import { DeferredEffectSchema, ResultSchema } from './records.ts';
 import { DisplayStateSchema, RequiredReplayFeaturesSchema, StreamRecordSchema } from './stream.ts';
 import { fail } from './replay-validation/common.ts';
 export { ReplayValidationError } from './replay-validation/common.ts';
@@ -15,23 +15,10 @@ export { eventHashLine, trajectoryHashLine } from './record-hashes.ts';
 export const MAX_RECORD_BYTES = MAX_FRAME_BYTES + 1;
 const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
 const recordIndex = z.number().int().min(0).max(12003);
-export const EnvironmentalHologramProvenanceSchema = z.strictObject({
-  id: IdSchema,
-  creatorId: IdSchema,
-  observerId: IdSchema,
-  abilityId: IdSchema,
-  effectIndex: z.number().int().min(0).max(31),
-  stageIndex: z.number().int().min(0).max(15).optional(),
-  sourcePosition: PhysicalVectorSchema,
-  activationSequence: z.number().int().min(0).max(1_000_000),
-  binding: IdSchema,
-});
-export type EnvironmentalHologramProvenance = z.infer<typeof EnvironmentalHologramProvenanceSchema>;
 export const ReplayCheckpointSchema = z.strictObject({
   stop: StopReplaySchema.optional(),
   requiredFeatures: RequiredReplayFeaturesSchema.optional(),
   deferred: z.array(DeferredEffectSchema).max(4096).optional(),
-  environmentalHolograms: z.array(EnvironmentalHologramProvenanceSchema).max(16).optional(),
   schemaVersion: z.literal(1),
   simulationHash: HashSchema,
   step,

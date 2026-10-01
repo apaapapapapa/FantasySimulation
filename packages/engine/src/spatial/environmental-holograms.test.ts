@@ -1,11 +1,14 @@
 import { expect, it } from 'vite-plus/test';
 import {
   ReplayState,
+  ReplayManifestSchema,
+  RECORDING_PROFILE,
   StoredManifestSchema,
   StreamRecordSchema,
   DEFAULT_BUDGET,
   environmentalHologramId,
   replayContext,
+  seekReplayState,
   type StreamRecord,
 } from '@fantasy/domain/spatial';
 import { sampleManifest } from '@fantasy/samples';
@@ -305,6 +308,51 @@ it('records one observer sensor projection through runtime, AI and replay withou
 
   const activeReplay = new ReplayState(context);
   for (const record of run.records.slice(0, activeIndex + 1)) activeReplay.apply(record);
+  const checkpoints = [new ReplayState(context).checkpoint(), activeReplay.checkpoint()];
+  const starts = [0, activeIndex + 1];
+  const ends = [activeIndex + 1, run.records.length];
+  const replayManifest = ReplayManifestSchema.parse({
+    schemaVersion: 1,
+    id: 'environmental-hologram-seek',
+    resultId: 'result-1',
+    attemptId: 'attempt-1',
+    simulationHash: run.result.simulationHash,
+    input: battle.manifest,
+    profile: RECORDING_PROFILE,
+    lastVerifiedStep: run.result.steps,
+    records: run.records.length,
+    eventHash: run.result.eventHash,
+    trajectoryHash: run.result.trajectoryHash,
+    end: { kind: 'result', result: run.result },
+    checkpoints: starts.map((start, index) => ({
+      file: `checkpoint-${String(index).padStart(5, '0')}.json.gz`,
+      bytes: 1,
+      rawBytes: 1,
+      checksum: run.result.eventHash,
+      index,
+      step: checkpoints[index]!.step,
+      nextRecord: start,
+    })),
+    chunks: starts.map((start, index) => ({
+      file: `chunk-${String(index).padStart(5, '0')}.ndjson.gz`,
+      bytes: 1,
+      rawBytes: 1,
+      checksum: run.result.eventHash,
+      index,
+      firstRecord: start,
+      records: ends[index]! - start,
+      fromStep: checkpoints[index]!.step,
+      toStep: index === 0 ? activeReplay.step : replay.step,
+      checkpoint: index,
+    })),
+  });
+  const seekSource = (activeCheckpoint = activeReplay.checkpoint()) => ({
+    checkpoint: (index: number) => Promise.resolve(index === 0 ? checkpoints[0] : activeCheckpoint),
+    records: (index: number) => Promise.resolve(run.records.slice(starts[index], ends[index])),
+  });
+  expect(
+    (await seekReplayState(context, replayManifest, activeIndex + 1, seekSource())).checkpoint(),
+  ).toEqual(activeReplay.checkpoint());
   const checkpoint = activeReplay.checkpoint();
   const checkpointProjection = checkpoint.state?.actors
     .flatMap((actor) => actor.sensorView?.environmentalHolograms ?? [])
@@ -312,21 +360,15 @@ it('records one observer sensor projection through runtime, AI and replay withou
   if (!checkpointProjection) throw new Error('Missing checkpoint projection');
   checkpointProjection.sourcePosition.x += 1;
   checkpointProjection.perceivedPosition.x += 1;
-  const checkpointProof = checkpoint.environmentalHolograms?.find((proof) => proof.id === firstId);
-  if (!checkpointProof) throw new Error('Missing checkpoint proof');
-  checkpointProof.sourcePosition.x += 1;
-  expect(() => new ReplayState(context, checkpoint)).toThrow(
-    /environmental hologram checkpoint provenance binding/,
-  );
+  await expect(
+    seekReplayState(context, replayManifest, activeIndex + 1, seekSource(checkpoint)),
+  ).rejects.toThrow(/seek hologram checkpoint history/);
 
   const checkpointIdentity = activeReplay.checkpoint();
   const identityProjection = checkpointIdentity.state?.actors
     .flatMap((actor) => actor.sensorView?.environmentalHolograms ?? [])
     .find((hologram) => hologram.id === firstId);
-  const identityProof = checkpointIdentity.environmentalHolograms?.find(
-    (proof) => proof.id === firstId,
-  );
-  if (!identityProjection || !identityProof) throw new Error('Missing identity proof');
+  if (!identityProjection) throw new Error('Missing identity projection');
   const forgedId = environmentalHologramId(
     battle.manifest.seed,
     identityProjection.creatorId,
@@ -334,11 +376,9 @@ it('records one observer sensor projection through runtime, AI and replay withou
     999,
   );
   identityProjection.id = forgedId;
-  identityProof.id = forgedId;
-  identityProof.activationSequence = 999;
-  expect(() => new ReplayState(context, checkpointIdentity)).toThrow(
-    /environmental hologram checkpoint provenance binding/,
-  );
+  await expect(
+    seekReplayState(context, replayManifest, activeIndex + 1, seekSource(checkpointIdentity)),
+  ).rejects.toThrow(/seek hologram checkpoint history/);
 
   const checkpointLifecycle = activeReplay.checkpoint();
   const lifecycleProjection = checkpointLifecycle.state?.actors
