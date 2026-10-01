@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ResultSchema } from './records.ts';
+import { EnvironmentalHologramDisplaySchema, ResultSchema } from './records.ts';
 import {
   BudgetSchema,
   MAX_BATTLE_STEPS,
@@ -117,6 +117,59 @@ export const JobViewSchema = z.object({
   allowedOperations: z.strictObject({ cancel: z.boolean(), retry: z.boolean() }).optional(),
 });
 export const JobResponseSchema = z.object({ job: JobViewSchema });
+const hologram = EnvironmentalHologramDisplaySchema.shape;
+export const EnvironmentalHologramSensorProjectionSchema = z
+  .strictObject({
+    id: hologram.id,
+    creatorId: hologram.creatorId,
+    observerId: hologram.observerId,
+    observerIds: hologram.observerIds,
+    abilityId: hologram.abilityId,
+    effectIndex: hologram.effectIndex,
+    stageIndex: hologram.stageIndex,
+    modality: hologram.modality,
+    perceivedPosition: hologram.perceivedPosition,
+    state: hologram.state,
+    activatedAt: hologram.activatedAt,
+    observedAt: hologram.observedAt,
+    invalidatedAt: hologram.invalidatedAt,
+    expiresAt: hologram.expiresAt,
+  })
+  .refine(
+    (projection) =>
+      projection.observerIds[0] === projection.observerId &&
+      projection.activatedAt < projection.observedAt &&
+      projection.observedAt < projection.invalidatedAt &&
+      projection.invalidatedAt < projection.expiresAt,
+    'Environmental hologram sensor projection lifecycle binding',
+  );
+export const ObserverSensorProjectionSchema = z
+  .strictObject({
+    observerId: IdSchema,
+    environmentalHolograms: z.array(EnvironmentalHologramSensorProjectionSchema).max(8),
+  })
+  .refine(
+    (view) =>
+      view.environmentalHolograms.every(
+        (hologram) =>
+          hologram.observerId === view.observerId &&
+          hologram.observerIds.length === 1 &&
+          hologram.observerIds[0] === view.observerId,
+      ),
+    'Environmental hologram sensor projection observer binding',
+  );
+export const BattleSensorProjectionSchema = z
+  .strictObject({
+    replayId: IdSchema,
+    step: z.number().int().min(0).max(MAX_BATTLE_STEPS),
+    observers: z.array(ObserverSensorProjectionSchema).max(2),
+  })
+  .refine(
+    (projection) =>
+      new Set(projection.observers.map((observer) => observer.observerId)).size ===
+      projection.observers.length,
+    'Duplicate observer sensor projection',
+  );
 export const JobStatusSchema = JobResponseSchema.extend({
   attempts: z
     .array(
@@ -127,6 +180,7 @@ export const JobStatusSchema = JobResponseSchema.extend({
         progressStep: z.number().int().min(0).max(MAX_BATTLE_STEPS),
         replayId: IdSchema.nullable(),
         error: z.string().max(10000).nullable(),
+        sensorProjection: BattleSensorProjectionSchema.optional(),
       }),
     )
     .max(MAX_JOB_ATTEMPTS),

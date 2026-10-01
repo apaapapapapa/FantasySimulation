@@ -25,6 +25,7 @@ import { BattlePool } from './worker-pool.ts';
 import { ownRuntime } from './runtime-owner.ts';
 import { ArtifactStore } from '../replay/artifact-store.ts';
 import type { ReplayVerifier } from '../replay/verification-pool.ts';
+import { environmentalHologramSensorProjection } from '../replay/sensor-projection.ts';
 
 export type BattleSubmission = {
   key: string;
@@ -34,7 +35,7 @@ export type BattleSubmission = {
 };
 export type BattleOutcome = {
   key: string;
-  job: ReturnType<BattleService['status']>['job'] | null;
+  job: Awaited<ReturnType<BattleService['status']>>['job'] | null;
   error: unknown;
 };
 export type RuntimeOptions = {
@@ -515,19 +516,26 @@ export class BattleService {
     }
     return { ...job, allowedOperations: { cancel: canCancelJob(job), retry } };
   }
-  status(id: string) {
+  async status(id: string) {
     const job = this.jobs.get(id);
     if (!job) throw new StoreError('not-found', 'Job not found');
-    const attempts = this.jobs.attempts(id).map((attempt) => {
-      const { token: _, budgetJson, ...publicAttempt } = attempt;
-      const metrics = this.jobs.metrics(attempt.id);
-      return {
-        ...publicAttempt,
-        budget: jsonValue(budgetJson),
-        progressStep: metrics?.progressStep ?? 0,
-        metrics: metrics?.metricsJson ? jsonValue(metrics.metricsJson) : null,
-      };
-    });
+    const attempts = await Promise.all(
+      this.jobs.attempts(id).map(async (attempt) => {
+        const { token: _, budgetJson, ...publicAttempt } = attempt;
+        const metrics = this.jobs.metrics(attempt.id);
+        const sensorProjection =
+          attempt.state === 'completed' && attempt.replayId
+            ? await environmentalHologramSensorProjection(this.artifacts, attempt.replayId)
+            : undefined;
+        return {
+          ...publicAttempt,
+          budget: jsonValue(budgetJson),
+          progressStep: metrics?.progressStep ?? 0,
+          metrics: metrics?.metricsJson ? jsonValue(metrics.metricsJson) : null,
+          ...(sensorProjection ? { sensorProjection } : {}),
+        };
+      }),
+    );
     return { job: this.view(job), attempts };
   }
   async resultSnapshot(id: string) {

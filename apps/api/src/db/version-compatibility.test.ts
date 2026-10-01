@@ -5,7 +5,7 @@ import { hostname } from 'node:os';
 import { gunzipSync } from 'node:zlib';
 import Database from 'better-sqlite3';
 import { describe, expect, it, vi } from 'vite-plus/test';
-import { DEFAULT_BUDGET, type Revision } from '@fantasy/domain/spatial';
+import { DEFAULT_BUDGET, JobStatusSchema, type Revision } from '@fantasy/domain/spatial';
 import { prepareBattle, reference } from '@fantasy/engine/spatial';
 import { withReplayDirectory } from '../../test-support/replays.ts';
 import { openStore, readSampleRevisions } from './store.ts';
@@ -62,6 +62,11 @@ describe('previous-code database and replay compatibility', () => {
         const app = createApp(store, false, runtime);
         try {
           expect((await app.inject('/api/health')).statusCode).toBe(200);
+          const legacyStatus = JobStatusSchema.parse(
+            (await app.inject(`/api/battle-jobs/${metadata.complete.id}`)).json(),
+          );
+          expect(legacyStatus.attempts).toHaveLength(1);
+          expect(legacyStatus.attempts[0]?.sensorProjection).toBeUndefined();
           expect((await app.inject('/api/rulesets')).statusCode).toBe(200);
           const characters = (await app.inject('/api/characters')).json<{ items: Revision[] }>();
           expect(characters.items.length).toBeGreaterThanOrEqual(13);
@@ -89,7 +94,7 @@ describe('previous-code database and replay compatibility', () => {
             expect(retry.statusCode).toBe(409);
             expect(retry.json().error).toMatch(/Unsupported engine/);
             expect(jobs.get(id)?.attempts).toBe(failed.attempts);
-            expect(runtime.status(id).job.allowedOperations.retry).toBe(false);
+            expect((await runtime.status(id)).job.allowedOperations.retry).toBe(false);
           }
           expect(run).not.toHaveBeenCalled();
           await writeFile(join(root, replayId, file), 'damaged fixture copy');
