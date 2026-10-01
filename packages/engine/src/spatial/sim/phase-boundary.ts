@@ -196,7 +196,7 @@ export function boundaryPhase(tx: StepTransaction) {
       },
       work.reactions,
     );
-  settleDefeatedDependents(tx);
+  settleDefeatedDependents(tx, step, 'boundary');
   interruptDamagedStages(next, step, journal, 'boundary');
   for (const actor of next)
     checkStageInterruption(

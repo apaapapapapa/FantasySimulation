@@ -78,6 +78,25 @@ export function applyDependents(
         same(event.before, resourcesBefore(event.actorId, event.sequence)),
       'dependent owner resource chain',
     );
+  for (const ownerId of new Set(resourceEvents.flatMap((event) => event.actorId ?? []))) {
+    const final = resourceEvents.findLast((event) => event.actorId === ownerId);
+    const followedByOwnerResourceEvent = record.events.some(
+      (event) =>
+        !!final &&
+        event.sequence > final.sequence &&
+        !!event.after &&
+        (event.actorId === ownerId || event.targetId === ownerId),
+    );
+    if (!followedByOwnerResourceEvent) {
+      const delta = record.changes.find((change) => change.id === ownerId);
+      const recorded =
+        delta?.resources ?? prior.state?.actors.find((actor) => actor.id === ownerId)?.resources;
+      requireReplay(
+        !!final?.after && same(final.after, recorded),
+        'dependent owner resource result',
+      );
+    }
+  }
   requireReplay(
     new Set(changes.spawn.map((d) => d.id)).size === changes.spawn.length &&
       new Set(changes.update.map((d) => d.id)).size === changes.update.length &&
@@ -299,7 +318,7 @@ export function applyDependents(
             (resourcesBefore(existing!.ownerId, event.sequence)?.mp ?? Number.MAX_SAFE_INTEGER) <
               spec!.upkeep.mp
           : removal.reason === 'owner-defeated'
-            ? event?.phase === 'resolution' &&
+            ? event?.phase === (record.kind === 'boundary' ? 'boundary' : 'resolution') &&
               (owner?.resources.hp === 0 || ownerDelta?.resources?.hp === 0)
             : false;
     requireReplay(common && reasonValid, 'dependent removal event binding');

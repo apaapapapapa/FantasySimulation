@@ -234,6 +234,7 @@ export async function withInitialStatus(
   delete startup.stages;
   delete startup.relocation;
   delete startup.barrier;
+  delete startup.summon;
   const ability = await sealRevision('ability', `initial-grant-${index}`, 1, startup);
   const participant = manifest.participants[index];
   const old = manifest.revisions.find(

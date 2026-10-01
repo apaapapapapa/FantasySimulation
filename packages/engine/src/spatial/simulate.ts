@@ -273,7 +273,7 @@ export function* simulate(
           },
           work.reactions,
         );
-        settleDefeatedDependents(tx);
+        settleDefeatedDependents(tx, step, 'boundary');
         const record = tx.boundaryRecord();
         const committed = tx.journal.finish(record);
         ({ actors, melees, dependents, dependentCreated, stop } = tx.next);

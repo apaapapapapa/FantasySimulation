@@ -43,7 +43,7 @@ export function resolutionPhase(tx: StepTransaction) {
     work.reactions,
     tx.projectileContacts,
   );
-  settleDefeatedDependents(tx);
+  settleDefeatedDependents(tx, step + 1, 'resolution');
   interruptDamagedStages(next, step + 1, journal, 'resolution');
   for (const actor of next)
     checkStageInterruption(

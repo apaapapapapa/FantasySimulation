@@ -16,13 +16,15 @@ function removeDependent(
   tx: StepTransaction,
   dependent: DependentState,
   reason: 'expired' | 'dismissed' | 'owner-defeated' | 'upkeep',
+  step: number,
+  phase: 'boundary' | 'resolution',
 ) {
   tx.next.dependents = (tx.next.dependents ?? []).filter((d) => d.id !== dependent.id);
   tx.dependentRemovals.set(dependent.id, reason);
   tx.journal.emit({
     kind: 'dependent-despawn',
-    phase: reason === 'owner-defeated' ? 'resolution' : 'boundary',
-    step: reason === 'owner-defeated' ? tx.step + 1 : tx.step,
+    phase,
+    step,
     actorId: dependent.ownerId,
     targetId: dependent.hostileOwnerId,
     entityId: dependent.id,
@@ -161,14 +163,14 @@ export function advanceDependents(tx: StepTransaction) {
   );
   for (const dependent of due) {
     if (tx.step >= dependent.expiresAt) {
-      removeDependent(tx, dependent, 'expired');
+      removeDependent(tx, dependent, 'expired', tx.step, 'boundary');
       continue;
     }
     const owner = tx.next.actors.find((actor) => actorId(actor) === dependent.ownerId)!;
     if (tx.step >= dependent.nextUpkeepAt) {
       const mp = owner.vitals.resources.mp;
       if (mp < dependent.ability.definition.summon!.upkeep.mp) {
-        removeDependent(tx, dependent, 'upkeep');
+        removeDependent(tx, dependent, 'upkeep', tx.step, 'boundary');
         continue;
       }
       owner.vitals.resources.mp -= dependent.ability.definition.summon!.upkeep.mp;
@@ -294,9 +296,14 @@ export function thawDependent(dependent: DependentState, controlId: string, glob
 }
 
 /** Called only after before-defeat revival has committed. */
-export function settleDefeatedDependents(tx: StepTransaction) {
+export function settleDefeatedDependents(
+  tx: StepTransaction,
+  activationStep: number,
+  phase: 'boundary' | 'resolution',
+) {
   for (const dependent of [...(tx.next.dependents ?? [])]) {
     const owner = tx.next.actors.find((actor) => actorId(actor) === dependent.ownerId)!;
-    if (owner.vitals.resources.hp === 0) removeDependent(tx, dependent, 'owner-defeated');
+    if (owner.vitals.resources.hp === 0)
+      removeDependent(tx, dependent, 'owner-defeated', activationStep, phase);
   }
 }

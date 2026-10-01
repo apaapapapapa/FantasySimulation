@@ -8,12 +8,28 @@ import {
 } from '@fantasy/domain/spatial';
 import { battleEvents } from '../../test-support/fixtures.ts';
 import { stoppedSummoningManifest, summoningManifest } from '../../test-support/summoning.ts';
+import { initialStatus, withInitialStatus } from '../../test-support/ai.ts';
+import { withStopReactions } from '../../test-support/time-stop.ts';
 import { prepareBattle } from './prepare.ts';
 import { runPreparedBattle } from './run.ts';
 import { freezeDependent, settleDefeatedDependents } from './sim/dependents.ts';
 import type { DependentState } from './state.ts';
 import type { StepTransaction } from './sim/step-transaction.ts';
 import { Journal } from './rules/journal.ts';
+
+async function lethalPulseSummoningManifest() {
+  const manifest = await summoningManifest(10);
+  for (const index of [0, 1] as const)
+    await withInitialStatus(
+      manifest,
+      index,
+      initialStatus({
+        durationSteps: 3,
+        periodic: [{ kind: 'damage', element: 'fire', amount: 50, everySteps: 1 }],
+      }),
+    );
+  return manifest;
+}
 
 it('executes a bounded observed rat dependent through replay with ordinal RNG identity', async () => {
   const battle = await prepareBattle(await summoningManifest());
@@ -91,7 +107,7 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     });
   rejects((records) => {
     const record = actionRecord(records);
-    if (!record || !('events' in record)) throw new Error('Missing action record');
+    if (!record || !('changes' in record)) throw new Error('Missing action record');
     const command = record?.events.find((event) => event.kind === 'dependent-command');
     if (command?.dependent?.nextActionAt === undefined) throw new Error('Missing command');
     command.dependent.nextActionAt += 1;
@@ -110,6 +126,14 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     if (!command?.before || !command.after) throw new Error('Missing command cost');
     command.before.mp += 1;
     command.after.mp += 1;
+  });
+  rejects((records) => {
+    const record = actionRecord(records);
+    if (!record || !('changes' in record)) throw new Error('Missing action record');
+    const command = record.events.find((event) => event.kind === 'dependent-command');
+    const owner = record.changes.find((change) => change.id === command?.actorId);
+    if (!owner?.resources) throw new Error('Missing owner resource delta');
+    owner.resources.mp += 1;
   });
   rejects((records) => {
     const record = records.find(
@@ -153,6 +177,32 @@ it('keeps dependent action clock frozen while lifetime/upkeep remain global', ()
     expiresAt: 1100,
     clock: { controlId: 'control.1', frozenFrom: 300, frozenUntil: 400 },
   });
+});
+
+it('records boundary pulse owner defeat at the actual boundary and replays it', async () => {
+  const battle = await prepareBattle(await lethalPulseSummoningManifest());
+  const run = await runPreparedBattle(battle);
+  const record = run.records.find(
+    (candidate) =>
+      candidate.kind === 'boundary' &&
+      candidate.dependents?.remove.some((removal) => removal.reason === 'owner-defeated'),
+  );
+  if (!record || record.kind !== 'boundary' || !record.dependents)
+    throw new Error('Missing boundary owner defeat');
+  expect(
+    record.events
+      .filter((event) => event.kind === 'dependent-despawn')
+      .map((event) => ({ step: event.step, phase: event.phase, reason: event.reason })),
+  ).toEqual(
+    record.dependents.remove.map(() => ({
+      step: record.step,
+      phase: 'boundary',
+      reason: 'owner-defeated',
+    })),
+  );
+  const replay = new ReplayState(await replayContext(battle.manifest, run.result.simulationHash));
+  for (const candidate of run.records) replay.apply(candidate);
+  expect(replay.checkpoint().state?.dependents ?? []).toHaveLength(0);
 });
 
 it('propagates an owner time stop to its dependent subject clock and rebases only actions', async () => {
@@ -223,6 +273,73 @@ it('propagates an owner time stop to its dependent subject clock and rebases onl
   }).toThrow(/dependent/);
 });
 
+it('records time-limit release owner defeat at the release boundary and replays it', async () => {
+  const input = await withStopReactions(
+    await stoppedSummoningManifest({ duration: 20, steps: 15, stopCastSteps: 0 }),
+    1,
+    [
+      {
+        trigger: 'after-damage',
+        costs: { hp: 36, mp: 0, uses: 1 },
+        reaction: { response: { kind: 'effects' } },
+        effects: [{ kind: 'shield', amount: 1 }],
+      },
+    ],
+  );
+  const battle = await prepareBattle(input);
+  const run = await runPreparedBattle(battle);
+  const record = run.records.find(
+    (candidate) =>
+      candidate.kind === 'boundary' &&
+      candidate.events.some(
+        (event) =>
+          event.timeStop?.state === 'release' &&
+          event.reason === 'time-limit release-only settlement',
+      ),
+  );
+  if (!record || record.kind !== 'boundary')
+    throw new Error(
+      `Missing time-limit release: ${JSON.stringify({
+        outcome: run.result.outcome,
+        stops: battleEvents(run.records)
+          .filter((event) => event.timeStop)
+          .map((event) => ({
+            step: event.step,
+            state: event.timeStop?.state,
+            reason: event.reason,
+          })),
+      })}`,
+    );
+  const despawn = record.events.find(
+    (event) => event.kind === 'dependent-despawn' && event.reason === 'owner-defeated',
+  );
+  if (!despawn)
+    throw new Error(
+      `Missing release despawn: ${JSON.stringify({
+        outcome: run.result.outcome,
+        changes: record.changes,
+        events: record.events.map((event) => ({
+          kind: event.kind,
+          actorId: event.actorId,
+          targetId: event.targetId,
+          before: event.before,
+          after: event.after,
+          ruleId: event.ruleId,
+          reason: event.reason,
+        })),
+      })}`,
+    );
+  expect(despawn).toMatchObject({ step: record.step, phase: 'boundary' });
+  expect(
+    record.dependents?.remove.some(
+      (removal) => removal.id === despawn?.entityId && removal.reason === 'owner-defeated',
+    ),
+  ).toBe(true);
+  const replay = new ReplayState(await replayContext(battle.manifest, run.result.simulationHash));
+  for (const candidate of run.records) replay.apply(candidate);
+  expect(replay.checkpoint().state?.dependents ?? []).toHaveLength(0);
+});
+
 it('derives dependent randomness from owner stream, ordinal, identity and purpose only', () => {
   const seed = dependentSeed(228071, 0, 0, 'dependent.a.0.scout-rat', 'policy-target');
   expect(seed).toBe(dependentSeed(228071, 0, 0, 'dependent.a.0.scout-rat', 'policy-target'));
@@ -250,10 +367,10 @@ it('despawns only after the owner revival result is known', async () => {
     dependentRemovals: new Map(),
     journal: new Journal(0, 0, DEFAULT_BUDGET),
   } as unknown as StepTransaction;
-  settleDefeatedDependents(tx);
+  settleDefeatedDependents(tx, 11, 'resolution');
   expect(tx.next.dependents).toHaveLength(1);
   owner.vitals.resources.hp = 0;
-  settleDefeatedDependents(tx);
+  settleDefeatedDependents(tx, 11, 'resolution');
   expect(tx.next.dependents).toHaveLength(0);
   expect(tx.journal.events).toMatchObject([
     {

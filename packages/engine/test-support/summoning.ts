@@ -53,19 +53,28 @@ export async function summoningManifest(maxSteps = 40) {
 }
 
 /** One real owner clock stop over a previously-created rat dependent. */
-export async function stoppedSummoningManifest() {
+export async function stoppedSummoningManifest(
+  options: {
+    duration?: number;
+    steps?: number;
+    stopCastSteps?: number;
+  } = {},
+) {
   const source = await summoningManifest();
   const summon = source.revisions.find(
     (revision) => revision.kind === 'ability' && revision.definition.summon,
   )!;
-  let manifest = await stopManifest({ duration: 5, steps: 60 });
+  let manifest = await stopManifest({
+    duration: options.duration ?? 5,
+    steps: options.steps ?? 60,
+  });
   const stop = manifest.revisions.find(
     (revision) => revision.kind === 'ability' && revision.definition.timeStop,
   )!;
   if (stop.kind !== 'ability') throw new Error('Missing stop fixture');
   const delayedStop = await ManifestBuilder.create('ability', stop.id, stop.revision + 1, {
     ...stop.definition,
-    castSteps: 4,
+    castSteps: options.stopCastSteps ?? 4,
   });
   manifest = await ManifestBuilder.relink(manifest, [{ from: stop, to: delayedStop }]);
   const character = manifest.revisions.find(
