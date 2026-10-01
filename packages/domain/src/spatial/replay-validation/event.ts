@@ -59,12 +59,30 @@ export function validateEvents(
       'event order',
     );
     previous = order;
-    for (const id of [e.actorId, e.targetId])
-      if (id !== null)
-        requireReplay(
-          context.actors.some((a) => a.participant.actorId === id),
-          'event actor reference',
-        );
+    if (e.actorId !== null)
+      requireReplay(
+        context.actors.some((a) => a.participant.actorId === e.actorId),
+        'event actor reference',
+      );
+    if (e.targetId !== null) {
+      const dependentIds = new Set([
+        ...(prior.state?.dependents ?? []).map((dependent) => dependent.id),
+        ...('dependents' in record
+          ? [...(record.dependents?.spawn ?? []), ...(record.dependents?.update ?? [])].map(
+              (dependent) => dependent.id,
+            )
+          : []),
+      ]);
+      const historicalDependentTarget =
+        (e.kind === 'dependent-command' || e.kind === 'dependent-act') &&
+        prior.dependentHistory?.some((dependent) => dependent.id === e.targetId) === true;
+      requireReplay(
+        context.actors.some((a) => a.participant.actorId === e.targetId) ||
+          dependentIds.has(e.targetId) ||
+          historicalDependentTarget,
+        'event target reference',
+      );
+    }
     if (e.entityId !== null)
       requireReplay(
         entities.has(e.entityId) ||

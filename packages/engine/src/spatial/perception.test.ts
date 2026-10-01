@@ -1,5 +1,5 @@
 import type { Obstacle } from './geometry-types.ts';
-import type { DecisionView } from './state.ts';
+import type { DecisionView, DependentState } from './state.ts';
 import { decisionView, withAbilities } from '../../test-support/ai.ts';
 import { beforeAll, describe, expect, it } from 'vite-plus/test';
 import { initializePhysics, SpatialWorld } from './world/physics.ts';
@@ -27,6 +27,50 @@ async function setup(obstacles: Obstacle[] = []) {
   };
 }
 describe('legal observations and conditional policies', () => {
+  it('records visible hostile dependent identities in stable delivered order', async () => {
+    const { world, left, right } = await setup();
+    const dependent = (id: string, ownerId: string, x: number) =>
+      ({
+        id,
+        ownerId,
+        hp: 1,
+        position: { x, y: 0, z: 0 },
+        body: { heightMm: 360 },
+      }) as DependentState;
+    const visible = [
+      dependent('dependent.right.1.rat', 'right', 3),
+      dependent('dependent.left.0.rat', 'left', 2),
+      dependent('dependent.right.0.rat', 'right', 2),
+    ];
+    try {
+      let memory = perceive(
+        world,
+        left,
+        right,
+        [],
+        0,
+        emptyMemory(),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        [],
+        undefined,
+        visible,
+      );
+      expect(memory.pending[0]?.dependentIds).toEqual([
+        'dependent.right.0.rat',
+        'dependent.right.1.rat',
+      ]);
+      memory = perceive(world, left, right, [], 5, memory);
+      expect(memory.observation?.dependentIds).toEqual([
+        'dependent.right.0.rat',
+        'dependent.right.1.rat',
+      ]);
+    } finally {
+      world.free();
+    }
+  });
   it('delays observations by the declared reaction interval and snapshots positions before mutation', async () => {
     const { world, left, right } = await setup();
     try {

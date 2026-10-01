@@ -1,7 +1,7 @@
 import { expect, it } from 'vite-plus/test';
 import fixture from '../fixtures/spatial/summoning-rat-dan1.json' with { type: 'json' };
 
-it('keeps the partial rat dan-one runtime separate from catalog availability', () => {
+it('keeps the measured rat dan-one runtime separate from catalog availability', () => {
   expect(fixture.status).toBe('runtime-pending');
   expect(fixture.availableClaim).toBe(false);
   expect(fixture.catalogNodeId).toBe('skill.summoning.rat.1');
@@ -14,7 +14,8 @@ it('keeps the partial rat dan-one runtime separate from catalog availability', (
     canNest: false,
     canWin: false,
   });
-  expect(fixture.missingRuntimeMechanisms).toEqual([
+  expect(fixture.missingRuntimeMechanisms).toEqual([]);
+  expect(fixture.runtimeMechanisms).toEqual([
     'dependent-targeting-and-hp-damage',
     'non-noop-dependent-drain-healing',
     'same-wave-owner-guard-revival-dependent-hp-settlement',
@@ -59,7 +60,7 @@ it('pins ordinal RNG, subject time, and command observation without hidden-state
   });
 });
 
-it('keeps unresolved simultaneous settlement ordering explicit without fabricated numbers', () => {
+it('pins actual runtime settlement numbers without promoting catalog availability', () => {
   expect(fixture.expected.pendingSettlementOrder).toEqual([
     'collect-simultaneous-guard-and-drain',
     'resolve-revival',
@@ -67,6 +68,21 @@ it('keeps unresolved simultaneous settlement ordering explicit without fabricate
     'despawn-dependents-of-terminally-defeated-owner',
     'compute-participant-win-or-draw',
   ]);
+  expect(fixture.runtimeSettlementEvidence).toEqual({
+    dependentTargetDamage: { beforeHp: 80, afterHp: 72, amount: 8 },
+    dependentDrain: { beforeHp: 72, afterHp: 73, amount: 1, maxHp: 80 },
+    revivalWave: {
+      dependentDamage: { beforeHp: 80, afterHp: 72 },
+      guardedDrain: { beforeHp: 72, afterHp: 73, amount: 1 },
+      cappedDrain: { beforeHp: 80, afterHp: 80, amount: 4 },
+      ownerRevival: { beforeHp: 0, afterHp: 7 },
+    },
+    terminalOwnerDefeat: {
+      participantHp: [0, 0],
+      outcome: { kind: 'draw', reason: 'mutual-defeat' },
+      despawnReason: 'owner-defeated',
+    },
+  });
 });
 
 it('requires the same dependent records through storage and reversible 2D/3D replay', () => {

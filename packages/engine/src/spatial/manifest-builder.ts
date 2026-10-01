@@ -107,10 +107,10 @@ export class ManifestBuilder {
     );
     return prepareBattle({
       ...request,
-      schemaVersion: hasEnvironmentalHolograms(revisions)
-        ? 8
-        : hasDependentSummons(revisions)
-          ? 7
+      schemaVersion: hasDependentSummons(revisions)
+        ? 9
+        : hasEnvironmentalHolograms(revisions)
+          ? 8
           : hasSensoryCues(revisions)
             ? 6
             : request.participants.some(
@@ -230,8 +230,8 @@ export class ManifestBuilder {
     manifest.ruleset = referenceFor('ruleset', manifest.ruleset);
     manifest.scenario = referenceFor('scenario', manifest.scenario);
     manifest.revisions = manifest.revisions.map((revision) => sealed.get(revisionKey(revision))!);
-    if (hasEnvironmentalHolograms(manifest.revisions)) manifest.schemaVersion = 8;
-    else if (hasDependentSummons(manifest.revisions)) manifest.schemaVersion = 7;
+    if (hasDependentSummons(manifest.revisions)) manifest.schemaVersion = 9;
+    else if (hasEnvironmentalHolograms(manifest.revisions)) manifest.schemaVersion = 8;
     else if (hasSensoryCues(manifest.revisions)) manifest.schemaVersion = 6;
     revisionIndex(manifest.revisions);
     return manifest;

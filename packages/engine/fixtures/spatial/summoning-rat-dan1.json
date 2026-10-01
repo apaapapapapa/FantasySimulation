@@ -108,10 +108,26 @@
     "apps/api/src/jobs/dependent-persistence.test.ts",
     "apps/web/src/replay/dependent-display.test.ts"
   ],
-  "missingRuntimeMechanisms": [
+  "runtimeMechanisms": [
     "dependent-targeting-and-hp-damage",
     "non-noop-dependent-drain-healing",
     "same-wave-owner-guard-revival-dependent-hp-settlement",
     "terminal-owner-defeat-verdict-numeric-fixture"
-  ]
+  ],
+  "runtimeSettlementEvidence": {
+    "dependentTargetDamage": { "beforeHp": 80, "afterHp": 72, "amount": 8 },
+    "dependentDrain": { "beforeHp": 72, "afterHp": 73, "amount": 1, "maxHp": 80 },
+    "revivalWave": {
+      "dependentDamage": { "beforeHp": 80, "afterHp": 72 },
+      "guardedDrain": { "beforeHp": 72, "afterHp": 73, "amount": 1 },
+      "cappedDrain": { "beforeHp": 80, "afterHp": 80, "amount": 4 },
+      "ownerRevival": { "beforeHp": 0, "afterHp": 7 }
+    },
+    "terminalOwnerDefeat": {
+      "participantHp": [0, 0],
+      "outcome": { "kind": "draw", "reason": "mutual-defeat" },
+      "despawnReason": "owner-defeated"
+    }
+  },
+  "missingRuntimeMechanisms": []
 }

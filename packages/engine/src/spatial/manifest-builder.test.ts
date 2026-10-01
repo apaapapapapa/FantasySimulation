@@ -2,6 +2,9 @@ import { expect, it } from 'vite-plus/test';
 import { sampleManifest, observedRules } from '@fantasy/samples';
 import { ManifestBuilder } from './manifest-builder.ts';
 import { prepareBattle, reference } from './prepare.ts';
+import { summoningManifest } from '../../test-support/summoning.ts';
+import { runPreparedBattle } from './run.ts';
+import { ReplayState, StoredManifestSchema, replayContext } from '@fantasy/domain/spatial';
 
 it('builds the same prepared input, excludes unrelated revisions and owns its snapshot', async () => {
   const manifest = await sampleManifest();
@@ -18,6 +21,24 @@ it('builds the same prepared input, excludes unrelated revisions and owns its sn
   ]);
   derived[0].position.x++;
   expect(derived[0].position.x).not.toBe(participants[0].position.x);
+});
+it('builds direct summon inputs as schema 9 and replays their v2 observations', async () => {
+  const source = await summoningManifest(8);
+  const { seed, participants, ruleset, scenario } = source;
+  const battle = await ManifestBuilder.from(source.revisions).build({
+    seed,
+    participants,
+    ruleset,
+    scenario,
+  });
+  expect(battle.manifest.schemaVersion).toBe(9);
+  expect(StoredManifestSchema.parse(battle.manifest).schemaVersion).toBe(9);
+  const run = await runPreparedBattle(battle);
+  const replay = new ReplayState(await replayContext(battle.manifest, run.result.simulationHash));
+  run.records.forEach((record) => replay.apply(record));
+  await expect(prepareBattle({ ...source, schemaVersion: 8 })).rejects.toMatchObject({
+    code: 'unsupported-mechanic',
+  });
 });
 it('relinks renamed abilities through policy, character and participants without reordering or async mutation', async () => {
   const manifest = await sampleManifest();

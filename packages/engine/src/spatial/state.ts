@@ -119,6 +119,8 @@ export type Observation = DeepReadonly<{
   sampledAt: number;
   availableAt: number;
   enemy: ObservedActor | null;
+  /** Visible dependent identities only; policy never receives canonical dependent state. */
+  dependentIds?: string[];
   projectiles: ObservableProjectile[];
   terrain?: ObservedSurface[];
   spatial?: ObservedSpatial[];

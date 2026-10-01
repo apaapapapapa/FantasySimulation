@@ -85,6 +85,7 @@ export function decisionPhase(tx: StepTransaction) {
       battle.scenario.bounds,
       tx.next.objects ?? [],
       actor.clock,
+      tx.next.dependents ?? [],
     );
     if (actor.actions.action && actor.actions.action.recoveryUntil <= step)
       actor.actions.action = null;

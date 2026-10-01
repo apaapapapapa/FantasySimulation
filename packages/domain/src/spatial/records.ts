@@ -285,6 +285,7 @@ export const EventSchema = z
         hostileOwnerId: IdSchema,
         ordinal: z.number().int().min(0).max(7),
         nextActionAt: z.number().int().min(0).max(12300).optional(),
+        observedTargetIds: z.array(IdSchema).min(1).max(9).optional(),
         reason: z.enum(['expired', 'dismissed', 'owner-defeated', 'upkeep']).optional(),
       })
       .optional(),
@@ -306,7 +307,10 @@ export const EventSchema = z
       (event.dependent &&
         (!event.entityId ||
           event.actorId !== event.dependent.ownerId ||
-          event.targetId !== event.dependent.hostileOwnerId ||
+          (!['dependent-command', 'dependent-act'].includes(event.kind) &&
+            event.targetId !== event.dependent.hostileOwnerId) ||
+          (['dependent-command', 'dependent-act'].includes(event.kind) &&
+            (!event.targetId || event.targetId === event.dependent.ownerId)) ||
           event.dependent.ownerId === event.dependent.hostileOwnerId ||
           event.dependent.transition !== event.kind.slice('dependent-'.length)))
     )

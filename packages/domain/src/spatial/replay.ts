@@ -18,6 +18,17 @@ const recordIndex = z.number().int().min(0).max(12003);
 export const ReplayCheckpointSchema = z.strictObject({
   stop: StopReplaySchema.optional(),
   requiredFeatures: RequiredReplayFeaturesSchema.optional(),
+  // A participant can create ordinals 0..7; retain both owners' bounded identities after despawn.
+  dependentHistory: z
+    .array(
+      z.strictObject({
+        id: IdSchema,
+        ownerId: IdSchema,
+        hostileOwnerId: IdSchema,
+      }),
+    )
+    .max(16)
+    .optional(),
   deferred: z.array(DeferredEffectSchema).max(4096).optional(),
   schemaVersion: z.literal(1),
   simulationHash: HashSchema,

@@ -161,34 +161,40 @@ export function advanceDependents(tx: StepTransaction) {
       a.ownerId.localeCompare(b.ownerId) ||
       a.ordinal - b.ordinal,
   );
+  // Settle every global removal/cost before any subject action. This prevents
+  // an earlier-sorted subject from queuing damage against a target that is due
+  // to despawn later in the same boundary.
   for (const dependent of due) {
     if (tx.step >= dependent.expiresAt) {
       removeDependent(tx, dependent, 'expired', tx.step, 'boundary');
       continue;
     }
     const owner = tx.next.actors.find((actor) => actorId(actor) === dependent.ownerId)!;
-    if (tx.step >= dependent.nextUpkeepAt) {
-      const mp = owner.vitals.resources.mp;
-      if (mp < dependent.ability.definition.summon!.upkeep.mp) {
-        removeDependent(tx, dependent, 'upkeep', tx.step, 'boundary');
-        continue;
-      }
-      owner.vitals.resources.mp -= dependent.ability.definition.summon!.upkeep.mp;
-      dependent.nextUpkeepAt += dependent.ability.definition.summon!.upkeep.everySteps;
-      tx.journal.emit({
-        kind: 'cost',
-        phase: 'boundary',
-        step: tx.step,
-        actorId: dependent.ownerId,
-        targetId: dependent.hostileOwnerId,
-        entityId: dependent.id,
-        abilityId: dependent.ability.id,
-        before: { ...owner.vitals.resources, mp },
-        after: { ...owner.vitals.resources },
-        ruleId: 'dependent.upkeep',
-        reason: 'global-lifetime-upkeep',
-      });
+    if (tx.step < dependent.nextUpkeepAt) continue;
+    const mp = owner.vitals.resources.mp;
+    if (mp < dependent.ability.definition.summon!.upkeep.mp) {
+      removeDependent(tx, dependent, 'upkeep', tx.step, 'boundary');
+      continue;
     }
+    owner.vitals.resources.mp -= dependent.ability.definition.summon!.upkeep.mp;
+    dependent.nextUpkeepAt += dependent.ability.definition.summon!.upkeep.everySteps;
+    tx.journal.emit({
+      kind: 'cost',
+      phase: 'boundary',
+      step: tx.step,
+      actorId: dependent.ownerId,
+      targetId: dependent.hostileOwnerId,
+      entityId: dependent.id,
+      abilityId: dependent.ability.id,
+      before: { ...owner.vitals.resources, mp },
+      after: { ...owner.vitals.resources },
+      ruleId: 'dependent.upkeep',
+      reason: 'global-lifetime-upkeep',
+    });
+  }
+  for (const dependent of due) {
+    if (!(tx.next.dependents ?? []).some((candidate) => candidate.id === dependent.id)) continue;
+    const owner = tx.next.actors.find((actor) => actorId(actor) === dependent.ownerId)!;
     const clockFrozen =
       dependent.clock &&
       dependent.clock.frozenFrom <= tx.step &&
@@ -213,6 +219,17 @@ export function advanceDependents(tx: StepTransaction) {
       dependent.nextActionAt += spec.actionEverySteps;
       continue;
     }
+    const policyRoll = nextRandom(dependent.rngState);
+    const observedTargets = [observation.enemy.id, ...(observation.dependentIds ?? [])];
+    const targetId = observedTargets[policyRoll % observedTargets.length]!;
+    const targetsDependent = targetId !== dependent.hostileOwnerId;
+    const hostileDependent = (tx.next.dependents ?? []).find(
+      (candidate) =>
+        candidate.id === targetId &&
+        candidate.ownerId === dependent.hostileOwnerId &&
+        candidate.hostileOwnerId === dependent.ownerId &&
+        candidate.hp > 0,
+    );
     const before = { ...owner.vitals.resources };
     owner.vitals.resources.mp -= spec.commandCostMp;
     const command = tx.journal.emit({
@@ -220,45 +237,55 @@ export function advanceDependents(tx: StepTransaction) {
       phase: 'boundary',
       step: tx.step,
       actorId: dependent.ownerId,
-      targetId: dependent.hostileOwnerId,
+      targetId,
       entityId: dependent.id,
       abilityId: dependent.ability.id,
       before,
       after: { ...owner.vitals.resources },
       ruleId: 'dependent.observed-command',
-      reason: 'owner-delivered-enemy-observation',
+      reason: targetsDependent
+        ? 'owner-delivered-dependent-observation'
+        : 'owner-delivered-enemy-observation',
       dependent: {
         transition: 'command',
         ownerId: dependent.ownerId,
         hostileOwnerId: dependent.hostileOwnerId,
         ordinal: dependent.ordinal,
         nextActionAt: dependent.nextActionAt,
+        observedTargetIds: observedTargets,
       },
     });
-    dependent.rngState = nextRandom(dependent.rngState);
+    dependent.rngState = policyRoll;
     dependent.nextActionAt += spec.actionEverySteps;
     const act = tx.journal.emit({
       kind: 'dependent-act',
       phase: 'boundary',
       step: tx.step,
       actorId: dependent.ownerId,
-      targetId: dependent.hostileOwnerId,
+      targetId,
       entityId: dependent.id,
       abilityId: dependent.ability.id,
       parentEventId: command.id,
       ruleId: 'dependent.subject-clock',
-      reason: 'stable-ordinal-policy',
+      reason: targetsDependent
+        ? 'stable-ordinal-visible-hostile-dependent'
+        : 'stable-ordinal-policy',
       dependent: {
         transition: 'act',
         ownerId: dependent.ownerId,
         hostileOwnerId: dependent.hostileOwnerId,
         ordinal: dependent.ordinal,
         nextActionAt: dependent.nextActionAt,
+        observedTargetIds: observedTargets,
       },
     });
+    // The recorded observation owns target selection. A selected dependent can
+    // disappear before this subject clock runs; that legal stale observation
+    // fizzles instead of consulting canonical state for a replacement target.
+    if (targetsDependent && !hostileDependent) continue;
     tx.effects.push({
       actorId: dependent.ownerId,
-      targetId: dependent.hostileOwnerId,
+      targetId,
       effect: {
         kind: 'damage',
         amount: spec.damage.amount,

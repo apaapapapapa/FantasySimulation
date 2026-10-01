@@ -1,5 +1,5 @@
 import { domainSnapshotStep, frozen } from '../rules/subject-clocks.ts';
-import type { ActorState, MotionState } from '../state.ts';
+import type { ActorState, DependentState, EffectTarget, MotionState } from '../state.ts';
 import type { BattleEvent, Effect } from '@fantasy/domain/spatial/execution';
 import { resolveEffects } from '../rules/effects.ts';
 import { damagePower } from '../rules/damage.ts';
@@ -52,6 +52,43 @@ export function contactObservation(
 }
 import type { EffectContext } from './effect-context.ts';
 export type { EffectContext } from './effect-context.ts';
+
+function dependentEffectTarget(
+  dependent: DependentState,
+  actors: readonly ActorState[],
+): EffectTarget {
+  const template = actors.find(
+    (actor) => actor.body.motion.actor.participant.actorId === dependent.ownerId,
+  );
+  if (!template) throw new Error('Missing dependent owner');
+  const actor = template.body.motion.actor;
+  return {
+    actor: {
+      ...actor,
+      participant: { ...actor.participant, actorId: dependent.id },
+      character: {
+        ...actor.character,
+        stats: {
+          ...actor.character.stats,
+          hp: dependent.maxHp,
+          mp: 0,
+          defense: 0,
+          magicDefense: 0,
+          shield: 0,
+          resistances: Object.fromEntries(
+            Object.keys(actor.character.stats.resistances).map((element) => [element, 0]),
+          ) as typeof actor.character.stats.resistances,
+        },
+      },
+      abilities: [],
+      decisionAbilities: [],
+      equipment: [],
+    },
+    resources: { hp: dependent.hp, mp: 0, shield: 0 },
+    statuses: [],
+  };
+}
+
 /** Emit causal applications, then commit every target from the same defense/status snapshot. */
 export function commitEffects(
   actors: ActorState[],
@@ -89,22 +126,26 @@ export function commitEffects(
   });
   let resolved: ReturnType<typeof resolveEffects>;
   try {
+    const actorTargets = actors.map((a) => ({
+      actor: a.body.motion.actor,
+      resources: a.vitals.resources,
+      statuses: a.statuses,
+      ...(frozen(a) || context.statusSteps?.has(a.body.motion.actor.participant.actorId)
+        ? {
+            statusStep:
+              context.statusSteps?.get(a.body.motion.actor.participant.actorId) ??
+              domainSnapshotStep(a, step),
+          }
+        : {}),
+      ...(a.vitals.immortalityUsed !== undefined
+        ? { immortalityUsed: a.vitals.immortalityUsed }
+        : {}),
+    }));
+    const dependentTargets = (context.dependents ?? [])
+      .filter((dependent) => effects.some((effect) => effect.targetId === dependent.id))
+      .map((dependent) => dependentEffectTarget(dependent, actors));
     resolved = resolveEffects(
-      actors.map((a) => ({
-        actor: a.body.motion.actor,
-        resources: a.vitals.resources,
-        statuses: a.statuses,
-        ...(frozen(a) || context.statusSteps?.has(a.body.motion.actor.participant.actorId)
-          ? {
-              statusStep:
-                context.statusSteps?.get(a.body.motion.actor.participant.actorId) ??
-                domainSnapshotStep(a, step),
-            }
-          : {}),
-        ...(a.vitals.immortalityUsed !== undefined
-          ? { immortalityUsed: a.vitals.immortalityUsed }
-          : {}),
-      })),
+      [...actorTargets, ...dependentTargets],
       applications,
       battle.statuses,
       step,
@@ -119,6 +160,30 @@ export function commitEffects(
     recordInterference(error, context);
   }
   for (const result of resolved) {
+    const dependent = context.dependents?.find((candidate) => candidate.id === result.actorId);
+    if (dependent) {
+      const incoming = applications.filter((application) => application.targetId === dependent.id);
+      let remainingCommittedLoss = dependent.hp - result.resources.hp;
+      for (const app of incoming) {
+        if (app.effect.kind !== 'damage')
+          throw new Error('Dependents accept only bounded damage effects');
+        const before = { hp: dependent.hp, mp: 0, shield: 0 };
+        app.event.before = before;
+        app.event.after = { ...result.resources };
+        const detail = result.damage.find((damage) => damage.applicationId === app.id);
+        if (!detail) throw new Error('Missing dependent damage detail');
+        const { applicationId: _, ...damage } = detail;
+        app.event.damage = damage;
+        const resolvedDamage = detail.calculation?.afterModifiers ?? detail.afterResistance;
+        const committedDamage = Math.min(resolvedDamage, remainingCommittedLoss);
+        app.event.amount = committedDamage;
+        remainingCommittedLoss -= committedDamage;
+        app.event.ruleId = 'damage.dependent-hp';
+        app.event.reason = 'same-wave-dependent-hp-clamp';
+      }
+      dependent.hp = result.resources.hp;
+      continue;
+    }
     const actor = actors.find((a) => a.body.motion.actor.participant.actorId === result.actorId)!;
     const incoming = applications.filter((a) => a.targetId === result.actorId);
     // A control dispel cleans only cues owned by this observer. Expiry/discovery already ran at
@@ -451,6 +516,13 @@ export function commitEffects(
     actor.vitals.resources = result.resources;
     actor.statuses = result.statuses;
   }
+  const dependentDrainResources = new Map<
+    string,
+    {
+      before: { hp: number; mp: number; shield: number };
+      after: { hp: number; mp: number; shield: number };
+    }
+  >();
   for (const application of applications) {
     if (!application.drainRecipientId) continue;
     const detail = resolved
@@ -461,26 +533,34 @@ export function commitEffects(
       (candidate) => candidate.id === application.drainRecipientId,
     );
     if (!dependent) throw new Error('Missing dependent drain recipient');
+    const before = { hp: dependent.hp, mp: 0, shield: 0 };
     dependent.hp = Math.min(dependent.maxHp, dependent.hp + detail.drain.healing);
+    dependentDrainResources.set(application.id, {
+      before,
+      after: { hp: dependent.hp, mp: 0, shield: 0 },
+    });
   }
   for (const result of resolved) {
     for (const detail of result.damage) {
       if (!detail.drain?.healing) continue;
       const app = applications.find((a) => a.id === detail.applicationId)!;
       const source = resolved.find((r) => r.actorId === app.actorId)!;
+      const dependentResources = dependentDrainResources.get(app.id);
       journal.emit({
         step: activationStep,
         phase,
         kind: 'heal',
         ruleId: 'damage.drain',
         actorId: app.actorId,
-        targetId: app.actorId,
+        targetId: app.drainRecipientId ?? app.actorId,
         ...(app.drainRecipientId ? { entityId: app.drainRecipientId } : {}),
         abilityId: app.abilityId,
         parentEventId: app.id,
         causes: [app.id],
         amount: detail.drain.healing,
-        ...(app.drainRecipientId ? {} : { after: { ...source.resources } }),
+        ...(dependentResources
+          ? { before: dependentResources.before, after: dependentResources.after }
+          : { after: { ...source.resources } }),
         reason: app.drainRecipientId
           ? 'same-wave-hp-loss-dependent-drain'
           : 'same-wave-hp-loss-drain',
