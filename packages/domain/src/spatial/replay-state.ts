@@ -522,13 +522,10 @@ export async function seekReplayState(
     replay.nextRecord === chunk.firstRecord && replay.step === chunk.fromStep,
     'seek checkpoint index',
   );
-  const hasActiveHologram =
-    context.manifest.schemaVersion === 8 &&
-    replay
-      .checkpoint()
-      .state?.actors.some((actor) => (actor.sensorView?.environmentalHolograms.length ?? 0) > 0);
-  if (hasActiveHologram) {
-    requireReplay(index > 0 && manifest.chunks[0]?.firstRecord === 0, 'seek hologram prefix');
+  // Schema 8 can carry sensor-only projections. This gate is trusted catalog input, never
+  // checkpoint content: deleting every projection from an untrusted checkpoint must not bypass it.
+  if (context.manifest.schemaVersion === 8 && index > 0) {
+    requireReplay(manifest.chunks[0]?.firstRecord === 0, 'seek hologram prefix');
     const canonical = new ReplayState(context, await source.checkpoint(0));
     requireReplay(
       canonical.nextRecord === 0 && canonical.step === manifest.chunks[0]!.fromStep,

@@ -364,6 +364,13 @@ it('records one observer sensor projection through runtime, AI and replay withou
     seekReplayState(context, replayManifest, activeIndex + 1, seekSource(checkpoint)),
   ).rejects.toThrow(/seek hologram checkpoint history/);
 
+  const checkpointDeleted = activeReplay.checkpoint();
+  for (const actor of checkpointDeleted.state?.actors ?? [])
+    if (actor.sensorView) actor.sensorView.environmentalHolograms = [];
+  await expect(
+    seekReplayState(context, replayManifest, activeIndex + 1, seekSource(checkpointDeleted)),
+  ).rejects.toThrow(/seek hologram checkpoint history/);
+
   const checkpointIdentity = activeReplay.checkpoint();
   const identityProjection = checkpointIdentity.state?.actors
     .flatMap((actor) => actor.sensorView?.environmentalHolograms ?? [])
