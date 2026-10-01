@@ -14,6 +14,7 @@ import milestones from '../../../data/content/p6-official-milestones-v1.json' wi
 import meleeBalance from '../../../data/content/melee-balance-v1.json' with { type: 'json' };
 import martialGuard from '../../../data/content/skill-martial-guard-v1.json' with { type: 'json' };
 import environmentalHologram from '../../../data/content/skill-environmental-hologram-v1.json' with { type: 'json' };
+import summoningRat from '../../../data/content/skill-summoning-rat-v1.json' with { type: 'json' };
 import { compileCatalog } from './authoring.ts';
 
 const sources = [
@@ -30,6 +31,7 @@ const sources = [
   ...meleeBalance,
   ...martialGuard,
   environmentalHologram,
+  summoningRat,
 ];
 
 const copy = (revision: Revision, id: string) => {

@@ -5,9 +5,43 @@ import { choosePolicy } from './ai/policy.ts';
 import { assessAbility, efficacy } from './ai/assessment.ts';
 import { withAbilities, aiFixture, impactEvidence } from '../../test-support/ai.ts';
 import { initialDecisionRandom } from './ai/decision-random.ts';
+import { summoningAbilityDefinition } from '../../test-support/summoning.ts';
 
 beforeAll(initializePhysics);
 describe('observed utility distributions', () => {
+  it('values zero-cost autonomous summon decisions at zero MP without changing paid admission', async () => {
+    const f = await aiFixture({
+      abilities: [
+        {
+          ...summoningAbilityDefinition(),
+          name: 'autonomous scout rat',
+          originalText: '',
+          costs: { hp: 0, mp: 0, uses: 1 },
+          summon: {
+            ...summoningAbilityDefinition().summon,
+            commandCostMp: 0,
+            damage: { amount: 8, drainBps: 0 },
+          },
+        },
+      ],
+    });
+    try {
+      const zeroMp = { ...f.view, resources: { ...f.view.resources, mp: 0 } };
+      const autonomous = assessAbility(zeroMp, f.abilities[0]!);
+      expect(autonomous.weight).toBeGreaterThan(0);
+      expect(autonomous.reason).toContain('autonomous decisions use delivered hostile observation');
+      const paid = structuredClone(f.abilities[0]!);
+      paid.definition.summon!.commandCostMp = 1;
+      const legacy = assessAbility(zeroMp, paid);
+      expect(legacy.weight).toBe(0);
+      expect(legacy.reason).toContain('commands require delivered hostile observation');
+      expect(assessAbility(f.view, paid).reason).toContain(
+        'commands require delivered hostile observation',
+      );
+    } finally {
+      f.world.free();
+    }
+  });
   it('prefers ordinary self extinguishing without making it compulsory, then favors a supported quick kill', async () => {
     const f = await aiFixture();
     try {

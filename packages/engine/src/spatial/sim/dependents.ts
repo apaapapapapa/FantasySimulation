@@ -6,8 +6,10 @@ import { bodyCapsule } from '../world/terrain.ts';
 import type { StepTransaction } from './step-transaction.ts';
 import { actorId } from './step-transaction.ts';
 
-const MAX_ACTIVE_PER_OWNER = 2;
-const MAX_CREATED_PER_OWNER = 8;
+export const DEPENDENT_LIMITS = {
+  maxActivePerOwner: 2,
+  maxCreatedPerOwner: 8,
+} as const;
 
 const ownerSlot = (tx: StepTransaction, ownerId: string) =>
   tx.context.battle.manifest.participants.findIndex((p) => p.actorId === ownerId) === 0 ? 'a' : 'b';
@@ -52,7 +54,10 @@ export function summonDependent(
   const ownerId = actorId(owner);
   const active = (tx.next.dependents ?? []).filter((d) => d.ownerId === ownerId);
   const ordinal = tx.next.dependentCreated?.[ownerId] ?? 0;
-  if (active.length >= MAX_ACTIVE_PER_OWNER || ordinal >= MAX_CREATED_PER_OWNER) {
+  if (
+    active.length >= DEPENDENT_LIMITS.maxActivePerOwner ||
+    ordinal >= DEPENDENT_LIMITS.maxCreatedPerOwner
+  ) {
     tx.journal.emit({
       kind: 'fizzle',
       phase: 'launch',
@@ -62,7 +67,9 @@ export function summonDependent(
       parentEventId: cause,
       ruleId: 'dependent.cap',
       reason:
-        active.length >= MAX_ACTIVE_PER_OWNER ? 'active-dependent-cap' : 'created-dependent-cap',
+        active.length >= DEPENDENT_LIMITS.maxActivePerOwner
+          ? 'active-dependent-cap'
+          : 'created-dependent-cap',
     });
     return;
   }

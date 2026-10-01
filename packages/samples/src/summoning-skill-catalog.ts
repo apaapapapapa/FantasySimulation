@@ -538,7 +538,7 @@ const mechanismsByDan = {
 export type SummoningFixtureContract = {
   id: string;
   nodeId: string;
-  status: 'runtime-pending';
+  status: 'runtime-pending' | 'release-ready';
   missingMechanisms: readonly SummoningRuntimeMechanism[];
   assertions: readonly string[];
 };

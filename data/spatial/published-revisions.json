@@ -1172,6 +1172,12 @@
       "id": "side-step-image-v1",
       "revision": 1,
       "contentHash": "sha256:96e42f32200a1d27beffa1a185a79206b847ce2a1ff162b680150bab6a0aa1fa"
+    },
+    {
+      "kind": "ability",
+      "id": "scout-rat-v1",
+      "revision": 1,
+      "contentHash": "sha256:c137e74851756fbdd5d8aefcdaecd325347758ad1627c1bc7f7a21b673687927"
     }
   ]
 }

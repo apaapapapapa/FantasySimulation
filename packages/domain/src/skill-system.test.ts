@@ -95,6 +95,14 @@ describe('skill system axes', () => {
 });
 
 describe('skill catalog validation', () => {
+  it('rejects a duplicate node ID without silently choosing either coordinate', () => {
+    const catalog = completeCatalog();
+    catalog.nodes[1] = { ...catalog.nodes[1]!, id: catalog.nodes[0]!.id, prerequisites: [] };
+    expect(() => parseCompleteSkillCatalog(catalog)).toThrowError(
+      expect.objectContaining<Partial<SkillCatalogError>>({ code: 'duplicate-node' }),
+    );
+  });
+
   it('rejects a missing coordinate', () => {
     const catalog = completeCatalog();
     catalog.nodes.pop();

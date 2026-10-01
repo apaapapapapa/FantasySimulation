@@ -107,7 +107,7 @@ describe('checksum reuse of semantically verified replay bytes', { timeout: 30_0
       }
     });
   });
-  it.each([null, 'unrecognized-profile'])(
+  it.each([null, 'record-validation-v1', 'unrecognized-profile'])(
     'fully validates %s receipts once before adoption',
     async (profile) => {
       await withArtifact(async ({ runtime, jobs, store, manifest }) => {
@@ -125,6 +125,7 @@ describe('checksum reuse of semantically verified replay bytes', { timeout: 30_0
             ...before,
             validationProfile: REPLAY_VALIDATION_PROFILE,
           });
+          expect(jobs.artifact(manifest.id)?.bytes).toBe(before.bytes);
           apply.mockClear();
           await runtime.replay(manifest.id);
           expect(apply).not.toHaveBeenCalled();

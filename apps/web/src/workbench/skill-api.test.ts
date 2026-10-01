@@ -48,7 +48,7 @@ async function abilityRevision(
 }
 
 it('targets the integrated immutable startup catalog by default', () => {
-  expect(DEFAULT_SKILL_CATALOG).toEqual({ id: 'skill-catalog-v1', revision: 7 });
+  expect(DEFAULT_SKILL_CATALOG).toEqual({ id: 'skill-catalog-v1', revision: 8 });
 });
 
 it('keeps exact refs and excludes loadouts from another catalog revision', () => {

@@ -32,14 +32,16 @@ it('defines all 12 summoning branches and 72 draft nodes without placeholder eff
   }
 });
 
-it('binds every node to one pending fixture and covers the complete ADR 0021 mechanism set', () => {
+it('keeps all 72 broad contracts pending while the rat production fixture is separate', () => {
   const contracts = new Map(SUMMONING_FIXTURE_CONTRACTS.map((fixture) => [fixture.id, fixture]));
   expect(contracts.size).toBe(72);
   expect(SUMMONING_SKILL_NODES.every((node) => contracts.has(node.fixtureIds[0]!))).toBe(true);
+  expect(SUMMONING_FIXTURE_CONTRACTS.every(({ status }) => status === 'runtime-pending')).toBe(
+    true,
+  );
   expect(
     SUMMONING_FIXTURE_CONTRACTS.every(
       (fixture) =>
-        fixture.status === 'runtime-pending' &&
         fixture.assertions.length >= 3 &&
         fixture.assertions[0]!.includes('allied with its immutable owner slot') &&
         fixture.assertions[0]!.includes('hostility derives from the opposing owner slot'),

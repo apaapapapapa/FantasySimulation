@@ -1,4 +1,14 @@
 import { test, expect } from '../fixtures.ts';
+import { gunzipSync } from 'node:zlib';
+
+type DependentReplayEvidence = {
+  step?: number;
+  events?: { kind: string; entityId?: string | null }[];
+  dependents?: {
+    update?: { id: string }[];
+    remove?: { id: string; reason: string }[];
+  };
+};
 
 async function readyWorkbench(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -22,6 +32,32 @@ async function saveSelectedSkill(
   const battle = page.locator('.arena');
   await expect(battle.locator(':scope > p[role="status"]').first()).toContainText(/revision \d+/);
   return battle;
+}
+
+async function submitBattleAndOpenReplay(
+  page: import('@playwright/test').Page,
+  battle: import('@playwright/test').Locator,
+  latest: unknown,
+) {
+  await battle.locator('select').nth(3).selectOption('standard-p6-group2-v1');
+  await expect(battle.locator('select').nth(3)).toHaveValue('standard-p6-group2-v1');
+  const battleRequest = page.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/api/skill-battle-jobs'),
+  );
+  await battle.locator(':scope > fieldset > button.primary').click();
+  const submitted = (await battleRequest).postDataJSON();
+  expect(submitted.spec.ruleset).toEqual({
+    id: 'standard-p6-group2-v1',
+    revision: 1,
+    contentHash: 'sha256:7a29dffc918f926dfe030ea3ae9bf488d582abae743179cb60617cbd1c7016d3',
+  });
+  expect(submitted.loadouts).toEqual([{ actorId: 'left', loadout: latest }]);
+  await expect(battle.locator('.result')).toBeVisible({ timeout: 15_000 });
+  const replayResponse = page.waitForResponse((response) =>
+    /\/api\/replays\/[^/]+$/.test(response.url()),
+  );
+  await battle.locator('.result button').click();
+  return { submitted, response: await replayResponse };
 }
 
 test('skill-workbench-desktop', async ({ page }) => {
@@ -141,25 +177,8 @@ test('rabbit hologram saves, battles and replays through both viewers', async ({
       },
     ],
   });
-  await battle.locator('select').nth(3).selectOption('standard-p6-group2-v1');
-  await expect(battle.locator('select').nth(3)).toHaveValue('standard-p6-group2-v1');
-  const battleRequest = page.waitForRequest(
-    (request) => request.method() === 'POST' && request.url().endsWith('/api/skill-battle-jobs'),
-  );
-  await battle.locator(':scope > fieldset > button.primary').click();
-  const submitted = (await battleRequest).postDataJSON();
-  expect(submitted.spec.ruleset).toEqual({
-    id: 'standard-p6-group2-v1',
-    revision: 1,
-    contentHash: 'sha256:7a29dffc918f926dfe030ea3ae9bf488d582abae743179cb60617cbd1c7016d3',
-  });
-  expect(submitted.loadouts).toEqual([{ actorId: 'left', loadout: saved.latest }]);
-  await expect(battle.locator('.result')).toBeVisible({ timeout: 15_000 });
-  const replayResponse = page.waitForResponse((response) =>
-    /\/api\/replays\/[^/]+$/.test(response.url()),
-  );
-  await battle.locator('.result button').click();
-  const replayManifest = await (await replayResponse).json();
+  const { submitted, response } = await submitBattleAndOpenReplay(page, battle, saved.latest),
+    replayManifest = await response.json();
   expect(replayManifest.input.ruleset).toEqual(submitted.spec.ruleset);
   expect(replayManifest.input.participants[0].skillLoadout).toMatchObject({
     loadout: saved.latest,
@@ -182,4 +201,106 @@ test('rabbit hologram saves, battles and replays through both viewers', async ({
   await expect(projections.first()).toBeVisible();
   const id = await projections.first().getAttribute('data-environmental-hologram');
   expect(id).toBeTruthy();
+});
+
+test('scout rat saves, battles and replays one dependent through both viewers', async ({
+  page,
+}) => {
+  const catalogResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'GET' &&
+      response.url().endsWith('/api/skill-catalogs/skill-catalog-v1/8'),
+  );
+  const workbench = await readyWorkbench(page);
+  const fetchedCatalog = await (await catalogResponse).json();
+  expect(fetchedCatalog.catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 8 });
+  await workbench.getByRole('button', { name: /summon, command and possession/ }).click();
+  const ratFoundation = workbench.getByRole('button', { name: /Scout Rat/ });
+  await ratFoundation.click();
+  await expect(workbench.locator('.skill-detail h3')).toHaveText('Scout Rat');
+  const savedResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && response.url().endsWith('/api/skill-loadouts'),
+  );
+  const battle = await saveSelectedSkill(page, workbench);
+  const saved = await (await savedResponse).json();
+  expect(saved.snapshot.resolved).toMatchObject({
+    catalog: { id: 'skill-catalog-v1', revision: 8 },
+    resolvedNodeIds: ['skill.summoning.rat.1'],
+    nodeResolutions: [
+      {
+        nodeId: 'skill.summoning.rat.1',
+        resolution: [
+          {
+            kind: 'active-ability',
+            ability: {
+              id: 'scout-rat-v1',
+              revision: 1,
+              contentHash:
+                'sha256:c137e74851756fbdd5d8aefcdaecd325347758ad1627c1bc7f7a21b673687927',
+            },
+          },
+        ],
+      },
+    ],
+  });
+  const { response: replayHttpResponse } = await submitBattleAndOpenReplay(
+    page,
+    battle,
+    saved.latest,
+  );
+  const replayManifest = await replayHttpResponse.json();
+  expect(replayManifest.input.schemaVersion).toBe(9);
+  expect(replayManifest.input.participants[0].skillLoadout).toMatchObject({
+    loadout: saved.latest,
+    resolvedNodeIds: ['skill.summoning.rat.1'],
+  });
+
+  const chunks = replayManifest.chunks as { file: string }[],
+    records = (
+      await Promise.all(
+        chunks.map(async ({ file }) => {
+          const response = await page.request.get(`${replayHttpResponse.url()}/files/${file}`);
+          expect(response.ok()).toBe(true);
+          return gunzipSync(await response.body())
+            .toString('utf8')
+            .trimEnd()
+            .split('\n')
+            .map((line) => JSON.parse(line) as DependentReplayEvidence);
+        }),
+      )
+    ).flat(),
+    create = records
+      .flatMap(({ events = [] }) => events)
+      .find(({ kind }) => kind === 'dependent-create'),
+    dependentId = create?.entityId,
+    activeStep = records.find(
+      (record) =>
+        record.step !== undefined &&
+        record.dependents?.update?.some(({ id }) => id === dependentId),
+    )?.step,
+    expiryStep = records.find(
+      (record) =>
+        record.step !== undefined &&
+        record.dependents?.remove?.some(
+          ({ id, reason }) => id === dependentId && reason === 'expired',
+        ),
+    )?.step;
+  expect(dependentId).toBe('dependent.a.0.scout-rat');
+  expect(activeStep).toBeGreaterThan(0);
+  expect(expiryStep).toBeGreaterThan(activeStep!);
+
+  const replay = page.locator('section').filter({ has: page.locator('input[type="range"]') }),
+    slider = replay.locator('input[type="range"]'),
+    view = replay.locator('.actions select').filter({ has: page.locator('option[value="2d"]') });
+  await expect(slider).toBeVisible();
+  await slider.fill(String(activeStep));
+  await expect(replay.locator('canvas')).toHaveAttribute('data-rendered', 'true');
+  const dependent = replay.locator(`[data-dependent="${dependentId}"]`);
+  await view.selectOption('2d');
+  await expect(dependent).toBeVisible();
+  await slider.fill(String(expiryStep));
+  await expect(replay.locator('[data-dependent]')).toHaveCount(0);
+  await slider.fill((await slider.getAttribute('max'))!);
+  await expect(replay.locator('[data-dependent]')).toHaveCount(0);
 });
