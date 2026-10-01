@@ -16,6 +16,7 @@ import { freezeDependent, settleDefeatedDependents } from './sim/dependents.ts';
 import type { DependentState } from './state.ts';
 import type { StepTransaction } from './sim/step-transaction.ts';
 import { Journal } from './rules/journal.ts';
+import type { StreamRecord } from '@fantasy/domain/spatial';
 
 async function lethalPulseSummoningManifest() {
   const manifest = await summoningManifest(10);
@@ -29,6 +30,27 @@ async function lethalPulseSummoningManifest() {
       }),
     );
   return manifest;
+}
+
+function followedDependent(
+  record: Exclude<StreamRecord, { kind: 'initial' | 'terminal' }>,
+) {
+  return record.events.find((event, index, events) => {
+    if (
+      (event.kind !== 'dependent-command' && event.ruleId !== 'dependent.upkeep') ||
+      !event.actorId
+    )
+      return false;
+    return events
+      .slice(index + 1)
+      .some(
+        (later) =>
+          !!later.before &&
+          !!later.after &&
+          later.targetId === event.actorId &&
+          !['cost', 'resource', 'dependent-command'].includes(later.kind),
+      );
+  });
 }
 
 it('executes a bounded observed rat dependent through replay with ordinal RNG identity', async () => {
@@ -139,36 +161,11 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     const records = structuredClone(run.records);
     const recordIndex = records.findIndex((candidate) => {
       if (!('changes' in candidate)) return false;
-      return candidate.events.some((event, index, events) => {
-        if (
-          (event.kind !== 'dependent-command' && event.ruleId !== 'dependent.upkeep') ||
-          !event.actorId
-        )
-          return false;
-        return events
-          .slice(index + 1)
-          .some(
-            (later) =>
-              !!later.before &&
-              !!later.after &&
-              later.targetId === event.actorId &&
-              !['cost', 'resource', 'dependent-command'].includes(later.kind),
-          );
-      });
+      return !!followedDependent(candidate);
     });
     const record = records[recordIndex];
     if (!record || !('changes' in record)) throw new Error('Missing followed resource record');
-    const dependent = record.events.find((event, index, events) =>
-      events
-        .slice(index + 1)
-        .some(
-          (later) =>
-            !!later.before &&
-            !!later.after &&
-            later.targetId === event.actorId &&
-            !['cost', 'resource', 'dependent-command'].includes(later.kind),
-        ),
-    );
+    const dependent = followedDependent(record);
     const anchor = record.events.find(
       (event) =>
         !!dependent &&
