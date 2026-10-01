@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { startWeb } from './web-server.ts';
 import { createApp } from '@fantasy/api/local';
-import { openStore, readSampleRevisions } from '@fantasy/api/local';
+import { openStore, readSampleRevisions, seedStartupData } from '@fantasy/api/local';
 import { BattleService } from '@fantasy/api/local';
 import { readConfig } from '@fantasy/api/local';
 import { RevisionSchema } from '@fantasy/domain/spatial';
@@ -30,7 +30,7 @@ export async function startServers(
   close.push(async () => store.close());
   try {
     const samples = readSampleRevisions().map((value) => RevisionSchema.parse(value));
-    await store.seedRevisions(samples);
+    await seedStartupData(store);
     const runtime = await BattleService.open(
       store,
       join(temporary, 'replays'),

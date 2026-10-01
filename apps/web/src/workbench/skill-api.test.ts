@@ -1,4 +1,5 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
+import { revisionHash, RevisionSchema, type Revision } from '@fantasy/domain/spatial';
 import {
   DEFAULT_SKILL_CATALOG,
   sameSkillRevisionRef,
@@ -8,6 +9,43 @@ import {
 } from './skill-api.ts';
 
 afterEach(() => vi.unstubAllGlobals());
+
+async function abilityRevision(
+  definitionOverrides: Record<string, unknown> = {},
+): Promise<Extract<Revision, { kind: 'ability' }>> {
+  const parsed = RevisionSchema.parse({
+    kind: 'ability',
+    id: 'transport-ability',
+    revision: 1,
+    schemaVersion: 1,
+    contentHash: `sha256:${'0'.repeat(64)}`,
+    definition: {
+      name: 'Transport ability',
+      originalText: '',
+      trigger: 'action',
+      target: 'enemy',
+      condition: { kind: 'always' },
+      costs: { hp: 0, mp: 1, uses: 0 },
+      castSteps: 1,
+      recoverySteps: 1,
+      cooldownSteps: 0,
+      movementWhileCasting: 'allow',
+      rangeMm: 2000,
+      aimErrorMilliDegrees: 0,
+      attack: {
+        kind: 'melee',
+        reachMm: 1800,
+        radiusMm: 200,
+        activeSteps: 1,
+        maxHitsPerTarget: 1,
+      },
+      effects: [{ kind: 'damage', amount: 1, attackScaleBps: 10_000, element: 'physical' }],
+      ...definitionOverrides,
+    },
+  });
+  if (parsed.kind !== 'ability') throw new Error('Expected ability fixture');
+  return { ...parsed, contentHash: await revisionHash(parsed) };
+}
 
 it('targets the integrated immutable startup catalog by default', () => {
   expect(DEFAULT_SKILL_CATALOG).toEqual({ id: 'skill-catalog-v1', revision: 6 });
@@ -42,6 +80,39 @@ it('reads the confirmed bounded cursor pages for saved loadouts', async () => {
     '/api/skill-loadouts?limit=100',
     '/api/skill-loadouts?limit=100&cursor=loadout.after',
   ]);
+});
+
+it('loads actual ability revisions used by node detail instead of inferring runtime fields', async () => {
+  const ability = await abilityRevision();
+  const request = vi.fn(async () => Response.json({ items: [ability], nextCursor: null }));
+  vi.stubGlobal('fetch', request);
+  await expect(skillWorkbenchApi.listAbilities()).resolves.toEqual([ability]);
+  expect(request).toHaveBeenCalledOnce();
+  const calls = request.mock.calls as unknown as [string, RequestInit][];
+  expect(calls[0]?.[0]).toBe('/api/revisions/ability?limit=10');
+});
+
+it('rejects a transport ability whose definition does not match its claimed content hash', async () => {
+  const ability = await abilityRevision();
+  const tampered = {
+    ...ability,
+    definition: { ...ability.definition, costs: { ...ability.definition.costs, mp: 999 } },
+  };
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.json({ items: [tampered], nextCursor: null })),
+  );
+  await expect(skillWorkbenchApi.listAbilities()).rejects.toThrow('content hash mismatch');
+});
+
+it('rejects conflicting duplicate revision identities even when each hash is valid', async () => {
+  const first = await abilityRevision();
+  const second = await abilityRevision({ costs: { hp: 0, mp: 2, uses: 0 } });
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.json({ items: [first, second], nextCursor: null })),
+  );
+  await expect(skillWorkbenchApi.listAbilities()).rejects.toThrow('Conflicting duplicate revision');
 });
 
 it('isolates the skill battle endpoint and binds the saved revision to the selected actor', async () => {
