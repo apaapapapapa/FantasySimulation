@@ -14,10 +14,6 @@ import {
 import { prepareBattle, runPreparedBattle } from '@fantasy/engine/spatial';
 import { ReplayWriter } from '../../../api/src/replay/replay-writer.ts';
 import { environmentalHologramManifest } from '../../../../packages/engine/test-support/environmental-holograms.ts';
-import {
-  ManifestBuilder,
-  sealRevision,
-} from '../../../../packages/engine/src/spatial/manifest-builder.ts';
 import type { OpenedReplay } from './open-replay.ts';
 import { expandArtifact } from './artifacts.ts';
 import { EnvironmentalHolograms3D } from './SceneEffects.tsx';
@@ -47,18 +43,7 @@ type SavedCheckpoint = {
 it('restores an actual multi-chunk hologram recording forward, reverse and across a loop', async () => {
   const root = await mkdtemp(join(tmpdir(), 'hologram-replay-'));
   try {
-    let input = await environmentalHologramManifest(350);
-    const oldAbility = input.revisions.find(
-      (revision) => revision.kind === 'ability' && revision.id === 'sk07-hologram',
-    );
-    if (!oldAbility || oldAbility.kind !== 'ability') throw new Error('Missing hologram ability');
-    const ability = await sealRevision('ability', oldAbility.id, oldAbility.revision, {
-      ...oldAbility.definition,
-      effects: oldAbility.definition.effects.map((effect) =>
-        effect.kind === 'environmental-hologram' ? { ...effect, durationSteps: 300 } : effect,
-      ),
-    });
-    input = await ManifestBuilder.relink(input, [{ from: oldAbility, to: ability }]);
+    const input = await environmentalHologramManifest(350, 300);
     const battle = await prepareBattle(input);
     const output = await runPreparedBattle(battle);
     const writer = await ReplayWriter.create(root, {
