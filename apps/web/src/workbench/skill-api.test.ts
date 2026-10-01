@@ -112,9 +112,7 @@ it('rejects conflicting duplicate revision identities even when each hash is val
     'fetch',
     vi.fn(async () => Response.json({ items: [first, second], nextCursor: null })),
   );
-  await expect(skillWorkbenchApi.listAbilities()).rejects.toThrow(
-    'Conflicting duplicate revision',
-  );
+  await expect(skillWorkbenchApi.listAbilities()).rejects.toThrow('Conflicting duplicate revision');
 });
 
 it('isolates the skill battle endpoint and binds the saved revision to the selected actor', async () => {

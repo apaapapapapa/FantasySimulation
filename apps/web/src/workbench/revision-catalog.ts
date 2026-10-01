@@ -20,10 +20,7 @@ export async function loadRevisionKind(kind: string, signal: AbortSignal) {
         throw new Error(`Revision content hash mismatch: ${identity}`);
       const serialized = JSON.stringify(revision);
       const prior = identities.get(identity);
-      if (
-        prior &&
-        (prior.contentHash !== revision.contentHash || prior.serialized !== serialized)
-      )
+      if (prior && (prior.contentHash !== revision.contentHash || prior.serialized !== serialized))
         throw new Error(`Conflicting duplicate revision: ${identity}`);
       if (prior) continue;
       identities.set(identity, { contentHash: revision.contentHash, serialized });

@@ -366,11 +366,7 @@ export function SkillWorkbench({
                     const state = workbenchNodeState(node, configuration!);
                     const matches = visibleIds.has(node.id);
                     return (
-                      <td
-                        key={animal.id}
-                        data-state={state.status}
-                        data-match={matches}
-                      >
+                      <td key={animal.id} data-state={state.status} data-match={matches}>
                         <button
                           type="button"
                           aria-pressed={selectedNodeId === node.id}
