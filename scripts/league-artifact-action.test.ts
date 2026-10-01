@@ -30,6 +30,10 @@ it('passes credentials only to the fixed child and preserves its exit status', a
       join(root, 'scripts/league-pipeline.ts'),
       await readFile(join(root, 'scripts/league-artifact-pilot.ts'), 'utf8'),
     );
+    await writeFile(
+      join(root, 'scripts/league-partition-pilot.ts'),
+      await readFile(join(root, 'scripts/league-artifact-pilot.ts'), 'utf8'),
+    );
     const env = {
       ...process.env,
       GITHUB_WORKSPACE: root,
@@ -43,6 +47,9 @@ it('passes credentials only to the fixed child and preserves its exit status', a
       ['pilot-produce', 'produce', 7],
       ['transfer', 'transfer', 0],
       ['recover', 'recover', 7],
+      ['partition-prepare', 'prepare', 0],
+      ['partition-compute', 'compute', 7],
+      ['partition-consume', 'consume', 0],
     ] as const) {
       const result = spawnSync(process.execPath, [action], {
         env: { ...env, INPUT_COMMAND: command, FIXTURE_EXIT: String(exit) },
