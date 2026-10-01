@@ -412,9 +412,38 @@ it('records boundary pulse owner defeat at the actual boundary and replays it', 
       reason: 'owner-defeated',
     })),
   );
+  for (const removal of record.dependents.remove) {
+    const despawn = record.events.find(
+      (event) => event.kind === 'dependent-despawn' && event.entityId === removal.id,
+    );
+    const owner = run.records
+      .flatMap((candidate) =>
+        'dependents' in candidate ? (candidate.dependents?.spawn ?? []) : [],
+      )
+      .find((dependent) => dependent.id === removal.id)?.ownerId;
+    const delta = record.changes.find((change) => change.id === owner);
+    const lethal = record.events.findLast(
+      (event) =>
+        event.kind === 'damage' &&
+        event.targetId === owner &&
+        event.before?.hp !== undefined &&
+        event.after?.hp === 0,
+    );
+    expect(delta?.resources?.hp).toBe(0);
+    expect(lethal?.amount).toBeGreaterThan(0);
+    expect(lethal!.sequence).toBeLessThan(despawn!.sequence);
+  }
+  const terminal = run.records.at(-1);
+  expect(terminal).toMatchObject({
+    kind: 'terminal',
+    step: record.step,
+    outcome: { kind: 'draw', reason: 'mutual-defeat' },
+  });
+  expect(run.result.outcome).toEqual({ kind: 'draw', reason: 'mutual-defeat' });
   const replay = new ReplayState(await replayContext(battle.manifest, run.result.simulationHash));
   for (const candidate of run.records) replay.apply(candidate);
   expect(replay.checkpoint().state?.dependents ?? []).toHaveLength(0);
+  expect(replay.checkpoint().state?.actors.map((actor) => actor.resources.hp)).toEqual([0, 0]);
 });
 
 it('propagates an owner time stop to its dependent subject clock and rebases only actions', async () => {
