@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { appendFile, writeFile, mkdir } from 'node:fs/promises';
-import { Measurements } from '@fantasy/api/tooling';
+import { Measurements, measureAsync } from '@fantasy/api/tooling';
 import { canonicalJson, contentHash, LeaguePipelineControlSchema } from '@fantasy/domain/spatial';
 import {
   cloudJson,
@@ -222,18 +222,20 @@ export async function consumePartitionPilot(
         await validatePartitionPilotPrepared(root, context.identity, runners);
       },
     );
-    const finalized = await finalizeLeaguePipeline(
-      preparedRoot,
-      join(context.root, 'final'),
-      received.producers,
-      received.terminals,
-      context.identity,
-      runners,
-      async () => {
-        if (!(await context.github.successfulProducers(runners)))
-          throw new Error('Successful pilot producer jobs required');
-      },
-      baseline,
+    const finalized = await measureAsync('receiver.finalize', () =>
+      finalizeLeaguePipeline(
+        preparedRoot,
+        join(context.root, 'final'),
+        received.producers,
+        received.terminals,
+        context.identity,
+        runners,
+        async () => {
+          if (!(await context.github.successfulProducers(runners)))
+            throw new Error('Successful pilot producer jobs required');
+        },
+        baseline,
+      ),
     );
     const registered = await partitionPilotInputs();
     const expected = new Map(registered.expected.map((entry) => [entry.simulationHash, entry]));

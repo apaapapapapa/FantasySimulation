@@ -2,8 +2,9 @@ import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { cp, readFile, writeFile, access, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { withReplayDirectory } from '@fantasy/api/testing';
+import { Measurements } from '@fantasy/api/tooling';
 import { LeagueCloudPreparedSchema } from '@fantasy/domain/spatial';
-import { preparedPipeline } from '../apps/cli/test-support/league-pipeline.ts';
+import { pipelineFixture, preparedPipeline } from '../apps/cli/test-support/league-pipeline.ts';
 import * as runner from '../apps/cli/src/league/league-runner.ts';
 import type { LeagueStaging } from '../apps/cli/src/league/league-staging.ts';
 import { PipelineArtifacts } from './league-pipeline-artifacts.ts';
@@ -18,6 +19,8 @@ afterEach(() => {
 });
 const signal = () => new AbortController().signal;
 const unusedStaging = () => ({ stage: vi.fn() }) as unknown as LeagueStaging;
+const receiverStageNames = (measurement: Measurements) =>
+  Object.keys(measurement.report().stages).filter((name) => name.startsWith('receiver.'));
 
 async function diagnosticPrepared(root: string) {
   const fixture = await preparedPipeline(root);
@@ -62,15 +65,179 @@ async function diagnosticPrepared(root: string) {
   };
 }
 
+it('observes authenticated receipt, staging and job stages without changing receiver results', async () => {
+  await withReplayDirectory(async (root) => {
+    const fixture = await pipelineFixture(root);
+    const slot = fixture.input.batch.slots[0]!;
+    await writeFile(
+      join(fixture.preparedRoot, 'cost-profile.json'),
+      JSON.stringify({
+        schemaVersion: 1,
+        source: fixture.identity.source,
+        measurementHash: 'sha256:' + 'a'.repeat(64),
+        metric: 'worker-compute-elapsed-ms',
+        samples: [
+          {
+            simulationHash: slot.simulationHash,
+            scenario: slot.spec.scenario.id,
+            characters: slot.spec.participants.map((p) => p.character.id),
+            elapsedMs: 1,
+          },
+        ],
+      }),
+    );
+    const terminalRef = {
+      id: 457,
+      name: 'league-123-1-terminal-0',
+      digest: 'sha256:' + 'd'.repeat(64),
+      bytes: 128,
+    };
+    for (const failure of [
+      'none',
+      'list',
+      'assemble',
+      'authenticatePartition',
+      'stage',
+      'jobs',
+    ] as const) {
+      const github = new PipelineArtifacts('test', fixture.identity);
+      vi.spyOn(github, 'list').mockImplementation(async () => {
+        if (failure === 'list') throw new Error('list failure');
+        return [...fixture.producer.artifacts, terminalRef];
+      });
+      vi.spyOn(github, 'download').mockImplementation(async (ref, target) => {
+        if (ref.id === terminalRef.id) {
+          await mkdir(target, { recursive: true });
+          await writeFile(join(target, 'terminal.json'), JSON.stringify(fixture.terminal));
+        } else {
+          if (failure === 'assemble') throw new Error('assemble failure');
+          await cp(fixture.producerRoot, target, { recursive: true });
+          if (failure === 'authenticatePartition') {
+            const proof = JSON.parse(await readFile(join(target, 'proof.json'), 'utf8'));
+            proof.resultHash = 'sha256:' + 'e'.repeat(64);
+            await writeFile(join(target, 'proof.json'), JSON.stringify(proof));
+          }
+        }
+        return ref;
+      });
+      vi.spyOn(github, 'successfulProducers').mockImplementation(async () => {
+        if (failure === 'jobs') throw new Error('jobs failure');
+        return true;
+      });
+      const staging = unusedStaging();
+      vi.mocked(staging.stage).mockImplementation(async () => {
+        if (failure === 'stage') throw new Error('stage failure');
+        return { files: 0, bytes: 0 };
+      });
+      const measurement = new Measurements(),
+        output = join(root, 'receive-' + failure);
+      await mkdir(output);
+      const pending = measurement.run(() =>
+        receivePipeline(output, fixture.preparedRoot, github, 1, staging, signal()),
+      );
+      if (failure === 'none') {
+        const received = await pending;
+        expect(received.producers.map((p) => p.proof)).toEqual([fixture.producer.proof]);
+        expect(received.terminals).toEqual([fixture.terminal]);
+      } else
+        await expect(pending).rejects.toThrow(
+          failure === 'authenticatePartition' ? /identity/ : failure + ' failure',
+        );
+      const report = measurement.report();
+      if (failure === 'none') {
+        for (const stage of ['list', 'assemble', 'authenticatePartition', 'stage', 'jobs'])
+          expect(report.stages['receiver.' + stage]).toMatchObject({
+            count: 1,
+            failures: 0,
+            incomplete: 0,
+          });
+      } else
+        expect(report.stages['receiver.' + failure]).toMatchObject({
+          count: 1,
+          failures: 1,
+          incomplete: 0,
+        });
+      expect(report.stages['receiver.pollWait']).toBeUndefined();
+      expect(report.incompleteSpans).toBe(0);
+      expect(report.measuredSpanUnionMs).toBeLessThanOrEqual(report.wallMs);
+    }
+  });
+});
+
+it('measures an interrupted poll wait and drains its span without pretending jobs succeeded', async () => {
+  await withReplayDirectory(async (root) => {
+    const { preparedRoot, github } = await diagnosticPrepared(root);
+    const controller = new AbortController();
+    vi.spyOn(github, 'list').mockResolvedValue([]);
+    vi.spyOn(github, 'successfulProducers').mockImplementation(async () => {
+      setImmediate(() => controller.abort());
+      return false;
+    });
+    const measurement = new Measurements();
+    await expect(
+      measurement.run(() =>
+        receivePartitionPilot(
+          root,
+          preparedRoot,
+          github,
+          1,
+          unusedStaging(),
+          controller.signal,
+          async () => {},
+        ),
+      ),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+    expect(measurement.report().stages).toMatchObject({
+      'receiver.list': { count: 1, failures: 0, incomplete: 0 },
+      'receiver.jobs': { count: 1, failures: 0, incomplete: 0 },
+      'receiver.pollWait': { count: 1, failures: 1, incomplete: 0 },
+    });
+    expect(measurement.report().incompleteSpans).toBe(0);
+  });
+});
+
+it('records only the list stage when foreign artifact names are rejected', async () => {
+  await withReplayDirectory(async (root) => {
+    const { preparedRoot, github } = await diagnosticPrepared(root);
+    vi.spyOn(github, 'list').mockResolvedValue([
+      { id: 789, name: 'foreign-artifact', digest: 'sha256:' + 'f'.repeat(64), bytes: 128 },
+    ]);
+    const measurement = new Measurements();
+    await expect(
+      measurement.run(() =>
+        receivePartitionPilot(
+          root,
+          preparedRoot,
+          github,
+          1,
+          unusedStaging(),
+          signal(),
+          async () => {},
+        ),
+      ),
+    ).rejects.toThrow('Unexpected pipeline artifact');
+    expect(receiverStageNames(measurement)).toEqual(['receiver.list']);
+    expect(measurement.report().stages['receiver.list']).toMatchObject({
+      count: 1,
+      failures: 0,
+      incomplete: 0,
+    });
+  });
+});
+
 it('keeps measured costs mandatory for production before listing artifacts', async () => {
   await withReplayDirectory(async (root) => {
     const { identity, preparedRoot } = await preparedPipeline(root);
     const github = new PipelineArtifacts('test', identity),
       list = vi.spyOn(github, 'list');
+    const measurement = new Measurements();
     await expect(
-      receivePipeline(root, preparedRoot, github, 1, unusedStaging(), signal()),
+      measurement.run(() =>
+        receivePipeline(root, preparedRoot, github, 1, unusedStaging(), signal()),
+      ),
     ).rejects.toThrow('Measured league cost profile required');
     expect(list).not.toHaveBeenCalled();
+    expect(receiverStageNames(measurement)).toEqual([]);
   });
 });
 
@@ -82,19 +249,23 @@ it('rejects diagnostic original-input binding before filesystem reception or API
     const binding = vi.fn(async () => {
       throw new Error('Original input changed');
     });
+    const measurement = new Measurements();
     await expect(
-      receivePartitionPilot(
-        root,
-        join(root, 'absent'),
-        github,
-        1,
-        unusedStaging(),
-        signal(),
-        binding,
+      measurement.run(() =>
+        receivePartitionPilot(
+          root,
+          join(root, 'absent'),
+          github,
+          1,
+          unusedStaging(),
+          signal(),
+          binding,
+        ),
       ),
     ).rejects.toThrow('Original input changed');
     expect(binding).toHaveBeenCalledWith(join(root, 'absent'));
     expect(list).not.toHaveBeenCalled();
+    expect(receiverStageNames(measurement)).toEqual([]);
   });
 });
 

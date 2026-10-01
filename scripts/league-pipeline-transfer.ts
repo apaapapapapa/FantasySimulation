@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { canonicalJson } from '@fantasy/domain/spatial';
+import { measureAsync } from '@fantasy/api/tooling';
 import { openLeagueStaging } from '../apps/cli/src/league/league-staging.ts';
 import { finalizeLeaguePipeline } from '../apps/cli/src/league/league-finalizer.ts';
 import { evidenceGraph } from '../apps/cli/src/publication/publication-evidence.ts';
@@ -88,18 +89,20 @@ export async function transferPipeline(
       session.staging,
       signal,
     );
-    const finalized = await finalizeLeaguePipeline(
-      preparedRoot,
-      join(context.root, 'final'),
-      received.producers,
-      received.terminals,
-      github.identity,
-      control.runners,
-      async () => {
-        if (!(await github.successfulProducers(control.runners)))
-          throw new Error('Producer success barrier changed');
-      },
-      baseline,
+    const finalized = await measureAsync('receiver.finalize', () =>
+      finalizeLeaguePipeline(
+        preparedRoot,
+        join(context.root, 'final'),
+        received.producers,
+        received.terminals,
+        github.identity,
+        control.runners,
+        async () => {
+          if (!(await github.successfulProducers(control.runners)))
+            throw new Error('Producer success barrier changed');
+        },
+        baseline,
+      ),
     );
     const graph = evidenceGraph(finalized.evidence);
     const league = graph.catalog.leagues?.find((ref) => ref.hash === finalized.snapshot.hash);
