@@ -18,7 +18,7 @@ import {
   requireLeagueAssignment,
 } from '../apps/cli/src/league/league-assignment.ts';
 import { preparedLeagueCosts } from '../apps/cli/src/league/league-cost-profile.ts';
-import { requireCalibrationScope } from './league-runner-calibration-policy.ts';
+import { CALIBRATION_LIMITS, requireCalibrationScope } from './league-runner-calibration-policy.ts';
 import { validateCalibrationPrepared } from './league-partition-pilot-inputs.ts';
 import { validateCalibrationBudgetRecord } from './league-calibration-history.ts';
 import {
@@ -220,6 +220,7 @@ export async function receiveRunnerCalibration(
     signal,
     assignments,
     true,
+    true,
   );
 }
 
@@ -232,10 +233,18 @@ async function receiveAssignedPipeline(
   signal: AbortSignal,
   assignments: ReturnType<typeof assignLeagueRunners>,
   packed = false,
+  calibration = false,
 ) {
   const started = performance.now(),
     prefix = `league-${github.identity.runId}-${github.identity.runAttempt}`;
   const prepared = await preparedLeague(preparedRoot);
+  const calibrationMetrics = calibration
+    ? new Set([
+        `${prefix}-prepare-shared-metrics`,
+        `${prefix}-consume-shared-metrics`,
+        ...assignments.map(({ runner }) => `${prefix}-compute-${runner}-metrics`),
+      ])
+    : null;
   const coverage = assignments.flatMap((a) => a.partitions);
   if (
     assignments.length !== runners ||
@@ -263,6 +272,13 @@ async function receiveAssignedPipeline(
       >(),
       packedRefs: { runner: number; ref: PipelineArtifact }[] = [];
     for (const ref of all) {
+      // list() has already authenticated immutable source/run metadata and duplicate names.
+      // Diagnostics are never downloaded or counted as producer/terminal coverage.
+      if (calibrationMetrics?.has(ref.name)) {
+        if (ref.bytes > CALIBRATION_LIMITS.encodedMetricsBytes)
+          throw new Error('Calibration metrics artifact exceeds encoded bound');
+        continue;
+      }
       const pack = /-runner-(\d+)-pack-(\d+)$/.exec(ref.name);
       if (pack) {
         const runner = Number(pack[1]);

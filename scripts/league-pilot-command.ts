@@ -21,6 +21,7 @@ import {
 } from './league-partition-pilot-driver.ts';
 
 import { partitionPilotRunners } from './league-partition-pilot-inputs.ts';
+import { redact } from './harness/process.ts';
 
 export async function runPilotCommand(
   calibration: boolean,
@@ -99,6 +100,18 @@ export async function runPilotCommand(
   } catch (error) {
     failure = error instanceof Error ? error.message : 'Unknown pilot failure';
     process.exitCode = 1;
+    const bounded = (value: string) => redact(value, process.env).slice(0, 2048);
+    console.error(
+      JSON.stringify({
+        command: bounded(command ?? ''),
+        status: 'failed',
+        formalAcceptance: false,
+        error: {
+          type: bounded(error instanceof Error ? error.name : 'NonError'),
+          message: bounded(failure),
+        },
+      }),
+    );
   } finally {
     clearInterval(sampling);
     clearTimeout(deadline);

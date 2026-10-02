@@ -9,7 +9,13 @@ import * as runner from '../apps/cli/src/league/league-runner.ts';
 import type { LeagueStaging } from '../apps/cli/src/league/league-staging.ts';
 import { PipelineArtifacts } from './league-pipeline-artifacts.ts';
 import { computePipeline } from './league-pipeline-compute.ts';
-import { receivePipeline, receivePartitionPilot } from './league-pipeline-receive.ts';
+import {
+  receivePipeline,
+  receivePartitionPilot,
+  receiveRunnerCalibration,
+} from './league-pipeline-receive.ts';
+import * as calibrationInputs from './league-partition-pilot-inputs.ts';
+import * as calibrationBudget from './league-calibration-history.ts';
 import * as uploads from './league-pipeline-upload.ts';
 import { pipelineActionsFixture } from './test-support/league-actions.ts';
 import * as transport from '../apps/cli/src/league/league-producer-transport.ts';
@@ -94,6 +100,144 @@ async function diagnosticPrepared(root: string) {
     github: new PipelineArtifacts('test', fixture.identity),
   };
 }
+
+async function calibrationReceiverProtocol(root: string) {
+  const fixture = await diagnosticPrepared(root);
+  const prepared = structuredClone(fixture.prepared);
+  prepared.plan.partitions = prepared.plan.partitions.map((partition) => ({
+    ...partition,
+    slots: 95,
+  }));
+  prepared.plan.partitions.push({
+    partitionId: 'sha256:' + 'c'.repeat(64),
+    batchPlanId: 'sha256:' + 'd'.repeat(64),
+    slots: 95,
+  });
+  prepared.inputs.push({ hash: 'sha256:' + 'e'.repeat(64), bytes: 128 });
+  await writeFile(join(fixture.preparedRoot, 'prepared.json'), JSON.stringify(prepared));
+  const github = new PipelineArtifacts(
+    'test',
+    fixture.github.identity,
+    200,
+    'league-runner-calibration.yml',
+  );
+  vi.spyOn(github, 'authenticateRun').mockResolvedValue({
+    path: '.github/workflows/league-runner-calibration.yml',
+  });
+  // These cases isolate artifact dispatch, not original-input or budget authentication.
+  // Real fresh 380-input and immutable budget-record verification have separate regressions.
+  vi.spyOn(calibrationInputs, 'validateCalibrationPrepared').mockResolvedValue({
+    prepared,
+    registered: {} as never,
+  });
+  vi.spyOn(calibrationBudget, 'validateCalibrationBudgetRecord').mockResolvedValue(
+    undefined as never,
+  );
+  return { ...fixture, prepared, github };
+}
+
+it.each([
+  [2, 'prepare-shared'],
+  [2, 'consume-shared'],
+  [2, 'compute-0'],
+  [2, 'compute-1'],
+  [4, 'compute-2'],
+  [4, 'compute-3'],
+] as const)(
+  'ignores bounded calibration %s-runner %s diagnostics without downloading or adopting them',
+  async (runners, phase) => {
+    await withReplayDirectory(async (root) => {
+      const fixture = await calibrationReceiverProtocol(root);
+      const metric = {
+        id: 901,
+        name: `league-123-1-${phase}-metrics`,
+        digest: 'sha256:' + 'f'.repeat(64),
+        bytes: 209031,
+      };
+      vi.spyOn(fixture.github, 'list').mockResolvedValue([metric]);
+      const controller = new AbortController();
+      const jobs = vi.spyOn(fixture.github, 'successfulProducers').mockImplementation(async () => {
+        controller.abort();
+        return false;
+      });
+      const download = vi.spyOn(fixture.github, 'download');
+      const staging = unusedStaging();
+      await expect(
+        receiveRunnerCalibration(
+          root,
+          fixture.preparedRoot,
+          fixture.github,
+          runners,
+          staging,
+          controller.signal,
+          async () => {},
+        ),
+      ).rejects.toMatchObject({ name: 'AbortError' });
+      expect(jobs).toHaveBeenCalledOnce();
+      expect(download).not.toHaveBeenCalled();
+      expect(staging.stage).not.toHaveBeenCalled();
+    });
+  },
+);
+
+it.each([
+  ['compute-2-metrics', 209031, 'Unexpected pipeline artifact'],
+  ['compute-00-metrics', 209031, 'Unexpected pipeline artifact'],
+  ['prepare-shared-metrics-extra', 209031, 'Unexpected pipeline artifact'],
+  ['prepare-shared-metrics', 524289, 'Calibration metrics artifact exceeds encoded bound'],
+] as const)(
+  'rejects foreign or oversized calibration diagnostics %s',
+  async (suffix, bytes, error) => {
+    await withReplayDirectory(async (root) => {
+      const fixture = await calibrationReceiverProtocol(root);
+      vi.spyOn(fixture.github, 'list').mockResolvedValue([
+        { id: 901, name: `league-123-1-${suffix}`, digest: 'sha256:' + 'f'.repeat(64), bytes },
+      ]);
+      const jobs = vi.spyOn(fixture.github, 'successfulProducers');
+      const download = vi.spyOn(fixture.github, 'download');
+      const staging = unusedStaging();
+      await expect(
+        receiveRunnerCalibration(
+          root,
+          fixture.preparedRoot,
+          fixture.github,
+          2,
+          staging,
+          signal(),
+          async () => {},
+        ),
+      ).rejects.toThrow(error);
+      expect(jobs).not.toHaveBeenCalled();
+      expect(download).not.toHaveBeenCalled();
+      expect(staging.stage).not.toHaveBeenCalled();
+    });
+  },
+);
+
+it('preserves the existing partition pilot rejection of calibration metrics', async () => {
+  await withReplayDirectory(async (root) => {
+    const fixture = await diagnosticPrepared(root);
+    vi.spyOn(fixture.github, 'list').mockResolvedValue([
+      {
+        id: 901,
+        name: 'league-123-1-prepare-shared-metrics',
+        digest: 'sha256:' + 'f'.repeat(64),
+        bytes: 209031,
+      },
+    ]);
+    await expect(
+      receivePartitionPilot(
+        root,
+        fixture.preparedRoot,
+        fixture.github,
+        2,
+        unusedStaging(),
+        signal(),
+        async () => {},
+      ),
+    ).rejects.toThrow('Unexpected pipeline artifact');
+  });
+});
 
 // Protocol mocks below isolate receiver adoption ordering. They are not full packed authentication
 // or fresh-computation evidence; real original-input and transport validation have separate tests.
