@@ -143,10 +143,16 @@ export class Store {
   async seedRevisions(input: unknown[]) {
     return this.loadRevisions(input, 'missing-definition');
   }
+  async seedExactRevisions(input: unknown[]) {
+    return this.loadRevisions(input, 'missing-revision');
+  }
   async loadPinnedRevisions(input: unknown[]) {
     return this.loadRevisions(input, 'exact-revision');
   }
-  private async loadRevisions(input: unknown[], mode: 'missing-definition' | 'exact-revision') {
+  private async loadRevisions(
+    input: unknown[],
+    mode: 'missing-definition' | 'missing-revision' | 'exact-revision',
+  ) {
     if (input.length > (mode === 'exact-revision' ? 4096 : 256))
       throw new StoreError('invalid-input', 'Revision import exceeds its limit');
     const revisions = input.map((r) => parseJson(RevisionSchema, r));
@@ -160,7 +166,7 @@ export class Store {
         const existing = this.getRevision(
           r.kind,
           r.id,
-          mode === 'exact-revision' ? r.revision : undefined,
+          mode === 'missing-definition' ? undefined : r.revision,
         );
         if (existing && mode === 'exact-revision' && canonicalJson(existing) !== canonicalJson(r))
           throw new StoreError(
@@ -177,7 +183,7 @@ export class Store {
           throw new StoreError('conflict', 'Sample conflicts with an existing revision');
         return r;
       };
-      new ManifestBuilder(get).closure(additions, mode === 'exact-revision' ? 4096 : 256);
+      new ManifestBuilder(get).closure(additions, mode === 'missing-definition' ? 256 : 4096);
       const now = new Date().toISOString();
       for (const r of additions) this.insertRevision(r, now);
     });

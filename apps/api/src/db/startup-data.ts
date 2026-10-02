@@ -18,7 +18,9 @@ import {
 /** Seed immutable built-in definitions and the partial, explicitly unfinished skill catalog. */
 export async function seedStartupData(store: Store) {
   const revisions = readSampleRevisions();
-  await store.seedRevisions(revisions);
+  // Startup definitions are immutable by exact revision; augments may add a newer revision
+  // under a stable ability ID without rebinding existing characters or saved manifests.
+  await store.seedExactRevisions(revisions);
   const skills = new SkillStore(store),
     legacy = readStartupSkillCatalog(revisions),
     integratedV2 = readIntegratedStartupSkillCatalogV2(revisions),
