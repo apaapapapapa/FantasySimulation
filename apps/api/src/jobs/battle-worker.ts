@@ -2,6 +2,7 @@ import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
 import { performance } from 'node:perf_hooks';
+import { observeGc } from './gc-observation.ts';
 import { threadId, type MessagePort } from 'node:worker_threads';
 import {
   canonicalJson,
@@ -48,6 +49,10 @@ let wasmBytes: (() => number) | undefined;
 
 /** Pull one bounded batch, transfer it, and wait for durable-writer acceptance before continuing. */
 export default async function battleWorker(task: WorkerTask): Promise<WorkerResult> {
+  return observeGc(task.measuredAt !== undefined, () => runTask(task));
+}
+
+async function runTask(task: WorkerTask): Promise<WorkerResult> {
   const started = performance.now(),
     cold = !initialized;
   const cpu = task.measuredAt === undefined ? undefined : process.threadCpuUsage();
