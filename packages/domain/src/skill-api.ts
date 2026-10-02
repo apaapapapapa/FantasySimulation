@@ -1,4 +1,8 @@
 import { z } from 'zod';
+import {
+  SkillAcquisitionRevisionSchema,
+  SkillAcquisitionSelectionSchema,
+} from './skill-acquisition.ts';
 import { SkillConfigurationSchema, SkillLoadoutRevisionSchema } from './skill-loadout.ts';
 import { SkillCatalogSchema } from './skill-system.ts';
 import { JobRequestSchema } from './spatial/api.ts';
@@ -57,6 +61,35 @@ export const SkillLoadoutPageSchema = z.strictObject({
   nextCursor: IdSchema.nullable(),
 });
 export type SkillLoadoutPage = z.infer<typeof SkillLoadoutPageSchema>;
+
+export const SkillAcquisitionCreateSchema = z.strictObject({
+  selection: SkillAcquisitionSelectionSchema,
+});
+export const SkillAcquisitionPatchSchema = SkillAcquisitionCreateSchema.extend({
+  expectedVersion: version,
+});
+export const SkillAcquisitionHeadSchema = z
+  .strictObject({
+    schemaVersion: z.literal(1),
+    authoritativeBoundary: z.literal(false),
+    id: IdSchema,
+    version,
+    latest: RefSchema,
+    snapshot: SkillAcquisitionRevisionSchema,
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+  })
+  .superRefine((head, context) => {
+    if (
+      head.latest.id !== head.id ||
+      head.latest.revision !== head.snapshot.revision ||
+      head.latest.contentHash !== head.snapshot.contentHash ||
+      head.snapshot.id !== head.id ||
+      head.version !== head.snapshot.revision
+    )
+      context.addIssue({ code: 'custom', message: 'Skill acquisition head mismatch' });
+  });
+export type SkillAcquisitionHead = z.infer<typeof SkillAcquisitionHeadSchema>;
 
 // JobRequestSchema carries the guard that rejects caller-supplied receipts. Keep
 // that refinement when adding the server-resolved loadout references.
