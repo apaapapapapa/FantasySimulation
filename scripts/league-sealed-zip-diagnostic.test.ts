@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vite-plus/test';
-import { chmod, lstat, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, open, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pipelineActionsFixture } from './test-support/league-actions.ts';
@@ -23,14 +23,19 @@ async function serviceFixture() {
   const f = await fixture();
   const serviceExecutor: SealedSegmentServiceExecutor = async (path, receipt) => {
     expect(f.reservation.snapshot().reservedRefs).toBe(1);
-    const info = await lstat(path);
-    expect(info.mode & 0o222).toBe(0);
-    const zip = await readFile(path);
-    return {
-      terminated: true,
-      artifact: { id: 456, name: receipt.name, bytes: zip.length, digest: segmentV3Hash(zip) },
-      zip,
-    };
+    const handle = await open(path, 'r');
+    try {
+      const info = await handle.stat();
+      expect(info.mode & 0o222).toBe(0);
+      const zip = await handle.readFile();
+      return {
+        terminated: true,
+        artifact: { id: 456, name: receipt.name, bytes: zip.length, digest: segmentV3Hash(zip) },
+        zip,
+      };
+    } finally {
+      await handle.close();
+    }
   };
   return {
     directory: f.directory,
