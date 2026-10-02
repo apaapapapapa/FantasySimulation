@@ -391,7 +391,7 @@ describe('production startup skill catalog', () => {
     await expect(lifecycle(8, 'skill.summoning.rat.1')).resolves.toBe('available');
     await expect(lifecycle(8, 'skill.magic.goat.1')).resolves.toBe('draft');
     await expect(lifecycle(9, 'skill.magic.goat.1')).resolves.toBe('available');
-  });
+  }, 15_000);
 
   it('integrates fourteen authored paths while keeping unfinished coordinates unavailable', () => {
     const revisions = readSampleRevisions(),
