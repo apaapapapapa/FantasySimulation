@@ -12,6 +12,7 @@ export const UI_CASES = [
   'battle-api-error',
   'skill-workbench-desktop',
   'skill-workbench-mobile',
+  'magic tiger prerequisite loadout reloads into an exact battle and replay',
   'rabbit hologram saves, battles and replays through both viewers',
   'scout rat saves, battles and replays one dependent through both viewers',
 ] as const;
