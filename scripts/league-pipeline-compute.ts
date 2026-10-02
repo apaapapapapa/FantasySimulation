@@ -157,9 +157,10 @@ async function computePipelineMode(
         ...(deadlineMs === undefined ? {} : { deadlineMs }),
         completed: async (index, directory, pool, bundles) => {
           const producerRoot = join(root, 'spool', String(index));
+          const partitionInput = await cloudInput(preparedRoot, prepared, index);
           const proof = await measureAsync('producer.seal', () =>
             sealLeagueProducer(
-              await cloudInput(preparedRoot, prepared, index),
+              partitionInput,
               directory,
               producerRoot,
               identity,
