@@ -160,6 +160,7 @@ export async function extractLeagueArchive(
     for (let parent = dirname(entry.name); parent !== '.'; parent = dirname(parent))
       if (files.has(parent)) throw new Error('Artifact file used as directory');
   await mkdir(destination); // Caller supplies a fresh owned directory; never follow existing paths.
+  const payloadHashes: Record<string, string> = Object.create(null);
   for (const entry of entries) {
     if (entry.directory) continue;
     const compressed = data.subarray(entry.offset, entry.offset + entry.compressed);
@@ -171,9 +172,10 @@ export async function extractLeagueArchive(
       throw new Error('Artifact CRC/expanded-size mismatch');
     const path = join(destination, entry.name);
     await mkdir(dirname(path), { recursive: true });
+    payloadHashes[entry.name] = archiveHash(bytes);
     await writeFile(path, bytes, { flag: 'wx' });
   }
-  return { files: files.size, bytes: expanded };
+  return { files: files.size, bytes: expanded, payloadHashes: Object.freeze(payloadHashes) };
 }
 
 export async function boundedArtifactResponse(response: Response) {

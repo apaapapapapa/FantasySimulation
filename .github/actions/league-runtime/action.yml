@@ -4,6 +4,9 @@ inputs:
   ci-run:
     required: true
     description: Successful same-source main CI run
+  require-artifact:
+    default: 'false'
+    description: Reject missing or expired CI distribution instead of installing a fallback
 runs:
   using: composite
   steps:
@@ -18,6 +21,7 @@ runs:
       env:
         LEAGUE_CI_RUN: ${{ inputs.ci-run }}
         LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        LEAGUE_REQUIRE_RUNTIME_ARTIFACT: ${{ inputs.require-artifact }}
       run: node scripts/league-runtime-bootstrap.ts
     - if: steps.runtime.outputs.installed != 'true'
       uses: ./.github/actions/setup-project
