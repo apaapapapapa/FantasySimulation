@@ -710,7 +710,7 @@ export const AbilitySchema = z
         spawnOffsetMm: Vec3Schema,
         lifetimeSteps: positive(MAX_BATTLE_STEPS),
         upkeep: z.strictObject({ mp: positive(1_000_000), everySteps: positive(1_000) }),
-        commandCostMp: positive(1_000_000),
+        commandCostMp: uint(1_000_000),
         actionEverySteps: positive(1_000),
         damage: z.strictObject({ amount: positive(1_000_000), drainBps: uint(10_000) }),
       })

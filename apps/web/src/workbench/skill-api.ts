@@ -20,7 +20,7 @@ export type SkillLoadoutSelection = {
   loadout: SkillRevisionRef;
   character: SkillRevisionRef;
 };
-export const DEFAULT_SKILL_CATALOG = { id: 'skill-catalog-v1', revision: 7 } as const;
+export const DEFAULT_SKILL_CATALOG = { id: 'skill-catalog-v1', revision: 8 } as const;
 export const sameSkillRevisionRef = (left: SkillRevisionRef, right: SkillRevisionRef) =>
   left.id === right.id &&
   left.revision === right.revision &&

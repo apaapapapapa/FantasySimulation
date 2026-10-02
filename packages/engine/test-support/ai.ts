@@ -126,6 +126,7 @@ export async function aiFixture(
     (r) => !['character', 'ability', 'policy'].includes(r.kind),
   );
   manifest.revisions.push(...abilities, policy, character);
+  if (abilities.some((ability) => ability.definition.summon)) manifest.schemaVersion = 9;
   for (const p of manifest.participants) p.character = reference(character);
   const battle = await prepareBattle(manifest),
     world = new SpatialWorld([]);

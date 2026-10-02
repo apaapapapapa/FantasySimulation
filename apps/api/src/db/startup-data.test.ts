@@ -7,6 +7,7 @@ import {
   revisionReference,
   skillBattleReceipt,
   skillCatalogDigest,
+  nextRandom,
   RevisionSchema,
   type Revision,
   type SkillCatalog,
@@ -26,9 +27,11 @@ import {
   readIntegratedStartupSkillCatalogV3,
   readIntegratedStartupSkillCatalogV5,
   readIntegratedStartupSkillCatalogV6,
+  readIntegratedStartupSkillCatalogV7,
   readPreviousIntegratedStartupSkillCatalog,
   readStartupSkillCatalog,
 } from './startup-skill-catalog.ts';
+import summoningFixture from '../../../../packages/engine/fixtures/spatial/summoning-rat-dan1-runtime-v1.json' with { type: 'json' };
 
 const stores: Store[] = [];
 const historicalCatalogSignatures = {
@@ -56,6 +59,11 @@ const historicalCatalogSignatures = {
     digest: 'sha256:b479659ce5d1cef32818323185b09a1484b9868bbc76d20c8f16d9f7e150afaf',
     canonicalBytes: 777_861,
     lifecycle: { available: 30, implemented: 2, draft: 1_120, retired: 0 },
+  },
+  7: {
+    digest: 'sha256:158f5c3ba6dbdc1b3d55ed411c60bd79a5a9252081a11a2c5082d1ae0cb78e6f',
+    canonicalBytes: 778_186,
+    lifecycle: { available: 31, implemented: 2, draft: 1_119, retired: 0 },
   },
 } as const;
 afterEach(() => {
@@ -122,6 +130,28 @@ async function seededCharacterAbility(characterId: string, abilityId: string) {
   if (character?.kind !== 'character') throw new Error(`Missing ${characterId} fixture`);
   if (ability?.kind !== 'ability') throw new Error(`Missing ${abilityId} fixture`);
   return { store, seeded, revisions, character, ability };
+}
+
+async function savedSkillBattleFixture(
+  seededFixture: Awaited<ReturnType<typeof seededCharacterAbility>>,
+  nodeId: string,
+  id: string,
+) {
+  const skills = new SkillStore(seededFixture.store),
+    created = await skills.create({
+      character: revisionReference(seededFixture.character),
+      configuration: {
+        schemaVersion: 1,
+        id,
+        version: 1,
+        catalog: seededFixture.seeded.skillCatalog.reference,
+        eligibilityNodeIds: [nodeId],
+        learnedNodeIds: [nodeId],
+        enabledNodeIds: [nodeId],
+      },
+    }),
+    reloaded = await skills.revision(created.latest);
+  return { reloaded, receipt: await skillBattleReceipt(reloaded) };
 }
 
 describe('production startup skill catalog', () => {
@@ -196,7 +226,7 @@ describe('production startup skill catalog', () => {
       second = await seedStartupData(store);
     expect(second.skillCatalog.reference).toEqual(first.skillCatalog.reference);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 7,
+      count: 8,
     });
     const changed = structuredClone(first.skillCatalog.catalog);
     changed.nodes[0]!.name = 'Changed immutable startup node';
@@ -206,14 +236,14 @@ describe('production startup skill catalog', () => {
 
     const app = createApp(store);
     stores.pop();
-    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/7');
+    const response = await app.inject('/api/skill-catalogs/skill-catalog-v1/8');
     expect(response.statusCode).toBe(200);
     expect(response.json()).toMatchObject({
       reference: first.skillCatalog.reference,
-      catalog: { id: 'skill-catalog-v1', revision: 7 },
+      catalog: { id: 'skill-catalog-v1', revision: 8 },
     });
     expect(response.json().catalog.nodes).toHaveLength(1_152);
-    for (const revision of [2, 3, 4, 5, 6]) {
+    for (const revision of [2, 3, 4, 5, 6, 7]) {
       const previous = await app.inject(`/api/skill-catalogs/skill-catalog-v1/${revision}`);
       expect(previous.statusCode).toBe(200);
       expect(previous.json()).toMatchObject({
@@ -233,7 +263,7 @@ describe('production startup skill catalog', () => {
     await app.close();
   });
 
-  it('preserves immutable v2 through v6 before seeding v7', async () => {
+  it('preserves immutable v2 through v7 before seeding v8', async () => {
     const store = openStore(':memory:'),
       revisions = readSampleRevisions();
     stores.push(store);
@@ -243,7 +273,8 @@ describe('production startup skill catalog', () => {
       historicalV3Catalog = readIntegratedStartupSkillCatalogV3(revisions),
       historicalV4Catalog = readPreviousIntegratedStartupSkillCatalog(revisions),
       historicalV5Catalog = readIntegratedStartupSkillCatalogV5(revisions),
-      historicalV6Catalog = readIntegratedStartupSkillCatalogV6(revisions);
+      historicalV6Catalog = readIntegratedStartupSkillCatalogV6(revisions),
+      historicalV7Catalog = readIntegratedStartupSkillCatalogV7(revisions);
     expect(await catalogHistorySignature(historicalV2Catalog)).toEqual(
       historicalCatalogSignatures[2],
     );
@@ -273,24 +304,29 @@ describe('production startup skill catalog', () => {
     expect(await catalogHistorySignature(historicalV6Catalog)).toEqual(
       historicalCatalogSignatures[6],
     );
+    expect(await catalogHistorySignature(historicalV7Catalog)).toEqual(
+      historicalCatalogSignatures[7],
+    );
     const previousV2 = await skills.seedCatalog(historicalV2Catalog),
       previousV3 = await skills.seedCatalog(historicalV3Catalog),
       previousV4 = await skills.seedCatalog(historicalV4Catalog),
       previousV5 = await skills.seedCatalog(historicalV5Catalog),
       previousV6 = await skills.seedCatalog(historicalV6Catalog),
+      previousV7 = await skills.seedCatalog(historicalV7Catalog),
       seeded = await seedStartupData(store);
 
     expect(seeded.skillCatalog.reference).toMatchObject({
       id: 'skill-catalog-v1',
-      revision: 7,
+      revision: 8,
     });
     expect(await skills.catalog('skill-catalog-v1', 2)).toEqual(previousV2);
     expect(await skills.catalog('skill-catalog-v1', 3)).toEqual(previousV3);
     expect(await skills.catalog('skill-catalog-v1', 4)).toEqual(previousV4);
     expect(await skills.catalog('skill-catalog-v1', 5)).toEqual(previousV5);
     expect(await skills.catalog('skill-catalog-v1', 6)).toEqual(previousV6);
+    expect(await skills.catalog('skill-catalog-v1', 7)).toEqual(previousV7);
     expect(store.db.prepare('SELECT count(*) count FROM skill_catalog_revisions').get()).toEqual({
-      count: 7,
+      count: 8,
     });
     expect(
       await catalogHistorySignature((await skills.catalog('skill-catalog-v1', 2))!.catalog),
@@ -313,6 +349,13 @@ describe('production startup skill catalog', () => {
     ]);
     expect(changedNodeIds(historicalV6Catalog, seeded.skillCatalog.catalog)).toEqual([
       'skill.illusion-curse.rabbit.1',
+      'skill.summoning.rat.1',
+    ]);
+    expect(changedNodeIds(historicalV6Catalog, historicalV7Catalog)).toEqual([
+      'skill.illusion-curse.rabbit.1',
+    ]);
+    expect(changedNodeIds(historicalV7Catalog, seeded.skillCatalog.catalog)).toEqual([
+      'skill.summoning.rat.1',
     ]);
     const lifecycle = (revision: number, nodeId: string) =>
       skills
@@ -328,6 +371,8 @@ describe('production startup skill catalog', () => {
     await expect(lifecycle(6, 'skill.archery.rat.1')).resolves.toBe('available');
     await expect(lifecycle(6, 'skill.illusion-curse.rabbit.1')).resolves.toBe('draft');
     await expect(lifecycle(7, 'skill.illusion-curse.rabbit.1')).resolves.toBe('available');
+    await expect(lifecycle(7, 'skill.summoning.rat.1')).resolves.toBe('draft');
+    await expect(lifecycle(8, 'skill.summoning.rat.1')).resolves.toBe('available');
   });
 
   it('integrates fourteen authored paths while keeping unfinished coordinates unavailable', () => {
@@ -336,12 +381,13 @@ describe('production startup skill catalog', () => {
       release = inspectIntegratedStartupSkillCatalog(catalog, revisions),
       available = catalog.nodes.filter(({ lifecycle }) => lifecycle === 'available');
 
-    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 7 });
+    expect(catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 8 });
     expect(catalog.nodes).toHaveLength(1_152);
+    expect(new Set(catalog.nodes.map(({ id }) => id))).toHaveLength(1_152);
     expect(release).toEqual({
-      lifecycle: { available: 31, implemented: 2, draft: 1_119, retired: 0 },
-      available: 31,
-      verified: 31,
+      lifecycle: { available: 32, implemented: 2, draft: 1_118, retired: 0 },
+      available: 32,
+      verified: 32,
       releaseReady: false,
       issues: [],
     });
@@ -364,14 +410,41 @@ describe('production startup skill catalog', () => {
       expect.objectContaining({ lifecycle: 'draft', resolution: [], fixtureIds: [] }),
       expect.objectContaining({ lifecycle: 'draft', resolution: [], fixtureIds: [] }),
     ]);
+    const summoning = catalog.nodes.filter(({ coordinate }) => coordinate.path === 'summoning');
+    expect(summoning.filter(({ id }) => id === 'skill.summoning.rat.1')).toEqual([
+      expect.objectContaining({
+        lifecycle: 'available',
+        resolution: [
+          {
+            kind: 'active-ability',
+            ability: {
+              id: 'scout-rat-v1',
+              revision: 1,
+              contentHash:
+                'sha256:c137e74851756fbdd5d8aefcdaecd325347758ad1627c1bc7f7a21b673687927',
+            },
+          },
+        ],
+        fixtureIds: ['fixture.skill.summoning.rat.1.runtime.v1'],
+      }),
+    ]);
     expect(
-      catalog.nodes
-        .filter(({ coordinate }) => coordinate.path === 'summoning')
+      summoning.filter(({ lifecycle }) => lifecycle === 'available').map(({ id }) => id),
+    ).toEqual(['skill.summoning.rat.1']);
+    expect(
+      summoning
+        .filter(({ id }) => id !== 'skill.summoning.rat.1')
         .every(
           ({ lifecycle, resolution, fixtureIds }) =>
             lifecycle === 'draft' && !resolution.length && !fixtureIds.length,
         ),
     ).toBe(true);
+    expect(
+      [5, 6].map((dan) => catalog.nodes.find(({ id }) => id === `skill.summoning.rat.${dan}`)),
+    ).toEqual([
+      expect.objectContaining({ lifecycle: 'draft', resolution: [], fixtureIds: [] }),
+      expect.objectContaining({ lifecycle: 'draft', resolution: [], fixtureIds: [] }),
+    ]);
   });
 
   it('resolves sixth dan through all six production prerequisites', async () => {
@@ -526,6 +599,121 @@ describe('production startup skill catalog', () => {
     ).toBe(true);
   });
 
+  it('runs fixture.skill.summoning.rat.1.runtime.v1 from the saved production recipe', async () => {
+    const {
+      store,
+      seeded,
+      character,
+      ability: summon,
+    } = await seededCharacterAbility('swordsman', 'scout-rat-v1');
+    expect(revisionReference(summon)).toEqual(summoningFixture.ability);
+    expect(summon.definition.summon).toMatchObject({
+      profile: summoningFixture.recipe.profile,
+      hp: summoningFixture.recipe.hp,
+      lifetimeSteps: summoningFixture.recipe.lifetimeSteps,
+      upkeep: {
+        mp: summoningFixture.recipe.upkeepMp,
+        everySteps: summoningFixture.recipe.upkeepEverySteps,
+      },
+      commandCostMp: summoningFixture.recipe.commandCostMp,
+      actionEverySteps: summoningFixture.recipe.actionEverySteps,
+      damage: {
+        amount: summoningFixture.recipe.damage,
+        drainBps: summoningFixture.recipe.drainBps,
+      },
+    });
+
+    const nodeId = summoningFixture.catalogNodeId,
+      { reloaded, receipt } = await savedSkillBattleFixture(
+        { store, seeded, revisions: [], character, ability: summon },
+        nodeId,
+        'loadout.integrated.summoning-rat-foundation',
+      ),
+      manifest = await catalogManifest(
+        'swordsman',
+        'swordsman',
+        'flat',
+        6000,
+        228,
+        summoningFixture.ruleset.id,
+      );
+    manifest.participants[0]!.skillLoadout = receipt;
+    manifest.participants[1]!.skillLoadout = receipt;
+    const actual = await runAndReplay(manifest, summon),
+      events = actual.run.records.flatMap((record) => ('events' in record ? record.events : [])),
+      commands = events.filter((event) => event.kind === 'dependent-command'),
+      acts = events.filter((event) => event.kind === 'dependent-act'),
+      spawned = actual.run.records.flatMap((record) =>
+        'dependents' in record ? (record.dependents?.spawn ?? []) : [],
+      );
+
+    expect(reloaded.resolved.nodeResolutions).toEqual([
+      {
+        nodeId,
+        resolution: [{ kind: 'active-ability', ability: summoningFixture.ability }],
+      },
+    ]);
+    expect(actual.battle.manifest.schemaVersion).toBe(
+      summoningFixture.expected.manifestSchemaVersion,
+    );
+    expect(actual.battle.manifest.ruleset).toEqual(summoningFixture.ruleset);
+    expect(actual.battle.manifest.participants.map(({ skillLoadout }) => skillLoadout)).toEqual([
+      receipt,
+      receipt,
+    ]);
+    const initial = actual.run.records[0];
+    if (initial?.kind !== 'initial') throw new Error('Missing summon initial record');
+    expect(initial.requiredFeatures).toContain(summoningFixture.expected.requiredFeature);
+    expect(spawned).toHaveLength(2);
+    expect(
+      spawned.every(
+        ({ ownerId, hostileOwnerId, maxHp }) =>
+          ownerId !== hostileOwnerId && maxHp === summoningFixture.recipe.hp,
+      ),
+    ).toBe(true);
+    expect(commands.length).toBeGreaterThan(0);
+    expect(acts).toHaveLength(commands.length);
+    const rng = new Map(spawned.map(({ id, rngState }) => [id, rngState]));
+    let observedMultiple = false;
+    for (const command of commands) {
+      const observed = command.dependent?.observedTargetIds;
+      const before = rng.get(command.entityId!);
+      if (!observed?.length || before === undefined) throw new Error('Missing recorded target RNG');
+      const roll = nextRandom(before);
+      expect(command.targetId).toBe(observed[roll % observed.length]);
+      expect(command.before?.mp).toBe(command.after?.mp);
+      rng.set(command.entityId!, roll);
+      observedMultiple ||= observed.length > 1;
+      const act = acts.find((candidate) => candidate.parentEventId === command.id);
+      expect(act).toMatchObject({
+        actorId: command.actorId,
+        entityId: command.entityId,
+        targetId: command.targetId,
+      });
+      const damage = events.find(
+        (candidate) =>
+          candidate.kind === 'damage' &&
+          candidate.parentEventId === act?.id &&
+          candidate.targetId === command.targetId,
+      );
+      expect(damage).toMatchObject({
+        amount: command.targetId?.startsWith('dependent.')
+          ? summoningFixture.expected.dependentDamage
+          : summoningFixture.expected.participantDamageAfterDefense,
+      });
+    }
+    expect(observedMultiple).toBe(true);
+    expect(
+      events.some(
+        (event) => event.kind === 'heal' && event.reason === 'same-wave-hp-loss-dependent-drain',
+      ),
+    ).toBe(false);
+    expect(
+      events.filter((event) => event.kind === 'dependent-despawn').map(({ reason }) => reason),
+    ).toContain(summoningFixture.expected.despawnReason);
+    expect(actual.restored.checkpoint().state?.dependents ?? []).toHaveLength(0);
+  });
+
   it('runs the saved rabbit hologram recipe under an explicitly selected production ruleset', async () => {
     const {
       store,
@@ -534,21 +722,11 @@ describe('production startup skill catalog', () => {
       ability: hologram,
     } = await seededCharacterAbility('swordsman', 'side-step-image-v1');
     const nodeId = 'skill.illusion-curse.rabbit.1',
-      skills = new SkillStore(store),
-      created = await skills.create({
-        character: revisionReference(character),
-        configuration: {
-          schemaVersion: 1,
-          id: 'loadout.integrated.illusion-curse-rabbit-foundation',
-          version: 1,
-          catalog: seeded.skillCatalog.reference,
-          eligibilityNodeIds: [nodeId],
-          learnedNodeIds: [nodeId],
-          enabledNodeIds: [nodeId],
-        },
-      }),
-      reloaded = await skills.revision(created.latest),
-      receipt = await skillBattleReceipt(reloaded),
+      { reloaded, receipt } = await savedSkillBattleFixture(
+        { store, seeded, revisions: [], character, ability: hologram },
+        nodeId,
+        'loadout.integrated.illusion-curse-rabbit-foundation',
+      ),
       manifest = await catalogManifest(
         'swordsman',
         'swordsman',

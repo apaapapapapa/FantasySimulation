@@ -6,6 +6,7 @@ import {
   actorSeed,
   contentHash,
   dependentSeed,
+  nextRandom,
   replayContext,
 } from '@fantasy/domain/spatial';
 import { battleEvents } from '../../test-support/fixtures.ts';
@@ -15,7 +16,7 @@ import { withStopReactions } from '../../test-support/time-stop.ts';
 import { reviveAbility } from '../../test-support/revival.ts';
 import { prepareBattle } from './prepare.ts';
 import { runPreparedBattle } from './run.ts';
-import { freezeDependent, settleDefeatedDependents } from './sim/dependents.ts';
+import { DEPENDENT_LIMITS, freezeDependent, settleDefeatedDependents } from './sim/dependents.ts';
 import type { DependentState } from './state.ts';
 import type { StepTransaction } from './sim/step-transaction.ts';
 import { Journal } from './rules/journal.ts';
@@ -96,6 +97,51 @@ async function respawnSummoningManifest() {
     cooldownSteps: 31,
   });
   return ManifestBuilder.relink(manifest, [{ from: summon, to: replacement }]);
+}
+
+async function cappedSummoningManifest(
+  maxSteps: number,
+  uses: number,
+  cooldownSteps: number,
+  lifetimeSteps: number,
+) {
+  const manifest = await summoningManifest(maxSteps);
+  const summon = manifest.revisions.find(
+    (revision) => revision.kind === 'ability' && revision.definition.summon,
+  );
+  if (!summon || summon.kind !== 'ability' || !summon.definition.summon)
+    throw new Error('Missing capped summon ability');
+  const replacement = await sealRevision('ability', summon.id, summon.revision, {
+    ...summon.definition,
+    costs: { ...summon.definition.costs, uses },
+    cooldownSteps,
+    summon: { ...summon.definition.summon, lifetimeSteps },
+  });
+  return ManifestBuilder.relink(manifest, [{ from: summon, to: replacement }]);
+}
+
+async function zeroMpAutonomousSummoningManifest(reactionSteps = 1) {
+  const manifest = await summoningManifest(40);
+  const summon = manifest.revisions.find(
+    (revision) => revision.kind === 'ability' && revision.definition.summon,
+  );
+  const character = manifest.revisions.find((revision) => revision.kind === 'character');
+  if (summon?.kind !== 'ability' || !summon.definition.summon || character?.kind !== 'character')
+    throw new Error('Missing autonomous summon fixture');
+  const autonomous = await sealRevision('ability', summon.id, summon.revision, {
+    ...summon.definition,
+    costs: { ...summon.definition.costs, mp: 0 },
+    summon: { ...summon.definition.summon, commandCostMp: 0 },
+  });
+  const zeroMp = await sealRevision('character', character.id, character.revision, {
+    ...character.definition,
+    stats: { ...character.definition.stats, mp: 0 },
+    perception: { ...character.definition.perception, reactionSteps },
+  });
+  return ManifestBuilder.relink(manifest, [
+    { from: summon, to: autonomous },
+    { from: character, to: zeroMp },
+  ]);
 }
 
 function followedDependent(record: Exclude<StreamRecord, { kind: 'initial' | 'terminal' }>) {
@@ -412,6 +458,118 @@ it('executes a bounded observed rat dependent through replay with ordinal RNG id
     despawn.reason = 'owner-defeated';
     despawn.dependent.reason = 'owner-defeated';
   });
+});
+
+it('runs zero-cost autonomous instructions at zero owner MP over recorded hostile candidates', async () => {
+  const battle = await prepareBattle(await zeroMpAutonomousSummoningManifest());
+  const run = await runPreparedBattle(battle);
+  const events = battleEvents(run.records);
+  const commands = events.filter((event) => event.kind === 'dependent-command');
+  const acts = events.filter((event) => event.kind === 'dependent-act');
+  expect(commands.length).toBeGreaterThan(0);
+  expect(acts).toHaveLength(commands.length);
+  expect(
+    commands.every(
+      (command) =>
+        command.before?.mp === 0 &&
+        command.after?.mp === 0 &&
+        command.dependent?.observedTargetIds?.includes(command.targetId!),
+    ),
+  ).toBe(true);
+  const rng = new Map(
+    run.records.flatMap((record) =>
+      'dependents' in record
+        ? (record.dependents?.spawn ?? []).map(
+            (dependent) => [dependent.id, dependent.rngState] as const,
+          )
+        : [],
+    ),
+  );
+  for (const command of commands) {
+    const before = rng.get(command.entityId!);
+    const observed = command.dependent?.observedTargetIds;
+    if (before === undefined || !observed?.length) throw new Error('Missing autonomous RNG input');
+    const policyRoll = nextRandom(before);
+    expect(command.targetId).toBe(observed[policyRoll % observed.length]);
+    rng.set(command.entityId!, policyRoll);
+  }
+  const multi = commands.find(
+    (command) => (command.dependent?.observedTargetIds?.length ?? 0) >= 2,
+  );
+  expect(multi?.dependent?.observedTargetIds).toContain(multi?.targetId);
+  expect(multi?.dependent?.observedTargetIds).toContain(multi?.dependent?.hostileOwnerId);
+  expect(
+    multi?.dependent?.observedTargetIds?.some((targetId) => targetId.startsWith('dependent.')),
+  ).toBe(true);
+  const act = acts.find((candidate) => candidate.parentEventId === multi?.id);
+  expect(act).toMatchObject({
+    actorId: multi?.actorId,
+    entityId: multi?.entityId,
+    targetId: multi?.targetId,
+  });
+  expect((act?.dependent?.nextActionAt ?? 0) - (multi?.dependent?.nextActionAt ?? 0)).toBe(5);
+  const damage = events.find((candidate) => candidate.parentEventId === act?.id);
+  expect(damage).toMatchObject({ kind: 'damage', amount: 8, targetId: multi?.targetId });
+  expect(
+    events.some(
+      (event) =>
+        event.kind === 'dependent-despawn' &&
+        event.reason === 'upkeep' &&
+        event.entityId === multi?.entityId,
+    ),
+  ).toBe(true);
+  // These records are autonomous policy decisions, not an external/user redirect instruction.
+  const replay = new ReplayState(await replayContext(battle.manifest, run.result.simulationHash));
+  const checkpoints = run.records.map((record) => {
+    replay.apply(record);
+    return replay.checkpoint();
+  });
+  expect(replay.ended).toBe(true);
+  for (const checkpoint of checkpoints.toReversed())
+    expect(new ReplayState(replay.context, checkpoint).checkpoint()).toEqual(checkpoint);
+
+  const rejects = (mutate: (records: typeof run.records) => void) => {
+    const records = structuredClone(run.records);
+    mutate(records);
+    const invalid = new ReplayState(replay.context);
+    expect(() => records.forEach((record) => invalid.apply(record))).toThrow(/dependent/);
+  };
+  rejects((records) => {
+    const command = battleEvents(records).find((event) => event.kind === 'dependent-command');
+    if (!command?.after) throw new Error('Missing autonomous command resources');
+    command.after.mp += 1;
+  });
+  rejects((records) => {
+    const command = battleEvents(records).find((event) => event.kind === 'dependent-command');
+    if (!command) throw new Error('Missing autonomous command');
+    command.targetId = 'not-observed';
+  });
+  rejects((records) => {
+    const spawn = records.find(
+      (record) => 'dependents' in record && record.dependents?.spawn.length,
+    );
+    if (!spawn || !('dependents' in spawn) || !spawn.dependents)
+      throw new Error('Missing autonomous spawn');
+    spawn.dependents.spawn[0]!.rngState ^= 1;
+  });
+});
+
+it('does not act or advance policy RNG before a hostile observation is delivered', async () => {
+  const battle = await prepareBattle(await zeroMpAutonomousSummoningManifest(100));
+  const run = await runPreparedBattle(battle);
+  const events = battleEvents(run.records);
+  expect(events.filter((event) => event.kind === 'dependent-command')).toHaveLength(0);
+  expect(events.filter((event) => event.kind === 'dependent-act')).toHaveLength(0);
+  const displays = run.records.flatMap((record) =>
+    'dependents' in record
+      ? [...(record.dependents?.spawn ?? []), ...(record.dependents?.update ?? [])]
+      : [],
+  );
+  const rngById = new Map<string, typeof displays>();
+  for (const display of displays)
+    rngById.set(display.id, [...(rngById.get(display.id) ?? []), display]);
+  for (const history of rngById.values())
+    expect(new Set(history.map(({ rngState }) => rngState))).toHaveLength(1);
 });
 
 it('keeps legacy schema-7/8 participant-only summon records replayable without target observations', async () => {
@@ -776,12 +934,59 @@ it('never reuses a retired dependent identity and keeps bounded history restorab
   expect(() => invalid.apply(reusedRecord)).toThrow(/dependent spawn identity\/history/);
 
   const overCapacity = structuredClone(checkpoints.at(-1)!);
-  overCapacity.dependentHistory = Array.from({ length: 17 }, (_, ordinal) => ({
-    id: `retired-dependent-${ordinal}`,
-    ownerId: battle.manifest.participants[ordinal % 2]!.actorId,
-    hostileOwnerId: battle.manifest.participants[(ordinal + 1) % 2]!.actorId,
-  }));
+  overCapacity.dependentHistory = Array.from(
+    { length: DEPENDENT_LIMITS.maxCreatedPerOwner * 2 + 1 },
+    (_, ordinal) => ({
+      id: `retired-dependent-${ordinal}`,
+      ownerId: battle.manifest.participants[ordinal % 2]!.actorId,
+      hostileOwnerId: battle.manifest.participants[(ordinal + 1) % 2]!.actorId,
+    }),
+  );
   expect(() => new ReplayState(context, overCapacity)).toThrow();
+});
+
+it('enforces independent active and created dependent caps for each owner', async () => {
+  const activeBattle = await prepareBattle(
+    await cappedSummoningManifest(12, DEPENDENT_LIMITS.maxActivePerOwner + 1, 1, 30),
+  );
+  const activeRun = await runPreparedBattle(activeBattle);
+  const activeEvents = battleEvents(activeRun.records);
+  for (const participant of activeBattle.manifest.participants) {
+    expect(
+      activeEvents.filter(
+        (event) => event.kind === 'dependent-create' && event.actorId === participant.actorId,
+      ),
+    ).toHaveLength(DEPENDENT_LIMITS.maxActivePerOwner);
+    expect(
+      activeEvents.some(
+        (event) =>
+          event.kind === 'fizzle' &&
+          event.actorId === participant.actorId &&
+          event.reason === 'active-dependent-cap',
+      ),
+    ).toBe(true);
+  }
+
+  const createdBattle = await prepareBattle(
+    await cappedSummoningManifest(60, DEPENDENT_LIMITS.maxCreatedPerOwner + 1, 2, 1),
+  );
+  const createdRun = await runPreparedBattle(createdBattle);
+  const createdEvents = battleEvents(createdRun.records);
+  const creates = createdEvents.filter((event) => event.kind === 'dependent-create');
+  expect(creates).toHaveLength(DEPENDENT_LIMITS.maxCreatedPerOwner * 2);
+  for (const participant of createdBattle.manifest.participants) {
+    expect(creates.filter((event) => event.actorId === participant.actorId)).toHaveLength(
+      DEPENDENT_LIMITS.maxCreatedPerOwner,
+    );
+    expect(
+      createdEvents.some(
+        (event) =>
+          event.kind === 'fizzle' &&
+          event.actorId === participant.actorId &&
+          event.reason === 'created-dependent-cap',
+      ),
+    ).toBe(true);
+  }
 });
 
 it('settles dependent HP and drain in the owner revival wave before the verdict', async () => {

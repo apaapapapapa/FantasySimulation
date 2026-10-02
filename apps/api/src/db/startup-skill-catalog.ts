@@ -15,6 +15,7 @@ import {
 } from '@fantasy/domain';
 import {
   ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
+  SUMMONING_RAT_DAN1_SKILL_NODE,
   integratedSkillShards,
 } from '@fantasy/samples/authoring';
 
@@ -220,7 +221,8 @@ export const INTEGRATED_STARTUP_CATALOG_V3_REVISION = 3;
 export const PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION = 4;
 export const INTEGRATED_STARTUP_CATALOG_V5_REVISION = 5;
 export const INTEGRATED_STARTUP_CATALOG_V6_REVISION = 6;
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 7;
+export const INTEGRATED_STARTUP_CATALOG_V7_REVISION = 7;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 8;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>
@@ -437,11 +439,26 @@ export function readIntegratedStartupSkillCatalogV6(revisionInput: unknown[]): S
 }
 
 /** Overlay every current authored shard as the next immutable startup catalog revision. */
+export function readIntegratedStartupSkillCatalogV7(revisionInput: unknown[]): SkillCatalog {
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    INTEGRATED_STARTUP_CATALOG_V7_REVISION,
+    [
+      ...integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V6_REVISION),
+      ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
+    ],
+  );
+}
+
+/** Promote only the measured rat foundation over immutable catalog v7. */
 export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
-  return assembleIntegratedStartupSkillCatalog(revisionInput, INTEGRATED_STARTUP_CATALOG_REVISION, [
-    ...integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V6_REVISION),
-    ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
-  ]);
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    INTEGRATED_STARTUP_CATALOG_REVISION,
+    readIntegratedStartupSkillCatalogV7(revisionInput).nodes.map((node) =>
+      node.id === SUMMONING_RAT_DAN1_SKILL_NODE.id ? SUMMONING_RAT_DAN1_SKILL_NODE : node,
+    ),
+  );
 }
 
 export function inspectIntegratedStartupSkillCatalog(
@@ -455,10 +472,10 @@ export function inspectIntegratedStartupSkillCatalog(
       fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
     });
   if (
-    report.available !== 31 ||
-    report.verified !== 31 ||
+    report.available !== 32 ||
+    report.verified !== 32 ||
     report.lifecycle.implemented !== 2 ||
-    report.lifecycle.draft !== 1_119 ||
+    report.lifecycle.draft !== 1_118 ||
     report.issues.length
   )
     throw new Error('Integrated startup skill catalog release evidence is incomplete');

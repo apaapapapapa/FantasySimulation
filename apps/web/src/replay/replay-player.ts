@@ -1,4 +1,8 @@
-import { advanceDeferred, advanceStopReplay } from '@fantasy/domain/spatial';
+import {
+  advanceDeferred,
+  advanceDependentHistory,
+  advanceStopReplay,
+} from '@fantasy/domain/spatial';
 import {
   canonicalJson,
   compareIds,
@@ -21,6 +25,9 @@ export type ReplayFrame = {
 const recordStep = (r: StreamRecord) => (r.kind === 'interval' ? r.toStep : r.step);
 const orderedState = (state: DisplayState): DisplayState => ({
   ...(state.objects ? { objects: [...state.objects].sort((a, b) => compareIds(a.id, b.id)) } : {}),
+  ...(state.dependents
+    ? { dependents: [...state.dependents].sort((a, b) => compareIds(a.id, b.id)) }
+    : {}),
   actors: [...state.actors].sort((a, b) => compareIds(a.id, b.id)),
   projectiles: [...state.projectiles].sort((a, b) => compareIds(a.id, b.id)),
 });
@@ -63,17 +70,34 @@ function advance(before: ReplayCheckpoint, record: StreamRecord): ReplayCheckpoi
         .filter((o) => !removed.has(o.id))
         .map((o) => updates.get(o.id) ?? o);
     }
-    state = { actors, projectiles, ...(objects ? { objects } : {}) };
+    let dependents = state!.dependents;
+    if (record.dependents) {
+      const updates = new Map(
+          record.dependents.update.map((dependent) => [dependent.id, dependent]),
+        ),
+        removed = new Set(record.dependents.remove.map(({ id }) => id));
+      dependents = [...(dependents ?? []), ...record.dependents.spawn]
+        .filter(({ id }) => !removed.has(id))
+        .map((dependent) => updates.get(dependent.id) ?? dependent);
+    }
+    state = {
+      actors,
+      projectiles,
+      ...(objects ? { objects } : {}),
+      ...(dependents ? { dependents } : {}),
+    };
   }
   const deferred = advanceDeferred(before.deferred, 'events' in record ? record.events : []);
   const stop = advanceStopReplay(before.stop, 'events' in record ? record.events : []);
   const requiredFeatures =
     record.kind === 'initial' ? record.requiredFeatures : before.requiredFeatures;
+  const dependentHistory = advanceDependentHistory(before.dependentHistory, record);
   return {
     ...before,
     ...(deferred ? { deferred } : {}),
     ...(stop ? { stop } : {}),
     ...(requiredFeatures ? { requiredFeatures } : {}),
+    ...(dependentHistory.length ? { dependentHistory } : {}),
     state: orderedState(state!),
     step: recordStep(record),
     nextRecord: before.nextRecord + 1,
