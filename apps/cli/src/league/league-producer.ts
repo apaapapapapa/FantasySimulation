@@ -130,6 +130,34 @@ async function authenticateProducerContents(
   runner: number,
   artifacts: readonly ReturnType<typeof LeagueProducerArtifactSchema.parse>[],
 ) {
+  return { ...(await validateProducerContents(root, input, identity, runner)), artifacts };
+}
+
+/** Offline diagnostics reuse complete producer content checks without granting an artifact witness.
+ * Upstream replay validation is unchanged; this does not introduce a third full replay pass.
+ */
+export async function validateLeagueProducerDiagnostic(
+  root: string,
+  inputValue: unknown,
+  identity: PipelineIdentity,
+  runner: number,
+) {
+  const input = LeagueCloudInputSchema.parse(inputValue);
+  const checked = await validateProducerContents(root, input, identity, runner);
+  return {
+    mode: 'off' as const,
+    executionEnabled: false as const,
+    proof: checked.proof,
+    result: checked.result,
+  };
+}
+
+async function validateProducerContents(
+  root: string,
+  input: LeagueCloudInput,
+  identity: PipelineIdentity,
+  runner: number,
+) {
   const proof = LeagueProducerProofSchema.parse(await cloudJson(join(root, 'proof.json')));
   const result = LeaguePartitionResultSchema.parse(await cloudJson(join(root, 'result.json')));
   if (
@@ -167,7 +195,7 @@ async function authenticateProducerContents(
     [...inventory].some(([key, bytes]) => graph.files.get(key)?.bytes !== bytes)
   )
     throw new OperationError('DATA_INVALID', 'Unexpected producer payload');
-  return { proof, result, evidence, artifacts };
+  return { proof, result, evidence };
 }
 export type LeagueProducer = Awaited<ReturnType<typeof authenticateProducerContents>> & {
   packed?: PackedBinding;
