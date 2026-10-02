@@ -232,6 +232,8 @@ export async function runSegmentServiceDiagnostic() {
         formalAcceptance: false,
         runtimeAuthority:
           'reviewed-required-main-ci-bootstrap-before-fresh-command; not a serialized-receipt or loaded-module attestation',
+        inventoryManifest: diagnostic.inventoryManifest,
+        segmentExpected: diagnostic.segmentExpected,
         producerChecks: diagnostic.verified.map((value) => ({
           partition: value.proof.partition,
           resultHash: value.proof.resultHash,

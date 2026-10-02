@@ -1,6 +1,9 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { calibrationEncodedBytes } from './league-calibration-upload.ts';
+import { canonicalJson } from '@fantasy/domain/spatial';
+import { verifyDiagnosticSegmentZip } from './league-sealed-zip-diagnostic.ts';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { sha256 } from '@fantasy/api/artifacts';
 import * as tooling from '@fantasy/api/tooling';
@@ -107,6 +110,7 @@ it('restores two real sealed producers across file/partition boundaries while re
     );
     expect(result.reservation.reservedRefs).toBe(1);
     expect(verify).toHaveBeenCalledTimes(2);
+    let serviceZip: Buffer | undefined;
     const service = await measured.run(() =>
       roundtripMultipartServiceDiagnostic({
         identity: fixture.identity,
@@ -117,6 +121,7 @@ it('restores two real sealed producers across file/partition boundaries while re
         reservation: multipartDiagnosticReservation(),
         serviceExecutor: async (path, receipt) => {
           const zip = await readFile(path);
+          serviceZip = zip;
           return {
             terminated: true,
             artifact: { id: 987, name: receipt.name, bytes: zip.length, digest: sha256(zip) },
@@ -126,6 +131,67 @@ it('restores two real sealed producers across file/partition boundaries while re
       }),
     );
     expect(service.executionEnabled).toBe(false);
+    expect(sha256(canonicalJson(service.inventoryManifest))).toBe(
+      service.segmentExpected.inventoryHash,
+    );
+    expect(service.segmentExpected).toMatchObject({
+      identity: fixture.identity,
+      runner: 0,
+      index: 0,
+      count: 1,
+    });
+    const payload = await verifyDiagnosticSegmentZip(
+      serviceZip!,
+      service.transport,
+      service.segmentExpected,
+      join(root, 'offline-readback'),
+    );
+    let offset = 0;
+    for (const file of service.inventoryManifest.files) {
+      const bytes = payload.subarray(offset, offset + file.bytes);
+      offset += file.bytes;
+      expect(sha256(bytes)).toBe(file.checksum);
+    }
+    const omitted = {
+      ...service.inventoryManifest,
+      files: service.inventoryManifest.files.slice(1),
+    };
+    await expect(
+      verifyDiagnosticSegmentZip(
+        serviceZip!,
+        service.transport,
+        { ...service.segmentExpected, inventoryHash: sha256(canonicalJson(omitted)) },
+        join(root, 'omitted-index'),
+      ),
+    ).rejects.toThrow('binding mismatch');
+    const sidecar = join(root, 'phase-measurement.json');
+    await writeFile(
+      sidecar,
+      JSON.stringify({
+        measurement: measured.report(),
+        inventoryManifest: service.inventoryManifest,
+        segmentExpected: service.segmentExpected,
+      }),
+    );
+    const encodedMetricsBytes = await calibrationEncodedBytes([sidecar], root, 524288);
+    console.log(
+      JSON.stringify({
+        diagnosticReceiptInventoryBytes: Buffer.byteLength(
+          JSON.stringify(service.inventoryManifest),
+        ),
+        diagnosticReceiptSegmentExpectedBytes: Buffer.byteLength(
+          JSON.stringify(service.segmentExpected),
+        ),
+        localFixtureMetricsEncodedBytes: encodedMetricsBytes,
+        scope: 'local fixture/SDK encoder; no service allocation',
+      }),
+    );
+    expect(encodedMetricsBytes).toBeLessThanOrEqual(524288);
+    expect(offset).toBe(service.segmentExpected.totalBytes);
+    expect(payload.length).toBe(offset);
+    expect(service.inventoryManifest.partitions.map((value) => value.resultHash)).toEqual(
+      fixture.sealed.map((value) => value.proof.resultHash),
+    );
     expect(service.transport).toMatchObject({
       serviceCompatibility: 'executor-reported-unattested',
       publicSdkUploadCompatibility: 'unmeasured',
