@@ -158,8 +158,15 @@ describe('Drizzle Kit and spatial persistence integration', () => {
         /immutable/,
       );
       expect(() => db.prepare('DELETE FROM battle_specs').run()).toThrow(/cannot be deleted/);
-      expect(db.prepare("SELECT name FROM sqlite_schema WHERE type='trigger'").all()).toHaveLength(
-        10,
+      const triggers = db
+        .prepare("SELECT name FROM sqlite_schema WHERE type='trigger' ORDER BY name")
+        .all() as { name: string }[];
+      expect(triggers).toHaveLength(12);
+      expect(triggers.map(({ name }) => name)).toEqual(
+        expect.arrayContaining([
+          'skill_acquisition_revisions_no_update',
+          'skill_acquisition_revisions_no_delete',
+        ]),
       );
       expect(db.pragma('integrity_check', { simple: true })).toBe('ok');
     } finally {

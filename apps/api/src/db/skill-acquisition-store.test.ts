@@ -41,29 +41,23 @@ describe('skill acquisition persistence', () => {
       eligibilityNodeIds: expect.arrayContaining([fixture.target, fixture.alternate]),
     });
 
+    const respecSelection = {
+      schemaVersion: 1 as const,
+      id: created.id,
+      version: 2,
+      character: created.snapshot.character,
+      catalog: created.snapshot.catalog,
+      learnedNodeIds: [],
+    };
     const respec = await acquisitions.patch(created.id, {
       expectedVersion: 1,
-      selection: {
-        schemaVersion: 1,
-        id: created.id,
-        version: 2,
-        character: created.snapshot.character,
-        catalog: created.snapshot.catalog,
-        learnedNodeIds: [],
-      },
+      selection: respecSelection,
     });
     expect(respec.snapshot.learnedNodeIds).toEqual([]);
     await expect(
       acquisitions.patch(created.id, {
         expectedVersion: 1,
-        selection: {
-          schemaVersion: 1,
-          id: created.id,
-          version: 2,
-          character: created.snapshot.character,
-          catalog: created.snapshot.catalog,
-          learnedNodeIds: [],
-        },
+        selection: respecSelection,
       }),
     ).rejects.toMatchObject({ code: 'conflict' });
     await expect(acquisitions.revision(created.latest)).resolves.toEqual(created.snapshot);

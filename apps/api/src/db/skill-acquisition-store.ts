@@ -114,6 +114,25 @@ export class SkillAcquisitionStore {
       .run();
   }
 
+  private headRow(id: string) {
+    return this.store.orm
+      .select()
+      .from(skillAcquisitionHeads)
+      .where(eq(skillAcquisitionHeads.id, id))
+      .get();
+  }
+
+  private static headValues(snapshot: SkillAcquisitionRevision, now: string) {
+    return {
+      id: snapshot.id,
+      version: snapshot.revision,
+      latestRevision: snapshot.revision,
+      latestContentHash: snapshot.contentHash,
+      createdAt: now,
+      updatedAt: now,
+    };
+  }
+
   async revision(ref: RevisionRef) {
     const row = this.store.orm
       .select()
@@ -159,17 +178,13 @@ export class SkillAcquisitionStore {
       contentHash !== (await skillAcquisitionRevisionHash(content))
     )
       throw new StoreError('conflict', 'Skill acquisition revision is corrupt or mismatched');
-    await this.requireCatalog(snapshot.catalog);
     this.store.requireRevision('character', snapshot.character);
+    await this.requireCatalog(snapshot.catalog);
     return snapshot;
   }
 
   async head(id: string) {
-    const row = this.store.orm
-      .select()
-      .from(skillAcquisitionHeads)
-      .where(eq(skillAcquisitionHeads.id, id))
-      .get();
+    const row = this.headRow(id);
     if (!row) throw new StoreError('not-found', 'Skill acquisition not found');
     const snapshot = await this.revision({
       id: row.id,
@@ -206,14 +221,7 @@ export class SkillAcquisitionStore {
       this.insert(snapshot, now);
       this.store.orm
         .insert(skillAcquisitionHeads)
-        .values({
-          id: snapshot.id,
-          version: 1,
-          latestRevision: 1,
-          latestContentHash: snapshot.contentHash,
-          createdAt: now,
-          updatedAt: now,
-        })
+        .values(SkillAcquisitionStore.headValues(snapshot, now))
         .run();
     });
     return this.head(snapshot.id);

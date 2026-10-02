@@ -9,6 +9,14 @@ import { JobRequestSchema } from './spatial/api.ts';
 import { IdSchema, RefSchema } from './spatial/contracts.ts';
 
 const version = z.number().int().min(1).max(1_000_000);
+const revisionHeadFields = {
+  schemaVersion: z.literal(1),
+  id: IdSchema,
+  version,
+  latest: RefSchema,
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+};
 
 export const SkillCatalogRecordSchema = z
   .strictObject({
@@ -37,13 +45,8 @@ export type SkillLoadoutPatch = z.infer<typeof SkillLoadoutPatchSchema>;
 
 export const SkillLoadoutHeadSchema = z
   .strictObject({
-    schemaVersion: z.literal(1),
-    id: IdSchema,
-    version,
-    latest: RefSchema,
+    ...revisionHeadFields,
     snapshot: SkillLoadoutRevisionSchema,
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
   })
   .superRefine((head, context) => {
     if (
@@ -70,14 +73,9 @@ export const SkillAcquisitionPatchSchema = SkillAcquisitionCreateSchema.extend({
 });
 export const SkillAcquisitionHeadSchema = z
   .strictObject({
-    schemaVersion: z.literal(1),
+    ...revisionHeadFields,
     authoritativeBoundary: z.literal(false),
-    id: IdSchema,
-    version,
-    latest: RefSchema,
     snapshot: SkillAcquisitionRevisionSchema,
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
   })
   .superRefine((head, context) => {
     if (
