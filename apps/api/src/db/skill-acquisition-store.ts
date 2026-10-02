@@ -193,7 +193,7 @@ export class SkillAcquisitionStore {
     });
     return SkillAcquisitionHeadSchema.parse({
       schemaVersion: 1,
-      authoritativeBoundary: false,
+      authoritativeBoundary: true,
       id: row.id,
       version: row.version,
       latest: { id: row.id, revision: row.latestRevision, contentHash: row.latestContentHash },

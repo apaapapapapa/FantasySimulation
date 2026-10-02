@@ -249,38 +249,28 @@ test('keeps an exact saved loadout selected when its acquisition head advances',
 test('reloads a legacy V1 loadout and upgrades it through acquisition V2', async ({
   page,
 }, testInfo) => {
-  const catalogRecord = await (
-      await page.request.get('/api/skill-catalogs/skill-catalog-v1/10')
-    ).json(),
-    characters = await (await page.request.get('/api/revisions/character?limit=10')).json(),
-    characterRevision = characters.items[0],
-    character = {
-      id: characterRevision.id,
-      revision: characterRevision.revision,
-      contentHash: characterRevision.contentHash,
-    },
+  const id = `loadout.e2e.v1-upgrade.retry-${testInfo.retry}`,
     nodeId = 'skill.magic.tiger.1',
-    id = `loadout.e2e.v1-upgrade.${testInfo.parallelIndex}.${testInfo.retry}`,
-    legacyResponse = await page.request.post('/api/skill-loadouts', {
-      data: {
-        character,
-        configuration: {
-          schemaVersion: 1,
-          id,
-          version: 1,
-          catalog: catalogRecord.reference,
-          eligibilityNodeIds: [nodeId],
-          learnedNodeIds: [nodeId],
-          enabledNodeIds: [nodeId],
-        },
-      },
-    });
-  expect(legacyResponse.status()).toBe(201);
-  expect(await legacyResponse.json()).toMatchObject({ schemaVersion: 1, id, version: 1 });
+    legacyResponse = await page.request.get(`/api/skill-loadouts/${id}`),
+    legacy = await legacyResponse.json(),
+    character = legacy.snapshot.character;
+  expect(legacyResponse.status()).toBe(200);
+  expect(legacy).toMatchObject({ schemaVersion: 1, id, version: 1 });
 
   const workbench = await readyWorkbench(page);
   await workbench.locator('.skill-loadout-controls select').nth(1).selectOption(`${id}:1`);
   await expect(workbench.locator('.message[role="status"]')).toContainText('revision 1');
+  await workbench.locator('.actions button').nth(1).click();
+  const { response: legacyBattleResponse } = await submitBattleAndOpenReplay(
+      page,
+      page.locator('.arena'),
+      legacy.latest,
+    ),
+    legacyReplay = await legacyBattleResponse.json();
+  expect(legacyReplay.input.participants[0].skillLoadout).toMatchObject({
+    loadout: legacy.latest,
+    resolvedNodeIds: [nodeId],
+  });
   const acquisitionResponse = page.waitForResponse(
       (response) =>
         response.request().method() === 'POST' &&
@@ -354,7 +344,7 @@ test('magic tiger prerequisite loadout reloads into an exact battle and replay',
   const acquisition = await (await acquisitionResponse).json(),
     saved = await (await savedResponse).json();
   expect(acquisition).toMatchObject({
-    authoritativeBoundary: false,
+    authoritativeBoundary: true,
     snapshot: { learnedNodeIds: ['skill.magic.tiger.1', 'skill.magic.tiger.2'] },
   });
   expect(saved.snapshot.configuration).toMatchObject({

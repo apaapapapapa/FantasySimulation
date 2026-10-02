@@ -1,11 +1,13 @@
 import { and, asc, eq, gt } from 'drizzle-orm';
 import {
   AnySkillConfigurationSchema,
-  AnySkillLoadoutCreateSchema,
   AnySkillLoadoutHeadSchema,
   AnySkillLoadoutPageSchema,
-  AnySkillLoadoutPatchSchema,
   AnySkillLoadoutRevisionSchema,
+  SkillLoadoutCreateSchema,
+  SkillLoadoutCreateV2Schema,
+  SkillLoadoutPatchSchema,
+  SkillLoadoutPatchV2Schema,
   SkillCatalogRecordSchema,
   canonicalJson,
   compareIds,
@@ -16,6 +18,8 @@ import {
   skillCatalogDigest,
   skillLoadoutRevisionHash,
   type RevisionRef,
+  type AnySkillLoadoutCreate,
+  type AnySkillLoadoutPatch,
   type SkillCatalog,
   type AnySkillLoadoutRevision,
   type AnyResolvedSkillLoadout,
@@ -314,7 +318,15 @@ export class SkillStore {
   }
 
   async create(input: unknown) {
-    const request = parseJson(AnySkillLoadoutCreateSchema, input);
+    return this.createParsed(parseJson(SkillLoadoutCreateV2Schema, input));
+  }
+
+  /** Preserve existing schema-v1 fixtures/history without exposing legacy writes over HTTP. */
+  async createLegacy(input: unknown) {
+    return this.createParsed(parseJson(SkillLoadoutCreateSchema, input));
+  }
+
+  private async createParsed(request: AnySkillLoadoutCreate) {
     if (request.configuration.version !== 1)
       throw new StoreError('invalid-input', 'New skill loadout version must be 1');
     const snapshot = await this.resolveSnapshot(request.character, request.configuration, 1),
@@ -345,8 +357,16 @@ export class SkillStore {
   }
 
   async patch(id: string, input: unknown) {
-    const request = parseJson(AnySkillLoadoutPatchSchema, input),
-      nextVersion = request.expectedVersion + 1;
+    return this.patchParsed(id, parseJson(SkillLoadoutPatchV2Schema, input));
+  }
+
+  /** Preserve controlled schema-v1 fixture construction; HTTP routes never call this method. */
+  async patchLegacy(id: string, input: unknown) {
+    return this.patchParsed(id, parseJson(SkillLoadoutPatchSchema, input));
+  }
+
+  private async patchParsed(id: string, request: AnySkillLoadoutPatch) {
+    const nextVersion = request.expectedVersion + 1;
     if (request.configuration.id !== id)
       throw new StoreError('invalid-input', 'Skill loadout ID cannot change');
     if (request.configuration.version !== nextVersion)

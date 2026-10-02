@@ -129,7 +129,7 @@ export const SkillAcquisitionHeadSchema = z
   .strictObject({
     ...revisionHeadFields,
     schemaVersion: z.literal(1),
-    authoritativeBoundary: z.literal(false),
+    authoritativeBoundary: z.literal(true),
     snapshot: SkillAcquisitionRevisionSchema,
   })
   .superRefine((head, context) => {

@@ -7,6 +7,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { catalogManifest } from '@fantasy/samples';
 import { readSkillReplay, submitSkillJob } from '../../test-support/skill-job.ts';
+import { saveSkillLoadoutV2 } from '../../test-support/skills.ts';
 import { withRuntime } from '../../test-support/runtime.ts';
 import { readSampleRevisions } from '../db/store.ts';
 import { seedStartupData } from '../db/startup-data.ts';
@@ -43,21 +44,13 @@ it(
         });
 
         await store.seedRevisions(input.revisions);
-        const saved = await app.inject({
-          method: 'POST',
-          url: '/api/skill-loadouts',
-          payload: {
-            character: input.participants[0]!.character,
-            configuration: {
-              schemaVersion: 1,
-              id: 'loadout.production.aikido.dog.1.passive',
-              version: 1,
-              catalog: seeded.skillCatalog.reference,
-              eligibilityNodeIds: [nodeId],
-              learnedNodeIds: [nodeId],
-              enabledNodeIds: [nodeId],
-            },
-          },
+        const saved = await saveSkillLoadoutV2(app, {
+          id: 'loadout.production.aikido.dog.1.passive',
+          acquisitionId: 'acquisition.production.aikido.dog.1.passive',
+          character: input.participants[0]!.character,
+          catalog: seeded.skillCatalog.reference,
+          learnedNodeIds: [nodeId],
+          enabledNodeIds: [nodeId],
         });
         if (saved.statusCode !== 201) throw new Error(`${saved.statusCode}: ${saved.body}`);
         expect(saved.json().snapshot.resolved.nodeResolutions).toEqual([

@@ -36,7 +36,7 @@ async function setup() {
 }
 
 describe('skill loadout API', () => {
-  it('creates, reloads and CAS-respecs advisory acquisition history over HTTP', async () => {
+  it('creates, reloads and CAS-respecs authoritative acquisition history over HTTP', async () => {
     const { app, character, catalogRecord, target } = await setup(),
       selection = {
         schemaVersion: 1,
@@ -55,7 +55,7 @@ describe('skill loadout API', () => {
     expect(created.json()).toMatchObject({
       id: selection.id,
       version: 1,
-      authoritativeBoundary: false,
+      authoritativeBoundary: true,
       snapshot: { learnedNodeIds: [target] },
     });
     expect((await app.inject(`/api/skill-acquisitions/${selection.id}`)).json()).toEqual(
@@ -90,46 +90,95 @@ describe('skill loadout API', () => {
     ).toBe(409);
   });
 
-  it('saves, reloads and CAS-updates a server-resolved immutable loadout', async () => {
-    const { app, character, configuration } = await setup(),
-      created = await app.inject({
-        method: 'POST',
-        url: '/api/skill-loadouts',
-        payload: { character: reference(character), configuration },
-      });
-    expect(created.statusCode).toBe(201);
-    expect(created.json()).toMatchObject({ id: configuration.id, version: 1 });
-    expect((await app.inject(`/api/skill-loadouts/${configuration.id}`)).json()).toEqual(
-      created.json(),
-    );
-    expect((await app.inject('/api/skill-loadouts?limit=1')).json()).toMatchObject({
-      items: [{ id: configuration.id, version: 1 }],
-      nextCursor: null,
+  it('rejects legacy HTTP writes without mutating a readable V1 head', async () => {
+    const { app, skills, character, catalogRecord, configuration, target } = await setup(),
+      characterRef = reference(character),
+      legacy = await skills.createLegacy({ character: characterRef, configuration }),
+      original = (await app.inject(`/api/skill-loadouts/${configuration.id}`)).json();
+    expect(original).toEqual(legacy);
+
+    const rejectedCreate = await app.inject({
+      method: 'POST',
+      url: '/api/skill-loadouts',
+      payload: {
+        character: characterRef,
+        configuration: { ...configuration, id: 'loadout.route-new-legacy' },
+      },
     });
-    const patched = await app.inject({
+    expect(rejectedCreate.statusCode).toBe(400);
+    expect((await app.inject('/api/skill-loadouts/loadout.route-new-legacy')).statusCode).toBe(404);
+
+    const rejectedPatch = await app.inject({
       method: 'PATCH',
       url: `/api/skill-loadouts/${configuration.id}`,
       payload: {
         expectedVersion: 1,
-        character: reference(character),
+        character: characterRef,
         configuration: { ...configuration, version: 2 },
       },
     });
-    expect(patched.statusCode).toBe(200);
-    expect(patched.json()).toMatchObject({ version: 2, latest: { revision: 2 } });
-    expect(
-      (
+    expect(rejectedPatch.statusCode).toBe(400);
+    expect((await app.inject(`/api/skill-loadouts/${configuration.id}`)).json()).toEqual(original);
+
+    const acquisition = (
         await app.inject({
-          method: 'PATCH',
-          url: `/api/skill-loadouts/${configuration.id}`,
+          method: 'POST',
+          url: '/api/skill-acquisitions',
           payload: {
-            expectedVersion: 1,
-            character: reference(character),
-            configuration: { ...configuration, version: 2 },
+            selection: {
+              schemaVersion: 1,
+              id: 'acquisition.route-upgrade',
+              version: 1,
+              character: characterRef,
+              catalog: catalogRecord.reference,
+              learnedNodeIds: [target],
+            },
           },
         })
-      ).statusCode,
-    ).toBe(409);
+      ).json(),
+      upgradedConfiguration = {
+        schemaVersion: 2 as const,
+        id: configuration.id,
+        version: 2,
+        catalog: catalogRecord.reference,
+        acquisition: acquisition.latest,
+        enabledNodeIds: [target],
+      },
+      upgraded = await app.inject({
+        method: 'PATCH',
+        url: `/api/skill-loadouts/${configuration.id}`,
+        payload: {
+          expectedVersion: 1,
+          character: characterRef,
+          configuration: upgradedConfiguration,
+        },
+      });
+    expect(upgraded.statusCode).toBe(200);
+    expect(upgraded.json()).toMatchObject({ schemaVersion: 2, version: 2 });
+
+    const downgrade = await app.inject({
+      method: 'PATCH',
+      url: `/api/skill-loadouts/${configuration.id}`,
+      payload: {
+        expectedVersion: 2,
+        character: characterRef,
+        configuration: { ...configuration, version: 3 },
+      },
+    });
+    expect(downgrade.statusCode).toBe(400);
+    const stale = await app.inject({
+      method: 'PATCH',
+      url: `/api/skill-loadouts/${configuration.id}`,
+      payload: {
+        expectedVersion: 1,
+        character: characterRef,
+        configuration: upgradedConfiguration,
+      },
+    });
+    expect(stale.statusCode).toBe(409);
+    expect((await app.inject(`/api/skill-loadouts/${configuration.id}`)).json()).toEqual(
+      upgraded.json(),
+    );
   });
 
   it('creates and CAS-updates a V2 loadout bound to an exact acquisition revision', async () => {
@@ -195,12 +244,37 @@ describe('skill loadout API', () => {
   });
 
   it('injects only an immutable loadout receipt and creates no job for invalid refs', async () => {
-    const { app, submit, manifest, character, configuration } = await setup(),
+    const { app, submit, manifest, character, catalogRecord, configuration, target } =
+        await setup(),
+      acquisition = (
+        await app.inject({
+          method: 'POST',
+          url: '/api/skill-acquisitions',
+          payload: {
+            selection: {
+              schemaVersion: 1,
+              id: 'acquisition.route-job',
+              version: 1,
+              character: reference(character),
+              catalog: catalogRecord.reference,
+              learnedNodeIds: [target],
+            },
+          },
+        })
+      ).json(),
+      v2 = {
+        schemaVersion: 2 as const,
+        id: configuration.id,
+        version: 1,
+        catalog: catalogRecord.reference,
+        acquisition: acquisition.latest,
+        enabledNodeIds: [target],
+      },
       created = (
         await app.inject({
           method: 'POST',
           url: '/api/skill-loadouts',
-          payload: { character: reference(character), configuration },
+          payload: { character: reference(character), configuration: v2 },
         })
       ).json(),
       spec = {
@@ -245,7 +319,7 @@ describe('skill loadout API', () => {
     const submitted = submit.mock.calls[0]![0];
     expect(submitted.participants[0].skillLoadout).toMatchObject({
       loadout: created.latest,
-      resolvedNodeIds: [configuration.enabledNodeIds[0]],
+      resolvedNodeIds: [target],
     });
     expect(submitted.participants[1].skillLoadout).toBeUndefined();
   });

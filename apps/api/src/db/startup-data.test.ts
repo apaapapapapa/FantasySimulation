@@ -150,7 +150,7 @@ async function savedSkillBattleFixture(
   id: string,
 ) {
   const skills = new SkillStore(seededFixture.store),
-    created = await skills.create({
+    created = await skills.createLegacy({
       character: revisionReference(seededFixture.character),
       configuration: {
         schemaVersion: 1,
@@ -502,7 +502,7 @@ describe('production startup skill catalog', () => {
       );
     if (character?.kind !== 'character') throw new Error('Missing stage vanguard fixture');
     const nodeIds = [1, 2, 3, 4, 5, 6].map((dan) => `skill.sword.rat.${dan}`),
-      created = await new SkillStore(store).create({
+      created = await new SkillStore(store).createLegacy({
         character: revisionReference(character),
         configuration: {
           schemaVersion: 1,
@@ -566,7 +566,7 @@ describe('production startup skill catalog', () => {
 
     const nodeId = 'skill.archery.rat.1',
       skills = new SkillStore(store),
-      created = await skills.create({
+      created = await skills.createLegacy({
         character: revisionReference(character),
         configuration: {
           schemaVersion: 1,
@@ -820,7 +820,7 @@ describe('production startup skill catalog', () => {
     } = await seededCharacterAbility('swordsman', 'spear');
 
     const nodeId = 'skill.spear.rat.1',
-      created = await new SkillStore(store).create({
+      created = await new SkillStore(store).createLegacy({
         character: revisionReference(character),
         configuration: {
           schemaVersion: 1,
@@ -870,7 +870,7 @@ describe('production startup skill catalog', () => {
 
     const nodeId = 'skill.aikido.dog.1',
       skills = new SkillStore(store),
-      created = await skills.create({
+      created = await skills.createLegacy({
         character: revisionReference(character),
         configuration: {
           schemaVersion: 1,
@@ -964,7 +964,7 @@ describe('production startup skill catalog', () => {
 
     const nodeIds = ['skill.magic.rooster.1', 'skill.magic.rooster.2'],
       skills = new SkillStore(store),
-      created = await skills.create({
+      created = await skills.createLegacy({
         character: revisionReference(character),
         configuration: {
           schemaVersion: 1,

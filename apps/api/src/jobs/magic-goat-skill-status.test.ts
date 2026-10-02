@@ -5,6 +5,7 @@ import { catalogManifest, sampleCatalog } from '@fantasy/samples';
 import { initialStatus, withInitialStatus } from '../../../../packages/engine/test-support/ai.ts';
 import { withRuntime } from '../../test-support/runtime.ts';
 import { readSkillReplay, submitSkillJob } from '../../test-support/skill-job.ts';
+import { saveSkillLoadoutV2 } from '../../test-support/skills.ts';
 import { seedStartupData } from '../db/startup-data.ts';
 import { createApp } from '../http/app.ts';
 
@@ -31,21 +32,13 @@ it(
         expect(character.definition.abilities.map(({ id }) => id)).not.toContain(abilityId);
         expect(ability.definition.effects).toEqual([{ kind: 'water', extinguish: true }]);
 
-        const saved = await app.inject({
-          method: 'POST',
-          url: '/api/skill-loadouts',
-          payload: {
-            character: revisionReference(character),
-            configuration: {
-              schemaVersion: 1,
-              id: 'loadout.production.magic.goat.1',
-              version: 1,
-              catalog: seeded.skillCatalog.reference,
-              eligibilityNodeIds: [nodeId],
-              learnedNodeIds: [nodeId],
-              enabledNodeIds: [nodeId],
-            },
-          },
+        const saved = await saveSkillLoadoutV2(app, {
+          id: 'loadout.production.magic.goat.1',
+          acquisitionId: 'acquisition.production.magic.goat.1',
+          character: revisionReference(character),
+          catalog: seeded.skillCatalog.reference,
+          learnedNodeIds: [nodeId],
+          enabledNodeIds: [nodeId],
         });
         expect(saved.statusCode).toBe(201);
         expect(saved.json().snapshot.resolved.nodeResolutions).toEqual([
@@ -74,21 +67,13 @@ it(
         ).toBe(false);
 
         await store.seedRevisions(input.revisions);
-        const activeSaved = await app.inject({
-          method: 'POST',
-          url: '/api/skill-loadouts',
-          payload: {
-            character: input.participants[0]!.character,
-            configuration: {
-              schemaVersion: 1,
-              id: 'loadout.production.magic.goat.1.status-actor',
-              version: 1,
-              catalog: seeded.skillCatalog.reference,
-              eligibilityNodeIds: [nodeId],
-              learnedNodeIds: [nodeId],
-              enabledNodeIds: [nodeId],
-            },
-          },
+        const activeSaved = await saveSkillLoadoutV2(app, {
+          id: 'loadout.production.magic.goat.1.status-actor',
+          acquisitionId: 'acquisition.production.magic.goat.1.status-actor',
+          character: input.participants[0]!.character,
+          catalog: seeded.skillCatalog.reference,
+          learnedNodeIds: [nodeId],
+          enabledNodeIds: [nodeId],
         });
         expect(activeSaved.statusCode).toBe(201);
         const jobId = await submitSkillJob(

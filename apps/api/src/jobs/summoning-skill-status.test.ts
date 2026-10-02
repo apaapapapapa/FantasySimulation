@@ -12,6 +12,7 @@ import {
 import { catalogManifest } from '@fantasy/samples';
 import { withRuntime } from '../../test-support/runtime.ts';
 import { submitSkillJob } from '../../test-support/skill-job.ts';
+import { saveSkillLoadoutV2 } from '../../test-support/skills.ts';
 import { readSampleRevisions } from '../db/store.ts';
 import { seedStartupData } from '../db/startup-data.ts';
 import { createApp } from '../http/app.ts';
@@ -37,21 +38,13 @@ it(
           throw new Error('Missing production rat loadout revisions');
         expect(revisionReference(ability)).toEqual(fixture.ability);
 
-        const saved = await app.inject({
-          method: 'POST',
-          url: '/api/skill-loadouts',
-          payload: {
-            character: revisionReference(character),
-            configuration: {
-              schemaVersion: 1,
-              id: 'loadout.production.summoning.rat.1',
-              version: 1,
-              catalog: seeded.skillCatalog.reference,
-              eligibilityNodeIds: [fixture.catalogNodeId],
-              learnedNodeIds: [fixture.catalogNodeId],
-              enabledNodeIds: [fixture.catalogNodeId],
-            },
-          },
+        const saved = await saveSkillLoadoutV2(app, {
+          id: 'loadout.production.summoning.rat.1',
+          acquisitionId: 'acquisition.production.summoning.rat.1',
+          character: revisionReference(character),
+          catalog: seeded.skillCatalog.reference,
+          learnedNodeIds: [fixture.catalogNodeId],
+          enabledNodeIds: [fixture.catalogNodeId],
         });
         expect(saved.statusCode).toBe(201);
         expect(saved.json().snapshot.resolved.nodeResolutions).toEqual([

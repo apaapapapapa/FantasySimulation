@@ -5,6 +5,7 @@ import {
   skillAcquisitionRevisionHash,
   skillBranchDans,
 } from './skill-acquisition.ts';
+import { SkillAcquisitionHeadSchema } from './skill-api.ts';
 import { skillCatalogDigest, type SkillNode } from './skill-system.ts';
 import { SKILL_TEST_HASH as hash, completeSkillTestCatalog } from './skill-system.test-fixtures.ts';
 
@@ -85,5 +86,41 @@ describe('skill acquisition', () => {
         { equipmentTags: [], abilityRefs: [] },
       ),
     ).rejects.toMatchObject({ code: 'unmet-learning-prerequisite' });
+  });
+
+  it('exposes only the authoritative acquisition boundary in current API heads', async () => {
+    const catalog = completeSkillTestCatalog(),
+      catalogRef = {
+        id: catalog.id,
+        revision: catalog.revision,
+        contentHash: await skillCatalogDigest(catalog),
+      },
+      content = await resolveSkillAcquisition(
+        catalog,
+        {
+          schemaVersion: 1,
+          id: 'acquisition.authoritative',
+          version: 1,
+          character,
+          catalog: catalogRef,
+          learnedNodeIds: ['skill.sword.rat.1'],
+        },
+        { equipmentTags: [], abilityRefs: [] },
+      ),
+      snapshot = { ...content, contentHash: await skillAcquisitionRevisionHash(content) },
+      head = {
+        schemaVersion: 1,
+        authoritativeBoundary: true,
+        id: snapshot.id,
+        version: 1,
+        latest: { id: snapshot.id, revision: 1, contentHash: snapshot.contentHash },
+        snapshot,
+        createdAt: '2026-10-02T00:00:00.000Z',
+        updatedAt: '2026-10-02T00:00:00.000Z',
+      };
+    expect(SkillAcquisitionHeadSchema.parse(head).authoritativeBoundary).toBe(true);
+    expect(
+      SkillAcquisitionHeadSchema.safeParse({ ...head, authoritativeBoundary: false }).success,
+    ).toBe(false);
   });
 });

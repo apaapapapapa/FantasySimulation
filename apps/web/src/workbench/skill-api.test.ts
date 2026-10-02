@@ -159,7 +159,7 @@ it('posts acquisition state before a V2 loadout bound to the returned exact revi
     catalog = { id: 'skill-catalog-v1', revision: 10, contentHash: hash },
     acquisition = {
       schemaVersion: 1,
-      authoritativeBoundary: false,
+      authoritativeBoundary: true,
       id: 'loadout.hero.acquisition',
       version: 1,
       latest: { id: 'loadout.hero.acquisition', revision: 1, contentHash: laterHash },

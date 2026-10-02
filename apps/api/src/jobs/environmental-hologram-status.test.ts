@@ -21,6 +21,7 @@ import { catalogManifest } from '@fantasy/samples';
 import { summoningManifest } from '../../../../packages/engine/test-support/summoning.ts';
 import { withReplayDirectory } from '../../test-support/replays.ts';
 import { specInput } from '../../test-support/runtime.ts';
+import { saveSkillLoadoutV2 } from '../../test-support/skills.ts';
 import { openStore, readSampleRevisions, type Store } from '../db/store.ts';
 import { seedStartupData } from '../db/startup-data.ts';
 import { createApp } from '../http/app.ts';
@@ -60,21 +61,13 @@ async function activeHologramRequest(store: Store, app: ReturnType<typeof create
   await store.seedRevisions([dormantSummon, utilityPolicy, combined]);
 
   const nodeId = 'skill.illusion-curse.rabbit.1',
-    saved = await app.inject({
-      method: 'POST',
-      url: '/api/skill-loadouts',
-      payload: {
-        character: reference(combined),
-        configuration: {
-          schemaVersion: 1,
-          id: 'loadout.production.hologram.rabbit.1',
-          version: 1,
-          catalog: seeded.skillCatalog.reference,
-          eligibilityNodeIds: [nodeId],
-          learnedNodeIds: [nodeId],
-          enabledNodeIds: [nodeId],
-        },
-      },
+    saved = await saveSkillLoadoutV2(app, {
+      id: 'loadout.production.hologram.rabbit.1',
+      acquisitionId: 'acquisition.production.hologram.rabbit.1',
+      character: reference(combined),
+      catalog: seeded.skillCatalog.reference,
+      learnedNodeIds: [nodeId],
+      enabledNodeIds: [nodeId],
     });
   expect(saved.statusCode).toBe(201);
   const input = await catalogManifest(
