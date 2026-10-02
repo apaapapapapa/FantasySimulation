@@ -143,6 +143,78 @@ test('skill-workbench-mobile', async ({ page }) => {
   ).toBe(1);
 });
 
+test('magic tiger prerequisite loadout reloads into an exact battle and replay', async ({
+  page,
+}) => {
+  const workbench = await readyWorkbench(page);
+  await workbench
+    .locator('.skill-paths > button')
+    .filter({ hasText: 'elements, affinity and formations' })
+    .click();
+
+  const condition = workbench.getByRole('button', { name: /Flame Pressure: Condition/ });
+  await condition.click();
+  await expect(workbench.locator('.skill-state')).toHaveText('未解放');
+  await expect(workbench.locator('.skill-blockers')).toContainText('Flame Pressure: Foundation');
+  await expect(workbench.locator('.skill-node-action')).toBeDisabled();
+
+  await workbench.getByRole('button', { name: /Flame Pressure: Foundation/ }).click();
+  await workbench.locator('.skill-node-action').click();
+  await expect(workbench.locator('.skill-state')).toHaveText('習得済み');
+
+  await condition.click();
+  await expect(workbench.locator('.skill-state')).toHaveText('習得可能');
+  await workbench.locator('.skill-node-action').click();
+  await workbench.locator('.skill-node-action').click();
+  await expect(workbench.locator('.skill-state')).toHaveText('編成中');
+
+  const savedResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' && response.url().endsWith('/api/skill-loadouts'),
+  );
+  await workbench.locator('.actions .primary').click();
+  const saved = await (await savedResponse).json();
+  expect(saved.snapshot.configuration).toMatchObject({
+    learnedNodeIds: ['skill.magic.tiger.1', 'skill.magic.tiger.2'],
+    enabledNodeIds: ['skill.magic.tiger.2'],
+  });
+  expect(saved.snapshot.resolved).toMatchObject({
+    catalog: { id: 'skill-catalog-v1', revision: 10 },
+    resolvedNodeIds: ['skill.magic.tiger.1', 'skill.magic.tiger.2'],
+  });
+
+  await page.reload();
+  const reloaded = page.locator('.skill-workbench');
+  await expect(reloaded.locator('fieldset').first()).toBeEnabled();
+  await reloaded.getByLabel('保存済み構成').selectOption(`${saved.id}:${saved.latest.revision}`);
+  await expect(reloaded.locator('.message[role="status"]')).toContainText(
+    `revision ${saved.latest.revision}`,
+  );
+  await reloaded
+    .locator('.skill-paths > button')
+    .filter({ hasText: 'elements, affinity and formations' })
+    .click();
+  await reloaded.getByRole('button', { name: /Flame Pressure: Foundation/ }).click();
+  await expect(reloaded.locator('.skill-state')).toHaveText('習得済み');
+  await reloaded.getByRole('button', { name: /Flame Pressure: Condition/ }).click();
+  await expect(reloaded.locator('.skill-state')).toHaveText('編成中');
+
+  const battle = page.locator('.arena');
+  await expect(battle.locator(':scope > p[role="status"]').first()).toContainText(
+    `${saved.id}・revision ${saved.latest.revision}`,
+  );
+  const { response } = await submitBattleAndOpenReplay(page, battle, saved.latest),
+    replayManifest = await response.json();
+  expect(replayManifest.input.participants[0].skillLoadout).toMatchObject({
+    loadout: saved.latest,
+    catalog: saved.snapshot.resolved.catalog,
+    resolvedNodeIds: ['skill.magic.tiger.1', 'skill.magic.tiger.2'],
+    nodeResolutions: saved.snapshot.resolved.nodeResolutions,
+    resolutionDigest: saved.snapshot.resolved.resolutionDigest,
+  });
+  await expect(page.locator('input[type="range"]')).toBeVisible();
+});
+
 test('rabbit hologram saves, battles and replays through both viewers', async ({ page }) => {
   const workbench = await readyWorkbench(page);
   await workbench
