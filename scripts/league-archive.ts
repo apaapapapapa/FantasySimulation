@@ -178,7 +178,9 @@ export async function extractLeagueArchive(
   return { files: files.size, bytes: expanded, payloadHashes: Object.freeze(payloadHashes) };
 }
 
-export async function boundedArtifactResponse(response: Response) {
+export async function boundedArtifactResponse(response: Response, limit = LEAGUE_ARCHIVE_BYTES) {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > LEAGUE_ARCHIVE_BYTES)
+    throw new Error('Artifact response byte budget invalid');
   if (!response.ok || !response.body) throw new Error('Artifact download failed');
   const reader = response.body.getReader(),
     chunks: Uint8Array[] = [];
@@ -188,7 +190,7 @@ export async function boundedArtifactResponse(response: Response) {
       const chunk = await reader.read();
       if (chunk.done) break;
       bytes += chunk.value.length;
-      if (bytes > LEAGUE_ARCHIVE_BYTES) throw new Error('Artifact streamed ZIP bound');
+      if (bytes > limit) throw new Error('Artifact streamed ZIP bound');
       chunks.push(chunk.value);
     }
   } finally {

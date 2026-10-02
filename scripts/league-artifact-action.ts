@@ -11,6 +11,7 @@ const commands: Record<string, string[]> = {
   'calibration-prepare': ['scripts/league-runner-calibration.ts', 'prepare'],
   'calibration-compute': ['scripts/league-runner-calibration.ts', 'compute'],
   'calibration-consume': ['scripts/league-runner-calibration.ts', 'consume'],
+  'segment-service': ['scripts/league-segment-service.ts'],
   prepare: ['scripts/league-pipeline.ts', 'prepare'],
   admit: ['scripts/league-pipeline.ts', 'admit'],
   compute: ['scripts/league-pipeline.ts', 'compute'],
@@ -44,7 +45,9 @@ try {
   const forward = (signal: NodeJS.Signals) => {
     interrupted = signal;
     child.kill(signal);
-    timer ??= setTimeout(() => child.kill('SIGKILL'), 5000);
+    // The service driver first kills/drains its SDK child after a five-second grace.
+    // Keep enough outer margin for that close event and its failure receipt.
+    timer ??= setTimeout(() => child.kill('SIGKILL'), command === 'segment-service' ? 15000 : 5000);
   };
   const term = () => forward('SIGTERM');
   const interrupt = () => forward('SIGINT');

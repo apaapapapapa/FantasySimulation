@@ -20,7 +20,9 @@ import { assignLeagueRunners } from '../apps/cli/src/league/league-assignment.ts
 import { TransportReservation } from './league-transport-reservation.ts';
 import {
   sealedZipSegmentDiagnostic,
+  sealedZipSegmentServiceDiagnostic,
   type LocalSegmentSink,
+  type SealedSegmentServiceExecutor,
 } from './league-sealed-zip-diagnostic.ts';
 
 // A tighter local-only diagnostic envelope, not an execution/cost/capacity admission.
@@ -181,18 +183,35 @@ export function multipartDiagnosticReservation() {
 /** Local-only vertical diagnostic. Producer sealing precedes this receiver's content checks.
  * It grants no service identity, official publication, precompute, cost or capacity authority.
  */
-export async function roundtripMultipartDiagnostic(options: {
+type MultipartOptions = {
   partitions: readonly MultipartDiagnosticPartition[];
   identity: PipelineIdentity;
   runner: number;
   runners: number;
   distribution: string;
-  sink: LocalSegmentSink;
   reservation: TransportReservation;
   signal?: AbortSignal;
   allocationAttempt?: 0 | 1;
-}) {
-  const { identity, runner, distribution, sink, reservation, signal } = options;
+};
+export function roundtripMultipartDiagnostic(
+  options: MultipartOptions & { sink: LocalSegmentSink },
+) {
+  return roundtripMultipart(options, { localOnly: true, sink: options.sink });
+}
+export function roundtripMultipartServiceDiagnostic(
+  options: MultipartOptions & {
+    serviceExecutor: SealedSegmentServiceExecutor;
+  },
+) {
+  return roundtripMultipart(options, { mode: 'service', serviceExecutor: options.serviceExecutor });
+}
+async function roundtripMultipart(
+  options: MultipartOptions,
+  transport:
+    | { localOnly: true; sink: LocalSegmentSink }
+    | { mode: 'service'; serviceExecutor: SealedSegmentServiceExecutor },
+) {
+  const { identity, runner, distribution, reservation, signal } = options;
   const partitions = options.partitions.map((value) => ({
     root: resolve(value.root),
     input: LeagueCloudInputSchema.parse(value.input),
@@ -230,7 +249,7 @@ export async function roundtripMultipartDiagnostic(options: {
   const expected = { ...binding, payloadHash: sha256(payload) };
   const directory = await mkdtemp(join(tmpdir(), 'fantasy-multipart-v3-'));
   try {
-    const received = await sealedZipSegmentDiagnostic({
+    const shared = {
       directory,
       payload,
       binding,
@@ -238,11 +257,13 @@ export async function roundtripMultipartDiagnostic(options: {
       sourceSha: identity.source.sha,
       prefix: `league-${identity.runId}-${identity.runAttempt}`,
       reservation,
-      localOnly: true,
-      sink,
       ...(signal ? { signal } : {}),
       allocationAttempt: options.allocationAttempt ?? 0,
-    });
+    };
+    const received =
+      'sink' in transport
+        ? await sealedZipSegmentDiagnostic({ ...shared, ...transport })
+        : await sealedZipSegmentServiceDiagnostic({ ...shared, ...transport });
     signal?.throwIfAborted();
     if (
       received.payload.length !== binding.totalBytes ||

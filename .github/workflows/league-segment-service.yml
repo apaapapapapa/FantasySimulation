@@ -1,0 +1,43 @@
+name: Sealed segment service diagnostic
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful exact-source main CI with unexpired runtime distribution
+        type: string
+        required: true
+      budget_observation:
+        description: Fresh source-bound owner headroom attestation JSON, not API billing proof
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: league-runner-calibration
+  cancel-in-progress: false
+env:
+  LEAGUE_CI_RUN: ${{ inputs.ci_run_id }}
+  LEAGUE_CALIBRATION_BUDGET: ${{ inputs.budget_observation }}
+jobs:
+  diagnostic:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main' && github.actor == 'apaapapapapa' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Authenticate required same-source runtime and verify startup
+        uses: ./.github/actions/league-runtime
+        with:
+          ci-run: ${{ inputs.ci_run_id }}
+          require-artifact: 'true'
+      - name: Fresh 144-match sealed ZIP service roundtrip
+        uses: ./.github/actions/league-artifact-command
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        with:
+          command: segment-service

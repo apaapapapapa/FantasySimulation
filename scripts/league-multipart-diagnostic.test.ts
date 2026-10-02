@@ -1,16 +1,21 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { withReplayDirectory } from '@fantasy/api/testing';
 import { sha256 } from '@fantasy/api/artifacts';
 import * as tooling from '@fantasy/api/tooling';
-import { sealedTwoPartitionFixture } from '../apps/cli/test-support/league-pipeline.ts';
+import {
+  preparedPipeline,
+  sealedTwoPartitionFixture,
+} from '../apps/cli/test-support/league-pipeline.ts';
+import { publicationLeagueSource } from '../apps/cli/test-support/leagues.ts';
 import { cloudInput } from '../apps/cli/src/league/league-cloud-files.ts';
 import * as runtime from './league-runtime.ts';
 import {
   multipartDiagnosticInventory,
   multipartDiagnosticReservation,
   roundtripMultipartDiagnostic,
+  roundtripMultipartServiceDiagnostic,
 } from './league-multipart-diagnostic.ts';
 import type { LocalSegmentSink } from './league-sealed-zip-diagnostic.ts';
 
@@ -22,7 +27,21 @@ afterEach(() => vi.restoreAllMocks());
 it('restores two real sealed producers across file/partition boundaries while retaining exactly two full replay validations', async () => {
   await withReplayDirectory(async (root) => {
     const measured = new tooling.Measurements();
-    const fixture = await measured.run(() => sealedTwoPartitionFixture(root));
+    const identity = {
+      source: publicationLeagueSource,
+      runId: 789,
+      runAttempt: 2,
+      validatorDigest: 'sha256:' + 'b'.repeat(64),
+    };
+    const fixture = await measured.run(() =>
+      sealedTwoPartitionFixture(root, identity.source, identity),
+    );
+    expect(fixture.executionId).toBe('league-789-2');
+    expect(
+      fixture.sealed.every(
+        (value) => value.proof.identity.runId === 789 && value.proof.identity.runAttempt === 2,
+      ),
+    ).toBe(true);
     const validations = measured.report().validation;
     expect(validations.uniqueReplays).toBeGreaterThan(0);
     expect(
@@ -88,6 +107,30 @@ it('restores two real sealed producers across file/partition boundaries while re
     );
     expect(result.reservation.reservedRefs).toBe(1);
     expect(verify).toHaveBeenCalledTimes(2);
+    const service = await measured.run(() =>
+      roundtripMultipartServiceDiagnostic({
+        identity: fixture.identity,
+        runner: 0,
+        runners: 1,
+        partitions,
+        distribution,
+        reservation: multipartDiagnosticReservation(),
+        serviceExecutor: async (path, receipt) => {
+          const zip = await readFile(path);
+          return {
+            terminated: true,
+            artifact: { id: 987, name: receipt.name, bytes: zip.length, digest: sha256(zip) },
+            zip,
+          };
+        },
+      }),
+    );
+    expect(service.executionEnabled).toBe(false);
+    expect(service.transport).toMatchObject({
+      serviceCompatibility: 'executor-reported-unattested',
+      publicSdkUploadCompatibility: 'unmeasured',
+    });
+    expect(measured.report().validation).toEqual(validations);
     await expect(
       multipartDiagnosticInventory([...partitions, partitions[0]!], fixture.identity, 0, 1),
     ).rejects.toThrow('duplicate');
@@ -95,7 +138,7 @@ it('restores two real sealed producers across file/partition boundaries while re
       multipartDiagnosticInventory(partitions.slice(1), fixture.identity, 0, 1),
     ).rejects.toThrow('assigned partition');
     await expect(
-      multipartDiagnosticInventory(partitions, { ...fixture.identity, runAttempt: 2 }, 0, 1),
+      multipartDiagnosticInventory(partitions, { ...fixture.identity, runAttempt: 3 }, 0, 1),
     ).rejects.toThrow('identity');
     const alteredSink: LocalSegmentSink = async (stream, expected) => {
       const reply = await sink(stream, expected);
@@ -129,3 +172,36 @@ it('restores two real sealed producers across file/partition boundaries while re
     expect(reservation.snapshot().reservedRefs).toBe(2);
   });
 }, 60000);
+
+it('rejects foreign fixture source and live cancellation before any prepared work', async () => {
+  await withReplayDirectory(async (root) => {
+    const identity = {
+      source: { ...publicationLeagueSource, sha: 'f'.repeat(40) },
+      runId: 789,
+      runAttempt: 2,
+      validatorDigest: 'sha256:' + 'b'.repeat(64),
+    };
+    await expect(preparedPipeline(root, 2, publicationLeagueSource, identity)).rejects.toThrow(
+      'source/identity mismatch',
+    );
+    const controller = new AbortController();
+    controller.abort(new Error('live cancel'));
+    await expect(
+      sealedTwoPartitionFixture(root, publicationLeagueSource, undefined, controller.signal),
+    ).rejects.toThrow('live cancel');
+    await expect(
+      roundtripMultipartServiceDiagnostic({
+        partitions: [],
+        identity,
+        runner: 0,
+        runners: 1,
+        distribution: 'unused',
+        reservation: multipartDiagnosticReservation(),
+        signal: controller.signal,
+        serviceExecutor: async () => {
+          throw new Error('must not execute');
+        },
+      }),
+    ).rejects.toThrow('live cancel');
+  });
+});

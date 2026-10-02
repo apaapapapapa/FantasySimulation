@@ -33,6 +33,7 @@ export async function bootstrapLeagueRuntime(
   const request = async (path: string) => {
     const response = await fetch(base + path, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+      redirect: 'error',
       signal: AbortSignal.timeout(30000),
     });
     if (!response.ok) throw new Error('Runtime CI metadata request failed');
