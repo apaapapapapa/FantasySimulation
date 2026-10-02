@@ -140,7 +140,7 @@ function dependencyPath(path: string) {
   )
     throw new Error('Invalid runtime dependency path');
 }
-async function bounded(path: string, limit: number) {
+export async function readLeagueRuntimeFile(path: string, limit: number) {
   const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
     const info = await file.stat({ bigint: true });
@@ -167,6 +167,7 @@ async function bounded(path: string, limit: number) {
     await file.close();
   }
 }
+const bounded = readLeagueRuntimeFile;
 async function runtimeIdentity(root: string, sourceSha: string) {
   if (
     !/^[a-f0-9]{40}$/.test(sourceSha) ||

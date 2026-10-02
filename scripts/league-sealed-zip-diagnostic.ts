@@ -29,6 +29,37 @@ type Receipt = {
 };
 type Reply = Receipt & { zip: Buffer };
 export type LocalSegmentSink = (stream: Readable, expected: Readonly<Receipt>) => Promise<Reply>;
+/** Only the integration-owned fixed child executor may implement this boundary.
+ * Its promise must settle (including rejection) only after child termination/drain.
+ * No service trial is permitted until that executor/watchdog has been implemented and verified.
+ */
+export type SealedSegmentServiceExecutor = (
+  path: string,
+  expected: Readonly<Receipt>,
+) => Promise<{
+  terminated: true;
+  artifact: { id: number; name: string; bytes: number; digest: string };
+  zip: Buffer;
+}>;
+type SegmentOptions = {
+  directory: string;
+  payload: Buffer;
+  binding: SegmentV3Binding;
+  expected: SegmentV3Expected;
+  sourceSha: string;
+  prefix: string;
+  reservation: TransportReservation;
+  allocationAttempt?: 0 | 1;
+};
+type LocalOptions = SegmentOptions & {
+  localOnly: true;
+  sink: LocalSegmentSink;
+  signal?: AbortSignal;
+};
+type ServiceOptions = SegmentOptions & {
+  mode: 'service';
+  serviceExecutor: SealedSegmentServiceExecutor;
+};
 const overhead = 92 + 2 * Buffer.byteLength('segment.bin') + 22;
 const zipLimit = SEGMENT_V3_HEADER_BYTES + SEGMENT_V3_PAYLOAD_BYTES + overhead;
 async function bounded(stream: Readable, limit: number) {
@@ -99,24 +130,26 @@ export async function verifyDiagnosticSegmentZip(
  * Real SDK encoder/raw reader are exercised; public version-7 upload compatibility is unmeasured.
  * Runtime/main-CI authentication and complete producer validation remain caller gates.
  */
-export async function sealedZipSegmentDiagnostic(options: {
-  directory: string;
-  payload: Buffer;
-  binding: SegmentV3Binding;
-  expected: SegmentV3Expected;
-  sourceSha: string;
-  prefix: string;
-  reservation: TransportReservation;
-  localOnly: true;
-  sink: LocalSegmentSink;
-  signal?: AbortSignal;
-  allocationAttempt?: 0 | 1;
-}) {
+export async function sealedZipSegmentDiagnostic(options: LocalOptions) {
+  return sealedSegment(options);
+}
+/** Explicit service authority, never disguised as a local sink. No SDK service calls here.
+ * Runtime/bootstrap/admission and executor termination gates remain integration-owned.
+ */
+export async function sealedZipSegmentServiceDiagnostic(options: ServiceOptions) {
+  if ('localOnly' in options || 'sink' in options)
+    throw new Error('Service diagnostic cannot use local authority');
+  return sealedSegment(options);
+}
+async function sealedSegment(options: LocalOptions | ServiceOptions) {
   const { binding, expected } = options;
+  const local = 'localOnly' in options;
+  const signal = local ? options.signal : undefined;
   const allocationAttempt = options.allocationAttempt ?? 0;
   if (
-    options.localOnly !== true ||
-    typeof options.sink !== 'function' ||
+    (local
+      ? options.localOnly !== true || typeof options.sink !== 'function'
+      : options.mode !== 'service' || typeof options.serviceExecutor !== 'function') ||
     !Buffer.isBuffer(options.payload) ||
     options.payload.length > 16 * 1024 ** 2 ||
     ![0, 1].includes(allocationAttempt) ||
@@ -124,7 +157,7 @@ export async function sealedZipSegmentDiagnostic(options: {
     options.prefix !== `league-${binding.identity.runId}-${binding.identity.runAttempt}`
   )
     throw new Error('Diagnostic source/prefix/local authority mismatch');
-  options.signal?.throwIfAborted();
+  signal?.throwIfAborted();
   const encoded = encodeSegmentV3(options.payload, binding);
   decodeSegmentV3(encoded, expected);
   const directory = await realpath(options.directory);
@@ -159,10 +192,53 @@ export async function sealedZipSegmentDiagnostic(options: {
       runtimeHash: binding.runtimeHash,
       allocationAttempt,
     });
+    if (!local) {
+      // The executor owns the whole-child watchdog; never race it and delete a still-used staging file.
+      options.reservation.reserve(name, zip.length);
+      const result = await options.serviceExecutor(path, receipt);
+      const after = await witness(path, zip);
+      if (
+        result.terminated !== true ||
+        !Number.isSafeInteger(result.artifact.id) ||
+        result.artifact.id < 1 ||
+        result.artifact.name !== receipt.name ||
+        result.artifact.bytes !== receipt.bytes ||
+        result.artifact.digest !== receipt.digest ||
+        JSON.stringify(before) !== JSON.stringify(after) ||
+        !Buffer.isBuffer(result.zip) ||
+        result.zip.length !== receipt.bytes ||
+        segmentV3Hash(result.zip) !== receipt.digest
+      )
+        throw new Error('Diagnostic service termination/artifact/download mismatch');
+      const received = Buffer.from(result.zip);
+      await writeFile(join(owned, 'received.zip'), received, { flag: 'wx', mode: 0o400 });
+      const payload = await verifyDiagnosticSegmentZip(
+        received,
+        receipt,
+        expected,
+        join(owned, 'extracted'),
+      );
+      if (!payload.equals(options.payload))
+        throw new Error('Diagnostic service payload roundtrip mismatch');
+      return {
+        ...receipt,
+        payload,
+        mode: 'service-diagnostic' as const,
+        localOnly: false as const,
+        artifactId: result.artifact.id,
+        serviceRequests: 'unmeasured' as const,
+        allocationAttempts: 1,
+        encodedSegmentBytes: encoded.length,
+        plaintextBytes: payload.length,
+        executionEnabled: false as const,
+        serviceCompatibility: 'executor-reported-unattested' as const,
+        publicSdkUploadCompatibility: 'unmeasured' as const,
+      };
+    }
     const hash = createHash('sha256');
     let bytes = 0,
       complete = false;
-    options.signal?.throwIfAborted();
+    signal?.throwIfAborted();
     // Synchronous allocation debit immediately before starting the SDK raw reader/sink.
     options.reservation.reserve(name, zip.length);
     raw = await createRawFileUploadStream(path);
@@ -170,7 +246,7 @@ export async function sealedZipSegmentDiagnostic(options: {
     sent = Readable.from(
       (async function* () {
         for await (const chunk of source) {
-          options.signal?.throwIfAborted();
+          signal?.throwIfAborted();
           bytes += Buffer.byteLength(chunk);
           if (bytes > receipt.bytes) throw new Error('Diagnostic raw upload byte bound');
           hash.update(chunk);
@@ -184,7 +260,7 @@ export async function sealedZipSegmentDiagnostic(options: {
       stream.destroy(new Error('Diagnostic cancelled'));
       source.destroy();
     };
-    options.signal?.addEventListener('abort', stop, { once: true });
+    signal?.addEventListener('abort', stop, { once: true });
     let reply: Reply;
     try {
       reply = await Promise.race([
@@ -200,10 +276,10 @@ export async function sealedZipSegmentDiagnostic(options: {
         }),
       ]);
     } finally {
-      options.signal?.removeEventListener('abort', stop);
+      signal?.removeEventListener('abort', stop);
       if (timer) clearTimeout(timer);
     }
-    options.signal?.throwIfAborted();
+    signal?.throwIfAborted();
     const after = await witness(path, zip);
     if (
       !complete ||

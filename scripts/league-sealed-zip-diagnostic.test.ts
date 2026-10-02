@@ -1,5 +1,5 @@
 import { afterEach, expect, it } from 'vite-plus/test';
-import { chmod, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pipelineActionsFixture } from './test-support/league-actions.ts';
@@ -8,14 +8,79 @@ import { TransportReservation } from './league-transport-reservation.ts';
 import { encodeSegmentV3, segmentV3Hash } from './league-segment-v3.ts';
 import {
   sealedZipSegmentDiagnostic,
+  sealedZipSegmentServiceDiagnostic,
   verifyDiagnosticSegmentZip,
   type LocalSegmentSink,
+  type SealedSegmentServiceExecutor,
 } from './league-sealed-zip-diagnostic.ts';
 const directories: string[] = [];
 afterEach(async () => {
   await Promise.all(
     directories.splice(0).map((path) => rm(path, { recursive: true, force: true })),
   );
+});
+async function serviceFixture() {
+  const f = await fixture();
+  const serviceExecutor: SealedSegmentServiceExecutor = async (path, receipt) => {
+    expect(f.reservation.snapshot().reservedRefs).toBe(1);
+    const info = await lstat(path);
+    expect(info.mode & 0o222).toBe(0);
+    const zip = await readFile(path);
+    return {
+      terminated: true,
+      artifact: { id: 456, name: receipt.name, bytes: zip.length, digest: segmentV3Hash(zip) },
+      zip,
+    };
+  };
+  return {
+    directory: f.directory,
+    payload: f.payload,
+    binding: f.binding,
+    expected: f.expected,
+    sourceSha: f.sourceSha,
+    prefix: f.prefix,
+    reservation: f.reservation,
+    mode: 'service' as const,
+    serviceExecutor,
+  };
+}
+it('keeps a fakeable executor report unattested and disabled after strict ZIP roundtrip', async () => {
+  const f = await serviceFixture();
+  const result = await sealedZipSegmentServiceDiagnostic(f);
+  expect(result.payload).toEqual(f.payload);
+  expect(result.localOnly).toBe(false);
+  expect('executionEnabled' in result && result.executionEnabled).toBe(false);
+  expect('serviceCompatibility' in result && result.serviceCompatibility).toBe(
+    'executor-reported-unattested',
+  );
+  expect(result.publicSdkUploadCompatibility).toBe('unmeasured');
+});
+it.each(['id', 'name', 'bytes', 'digest', 'zip', 'termination', 'unknown'])(
+  'rejects executor %s failure without refund or compatibility elevation',
+  async (fault) => {
+    const f = await serviceFixture(),
+      ordinary = f.serviceExecutor;
+    f.serviceExecutor = async (path, receipt) => {
+      const reply = await ordinary(path, receipt);
+      if (fault === 'unknown') throw new Error('terminated child with unknown outcome');
+      if (fault === 'id') reply.artifact.id = 0;
+      if (fault === 'name') reply.artifact.name = 'foreign.zip';
+      if (fault === 'bytes') reply.artifact.bytes++;
+      if (fault === 'digest') reply.artifact.digest = 'sha256:' + 'd'.repeat(64);
+      if (fault === 'zip') reply.zip[0] = reply.zip[0]! ^ 1;
+      if (fault === 'termination') Object.assign(reply, { terminated: false });
+      return reply;
+    };
+    await expect(sealedZipSegmentServiceDiagnostic(f)).rejects.toThrow();
+    expect(f.reservation.snapshot().reservedRefs).toBe(1);
+  },
+);
+it('rejects mixing local sink authority into a service diagnostic', async () => {
+  const f = await serviceFixture();
+  await expect(
+    sealedZipSegmentServiceDiagnostic({ ...f, localOnly: true } as typeof f),
+  ).rejects.toThrow();
+  expect(f.reservation.snapshot().reservedRefs).toBe(0);
 });
 async function fixture() {
   const directory = await mkdtemp(join(tmpdir(), 'segment-sdk-'));
