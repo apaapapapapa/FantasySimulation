@@ -8,7 +8,7 @@ import {
 } from '@fantasy/domain';
 
 export const MYSTIC_CATALOG_ID = 'skill-catalog-v1';
-export const MYSTIC_CATALOG_REVISION = 4;
+export const MYSTIC_CATALOG_REVISION = 5;
 
 type MysticPath = Extract<SkillPathId, 'shinto' | 'renki' | 'magic'>;
 type BranchDesign = {
@@ -484,6 +484,12 @@ export const MYSTIC_GOAT_DAN1_RELEASE = {
   resolution: { kind: 'active-ability' as const, ability: abilityRef('self-water') },
 } as const;
 
+export const MYSTIC_TIGER_DAN2_RELEASE = {
+  nodeId: 'skill.magic.tiger.2',
+  prerequisiteNodeId: 'skill.magic.tiger.1',
+  resolution: { kind: 'active-ability' as const, ability: abilityRef('ordinary-flare') },
+} as const;
+
 const available: Partial<
   Record<
     `${MysticPath}:${BranchDesign['zodiac']}`,
@@ -540,7 +546,9 @@ function branchNodes(path: MysticPath, design: BranchDesign): SkillNode[] {
           ? available[`${path}:${design.zodiac}`]
           : id === MYSTIC_ROOSTER_DAN2_RELEASE.nodeId
             ? (['measured-fire', 'active-ability'] as const)
-            : undefined;
+            : id === MYSTIC_TIGER_DAN2_RELEASE.nodeId
+              ? (['ordinary-flare', 'active-ability'] as const)
+              : undefined;
     return {
       id,
       coordinate: { path, zodiac: design.zodiac, dan },

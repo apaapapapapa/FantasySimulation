@@ -107,11 +107,17 @@ export async function skillBattleReceipt(input: unknown): Promise<SkillLoadoutRe
     { contentHash: storedHash, ...content } = snapshot;
   if (storedHash !== (await skillLoadoutRevisionHash(content)))
     throw new SkillLoadoutError('catalog-mismatch', 'Skill loadout revision hash mismatch');
-  const schemaVersion = snapshot.resolved.nodeResolutions.some(({ resolution }) =>
-    resolution.some(({ kind }) => kind !== 'active-ability'),
-  )
-    ? 2
-    : 1;
+  const producedIds = new Set<string>();
+  let sharedProducedAbility = false,
+    nonActiveAbility = false;
+  for (const { resolution } of snapshot.resolved.nodeResolutions)
+    for (const item of resolution) {
+      nonActiveAbility ||= item.kind !== 'active-ability';
+      const id = item.kind === 'augment' ? item.resolvedAbility.id : item.ability.id;
+      if (producedIds.has(id)) sharedProducedAbility = true;
+      producedIds.add(id);
+    }
+  const schemaVersion = sharedProducedAbility ? 3 : nonActiveAbility ? 2 : 1;
   return SkillLoadoutReceiptSchema.parse({
     schemaVersion,
     resolverVersion: snapshot.resolved.resolverVersion,

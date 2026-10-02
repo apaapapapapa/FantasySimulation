@@ -16,6 +16,7 @@ import {
 import {
   ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
   MYSTIC_GOAT_DAN1_RELEASE,
+  MYSTIC_TIGER_DAN2_RELEASE,
   SUMMONING_RAT_DAN1_SKILL_NODE,
   integratedSkillShards,
 } from '@fantasy/samples/authoring';
@@ -224,7 +225,8 @@ export const INTEGRATED_STARTUP_CATALOG_V5_REVISION = 5;
 export const INTEGRATED_STARTUP_CATALOG_V6_REVISION = 6;
 export const INTEGRATED_STARTUP_CATALOG_V7_REVISION = 7;
 export const INTEGRATED_STARTUP_CATALOG_V8_REVISION = 8;
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 9;
+export const INTEGRATED_STARTUP_CATALOG_V9_REVISION = 9;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 10;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>
@@ -408,6 +410,30 @@ const historicalReleaseNodes = new Map<string, { releaseRevision: number; prior:
       },
     },
   ],
+  [
+    MYSTIC_TIGER_DAN2_RELEASE.nodeId,
+    {
+      releaseRevision: 10,
+      prior: {
+        id: 'skill.magic.tiger.2',
+        coordinate: { path: 'magic', zodiac: 'tiger', dan: 2 },
+        name: 'Flame Pressure: Condition',
+        description:
+          'ignition admitted only on a valid hit. The earlier techniques remain independently selectable; this dan does not silently replace them.',
+        lifecycle: 'draft',
+        prerequisites: ['skill.magic.tiger.1'],
+        deepening: {
+          kind: 'conditional-effect',
+          explanation:
+            'ignition admitted only on a valid hit; it deepens a direct fire projectile without removing that lower-cost use.',
+          retainsLowerUse: true,
+        },
+        pathRoleTags: ['dan.2', 'path.magic', 'zodiac.tiger'],
+        resolution: [],
+        fixtureIds: [],
+      },
+    },
+  ],
 ]);
 
 function integratedNodesAtRevision(revision: number): SkillNode[] {
@@ -488,16 +514,32 @@ export function readIntegratedStartupSkillCatalogV8(revisionInput: unknown[]): S
 }
 
 /** Promote only magic goat dan one over immutable catalog v8. */
-export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
-  const goat = integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_REVISION).find(
+export function readIntegratedStartupSkillCatalogV9(revisionInput: unknown[]): SkillCatalog {
+  const goat = integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V9_REVISION).find(
     ({ id }) => id === MYSTIC_GOAT_DAN1_RELEASE.nodeId,
   );
   if (!goat) throw new Error('Authored magic goat release is missing');
+
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    INTEGRATED_STARTUP_CATALOG_V9_REVISION,
+    readIntegratedStartupSkillCatalogV8(revisionInput).nodes.map((node) =>
+      node.id === goat.id ? goat : node,
+    ),
+  );
+}
+
+/** Promote only magic tiger dan two over immutable goat catalog v9. */
+export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
+  const tiger = integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_REVISION).find(
+    ({ id }) => id === MYSTIC_TIGER_DAN2_RELEASE.nodeId,
+  );
+  if (!tiger) throw new Error('Authored magic tiger release is missing');
   return assembleIntegratedStartupSkillCatalog(
     revisionInput,
     INTEGRATED_STARTUP_CATALOG_REVISION,
-    readIntegratedStartupSkillCatalogV8(revisionInput).nodes.map((node) =>
-      node.id === goat.id ? goat : node,
+    readIntegratedStartupSkillCatalogV9(revisionInput).nodes.map((node) =>
+      node.id === tiger.id ? tiger : node,
     ),
   );
 }
@@ -513,10 +555,10 @@ export function inspectIntegratedStartupSkillCatalog(
       fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
     });
   if (
-    report.available !== 33 ||
-    report.verified !== 33 ||
+    report.available !== 34 ||
+    report.verified !== 34 ||
     report.lifecycle.implemented !== 2 ||
-    report.lifecycle.draft !== 1_117 ||
+    report.lifecycle.draft !== 1_116 ||
     report.issues.length
   )
     throw new Error('Integrated startup skill catalog release evidence is incomplete');

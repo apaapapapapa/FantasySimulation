@@ -17,6 +17,7 @@ import {
   StoredManifestSchema,
   parseJson,
   compareIds,
+  skillReceiptExecutionResolutions,
   type Manifest,
   type Revision,
 } from '@fantasy/domain/spatial/execution';
@@ -98,50 +99,51 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
         base: Extract<Revision, { kind: 'ability' }>;
         resolved: Extract<Revision, { kind: 'ability' }>;
       }> = [];
-    for (const { resolution } of participant.skillLoadout?.nodeResolutions ?? [])
-      for (const item of resolution) {
-        if (item.kind === 'augment') {
-          const base = get('ability', item.baseAbility),
-            resolved = get('ability', item.resolvedAbility),
-            equipped = baseAbilities.get(base.id);
-          if (
-            !equipped ||
-            equipped.revision !== base.revision ||
-            equipped.contentHash !== base.contentHash
-          )
-            throw new EngineInputError(
-              'revision-content',
-              `Augment base ability is not in the character loadout: ${base.id}`,
-            );
-          if (
-            resolved.id !== base.id ||
-            (resolved.revision === base.revision && resolved.contentHash === base.contentHash) ||
-            resolved.definition.trigger !== base.definition.trigger
-          )
-            throw new EngineInputError(
-              'revision-content',
-              `Augment must preserve ability identity and trigger: ${base.id}`,
-            );
-          augmentations.push({ base, resolved });
-        } else {
-          const ability = get('ability', item.ability);
-          if (
-            participant.skillLoadout?.schemaVersion === 2 &&
-            item.kind === 'active-ability' &&
-            ability.definition.trigger !== 'action'
-          )
-            throw new EngineInputError(
-              'revision-content',
-              `Active skill ability must use the action trigger: ${ability.id}`,
-            );
-          if (item.kind === 'passive-ability' && ability.definition.trigger === 'action')
-            throw new EngineInputError(
-              'revision-content',
-              `Passive skill ability cannot use the action trigger: ${ability.id}`,
-            );
-          grantedAbilities.push(ability);
-        }
+    for (const item of participant.skillLoadout
+      ? skillReceiptExecutionResolutions(participant.skillLoadout)
+      : []) {
+      if (item.kind === 'augment') {
+        const base = get('ability', item.baseAbility),
+          resolved = get('ability', item.resolvedAbility),
+          equipped = baseAbilities.get(base.id);
+        if (
+          !equipped ||
+          equipped.revision !== base.revision ||
+          equipped.contentHash !== base.contentHash
+        )
+          throw new EngineInputError(
+            'revision-content',
+            `Augment base ability is not in the character loadout: ${base.id}`,
+          );
+        if (
+          resolved.id !== base.id ||
+          (resolved.revision === base.revision && resolved.contentHash === base.contentHash) ||
+          resolved.definition.trigger !== base.definition.trigger
+        )
+          throw new EngineInputError(
+            'revision-content',
+            `Augment must preserve ability identity and trigger: ${base.id}`,
+          );
+        augmentations.push({ base, resolved });
+      } else {
+        const ability = get('ability', item.ability);
+        if (
+          participant.skillLoadout?.schemaVersion !== 1 &&
+          item.kind === 'active-ability' &&
+          ability.definition.trigger !== 'action'
+        )
+          throw new EngineInputError(
+            'revision-content',
+            `Active skill ability must use the action trigger: ${ability.id}`,
+          );
+        if (item.kind === 'passive-ability' && ability.definition.trigger === 'action')
+          throw new EngineInputError(
+            'revision-content',
+            `Passive skill ability cannot use the action trigger: ${ability.id}`,
+          );
+        grantedAbilities.push(ability);
       }
+    }
     const direct = new Map(character.abilities.map((ability) => [ability.id, ability]));
     for (const ability of grantedAbilities) {
       const previous = direct.get(ability.id);
