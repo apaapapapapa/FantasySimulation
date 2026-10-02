@@ -11,7 +11,7 @@ import { pipeline } from 'node:stream/promises';
 import { LEAGUE_ARCHIVE_BYTES } from '../league-archive.ts';
 
 /** Actual pinned SDK ZIP encoding; callers mock only the external artifact service. */
-export async function realArtifactZip(files: string[], root: string) {
+export async function realArtifactZip(files: string[], root: string, compressionLevel = 0) {
   const sdk = import.meta.resolve('@actions/artifact');
   const metadata = JSON.parse(await readFile(new URL('../package.json', sdk), 'utf8')) as {
     version: string;
@@ -31,7 +31,7 @@ export async function realArtifactZip(files: string[], root: string) {
     });
     const path = join(directory, 'artifact.zip');
     await pipeline(
-      await createZipUploadStream(getUploadZipSpecification(files, root), 0),
+      await createZipUploadStream(getUploadZipSpecification(files, root), compressionLevel),
       bounded,
       createWriteStream(path, { flags: 'wx' }),
     );

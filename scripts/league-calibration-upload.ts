@@ -21,7 +21,7 @@ export function setCalibrationPartition(index: number) {
 }
 
 /** Uses the installed pinned SDK encoder locally; never creates an artifact or contacts a service. */
-export async function calibrationEncodedBytes(files: string[], root: string, limit: number) {
+export async function calibrationArchiveStream(files: string[], root: string) {
   const sdkRoot = dirname(fileURLToPath(import.meta.resolve('@actions/artifact')));
   const manifest = JSON.parse(await readFile(join(sdkRoot, '../package.json'), 'utf8')) as {
     version?: unknown;
@@ -36,10 +36,11 @@ export async function calibrationEncodedBytes(files: string[], root: string, lim
   const encoder = (await import(pathToFileURL(join(sdkRoot, 'internal/upload/zip.js')).href)) as {
     createZipUploadStream(spec: unknown, level: number): Promise<Readable>;
   };
-  const stream = await encoder.createZipUploadStream(
-    specification.getUploadZipSpecification(files, root),
-    0,
-  );
+  return encoder.createZipUploadStream(specification.getUploadZipSpecification(files, root), 0);
+}
+
+export async function calibrationEncodedBytes(files: string[], root: string, limit: number) {
+  const stream = await calibrationArchiveStream(files, root);
   let bytes = 0;
   try {
     for await (const chunk of stream) {
