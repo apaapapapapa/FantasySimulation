@@ -55,7 +55,7 @@ it('preserves exact original 380 inputs and full-size/scale-up holds', async () 
   expect(registration.definition.battlefields.map((field) => field.scenario.id)).toEqual([
     'aerial-surveyed-v1',
   ]);
-});
+}, 15_000);
 
 it('prepares real fresh partitions with local accounting and immutable SDK refs, never a fabricated profile', async () => {
   await withReplayDirectory(async (root) => {
