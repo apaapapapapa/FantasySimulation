@@ -6,6 +6,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { sql } from 'drizzle-orm';
 import {
+  type AnySQLiteColumn,
   check,
   foreignKey,
   index,
@@ -19,6 +20,59 @@ import {
 const kinds = DEFINITION_KINDS;
 // Only schema-owned enum literals enter generated DDL; runtime values remain bound parameters.
 const kindCheck = sql.raw(kinds.map((kind) => `'${kind.replaceAll("'", "''")}'`).join(','));
+
+type SkillRevisionKey = {
+  id: AnySQLiteColumn;
+  revision: AnySQLiteColumn;
+  catalogId: AnySQLiteColumn;
+  catalogRevision: AnySQLiteColumn;
+  characterJson: AnySQLiteColumn;
+};
+
+function skillRevisionConstraints(
+  table: SkillRevisionKey,
+  catalog: typeof skillCatalogRevisions,
+  name: string,
+) {
+  return [
+    primaryKey({ columns: [table.id, table.revision] }),
+    foreignKey({
+      columns: [table.catalogId, table.catalogRevision],
+      foreignColumns: [catalog.id, catalog.revision],
+    }),
+    check(`${name}_positive_revision`, sql`${table.revision} > 0`),
+    check(`${name}_valid_character`, sql`json_valid(${table.characterJson})`),
+  ];
+}
+
+type SkillHeadKey = {
+  id: AnySQLiteColumn;
+  version: AnySQLiteColumn;
+  latestRevision: AnySQLiteColumn;
+};
+
+function skillHeadConstraints(
+  table: SkillHeadKey,
+  revision: { id: AnySQLiteColumn; revision: AnySQLiteColumn },
+  name: string,
+) {
+  return [
+    foreignKey({
+      columns: [table.id, table.latestRevision],
+      foreignColumns: [revision.id, revision.revision],
+    }),
+    check(`${name}_positive_version`, sql`${table.version} > 0 AND ${table.latestRevision} > 0`),
+  ];
+}
+
+const skillHeadColumns = () => ({
+  id: text('id').primaryKey().notNull(),
+  version: integer('version').notNull(),
+  latestRevision: integer('latest_revision').notNull(),
+  latestContentHash: text('latest_content_hash').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+});
 
 export const publishedRevisions = sqliteTable(
   'published_revisions',
@@ -82,6 +136,37 @@ export const skillCatalogRevisions = sqliteTable(
   ],
 );
 
+export const skillAcquisitionRevisions = sqliteTable(
+  'skill_acquisition_revisions',
+  {
+    id: text('id').notNull(),
+    revision: integer('revision').notNull(),
+    policyVersion: text('policy_version').notNull().default('skill-acquisition-v1'),
+    contentHash: text('content_hash').notNull(),
+    catalogId: text('catalog_id').notNull(),
+    catalogRevision: integer('catalog_revision').notNull(),
+    characterJson: text('character_json').notNull(),
+    eligibilityJson: text('eligibility_json').notNull(),
+    learnedJson: text('learned_json').notNull(),
+    capabilitiesDigest: text('capabilities_digest').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [
+    ...skillRevisionConstraints(table, skillCatalogRevisions, 'skill_acquisition_revisions'),
+    check(
+      'skill_acquisition_revisions_valid_eligibility',
+      sql`json_valid(${table.eligibilityJson})`,
+    ),
+    check('skill_acquisition_revisions_valid_learned', sql`json_valid(${table.learnedJson})`),
+  ],
+);
+
+export const skillAcquisitionHeads = sqliteTable(
+  'skill_acquisition_heads',
+  skillHeadColumns(),
+  (table) => skillHeadConstraints(table, skillAcquisitionRevisions, 'skill_acquisition_heads'),
+);
+
 export const skillLoadoutRevisions = sqliteTable(
   'skill_loadout_revisions',
   {
@@ -96,13 +181,7 @@ export const skillLoadoutRevisions = sqliteTable(
     createdAt: text('created_at').notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.id, table.revision] }),
-    foreignKey({
-      columns: [table.catalogId, table.catalogRevision],
-      foreignColumns: [skillCatalogRevisions.id, skillCatalogRevisions.revision],
-    }),
-    check('skill_loadout_revisions_positive_revision', sql`${table.revision} > 0`),
-    check('skill_loadout_revisions_valid_character', sql`json_valid(${table.characterJson})`),
+    ...skillRevisionConstraints(table, skillCatalogRevisions, 'skill_loadout_revisions'),
     check(
       'skill_loadout_revisions_valid_configuration',
       sql`json_valid(${table.configurationJson})`,
@@ -111,26 +190,8 @@ export const skillLoadoutRevisions = sqliteTable(
   ],
 );
 
-export const skillLoadoutHeads = sqliteTable(
-  'skill_loadout_heads',
-  {
-    id: text('id').primaryKey().notNull(),
-    version: integer('version').notNull(),
-    latestRevision: integer('latest_revision').notNull(),
-    latestContentHash: text('latest_content_hash').notNull(),
-    createdAt: text('created_at').notNull(),
-    updatedAt: text('updated_at').notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.id, table.latestRevision],
-      foreignColumns: [skillLoadoutRevisions.id, skillLoadoutRevisions.revision],
-    }),
-    check(
-      'skill_loadout_heads_positive_version',
-      sql`${table.version} > 0 AND ${table.latestRevision} > 0`,
-    ),
-  ],
+export const skillLoadoutHeads = sqliteTable('skill_loadout_heads', skillHeadColumns(), (table) =>
+  skillHeadConstraints(table, skillLoadoutRevisions, 'skill_loadout_heads'),
 );
 
 export const battleSpecs = sqliteTable(

@@ -1,10 +1,22 @@
 import { z } from 'zod';
+import {
+  SkillAcquisitionRevisionSchema,
+  SkillAcquisitionSelectionSchema,
+} from './skill-acquisition.ts';
 import { SkillConfigurationSchema, SkillLoadoutRevisionSchema } from './skill-loadout.ts';
 import { SkillCatalogSchema } from './skill-system.ts';
 import { JobRequestSchema } from './spatial/api.ts';
 import { IdSchema, RefSchema } from './spatial/contracts.ts';
 
 const version = z.number().int().min(1).max(1_000_000);
+const revisionHeadFields = {
+  schemaVersion: z.literal(1),
+  id: IdSchema,
+  version,
+  latest: RefSchema,
+  createdAt: z.iso.datetime(),
+  updatedAt: z.iso.datetime(),
+};
 
 export const SkillCatalogRecordSchema = z
   .strictObject({
@@ -33,13 +45,8 @@ export type SkillLoadoutPatch = z.infer<typeof SkillLoadoutPatchSchema>;
 
 export const SkillLoadoutHeadSchema = z
   .strictObject({
-    schemaVersion: z.literal(1),
-    id: IdSchema,
-    version,
-    latest: RefSchema,
+    ...revisionHeadFields,
     snapshot: SkillLoadoutRevisionSchema,
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime(),
   })
   .superRefine((head, context) => {
     if (
@@ -57,6 +64,30 @@ export const SkillLoadoutPageSchema = z.strictObject({
   nextCursor: IdSchema.nullable(),
 });
 export type SkillLoadoutPage = z.infer<typeof SkillLoadoutPageSchema>;
+
+export const SkillAcquisitionCreateSchema = z.strictObject({
+  selection: SkillAcquisitionSelectionSchema,
+});
+export const SkillAcquisitionPatchSchema = SkillAcquisitionCreateSchema.extend({
+  expectedVersion: version,
+});
+export const SkillAcquisitionHeadSchema = z
+  .strictObject({
+    ...revisionHeadFields,
+    authoritativeBoundary: z.literal(false),
+    snapshot: SkillAcquisitionRevisionSchema,
+  })
+  .superRefine((head, context) => {
+    if (
+      head.latest.id !== head.id ||
+      head.latest.revision !== head.snapshot.revision ||
+      head.latest.contentHash !== head.snapshot.contentHash ||
+      head.snapshot.id !== head.id ||
+      head.version !== head.snapshot.revision
+    )
+      context.addIssue({ code: 'custom', message: 'Skill acquisition head mismatch' });
+  });
+export type SkillAcquisitionHead = z.infer<typeof SkillAcquisitionHeadSchema>;
 
 // JobRequestSchema carries the guard that rejects caller-supplied receipts. Keep
 // that refinement when adding the server-resolved loadout references.

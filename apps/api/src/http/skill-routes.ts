@@ -2,6 +2,8 @@ import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import {
   IdSchema,
+  SkillAcquisitionCreateSchema,
+  SkillAcquisitionPatchSchema,
   SkillBattleJobRequestSchema,
   SkillLoadoutCreateSchema,
   SkillLoadoutPatchSchema,
@@ -11,6 +13,7 @@ import {
 import type { Store } from '../db/store.ts';
 import { StoreError } from '../db/store-error.ts';
 import { SkillStore } from '../db/skill-store.ts';
+import { SkillAcquisitionStore } from '../db/skill-acquisition-store.ts';
 import type { BattleService } from '../jobs/battle-service.ts';
 import { body } from './request-body.ts';
 
@@ -26,7 +29,8 @@ const pageQuery = z.strictObject({
 });
 
 export function addSkillRoutes(app: FastifyInstance, store: Store, runtime?: BattleService) {
-  const skills = new SkillStore(store);
+  const skills = new SkillStore(store),
+    acquisitions = new SkillAcquisitionStore(store);
   app.get('/api/skill-catalogs/:id/:revision', async (request) => {
     const { id, revision } = catalogParams.parse(request.params);
     return skills.catalog(id, revision);
@@ -44,6 +48,18 @@ export function addSkillRoutes(app: FastifyInstance, store: Store, runtime?: Bat
   app.patch('/api/skill-loadouts/:id', async (request) => {
     const { id } = idParams.parse(request.params);
     return skills.patch(id, body(SkillLoadoutPatchSchema, request.body));
+  });
+  app.post('/api/skill-acquisitions', async (request, reply) =>
+    reply
+      .code(201)
+      .send(await acquisitions.create(body(SkillAcquisitionCreateSchema, request.body))),
+  );
+  app.get('/api/skill-acquisitions/:id', async (request) =>
+    acquisitions.head(idParams.parse(request.params).id),
+  );
+  app.patch('/api/skill-acquisitions/:id', async (request) => {
+    const { id } = idParams.parse(request.params);
+    return acquisitions.patch(id, body(SkillAcquisitionPatchSchema, request.body));
   });
   if (!runtime) return;
   app.post('/api/skill-battle-jobs', async (request, reply) => {
