@@ -184,13 +184,7 @@ async function runtimeIdentity(root: string, sourceSha: string) {
   };
 }
 
-/** Dependencies only: source comes from the exact checkout, never from a cached artifact. */
-export async function buildLeagueRuntime(checkout: string, destination: string, sourceSha: string) {
-  const root = resolve(checkout),
-    output = resolve(destination);
-  const identity = await runtimeIdentity(root, sourceSha);
-  if (execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim())
-    throw new Error('Runtime build requires a clean committed source');
+async function runtimeInventory(root: string) {
   const files = new Map<string, Entry>();
   const packages = new Set<string>();
   let bytes = 0;
@@ -279,6 +273,17 @@ export async function buildLeagueRuntime(checkout: string, destination: string, 
   }
   for (const name of rootDependencies) await dependency(root, name, false);
   const inventory = [...files.values()].sort((a, b) => a.path.localeCompare(b.path));
+  return { inventory, bytes };
+}
+
+/** Dependencies only: source comes from the exact checkout, never from a cached artifact. */
+export async function buildLeagueRuntime(checkout: string, destination: string, sourceSha: string) {
+  const root = resolve(checkout),
+    output = resolve(destination);
+  const identity = await runtimeIdentity(root, sourceSha);
+  if (execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim())
+    throw new Error('Runtime build requires a clean committed source');
+  const { inventory, bytes } = await runtimeInventory(root);
   await mkdir(output, { recursive: true });
   const archive = join(output, 'runtime.gz');
   async function* payload() {
@@ -312,6 +317,84 @@ export async function buildLeagueRuntime(checkout: string, destination: string, 
     archiveBytes: compressed.length,
     archiveHash: manifest.archiveHash,
   };
+}
+
+/** Local snapshot only: the caller must separately authenticate the enclosing ZIP
+ * against successful same-SHA main CI. Rediscovering the build-owned closure, rather
+ * than trusting manifest membership, rejects a re-encoded subset manifest. */
+export async function verifyLeagueRuntime(
+  checkout: string,
+  distribution: string,
+  sourceSha: string,
+) {
+  const root = resolve(checkout);
+  if (!(await lstat(root)).isDirectory())
+    throw new Error('Runtime checkout is not a real directory');
+  const cleanIdentity = async () => {
+    const identity = await runtimeIdentity(root, sourceSha);
+    if (execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim())
+      throw new Error('Runtime verification requires a clean committed source');
+    return identity;
+  };
+  const expected = await cleanIdentity();
+  const manifestBytes = await bounded(join(distribution, 'runtime.json'), 16000000);
+  const manifest = RuntimeManifest.parse(JSON.parse(manifestBytes.toString('utf8')));
+  if (
+    Object.entries(expected).some(
+      ([key, value]) => manifest[key as keyof typeof expected] !== value,
+    )
+  )
+    throw new Error('Runtime identity mismatch');
+  const { inventory, bytes } = await runtimeInventory(root);
+  if (JSON.stringify(manifest.files) !== JSON.stringify(inventory))
+    throw new Error('Runtime complete dependency closure mismatch');
+  const verifyPaths = async () => {
+    const parents = new Set<string>();
+    for (const entry of inventory) {
+      // Reject symlinked ancestors: matching bytes reached through another closure
+      // is not evidence for the named dependency installation.
+      for (let parent = dirname(entry.path); parent !== '.'; parent = dirname(parent))
+        parents.add(parent);
+      if (
+        entry.type === 'file' &&
+        ((await lstat(join(root, entry.path))).mode & 0o777) !== entry.mode
+      )
+        throw new Error('Runtime dependency mode mismatch');
+    }
+    for (const parent of parents)
+      if (!(await lstat(join(root, parent))).isDirectory())
+        throw new Error('Runtime dependency parent is not a real directory');
+  };
+  await verifyPaths();
+  const archive = await bounded(join(distribution, 'runtime.gz'), maxArchive);
+  if (archive.length !== manifest.archiveBytes || hash(archive) !== manifest.archiveHash)
+    throw new Error('Runtime archive hash mismatch');
+  const data = gunzipSync(archive, { maxOutputLength: maxBytes });
+  if (data.length !== bytes) throw new Error('Runtime extracted length mismatch');
+  let offset = 0;
+  for (const entry of inventory)
+    if (entry.type === 'file') {
+      if (hash(data.subarray(offset, offset + entry.bytes)) !== entry.hash)
+        throw new Error('Runtime native/file digest mismatch');
+      offset += entry.bytes;
+    }
+  if (
+    JSON.stringify(await cleanIdentity()) !== JSON.stringify(expected) ||
+    JSON.stringify((await runtimeInventory(root)).inventory) !== JSON.stringify(inventory) ||
+    !(await bounded(join(distribution, 'runtime.json'), 16000000)).equals(manifestBytes) ||
+    !(await bounded(join(distribution, 'runtime.gz'), maxArchive)).equals(archive)
+  )
+    throw new Error('Runtime verification snapshot changed');
+  await verifyPaths();
+  return Object.freeze({
+    sourceSha,
+    files: inventory.length,
+    bytes,
+    manifestHash: hash(manifestBytes),
+    archiveHash: manifest.archiveHash,
+    scope: 'local-dependency-snapshot' as const,
+    authenticatedMainCI: false as const,
+  });
 }
 
 /** Caller must authenticate the enclosing immutable ZIP against successful same-SHA main CI. */

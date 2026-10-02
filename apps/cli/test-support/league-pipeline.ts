@@ -9,9 +9,13 @@ import { sealLeagueProducer, authenticateLeagueProducer } from '../src/league/le
 import { PublicationEvidence } from '../src/publication/publication-evidence.ts';
 
 /** One prepared four-slot partition, before any runner has claimed it. */
-export async function preparedPipeline(root: string, characters = 2) {
+export async function preparedPipeline(
+  root: string,
+  characters = 2,
+  source = publicationLeagueSource,
+) {
   const identity = {
-    source: publicationLeagueSource,
+    source,
     runId: 123,
     runAttempt: 1,
     validatorDigest: 'sha256:' + 'b'.repeat(64),
@@ -78,8 +82,8 @@ export async function pipelineFixture(root: string) {
 }
 
 /** Real bounded 144-match/2-partition fixture, sealed before transport timers start. */
-export async function sealedTwoPartitionFixture(root: string) {
-  const fixture = await preparedPipeline(root, 9);
+export async function sealedTwoPartitionFixture(root: string, source = publicationLeagueSource) {
+  const fixture = await preparedPipeline(root, 9, source);
   const baseline = await PublicationEvidence.audit(fixture.baselineRoot);
   const sealed: { root: string; proof: Awaited<ReturnType<typeof sealLeagueProducer>> }[] = [];
   await runCloudLeagueRunner(
