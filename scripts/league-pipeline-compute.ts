@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { rm, lstat } from 'node:fs/promises';
 import { LeaguePipelineControlSchema, canonicalJson } from '@fantasy/domain/spatial';
+import { measureAsync } from '@fantasy/api/tooling';
 import {
   cloudJson,
   preparedLeague,
@@ -156,14 +157,16 @@ async function computePipelineMode(
         ...(deadlineMs === undefined ? {} : { deadlineMs }),
         completed: async (index, directory, pool, bundles) => {
           const producerRoot = join(root, 'spool', String(index));
-          const proof = await sealLeagueProducer(
-            await cloudInput(preparedRoot, prepared, index),
-            directory,
-            producerRoot,
-            identity,
-            runner,
-            pool,
-            bundles,
+          const proof = await measureAsync('producer.seal', () =>
+            sealLeagueProducer(
+              await cloudInput(preparedRoot, prepared, index),
+              directory,
+              producerRoot,
+              identity,
+              runner,
+              pool,
+              bundles,
+            ),
           );
           const sealedAt = performance.now();
           const controls = ['proof.json', 'result.json'].map((name) => join(producerRoot, name));
