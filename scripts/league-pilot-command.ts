@@ -10,7 +10,11 @@ import {
   calibrationRunners,
   validateCalibrationBudget,
 } from './league-runner-calibration-policy.ts';
-import { uploadCalibrationArtifact } from './league-calibration-upload.ts';
+import {
+  uploadCalibrationArtifact,
+  beginCalibrationTransportJob,
+  calibrationTransportSnapshot,
+} from './league-calibration-upload.ts';
 import {
   prepareRunnerCalibration,
   preparePartitionPilot,
@@ -81,6 +85,16 @@ export async function runPilotCommand(
       await pipelineCi(context.github, context.ciRun, 'start');
       await context.github.authenticateRun();
 
+      // Fixed shares precede preparation or the first simulation. No retry resets them.
+      if (calibration) {
+        // Includes artifacts from earlier failed attempts; reserve the whole wave again.
+        const artifacts = await context.github.request(
+          'GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts',
+          { run_id: context.identity.runId, per_page: 1 },
+        );
+        beginCalibrationTransportJob(command!, runners, context.prefix, artifacts.total_count);
+      }
+
       if (command === 'prepare') await prepare(context, runners);
       else if (command === 'compute')
         await compute(
@@ -125,6 +139,7 @@ export async function runPilotCommand(
       identity,
       source: executionSource(),
       formalAcceptance: false,
+      ...(calibration ? { transportReservation: calibrationTransportSnapshot() } : {}),
       metadataScope:
         'PipelineArtifacts REST calls; @actions/artifact upload service calls are a separate SDK scope.',
       processLifetimeMaxRssKiB: process.resourceUsage().maxRSS,

@@ -11,9 +11,44 @@ import {
   validateCalibrationBudget,
 } from './league-runner-calibration-policy.ts';
 import type { PipelineArtifact } from './league-pipeline-artifacts.ts';
+import {
+  calibrationTransportReservation,
+  type TransportReservation,
+} from './league-transport-reservation.ts';
 
 let partition: number | undefined;
 const reserved = new Map<string, number>();
+let transport: TransportReservation | undefined;
+let globalRefsUpper: number | undefined;
+let transportCommand: string | undefined;
+let transportPrefix: string | undefined;
+let transportSourceSha: string | undefined;
+export function beginCalibrationTransportJob(
+  command: string,
+  runners: number,
+  prefix: string,
+  existingArtifacts: number,
+) {
+  if (transport) throw new Error('Calibration transport job already reserved');
+  if (!/^league-[1-9][0-9]*-[1-9][0-9]*$/.test(prefix))
+    throw new Error('Invalid calibration transport identity');
+  const reservation = calibrationTransportReservation(command, runners, existingArtifacts);
+  transport = reservation.ledger;
+  globalRefsUpper = reservation.globalRefsUpper;
+  transportCommand = command;
+  transportPrefix = prefix;
+  transportSourceSha = executionSource().sha;
+}
+export function calibrationTransportSnapshot() {
+  return transport
+    ? {
+        ...transport.snapshot(),
+        globalRefsUpper,
+        sourceSha: transportSourceSha,
+        scope: 'before final metrics allocation',
+      }
+    : null;
+}
 export function setCalibrationPartition(index: number) {
   if (!Number.isInteger(index) || index < 0 || index >= 4)
     throw new Error('Foreign calibration partition');
@@ -59,6 +94,11 @@ export async function uploadCalibrationArtifact(
   files: string[],
   root: string,
 ): Promise<PipelineArtifact> {
+  if (!transport) throw new Error('Calibration transport requires a pre-reserved job');
+  if (executionSource().sha !== transportSourceSha)
+    throw new Error('Calibration transport source changed');
+  if (!name.startsWith(transportPrefix + '-'))
+    throw new Error('Foreign calibration transport identity');
   validateCalibrationBudget(
     JSON.parse(requiredPipeline('LEAGUE_CALIBRATION_BUDGET')),
     executionSource().sha,
@@ -89,6 +129,12 @@ export async function uploadCalibrationArtifact(
     rawLimit = CALIBRATION_LIMITS.rawPartitionBytes;
     encodedLimit = CALIBRATION_LIMITS.encodedPartitionBytes;
   }
+  if (
+    (transportCommand === 'prepare' && !['inputs', 'baseline', 'metrics'].includes(category)) ||
+    (transportCommand === 'consume' && category !== 'metrics') ||
+    (transportCommand === 'compute' && ['inputs', 'baseline'].includes(category))
+  )
+    throw new Error('Foreign calibration transport job category');
   const used = reserved.get(category) ?? 0;
   // SDK creates one ZIP/body only after Create succeeds. HTTP retries do not multiply stored payload bytes.
   const serviceAttempts = 1;
@@ -131,6 +177,7 @@ export async function uploadCalibrationArtifact(
   const latestUsed = reserved.get(category) ?? 0;
   if (latestUsed + encodedBytes * serviceAttempts > encodedLimit)
     throw new Error('Calibration concurrent archive reservation exceeds aggregate bound');
+  transport.reserve(name, encodedBytes * serviceAttempts);
   reserved.set(category, latestUsed + encodedBytes * serviceAttempts);
   const uploaded = await measureAsync('artifact.upload', () =>
     artifact.uploadArtifact(name, files, directory, { retentionDays: 1, compressionLevel: 0 }),
