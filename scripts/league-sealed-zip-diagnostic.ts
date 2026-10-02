@@ -19,7 +19,7 @@ import {
 } from './league-segment-v3.ts';
 import type { TransportReservation } from './league-transport-reservation.ts';
 
-type Receipt = {
+export type SealedSegmentReceipt = {
   name: string;
   bytes: number;
   digest: string;
@@ -27,6 +27,7 @@ type Receipt = {
   runtimeHash: string;
   allocationAttempt: 0 | 1;
 };
+type Receipt = SealedSegmentReceipt;
 type Reply = Receipt & { zip: Buffer };
 export type LocalSegmentSink = (stream: Readable, expected: Readonly<Receipt>) => Promise<Reply>;
 /** Only the integration-owned fixed child executor may implement this boundary.
@@ -59,6 +60,7 @@ type LocalOptions = SegmentOptions & {
 type ServiceOptions = SegmentOptions & {
   mode: 'service';
   serviceExecutor: SealedSegmentServiceExecutor;
+  signal?: AbortSignal;
 };
 const overhead = 92 + 2 * Buffer.byteLength('segment.bin') + 22;
 const zipLimit = SEGMENT_V3_HEADER_BYTES + SEGMENT_V3_PAYLOAD_BYTES + overhead;
@@ -144,7 +146,7 @@ export async function sealedZipSegmentServiceDiagnostic(options: ServiceOptions)
 async function sealedSegment(options: LocalOptions | ServiceOptions) {
   const { binding, expected } = options;
   const local = 'localOnly' in options;
-  const signal = local ? options.signal : undefined;
+  const signal = options.signal;
   const allocationAttempt = options.allocationAttempt ?? 0;
   if (
     (local
@@ -196,6 +198,7 @@ async function sealedSegment(options: LocalOptions | ServiceOptions) {
       // The executor owns the whole-child watchdog; never race it and delete a still-used staging file.
       options.reservation.reserve(name, zip.length);
       const result = await options.serviceExecutor(path, receipt);
+      signal?.throwIfAborted();
       const after = await witness(path, zip);
       if (
         result.terminated !== true ||

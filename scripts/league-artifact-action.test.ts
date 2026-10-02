@@ -38,6 +38,10 @@ it('passes credentials only to the fixed child and preserves its exit status', a
       join(root, 'scripts/league-runner-calibration.ts'),
       await readFile(join(root, 'scripts/league-artifact-pilot.ts'), 'utf8'),
     );
+    await writeFile(
+      join(root, 'scripts/league-segment-service.ts'),
+      await readFile(join(root, 'scripts/league-artifact-pilot.ts'), 'utf8'),
+    );
     const env = {
       ...process.env,
       GITHUB_WORKSPACE: root,
@@ -57,6 +61,7 @@ it('passes credentials only to the fixed child and preserves its exit status', a
       ['calibration-prepare', 'prepare', 0],
       ['calibration-compute', 'compute', 7],
       ['calibration-consume', 'consume', 0],
+      ['segment-service', undefined, 0],
     ] as const) {
       const result = spawnSync(process.execPath, [action], {
         env: { ...env, INPUT_COMMAND: command, FIXTURE_EXIT: String(exit) },
@@ -66,7 +71,7 @@ it('passes credentials only to the fixed child and preserves its exit status', a
       expect(JSON.parse(await readFile(join(root, 'observed.json'), 'utf8'))).toEqual({
         token: 'surrogate',
         results: 'https://results.invalid/',
-        args: [argument],
+        args: argument === undefined ? [] : [argument],
       });
       expect(await readFile(environmentFile, 'utf8')).toBe('original\n');
     }
@@ -106,6 +111,62 @@ it('passes credentials only to the fixed child and preserves its exit status', a
             { code: 130, signal: 'SIGINT' },
           ],
     );
+    if (process.platform !== 'win32') {
+      await writeFile(
+        join(root, 'scripts/grandchild.mjs'),
+        `
+        process.on('SIGTERM', () => {});
+        setInterval(() => {}, 1000);
+        console.log('grandchild-ready');
+      `,
+      );
+      await writeFile(
+        join(root, 'scripts/league-segment-service.ts'),
+        `
+        import { spawn } from 'node:child_process';
+        import { writeFileSync } from 'node:fs';
+        const child = spawn(process.execPath, ['scripts/grandchild.mjs'], { stdio: 'inherit' });
+        writeFileSync('grandchild-pid.json', JSON.stringify(child.pid));
+        let timer;
+        process.on('SIGTERM', () => {
+          child.kill('SIGTERM');
+          timer ??= setTimeout(() => child.kill('SIGKILL'), 5000);
+        });
+        child.on('close', (code, signal) => {
+          clearTimeout(timer);
+          writeFileSync('grandchild-drained.json', JSON.stringify({ code, signal }));
+          setTimeout(() => process.exit(0), 500);
+        });
+      `,
+      );
+      const service = spawn(process.execPath, [action], {
+        env: { ...env, INPUT_COMMAND: 'segment-service' },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const closed = once(service, 'close');
+      let grandchildPid: number | undefined;
+      try {
+        await once(service.stdout!, 'data');
+        grandchildPid = JSON.parse(await readFile(join(root, 'grandchild-pid.json'), 'utf8'));
+        service.kill('SIGTERM');
+        expect((await closed)[0]).toBe(143);
+        expect(JSON.parse(await readFile(join(root, 'grandchild-drained.json'), 'utf8'))).toEqual({
+          code: null,
+          signal: 'SIGKILL',
+        });
+        expect(() => process.kill(grandchildPid!, 0)).toThrow();
+      } finally {
+        if (grandchildPid !== undefined) {
+          try {
+            process.kill(grandchildPid, 'SIGKILL');
+          } catch {
+            /* Already drained. */
+          }
+        }
+        service.kill('SIGKILL');
+        await closed;
+      }
+    }
     for (const command of ['constructor', 'prepare; echo injection', '../scripts/evil.ts']) {
       const result = spawnSync(process.execPath, [action], {
         env: { ...env, INPUT_COMMAND: command },
@@ -123,4 +184,4 @@ it('passes credentials only to the fixed child and preserves its exit status', a
       expect(result.stderr).toContain('Missing action credential: ' + credential);
     }
   });
-});
+}, 20000);

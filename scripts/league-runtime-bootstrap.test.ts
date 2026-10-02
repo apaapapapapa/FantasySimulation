@@ -64,43 +64,46 @@ async function serveDistribution(
     ),
   );
   // The bootstrap only requests string URLs.
-  const fetch = vi.fn<(path: string) => Promise<Response>>(async (path) => {
-    if (path.startsWith('https://signed.example.invalid/'))
-      return new Response(new Uint8Array(zip));
-    if (path.endsWith(`/actions/artifacts/${artifactId}/zip`))
-      return new Response(null, {
-        status: 302,
-        headers: { location: 'https://signed.example.invalid/runtime' },
-      });
-    if (path.includes(`/actions/runs/${runId}/artifacts?`))
-      return Response.json({
-        total_count: state === 'missing' ? 0 : 1,
-        artifacts:
-          state === 'missing'
-            ? []
-            : [
-                {
-                  id: artifactId,
-                  name: `league-runtime-${fixture.sha}`,
-                  digest: state === 'bad-digest' ? 'sha256:' + '0'.repeat(64) : archiveHash(zip),
-                  size_in_bytes: zip.length,
-                  expired: state === 'expired',
-                  workflow_run: { id: runId, head_sha: fixture.sha },
-                },
-              ],
-      });
-    if (path.endsWith(`/actions/runs/${runId}`))
-      return Response.json({
-        head_sha: state === 'foreign-source' ? '0'.repeat(40) : fixture.sha,
-        path: '.github/workflows/ci.yml',
-        head_branch: 'main',
-        event: 'push',
-        status: 'completed',
-        conclusion: 'success',
-        head_repository: { full_name: 'apaapapapapa/FantasySimulation' },
-      });
-    return new Response(null, { status: 404 });
-  });
+  const fetch = vi.fn<(path: string, options?: RequestInit) => Promise<Response>>(
+    async (path, options) => {
+      expect(options?.redirect).toBe(path.endsWith('/zip') ? 'manual' : 'error');
+      if (path.startsWith('https://signed.example.invalid/'))
+        return new Response(new Uint8Array(zip));
+      if (path.endsWith(`/actions/artifacts/${artifactId}/zip`))
+        return new Response(null, {
+          status: 302,
+          headers: { location: 'https://signed.example.invalid/runtime' },
+        });
+      if (path.includes(`/actions/runs/${runId}/artifacts?`))
+        return Response.json({
+          total_count: state === 'missing' ? 0 : 1,
+          artifacts:
+            state === 'missing'
+              ? []
+              : [
+                  {
+                    id: artifactId,
+                    name: `league-runtime-${fixture.sha}`,
+                    digest: state === 'bad-digest' ? 'sha256:' + '0'.repeat(64) : archiveHash(zip),
+                    size_in_bytes: zip.length,
+                    expired: state === 'expired',
+                    workflow_run: { id: runId, head_sha: fixture.sha },
+                  },
+                ],
+        });
+      if (path.endsWith(`/actions/runs/${runId}`))
+        return Response.json({
+          head_sha: state === 'foreign-source' ? '0'.repeat(40) : fixture.sha,
+          path: '.github/workflows/ci.yml',
+          head_branch: 'main',
+          event: 'push',
+          status: 'completed',
+          conclusion: 'success',
+          head_repository: { full_name: 'apaapapapapa/FantasySimulation' },
+        });
+      return new Response(null, { status: 404 });
+    },
+  );
   vi.stubGlobal('fetch', fetch);
   return zip;
 }

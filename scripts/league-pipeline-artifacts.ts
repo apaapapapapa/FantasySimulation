@@ -20,10 +20,19 @@ export class PipelineArtifacts {
     readonly identity: PipelineIdentity,
     private readonly maxCalls = 200,
     private readonly workflow = 'league-pipeline.yml',
+    private readonly signal?: AbortSignal,
   ) {
-    this.github = new Octokit({ auth: token, request: { timeout: 30000 } });
+    this.github = new Octokit({
+      auth: token,
+      request: {
+        timeout: 30000,
+        fetch: (input: Parameters<typeof fetch>[0], init?: RequestInit) =>
+          fetch(input, { ...init, redirect: 'error' }),
+      },
+    });
   }
   async request(route: string, parameters: Record<string, string | number> = {}) {
+    this.signal?.throwIfAborted();
     if (++this.calls + this.reservedOtherCalls > this.maxCalls)
       throw new Error('League metadata API budget exhausted');
     return (
@@ -31,6 +40,12 @@ export class PipelineArtifacts {
         owner: 'apaapapapapa',
         repo: 'FantasySimulation',
         ...parameters,
+        request: {
+          signal: AbortSignal.any([
+            AbortSignal.timeout(30000),
+            ...(this.signal ? [this.signal] : []),
+          ]),
+        },
       })
     ).data;
   }
@@ -100,7 +115,15 @@ export class PipelineArtifacts {
       throw new Error('Duplicate league artifact name');
     return artifacts;
   }
-  async archive(ref: PipelineArtifact) {
+  async archive(ref: PipelineArtifact, maxBytes = LEAGUE_ARCHIVE_BYTES) {
+    this.signal?.throwIfAborted();
+    if (
+      !Number.isSafeInteger(maxBytes) ||
+      maxBytes < 1 ||
+      maxBytes > LEAGUE_ARCHIVE_BYTES ||
+      ref.bytes > maxBytes
+    )
+      throw new Error('Artifact download byte budget exhausted');
     if (!this.authenticated || JSON.stringify(this.known.get(ref.id)) !== JSON.stringify(ref))
       throw new Error('Artifact is not authenticated by the current run');
     const response = await fetch(
@@ -108,7 +131,10 @@ export class PipelineArtifacts {
       {
         headers: { Authorization: `Bearer ${this.token}`, Accept: 'application/vnd.github+json' },
         redirect: 'manual',
-        signal: AbortSignal.timeout(30000),
+        signal: AbortSignal.any([
+          AbortSignal.timeout(30000),
+          ...(this.signal ? [this.signal] : []),
+        ]),
       },
     );
     if (response.status !== 302)
@@ -118,7 +144,14 @@ export class PipelineArtifacts {
       throw new Error('Invalid artifact download URL');
     // GitHub credentials never follow the signed storage redirect.
     const bytes = await boundedArtifactResponse(
-      await fetch(location, { signal: AbortSignal.timeout(120000), redirect: 'error' }),
+      await fetch(location, {
+        signal: AbortSignal.any([
+          AbortSignal.timeout(120000),
+          ...(this.signal ? [this.signal] : []),
+        ]),
+        redirect: 'error',
+      }),
+      maxBytes,
     );
     if (bytes.length !== ref.bytes || archiveHash(bytes) !== ref.digest)
       throw new Error('Actual artifact ZIP digest mismatch');
