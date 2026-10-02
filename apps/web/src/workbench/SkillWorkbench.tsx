@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   SKILL_DANS,
   SKILL_PATHS,
   SKILL_ZODIACS,
   skillCatalogDigest,
+  type SkillAcquisitionHead,
   type SkillCatalog,
   type SkillConfiguration,
   type SkillNode,
@@ -11,6 +12,7 @@ import {
 import { errorText, reference } from '../api-client.ts';
 import {
   DEFAULT_SKILL_CATALOG,
+  createOrRecoverSkillAcquisition,
   sameSkillRevisionRef,
   skillLoadoutsForCatalog,
 } from './skill-api.ts';
@@ -31,6 +33,7 @@ import {
 } from './skill-workbench-view.ts';
 import {
   learnNode,
+  latestSelectionGuard,
   loadoutCounts,
   toggleEnabledNode,
   workbenchNodeState,
@@ -55,6 +58,26 @@ const ZODIAC_OPTIONS = SKILL_ZODIACS.map(({ id, name }) => ({ value: id, label: 
 const DAN_OPTIONS = SKILL_DANS.map(({ dan, name }) => ({ value: String(dan), label: name }));
 const refKey = (value: SkillRevisionRef) => `${value.id}@${value.revision}:${value.contentHash}`;
 const coordinateKey = (node: SkillNode) => `${node.coordinate.dan}:${node.coordinate.zodiac}`;
+
+function configurationView(
+  loadout: SkillLoadoutHead,
+  acquisition: SkillAcquisitionHead | null,
+): SkillConfiguration {
+  if (loadout.snapshot.configuration.schemaVersion === 1) return loadout.snapshot.configuration;
+  return {
+    schemaVersion: 1,
+    id: loadout.id,
+    version: loadout.version,
+    catalog: loadout.snapshot.configuration.catalog,
+    eligibilityNodeIds:
+      acquisition?.snapshot.eligibilityNodeIds ?? loadout.snapshot.resolved.learnedNodeIds,
+    learnedNodeIds: loadout.snapshot.resolved.learnedNodeIds,
+    enabledNodeIds: loadout.snapshot.configuration.enabledNodeIds,
+  };
+}
+
+const sameNodeIds = (left: string[], right: string[]) =>
+  [...left].sort().join('\n') === [...right].sort().join('\n');
 
 function FilterOptions({ items }: { items: readonly { value: string; label: string }[] }) {
   return items.map((item) => (
@@ -97,28 +120,34 @@ export function SkillWorkbench({
   const [saved, setSaved] = useState<SkillLoadoutHead[]>([]);
   const [configuration, setConfiguration] = useState<SkillConfiguration | null>(null);
   const [selectedRevision, setSelectedRevision] = useState<SkillLoadoutHead | null>(null);
+  const [acquisition, setAcquisition] = useState<SkillAcquisitionHead | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [path, setPath] = useState(SKILL_PATHS[0].id as string);
   const [query, setQuery] = useState('');
   const [zodiac, setZodiac] = useState('all');
   const [dan, setDan] = useState('all');
   const [busy, setBusy] = useState(false);
+  const [selecting, setSelecting] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const selectionGuard = useRef(latestSelectionGuard()).current;
 
   async function hydrate(signal?: AbortSignal, replace = false) {
-    const [nextCatalog, nextAbilities, nextCharacters, loadouts] = await Promise.all([
-      client.getCatalog(catalogId, catalogVersion, signal),
-      client.listAbilities(signal),
-      client.listCharacters(signal),
-      client.listLoadouts(signal),
-    ]);
+    setSelecting(true);
+    const attempt = selectionGuard.begin(),
+      [nextCatalog, nextAbilities, nextCharacters, loadouts] = await Promise.all([
+        client.getCatalog(catalogId, catalogVersion, signal),
+        client.listAbilities(signal),
+        client.listCharacters(signal),
+        client.listLoadouts(signal),
+      ]);
     const catalogRef = {
       id: nextCatalog.id,
       revision: nextCatalog.revision,
       contentHash: await skillCatalogDigest(nextCatalog),
     };
     const matchingLoadouts = skillLoadoutsForCatalog(loadouts, catalogRef);
+    if (signal?.aborted || !attempt.isCurrent()) return;
     setCatalog(nextCatalog);
     setAbilities(nextAbilities);
     setCharacters(nextCharacters);
@@ -134,7 +163,29 @@ export function SkillWorkbench({
       const current = replace
         ? (matchingLoadouts.find((item) => item.id === selectedRevision?.id) ?? null)
         : null;
+      const currentAcquisition =
+        current?.snapshot.configuration.schemaVersion === 2
+          ? await client.getAcquisition(current.snapshot.configuration.acquisition.id, signal)
+          : null;
+      if (signal?.aborted || !attempt.isCurrent()) return;
+      if (
+        current?.snapshot.configuration.schemaVersion === 2 &&
+        currentAcquisition &&
+        !sameSkillRevisionRef(current.snapshot.configuration.acquisition, currentAcquisition.latest)
+      ) {
+        setSelectedRevision(current);
+        setAcquisition(null);
+        setCharacter(current.snapshot.character);
+        setConfiguration(configurationView(current, null));
+        onSaved({ loadout: current.latest, character: current.snapshot.character });
+        setError(
+          'The acquisition head advanced after this loadout was saved. Its exact battle revision is still selected, but it cannot be edited as the latest acquisition.',
+        );
+        setSelecting(false);
+        return;
+      }
       setSelectedRevision(current);
+      setAcquisition(currentAcquisition);
       setCharacter(
         current?.snapshot.character ??
           (character &&
@@ -145,26 +196,32 @@ export function SkillWorkbench({
               : null),
       );
       setConfiguration(
-        current?.snapshot.configuration ?? {
-          schemaVersion: 1,
-          id: `loadout-${crypto.randomUUID()}`,
-          version: 1,
-          catalog: catalogRef,
-          eligibilityNodeIds: nextCatalog.nodes
-            .filter((node) => node.lifecycle === 'available')
-            .map((node) => node.id),
-          learnedNodeIds: [],
-          enabledNodeIds: [],
-        },
+        current
+          ? configurationView(current, currentAcquisition)
+          : {
+              schemaVersion: 1,
+              id: `loadout-${crypto.randomUUID()}`,
+              version: 1,
+              catalog: catalogRef,
+              eligibilityNodeIds: nextCatalog.nodes
+                .filter((node) => node.lifecycle === 'available')
+                .map((node) => node.id),
+              learnedNodeIds: [],
+              enabledNodeIds: [],
+            },
       );
       onSaved(current ? { loadout: current.latest, character: current.snapshot.character } : null);
     }
+    if (attempt.isCurrent()) setSelecting(false);
   }
 
   useEffect(() => {
     const controller = new AbortController();
     void hydrate(controller.signal, true).catch((cause: unknown) => {
-      if (!controller.signal.aborted) setError(errorText(cause));
+      if (!controller.signal.aborted) {
+        setSelecting(false);
+        setError(errorText(cause));
+      }
     });
     return () => controller.abort();
   }, [catalogId, catalogVersion]);
@@ -187,6 +244,7 @@ export function SkillWorkbench({
     selectedCandidate && visibleIds.has(selectedCandidate.id) ? selectedCandidate : null;
   const selectedPath = SKILL_PATHS.find((item) => item.id === path)!;
   const counts = catalog && configuration ? loadoutCounts(catalog.nodes, configuration) : null;
+  const editingBlocked = selectedRevision?.schemaVersion === 2 && !acquisition;
 
   function selectPath(nextPath: string) {
     setPath(nextPath);
@@ -196,11 +254,14 @@ export function SkillWorkbench({
     setSelectedNodeId(nextNode?.id ?? null);
   }
 
-  function choose(savedId: string) {
-    const revision = saved.find((item) => `${item.id}:${item.latest.revision}` === savedId) ?? null;
+  async function choose(savedId: string) {
+    const attempt = selectionGuard.begin(),
+      revision = saved.find((item) => `${item.id}:${item.latest.revision}` === savedId) ?? null;
     if (!revision) {
       if (!catalog || !configuration) return;
+      if (attempt.isCurrent()) setSelecting(false);
       setSelectedRevision(null);
+      setAcquisition(null);
       onSaved(null);
       setConfiguration({
         ...configuration,
@@ -215,15 +276,49 @@ export function SkillWorkbench({
       setMessage('新規構成に切り替えました。');
       return;
     }
+    setError('');
+    setSelecting(true);
+    let nextAcquisition: SkillAcquisitionHead | null = null;
+    try {
+      if (revision.snapshot.configuration.schemaVersion === 2) {
+        nextAcquisition = await client.getAcquisition(
+          revision.snapshot.configuration.acquisition.id,
+        );
+        if (!attempt.isCurrent()) return;
+        if (
+          !sameSkillRevisionRef(revision.snapshot.configuration.acquisition, nextAcquisition.latest)
+        ) {
+          setSelectedRevision(revision);
+          setAcquisition(null);
+          setConfiguration(configurationView(revision, null));
+          setCharacter(revision.snapshot.character);
+          onSaved({ loadout: revision.latest, character: revision.snapshot.character });
+          setError(
+            'The acquisition head advanced after this loadout was saved. Its exact battle revision is still selected, but it cannot be edited as the latest acquisition.',
+          );
+          setSelecting(false);
+          return;
+        }
+      }
+    } catch (cause) {
+      if (attempt.isCurrent()) setSelecting(false);
+      throw cause;
+    }
     setSelectedRevision(revision);
-    setConfiguration(revision.snapshot.configuration);
+    setAcquisition(nextAcquisition);
+    setConfiguration(configurationView(revision, nextAcquisition));
     setCharacter(revision.snapshot.character);
     onSaved({ loadout: revision.latest, character: revision.snapshot.character });
+    if (attempt.isCurrent()) setSelecting(false);
     setMessage(`revision ${revision.latest.revision} を再読込しました。`);
   }
 
   function operate(node: SkillNode) {
     if (!configuration || !catalog) return;
+    if (editingBlocked) {
+      setError('Reload the latest acquisition before editing this saved loadout.');
+      return;
+    }
     const state = workbenchNodeState(node, configuration);
     setError('');
     if (state.status === 'eligible')
@@ -244,9 +339,41 @@ export function SkillWorkbench({
     setBusy(true);
     setError('');
     try {
-      const nextConfiguration = selectedRevision
-        ? { ...configuration, version: selectedRevision.version + 1 }
-        : configuration;
+      if (selectedRevision?.schemaVersion === 2 && !acquisition)
+        throw new Error('Reload the latest acquisition before editing this saved loadout.');
+      const acquisitionMatches =
+        acquisition &&
+        sameSkillRevisionRef(acquisition.snapshot.character, character) &&
+        sameSkillRevisionRef(acquisition.snapshot.catalog, configuration.catalog) &&
+        sameNodeIds(acquisition.snapshot.learnedNodeIds, configuration.learnedNodeIds);
+      const nextAcquisition = acquisitionMatches
+        ? acquisition
+        : acquisition
+          ? await client.updateAcquisition(acquisition.id, acquisition.version, {
+              schemaVersion: 1,
+              id: acquisition.id,
+              version: acquisition.version + 1,
+              character,
+              catalog: configuration.catalog,
+              learnedNodeIds: configuration.learnedNodeIds,
+            })
+          : await createOrRecoverSkillAcquisition(client, {
+              schemaVersion: 1,
+              id: `${configuration.id}.acquisition`,
+              version: 1,
+              character,
+              catalog: configuration.catalog,
+              learnedNodeIds: configuration.learnedNodeIds,
+            });
+      setAcquisition(nextAcquisition);
+      const nextConfiguration = {
+        schemaVersion: 2 as const,
+        id: configuration.id,
+        version: selectedRevision ? selectedRevision.version + 1 : 1,
+        catalog: configuration.catalog,
+        acquisition: nextAcquisition.latest,
+        enabledNodeIds: configuration.enabledNodeIds,
+      };
       const result = selectedRevision
         ? await client.updateLoadout(
             selectedRevision.id,
@@ -256,7 +383,7 @@ export function SkillWorkbench({
           )
         : await client.createLoadout(character, nextConfiguration);
       setSelectedRevision(result);
-      setConfiguration(result.snapshot.configuration);
+      setConfiguration(configurationView(result, nextAcquisition));
       setSaved((items) => [result, ...items.filter((item) => item.id !== result.id)]);
       onSaved({ loadout: result.latest, character: result.snapshot.character });
       setMessage(`revision ${result.latest.revision} を保存しました。下の対戦画面で使用できます。`);
@@ -283,7 +410,7 @@ export function SkillWorkbench({
       <p>
         道を選び、六段から初段・子から亥の72枠を確認します。保存した構成は下の対戦へ渡り、完了後に保存リプレイを開けます。
       </p>
-      <fieldset disabled={busy || !catalog || !configuration}>
+      <fieldset disabled={busy || selecting || !catalog || !configuration}>
         <nav className="skill-paths" aria-label="道一覧">
           {SKILL_PATHS.map((item) => {
             const nodes = catalog?.nodes.filter((node) => node.coordinate.path === item.id) ?? [];
@@ -488,7 +615,11 @@ export function SkillWorkbench({
             <button
               type="button"
               className="skill-node-action"
-              disabled={detailState.status === 'locked' || detailState.status === 'disabled'}
+              disabled={
+                editingBlocked ||
+                detailState.status === 'locked' ||
+                detailState.status === 'disabled'
+              }
               onClick={() => operate(selectedNode)}
             >
               {ACTIONS[detailState.status]}
@@ -531,10 +662,14 @@ export function SkillWorkbench({
           <label>
             保存済み構成
             <select
+              disabled={selecting}
+              aria-busy={selecting}
               value={
                 selectedRevision ? `${selectedRevision.id}:${selectedRevision.latest.revision}` : ''
               }
-              onChange={(event) => choose(event.target.value)}
+              onChange={(event) =>
+                void choose(event.target.value).catch((cause) => setError(errorText(cause)))
+              }
             >
               <option value="">新規構成</option>
               {saved.map((item) => (
@@ -559,7 +694,10 @@ export function SkillWorkbench({
           <button
             type="button"
             onClick={() =>
-              void hydrate(undefined, true).catch((cause) => setError(errorText(cause)))
+              void hydrate(undefined, true).catch((cause) => {
+                setSelecting(false);
+                setError(errorText(cause));
+              })
             }
           >
             サーバーから再読込

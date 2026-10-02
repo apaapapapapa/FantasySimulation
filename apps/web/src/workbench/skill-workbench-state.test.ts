@@ -2,10 +2,16 @@ import { expect, it } from 'vite-plus/test';
 import { SkillNodeSchema, type SkillConfiguration, type SkillNode } from '@fantasy/domain';
 import {
   learnNode,
+  latestSelectionGuard,
   loadoutCounts,
   toggleEnabledNode,
   workbenchNodeState,
 } from './skill-workbench-state.ts';
+
+function deferred() {
+  let resolve!: () => void;
+  return { promise: new Promise<void>((done) => (resolve = done)), resolve };
+}
 
 const hash = `sha256:${'a'.repeat(64)}`;
 function node(
@@ -69,4 +75,23 @@ it('keeps prerequisite locks and rejects a third path after resolving the closur
   const rejected = toggleEnabledNode(nodes, learned, 'magic-rat-1');
   expect(rejected.error).toMatch(/最大2つ/);
   expect(rejected.configuration).toBe(learned);
+});
+
+it('applies only the latest selection when acquisition responses resolve out of order', async () => {
+  const guard = latestSelectionGuard(),
+    first = deferred(),
+    second = deferred(),
+    applied: string[] = [],
+    select = async (value: string, response: Promise<void>) => {
+      const attempt = guard.begin();
+      await response;
+      if (attempt.isCurrent()) applied.push(value);
+    },
+    firstSelection = select('first', first.promise),
+    secondSelection = select('second', second.promise);
+  second.resolve();
+  await secondSelection;
+  first.resolve();
+  await firstSelection;
+  expect(applied).toEqual(['second']);
 });
