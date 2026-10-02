@@ -18,6 +18,9 @@ import {
   requireLeagueAssignment,
 } from '../apps/cli/src/league/league-assignment.ts';
 import { preparedLeagueCosts } from '../apps/cli/src/league/league-cost-profile.ts';
+import { requireCalibrationScope } from './league-runner-calibration-policy.ts';
+import { validateCalibrationPrepared } from './league-partition-pilot-inputs.ts';
+import { validateCalibrationBudgetRecord } from './league-calibration-history.ts';
 import {
   authenticateLeagueProducer,
   authenticatePackedLeagueProducer,
@@ -36,6 +39,26 @@ import { pipelineInputKey } from './league-pipeline-compute.ts';
 import { pipelineCapacity, pipelinePollMs } from './league-pipeline-policy.ts';
 
 export async function receiveBaseline(root: string, github: PipelineArtifacts, maxAgeMs: number) {
+  return receiveBaselineMode(root, github, maxAgeMs, false);
+}
+
+export async function receiveCalibrationBaseline(
+  root: string,
+  github: PipelineArtifacts,
+  maxAgeMs: number,
+) {
+  const run = await github.authenticateRun();
+  if (run.path !== '.github/workflows/league-runner-calibration.yml')
+    throw new Error('Calibration workflow authentication required');
+  return receiveBaselineMode(root, github, maxAgeMs, true);
+}
+
+async function receiveBaselineMode(
+  root: string,
+  github: PipelineArtifacts,
+  maxAgeMs: number,
+  calibration: boolean,
+) {
   const prefix = `league-${github.identity.runId}-${github.identity.runAttempt}`;
   const all = await github.list(),
     ref = all.find((a) => a.name === prefix + '-baseline');
@@ -44,13 +67,17 @@ export async function receiveBaseline(root: string, github: PipelineArtifacts, m
   await github.download(
     ref,
     preparedRoot,
-    (key) => key === 'checkpoint.gz' || (pipelineInputKey(key) && !key.includes('/retained/')),
+    (key) =>
+      key === 'checkpoint.gz' ||
+      (pipelineInputKey(key) && !key.includes('/retained/')) ||
+      (calibration && key === 'calibration-budget.json'),
   );
   const control = LeaguePipelineControlSchema.parse(
     await cloudJson(join(preparedRoot, 'control.json')),
   );
   if (canonicalJson(control.identity) !== canonicalJson(github.identity))
     throw new Error('Baseline execution mismatch');
+  if (calibration) await validateCalibrationBudgetRecord(preparedRoot, github.identity);
   const baseline = await PublicationEvidence.restore(
     decodeLeagueCheckpoint(await readFile(join(preparedRoot, 'checkpoint.gz'))),
     {
@@ -145,6 +172,40 @@ export async function receivePartitionPilot(
     prepared.plan.partitions.reduce((n, p) => n + p.slots, 0) !== 380
   )
     throw new Error('Partition pilot scope mismatch');
+  const assignments = requireLeagueAssignment(
+    prepared.plan,
+    assignLeagueRunners(prepared.plan, runners),
+    runners,
+  );
+  return receiveAssignedPipeline(
+    root,
+    preparedRoot,
+    github,
+    runners,
+    staging,
+    signal,
+    assignments,
+    true,
+  );
+}
+
+export async function receiveRunnerCalibration(
+  root: string,
+  preparedRoot: string,
+  github: PipelineArtifacts,
+  runners: number,
+  staging: LeagueStaging,
+  signal: AbortSignal,
+  originalInputs: (preparedRoot: string) => Promise<void>,
+) {
+  const run = await github.authenticateRun();
+  if (run.path !== '.github/workflows/league-runner-calibration.yml')
+    throw new Error('Calibration workflow authentication required');
+  await originalInputs(preparedRoot);
+  await validateCalibrationPrepared(preparedRoot, github.identity, runners);
+  const prepared = await preparedLeague(preparedRoot);
+  requireCalibrationScope(prepared, runners, github.identity);
+  await validateCalibrationBudgetRecord(preparedRoot, github.identity);
   const assignments = requireLeagueAssignment(
     prepared.plan,
     assignLeagueRunners(prepared.plan, runners),

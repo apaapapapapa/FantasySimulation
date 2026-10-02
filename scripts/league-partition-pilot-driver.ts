@@ -1,3 +1,5 @@
+import { requiredPipeline } from './league-pipeline-context.ts';
+import { reserveCalibrationTrial } from './league-calibration-history.ts';
 import { join } from 'node:path';
 import { appendFile, writeFile, mkdir } from 'node:fs/promises';
 import { Measurements, measureAsync } from '@fantasy/api/tooling';
@@ -7,7 +9,10 @@ import {
   cloudInput,
   writeCloudJson,
 } from '../apps/cli/src/league/league-cloud-files.ts';
-import { prepareCloudLeague } from '../apps/cli/src/league/league-cloud.ts';
+import {
+  prepareCloudLeague,
+  prepareCalibrationCloudLeague,
+} from '../apps/cli/src/league/league-cloud.ts';
 import { assignLeagueRunners } from '../apps/cli/src/league/league-assignment.ts';
 import { leagueCostProfile } from '../apps/cli/src/league/league-cost-profile.ts';
 import { leagueArtifactFiles } from '../apps/cli/src/league/league-artifact-files.ts';
@@ -20,19 +25,43 @@ import {
 } from '../apps/cli/src/publication/publication-evidence.ts';
 import { publicationInventory } from '../apps/cli/src/publication/publication-files.ts';
 import { MemoryStore } from '../apps/cli/test-support/remote-store.ts';
-import { computePipeline } from './league-pipeline-compute.ts';
-import { receiveBaseline, receivePartitionPilot } from './league-pipeline-receive.ts';
+import { computePipeline, computeRunnerCalibrationPipeline } from './league-pipeline-compute.ts';
+import {
+  receiveBaseline,
+  receiveCalibrationBaseline,
+  receivePartitionPilot,
+  receiveRunnerCalibration,
+} from './league-pipeline-receive.ts';
 import { uploadPipelineArtifact } from './league-pipeline-upload.ts';
+import { uploadCalibrationArtifact } from './league-calibration-upload.ts';
+import { calibrationRunners } from './league-runner-calibration-policy.ts';
 import { pipelineCapacity, pipelineCi } from './league-pipeline-policy.ts';
 import type { PipelineContext } from './league-pipeline-context.ts';
 import {
   partitionPilotInputs,
   partitionPilotRunners,
   validatePartitionPilotPrepared,
+  validateCalibrationPrepared,
 } from './league-partition-pilot-inputs.ts';
 
-export async function preparePartitionPilot(context: PipelineContext, runners: number) {
-  partitionPilotRunners(runners);
+export function preparePartitionPilot(context: PipelineContext, runners: number) {
+  return preparePilot(context, runners, false);
+}
+export function prepareRunnerCalibration(context: PipelineContext, runners: number) {
+  return preparePilot(context, runners, true);
+}
+async function preparePilot(context: PipelineContext, runners: number, calibration: boolean) {
+  (calibration ? calibrationRunners : partitionPilotRunners)(runners);
+  const prepare = calibration ? prepareCalibrationCloudLeague : prepareCloudLeague;
+  const validate = calibration ? validateCalibrationPrepared : validatePartitionPilotPrepared;
+  const upload = calibration ? uploadCalibrationArtifact : uploadPipelineArtifact;
+  const calibrationReservation = calibration
+    ? await reserveCalibrationTrial(
+        context.github,
+        context.identity,
+        JSON.parse(requiredPipeline('LEAGUE_CALIBRATION_BUDGET')),
+      )
+    : undefined;
   const registration = await partitionPilotInputs();
   await pipelineCi(context.github, context.ciRun, 'start');
   const publicRoot = join(context.root, 'public'),
@@ -40,7 +69,7 @@ export async function preparePartitionPilot(context: PipelineContext, runners: n
   await mkdir(publicRoot, { recursive: true });
   const before = await publicationInventory(publicRoot);
   if (before.size) throw new Error('Partition pilot requires a fresh empty local namespace');
-  const outcome = await prepareCloudLeague(
+  const outcome = await prepare(
     registration.definition,
     context.identity.source,
     context.prefix,
@@ -54,7 +83,7 @@ export async function preparePartitionPilot(context: PipelineContext, runners: n
       usedWriteRequests: 10000,
     },
   );
-  await validatePartitionPilotPrepared(preparedRoot, context.identity, runners);
+  await validate(preparedRoot, context.identity, runners);
   const assignment = assignLeagueRunners(outcome.prepared.plan, runners);
   pipelineCapacity(outcome.prepared.inputs.length, assignment);
   const baseline = await PublicationEvidence.audit(publicRoot);
@@ -77,19 +106,27 @@ export async function preparePartitionPilot(context: PipelineContext, runners: n
     encodeLeagueCheckpoint(baseline.checkpoint(context.identity)),
     { flag: 'wx' },
   );
+  if (calibrationReservation)
+    await writeCloudJson(join(preparedRoot, 'calibration-budget.json'), {
+      schemaVersion: 1,
+      identity: context.identity,
+      ...calibrationReservation,
+    });
   const inputs = [
     ...(await leagueArtifactFiles(preparedRoot, 'inputs')).files,
     join(preparedRoot, 'control.json'),
+    ...(calibration ? [join(preparedRoot, 'calibration-budget.json')] : []),
   ];
   const baselineFiles = [
     'prepared.json',
     'control.json',
     'checkpoint.gz',
+    ...(calibration ? ['calibration-budget.json'] : []),
     ...outcome.prepared.inputs.map((_, index) => `inputs/${index}/input.json`),
   ];
   const artifacts = [
-    await uploadPipelineArtifact(context.prefix + '-inputs', inputs, preparedRoot),
-    await uploadPipelineArtifact(
+    await upload(context.prefix + '-inputs', inputs, preparedRoot),
+    await upload(
       context.prefix + '-baseline',
       baselineFiles.map((key) => join(preparedRoot, key)),
       preparedRoot,
@@ -116,13 +153,15 @@ export async function preparePartitionPilot(context: PipelineContext, runners: n
   return { assignment, artifacts };
 }
 
-export async function computePartitionPilot(
+async function computePilot(
   context: PipelineContext,
   runners: number,
   runner: number,
   signal: AbortSignal,
+  calibration: boolean,
 ) {
-  partitionPilotRunners(runners);
+  (calibration ? calibrationRunners : partitionPilotRunners)(runners);
+  const validate = calibration ? validateCalibrationPrepared : validatePartitionPilotPrepared;
   if (!Number.isInteger(runner) || runner < 0 || runner >= runners)
     throw new Error('Foreign pilot runner');
   const measured = new Measurements();
@@ -131,7 +170,7 @@ export async function computePartitionPilot(
   let status = 'failed';
   try {
     const outcome = await measured.run(() =>
-      computePipeline(
+      (calibration ? computeRunnerCalibrationPipeline : computePartition)(
         context.root,
         context.github,
         context.identity,
@@ -147,16 +186,11 @@ export async function computePartitionPilot(
             canonicalJson(control.identity) !== canonicalJson(context.identity)
           )
             throw new Error('Foreign pilot control');
-          await validatePartitionPilotPrepared(root, context.identity, runners);
+          await validate(root, context.identity, runners);
         },
-        true,
       ),
     );
-    const { prepared } = await validatePartitionPilotPrepared(
-      join(context.root, 'prepared'),
-      context.identity,
-      runners,
-    );
+    const { prepared } = await validate(join(context.root, 'prepared'), context.identity, runners);
     const assigned = assignLeagueRunners(prepared.plan, runners)[runner]!;
     const expected = new Set<string>();
     for (const index of assigned.partitions)
@@ -196,23 +230,24 @@ export async function computePartitionPilot(
   }
 }
 
-export async function consumePartitionPilot(
+async function consumePilot(
   context: PipelineContext,
   runners: number,
   signal: AbortSignal,
+  calibration: boolean,
 ) {
-  partitionPilotRunners(runners);
-  const { control, baseline, preparedRoot } = await receiveBaseline(
-    context.root,
-    context.github,
-    3600000,
-  );
+  (calibration ? calibrationRunners : partitionPilotRunners)(runners);
+  const validate = calibration ? validateCalibrationPrepared : validatePartitionPilotPrepared;
+  const receive = calibration ? receiveRunnerCalibration : receivePartitionPilot;
+  const { control, baseline, preparedRoot } = await (
+    calibration ? receiveCalibrationBaseline : receiveBaseline
+  )(context.root, context.github, 3600000);
   if (control.runners !== runners || control.ciRunId !== context.ciRun)
     throw new Error('Foreign pilot baseline control');
   const store = new MemoryStore(),
     staging = new LeagueStaging(store, new Map(), 1000, 64 * 1024 ** 2);
   try {
-    const received = await receivePartitionPilot(
+    const received = await receive(
       context.root,
       preparedRoot,
       context.github,
@@ -220,7 +255,7 @@ export async function consumePartitionPilot(
       staging,
       signal,
       async (root) => {
-        await validatePartitionPilotPrepared(root, context.identity, runners);
+        await validate(root, context.identity, runners);
       },
     );
     const finalized = await measureAsync('receiver.finalize', () =>
@@ -285,4 +320,39 @@ export async function consumePartitionPilot(
   } finally {
     await staging.close();
   }
+}
+
+// Preserve the original pilot's explicit packed diagnostic argument. Calibration has its own
+// scoped compute entry; a generic caller never receives a guard-bypass boolean.
+const computePartition = (...args: Parameters<typeof computeRunnerCalibrationPipeline>) =>
+  computePipeline(...args, true);
+export function computePartitionPilot(
+  context: PipelineContext,
+  runners: number,
+  runner: number,
+  signal: AbortSignal,
+) {
+  return computePilot(context, runners, runner, signal, false);
+}
+export function computeRunnerCalibration(
+  context: PipelineContext,
+  runners: number,
+  runner: number,
+  signal: AbortSignal,
+) {
+  return computePilot(context, runners, runner, signal, true);
+}
+export function consumePartitionPilot(
+  context: PipelineContext,
+  runners: number,
+  signal: AbortSignal,
+) {
+  return consumePilot(context, runners, signal, false);
+}
+export function consumeRunnerCalibration(
+  context: PipelineContext,
+  runners: number,
+  signal: AbortSignal,
+) {
+  return consumePilot(context, runners, signal, true);
 }

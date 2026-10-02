@@ -1,0 +1,133 @@
+name: League runner calibration
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful exact-source main CI with runtime distribution
+        type: string
+        required: true
+      runners:
+        description: Fixed calibration width
+        type: choice
+        options: ['2', '4']
+        default: '2'
+        required: true
+      budget_observation:
+        description: Fresh source-bound owner attestation JSON; not API billing proof
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: league-runner-calibration
+  cancel-in-progress: false
+env:
+  LEAGUE_CI_RUN: ${{ inputs.ci_run_id }}
+  LEAGUE_RUNNERS: ${{ inputs.runners }}
+  LEAGUE_CALIBRATION_BUDGET: ${{ inputs.budget_observation }}
+jobs:
+  admit:
+    if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main' && github.actor == 'apaapapapapa'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.prepare.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - id: runtime
+        name: Authenticate exact-source CI runtime
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        run: node scripts/league-runtime-bootstrap.ts
+      - name: Require runtime and verify startup
+        env:
+          INSTALLED: ${{ steps.runtime.outputs.installed }}
+        run: |
+          test "$INSTALLED" = true
+          node --import tsx scripts/league-runtime-smoke.ts
+      - id: prepare
+        name: Prepare four original 95-match partitions
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: calibration-prepare
+  compute:
+    needs: admit
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.admit.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - id: runtime
+        name: Authenticate exact-source CI runtime
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        run: node scripts/league-runtime-bootstrap.ts
+      - name: Require runtime and verify startup
+        env:
+          INSTALLED: ${{ steps.runtime.outputs.installed }}
+        run: |
+          test "$INSTALLED" = true
+          node --import tsx scripts/league-runtime-smoke.ts
+      - name: Compute validate save and transfer assigned partitions
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+          LEAGUE_RUNNER: ${{ matrix.index }}
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: calibration-compute
+  consume:
+    needs: admit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@cff3efc7cbe0c9627b82dc3e846c89fd772a39a6
+        with:
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - id: runtime
+        name: Authenticate exact-source CI runtime
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        run: node scripts/league-runtime-bootstrap.ts
+      - name: Require runtime and verify startup
+        env:
+          INSTALLED: ${{ steps.runtime.outputs.installed }}
+        run: |
+          test "$INSTALLED" = true
+          node --import tsx scripts/league-runtime-smoke.ts
+      - name: Receive authenticate fixture-stage and aggregate
+        env:
+          LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: calibration-consume
