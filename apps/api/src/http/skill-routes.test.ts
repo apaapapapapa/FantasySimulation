@@ -36,6 +36,60 @@ async function setup() {
 }
 
 describe('skill loadout API', () => {
+  it('creates, reloads and CAS-respecs advisory acquisition history over HTTP', async () => {
+    const { app, character, catalogRecord, target } = await setup(),
+      selection = {
+        schemaVersion: 1,
+        id: 'acquisition.route',
+        version: 1,
+        character: reference(character),
+        catalog: catalogRecord.reference,
+        learnedNodeIds: [target],
+      },
+      created = await app.inject({
+        method: 'POST',
+        url: '/api/skill-acquisitions',
+        payload: { selection },
+      });
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({
+      id: selection.id,
+      version: 1,
+      authoritativeBoundary: false,
+      snapshot: { learnedNodeIds: [target] },
+    });
+    expect((await app.inject(`/api/skill-acquisitions/${selection.id}`)).json()).toEqual(
+      created.json(),
+    );
+
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: `/api/skill-acquisitions/${selection.id}`,
+      payload: {
+        expectedVersion: 1,
+        selection: { ...selection, version: 2, learnedNodeIds: [] },
+      },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json()).toMatchObject({
+      version: 2,
+      latest: { revision: 2 },
+      snapshot: { learnedNodeIds: [] },
+    });
+    expect(
+      (
+        await app.inject({
+          method: 'PATCH',
+          url: `/api/skill-acquisitions/${selection.id}`,
+          payload: {
+            expectedVersion: 1,
+            selection: { ...selection, version: 2, learnedNodeIds: [] },
+          },
+        })
+      ).statusCode,
+    ).toBe(409);
+  });
+
   it('saves, reloads and CAS-updates a server-resolved immutable loadout', async () => {
     const { app, character, configuration } = await setup(),
       created = await app.inject({
