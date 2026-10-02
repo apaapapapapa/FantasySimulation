@@ -41,6 +41,49 @@ function Glow({
   );
 }
 
+type Projectile = SceneModel['projectiles'][number];
+
+/** Pure projection consumed by the live three-dimensional projectile component. */
+export function projectile3DProjection(projectile: Projectile) {
+  const colours = tintColours(projectile.tint),
+    coreColour = projectile.deflected ? DEFLECTED : colours.core,
+    glowColour = projectile.deflected ? DEFLECTED : colours.glow;
+  return {
+    id: projectile.id,
+    position: projectile.position,
+    radius: Math.max(0.06, projectile.radius),
+    coreColour,
+    glowColour,
+    glowScale: Math.max(0.5, projectile.radius * 7),
+    lifecycle: 'active' as const,
+  };
+}
+
+/** The recorded active projectiles rendered by the live three-dimensional replay scene. */
+export function ProjectileEffects3D({ model }: { model: Pick<SceneModel, 'projectiles'> }) {
+  return model.projectiles.map((projectile) => {
+    const projection = projectile3DProjection(projectile);
+    return (
+      <group
+        key={projection.id}
+        name={`projectile:${projection.id}`}
+        userData={{ projectile: projection.id, lifecycle: projection.lifecycle }}
+      >
+        <mesh position={projection.position}>
+          <sphereGeometry args={[projection.radius, 10, 8]} />
+          <meshBasicMaterial color={projection.coreColour} toneMapped={false} />
+        </mesh>
+        <Glow
+          position={projection.position}
+          scale={projection.glowScale}
+          colour={projection.glowColour}
+          opacity={0.9}
+        />
+      </group>
+    );
+  });
+}
+
 /**
  * Crescent bands along the blade (fraction from root → tip, alpha, bright rim?): transparent
  * inside, an orange glow, then a bright rim at the recorded tip.
@@ -363,9 +406,6 @@ export function SceneEffects({ model }: { model: SceneModel }) {
     step,
     SPANS.beam,
   );
-  const tints = new Map(
-    model.projectiles.map((p) => [p.id, p.deflected ? DEFLECTED : tintColours(p.tint).glow]),
-  );
   // The colour is kept with each trail segment: the projectile may be gone a step later.
   const trails = useAfterimages(
     model,
@@ -387,26 +427,7 @@ export function SceneEffects({ model }: { model: SceneModel }) {
           opacity={afterimageStrength(mark, step, SPANS.trail) * 0.8}
         />
       ))}
-      {model.projectiles.map((p) => {
-        const colours = tintColours(p.tint);
-        return (
-          <group key={p.id}>
-            <mesh position={p.position}>
-              <sphereGeometry args={[Math.max(0.06, p.radius), 10, 8]} />
-              <meshBasicMaterial
-                color={p.deflected ? DEFLECTED : colours.core}
-                toneMapped={false}
-              />
-            </mesh>
-            <Glow
-              position={p.position}
-              scale={Math.max(0.5, p.radius * 7)}
-              colour={tints.get(p.id)!}
-              opacity={0.9}
-            />
-          </group>
-        );
-      })}
+      <ProjectileEffects3D model={model} />
       <Slashes marks={slashes} step={step} />
       {orbs.map((mark) => (
         <Glow

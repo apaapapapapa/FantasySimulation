@@ -10,7 +10,7 @@ import { catalogManifest, revisionClosure, sampleCatalog } from '@fantasy/sample
 import { ReplayWriter } from '../../../api/src/replay/replay-writer.ts';
 import { buildSceneModel } from './scene-model.ts';
 import { Scene2D } from './Scene2D.tsx';
-import { SceneEffects } from './SceneEffects.tsx';
+import { projectile3DProjection, ProjectileEffects3D } from './SceneEffects.tsx';
 import { NO_OVERLAYS } from './overlays.ts';
 import { openReplay } from './open-replay.ts';
 import { ReplayPlayer } from './replay-player.ts';
@@ -121,20 +121,51 @@ it('replays the shared tiger flare forward reverse and loop through one common 2
       1,
     );
     const activeStep = activeRecord.toStep,
-      active = await player.frame(activeStep);
+      before = await player.frame(0),
+      active = await player.frame(activeStep),
+      after = await player.frame(manifest.lastVerifiedStep!);
     const displayProjectile = active.checkpoint.state?.projectiles.find(
       ({ abilityId }) => abilityId === 'ordinary-flare',
     );
     expect(displayProjectile).toBeDefined();
-    for (const step of [manifest.lastVerifiedStep!, activeStep, 0, activeStep])
+    for (const step of [activeStep, 0, activeStep])
       await expect(player.frame(step)).resolves.toBeDefined();
     const model = buildSceneModel(context, active.checkpoint),
-      projectile = model.projectiles.find(({ id }) => id === displayProjectile!.id);
+      projectile = model.projectiles.find(({ id }) => id === displayProjectile!.id),
+      beforeModel = buildSceneModel(context, before.checkpoint),
+      afterModel = buildSceneModel(context, after.checkpoint);
     expect(projectile).toBeDefined();
+    expect(projectile).toMatchObject({
+      id: displayProjectile!.id,
+      position: [
+        displayProjectile!.position.x,
+        displayProjectile!.position.y,
+        displayProjectile!.position.z,
+      ],
+      tint: 'fire',
+    });
     expect(
       renderToStaticMarkup(createElement(Scene2D, { model, overlays: NO_OVERLAYS })),
     ).toContain(projectile!.colour);
-    expect(createElement(SceneEffects, { model }).props.model).toBe(model);
+    const projection = projectile3DProjection(projectile!),
+      active3D = renderToStaticMarkup(createElement(ProjectileEffects3D, { model }));
+    expect(projection).toMatchObject({
+      id: projectile!.id,
+      position: projectile!.position,
+      coreColour: '#fff0c2',
+      glowColour: '#ff6a2b',
+      lifecycle: 'active',
+    });
+    expect(active3D).toContain(`name="projectile:${projection.id}"`);
+    expect(active3D).toContain(`position="${projection.position.join(',')}"`);
+    expect(active3D).toContain(`color="${projection.coreColour}"`);
+    expect(active3D).toContain(`color="${projection.glowColour}"`);
+    expect(
+      renderToStaticMarkup(createElement(ProjectileEffects3D, { model: beforeModel })),
+    ).not.toContain(`name="projectile:${projection.id}"`);
+    expect(
+      renderToStaticMarkup(createElement(ProjectileEffects3D, { model: afterModel })),
+    ).not.toContain(`name="projectile:${projection.id}"`);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
