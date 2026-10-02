@@ -2,11 +2,11 @@ import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import {
   IdSchema,
+  AnySkillLoadoutCreateSchema,
+  AnySkillLoadoutPatchSchema,
   SkillAcquisitionCreateSchema,
   SkillAcquisitionPatchSchema,
   SkillBattleJobRequestSchema,
-  SkillLoadoutCreateSchema,
-  SkillLoadoutPatchSchema,
   canonicalJson,
   skillBattleReceipt,
 } from '@fantasy/domain';
@@ -36,7 +36,7 @@ export function addSkillRoutes(app: FastifyInstance, store: Store, runtime?: Bat
     return skills.catalog(id, revision);
   });
   app.post('/api/skill-loadouts', async (request, reply) =>
-    reply.code(201).send(await skills.create(body(SkillLoadoutCreateSchema, request.body))),
+    reply.code(201).send(await skills.create(body(AnySkillLoadoutCreateSchema, request.body))),
   );
   app.get('/api/skill-loadouts', async (request) => {
     const query = pageQuery.parse(request.query);
@@ -47,7 +47,7 @@ export function addSkillRoutes(app: FastifyInstance, store: Store, runtime?: Bat
   );
   app.patch('/api/skill-loadouts/:id', async (request) => {
     const { id } = idParams.parse(request.params);
-    return skills.patch(id, body(SkillLoadoutPatchSchema, request.body));
+    return skills.patch(id, body(AnySkillLoadoutPatchSchema, request.body));
   });
   app.post('/api/skill-acquisitions', async (request, reply) =>
     reply

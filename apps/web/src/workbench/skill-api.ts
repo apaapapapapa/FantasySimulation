@@ -1,9 +1,10 @@
 import {
+  AnySkillLoadoutPageSchema,
   JobResponseSchema,
   SkillCatalogRecordSchema,
   SkillConfigurationSchema,
   SkillLoadoutHeadSchema,
-  SkillLoadoutPageSchema,
+  type AnySkillLoadoutHead,
   type SkillCatalog,
   type SkillConfiguration,
   type SkillLoadoutHead,
@@ -77,12 +78,14 @@ export const skillWorkbenchApi: SkillWorkbenchClient = {
       cursors = new Set<string>();
     let cursor: string | null = null;
     do {
-      const page: { items: SkillLoadoutHead[]; nextCursor: string | null } = await api(
+      const page: { items: AnySkillLoadoutHead[]; nextCursor: string | null } = await api(
         `skill-loadouts?limit=100${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`,
-        SkillLoadoutPageSchema,
+        AnySkillLoadoutPageSchema,
         { ...(signal ? { signal } : {}), maxBytes: 8 * 1024 * 1024 },
       );
-      items.push(...page.items);
+      items.push(
+        ...page.items.filter((item): item is SkillLoadoutHead => item.schemaVersion === 1),
+      );
       cursor = page.nextCursor;
       if (cursor && cursors.has(cursor)) throw new Error('Skill loadout cursor repeated');
       if (cursor) cursors.add(cursor);

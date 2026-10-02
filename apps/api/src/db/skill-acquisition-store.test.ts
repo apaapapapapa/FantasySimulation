@@ -94,6 +94,45 @@ describe('skill acquisition persistence', () => {
     ).rejects.toMatchObject({ code: 'invalid-input' });
   });
 
+  it('rejects an augment whose exact base ability is not owned by the character', async () => {
+    const store = openStore(':memory:');
+    stores.push(store);
+    const fixture = await skillPersistenceFixture(store, 'acquisition-augment-ownership'),
+      acquisitions = new SkillAcquisitionStore(store),
+      target = fixture.catalog.nodes.find(({ id }) => id === fixture.target)!,
+      alternate = fixture.catalog.nodes.find(({ id }) => id === fixture.alternate)!,
+      base = target.resolution[0]!.kind === 'active-ability' ? target.resolution[0]!.ability : null,
+      replacement =
+        alternate.resolution[0]!.kind === 'active-ability'
+          ? alternate.resolution[0]!.ability
+          : null;
+    if (!base || !replacement) throw new Error('Expected active fixture abilities');
+    fixture.catalog.revision++;
+    fixture.catalog.nodes = fixture.catalog.nodes.map((node) =>
+      node.id === fixture.target
+        ? {
+            ...node,
+            resolution: [
+              { kind: 'augment' as const, baseAbility: base, resolvedAbility: replacement },
+            ],
+          }
+        : node,
+    );
+    const catalog = await fixture.skills.seedCatalog(fixture.catalog);
+    await expect(
+      acquisitions.create({
+        selection: {
+          schemaVersion: 1,
+          id: 'acquisition.unowned-augment',
+          version: 1,
+          character: reference(fixture.character),
+          catalog: catalog.reference,
+          learnedNodeIds: [fixture.target],
+        },
+      }),
+    ).rejects.toThrow('not eligible');
+  });
+
   it('adds strict acquisition tables to an old database without changing saved rows', () => {
     const directory = mkdtempSync(join(tmpdir(), 'fantasy-skill-acquisition-')),
       old = join(directory, 'old-migrations'),

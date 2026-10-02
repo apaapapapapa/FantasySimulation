@@ -5,6 +5,8 @@ import {
   skillCatalogDigest,
 } from './skill-system.ts';
 import {
+  SKILL_RESOLVER_VERSION,
+  SkillLoadoutRevisionContentSchema,
   resolveSkillLoadout,
   skillBattleReceipt,
   skillLoadoutRevisionHash,
@@ -12,6 +14,7 @@ import {
   type SkillConfiguration,
   type SkillLoadoutRevisionContent,
 } from './skill-loadout.ts';
+import { canonicalJson } from './spatial/canonical.ts';
 import {
   SkillLoadoutReceiptSchema,
   skillReceiptExecutionResolutions,
@@ -58,6 +61,45 @@ async function revisionContent(catalog: SkillCatalog, id: string) {
 }
 
 describe('skill loadout resolution', () => {
+  it('keeps V1 revision bytes and hash stable', async () => {
+    const reference = { id: 'fixture.ref', revision: 1, contentHash: hash },
+      content = {
+        schemaVersion: 1 as const,
+        id: 'loadout.golden',
+        revision: 1,
+        character: reference,
+        configuration: {
+          schemaVersion: 1 as const,
+          id: 'loadout.golden',
+          version: 1,
+          catalog: reference,
+          eligibilityNodeIds: ['skill.a'],
+          learnedNodeIds: ['skill.a'],
+          enabledNodeIds: [],
+        },
+        resolved: {
+          schemaVersion: 1 as const,
+          resolverVersion: SKILL_RESOLVER_VERSION,
+          configurationId: 'loadout.golden',
+          configurationVersion: 1,
+          catalog: reference,
+          learnedNodeIds: ['skill.a'],
+          explicitlyEnabledNodeIds: [],
+          resolvedNodeIds: [],
+          nodeResolutions: [],
+          resolutionDigest: hash,
+        },
+      } satisfies SkillLoadoutRevisionContent,
+      parsed = SkillLoadoutRevisionContentSchema.parse(content);
+    expect({ bytes: canonicalJson(parsed), hash: await skillLoadoutRevisionHash(content) }).toEqual(
+      {
+        bytes:
+          '{"character":{"contentHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","id":"fixture.ref","revision":1},"configuration":{"catalog":{"contentHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","id":"fixture.ref","revision":1},"eligibilityNodeIds":["skill.a"],"enabledNodeIds":[],"id":"loadout.golden","learnedNodeIds":["skill.a"],"schemaVersion":1,"version":1},"id":"loadout.golden","resolved":{"catalog":{"contentHash":"sha256:1111111111111111111111111111111111111111111111111111111111111111","id":"fixture.ref","revision":1},"configurationId":"loadout.golden","configurationVersion":1,"explicitlyEnabledNodeIds":[],"learnedNodeIds":["skill.a"],"nodeResolutions":[],"resolutionDigest":"sha256:1111111111111111111111111111111111111111111111111111111111111111","resolvedNodeIds":[],"resolverVersion":"skill-resolver-v1","schemaVersion":1},"revision":1,"schemaVersion":1}',
+        hash: 'sha256:98d01c76bf2e511eb32891d4c40fa638d7ee8218bc79e04cb4913b976db4f4a0',
+      },
+    );
+  });
+
   it('closes prerequisites and canonicalizes set-like configuration order', async () => {
     const catalog = completeCatalog(),
       learned = branchIds('sword', 'rat'),
