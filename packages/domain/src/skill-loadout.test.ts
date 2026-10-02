@@ -13,6 +13,10 @@ import {
   type SkillLoadoutRevisionContent,
 } from './skill-loadout.ts';
 import {
+  SkillLoadoutReceiptSchema,
+  skillReceiptExecutionResolutions,
+} from './spatial/contracts.ts';
+import {
   SKILL_TEST_HASH as hash,
   completeSkillTestCatalog as completeCatalog,
 } from './skill-system.test-fixtures.ts';
@@ -197,6 +201,180 @@ describe('skill loadout resolution', () => {
         },
       ],
     });
+  });
+
+  it('preserves shared grant provenance in v3 and projects one canonical execution ref', async () => {
+    const catalog = completeCatalog(),
+      nodeIds = ['skill.judo.rat.1', 'skill.sword.rat.1'],
+      ability = catalog.nodes.find(({ id }) => id === nodeIds[1])!.resolution[0]!;
+    catalog.nodes = catalog.nodes.map((node) =>
+      nodeIds.includes(node.id) ? { ...node, resolution: [ability] } : node,
+    );
+    const direct = await configuration(catalog, nodeIds, nodeIds),
+      permuted = await configuration(catalog, [...nodeIds].reverse(), [...nodeIds].reverse()),
+      first = await resolveSkillLoadout(catalog, direct, []),
+      second = await resolveSkillLoadout(catalog, permuted, []);
+    expect(first.nodeResolutions).toEqual(second.nodeResolutions);
+    expect(first.resolutionDigest).toBe(second.resolutionDigest);
+    const content = {
+        schemaVersion: 1 as const,
+        id: direct.id,
+        revision: 1,
+        character: { id: 'character.test', revision: 1, contentHash: hash },
+        configuration: direct,
+        resolved: first,
+      },
+      receipt = await skillBattleReceipt({
+        ...content,
+        contentHash: await skillLoadoutRevisionHash(content),
+      });
+    expect(receipt).toMatchObject({
+      schemaVersion: 3,
+      resolvedNodeIds: [...nodeIds].sort(),
+      nodeResolutions: [
+        { nodeId: 'skill.judo.rat.1', resolution: [ability] },
+        { nodeId: 'skill.sword.rat.1', resolution: [ability] },
+      ],
+    });
+    expect(skillReceiptExecutionResolutions(receipt)).toEqual([ability]);
+
+    const conflicting = structuredClone(first),
+      secondResolution = conflicting.nodeResolutions[1]!.resolution[0]!;
+    if (secondResolution.kind === 'augment') throw new Error('Expected an active grant');
+    secondResolution.ability.contentHash = `sha256:${'2'.repeat(64)}`;
+    const invalidContent = { ...content, resolved: conflicting };
+    await expect(
+      skillBattleReceipt({
+        ...invalidContent,
+        contentHash: await skillLoadoutRevisionHash(invalidContent),
+      }),
+    ).rejects.toThrow(/exact shared grants/);
+  });
+
+  it('keeps invalid duplicate produced abilities invalid under receipt v3', async () => {
+    const active = {
+        kind: 'active-ability' as const,
+        ability: { id: 'shared', revision: 1, contentHash: hash },
+      },
+      base = {
+        schemaVersion: 3 as const,
+        resolverVersion: 'skill-resolver-v1',
+        character: { id: 'character.test', revision: 1, contentHash: hash },
+        catalog: { id: 'catalog.test', revision: 1, contentHash: hash },
+        loadout: { id: 'loadout.test', revision: 1, contentHash: hash },
+        explicitlyEnabledNodeIds: ['skill.one', 'skill.two'],
+        resolvedNodeIds: ['skill.one', 'skill.two'],
+        nodeResolutions: [
+          { nodeId: 'skill.one', resolution: [active] },
+          { nodeId: 'skill.two', resolution: [active] },
+        ],
+        resolutionDigest: hash,
+      },
+      invalid = [
+        {
+          ...base,
+          resolvedNodeIds: ['skill.one'],
+          explicitlyEnabledNodeIds: ['skill.one'],
+          nodeResolutions: [{ nodeId: 'skill.one', resolution: [active, active] }],
+        },
+        {
+          ...base,
+          nodeResolutions: [
+            base.nodeResolutions[0],
+            {
+              nodeId: 'skill.two',
+              resolution: [
+                {
+                  ...active,
+                  ability: { ...active.ability, contentHash: `sha256:${'2'.repeat(64)}` },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          ...base,
+          nodeResolutions: [
+            base.nodeResolutions[0],
+            {
+              nodeId: 'skill.two',
+              resolution: [{ kind: 'passive-ability' as const, ability: active.ability }],
+            },
+          ],
+        },
+        {
+          ...base,
+          nodeResolutions: [
+            base.nodeResolutions[0],
+            {
+              nodeId: 'skill.two',
+              resolution: [
+                {
+                  kind: 'augment' as const,
+                  baseAbility: { ...active.ability, revision: 2 },
+                  resolvedAbility: active.ability,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          ...base,
+          nodeResolutions: base.nodeResolutions.map(({ nodeId }) => ({
+            nodeId,
+            resolution: [
+              {
+                kind: 'augment' as const,
+                baseAbility: { ...active.ability, revision: 2 },
+                resolvedAbility: active.ability,
+              },
+            ],
+          })),
+        },
+      ];
+    expect(invalid.map((receipt) => SkillLoadoutReceiptSchema.safeParse(receipt).success)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it('caps v3 execution abilities after exact shared provenance is deduplicated', () => {
+    const nodeIds = Array.from({ length: 5 }, (_, index) => `skill.node.0${index + 1}`),
+      ability = (id: string) => ({
+        kind: 'active-ability' as const,
+        ability: { id, revision: 1, contentHash: hash },
+      }),
+      receipt = (nodeResolutions: { nodeId: string; resolution: ReturnType<typeof ability>[] }[]) =>
+        ({
+          schemaVersion: 3 as const,
+          resolverVersion: 'skill-resolver-v1',
+          character: { id: 'character.test', revision: 1, contentHash: hash },
+          catalog: { id: 'catalog.test', revision: 1, contentHash: hash },
+          loadout: { id: 'loadout.test', revision: 1, contentHash: hash },
+          explicitlyEnabledNodeIds: nodeIds,
+          resolvedNodeIds: nodeIds,
+          nodeResolutions,
+          resolutionDigest: hash,
+        }) as const,
+      shared = Array.from({ length: 7 }, (_, index) => ability(`shared.0${index + 1}`)),
+      sharedReceipt = SkillLoadoutReceiptSchema.parse(
+        receipt(nodeIds.map((nodeId) => ({ nodeId, resolution: shared }))),
+      );
+    expect(sharedReceipt.nodeResolutions.flatMap(({ resolution }) => resolution)).toHaveLength(35);
+    expect(skillReceiptExecutionResolutions(sharedReceipt)).toHaveLength(7);
+
+    const unique = receipt(
+      nodeIds.map((nodeId, nodeIndex) => ({
+        nodeId,
+        resolution: Array.from({ length: 7 }, (_, abilityIndex) =>
+          ability(`unique.${nodeIndex}.${abilityIndex}`),
+        ),
+      })),
+    );
+    expect(SkillLoadoutReceiptSchema.safeParse(unique).success).toBe(false);
   });
 });
 

@@ -110,6 +110,55 @@ describe('skill loadout battle vertical', () => {
     expect(replayed.checkpoint()).toEqual(restored.checkpoint());
   });
 
+  it('executes one exact shared grant while retaining both v3 node provenances', async () => {
+    const { manifest, ability } = await skillFixture(),
+      catalog = { id: 'skill-catalog-v1', revision: 9, contentHash: hash('8') },
+      resolvedNodeIds = ['skill.magic.rat.1', 'skill.magic.tiger.2'],
+      resolution = [{ kind: 'active-ability' as const, ability: reference(ability) }],
+      nodeResolutions = resolvedNodeIds.map((nodeId) => ({ nodeId, resolution })),
+      participants = structuredClone(manifest.participants);
+    participants[0].skillLoadout = SkillLoadoutReceiptSchema.parse({
+      schemaVersion: 3,
+      resolverVersion: 'skill-resolver-v1',
+      character: participants[0].character,
+      catalog,
+      loadout: { id: 'skill-loadout-shared', revision: 1, contentHash: hash('9') },
+      explicitlyEnabledNodeIds: resolvedNodeIds,
+      resolvedNodeIds,
+      nodeResolutions,
+      resolutionDigest: await skillResolutionDigest(catalog, resolvedNodeIds, nodeResolutions),
+    });
+    const battle = await ManifestBuilder.from([...manifest.revisions, ability]).build({
+      seed: manifest.seed,
+      participants,
+      ruleset: manifest.ruleset,
+      scenario: manifest.scenario,
+    });
+    expect(battle.manifest.schemaVersion).toBe(5);
+    expect(battle.manifest.participants[0]!.skillLoadout?.nodeResolutions).toEqual(nodeResolutions);
+    expect(battle.actors[0].abilities.filter(({ id }) => id === ability.id)).toHaveLength(1);
+    expect(battle.actors[0].decisionAbilities.filter(({ id }) => id === ability.id)).toHaveLength(
+      1,
+    );
+    expect(
+      battle.actors[0].policy.priorities.filter(({ abilityId }) => abilityId === ability.id),
+    ).toHaveLength(1);
+    expect(battle.manifest.revisions.filter(({ id }) => id === ability.id)).toHaveLength(1);
+    expect(
+      (await replayContext(battle.manifest, battle.simulationHash)).actors[0]!.abilities.filter(
+        ({ id }) => id === ability.id,
+      ),
+    ).toHaveLength(1);
+    expect(battle.simulationHash).not.toBe((await builtSkillBattle()).battle.simulationHash);
+
+    const removedProvenance = structuredClone(battle.manifest) as unknown as Manifest,
+      receipt = removedProvenance.participants[0].skillLoadout!;
+    receipt.resolvedNodeIds = receipt.resolvedNodeIds.slice(0, 1);
+    receipt.explicitlyEnabledNodeIds = receipt.explicitlyEnabledNodeIds.slice(0, 1);
+    receipt.nodeResolutions = receipt.nodeResolutions.slice(0, 1);
+    await expect(prepareBattle(removedProvenance)).rejects.toThrow(/resolution digest/);
+  });
+
   it('executes a non-action passive through a version 2 receipt and manifest 5 replay', async () => {
     const manifest = await sampleManifest(),
       source = manifest.revisions.find(

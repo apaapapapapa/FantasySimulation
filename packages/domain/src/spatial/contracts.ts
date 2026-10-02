@@ -1272,6 +1272,90 @@ function validateSkillReceipt(
   )
     context.addIssue({ code: 'custom', message: 'Skill resolutions must match resolved nodes' });
 }
+type BattleSkillReceipt = {
+  explicitlyEnabledNodeIds: string[];
+  resolvedNodeIds: string[];
+  nodeResolutions: z.infer<typeof BattleSkillNodeResolutionSchema>[];
+};
+function validateBattleSkillReceipt(
+  receipt: BattleSkillReceipt,
+  context: z.RefinementCtx,
+  allowExactSharedGrants: boolean,
+) {
+  validateSkillReceipt(receipt, context);
+  let active = 0,
+    passive = 0,
+    resolutionCount = 0;
+  const augmented = new Set<string>(),
+    producedAbilities = new Map<
+      string,
+      {
+        nodeId: string;
+        kind: z.infer<typeof BattleSkillResolutionSchema>['kind'];
+        reference: RevisionRef;
+      }
+    >();
+  for (const node of receipt.nodeResolutions) {
+    const hasActive = node.resolution.some(({ kind }) => kind === 'active-ability'),
+      hasPassive = node.resolution.some(({ kind }) => kind !== 'active-ability');
+    if (hasActive && hasPassive)
+      context.addIssue({
+        code: 'custom',
+        message: `Mixed skill resolution node: ${node.nodeId}`,
+      });
+    hasActive ? active++ : passive++;
+    for (const resolution of node.resolution) {
+      resolutionCount++;
+      const reference =
+          resolution.kind === 'augment' ? resolution.resolvedAbility : resolution.ability,
+        previous = producedAbilities.get(reference.id),
+        sharedExactGrant =
+          allowExactSharedGrants &&
+          previous !== undefined &&
+          previous.nodeId !== node.nodeId &&
+          previous.kind === resolution.kind &&
+          resolution.kind !== 'augment' &&
+          canonicalJson(previous.reference) === canonicalJson(reference);
+      if (previous && !sharedExactGrant)
+        context.addIssue({
+          code: 'custom',
+          message: allowExactSharedGrants
+            ? 'Resolved skill ability IDs must be unique or exact shared grants'
+            : 'Resolved skill ability IDs must be unique',
+        });
+      if (!previous)
+        producedAbilities.set(reference.id, {
+          nodeId: node.nodeId,
+          kind: resolution.kind,
+          reference,
+        });
+      if (resolution.kind === 'augment') {
+        if (resolution.baseAbility.id !== resolution.resolvedAbility.id)
+          context.addIssue({
+            code: 'custom',
+            message: 'Augments must preserve ability identity',
+          });
+        if (
+          resolution.baseAbility.revision === resolution.resolvedAbility.revision &&
+          resolution.baseAbility.contentHash === resolution.resolvedAbility.contentHash
+        )
+          context.addIssue({
+            code: 'custom',
+            message: 'Augments must change the exact ability ref',
+          });
+        if (augmented.has(resolution.baseAbility.id))
+          context.addIssue({ code: 'custom', message: 'An ability may be augmented only once' });
+        augmented.add(resolution.baseAbility.id);
+      }
+    }
+  }
+  if (active > 8) context.addIssue({ code: 'custom', message: 'Active skill node limit exceeded' });
+  if (passive > 4)
+    context.addIssue({ code: 'custom', message: 'Passive skill node limit exceeded' });
+  const producedCount = allowExactSharedGrants ? producedAbilities.size : resolutionCount;
+  if (producedCount > 32)
+    context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
+}
 /** Lightweight execution receipt. Catalog content and resolver code stay outside workers. */
 export const SkillLoadoutReceiptV1Schema = z
   .strictObject({
@@ -1295,76 +1379,59 @@ export const SkillLoadoutReceiptV1Schema = z
     if (abilityIds.length > 32)
       context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
   });
+const BattleSkillReceiptShape = {
+  resolverVersion: IdSchema,
+  character: RefSchema,
+  catalog: RefSchema,
+  loadout: RefSchema,
+  explicitlyEnabledNodeIds: CanonicalSkillIdsSchema(12),
+  resolvedNodeIds: CanonicalSkillIdsSchema(12),
+  nodeResolutions: z.array(BattleSkillNodeResolutionSchema).min(1).max(12),
+  resolutionDigest: HashSchema,
+};
 export const SkillLoadoutReceiptV2Schema = z
   .strictObject({
     schemaVersion: z.literal(2),
-    resolverVersion: IdSchema,
-    character: RefSchema,
-    catalog: RefSchema,
-    loadout: RefSchema,
-    explicitlyEnabledNodeIds: CanonicalSkillIdsSchema(12),
-    resolvedNodeIds: CanonicalSkillIdsSchema(12),
-    nodeResolutions: z.array(BattleSkillNodeResolutionSchema).min(1).max(12),
-    resolutionDigest: HashSchema,
+    ...BattleSkillReceiptShape,
   })
-  .superRefine((receipt, context) => {
-    validateSkillReceipt(receipt, context);
-    let active = 0,
-      passive = 0;
-    const augmented = new Set<string>(),
-      producedAbilities = new Set<string>();
-    let resolutionCount = 0;
-    for (const node of receipt.nodeResolutions) {
-      const hasActive = node.resolution.some(({ kind }) => kind === 'active-ability'),
-        hasPassive = node.resolution.some(({ kind }) => kind !== 'active-ability');
-      if (hasActive && hasPassive)
-        context.addIssue({
-          code: 'custom',
-          message: `Mixed skill resolution node: ${node.nodeId}`,
-        });
-      hasActive ? active++ : passive++;
-      for (const resolution of node.resolution) {
-        resolutionCount++;
-        const producedId =
-          resolution.kind === 'augment' ? resolution.resolvedAbility.id : resolution.ability.id;
-        if (producedAbilities.has(producedId))
-          context.addIssue({
-            code: 'custom',
-            message: 'Resolved skill ability IDs must be unique',
-          });
-        producedAbilities.add(producedId);
-        if (resolution.kind === 'augment') {
-          if (resolution.baseAbility.id !== resolution.resolvedAbility.id)
-            context.addIssue({
-              code: 'custom',
-              message: 'Augments must preserve ability identity',
-            });
-          if (
-            resolution.baseAbility.revision === resolution.resolvedAbility.revision &&
-            resolution.baseAbility.contentHash === resolution.resolvedAbility.contentHash
-          )
-            context.addIssue({
-              code: 'custom',
-              message: 'Augments must change the exact ability ref',
-            });
-          if (augmented.has(resolution.baseAbility.id))
-            context.addIssue({ code: 'custom', message: 'An ability may be augmented only once' });
-          augmented.add(resolution.baseAbility.id);
-        }
-      }
-    }
-    if (active > 8)
-      context.addIssue({ code: 'custom', message: 'Active skill node limit exceeded' });
-    if (passive > 4)
-      context.addIssue({ code: 'custom', message: 'Passive skill node limit exceeded' });
-    if (resolutionCount > 32)
-      context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
-  });
+  .superRefine((receipt, context) => validateBattleSkillReceipt(receipt, context, false));
+/**
+ * Receipt v3 preserves every resolving node while permitting different nodes to share one exact
+ * non-augment ability. Execution consumers use `skillReceiptExecutionResolutions` so that shared
+ * provenance never creates a second runtime ability.
+ */
+export const SkillLoadoutReceiptV3Schema = z
+  .strictObject({
+    schemaVersion: z.literal(3),
+    ...BattleSkillReceiptShape,
+  })
+  .superRefine((receipt, context) => validateBattleSkillReceipt(receipt, context, true));
 export const SkillLoadoutReceiptSchema = z.union([
   SkillLoadoutReceiptV1Schema,
   SkillLoadoutReceiptV2Schema,
+  SkillLoadoutReceiptV3Schema,
 ]);
 export type SkillLoadoutReceipt = z.infer<typeof SkillLoadoutReceiptSchema>;
+export type SkillReceiptExecutionResolution = z.infer<typeof BattleSkillResolutionSchema>;
+/** Canonical unique execution projection; node-level provenance remains in the receipt. */
+export function skillReceiptExecutionResolutions(
+  receipt: SkillLoadoutReceipt,
+): SkillReceiptExecutionResolution[] {
+  const resolutions = receipt.nodeResolutions.flatMap(({ resolution }) => resolution);
+  // V1/V2 already require uniqueness; retaining their authored order preserves old execution.
+  if (receipt.schemaVersion !== 3) return resolutions;
+  const byProducedId = new Map<string, SkillReceiptExecutionResolution>();
+  for (const item of resolutions) {
+    const reference = item.kind === 'augment' ? item.resolvedAbility : item.ability,
+      previous = byProducedId.get(reference.id);
+    if (previous && canonicalJson(previous) !== canonicalJson(item))
+      throw new Error(`Conflicting skill execution ability: ${reference.id}`);
+    if (!previous) byProducedId.set(reference.id, item);
+  }
+  return [...byProducedId]
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+    .map(([, resolution]) => resolution);
+}
 export const ParticipantSchema = z.strictObject({
   actorId: IdSchema.refine(
     (id) => !id.startsWith('projectile.'),
@@ -1441,7 +1508,10 @@ export const StoredManifestSchema = z
       ctx.addIssue({ code: 'custom', message: 'Skill loadouts require manifest schema version 4' });
     if (
       manifest.schemaVersion < 5 &&
-      manifest.participants.some((participant) => participant.skillLoadout?.schemaVersion === 2)
+      manifest.participants.some(
+        (participant) =>
+          participant.skillLoadout !== undefined && participant.skillLoadout.schemaVersion !== 1,
+      )
     )
       ctx.addIssue({
         code: 'custom',

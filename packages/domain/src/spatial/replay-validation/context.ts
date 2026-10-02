@@ -7,7 +7,7 @@ import {
   resolveClosure,
 } from '../revision-graph.ts';
 import { canonicalJson, compareIds, contentHash, deepFreeze } from '../canonical.ts';
-import { parseJson } from '../contracts.ts';
+import { parseJson, skillReceiptExecutionResolutions } from '../contracts.ts';
 import { RecordedManifestSchema } from '../replay.ts';
 import { fail, requireReplay } from './common.ts';
 export type ReplayContext = Awaited<ReturnType<typeof replayContext>>;
@@ -42,9 +42,9 @@ export async function replayContext(input: unknown, simulationHash: string) {
       const { character, abilities } = characterLoadout(participant.character, get);
       const originalAbilities = new Map(abilities.map((ability) => [ability.id, ability])),
         byId = new Map(originalAbilities);
-      for (const item of (participant.skillLoadout?.nodeResolutions ?? []).flatMap(
-        ({ resolution }) => resolution,
-      )) {
+      for (const item of participant.skillLoadout
+        ? skillReceiptExecutionResolutions(participant.skillLoadout)
+        : []) {
         if (item.kind === 'augment') {
           const base = get('ability', item.baseAbility),
             resolved = get('ability', item.resolvedAbility),
@@ -65,7 +65,7 @@ export async function replayContext(input: unknown, simulationHash: string) {
           continue;
         }
         const ability = get('ability', item.ability);
-        if (participant.skillLoadout?.schemaVersion === 2)
+        if (participant.skillLoadout?.schemaVersion !== 1)
           requireReplay(
             item.kind === 'active-ability'
               ? ability.definition.trigger === 'action'

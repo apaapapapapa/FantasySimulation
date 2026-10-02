@@ -23,6 +23,7 @@ import {
   hasSensoryCues,
   hasDependentSummons,
   hasEnvironmentalHolograms,
+  skillReceiptExecutionResolutions,
 } from '@fantasy/domain/spatial/execution';
 import { prepareBattle, implementation, profile } from './prepare.ts';
 import {
@@ -93,12 +94,13 @@ export class ManifestBuilder {
       this.closure([
         ...request.participants.map((participant) => get('character', participant.character)),
         ...request.participants.flatMap((participant) =>
-          (participant.skillLoadout?.nodeResolutions ?? []).flatMap(({ resolution }) =>
-            resolution.flatMap((item) =>
-              item.kind === 'augment'
-                ? [get('ability', item.baseAbility), get('ability', item.resolvedAbility)]
-                : [get('ability', item.ability)],
-            ),
+          (participant.skillLoadout
+            ? skillReceiptExecutionResolutions(participant.skillLoadout)
+            : []
+          ).flatMap((item) =>
+            item.kind === 'augment'
+              ? [get('ability', item.baseAbility), get('ability', item.resolvedAbility)]
+              : [get('ability', item.ability)],
           ),
         ),
         rules,
@@ -114,7 +116,9 @@ export class ManifestBuilder {
           : hasSensoryCues(revisions)
             ? 6
             : request.participants.some(
-                  (participant) => participant.skillLoadout?.schemaVersion === 2,
+                  (participant) =>
+                    participant.skillLoadout !== undefined &&
+                    participant.skillLoadout.schemaVersion !== 1,
                 )
               ? 5
               : request.participants.some((participant) => participant.skillLoadout)
