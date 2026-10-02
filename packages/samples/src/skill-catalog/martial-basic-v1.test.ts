@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vite-plus/test';
-import { SKILL_DANS, SKILL_ZODIAC_IDS } from '@fantasy/domain';
+import { SKILL_DANS, SKILL_ZODIAC_IDS, skillResolutionAbilityRefs } from '@fantasy/domain';
 import { martialBasicSkillEvidence, martialBasicSkillShards } from './martial-basic-v1.ts';
 
 type CatalogRecord = {
@@ -111,15 +111,16 @@ describe('basic martial skill catalog authoring', () => {
       evidenceIssues: string[] = [];
     for (const { evidence } of martialBasicSkillEvidence) {
       if (evidence.status === 'missing-mechanism') continue;
-      if (
-        !catalog.some(
-          (record) =>
-            record.id === evidence.ability.id &&
-            record.revision === evidence.ability.revision &&
-            record.contentHash === evidence.ability.contentHash,
+      for (const ability of skillResolutionAbilityRefs([evidence.recipe]))
+        if (
+          !catalog.some(
+            (record) =>
+              record.id === ability.id &&
+              record.revision === ability.revision &&
+              record.contentHash === ability.contentHash,
+          )
         )
-      )
-        evidenceIssues.push(`${evidence.ability.id}: catalog reference mismatch`);
+          evidenceIssues.push(`${ability.id}: catalog reference mismatch`);
       const evidenceSources = evidence.evidenceFiles.map((evidenceFile) =>
         readFileSync(repositoryFile(evidenceFile), 'utf8'),
       );

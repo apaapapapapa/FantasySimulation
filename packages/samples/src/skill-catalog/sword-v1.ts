@@ -511,60 +511,90 @@ const fixtureFiles = [
 const evidence = {
   'skill.sword.rat.1': {
     status: 'proven',
-    ability: {
-      id: 'sword',
-      revision: 1,
-      contentHash: hash('sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef'),
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'sword',
+        revision: 1,
+        contentHash: hash(
+          'sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef',
+        ),
+      },
     },
     fixtureIds: ['fixture.skill.sword.rat.1.action'],
     evidenceFiles: fixtureFiles,
   },
   'skill.sword.rat.2': {
     status: 'proven',
-    ability: {
-      id: 'stamina-strike-v1',
-      revision: 1,
-      contentHash: hash('sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc'),
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'stamina-strike-v1',
+        revision: 1,
+        contentHash: hash(
+          'sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc',
+        ),
+      },
     },
     fixtureIds: ['fixture.skill.sword.rat.2.action'],
     evidenceFiles: fixtureFiles,
   },
   'skill.sword.rat.3': {
     status: 'proven',
-    ability: {
-      id: 'return-cut-v1',
-      revision: 1,
-      contentHash: hash('sha256:396d51406e90fb6d783f0b9037d39f6bcd7f8c034624096c90db34edf3934b7f'),
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'return-cut-v1',
+        revision: 1,
+        contentHash: hash(
+          'sha256:396d51406e90fb6d783f0b9037d39f6bcd7f8c034624096c90db34edf3934b7f',
+        ),
+      },
     },
     fixtureIds: ['fixture.skill.sword.rat.3.action'],
     evidenceFiles: fixtureFiles,
   },
   'skill.sword.rat.4': {
     status: 'proven',
-    ability: {
-      id: 'dash-cut-v1',
-      revision: 1,
-      contentHash: hash('sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c'),
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'dash-cut-v1',
+        revision: 1,
+        contentHash: hash(
+          'sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c',
+        ),
+      },
     },
     fixtureIds: ['fixture.skill.sword.rat.4.action'],
     evidenceFiles: fixtureFiles,
   },
   'skill.sword.rat.5': {
     status: 'proven',
-    ability: {
-      id: 'wide-sweep-v1',
-      revision: 1,
-      contentHash: hash('sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18'),
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'wide-sweep-v1',
+        revision: 1,
+        contentHash: hash(
+          'sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18',
+        ),
+      },
     },
     fixtureIds: ['fixture.skill.sword.rat.5.action'],
     evidenceFiles: fixtureFiles,
   },
   'skill.sword.rat.6': {
     status: 'proven',
-    ability: {
-      id: 'wide-sweep-trained-v1',
-      revision: 1,
-      contentHash: hash('sha256:bab5ea0a1fcd1fc011581c516ec78303c61ba5c7ac7f85dda18e515aa789e76a'),
+    recipe: {
+      kind: 'active-ability',
+      ability: {
+        id: 'wide-sweep-trained-v1',
+        revision: 1,
+        contentHash: hash(
+          'sha256:bab5ea0a1fcd1fc011581c516ec78303c61ba5c7ac7f85dda18e515aa789e76a',
+        ),
+      },
     },
     fixtureIds: ['fixture.skill.sword.rat.6.action'],
     evidenceFiles: fixtureFiles,
