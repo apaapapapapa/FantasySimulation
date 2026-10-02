@@ -1,7 +1,8 @@
 import { MAX_RECORD_BYTES } from '@fantasy/domain/spatial';
 import { createHash } from 'node:crypto';
 import { once } from 'node:events';
-import { PerformanceObserver, performance } from 'node:perf_hooks';
+import { performance } from 'node:perf_hooks';
+import { observeGc } from './gc-observation.ts';
 import { threadId, type MessagePort } from 'node:worker_threads';
 import {
   canonicalJson,
@@ -48,24 +49,13 @@ let wasmBytes: (() => number) | undefined;
 
 /** Pull one bounded batch, transfer it, and wait for durable-writer acceptance before continuing. */
 export default async function battleWorker(task: WorkerTask): Promise<WorkerResult> {
+  return observeGc(task.measuredAt !== undefined, () => runTask(task));
+}
+
+async function runTask(task: WorkerTask): Promise<WorkerResult> {
   const started = performance.now(),
     cold = !initialized;
   const cpu = task.measuredAt === undefined ? undefined : process.threadCpuUsage();
-  const gc = { count: 0, durationMs: 0 };
-  const recordGc = (entries: readonly { duration: number }[]) => {
-    for (const entry of entries) {
-      gc.count++;
-      gc.durationMs += entry.duration;
-    }
-  };
-  const gcObserver = cpu
-    ? new PerformanceObserver((list) => recordGc(list.getEntries()))
-    : undefined;
-  gcObserver?.observe({ entryTypes: ['gc'] });
-  const snapshotGc = () => {
-    if (gcObserver) recordGc(gcObserver.takeRecords());
-    return { gcCount: gc.count, gcDurationMs: gc.durationMs };
-  };
   const dispatchWaitMs =
     task.measuredAt === undefined ? 0 : performance.timeOrigin + started - task.measuredAt;
   let recordingMs = 0,
@@ -130,7 +120,6 @@ export default async function battleWorker(task: WorkerTask): Promise<WorkerResu
                   hashMs,
                   cpuUserMs: process.threadCpuUsage(cpu).user / 1000,
                   cpuSystemMs: process.threadCpuUsage(cpu).system / 1000,
-                  ...snapshotGc(),
                 },
               }
             : {}),
@@ -167,7 +156,6 @@ export default async function battleWorker(task: WorkerTask): Promise<WorkerResu
       if (bytes >= 131072) await flush();
     }
   } finally {
-    gcObserver?.disconnect();
     stream.return(undefined as never);
     task.port.close();
   }
