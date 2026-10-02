@@ -222,6 +222,8 @@ it('updates named builtin exports before CJS snapshots and counts each get/reque
       for(const method of ['get','request']) {try{transport[method](url);}catch{}}
     }
     require('fs').writeSync(3,JSON.stringify({...${reply()},...guard.snapshot(),childMaxRssKiB:process.resourceUsage().maxRSS}));
+    // This fixture owns HTTP interception, so leave supervision sampling to its dedicated tests.
+    await new Promise(resolve=>setTimeout(resolve,300));
   `,
     ],
     { env: {}, stdio: ['ignore', 'pipe', 'pipe', 'pipe'], shell: false },
