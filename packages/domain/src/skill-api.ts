@@ -3,20 +3,48 @@ import {
   SkillAcquisitionRevisionSchema,
   SkillAcquisitionSelectionSchema,
 } from './skill-acquisition.ts';
-import { SkillConfigurationSchema, SkillLoadoutRevisionSchema } from './skill-loadout.ts';
+import {
+  SkillConfigurationSchema,
+  SkillConfigurationV2Schema,
+  SkillLoadoutRevisionSchema,
+  SkillLoadoutRevisionV2Schema,
+} from './skill-loadout.ts';
 import { SkillCatalogSchema } from './skill-system.ts';
 import { JobRequestSchema } from './spatial/api.ts';
 import { IdSchema, RefSchema } from './spatial/contracts.ts';
 
 const version = z.number().int().min(1).max(1_000_000);
 const revisionHeadFields = {
-  schemaVersion: z.literal(1),
   id: IdSchema,
   version,
   latest: RefSchema,
   createdAt: z.iso.datetime(),
   updatedAt: z.iso.datetime(),
 };
+
+function validateLoadoutHead(
+  head: {
+    id: string;
+    version: number;
+    latest: z.infer<typeof RefSchema>;
+    snapshot: {
+      id: string;
+      revision: number;
+      contentHash: string;
+      configuration: { version: number };
+    };
+  },
+  context: z.RefinementCtx,
+) {
+  if (
+    head.latest.id !== head.id ||
+    head.latest.revision !== head.snapshot.revision ||
+    head.latest.contentHash !== head.snapshot.contentHash ||
+    head.snapshot.id !== head.id ||
+    head.version !== head.snapshot.configuration.version
+  )
+    context.addIssue({ code: 'custom', message: 'Skill loadout head mismatch' });
+}
 
 export const SkillCatalogRecordSchema = z
   .strictObject({
@@ -42,28 +70,54 @@ export const SkillLoadoutPatchSchema = SkillLoadoutCreateSchema.extend({
 });
 export type SkillLoadoutCreate = z.infer<typeof SkillLoadoutCreateSchema>;
 export type SkillLoadoutPatch = z.infer<typeof SkillLoadoutPatchSchema>;
+export const SkillLoadoutCreateV2Schema = z.strictObject({
+  character: RefSchema,
+  configuration: SkillConfigurationV2Schema,
+});
+export const SkillLoadoutPatchV2Schema = SkillLoadoutCreateV2Schema.extend({
+  expectedVersion: version,
+});
+export const AnySkillLoadoutCreateSchema = z.union([
+  SkillLoadoutCreateSchema,
+  SkillLoadoutCreateV2Schema,
+]);
+export const AnySkillLoadoutPatchSchema = z.union([
+  SkillLoadoutPatchSchema,
+  SkillLoadoutPatchV2Schema,
+]);
+export type AnySkillLoadoutCreate = z.infer<typeof AnySkillLoadoutCreateSchema>;
+export type AnySkillLoadoutPatch = z.infer<typeof AnySkillLoadoutPatchSchema>;
 
 export const SkillLoadoutHeadSchema = z
   .strictObject({
     ...revisionHeadFields,
+    schemaVersion: z.literal(1),
     snapshot: SkillLoadoutRevisionSchema,
   })
-  .superRefine((head, context) => {
-    if (
-      head.latest.id !== head.id ||
-      head.latest.revision !== head.snapshot.revision ||
-      head.latest.contentHash !== head.snapshot.contentHash ||
-      head.snapshot.id !== head.id ||
-      head.version !== head.snapshot.configuration.version
-    )
-      context.addIssue({ code: 'custom', message: 'Skill loadout head mismatch' });
-  });
+  .superRefine(validateLoadoutHead);
 export type SkillLoadoutHead = z.infer<typeof SkillLoadoutHeadSchema>;
 export const SkillLoadoutPageSchema = z.strictObject({
   items: z.array(SkillLoadoutHeadSchema).max(100),
   nextCursor: IdSchema.nullable(),
 });
 export type SkillLoadoutPage = z.infer<typeof SkillLoadoutPageSchema>;
+
+export const SkillLoadoutHeadV2Schema = z
+  .strictObject({
+    ...revisionHeadFields,
+    schemaVersion: z.literal(2),
+    snapshot: SkillLoadoutRevisionV2Schema,
+  })
+  .superRefine(validateLoadoutHead);
+export const AnySkillLoadoutHeadSchema = z.union([
+  SkillLoadoutHeadSchema,
+  SkillLoadoutHeadV2Schema,
+]);
+export type AnySkillLoadoutHead = z.infer<typeof AnySkillLoadoutHeadSchema>;
+export const AnySkillLoadoutPageSchema = z.strictObject({
+  items: z.array(AnySkillLoadoutHeadSchema).max(100),
+  nextCursor: IdSchema.nullable(),
+});
 
 export const SkillAcquisitionCreateSchema = z.strictObject({
   selection: SkillAcquisitionSelectionSchema,
@@ -74,6 +128,7 @@ export const SkillAcquisitionPatchSchema = SkillAcquisitionCreateSchema.extend({
 export const SkillAcquisitionHeadSchema = z
   .strictObject({
     ...revisionHeadFields,
+    schemaVersion: z.literal(1),
     authoritativeBoundary: z.literal(false),
     snapshot: SkillAcquisitionRevisionSchema,
   })

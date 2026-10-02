@@ -1,23 +1,27 @@
 import { and, asc, eq, gt } from 'drizzle-orm';
 import {
+  AnySkillConfigurationSchema,
+  AnySkillLoadoutCreateSchema,
+  AnySkillLoadoutHeadSchema,
+  AnySkillLoadoutPageSchema,
+  AnySkillLoadoutPatchSchema,
+  AnySkillLoadoutRevisionSchema,
   SkillCatalogRecordSchema,
-  SkillLoadoutCreateSchema,
-  SkillLoadoutHeadSchema,
-  SkillLoadoutPatchSchema,
-  SkillLoadoutPageSchema,
-  SkillLoadoutRevisionSchema,
   canonicalJson,
   compareIds,
   parseJson,
   parseCompleteSkillCatalog,
   resolveSkillLoadout,
+  skillBattleReceipt,
   skillCatalogDigest,
   skillLoadoutRevisionHash,
   type RevisionRef,
   type SkillCatalog,
-  type SkillLoadoutRevision,
+  type AnySkillLoadoutRevision,
+  type AnyResolvedSkillLoadout,
 } from '@fantasy/domain';
 import { skillCatalogRevisions, skillLoadoutHeads, skillLoadoutRevisions } from './schema.ts';
+import { SkillAcquisitionStore } from './skill-acquisition-store.ts';
 import { jsonValue, type Store } from './store.ts';
 import { StoreError } from './store-error.ts';
 
@@ -99,25 +103,78 @@ export class SkillStore {
     return record.catalog;
   }
 
+  private validateV2Applicability(characterRef: RevisionRef, resolved: AnyResolvedSkillLoadout) {
+    if (resolved.schemaVersion !== 2) return;
+    const character = this.store.requireRevision('character', characterRef);
+    if (character.kind !== 'character') throw new Error('Expected character revision');
+    const equipped = new Map<string, RevisionRef>();
+    for (const ref of character.definition.abilities) equipped.set(ref.id, ref);
+    for (const equipmentRef of character.definition.equipment) {
+      const equipment = this.store.requireRevision('equipment', equipmentRef);
+      if (equipment.kind !== 'equipment') throw new Error('Expected equipment revision');
+      for (const ref of equipment.definition.abilities) equipped.set(ref.id, ref);
+    }
+    for (const node of resolved.nodeResolutions)
+      for (const resolution of node.resolution) {
+        if (resolution.kind === 'augment') {
+          const base = this.store.requireRevision('ability', resolution.baseAbility),
+            replacement = this.store.requireRevision('ability', resolution.resolvedAbility),
+            owned = equipped.get(base.id);
+          if (!owned || canonicalJson(owned) !== canonicalJson(resolution.baseAbility))
+            throw new Error(`Augment base ability is not in the character loadout: ${base.id}`);
+          if (
+            base.kind !== 'ability' ||
+            replacement.kind !== 'ability' ||
+            base.definition.trigger !== replacement.definition.trigger
+          )
+            throw new Error(`Augment must preserve ability trigger: ${base.id}`);
+          continue;
+        }
+        const ability = this.store.requireRevision('ability', resolution.ability);
+        if (ability.kind !== 'ability') throw new Error('Expected ability revision');
+        if (resolution.kind === 'active-ability' && ability.definition.trigger !== 'action')
+          throw new Error(`Active skill ability must use the action trigger: ${ability.id}`);
+        if (resolution.kind === 'passive-ability' && ability.definition.trigger === 'action')
+          throw new Error(`Passive skill ability cannot use the action trigger: ${ability.id}`);
+        const previous = equipped.get(ability.id);
+        if (previous && canonicalJson(previous) !== canonicalJson(resolution.ability))
+          throw new Error(`Skill ability conflicts with equipped ability: ${ability.id}`);
+      }
+  }
+
   private async resolveSnapshot(
     character: RevisionRef,
     configurationInput: unknown,
     revision: number,
-  ): Promise<SkillLoadoutRevision> {
-    const parsedConfiguration =
-        SkillLoadoutCreateSchema.shape.configuration.parse(configurationInput),
-      configuration = {
-        ...parsedConfiguration,
-        eligibilityNodeIds: [...parsedConfiguration.eligibilityNodeIds].sort(compareIds),
-        learnedNodeIds: [...parsedConfiguration.learnedNodeIds].sort(compareIds),
-        enabledNodeIds: [...parsedConfiguration.enabledNodeIds].sort(compareIds),
-      };
+  ): Promise<AnySkillLoadoutRevision> {
+    const parsedConfiguration = AnySkillConfigurationSchema.parse(configurationInput),
+      configuration =
+        parsedConfiguration.schemaVersion === 1
+          ? {
+              ...parsedConfiguration,
+              eligibilityNodeIds: [...parsedConfiguration.eligibilityNodeIds].sort(compareIds),
+              learnedNodeIds: [...parsedConfiguration.learnedNodeIds].sort(compareIds),
+              enabledNodeIds: [...parsedConfiguration.enabledNodeIds].sort(compareIds),
+            }
+          : {
+              ...parsedConfiguration,
+              enabledNodeIds: [...parsedConfiguration.enabledNodeIds].sort(compareIds),
+            };
     this.store.requireRevision('character', character);
     const catalog = await this.requireCatalog(configuration.catalog);
     let resolved;
     try {
       // Equipment tag contracts are not part of SK-02. Nodes requiring one fail closed.
-      resolved = await resolveSkillLoadout(catalog, configuration, []);
+      if (configuration.schemaVersion === 1)
+        resolved = await resolveSkillLoadout(catalog, configuration, []);
+      else {
+        const acquisition = await new SkillAcquisitionStore(this.store).revision(
+          configuration.acquisition,
+        );
+        if (canonicalJson(acquisition.character) !== canonicalJson(character))
+          throw new Error('Skill acquisition character does not match loadout character');
+        resolved = await resolveSkillLoadout(catalog, configuration, [], acquisition);
+      }
       for (const node of resolved.nodeResolutions)
         for (const resolution of node.resolution) {
           if (resolution.kind === 'augment') {
@@ -125,22 +182,43 @@ export class SkillStore {
             this.store.requireRevision('ability', resolution.resolvedAbility);
           } else this.store.requireRevision('ability', resolution.ability);
         }
+      this.validateV2Applicability(character, resolved);
     } catch (error) {
       invalid(error);
     }
-    const content = {
-        schemaVersion: 1 as const,
-        id: configuration.id,
-        revision,
-        character,
-        configuration,
-        resolved,
-      },
+    if (configuration.schemaVersion !== resolved.schemaVersion)
+      throw new StoreError('conflict', 'Skill loadout resolver version mismatch');
+    const content =
+        configuration.schemaVersion === 1 && resolved.schemaVersion === 1
+          ? {
+              schemaVersion: 1 as const,
+              id: configuration.id,
+              revision,
+              character,
+              configuration,
+              resolved,
+            }
+          : configuration.schemaVersion === 2 && resolved.schemaVersion === 2
+            ? {
+                schemaVersion: 2 as const,
+                id: configuration.id,
+                revision,
+                character,
+                configuration,
+                resolved,
+              }
+            : invalid('Skill loadout resolver version mismatch'),
       contentHash = await skillLoadoutRevisionHash(content);
-    return SkillLoadoutRevisionSchema.parse({ ...content, contentHash });
+    const snapshot = AnySkillLoadoutRevisionSchema.parse({ ...content, contentHash });
+    try {
+      await skillBattleReceipt(snapshot);
+    } catch (error) {
+      invalid(error);
+    }
+    return snapshot;
   }
 
-  private insertSnapshot(snapshot: SkillLoadoutRevision, createdAt: string) {
+  private insertSnapshot(snapshot: AnySkillLoadoutRevision, createdAt: string) {
     this.store.orm
       .insert(skillLoadoutRevisions)
       .values({
@@ -157,15 +235,18 @@ export class SkillStore {
       .run();
   }
 
-  private snapshotRow(id: string, revision: number): SkillLoadoutRevision | undefined {
+  private snapshotRow(id: string, revision: number): AnySkillLoadoutRevision | undefined {
     const row = this.store.orm
       .select()
       .from(skillLoadoutRevisions)
       .where(and(eq(skillLoadoutRevisions.id, id), eq(skillLoadoutRevisions.revision, revision)))
       .get();
     return row
-      ? parseJson(SkillLoadoutRevisionSchema, {
-          schemaVersion: 1,
+      ? parseJson(AnySkillLoadoutRevisionSchema, {
+          schemaVersion:
+            (jsonValue(row.configurationJson) as { schemaVersion?: number }).schemaVersion === 2
+              ? 2
+              : 1,
           id: row.id,
           revision: row.revision,
           contentHash: row.contentHash,
@@ -202,8 +283,8 @@ export class SkillStore {
       revision: row.latestRevision,
       contentHash: row.latestContentHash,
     });
-    return SkillLoadoutHeadSchema.parse({
-      schemaVersion: 1,
+    return AnySkillLoadoutHeadSchema.parse({
+      schemaVersion: snapshot.schemaVersion,
       id: row.id,
       version: row.version,
       latest: {
@@ -226,14 +307,14 @@ export class SkillStore {
         .limit(limit + 1)
         .all(),
       page = rows.slice(0, limit);
-    return SkillLoadoutPageSchema.parse({
+    return AnySkillLoadoutPageSchema.parse({
       items: await Promise.all(page.map(({ id }) => this.head(id))),
       nextCursor: rows.length > limit ? page.at(-1)!.id : null,
     });
   }
 
   async create(input: unknown) {
-    const request = parseJson(SkillLoadoutCreateSchema, input);
+    const request = parseJson(AnySkillLoadoutCreateSchema, input);
     if (request.configuration.version !== 1)
       throw new StoreError('invalid-input', 'New skill loadout version must be 1');
     const snapshot = await this.resolveSnapshot(request.character, request.configuration, 1),
@@ -264,7 +345,7 @@ export class SkillStore {
   }
 
   async patch(id: string, input: unknown) {
-    const request = parseJson(SkillLoadoutPatchSchema, input),
+    const request = parseJson(AnySkillLoadoutPatchSchema, input),
       nextVersion = request.expectedVersion + 1;
     if (request.configuration.id !== id)
       throw new StoreError('invalid-input', 'Skill loadout ID cannot change');
@@ -273,6 +354,20 @@ export class SkillStore {
     const current = await this.head(id);
     if (current.version !== request.expectedVersion)
       throw new StoreError('conflict', 'Skill loadout changed; reload before saving');
+    if (current.schemaVersion === 2 && request.configuration.schemaVersion === 1)
+      throw new StoreError('invalid-input', 'Schema v2 loadouts cannot downgrade to schema v1');
+    if (
+      request.configuration.schemaVersion === 2 &&
+      (canonicalJson(current.snapshot.character) !== canonicalJson(request.character) ||
+        canonicalJson(current.snapshot.configuration.catalog) !==
+          canonicalJson(request.configuration.catalog) ||
+        (current.schemaVersion === 2 &&
+          current.snapshot.configuration.acquisition.id !== request.configuration.acquisition.id))
+    )
+      throw new StoreError(
+        'invalid-input',
+        'Schema v2 loadout character, catalog and acquisition identity cannot change',
+      );
     const snapshot = await this.resolveSnapshot(
         request.character,
         request.configuration,

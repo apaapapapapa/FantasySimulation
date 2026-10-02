@@ -132,6 +132,68 @@ describe('skill loadout API', () => {
     ).toBe(409);
   });
 
+  it('creates and CAS-updates a V2 loadout bound to an exact acquisition revision', async () => {
+    const { app, character, catalogRecord, configuration, target } = await setup(),
+      acquisition = (
+        await app.inject({
+          method: 'POST',
+          url: '/api/skill-acquisitions',
+          payload: {
+            selection: {
+              schemaVersion: 1,
+              id: 'acquisition.route-loadout',
+              version: 1,
+              character: reference(character),
+              catalog: catalogRecord.reference,
+              learnedNodeIds: [target],
+            },
+          },
+        })
+      ).json(),
+      v2 = {
+        schemaVersion: 2,
+        id: configuration.id,
+        version: 1,
+        catalog: catalogRecord.reference,
+        acquisition: acquisition.latest,
+        enabledNodeIds: configuration.enabledNodeIds,
+      },
+      created = await app.inject({
+        method: 'POST',
+        url: '/api/skill-loadouts',
+        payload: { character: reference(character), configuration: v2 },
+      });
+    expect(created.statusCode).toBe(201);
+    expect(created.json()).toMatchObject({
+      schemaVersion: 2,
+      version: 1,
+      snapshot: {
+        configuration: { acquisition: acquisition.latest },
+        resolved: { acquisition: acquisition.latest },
+      },
+    });
+
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: `/api/skill-loadouts/${configuration.id}`,
+      payload: {
+        expectedVersion: 1,
+        character: reference(character),
+        configuration: { ...v2, version: 2 },
+      },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json()).toMatchObject({
+      schemaVersion: 2,
+      version: 2,
+      latest: { revision: 2 },
+      snapshot: {
+        configuration: { acquisition: acquisition.latest },
+        resolved: { acquisition: acquisition.latest },
+      },
+    });
+  });
+
   it('injects only an immutable loadout receipt and creates no job for invalid refs', async () => {
     const { app, submit, manifest, character, configuration } = await setup(),
       created = (

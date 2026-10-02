@@ -15,6 +15,11 @@ import {
   parseCompleteSkillCatalog,
   skillCatalogDigest,
 } from './skill-system.ts';
+import {
+  SkillAcquisitionRevisionSchema,
+  skillAcquisitionRevisionHash,
+  type SkillAcquisitionRevision,
+} from './skill-acquisition.ts';
 
 export const SKILL_RESOLVER_VERSION = CURRENT_SKILL_RESOLVER_VERSION;
 export const MAX_ENABLED_SKILL_PATHS = 2;
@@ -37,6 +42,20 @@ export const SkillConfigurationSchema = z.strictObject({
   enabledNodeIds: UniqueNodeIdsSchema(12),
 });
 export type SkillConfiguration = z.infer<typeof SkillConfigurationSchema>;
+export const SkillConfigurationV2Schema = z.strictObject({
+  schemaVersion: z.literal(2),
+  id: IdSchema,
+  version: z.number().int().min(1).max(1_000_000),
+  catalog: RefSchema,
+  acquisition: RefSchema,
+  enabledNodeIds: UniqueNodeIdsSchema(12),
+});
+export type SkillConfigurationV2 = z.infer<typeof SkillConfigurationV2Schema>;
+export const AnySkillConfigurationSchema = z.union([
+  SkillConfigurationSchema,
+  SkillConfigurationV2Schema,
+]);
+export type AnySkillConfiguration = z.infer<typeof AnySkillConfigurationSchema>;
 
 export const SkillNodeStatusSchema = z.enum([
   'locked',
@@ -53,8 +72,7 @@ export type SkillNodeState = {
   reasons: string[];
 };
 
-export const ResolvedSkillLoadoutSchema = z.strictObject({
-  schemaVersion: z.literal(1),
+const resolvedSkillLoadoutFields = {
   resolverVersion: z.literal(SKILL_RESOLVER_VERSION),
   configurationId: IdSchema,
   configurationVersion: z.number().int().min(1).max(1_000_000),
@@ -71,8 +89,23 @@ export const ResolvedSkillLoadoutSchema = z.strictObject({
     )
     .max(12),
   resolutionDigest: HashSchema,
+};
+export const ResolvedSkillLoadoutSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  ...resolvedSkillLoadoutFields,
 });
 export type ResolvedSkillLoadout = z.infer<typeof ResolvedSkillLoadoutSchema>;
+export const ResolvedSkillLoadoutV2Schema = z.strictObject({
+  schemaVersion: z.literal(2),
+  ...resolvedSkillLoadoutFields,
+  acquisition: RefSchema,
+});
+export type ResolvedSkillLoadoutV2 = z.infer<typeof ResolvedSkillLoadoutV2Schema>;
+export const AnyResolvedSkillLoadoutSchema = z.union([
+  ResolvedSkillLoadoutSchema,
+  ResolvedSkillLoadoutV2Schema,
+]);
+export type AnyResolvedSkillLoadout = z.infer<typeof AnyResolvedSkillLoadoutSchema>;
 
 export const SkillLoadoutRevisionContentSchema = z
   .strictObject({
@@ -98,12 +131,51 @@ export const SkillLoadoutRevisionSchema = SkillLoadoutRevisionContentSchema.safe
 export type SkillLoadoutRevisionContent = z.infer<typeof SkillLoadoutRevisionContentSchema>;
 export type SkillLoadoutRevision = z.infer<typeof SkillLoadoutRevisionSchema>;
 
-export const skillLoadoutRevisionHash = (snapshot: SkillLoadoutRevisionContent) =>
-  contentHash(JSON.parse(canonicalJson(SkillLoadoutRevisionContentSchema.parse(snapshot))));
+export const SkillLoadoutRevisionContentV2Schema = z
+  .strictObject({
+    schemaVersion: z.literal(2),
+    id: IdSchema,
+    revision: z.number().int().min(1).max(1_000_000),
+    character: RefSchema,
+    configuration: SkillConfigurationV2Schema,
+    resolved: ResolvedSkillLoadoutV2Schema,
+  })
+  .superRefine((snapshot, context) => {
+    if (
+      snapshot.configuration.id !== snapshot.resolved.configurationId ||
+      snapshot.configuration.version !== snapshot.resolved.configurationVersion
+    )
+      context.addIssue({ code: 'custom', message: 'Resolved loadout configuration mismatch' });
+    if (canonicalJson(snapshot.configuration.catalog) !== canonicalJson(snapshot.resolved.catalog))
+      context.addIssue({ code: 'custom', message: 'Resolved loadout catalog mismatch' });
+    if (
+      canonicalJson(snapshot.configuration.acquisition) !==
+      canonicalJson(snapshot.resolved.acquisition)
+    )
+      context.addIssue({ code: 'custom', message: 'Resolved loadout acquisition mismatch' });
+  });
+export const SkillLoadoutRevisionV2Schema = SkillLoadoutRevisionContentV2Schema.safeExtend({
+  contentHash: HashSchema,
+});
+export type SkillLoadoutRevisionContentV2 = z.infer<typeof SkillLoadoutRevisionContentV2Schema>;
+export type SkillLoadoutRevisionV2 = z.infer<typeof SkillLoadoutRevisionV2Schema>;
+export const AnySkillLoadoutRevisionContentSchema = z.union([
+  SkillLoadoutRevisionContentSchema,
+  SkillLoadoutRevisionContentV2Schema,
+]);
+export const AnySkillLoadoutRevisionSchema = z.union([
+  SkillLoadoutRevisionSchema,
+  SkillLoadoutRevisionV2Schema,
+]);
+export type AnySkillLoadoutRevisionContent = z.infer<typeof AnySkillLoadoutRevisionContentSchema>;
+export type AnySkillLoadoutRevision = z.infer<typeof AnySkillLoadoutRevisionSchema>;
+
+export const skillLoadoutRevisionHash = (snapshot: AnySkillLoadoutRevisionContent) =>
+  contentHash(JSON.parse(canonicalJson(AnySkillLoadoutRevisionContentSchema.parse(snapshot))));
 
 /** Project an immutable resolved loadout into a bounded, versioned battle receipt. */
 export async function skillBattleReceipt(input: unknown): Promise<SkillLoadoutReceipt> {
-  const snapshot = SkillLoadoutRevisionSchema.parse(input),
+  const snapshot = AnySkillLoadoutRevisionSchema.parse(input),
     { contentHash: storedHash, ...content } = snapshot;
   if (storedHash !== (await skillLoadoutRevisionHash(content)))
     throw new SkillLoadoutError('catalog-mismatch', 'Skill loadout revision hash mismatch');
@@ -228,9 +300,21 @@ export async function resolveSkillLoadout(
   catalogInput: SkillCatalog,
   configurationInput: SkillConfiguration,
   equippedWeaponTagsInput: string[],
-): Promise<ResolvedSkillLoadout> {
+): Promise<ResolvedSkillLoadout>;
+export async function resolveSkillLoadout(
+  catalogInput: SkillCatalog,
+  configurationInput: SkillConfigurationV2,
+  equippedWeaponTagsInput: string[],
+  acquisitionInput: SkillAcquisitionRevision,
+): Promise<ResolvedSkillLoadoutV2>;
+export async function resolveSkillLoadout(
+  catalogInput: SkillCatalog,
+  configurationInput: AnySkillConfiguration,
+  equippedWeaponTagsInput: string[],
+  acquisitionInput?: SkillAcquisitionRevision,
+): Promise<AnyResolvedSkillLoadout> {
   const catalog = parseCompleteSkillCatalog(catalogInput),
-    configuration = SkillConfigurationSchema.parse(configurationInput),
+    configuration = AnySkillConfigurationSchema.parse(configurationInput),
     equippedWeaponTags = [...new Set(equippedWeaponTagsInput.map((tag) => IdSchema.parse(tag)))],
     expectedCatalogHash = await skillCatalogDigest(catalog);
   if (
@@ -240,11 +324,37 @@ export async function resolveSkillLoadout(
   )
     throw new SkillLoadoutError('catalog-mismatch', 'Configuration catalog ref does not match');
 
+  let eligibilityNodeIds: string[], learnedNodeIds: string[];
+  let acquisition: SkillAcquisitionRevision | undefined;
+  if (configuration.schemaVersion === 1) {
+    eligibilityNodeIds = configuration.eligibilityNodeIds;
+    learnedNodeIds = configuration.learnedNodeIds;
+  } else {
+    acquisition = SkillAcquisitionRevisionSchema.parse(acquisitionInput);
+    const { contentHash: acquisitionHash, ...acquisitionContent } = acquisition;
+    if (
+      acquisitionHash !== (await skillAcquisitionRevisionHash(acquisitionContent)) ||
+      canonicalJson(configuration.acquisition) !==
+        canonicalJson({
+          id: acquisition.id,
+          revision: acquisition.revision,
+          contentHash: acquisition.contentHash,
+        }) ||
+      canonicalJson(configuration.catalog) !== canonicalJson(acquisition.catalog)
+    )
+      throw new SkillLoadoutError(
+        'catalog-mismatch',
+        'Configuration acquisition ref does not match immutable acquisition state',
+      );
+    eligibilityNodeIds = acquisition.eligibilityNodeIds;
+    learnedNodeIds = acquisition.learnedNodeIds;
+  }
+
   const nodes = catalogNodes(catalog),
-    eligible = new Set(configuration.eligibilityNodeIds),
-    learned = new Set(configuration.learnedNodeIds);
-  requireKnownIds(nodes, 'eligibilityNodeIds', configuration.eligibilityNodeIds);
-  requireKnownIds(nodes, 'learnedNodeIds', configuration.learnedNodeIds);
+    eligible = new Set(eligibilityNodeIds),
+    learned = new Set(learnedNodeIds);
+  requireKnownIds(nodes, 'eligibilityNodeIds', eligibilityNodeIds);
+  requireKnownIds(nodes, 'learnedNodeIds', learnedNodeIds);
   requireKnownIds(nodes, 'enabledNodeIds', configuration.enabledNodeIds);
   for (const id of learned) {
     const node = nodes.get(id)!;
@@ -304,8 +414,7 @@ export async function resolveSkillLoadout(
       resolution: node.resolution,
     })),
   };
-  return {
-    schemaVersion: 1,
+  const common = {
     resolverVersion: SKILL_RESOLVER_VERSION,
     configurationId: configuration.id,
     configurationVersion: configuration.version,
@@ -316,4 +425,7 @@ export async function resolveSkillLoadout(
     nodeResolutions: digestInput.nodeResolutions,
     resolutionDigest: await contentHash(JSON.parse(canonicalJson(digestInput))),
   };
+  return configuration.schemaVersion === 1
+    ? { schemaVersion: 1, ...common }
+    : { schemaVersion: 2, ...common, acquisition: configuration.acquisition };
 }
