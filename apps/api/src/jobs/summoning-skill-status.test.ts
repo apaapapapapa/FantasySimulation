@@ -1,7 +1,6 @@
 import { gunzipSync } from 'node:zlib';
 import { expect, it } from 'vite-plus/test';
 import {
-  DEFAULT_BUDGET,
   ReplayManifestSchema,
   ReplayState,
   RevisionSchema,
@@ -11,7 +10,8 @@ import {
   revisionReference,
 } from '@fantasy/domain/spatial';
 import { catalogManifest } from '@fantasy/samples';
-import { withRuntime, specInput } from '../../test-support/runtime.ts';
+import { withRuntime } from '../../test-support/runtime.ts';
+import { submitSkillJob } from '../../test-support/skill-job.ts';
 import { readSampleRevisions } from '../db/store.ts';
 import { seedStartupData } from '../db/startup-data.ts';
 import { createApp } from '../http/app.ts';
@@ -70,19 +70,14 @@ it(
           fixture.ruleset.id,
         );
         await store.seedRevisions(input.revisions);
-        const submitted = await app.inject({
-          method: 'POST',
-          url: '/api/skill-battle-jobs',
-          headers: { 'x-client-id': 'summoning-skill', 'idempotency-key': 'production-rat-v1' },
-          payload: {
-            spec: specInput(input),
-            budget: DEFAULT_BUDGET,
-            loadouts: [{ actorId: 'left', loadout: saved.json().latest }],
-          },
-        });
-        if (submitted.statusCode !== 202)
-          throw new Error(`${submitted.statusCode}: ${submitted.body}`);
-        const done = await runtime.wait(submitted.json().job.id);
+        const jobId = await submitSkillJob(
+            app,
+            input,
+            'summoning-skill',
+            'production-rat-v1',
+            saved.json().latest,
+          ),
+          done = await runtime.wait(jobId);
         if (done.state !== 'completed') throw new Error(JSON.stringify(done));
         const result = jobs.result(done.resultId!)!;
         expect(jobs.artifact(result.replayId)?.validationProfile).toBe(REPLAY_VALIDATION_PROFILE);

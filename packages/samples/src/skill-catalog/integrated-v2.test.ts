@@ -12,9 +12,9 @@ describe('integrated startup skill shards', () => {
     expect(nodes).toHaveLength(1_008);
     expect(new Set(nodes.map(({ id }) => id)).size).toBe(1_008);
     expect(new Set(nodes.map(({ coordinate }) => skillCoordinateKey(coordinate))).size).toBe(1_008);
-    expect(nodes.filter(({ lifecycle }) => lifecycle === 'available')).toHaveLength(30);
+    expect(nodes.filter(({ lifecycle }) => lifecycle === 'available')).toHaveLength(31);
     expect(nodes.filter(({ lifecycle }) => lifecycle === 'implemented')).toHaveLength(2);
-    expect(nodes.filter(({ lifecycle }) => lifecycle === 'draft')).toHaveLength(976);
+    expect(nodes.filter(({ lifecycle }) => lifecycle === 'draft')).toHaveLength(975);
   });
 
   it('exposes only the runtime-evidenced available nodes from the source shards', () => {
@@ -46,6 +46,7 @@ describe('integrated startup skill shards', () => {
         'skill.magic.dragon.1',
         'skill.magic.snake.1',
         'skill.magic.horse.1',
+        'skill.magic.goat.1',
         'skill.magic.monkey.1',
         'skill.magic.rooster.1',
         'skill.magic.rooster.2',

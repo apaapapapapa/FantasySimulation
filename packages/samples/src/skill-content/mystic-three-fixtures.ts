@@ -18,6 +18,7 @@ export type MysticSkillFixture = {
     interference: string;
   };
   evidenceTests: string[];
+  requiresLoadout?: true;
 };
 
 const fixture = (
@@ -28,7 +29,9 @@ const fixture = (
   mechanisms: string[],
   boundaries: MysticSkillFixture['boundaries'],
   evidenceTests: string[],
-  options: Pick<MysticSkillFixture, 'scenario' | 'ruleset' | 'preserves'> = { scenario: 'flat' },
+  options: Pick<MysticSkillFixture, 'scenario' | 'ruleset' | 'preserves' | 'requiresLoadout'> = {
+    scenario: 'flat',
+  },
 ): MysticSkillFixture => ({
   id: nodeId.replace('skill.', 'fixture.skill.') + '.runtime',
   nodeId,
@@ -74,6 +77,45 @@ export const MYSTIC_ROOSTER_DAN2_FIXTURE = fixture(
     scenario: 'flat',
     preserves: { nodeId: 'skill.magic.rooster.1', abilityId: 'reveal-fire' },
   },
+);
+
+export const MYSTIC_MAGIC_GOAT_DAN1_FIXTURE = fixture(
+  'skill.magic.goat.1',
+  'self-water',
+  'swordsman',
+  'fire-mage',
+  [
+    'water',
+    'water-extinguishable',
+    'observed-self-extinguish',
+    'loadout-injection',
+    'silence-admission',
+    'mp-admission',
+    'cooldown-admission',
+    'simultaneous-status-cohort',
+    'no-op-without-eligible-burn',
+  ],
+  {
+    resource: 'Pays the published self-water MP cost and observes its cast, recovery and cooldown.',
+    duplicate:
+      'A repeat without an eligible observed burn is a bounded no-op rather than a second removal.',
+    duration:
+      'Water settles once after the published cast boundary and creates no continuing status.',
+    release: 'Only a burning status marked waterExtinguishable is removed.',
+    interference:
+      'Silence, insufficient MP, cooldown and concurrently created burns remain authoritative.',
+  },
+  [
+    ...catalogEvidence,
+    'packages/engine/src/spatial/status-integration.test.ts',
+    'packages/engine/src/spatial/ai-integration.test.ts',
+    'packages/engine/src/spatial/effects.test.ts',
+    'packages/engine/src/spatial/assessment.test.ts',
+    'packages/engine/src/spatial/candidate-cutoff.test.ts',
+    'apps/api/src/jobs/magic-goat-skill-status.test.ts',
+    'apps/web/src/replay/magic-goat-skill-display.test.ts',
+  ],
+  { scenario: 'flat', requiresLoadout: true },
 );
 
 export const MYSTIC_SKILL_FIXTURES: MysticSkillFixture[] = [
@@ -310,6 +352,7 @@ export const MYSTIC_SKILL_FIXTURES: MysticSkillFixture[] = [
     teleportEvidence,
     { scenario: 'flat-surveyed-v1' },
   ),
+  MYSTIC_MAGIC_GOAT_DAN1_FIXTURE,
   fixture(
     'skill.magic.monkey.1',
     'ice',
