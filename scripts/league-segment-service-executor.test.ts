@@ -131,11 +131,13 @@ it('allows only the two fixed pilot names and the smaller metrics byte ceiling',
       bytes: 524288,
     }).bytes,
   ).toBe(524288);
+  expect(segmentServiceReceiptSchema.parse({ ...receipt(), bytes: 16777608 }).bytes).toBe(16777608);
   for (const update of [
     { name: 'league-123-2-service-metrics.zip' },
     { name: 'league-123-1-segment-1-0-upload-0.zip' },
     { allocationAttempt: 1 },
     { name: 'league-123-1-service-metrics.zip', bytes: 524289 },
+    { bytes: 16777609 },
   ])
     expect(() => segmentServiceReceiptSchema.parse({ ...receipt(), ...update })).toThrow();
 });

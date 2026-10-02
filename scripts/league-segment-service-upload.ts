@@ -5,15 +5,21 @@ import { lstat, readFile, realpath } from 'node:fs/promises';
 import { writeSync } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  SEGMENT_SERVICE_HTTP_REQUESTS,
+  SEGMENT_SERVICE_UPLOAD_NAME,
+  segmentServiceUploadKind,
+  type SegmentServiceUploadKind,
+} from './league-segment-service-bounds.ts';
 let guarded = false;
 /** Restriction only, installed before any third-party dependency can snapshot core transports.
  * Counts request creations conservatively (including requests cancelled before wire transmission).
  * Exhaustion terminates the one-shot child; SDK retry cannot create request upper+1.
  */
-export function installSegmentPhysicalHttpGuard(kind: 'data' | 'metrics') {
+export function installSegmentPhysicalHttpGuard(kind: SegmentServiceUploadKind) {
   if (guarded || !['data', 'metrics'].includes(kind)) throw new Error('Invalid child HTTP guard');
   guarded = true;
-  const upper = kind === 'metrics' ? 18 : 26;
+  const upper = SEGMENT_SERVICE_HTTP_REQUESTS[kind];
   let actual = 0;
   const terminate = () => {
     process.kill(process.pid, 'SIGTERM');
@@ -74,14 +80,9 @@ async function upload() {
   )
     throw new Error('Child proxy environment forbidden');
   const raw = JSON.parse(process.argv[3]!) as { name?: unknown };
-  if (
-    typeof raw.name !== 'string' ||
-    !/^league-[1-9][0-9]*-1-(segment-0-0-upload-0|service-metrics)\.zip$/.test(raw.name)
-  )
+  if (typeof raw.name !== 'string' || !SEGMENT_SERVICE_UPLOAD_NAME.test(raw.name))
     throw new Error('Invalid child name');
-  const guard = installSegmentPhysicalHttpGuard(
-    raw.name.endsWith('-service-metrics.zip') ? 'metrics' : 'data',
-  );
+  const guard = installSegmentPhysicalHttpGuard(segmentServiceUploadKind(raw.name));
   // Literal owner imports occur only after the core HTTP guard is active.
   const { segmentServiceReceiptSchema } = await import('./league-segment-service-executor.ts');
   const { segmentV3Hash } = await import('./league-segment-v3.ts');

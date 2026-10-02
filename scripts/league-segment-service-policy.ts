@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import { validateCalibrationBudget } from './league-runner-calibration-policy.ts';
+import {
+  SEGMENT_SERVICE_HTTP_REQUESTS,
+  SEGMENT_SERVICE_UPLOAD_BYTES,
+} from './league-segment-service-bounds.ts';
 import { TransportReservation } from './league-transport-reservation.ts';
 
 /** Diagnostic bounds, not production admission or authenticated billing evidence.
@@ -18,8 +22,8 @@ export const SEGMENT_SERVICE_LIMITS = Object.freeze({
   processRssBytes: 1024 ** 3,
   minimumFreeDiskBytes: 1024 ** 3,
   payloadBytes: 16 * 1024 ** 2,
-  encodedSegmentBytes: 16777608,
-  encodedMetricsBytes: 524288,
+  encodedSegmentBytes: SEGMENT_SERVICE_UPLOAD_BYTES.data,
+  encodedMetricsBytes: SEGMENT_SERVICE_UPLOAD_BYTES.metrics,
   totalReservedBytes: 34079504,
   allocationRefs: 3,
   retentionDays: 1,
@@ -27,8 +31,8 @@ export const SEGMENT_SERVICE_LIMITS = Object.freeze({
   applicationRetries: 0,
   sdkConcurrency: 1,
   sdkBufferBytes: 8 * 1024 ** 2,
-  primaryHttpRequests: 26,
-  metricsHttpRequests: 18,
+  primaryHttpRequests: SEGMENT_SERVICE_HTTP_REQUESTS.data,
+  metricsHttpRequests: SEGMENT_SERVICE_HTTP_REQUESTS.metrics,
   bootstrapHttpRequests: 8,
   metadataRequests: 40,
   downloadHttpRequests: 2,
