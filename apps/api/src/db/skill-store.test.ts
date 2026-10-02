@@ -130,9 +130,9 @@ describe('skill persistence', () => {
   it('appends immutable loadout revisions and advances only the CAS head', async () => {
     const { store, skills, character, configuration } = await fixture();
     try {
-      const first = await skills.create({ character: reference(character), configuration });
+      const first = await skills.createLegacy({ character: reference(character), configuration });
       expect(first).toMatchObject({ id: configuration.id, version: 1, latest: { revision: 1 } });
-      const second = await skills.patch(configuration.id, {
+      const second = await skills.patchLegacy(configuration.id, {
         expectedVersion: 1,
         character: reference(character),
         configuration: { ...configuration, version: 2 },
@@ -142,7 +142,7 @@ describe('skill persistence', () => {
         store.db.prepare('SELECT revision FROM skill_loadout_revisions ORDER BY revision').all(),
       ).toEqual([{ revision: 1 }, { revision: 2 }]);
       await expect(
-        skills.patch(configuration.id, {
+        skills.patchLegacy(configuration.id, {
           expectedVersion: 1,
           character: reference(character),
           configuration: { ...configuration, version: 2 },
@@ -163,7 +163,7 @@ describe('skill persistence', () => {
     const { store, skills, character, configuration } = await fixture();
     try {
       await expect(
-        skills.create({
+        skills.createLegacy({
           character: reference(character),
           configuration: {
             ...configuration,
@@ -188,7 +188,7 @@ describe('skill persistence', () => {
         second = await skillPersistenceFixture(secondStore, 'permutation'),
         ascending = [first.target, first.alternate].sort(compareIds),
         descending = [...ascending].reverse(),
-        firstHead = await first.skills.create({
+        firstHead = await first.skills.createLegacy({
           character: reference(first.character),
           configuration: {
             ...first.configuration,
@@ -197,7 +197,7 @@ describe('skill persistence', () => {
             enabledNodeIds: ascending,
           },
         }),
-        secondHead = await second.skills.create({
+        secondHead = await second.skills.createLegacy({
           character: reference(second.character),
           configuration: {
             ...second.configuration,
@@ -223,7 +223,7 @@ describe('skill persistence', () => {
     const { store, skills, character, configuration, target } = await fixture();
     try {
       await expect(
-        skills.create({
+        skills.createLegacy({
           character: reference(character),
           configuration: {
             ...configuration,
@@ -244,7 +244,7 @@ describe('skill persistence', () => {
     const input = await fixture();
     try {
       const { store, skills, character, configuration, catalogRecord } = input,
-        first = await skills.create({ character: reference(character), configuration }),
+        first = await skills.createLegacy({ character: reference(character), configuration }),
         acquisition = await acquisitionFixture(store, input, 'acquisition.upgrade'),
         v2 = {
           schemaVersion: 2 as const,
@@ -263,7 +263,7 @@ describe('skill persistence', () => {
       ).resolves.toMatchObject({ schemaVersion: 2, version: 2 });
 
       await expect(
-        skills.patch(configuration.id, {
+        skills.patchLegacy(configuration.id, {
           expectedVersion: 2,
           character: reference(character),
           configuration: { ...configuration, version: 3 },

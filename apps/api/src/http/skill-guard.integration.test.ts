@@ -108,7 +108,7 @@ describe('shield guard skill vertical fixture', () => {
     await store.seedRevisions([...source.revisions, policy, character, ability]);
     const skills = new SkillStore(store),
       catalogRecord = await skills.seedCatalog(catalog),
-      created = await skills.create({
+      created = await skills.createLegacy({
         character: reference(character),
         configuration: {
           schemaVersion: 1,

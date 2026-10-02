@@ -7,6 +7,7 @@ import {
 } from '@fantasy/domain/spatial';
 import { catalogManifest } from '@fantasy/samples';
 import { readSkillReplay, submitSkillJob } from '../../test-support/skill-job.ts';
+import { saveSkillLoadoutV2 } from '../../test-support/skills.ts';
 import { withRuntime } from '../../test-support/runtime.ts';
 import { readSampleRevisions } from '../db/store.ts';
 import { seedStartupData } from '../db/startup-data.ts';
@@ -41,21 +42,13 @@ it(
           contentHash: 'sha256:ebe6c0f4194d04a18d9d657a3fdd2b692a86b1ccb82b291d6b5885e17ddc5c42',
         });
 
-        const saved = await app.inject({
-          method: 'POST',
-          url: '/api/skill-loadouts',
-          payload: {
-            character: revisionReference(character),
-            configuration: {
-              schemaVersion: 1,
-              id: 'loadout.production.magic.tiger.2.shared',
-              version: 1,
-              catalog: seeded.skillCatalog.reference,
-              eligibilityNodeIds: [ratNode, tigerOne, tigerTwo],
-              learnedNodeIds: [ratNode, tigerOne, tigerTwo],
-              enabledNodeIds: [ratNode, tigerTwo],
-            },
-          },
+        const saved = await saveSkillLoadoutV2(app, {
+          id: 'loadout.production.magic.tiger.2.shared',
+          acquisitionId: 'acquisition.production.magic.tiger.2.shared',
+          character: revisionReference(character),
+          catalog: seeded.skillCatalog.reference,
+          learnedNodeIds: [ratNode, tigerOne, tigerTwo],
+          enabledNodeIds: [ratNode, tigerTwo],
         });
         if (saved.statusCode !== 201) throw new Error(`${saved.statusCode}: ${saved.body}`);
         const receipt = saved.json().snapshot.resolved;

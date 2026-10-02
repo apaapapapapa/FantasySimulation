@@ -61,7 +61,7 @@ describe('skill acquisition persistence', () => {
       }),
     ).rejects.toMatchObject({ code: 'conflict' });
     await expect(acquisitions.revision(created.latest)).resolves.toEqual(created.snapshot);
-    expect(created.authoritativeBoundary).toBe(false);
+    expect(created.authoritativeBoundary).toBe(true);
     expect(() =>
       store.db.prepare("UPDATE skill_acquisition_revisions SET learned_json='[]'").run(),
     ).toThrow(/immutable/);
