@@ -36,6 +36,7 @@ export async function runtimeFixture(root: string, artifactVersion = '6.2.1') {
     '@octokit/plugin-paginate-rest',
     '@playwright/test',
     'tsx',
+    'zod',
   ]) {
     const real = join(
       source,

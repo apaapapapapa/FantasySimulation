@@ -113,6 +113,8 @@ const rootDependencies = [
   // The transfer job's fresh-browser acceptance; its browser is installed per run, never cached.
   '@playwright/test',
   'tsx',
+  // Calibration scripts validate owner budget records before network allocation.
+  'zod',
 ];
 const workspaces = [
   'apps/api',
