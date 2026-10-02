@@ -57,11 +57,15 @@ vi.mock('./league-pipeline-context.ts', () => ({
   }),
 }));
 import { runPilotCommand } from './league-pilot-command.ts';
-it('keeps failure diagnostics local when CI, run authentication or history reservation refuses admission', async () => {
+it('emits bounded redacted failure diagnostics without SDK allocation when admission fails', async () => {
   const args = [...process.argv],
     exit = process.exitCode;
   process.argv[2] = 'prepare';
   vi.stubEnv('LEAGUE_RUNNERS', '2');
+  const diagnostic = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const secret = 'fixture-artifact-secret';
+  vi.stubEnv('LEAGUE_ARTIFACT_TOKEN', secret);
+  const rejected = 'admission refused ' + secret + ' github_pat_fixture_secret ' + 'x'.repeat(3000);
   vi.stubEnv(
     'LEAGUE_CALIBRATION_BUDGET',
     JSON.stringify({
@@ -83,23 +87,38 @@ it('keeps failure diagnostics local when CI, run authentication or history reser
       fixture.auth.mockReset().mockResolvedValue(undefined);
       fixture.prepare.mockReset().mockResolvedValue(undefined);
       fixture.upload.mockReset();
-      rejection.mockRejectedValue(new Error('admission refused'));
+      diagnostic.mockClear();
+      rejection.mockRejectedValue(new Error(rejected));
       await withReplayDirectory(async (root) => {
         await runPilotCommand(true, root);
         expect(
           JSON.parse(await readFile(join(root, 'phase-measurement.json'), 'utf8')),
         ).toMatchObject({
           status: 'failed',
-          failure: 'admission refused',
+          failure: rejected,
           formalAcceptance: false,
         });
       });
       expect(process.exitCode).toBe(1);
       expect(fixture.upload).not.toHaveBeenCalled();
+      expect(diagnostic).toHaveBeenCalledOnce();
+      const output = JSON.parse(diagnostic.mock.calls[0]![0] as string);
+      expect(output).toMatchObject({
+        command: 'prepare',
+        status: 'failed',
+        formalAcceptance: false,
+        error: { type: 'Error' },
+      });
+      expect(output.error.message).toContain('[REDACTED]');
+      expect(output.error.message).not.toContain(secret);
+      expect(output.error.message).not.toContain('github_pat_fixture_secret');
+      expect(output.error.message.length).toBeLessThanOrEqual(2048);
+      expect(output.error).not.toHaveProperty('stack');
     }
   } finally {
     process.argv = args;
     process.exitCode = exit;
     vi.unstubAllEnvs();
+    diagnostic.mockRestore();
   }
 });
