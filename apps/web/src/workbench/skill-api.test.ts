@@ -2,9 +2,11 @@ import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { revisionHash, RevisionSchema, type Revision } from '@fantasy/domain/spatial';
 import {
   DEFAULT_SKILL_CATALOG,
+  createOrRecoverSkillAcquisition,
   sameSkillRevisionRef,
   skillLoadoutsForCatalog,
   skillWorkbenchApi,
+  type SkillAcquisitionHead,
   type SkillLoadoutHead,
 } from './skill-api.ts';
 
@@ -147,4 +149,129 @@ it('isolates the skill battle endpoint and binds the saved revision to the selec
     budget: { maxBytes: 1024 },
     loadouts: [{ actorId: 'left', loadout }],
   });
+});
+
+it('posts acquisition state before a V2 loadout bound to the returned exact revision', async () => {
+  const hash = `sha256:${'a'.repeat(64)}` as const,
+    laterHash = `sha256:${'b'.repeat(64)}` as const,
+    timestamp = '2026-10-02T00:00:00.000Z',
+    character = { id: 'character.hero', revision: 1, contentHash: hash },
+    catalog = { id: 'skill-catalog-v1', revision: 10, contentHash: hash },
+    acquisition = {
+      schemaVersion: 1,
+      authoritativeBoundary: false,
+      id: 'loadout.hero.acquisition',
+      version: 1,
+      latest: { id: 'loadout.hero.acquisition', revision: 1, contentHash: laterHash },
+      snapshot: {
+        schemaVersion: 1,
+        policyVersion: 'skill-acquisition-v1',
+        id: 'loadout.hero.acquisition',
+        revision: 1,
+        contentHash: laterHash,
+        character,
+        catalog,
+        eligibilityNodeIds: ['skill.magic.tiger.1'],
+        learnedNodeIds: ['skill.magic.tiger.1'],
+        capabilitiesDigest: hash,
+      },
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    configuration = {
+      schemaVersion: 2 as const,
+      id: 'loadout.hero',
+      version: 1,
+      catalog,
+      acquisition: acquisition.latest,
+      enabledNodeIds: [],
+    },
+    resolved = {
+      schemaVersion: 2,
+      resolverVersion: 'skill-resolver-v1',
+      configurationId: configuration.id,
+      configurationVersion: 1,
+      catalog,
+      acquisition: acquisition.latest,
+      learnedNodeIds: acquisition.snapshot.learnedNodeIds,
+      explicitlyEnabledNodeIds: [],
+      resolvedNodeIds: [],
+      nodeResolutions: [],
+      resolutionDigest: hash,
+    },
+    loadout = {
+      schemaVersion: 2,
+      id: configuration.id,
+      version: 1,
+      latest: { id: configuration.id, revision: 1, contentHash: hash },
+      snapshot: {
+        schemaVersion: 2,
+        id: configuration.id,
+        revision: 1,
+        contentHash: hash,
+        character,
+        configuration,
+        resolved,
+      },
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    },
+    request = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json(acquisition))
+      .mockResolvedValueOnce(Response.json(loadout));
+  vi.stubGlobal('fetch', request);
+
+  const savedAcquisition = await skillWorkbenchApi.createAcquisition({
+    schemaVersion: 1,
+    id: acquisition.id,
+    version: 1,
+    character,
+    catalog,
+    learnedNodeIds: acquisition.snapshot.learnedNodeIds,
+  });
+  await expect(skillWorkbenchApi.createLoadout(character, configuration)).resolves.toMatchObject({
+    schemaVersion: 2,
+    snapshot: { configuration: { acquisition: savedAcquisition.latest } },
+  });
+
+  const calls = request.mock.calls as unknown as [string, RequestInit][];
+  expect(calls.map(([url]) => url)).toEqual(['/api/skill-acquisitions', '/api/skill-loadouts']);
+  expect(JSON.parse(String(calls[0]![1].body))).toMatchObject({
+    selection: { id: acquisition.id, learnedNodeIds: ['skill.magic.tiger.1'] },
+  });
+  expect(JSON.parse(String(calls[1]![1].body))).toMatchObject({
+    configuration: { schemaVersion: 2, acquisition: savedAcquisition.latest },
+  });
+});
+
+it('recovers the exact version-one acquisition when a successful POST response is lost', async () => {
+  const hash = `sha256:${'c'.repeat(64)}` as const,
+    character = { id: 'character.retry', revision: 1, contentHash: hash },
+    catalog = { id: 'catalog.retry', revision: 1, contentHash: hash },
+    selection = {
+      schemaVersion: 1 as const,
+      id: 'loadout.retry.acquisition',
+      version: 1,
+      character,
+      catalog,
+      learnedNodeIds: ['skill.retry'],
+    },
+    recovered = {
+      id: selection.id,
+      version: 1,
+      latest: { id: selection.id, revision: 1, contentHash: hash },
+      snapshot: { character, catalog, learnedNodeIds: selection.learnedNodeIds },
+    } as unknown as SkillAcquisitionHead,
+    createAcquisition = vi.fn(async () => {
+      throw new TypeError('response lost after commit');
+    }),
+    getAcquisition = vi.fn(async () => recovered);
+
+  await expect(
+    createOrRecoverSkillAcquisition({ createAcquisition, getAcquisition }, selection),
+  ).resolves.toBe(recovered);
+  expect(createAcquisition).toHaveBeenCalledOnce();
+  expect(getAcquisition).toHaveBeenCalledExactlyOnceWith(selection.id);
+  expect(recovered.latest.revision).toBe(1);
 });

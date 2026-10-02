@@ -9,6 +9,16 @@ import {
 export type WorkbenchStatus = 'eligible' | 'learned' | 'enabled' | 'locked' | 'disabled';
 export type WorkbenchNodeState = { status: WorkbenchStatus; reasons: string[] };
 
+export function latestSelectionGuard() {
+  let latest = 0;
+  return {
+    begin() {
+      const generation = ++latest;
+      return { isCurrent: () => generation === latest };
+    },
+  };
+}
+
 const mapNodes = (nodes: SkillNode[]) => new Map(nodes.map((node) => [node.id, node]));
 
 function closure(nodes: Map<string, SkillNode>, ids: string[]) {

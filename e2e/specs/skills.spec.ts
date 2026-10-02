@@ -143,6 +143,179 @@ test('skill-workbench-mobile', async ({ page }) => {
   ).toBe(1);
 });
 
+test('retries a failed loadout save without creating a second acquisition', async ({ page }) => {
+  let acquisitionPosts = 0,
+    loadoutPosts = 0,
+    failedOnce = false;
+  page.on('request', (request) => {
+    if (request.method() !== 'POST') return;
+    if (request.url().endsWith('/api/skill-acquisitions')) acquisitionPosts++;
+    if (request.url().endsWith('/api/skill-loadouts')) loadoutPosts++;
+  });
+  await page.route('**/api/skill-loadouts', async (route) => {
+    if (route.request().method() === 'POST' && !failedOnce) {
+      failedOnce = true;
+      await route.fulfill({ status: 503, json: { message: 'transient loadout failure' } });
+      return;
+    }
+    await route.continue();
+  });
+
+  const workbench = await readyWorkbench(page),
+    foundation = workbench.locator('.skill-matrix tbody td > button').nth(60);
+  await foundation.click();
+  await workbench.locator('.skill-node-action').click();
+  await workbench.locator('.skill-node-action').click();
+  await workbench.locator('.actions .primary').click();
+  await expect(workbench.locator('[role="alert"]')).toContainText('API 503');
+  expect(acquisitionPosts).toBe(1);
+  expect(loadoutPosts).toBe(1);
+
+  await workbench.locator('.actions .primary').click();
+  await expect(workbench.locator('.message[role="status"]')).toContainText(/revision \d+/);
+  expect(acquisitionPosts).toBe(1);
+  expect(loadoutPosts).toBe(2);
+});
+
+test('keeps an exact saved loadout selected when its acquisition head advances', async ({
+  page,
+}) => {
+  const workbench = await readyWorkbench(page),
+    foundation = workbench.locator('.skill-matrix tbody td > button').nth(60),
+    acquisitionResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().endsWith('/api/skill-acquisitions'),
+    ),
+    loadoutResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' && response.url().endsWith('/api/skill-loadouts'),
+    );
+  await foundation.click();
+  await workbench.locator('.skill-node-action').click();
+  await workbench.locator('.skill-node-action').click();
+  await workbench.locator('.actions .primary').click();
+  const acquisition = await (await acquisitionResponse).json(),
+    loadout = await (await loadoutResponse).json();
+
+  const advanced = await page.request.patch(`/api/skill-acquisitions/${acquisition.id}`, {
+    data: {
+      expectedVersion: 1,
+      selection: {
+        schemaVersion: 1,
+        id: acquisition.id,
+        version: 2,
+        character: acquisition.snapshot.character,
+        catalog: acquisition.snapshot.catalog,
+        learnedNodeIds: acquisition.snapshot.learnedNodeIds,
+      },
+    },
+  });
+  expect(advanced.ok()).toBe(true);
+  const advancedHead = await advanced.json();
+  expect(advancedHead.latest).not.toEqual(acquisition.latest);
+
+  await page.reload();
+  const reloaded = page.locator('.skill-workbench');
+  await expect(reloaded.locator('fieldset').first()).toBeEnabled();
+  await reloaded
+    .locator('.skill-loadout-controls select')
+    .nth(1)
+    .selectOption(`${loadout.id}:${loadout.latest.revision}`);
+  await expect(reloaded.locator('[role="alert"]')).toContainText('advanced');
+  await reloaded.locator('.actions button').nth(1).click();
+  await expect(reloaded.locator('[role="alert"]')).toContainText('advanced');
+  await reloaded.locator('.skill-matrix tbody td > button').nth(60).click();
+  await expect(reloaded.locator('.skill-node-action')).toBeDisabled();
+  await expect(page.locator('.arena > p[role="status"]').first()).toContainText(
+    `revision ${loadout.latest.revision}`,
+  );
+  const { response } = await submitBattleAndOpenReplay(
+      page,
+      page.locator('.arena'),
+      loadout.latest,
+    ),
+    replayManifest = await response.json();
+  expect(loadout.snapshot.configuration.acquisition).toEqual(acquisition.latest);
+  expect(replayManifest.input.participants[0].skillLoadout).toMatchObject({
+    loadout: loadout.latest,
+    resolvedNodeIds: loadout.snapshot.resolved.resolvedNodeIds,
+    resolutionDigest: loadout.snapshot.resolved.resolutionDigest,
+  });
+  await reloaded.locator('.actions .primary').click();
+  await expect(reloaded.locator('[role="alert"]')).toContainText('Reload the latest acquisition');
+});
+
+test('reloads a legacy V1 loadout and upgrades it through acquisition V2', async ({
+  page,
+}, testInfo) => {
+  const catalogRecord = await (
+      await page.request.get('/api/skill-catalogs/skill-catalog-v1/10')
+    ).json(),
+    characters = await (await page.request.get('/api/revisions/character?limit=10')).json(),
+    characterRevision = characters.items[0],
+    character = {
+      id: characterRevision.id,
+      revision: characterRevision.revision,
+      contentHash: characterRevision.contentHash,
+    },
+    nodeId = 'skill.magic.tiger.1',
+    id = `loadout.e2e.v1-upgrade.${testInfo.parallelIndex}.${testInfo.retry}`,
+    legacyResponse = await page.request.post('/api/skill-loadouts', {
+      data: {
+        character,
+        configuration: {
+          schemaVersion: 1,
+          id,
+          version: 1,
+          catalog: catalogRecord.reference,
+          eligibilityNodeIds: [nodeId],
+          learnedNodeIds: [nodeId],
+          enabledNodeIds: [nodeId],
+        },
+      },
+    });
+  expect(legacyResponse.status()).toBe(201);
+  expect(await legacyResponse.json()).toMatchObject({ schemaVersion: 1, id, version: 1 });
+
+  const workbench = await readyWorkbench(page);
+  await workbench.locator('.skill-loadout-controls select').nth(1).selectOption(`${id}:1`);
+  await expect(workbench.locator('.message[role="status"]')).toContainText('revision 1');
+  const acquisitionResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().endsWith('/api/skill-acquisitions'),
+    ),
+    upgradedResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PATCH' &&
+        response.url().endsWith(`/api/skill-loadouts/${id}`),
+    );
+  await workbench.locator('.actions .primary').click();
+  const acquisition = await (await acquisitionResponse).json(),
+    upgraded = await (await upgradedResponse).json();
+  expect(upgraded).toMatchObject({
+    schemaVersion: 2,
+    id,
+    version: 2,
+    snapshot: {
+      character,
+      configuration: {
+        schemaVersion: 2,
+        acquisition: acquisition.latest,
+        enabledNodeIds: [nodeId],
+      },
+      resolved: { learnedNodeIds: [nodeId], resolvedNodeIds: [nodeId] },
+    },
+  });
+
+  await page.reload();
+  const reloaded = page.locator('.skill-workbench');
+  await expect(reloaded.locator('fieldset').first()).toBeEnabled();
+  await reloaded.locator('.skill-loadout-controls select').nth(1).selectOption(`${id}:2`);
+  await expect(reloaded.locator('.message[role="status"]')).toContainText('revision 2');
+});
+
 test('magic tiger prerequisite loadout reloads into an exact battle and replay', async ({
   page,
 }) => {
@@ -168,14 +341,25 @@ test('magic tiger prerequisite loadout reloads into an exact battle and replay',
   await workbench.locator('.skill-node-action').click();
   await expect(workbench.locator('.skill-state')).toHaveText('編成中');
 
-  const savedResponse = page.waitForResponse(
-    (response) =>
-      response.request().method() === 'POST' && response.url().endsWith('/api/skill-loadouts'),
-  );
+  const acquisitionResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        response.url().endsWith('/api/skill-acquisitions'),
+    ),
+    savedResponse = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' && response.url().endsWith('/api/skill-loadouts'),
+    );
   await workbench.locator('.actions .primary').click();
-  const saved = await (await savedResponse).json();
+  const acquisition = await (await acquisitionResponse).json(),
+    saved = await (await savedResponse).json();
+  expect(acquisition).toMatchObject({
+    authoritativeBoundary: false,
+    snapshot: { learnedNodeIds: ['skill.magic.tiger.1', 'skill.magic.tiger.2'] },
+  });
   expect(saved.snapshot.configuration).toMatchObject({
-    learnedNodeIds: ['skill.magic.tiger.1', 'skill.magic.tiger.2'],
+    schemaVersion: 2,
+    acquisition: acquisition.latest,
     enabledNodeIds: ['skill.magic.tiger.2'],
   });
   expect(saved.snapshot.resolved).toMatchObject({
