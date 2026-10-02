@@ -108,6 +108,10 @@ export function closureMechanics(revisions: readonly DeepReadonly<Revision>[]): 
       const ability = owner.definition;
       if (ability.timeStop) add('time-stop');
       if (ability.accuracy) add('absolute-hit');
+      if (ability.summon) {
+        add('damage');
+        if (ability.summon.damage.drainBps > 0) add('drain');
+      }
       effects(ability.effects);
       if (ability.relocation) add('teleport');
       if (ability.barrier) add('barrier');

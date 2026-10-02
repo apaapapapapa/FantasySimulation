@@ -25,7 +25,7 @@ import {
 import { readBoundedFile, readCompressed, replayDirectory, sha256 } from './replay-files.ts';
 
 // Bump when semantic acceptance changes. Only this full validator can issue the receipt.
-export const REPLAY_VALIDATION_PROFILE = 'record-validation-v1';
+export const REPLAY_VALIDATION_PROFILE = 'record-validation-v2';
 const verifiedManifests = new WeakMap<ReplayManifest, string>();
 export function replayValidationProfile(manifest: ReplayManifest) {
   return verifiedManifests.get(manifest) === sha256(canonicalJson(manifest))

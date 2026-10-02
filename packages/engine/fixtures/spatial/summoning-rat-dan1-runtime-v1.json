@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.skill.summoning.rat.1.runtime.v1",
+  "issue": 228,
+  "status": "release-ready",
+  "availableClaim": true,
+  "catalogNodeId": "skill.summoning.rat.1",
+  "ability": {
+    "id": "scout-rat-v1",
+    "revision": 1,
+    "contentHash": "sha256:c137e74851756fbdd5d8aefcdaecd325347758ad1627c1bc7f7a21b673687927"
+  },
+  "ruleset": {
+    "id": "standard-p6-group2-v1",
+    "revision": 1,
+    "contentHash": "sha256:7a29dffc918f926dfe030ea3ae9bf488d582abae743179cb60617cbd1c7016d3"
+  },
+  "recipe": {
+    "profile": "scout-rat-v1",
+    "uses": 1,
+    "ownerCostMp": 2,
+    "hp": 80,
+    "lifetimeSteps": 30,
+    "upkeepMp": 1,
+    "upkeepEverySteps": 10,
+    "commandCostMp": 0,
+    "actionEverySteps": 5,
+    "damage": 8,
+    "drainBps": 0
+  },
+  "bounds": {
+    "maxActiveDependentsPerOwner": 2,
+    "maxCreatedDependentsPerOwner": 8,
+    "maxCreatedDependentsPerBattle": 16
+  },
+  "expected": {
+    "manifestSchemaVersion": 9,
+    "activeReplayStep": 1,
+    "requiredFeature": "dependent-entities-v1",
+    "ownerSlotImmutable": true,
+    "hostilityDerivedFromOpposingOwner": true,
+    "observedCommandsOnly": true,
+    "targetPolicy": "recorded-rng-legally-observed-hostile",
+    "externalInstruction": false,
+    "ordinalRngIdentity": true,
+    "canWin": false,
+    "events": [
+      "dependent-create",
+      "dependent-command",
+      "dependent-act",
+      "damage",
+      "dependent-despawn"
+    ],
+    "despawnReason": "expired",
+    "participantDamageAfterDefense": 3,
+    "dependentDamage": 8,
+    "replaySurfaces": ["writer", "sqlite", "api", "viewer-2d", "viewer-3d"]
+  },
+  "runtimeEvidence": [
+    "apps/api/src/db/startup-data.test.ts",
+    "apps/api/src/jobs/summoning-skill-status.test.ts",
+    "apps/web/src/replay/summoning-skill-display.test.ts",
+    "e2e/specs/skills.spec.ts"
+  ],
+  "designRationale": [
+    "Damage 8 is intentionally below the ordinary owner weapon hit and does not multiply another ability.",
+    "Thirty steps and one use bound field presence; upkeep consumes owner MP while autonomous recorded decisions do not.",
+    "Zero drain keeps the plague-spirit drain mechanic out of the dan-one scout foundation."
+  ]
+}

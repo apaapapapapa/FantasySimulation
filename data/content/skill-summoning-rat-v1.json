@@ -1,0 +1,40 @@
+{
+  "kind": "ability",
+  "id": "scout-rat-v1",
+  "revision": 1,
+  "schemaVersion": 1,
+  "definition": {
+    "name": "Scout Rat",
+    "originalText": "Call one fragile scout rat that autonomously harasses a legally observed hostile.",
+    "trigger": "action",
+    "categories": ["special"],
+    "target": "self",
+    "condition": { "kind": "always" },
+    "costs": { "hp": 0, "mp": 2, "uses": 1 },
+    "castSteps": 0,
+    "recoverySteps": 1,
+    "cooldownSteps": 100,
+    "movementWhileCasting": "allow",
+    "rangeMm": 0,
+    "aimErrorMilliDegrees": 0,
+    "attack": { "kind": "direct" },
+    "effects": [],
+    "summon": {
+      "profile": "scout-rat-v1",
+      "body": {
+        "radiusMm": 180,
+        "heightMm": 360,
+        "eyeOffset": { "x": 0, "y": 100, "z": 0 },
+        "muzzleOffset": { "x": 0, "y": 80, "z": 120 },
+        "aimOffset": { "x": 0, "y": 80, "z": 0 }
+      },
+      "hp": 80,
+      "spawnOffsetMm": { "x": 800, "y": -720, "z": 500 },
+      "lifetimeSteps": 30,
+      "upkeep": { "mp": 1, "everySteps": 10 },
+      "commandCostMp": 0,
+      "actionEverySteps": 5,
+      "damage": { "amount": 8, "drainBps": 0 }
+    }
+  }
+}

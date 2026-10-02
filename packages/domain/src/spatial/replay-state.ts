@@ -44,6 +44,20 @@ import {
   validateEnvironmentalHolograms,
 } from './replay-validation/environmental-hologram.ts';
 
+export const advanceDependentHistory = (
+  prior: ReplayCheckpoint['dependentHistory'],
+  record: StreamRecord,
+) => [
+  ...(prior ?? []),
+  ...('dependents' in record
+    ? (record.dependents?.spawn ?? []).map(({ id, ownerId, hostileOwnerId }) => ({
+        id,
+        ownerId,
+        hostileOwnerId,
+      }))
+    : []),
+];
+
 /** Atomic display restoration. This is not an engine resume snapshot or combat re-simulation. */
 export class ReplayState {
   readonly context: ReplayContext;
@@ -497,16 +511,7 @@ export class ReplayState {
     const stop = advanceStopReplay(prior.stop, 'events' in record ? record.events : []);
     const requiredFeatures =
       record.kind === 'initial' ? record.requiredFeatures : prior.requiredFeatures;
-    const dependentHistory = [
-      ...(prior.dependentHistory ?? []),
-      ...('dependents' in record
-        ? (record.dependents?.spawn ?? []).map(({ id, ownerId, hostileOwnerId }) => ({
-            id,
-            ownerId,
-            hostileOwnerId,
-          }))
-        : []),
-    ];
+    const dependentHistory = advanceDependentHistory(prior.dependentHistory, record);
     if (record.kind === 'terminal' && ['win', 'draw'].includes(record.outcome.kind))
       requireReplay(
         !deferred?.length && !stop?.controls.some((control) => control.releasedAt === undefined),

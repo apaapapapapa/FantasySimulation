@@ -12,3 +12,10 @@ export {
   ENVIRONMENTAL_HOLOGRAM_FIXTURE_ID,
   ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
 } from './skill-content/environmental-hologram.ts';
+export { SUMMONING_FIXTURE_CONTRACTS, SUMMONING_SKILL_NODES } from './summoning-skill-catalog.ts';
+export {
+  SUMMONING_RAT_DAN1_ABILITY_HASH,
+  SUMMONING_RAT_DAN1_ABILITY_ID,
+  SUMMONING_RAT_DAN1_FIXTURE_ID,
+  SUMMONING_RAT_DAN1_SKILL_NODE,
+} from './skill-content/summoning-rat.ts';

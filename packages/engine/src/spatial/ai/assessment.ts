@@ -218,9 +218,10 @@ function assessSingle(
       1,
       Math.floor(Math.min(d.summon.lifetimeSteps, rules.horizonSteps) / d.summon.actionEverySteps),
     );
-    const affordableCommands = Math.floor(
-      Math.max(0, view.resources.mp - d.costs.mp) / Math.max(1, d.summon.commandCostMp),
-    );
+    const affordableCommands =
+      d.summon.commandCostMp === 0
+        ? opportunities
+        : Math.floor(Math.max(0, view.resources.mp - d.costs.mp) / d.summon.commandCostMp);
     const expectedActions = Math.min(opportunities, affordableCommands);
     utility +=
       rules.actionWeight *
@@ -228,7 +229,9 @@ function assessSingle(
       Math.min(2, (d.summon.damage.amount * expectedActions) / Math.max(1, rules.healthPrior));
     confidence = Math.min(confidence, target ? 5000 : 1000);
     reasons.push(
-      'own bounded dependent profile and resource schedule; commands require delivered hostile observation',
+      d.summon.commandCostMp === 0
+        ? 'own bounded dependent profile and resource schedule; autonomous decisions use delivered hostile observation'
+        : 'own bounded dependent profile and resource schedule; commands require delivered hostile observation',
     );
   }
   const effects = abilityPlan(ability).effects;
