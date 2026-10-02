@@ -1,2 +1,2 @@
 import { runPilotCommand } from './league-pilot-command.ts';
-await runPilotCommand(false);
+await runPilotCommand(true);

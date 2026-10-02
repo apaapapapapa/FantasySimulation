@@ -38,7 +38,28 @@ import {
   newCloudDirectory,
 } from './league-cloud-files.ts';
 
-export async function prepareCloudLeague(
+type PrepareCloudArgs = [
+  definition: unknown,
+  source: ExecutionSource,
+  executionId: string,
+  publicRoot: string,
+  preparedRoot: string,
+  inventoryInput: unknown,
+  expectedProbe?: unknown,
+  options?: { evidence?: PublicationEvidence; maxInputBytes?: number },
+];
+
+export function prepareCloudLeague(...args: PrepareCloudArgs) {
+  return prepareLeagueCloud(128, ...args);
+}
+
+/** Fixture-only scheduling: the diagnostic verifies every original input before upload. */
+export function prepareCalibrationCloudLeague(...args: PrepareCloudArgs) {
+  return prepareLeagueCloud(95, ...args);
+}
+
+async function prepareLeagueCloud(
+  matchesPerPlan: 128 | 95,
   definition: unknown,
   source: ExecutionSource,
   executionId: string,
@@ -76,6 +97,7 @@ export async function prepareCloudLeague(
     source,
     {
       ...LEAGUE_PROFILE,
+      matchesPerPlan,
       retainedBytes: inventory.bytes,
       retainedFiles: inventory.files,
       usedReadRequests: inventory.usedReadRequests,

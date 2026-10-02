@@ -42,6 +42,7 @@ export class PackedLeagueUpload {
     private readonly runner: number,
     private readonly signal: AbortSignal,
     private readonly artifacts: PipelineArtifact[],
+    private readonly upload = uploadPipelineArtifact,
   ) {
     signal.addEventListener('abort', this.aborted, { once: true });
   }
@@ -99,7 +100,7 @@ export class PackedLeagueUpload {
       await writeCloudJson(join(group.root, 'index.json'), index);
       this.signal.throwIfAborted();
       this.artifacts.push(
-        await uploadPipelineArtifact(
+        await this.upload(
           packedArtifactName(this.identity, this.runner, this.sequence),
           [
             join(group.root, 'index.json'),

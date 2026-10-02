@@ -528,3 +528,35 @@ it('retains runtime development SDK boundaries for root filesystem imports', asy
     (await architecture(f.root, f.paths)).publicGraph.summary.violations.map((v) => v.rule.name),
   ).toContain('development-tools-stay-outside-runtime');
 });
+
+it("permits only the diagnostic uploader's fixed local SDK encoder boundary", async () => {
+  for (const module of ['upload-zip-specification.js', 'zip.js']) {
+    const source = 'scripts/league-calibration-upload.ts';
+    const expression = `pathToFileURL(join(sdkRoot, 'internal/upload/${module}')).href`;
+    const allowed = fixture({
+      'package.json': '{"private":true}',
+      'node_modules/@actions/artifact/package.json':
+        '{"name":"@actions/artifact","exports":{".":"./lib/artifact.js"}}',
+      'node_modules/@actions/artifact/lib/artifact.js': 'export const value = 1;',
+      [source]: `export const encode = () => import(${expression});`,
+      [`node_modules/@actions/artifact/lib/internal/upload/${module}`]:
+        'export const localOnly = true;',
+    });
+    expect(
+      (await architecture(allowed.root, allowed.paths)).publicGraph.summary.violations,
+    ).toEqual([]);
+    const foreignFile = fixture({
+      'scripts/other.ts': `export const encode = () => import(${expression});`,
+    });
+    await expect(architecture(foreignFile.root, foreignFile.paths)).rejects.toThrow(
+      'Dynamic module expression',
+    );
+  }
+  const networkLoader = fixture({
+    'scripts/league-calibration-upload.ts':
+      "export const send = () => import(pathToFileURL(join(sdkRoot, 'internal/upload/blob-upload.js')).href);",
+  });
+  await expect(architecture(networkLoader.root, networkLoader.paths)).rejects.toThrow(
+    'Dynamic module expression',
+  );
+});

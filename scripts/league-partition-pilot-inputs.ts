@@ -13,6 +13,7 @@ import {
 import { optionalPublicationFile } from '../apps/cli/src/publication/publication-files.ts';
 import { requirePipelineCapacityEvidence } from './league-pipeline-policy.ts';
 import type { PipelineIdentity } from '../apps/cli/src/league/league-producer.ts';
+import { calibrationRunners, requireCalibrationScope } from './league-runner-calibration-policy.ts';
 
 export function partitionPilotRunners(value: number) {
   if (value !== 1 && value !== 2) throw new Error('Partition pilot requires one or two runners');
@@ -91,12 +92,30 @@ export async function partitionPilotInputs() {
   };
 }
 
-export async function validatePartitionPilotPrepared(
+export function validatePartitionPilotPrepared(
   root: string,
   identity: PipelineIdentity,
   runners: number,
 ) {
   partitionPilotRunners(runners);
+  return validatePilotPrepared(root, identity, runners, false);
+}
+
+export function validateCalibrationPrepared(
+  root: string,
+  identity: PipelineIdentity,
+  runners: number,
+) {
+  calibrationRunners(runners);
+  return validatePilotPrepared(root, identity, runners, true);
+}
+
+async function validatePilotPrepared(
+  root: string,
+  identity: PipelineIdentity,
+  runners: number,
+  calibration: boolean,
+) {
   if (await optionalPublicationFile(join(root, 'cost-profile.json'), 4000000))
     throw new Error(
       'Partition pilot requires the registered default assignment, not profile hints',
@@ -107,7 +126,9 @@ export async function validatePartitionPilotPrepared(
     throw new Error('Partition pilot source mismatch');
   if (prepared.executionId !== `league-${identity.runId}-${identity.runAttempt}`)
     throw new Error('Partition pilot execution mismatch');
-  if (prepared.inputs.length !== 3) throw new Error('Partition pilot partition coverage mismatch');
+  if (calibration) requireCalibrationScope(prepared, runners, identity);
+  else if (prepared.inputs.length !== 3)
+    throw new Error('Partition pilot partition coverage mismatch');
   if ((await contentHash(prepared.plan.revision.definition)) !== registered.definitionHash)
     throw new Error('Partition pilot definition mismatch');
   if (prepared.plan.partitions.reduce((n, partition) => n + partition.slots, 0) !== 380)
