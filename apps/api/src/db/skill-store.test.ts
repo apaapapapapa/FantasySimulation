@@ -58,7 +58,6 @@ async function invalidAugment(mode: 'id' | 'trigger') {
       baseRef = node.resolution[0]!.kind === 'active-ability' ? node.resolution[0]!.ability : null;
     if (!baseRef) throw new Error('Expected active fixture ability');
     const base = store.requireRevision('ability', baseRef);
-    if (base.kind !== 'ability') throw new Error('Expected ability fixture');
     const { stages: _stages, ...reactionBase } = base.definition;
     const replacement = await sealRevision(
         'ability',

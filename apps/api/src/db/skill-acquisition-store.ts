@@ -7,74 +7,38 @@ import {
   SkillAcquisitionSelectionSchema,
   canonicalJson,
   compareIds,
-  parseCompleteSkillCatalog,
   parseJson,
   resolveSkillAcquisitionV1,
+  revisionRefKey,
   skillAcquisitionRevisionHash,
-  skillCatalogDigest,
   type RevisionRef,
   type SkillAcquisitionRevision,
-  type SkillCatalog,
 } from '@fantasy/domain';
 import {
   skillAcquisitionHeads,
   skillAcquisitionRevisions,
   skillCatalogRevisions,
 } from './schema.ts';
+import { characterAbilityRefs, requireSkillCatalog } from './skill-records.ts';
 import { jsonValue, type Store } from './store.ts';
-import { StoreError } from './store-error.ts';
-
-function invalid(error: unknown): never {
-  throw new StoreError(
-    'invalid-input',
-    (error instanceof Error ? error.message : 'Invalid skill acquisition').slice(0, 1000),
-  );
-}
-
-const refKey = (ref: RevisionRef) => `${ref.id}@${ref.revision}:${ref.contentHash}`;
+import { StoreError, invalidInput } from './store-error.ts';
 
 export class SkillAcquisitionStore {
   constructor(private readonly store: Store) {}
 
-  private async requireCatalog(ref: RevisionRef): Promise<SkillCatalog> {
-    const row = this.store.orm
-      .select()
-      .from(skillCatalogRevisions)
-      .where(
-        and(eq(skillCatalogRevisions.id, ref.id), eq(skillCatalogRevisions.revision, ref.revision)),
-      )
-      .get();
-    if (!row) throw new StoreError('not-found', 'Skill catalog revision not found');
-    const catalog = parseCompleteSkillCatalog(jsonValue(row.catalogJson)),
-      digest = await skillCatalogDigest(catalog);
-    if (digest !== row.contentHash || digest !== ref.contentHash)
-      throw new StoreError('conflict', 'Skill catalog reference does not match stored content');
-    return catalog;
-  }
-
   private capabilities(characterRef: RevisionRef) {
-    const character = this.store.requireRevision('character', characterRef);
-    if (character.kind !== 'character') throw new StoreError('invalid-input', 'Expected character');
-    const refs = new Map(character.definition.abilities.map((ref) => [refKey(ref), ref]));
-    for (const equipmentRef of character.definition.equipment) {
-      const equipment = this.store.requireRevision('equipment', equipmentRef);
-      if (equipment.kind !== 'equipment')
-        throw new StoreError('invalid-input', 'Expected equipment');
-      for (const ref of equipment.definition.abilities) refs.set(refKey(ref), ref);
-    }
+    const refs = new Map(
+      characterAbilityRefs(this.store, characterRef).map((ref) => [revisionRefKey(ref), ref]),
+    );
     // Equipment revisions do not yet carry authoritative tags. Tagged nodes fail closed rather
     // than deriving inventory from appearance or trusting caller-supplied strings.
-    return {
-      equipmentTags: [],
-      abilityRefs: [...refs.values()].sort((left, right) =>
-        refKey(left).localeCompare(refKey(right), 'en'),
-      ),
-    };
+    // The domain resolver canonicalizes ability ref order before digesting capabilities.
+    return { equipmentTags: [], abilityRefs: [...refs.values()] };
   }
 
   private async resolveSnapshot(input: unknown): Promise<SkillAcquisitionRevision> {
     const selection = SkillAcquisitionSelectionSchema.parse(input),
-      catalog = await this.requireCatalog(selection.catalog);
+      catalog = await requireSkillCatalog(this.store, selection.catalog);
     this.store.requireRevision('character', selection.character);
     let content;
     try {
@@ -87,7 +51,7 @@ export class SkillAcquisitionStore {
         this.capabilities(selection.character),
       );
     } catch (error) {
-      invalid(error);
+      invalidInput(error, 'Invalid skill acquisition');
     }
     return SkillAcquisitionRevisionSchema.parse({
       ...content,
@@ -179,7 +143,7 @@ export class SkillAcquisitionStore {
     )
       throw new StoreError('conflict', 'Skill acquisition revision is corrupt or mismatched');
     this.store.requireRevision('character', snapshot.character);
-    await this.requireCatalog(snapshot.catalog);
+    await requireSkillCatalog(this.store, snapshot.catalog);
     return snapshot;
   }
 

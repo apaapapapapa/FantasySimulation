@@ -93,7 +93,7 @@ export class Store {
       .get();
     return row ? parseJson(RevisionSchema, jsonValue(row.revisionJson)) : undefined;
   }
-  requireRevision(kind: DefinitionKind, ref: RevisionRef): Revision {
+  requireRevision<K extends DefinitionKind>(kind: K, ref: RevisionRef) {
     return requireRevision((kind, ref) => this.getRevision(kind, ref.id, ref.revision), kind, ref);
   }
   listRevisions(kind: DefinitionKind, limit = 50, cursor = '') {
