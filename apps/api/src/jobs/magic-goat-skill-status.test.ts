@@ -1,17 +1,10 @@
-import { gunzipSync } from 'node:zlib';
 import { expect, it } from 'vite-plus/test';
-import {
-  ReplayManifestSchema,
-  ReplayState,
-  replayChunkRecords,
-  replayContext,
-  revisionReference,
-} from '@fantasy/domain/spatial';
+import { ReplayManifestSchema, revisionReference } from '@fantasy/domain/spatial';
 import { runBattle } from '@fantasy/engine/spatial';
 import { catalogManifest, sampleCatalog } from '@fantasy/samples';
 import { initialStatus, withInitialStatus } from '../../../../packages/engine/test-support/ai.ts';
 import { withRuntime } from '../../test-support/runtime.ts';
-import { submitSkillJob } from '../../test-support/skill-job.ts';
+import { readSkillReplay, submitSkillJob } from '../../test-support/skill-job.ts';
 import { seedStartupData } from '../db/startup-data.ts';
 import { createApp } from '../http/app.ts';
 
@@ -110,9 +103,7 @@ it(
         const result = jobs.result(done.resultId!)!,
           response = await app.inject(`/api/replays/${result.replayId}`),
           manifest = ReplayManifestSchema.parse(response.json()),
-          context = await replayContext(manifest.input, manifest.simulationHash),
-          replay = new ReplayState(context),
-          records = [];
+          { context, replay, records } = await readSkillReplay(app, manifest);
         expect(manifest.input.participants[0]?.skillLoadout).toMatchObject({
           loadout: activeSaved.json().latest,
           resolvedNodeIds: [nodeId],
@@ -121,14 +112,6 @@ it(
         expect(
           context.actors[0]!.abilities.find(({ id }) => id === abilityId)?.definition,
         ).toMatchObject({ castSteps: 3, recoverySteps: 12, cooldownSteps: 25 });
-        for (const ref of manifest.chunks) {
-          const file = await app.inject(`/api/replays/${manifest.id}/files/${ref.file}`);
-          for (const record of replayChunkRecords(
-            gunzipSync(file.rawPayload).toString('utf8'),
-            ref,
-          ))
-            records.push(replay.apply(record));
-        }
         const events = records.flatMap((record) => ('events' in record ? record.events : [])),
           launch = events.find(
             (event) =>

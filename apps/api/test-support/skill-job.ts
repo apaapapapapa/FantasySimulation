@@ -1,4 +1,13 @@
-import { DEFAULT_BUDGET, type Manifest, type RevisionRef } from '@fantasy/domain/spatial';
+import { gunzipSync } from 'node:zlib';
+import {
+  DEFAULT_BUDGET,
+  ReplayManifestSchema,
+  ReplayState,
+  replayChunkRecords,
+  replayContext,
+  type Manifest,
+  type RevisionRef,
+} from '@fantasy/domain/spatial';
 import type { createApp } from '../src/http/app.ts';
 import { specInput } from './runtime.ts';
 
@@ -22,4 +31,20 @@ export async function submitSkillJob(
   });
   if (response.statusCode !== 202) throw new Error(`${response.statusCode}: ${response.body}`);
   return response.json().job.id as string;
+}
+
+/** Read and apply every persisted replay chunk through the public file route. */
+export async function readSkillReplay(
+  app: ReturnType<typeof createApp>,
+  manifest: ReturnType<typeof ReplayManifestSchema.parse>,
+) {
+  const context = await replayContext(manifest.input, manifest.simulationHash),
+    replay = new ReplayState(context),
+    records: ReturnType<ReplayState['apply']>[] = [];
+  for (const ref of manifest.chunks) {
+    const file = await app.inject(`/api/replays/${manifest.id}/files/${ref.file}`);
+    for (const record of replayChunkRecords(gunzipSync(file.rawPayload).toString('utf8'), ref))
+      records.push(replay.apply(record));
+  }
+  return { context, replay, records };
 }

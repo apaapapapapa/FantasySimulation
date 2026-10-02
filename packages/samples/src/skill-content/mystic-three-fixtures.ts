@@ -19,6 +19,7 @@ export type MysticSkillFixture = {
   };
   evidenceTests: string[];
   requiresLoadout?: true;
+  expectsLaunch?: boolean;
 };
 
 const fixture = (
@@ -29,9 +30,10 @@ const fixture = (
   mechanisms: string[],
   boundaries: MysticSkillFixture['boundaries'],
   evidenceTests: string[],
-  options: Pick<MysticSkillFixture, 'scenario' | 'ruleset' | 'preserves' | 'requiresLoadout'> = {
-    scenario: 'flat',
-  },
+  options: Pick<
+    MysticSkillFixture,
+    'scenario' | 'ruleset' | 'preserves' | 'requiresLoadout' | 'expectsLaunch'
+  > = { scenario: 'flat' },
 ): MysticSkillFixture => ({
   id: nodeId.replace('skill.', 'fixture.skill.') + '.runtime',
   nodeId,
@@ -115,7 +117,40 @@ export const MYSTIC_MAGIC_GOAT_DAN1_FIXTURE = fixture(
     'apps/api/src/jobs/magic-goat-skill-status.test.ts',
     'apps/web/src/replay/magic-goat-skill-display.test.ts',
   ],
-  { scenario: 'flat', requiresLoadout: true },
+  { scenario: 'flat', requiresLoadout: true, expectsLaunch: false },
+);
+
+export const MYSTIC_MAGIC_TIGER_DAN2_FIXTURE = fixture(
+  'skill.magic.tiger.2',
+  'ordinary-flare',
+  'ember-duelist',
+  'swordsman',
+  [
+    'projectile',
+    'fire',
+    'burning',
+    'valid-hit-ignition',
+    'prerequisite-closure',
+    'shared-ability-provenance',
+  ],
+  {
+    resource: 'Pays the published 3 MP cost only after the cast is admitted.',
+    duplicate: 'Rat and tiger grants preserve both nodes but execute one ordinary flare runtime.',
+    duration: 'Ordinary burning lasts 250 steps and pulses every 25 steps after a valid hit.',
+    release: 'Miss, terrain occlusion and barrier contact end the projectile without ignition.',
+    interference: 'Damage and burning are applied only to the valid body-contact target.',
+  },
+  [
+    ...catalogEvidence,
+    'packages/engine/src/spatial/magic-tiger-flare.test.ts',
+    'apps/api/src/jobs/magic-tiger-skill-status.test.ts',
+    'apps/web/src/replay/magic-tiger-skill-display.test.ts',
+  ],
+  {
+    scenario: 'flat',
+    preserves: { nodeId: 'skill.magic.tiger.1', abilityId: 'fireball' },
+    requiresLoadout: true,
+  },
 );
 
 export const MYSTIC_SKILL_FIXTURES: MysticSkillFixture[] = [
@@ -289,6 +324,7 @@ export const MYSTIC_SKILL_FIXTURES: MysticSkillFixture[] = [
     },
     catalogEvidence,
   ),
+  MYSTIC_MAGIC_TIGER_DAN2_FIXTURE,
   fixture(
     'skill.magic.rabbit.1',
     'spatial-blink-retreat-v1',

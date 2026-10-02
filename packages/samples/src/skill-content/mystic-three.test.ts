@@ -8,6 +8,7 @@ import {
   SkillCatalogSchema,
   canonicalJson,
   compareIds,
+  contentHash,
   replayContext,
   resolveSkillLoadout,
   skillBattleReceipt,
@@ -16,10 +17,11 @@ import {
   type SkillCatalog,
 } from '@fantasy/domain';
 import { ManifestBuilder, reference, runBattle, sealRevision } from '@fantasy/engine/spatial';
-import { catalogManifest, sampleCatalog } from '../index.ts';
+import { catalogManifest, revisionClosure, sampleCatalog } from '../index.ts';
 import { integratedSkillShards } from '../skill-catalog/integrated-v2.ts';
 import {
   MYSTIC_MAGIC_GOAT_DAN1_FIXTURE,
+  MYSTIC_MAGIC_TIGER_DAN2_FIXTURE,
   MYSTIC_ROOSTER_DAN2_FIXTURE,
   MYSTIC_SKILL_FIXTURES,
   type MysticSkillFixture,
@@ -30,6 +32,7 @@ import {
   MYSTIC_GOAT_DAN1_RELEASE,
   MYSTIC_ROOSTER_DAN2_RELEASE,
   MYSTIC_SKILL_SHARDS,
+  MYSTIC_TIGER_DAN2_RELEASE,
 } from './mystic-three.ts';
 
 const repositoryRoot = fileURLToPath(new URL('../../../../', import.meta.url));
@@ -101,14 +104,10 @@ async function forcedFixtureManifest(fixture: MysticSkillFixture) {
     throw new Error(`Missing fixture policy ${actor.definition.policy.id}`);
   const forcedPolicy = await sealRevision('policy', `fixture.policy.${fixture.abilityId}`, 1, {
       ...policy.definition,
-      priorities: fixture.requiresLoadout
-        ? []
-        : [
-            ...(fixture.preserves
-              ? [{ abilityId: fixture.preserves.abilityId, when: { kind: 'always' as const } }]
-              : []),
-            { abilityId: fixture.abilityId, when: { kind: 'always' as const } },
-          ],
+      priorities:
+        fixture.expectsLaunch === false
+          ? []
+          : [{ abilityId: fixture.abilityId, when: { kind: 'always' as const } }],
     }),
     forcedActor = await sealRevision('character', `fixture.character.${fixture.abilityId}`, 1, {
       ...actor.definition,
@@ -156,11 +155,32 @@ async function savedFixtureManifest(fixture: MysticSkillFixture) {
     snapshot = { ...content, contentHash: await skillLoadoutRevisionHash(content) },
     receipt = await skillBattleReceipt(snapshot);
   if (fixture.requiresLoadout) {
-    const ability = (await sampleCatalog()).find(
-      (revision) => revision.kind === 'ability' && revision.id === fixture.abilityId,
+    const catalog = await sampleCatalog(),
+      abilityIds = new Set(
+        receipt.nodeResolutions.flatMap(({ resolution }) =>
+          resolution.flatMap((item) =>
+            item.kind === 'augment'
+              ? [item.baseAbility.id, item.resolvedAbility.id]
+              : [item.ability.id],
+          ),
+        ),
+      ),
+      abilities = catalog.filter(
+        (revision) => revision.kind === 'ability' && abilityIds.has(revision.id),
+      ),
+      closure = revisionClosure(
+        catalog,
+        abilities.map((ability) => ({ kind: 'ability' as const, ref: reference(ability) })),
+      );
+    if (abilities.length !== abilityIds.size) throw new Error('Missing loadout fixture ability');
+    const existing = new Set(
+      manifest.revisions.map((revision) => `${revision.kind}:${revision.id}:${revision.revision}`),
     );
-    if (!ability) throw new Error(`Missing loadout ability ${fixture.abilityId}`);
-    manifest.revisions.push(ability);
+    manifest.revisions.push(
+      ...closure.filter(
+        (revision) => !existing.has(`${revision.kind}:${revision.id}:${revision.revision}`),
+      ),
+    );
   }
   manifest.participants[0]!.skillLoadout = receipt;
   const battle = await ManifestBuilder.from(manifest.revisions).build({
@@ -223,16 +243,20 @@ describe('mystic path catalog content', () => {
       available = nodes.filter(({ lifecycle }) => lifecycle === 'available'),
       fixtureByNode = new Map(MYSTIC_SKILL_FIXTURES.map((fixture) => [fixture.nodeId, fixture]));
 
-    expect(available).toHaveLength(21);
+    expect(available).toHaveLength(22);
     expect(MYSTIC_SKILL_FIXTURES).toHaveLength(available.length);
     expect(new Set(MYSTIC_SKILL_FIXTURES.map(({ id }) => id)).size).toBe(
       MYSTIC_SKILL_FIXTURES.length,
     );
+    const danTwoNodes = new Set<string>([
+      MYSTIC_ROOSTER_DAN2_RELEASE.nodeId,
+      MYSTIC_TIGER_DAN2_RELEASE.nodeId,
+    ]);
     for (const node of available) {
       const fixture = fixtureByNode.get(node.id),
         resolution = node.resolution[0];
       expect(fixture).toBeDefined();
-      expect(node.coordinate.dan).toBe(node.id === MYSTIC_ROOSTER_DAN2_RELEASE.nodeId ? 2 : 1);
+      expect(node.coordinate.dan).toBe(danTwoNodes.has(node.id) ? 2 : 1);
       expect(node.fixtureIds).toEqual([fixture!.id]);
       expect(node.resolution).toHaveLength(1);
       expect(resolution?.kind).toMatch(/^(active|passive)-ability$/);
@@ -268,7 +292,7 @@ describe('mystic path catalog content', () => {
       expect(actor?.kind).toBe('character');
       if (actor?.kind !== 'character') throw new Error(`Missing actor ${fixture.actor}`);
       expect(actor.definition.abilities.some(({ id }) => id === fixture.abilityId)).toBe(
-        !fixture.requiresLoadout,
+        fixture.expectsLaunch !== false,
       );
     }
   });
@@ -306,7 +330,7 @@ describe('mystic path catalog content', () => {
       integratedSkillShards
         .flatMap(({ nodes }) => nodes)
         .filter(({ lifecycle }) => lifecycle === 'available'),
-    ).toHaveLength(31);
+    ).toHaveLength(32);
 
     const { manifest, snapshot } = await savedFixtureManifest(fixture),
       run = await runBattle(manifest),
@@ -354,14 +378,14 @@ describe('mystic path catalog content', () => {
         );
         expect(policy?.kind).toBe('policy');
         if (policy?.kind !== 'policy') throw new Error('Missing forced fixture policy');
-        if (fixture.requiresLoadout) expect(policy.definition.priorities).toEqual([]);
+        if (fixture.expectsLaunch === false) expect(policy.definition.priorities).toEqual([]);
         else
           expect(policy.definition.priorities).toContainEqual({
             abilityId: fixture.abilityId,
             when: { kind: 'always' },
           });
       } else expect(resolution.kind).toBe('passive-ability');
-      expect(launched(run.records, fixture.abilityId)).toBe(!fixture.requiresLoadout);
+      expect(launched(run.records, fixture.abilityId)).toBe(fixture.expectsLaunch !== false);
       if (fixture.preserves) expect(launched(run.records, fixture.preserves.abilityId)).toBe(true);
       expect(restored).toMatchObject({ ended: true, step: run.result.steps });
       expect(run.result.steps).toBeLessThanOrEqual(200);
@@ -429,5 +453,42 @@ describe('mystic path catalog content', () => {
       kind: 'dispel',
       statusIds: ['burning', 'frost'],
     });
+  });
+
+  it('publishes tiger dan two as exact ordinary flare while retaining tiger one', async () => {
+    const fixture = MYSTIC_MAGIC_TIGER_DAN2_FIXTURE,
+      revisions = await sampleCatalog(),
+      ability = revisions.find(
+        (revision) =>
+          revision.kind === 'ability' &&
+          revision.id === MYSTIC_TIGER_DAN2_RELEASE.resolution.ability.id,
+      ),
+      node = MYSTIC_SKILL_SHARDS.magic.nodes.find(({ id }) => id === fixture.nodeId),
+      { manifest, snapshot } = await savedFixtureManifest(fixture),
+      replay = await replayContext(manifest, await contentHash(manifest));
+    expect(node).toMatchObject({
+      lifecycle: 'available',
+      prerequisites: [MYSTIC_TIGER_DAN2_RELEASE.prerequisiteNodeId],
+      resolution: [MYSTIC_TIGER_DAN2_RELEASE.resolution],
+      fixtureIds: [fixture.id],
+    });
+    expect(ability).toMatchObject({
+      kind: 'ability',
+      revision: 1,
+      contentHash: MYSTIC_TIGER_DAN2_RELEASE.resolution.ability.contentHash,
+      definition: {
+        costs: { hp: 0, mp: 3, uses: 0 },
+        castSteps: 6,
+        recoverySteps: 24,
+        cooldownSteps: 0,
+      },
+    });
+    expect(snapshot.resolved.resolvedNodeIds).toEqual([
+      MYSTIC_TIGER_DAN2_RELEASE.prerequisiteNodeId,
+      MYSTIC_TIGER_DAN2_RELEASE.nodeId,
+    ]);
+    expect(replay.actors[0]!.abilities.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(['fireball', 'ordinary-flare']),
+    );
   });
 });
