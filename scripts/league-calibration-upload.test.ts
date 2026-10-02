@@ -61,7 +61,9 @@ async function budgetFixture() {
   );
   vi.resetModules();
   upload.mockReset();
-  return { root, file, api: await import('./league-calibration-upload.ts') };
+  const api = await import('./league-calibration-upload.ts');
+  api.beginCalibrationTransportJob('consume', 2, 'league-123-1', 0);
+  return { root, file, api };
 }
 it('reserves aggregate capacity atomically before concurrent SDK allocation', async () => {
   const { root, file, api } = await budgetFixture();
@@ -74,8 +76,8 @@ it('reserves aggregate capacity atomically before concurrent SDK allocation', as
     };
   });
   const outcomes = await Promise.allSettled([
-    api.uploadCalibrationArtifact('league-one-metrics', [file], root),
-    api.uploadCalibrationArtifact('league-two-metrics', [file], root),
+    api.uploadCalibrationArtifact('league-123-1-one-metrics', [file], root),
+    api.uploadCalibrationArtifact('league-123-1-two-metrics', [file], root),
   ]);
   expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
   expect(outcomes.filter((outcome) => outcome.status === 'rejected')).toHaveLength(1);
@@ -85,19 +87,54 @@ it('reserves aggregate capacity atomically before concurrent SDK allocation', as
 it('never refunds an uncertain service allocation or makes an unbudgeted retry', async () => {
   const { root, file, api } = await budgetFixture();
   upload.mockRejectedValue(new Error('uncertain SDK outcome'));
-  await expect(api.uploadCalibrationArtifact('league-one-metrics', [file], root)).rejects.toThrow(
-    'uncertain SDK outcome',
-  );
-  await expect(api.uploadCalibrationArtifact('league-two-metrics', [file], root)).rejects.toThrow(
-    'before service allocation',
-  );
+  await expect(
+    api.uploadCalibrationArtifact('league-123-1-one-metrics', [file], root),
+  ).rejects.toThrow('uncertain SDK outcome');
+  await expect(
+    api.uploadCalibrationArtifact('league-123-1-two-metrics', [file], root),
+  ).rejects.toThrow('before service allocation');
   expect(upload).toHaveBeenCalledTimes(1);
   vi.unstubAllEnvs();
 });
 it('rejects missing source-bound budget before any SDK upload', async () => {
   const { root, file, api } = await budgetFixture();
   vi.stubEnv('LEAGUE_CALIBRATION_BUDGET', '');
-  await expect(api.uploadCalibrationArtifact('league-one-metrics', [file], root)).rejects.toThrow();
+  await expect(
+    api.uploadCalibrationArtifact('league-123-1-one-metrics', [file], root),
+  ).rejects.toThrow();
+  expect(upload).not.toHaveBeenCalled();
+  vi.unstubAllEnvs();
+});
+it('charges a tiny failed allocation against the finite ref share without refunds or reset', async () => {
+  const { root, file, api } = await budgetFixture();
+  await writeFile(file, 'x');
+  upload.mockRejectedValue(new Error('uncertain allocation'));
+  await expect(
+    api.uploadCalibrationArtifact('league-123-1-one-metrics', [file], root),
+  ).rejects.toThrow('uncertain allocation');
+  expect(api.calibrationTransportSnapshot()).toMatchObject({
+    refsUpper: 1,
+    reservedRefs: 1,
+    refundable: false,
+  });
+  await expect(
+    api.uploadCalibrationArtifact('league-123-1-two-metrics', [file], root),
+  ).rejects.toThrow('job reservation exhausted');
+  expect(() => api.beginCalibrationTransportJob('consume', 2, 'league-123-1', 0)).toThrow(
+    'already reserved',
+  );
+  expect(upload).toHaveBeenCalledTimes(1);
+  vi.unstubAllEnvs();
+});
+it('rejects foreign identity or job categories before SDK allocation', async () => {
+  const { root, file, api } = await budgetFixture();
+  await expect(api.uploadCalibrationArtifact('league-124-1-metrics', [file], root)).rejects.toThrow(
+    'identity',
+  );
+  await expect(api.uploadCalibrationArtifact('league-123-1-inputs', [file], root)).rejects.toThrow(
+    'category',
+  );
+  expect(api.calibrationTransportSnapshot()?.reservedRefs).toBe(0);
   expect(upload).not.toHaveBeenCalled();
   vi.unstubAllEnvs();
 });

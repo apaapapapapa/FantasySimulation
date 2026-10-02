@@ -7,6 +7,8 @@ const fixture = vi.hoisted(() => ({
   ci: vi.fn(),
   auth: vi.fn(),
   upload: vi.fn(),
+  reserve: vi.fn(),
+  count: vi.fn(),
 }));
 const source = { sha: 'a'.repeat(40), node: 'v24.19.0', platform: 'linux', arch: 'x64' };
 vi.mock('@fantasy/api/tooling', async (original) => ({
@@ -26,11 +28,16 @@ vi.mock('./league-partition-pilot-driver.ts', () => ({
   computePartitionPilot: vi.fn(),
   consumePartitionPilot: vi.fn(),
 }));
-vi.mock('./league-calibration-upload.ts', () => ({ uploadCalibrationArtifact: fixture.upload }));
+vi.mock('./league-calibration-upload.ts', () => ({
+  uploadCalibrationArtifact: fixture.upload,
+  beginCalibrationTransportJob: fixture.reserve,
+  calibrationTransportSnapshot: () => null,
+}));
 vi.mock('./league-pipeline-policy.ts', () => ({ pipelineCi: fixture.ci }));
 vi.mock('./league-pipeline-artifacts.ts', () => ({
   PipelineArtifacts: class {
     authenticateRun = fixture.auth;
+    request = fixture.count;
     metrics() {
       return {};
     }
@@ -82,11 +89,13 @@ it('emits bounded redacted failure diagnostics without SDK allocation when admis
     }),
   );
   try {
-    for (const rejection of [fixture.ci, fixture.auth, fixture.prepare]) {
+    for (const rejection of [fixture.ci, fixture.auth, fixture.count, fixture.prepare]) {
       fixture.ci.mockReset().mockResolvedValue(undefined);
       fixture.auth.mockReset().mockResolvedValue(undefined);
       fixture.prepare.mockReset().mockResolvedValue(undefined);
       fixture.upload.mockReset();
+      fixture.reserve.mockReset();
+      fixture.count.mockReset().mockResolvedValue({ total_count: 0 });
       diagnostic.mockClear();
       rejection.mockRejectedValue(new Error(rejected));
       await withReplayDirectory(async (root) => {
@@ -101,6 +110,12 @@ it('emits bounded redacted failure diagnostics without SDK allocation when admis
       });
       expect(process.exitCode).toBe(1);
       expect(fixture.upload).not.toHaveBeenCalled();
+      if (rejection === fixture.prepare) {
+        expect(fixture.reserve).toHaveBeenCalledWith('prepare', 2, 'league-123-1', 0);
+        expect(fixture.reserve.mock.invocationCallOrder[0]).toBeLessThan(
+          fixture.prepare.mock.invocationCallOrder[0]!,
+        );
+      } else expect(fixture.reserve).not.toHaveBeenCalled();
       expect(diagnostic).toHaveBeenCalledOnce();
       const output = JSON.parse(diagnostic.mock.calls[0]![0] as string);
       expect(output).toMatchObject({
