@@ -31,6 +31,7 @@ export async function skillReceipt(input: {
   loadoutId: string;
   nodeId: string;
   ability: RevisionRef;
+  kind?: 'active-ability' | 'passive-ability';
 }) {
   const catalog = {
       id: 'skill-catalog-v1',
@@ -42,7 +43,7 @@ export async function skillReceipt(input: {
     nodeResolutions = [
       {
         nodeId: input.nodeId,
-        resolution: [{ kind: 'active-ability' as const, ability: input.ability }],
+        resolution: [{ kind: input.kind ?? 'active-ability', ability: input.ability }],
       },
     ],
     digest = await resolutionDigest(catalog, resolvedNodeIds, nodeResolutions);
