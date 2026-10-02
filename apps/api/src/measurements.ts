@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { availableParallelism } from 'node:os';
+import { availableParallelism, cpus } from 'node:os';
 import { statSync } from 'node:fs';
 
 type Stage = {
@@ -60,6 +60,7 @@ export class Measurements {
   private readonly started = performance.now();
   private readonly startedAt = new Date().toISOString();
   private readonly cpu = process.cpuUsage();
+  private readonly resource = process.resourceUsage();
   private readonly stages = new Map<string, Stage>();
   private readonly matches: MatchMeasurement[] = [];
   private readonly validations = new Map<string, { calls: number; failures: number }>();
@@ -192,7 +193,9 @@ export class Measurements {
     this.sample();
     const now = performance.now(),
       wallMs = now - this.started,
-      cpu = process.cpuUsage(this.cpu);
+      cpu = process.cpuUsage(this.cpu),
+      resource = process.resourceUsage(),
+      hardware = cpus();
     const measuredSpanUnionMs = this.coveredMs + (this.active ? now - this.changedAt : 0);
     const calls = [...this.validations.values()].reduce((n, v) => n + v.calls, 0);
     return {
@@ -210,10 +213,25 @@ export class Measurements {
         oneCorePercent: wallMs ? (cpu.user + cpu.system) / (wallMs * 10) : null,
         availableParallelism: availableParallelism(),
         scope: 'process including all Workers; do not add thread CPU',
+        hardware: {
+          model: hardware[0]?.model ?? null,
+          logicalProcessors: hardware.length,
+          speedMHz: distribution(hardware.map(({ speed }) => speed)),
+        },
+        scheduler: {
+          voluntaryContextSwitches: Math.max(
+            0,
+            resource.voluntaryContextSwitches - this.resource.voluntaryContextSwitches,
+          ),
+          involuntaryContextSwitches: Math.max(
+            0,
+            resource.involuntaryContextSwitches - this.resource.involuntaryContextSwitches,
+          ),
+        },
       },
       memory: {
         sampledPeakBytes: this.peaks,
-        processLifetimeMaxRssBytes: process.resourceUsage().maxRSS * 1024,
+        processLifetimeMaxRssBytes: resource.maxRSS * 1024,
       },
       capacitySampleMaxBytes: this.capacities,
       queues: this.queues,
