@@ -8,7 +8,7 @@ import {
 } from '@fantasy/domain';
 
 export const MYSTIC_CATALOG_ID = 'skill-catalog-v1';
-export const MYSTIC_CATALOG_REVISION = 3;
+export const MYSTIC_CATALOG_REVISION = 4;
 
 type MysticPath = Extract<SkillPathId, 'shinto' | 'renki' | 'magic'>;
 type BranchDesign = {
@@ -459,6 +459,7 @@ const refs = {
     'measured-fire',
     'e1aca9e3d47b654405b4ce23dc445fe5d9c6edec8a2a1d9ab787b35c50923965',
   ],
+  'self-water': ['self-water', '632591d43b0dca7310f17559fca0a2640e0b2dbd670ede70021f316881747c55'],
   'spatial-beam-v1': [
     'spatial-beam-v1',
     '341fe27a18970c970300ea60d1031fc3b2df2ed8bfb4dd405545939557aad492',
@@ -476,6 +477,11 @@ export const MYSTIC_ROOSTER_DAN2_RELEASE = {
   nodeId: 'skill.magic.rooster.2',
   prerequisiteNodeId: 'skill.magic.rooster.1',
   resolution: { kind: 'active-ability' as const, ability: abilityRef('measured-fire') },
+} as const;
+
+export const MYSTIC_GOAT_DAN1_RELEASE = {
+  nodeId: 'skill.magic.goat.1',
+  resolution: { kind: 'active-ability' as const, ability: abilityRef('self-water') },
 } as const;
 
 const available: Partial<
@@ -499,6 +505,7 @@ const available: Partial<
   'magic:dragon': ['spatial-area-v1', 'active-ability'],
   'magic:snake': ['sealing-bolt-v1', 'active-ability'],
   'magic:horse': ['spatial-blink-flank-v1', 'active-ability'],
+  'magic:goat': ['self-water', 'active-ability'],
   'magic:monkey': ['ice', 'active-ability'],
   'magic:rooster': ['reveal-fire', 'active-ability'],
   'magic:dog': ['spatial-barrier-v1', 'active-ability'],

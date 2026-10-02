@@ -19,6 +19,7 @@ import { ManifestBuilder, reference, runBattle, sealRevision } from '@fantasy/en
 import { catalogManifest, sampleCatalog } from '../index.ts';
 import { integratedSkillShards } from '../skill-catalog/integrated-v2.ts';
 import {
+  MYSTIC_MAGIC_GOAT_DAN1_FIXTURE,
   MYSTIC_ROOSTER_DAN2_FIXTURE,
   MYSTIC_SKILL_FIXTURES,
   type MysticSkillFixture,
@@ -26,6 +27,7 @@ import {
 import {
   MYSTIC_AVAILABLE_NODE_IDS,
   MYSTIC_CATALOG_REVISION,
+  MYSTIC_GOAT_DAN1_RELEASE,
   MYSTIC_ROOSTER_DAN2_RELEASE,
   MYSTIC_SKILL_SHARDS,
 } from './mystic-three.ts';
@@ -99,12 +101,14 @@ async function forcedFixtureManifest(fixture: MysticSkillFixture) {
     throw new Error(`Missing fixture policy ${actor.definition.policy.id}`);
   const forcedPolicy = await sealRevision('policy', `fixture.policy.${fixture.abilityId}`, 1, {
       ...policy.definition,
-      priorities: [
-        ...(fixture.preserves
-          ? [{ abilityId: fixture.preserves.abilityId, when: { kind: 'always' as const } }]
-          : []),
-        { abilityId: fixture.abilityId, when: { kind: 'always' as const } },
-      ],
+      priorities: fixture.requiresLoadout
+        ? []
+        : [
+            ...(fixture.preserves
+              ? [{ abilityId: fixture.preserves.abilityId, when: { kind: 'always' as const } }]
+              : []),
+            { abilityId: fixture.abilityId, when: { kind: 'always' as const } },
+          ],
     }),
     forcedActor = await sealRevision('character', `fixture.character.${fixture.abilityId}`, 1, {
       ...actor.definition,
@@ -151,6 +155,13 @@ async function savedFixtureManifest(fixture: MysticSkillFixture) {
     },
     snapshot = { ...content, contentHash: await skillLoadoutRevisionHash(content) },
     receipt = await skillBattleReceipt(snapshot);
+  if (fixture.requiresLoadout) {
+    const ability = (await sampleCatalog()).find(
+      (revision) => revision.kind === 'ability' && revision.id === fixture.abilityId,
+    );
+    if (!ability) throw new Error(`Missing loadout ability ${fixture.abilityId}`);
+    manifest.revisions.push(ability);
+  }
   manifest.participants[0]!.skillLoadout = receipt;
   const battle = await ManifestBuilder.from(manifest.revisions).build({
     seed: manifest.seed,
@@ -212,7 +223,7 @@ describe('mystic path catalog content', () => {
       available = nodes.filter(({ lifecycle }) => lifecycle === 'available'),
       fixtureByNode = new Map(MYSTIC_SKILL_FIXTURES.map((fixture) => [fixture.nodeId, fixture]));
 
-    expect(available).toHaveLength(20);
+    expect(available).toHaveLength(21);
     expect(MYSTIC_SKILL_FIXTURES).toHaveLength(available.length);
     expect(new Set(MYSTIC_SKILL_FIXTURES.map(({ id }) => id)).size).toBe(
       MYSTIC_SKILL_FIXTURES.length,
@@ -256,7 +267,9 @@ describe('mystic path catalog content', () => {
       const actor = characters.get(fixture.actor);
       expect(actor?.kind).toBe('character');
       if (actor?.kind !== 'character') throw new Error(`Missing actor ${fixture.actor}`);
-      expect(actor.definition.abilities.some(({ id }) => id === fixture.abilityId)).toBe(true);
+      expect(actor.definition.abilities.some(({ id }) => id === fixture.abilityId)).toBe(
+        !fixture.requiresLoadout,
+      );
     }
   });
 
@@ -293,7 +306,7 @@ describe('mystic path catalog content', () => {
       integratedSkillShards
         .flatMap(({ nodes }) => nodes)
         .filter(({ lifecycle }) => lifecycle === 'available'),
-    ).toHaveLength(30);
+    ).toHaveLength(31);
 
     const { manifest, snapshot } = await savedFixtureManifest(fixture),
       run = await runBattle(manifest),
@@ -341,15 +354,80 @@ describe('mystic path catalog content', () => {
         );
         expect(policy?.kind).toBe('policy');
         if (policy?.kind !== 'policy') throw new Error('Missing forced fixture policy');
-        expect(policy.definition.priorities).toContainEqual({
-          abilityId: fixture.abilityId,
-          when: { kind: 'always' },
-        });
+        if (fixture.requiresLoadout) expect(policy.definition.priorities).toEqual([]);
+        else
+          expect(policy.definition.priorities).toContainEqual({
+            abilityId: fixture.abilityId,
+            when: { kind: 'always' },
+          });
       } else expect(resolution.kind).toBe('passive-ability');
-      expect(launched(run.records, fixture.abilityId)).toBe(true);
+      expect(launched(run.records, fixture.abilityId)).toBe(!fixture.requiresLoadout);
       if (fixture.preserves) expect(launched(run.records, fixture.preserves.abilityId)).toBe(true);
       expect(restored).toMatchObject({ ended: true, step: run.result.steps });
       expect(run.result.steps).toBeLessThanOrEqual(200);
     },
   );
+
+  it('publishes goat self-water as a loadout-only water interaction distinct from cleanse', async () => {
+    const fixture = MYSTIC_MAGIC_GOAT_DAN1_FIXTURE,
+      revisions = await sampleCatalog(),
+      selfWater = revisions.find(
+        (revision) => revision.kind === 'ability' && revision.id === fixture.abilityId,
+      ),
+      cleanse = revisions.find(
+        (revision) => revision.kind === 'ability' && revision.id === 'cleanse',
+      ),
+      node = MYSTIC_SKILL_SHARDS.magic.nodes.find(({ id }) => id === fixture.nodeId),
+      actor = revisions.find(
+        (revision) => revision.kind === 'character' && revision.id === fixture.actor,
+      ),
+      saved = await savedFixtureManifest(fixture),
+      run = await runBattle(saved.manifest),
+      replay = await replayContext(saved.manifest, run.result.simulationHash);
+
+    expect(node).toMatchObject({
+      lifecycle: 'available',
+      resolution: [MYSTIC_GOAT_DAN1_RELEASE.resolution],
+      fixtureIds: [fixture.id],
+    });
+    expect(fixture).toMatchObject({
+      id: 'fixture.skill.magic.goat.1.runtime',
+      mechanisms: expect.arrayContaining([
+        'water-extinguishable',
+        'silence-admission',
+        'mp-admission',
+        'cooldown-admission',
+        'simultaneous-status-cohort',
+        'no-op-without-eligible-burn',
+      ]),
+      evidenceTests: expect.arrayContaining([
+        'packages/engine/src/spatial/ai-integration.test.ts',
+        'packages/engine/src/spatial/effects.test.ts',
+        'packages/engine/src/spatial/assessment.test.ts',
+        'packages/engine/src/spatial/candidate-cutoff.test.ts',
+        'apps/api/src/jobs/magic-goat-skill-status.test.ts',
+        'apps/web/src/replay/magic-goat-skill-display.test.ts',
+      ]),
+    });
+    expect(actor?.kind).toBe('character');
+    if (actor?.kind !== 'character' || selfWater?.kind !== 'ability' || cleanse?.kind !== 'ability')
+      throw new Error('Missing goat fixture definitions');
+    expect(actor.definition.abilities.map(({ id }) => id)).not.toContain(fixture.abilityId);
+    expect(replay.actors[0]!.abilities.map(({ id }) => id)).toContain(fixture.abilityId);
+    expect(selfWater).toMatchObject({
+      revision: MYSTIC_GOAT_DAN1_RELEASE.resolution.ability.revision,
+      contentHash: MYSTIC_GOAT_DAN1_RELEASE.resolution.ability.contentHash,
+      definition: {
+        costs: { hp: 0, mp: 4, uses: 0 },
+        castSteps: 3,
+        recoverySteps: 12,
+        cooldownSteps: 25,
+        effects: [{ kind: 'water', extinguish: true }],
+      },
+    });
+    expect(cleanse.definition.effects).toContainEqual({
+      kind: 'dispel',
+      statusIds: ['burning', 'frost'],
+    });
+  });
 });

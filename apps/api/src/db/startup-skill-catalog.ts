@@ -15,6 +15,7 @@ import {
 } from '@fantasy/domain';
 import {
   ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
+  MYSTIC_GOAT_DAN1_RELEASE,
   SUMMONING_RAT_DAN1_SKILL_NODE,
   integratedSkillShards,
 } from '@fantasy/samples/authoring';
@@ -222,7 +223,8 @@ export const PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION = 4;
 export const INTEGRATED_STARTUP_CATALOG_V5_REVISION = 5;
 export const INTEGRATED_STARTUP_CATALOG_V6_REVISION = 6;
 export const INTEGRATED_STARTUP_CATALOG_V7_REVISION = 7;
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 8;
+export const INTEGRATED_STARTUP_CATALOG_V8_REVISION = 8;
+export const INTEGRATED_STARTUP_CATALOG_REVISION = 9;
 
 const definitionRefs = (node: SkillNode) =>
   node.resolution.flatMap((resolution) =>
@@ -382,6 +384,30 @@ const historicalReleaseNodes = new Map<string, { releaseRevision: number; prior:
       },
     },
   ],
+  [
+    MYSTIC_GOAT_DAN1_RELEASE.nodeId,
+    {
+      releaseRevision: 9,
+      prior: {
+        id: 'skill.magic.goat.1',
+        coordinate: { path: 'magic', zodiac: 'goat', dan: 1 },
+        name: 'Elemental Balance: Foundation',
+        description:
+          'a self-applied water interaction. The earlier techniques remain independently selectable; this dan does not silently replace them.',
+        lifecycle: 'draft',
+        prerequisites: [],
+        deepening: {
+          kind: 'foundation',
+          explanation:
+            'a self-applied water interaction; it deepens a self-applied water interaction without removing that lower-cost use.',
+          retainsLowerUse: true,
+        },
+        pathRoleTags: ['path.magic', 'zodiac.goat', 'dan.1'],
+        resolution: [],
+        fixtureIds: [],
+      },
+    },
+  ],
 ]);
 
 function integratedNodesAtRevision(revision: number): SkillNode[] {
@@ -450,13 +476,28 @@ export function readIntegratedStartupSkillCatalogV7(revisionInput: unknown[]): S
   );
 }
 
-/** Promote only the measured rat foundation over immutable catalog v7. */
+/** Reconstruct immutable catalog v8 with only the measured rat promotion over v7. */
+export function readIntegratedStartupSkillCatalogV8(revisionInput: unknown[]): SkillCatalog {
+  return assembleIntegratedStartupSkillCatalog(
+    revisionInput,
+    INTEGRATED_STARTUP_CATALOG_V8_REVISION,
+    readIntegratedStartupSkillCatalogV7(revisionInput).nodes.map((node) =>
+      node.id === SUMMONING_RAT_DAN1_SKILL_NODE.id ? SUMMONING_RAT_DAN1_SKILL_NODE : node,
+    ),
+  );
+}
+
+/** Promote only magic goat dan one over immutable catalog v8. */
 export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
+  const goat = integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_REVISION).find(
+    ({ id }) => id === MYSTIC_GOAT_DAN1_RELEASE.nodeId,
+  );
+  if (!goat) throw new Error('Authored magic goat release is missing');
   return assembleIntegratedStartupSkillCatalog(
     revisionInput,
     INTEGRATED_STARTUP_CATALOG_REVISION,
-    readIntegratedStartupSkillCatalogV7(revisionInput).nodes.map((node) =>
-      node.id === SUMMONING_RAT_DAN1_SKILL_NODE.id ? SUMMONING_RAT_DAN1_SKILL_NODE : node,
+    readIntegratedStartupSkillCatalogV8(revisionInput).nodes.map((node) =>
+      node.id === goat.id ? goat : node,
     ),
   );
 }
@@ -472,10 +513,10 @@ export function inspectIntegratedStartupSkillCatalog(
       fixtureIds: available.flatMap(({ fixtureIds }) => fixtureIds),
     });
   if (
-    report.available !== 32 ||
-    report.verified !== 32 ||
+    report.available !== 33 ||
+    report.verified !== 33 ||
     report.lifecycle.implemented !== 2 ||
-    report.lifecycle.draft !== 1_118 ||
+    report.lifecycle.draft !== 1_117 ||
     report.issues.length
   )
     throw new Error('Integrated startup skill catalog release evidence is incomplete');

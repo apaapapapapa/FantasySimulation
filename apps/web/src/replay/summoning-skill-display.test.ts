@@ -5,14 +5,10 @@ import { join } from 'node:path';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
-  SkillLoadoutReceiptSchema,
   ManifestSchema,
-  canonicalJson,
-  contentHash,
   replayChunkRecords,
   replayContext,
   seekReplayState,
-  type RevisionRef,
 } from '@fantasy/domain/spatial';
 import { ManifestBuilder, runBattle } from '@fantasy/engine/spatial';
 import { catalogManifest, sampleCatalog } from '@fantasy/samples';
@@ -26,8 +22,8 @@ import { NO_OVERLAYS } from './overlays.ts';
 import { expandArtifact } from './artifacts.ts';
 import type { OpenedReplay } from './open-replay.ts';
 import { ReplayPlayer } from './replay-player.ts';
+import { skillReceipt } from './skill-display-test-support.ts';
 
-const hash = (digit: string) => `sha256:${digit.repeat(64)}`;
 async function productionSummonBattle() {
   const source = await catalogManifest(
       'swordsman',
@@ -44,35 +40,12 @@ async function productionSummonBattle() {
   expect({ id: ability.id, revision: ability.revision, contentHash: ability.contentHash }).toEqual(
     fixture.ability,
   );
-  const catalog = { id: 'skill-catalog-v1', revision: 8, contentHash: hash('1') },
-    loadout = { id: 'loadout.production.summoning.rat.1', revision: 1, contentHash: hash('2') },
-    resolvedNodeIds = [fixture.catalogNodeId],
-    nodeResolutions = [
-      {
-        nodeId: fixture.catalogNodeId,
-        resolution: [{ kind: 'active-ability' as const, ability: fixture.ability as RevisionRef }],
-      },
-    ],
-    resolutionDigest = await contentHash(
-      JSON.parse(
-        canonicalJson({
-          resolverVersion: 'skill-resolver-v1',
-          catalog,
-          resolvedNodeIds,
-          nodeResolutions,
-        }),
-      ),
-    ),
-    receipt = SkillLoadoutReceiptSchema.parse({
-      schemaVersion: 2,
-      resolverVersion: 'skill-resolver-v1',
+  const receipt = await skillReceipt({
       character: source.participants[0]!.character,
-      catalog,
-      loadout,
-      explicitlyEnabledNodeIds: resolvedNodeIds,
-      resolvedNodeIds,
-      nodeResolutions,
-      resolutionDigest,
+      catalogRevision: 8,
+      loadoutId: 'loadout.production.summoning.rat.1',
+      nodeId: fixture.catalogNodeId,
+      ability: fixture.ability,
     }),
     participants = structuredClone(source.participants);
   participants[0]!.skillLoadout = receipt;
@@ -134,7 +107,6 @@ it('restores production rat transitions through ReplayWriter and ReplayPlayer in
         record.kind !== 'terminal' &&
         record.dependents?.update.length
       ) {
-        // Exercise an actual persisted checkpoint boundary inside this short production lifecycle.
         await (writer as unknown as { flush(): Promise<void> }).flush();
         forcedDependentBoundary = true;
       }
