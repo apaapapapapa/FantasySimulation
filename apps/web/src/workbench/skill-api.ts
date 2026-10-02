@@ -33,6 +33,16 @@ export const skillLoadoutsForCatalog = (
   loadouts: AnySkillLoadoutHead[],
   catalog: SkillRevisionRef,
 ) => loadouts.filter((item) => sameSkillRevisionRef(item.snapshot.configuration.catalog, catalog));
+export const sameSkillNodeIds = (left: readonly string[], right: readonly string[]) =>
+  [...left].sort().join('\n') === [...right].sort().join('\n');
+/** A saved schema-v2 loadout stays selectable, but not editable, once its acquisition advanced. */
+export const skillAcquisitionAdvanced = (
+  loadout: AnySkillLoadoutHead,
+  acquisition: SkillAcquisitionHead | null,
+) =>
+  loadout.snapshot.configuration.schemaVersion === 2 &&
+  acquisition !== null &&
+  !sameSkillRevisionRef(loadout.snapshot.configuration.acquisition, acquisition.latest);
 export type SkillBattleRequest = {
   job: unknown;
   actorId: string;
@@ -81,8 +91,7 @@ export async function createOrRecoverSkillAcquisition(
       existing.version === 1 &&
       sameSkillRevisionRef(existing.snapshot.character, selection.character) &&
       sameSkillRevisionRef(existing.snapshot.catalog, selection.catalog) &&
-      [...existing.snapshot.learnedNodeIds].sort().join('\n') ===
-        [...selection.learnedNodeIds].sort().join('\n')
+      sameSkillNodeIds(existing.snapshot.learnedNodeIds, selection.learnedNodeIds)
     )
       return existing;
     throw cause;

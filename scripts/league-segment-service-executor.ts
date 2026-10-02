@@ -4,6 +4,12 @@ import { open } from 'node:fs/promises';
 import { HashSchema } from '@fantasy/domain/spatial';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
+import {
+  SEGMENT_SERVICE_HTTP_REQUESTS,
+  SEGMENT_SERVICE_UPLOAD_BYTES,
+  SEGMENT_SERVICE_UPLOAD_NAME,
+  segmentServiceUploadKind,
+} from './league-segment-service-bounds.ts';
 import type { SealedSegmentReceipt } from './league-sealed-zip-diagnostic.ts';
 
 export const SERVICE_UPLOAD_DEADLINE_MS = 300000;
@@ -13,12 +19,8 @@ const graceMs = 5000,
   rssLimit = 1024 ** 3;
 export const segmentServiceReceiptSchema = z
   .object({
-    name: z.string().regex(/^league-[1-9][0-9]*-1-(segment-0-0-upload-0|service-metrics)\.zip$/),
-    bytes: z
-      .number()
-      .int()
-      .min(1)
-      .max(16 * 1024 ** 2 + 392),
+    name: z.string().regex(SEGMENT_SERVICE_UPLOAD_NAME),
+    bytes: z.number().int().min(1).max(SEGMENT_SERVICE_UPLOAD_BYTES.data),
     digest: HashSchema,
     sourceSha: z.string().regex(/^[a-f0-9]{40}$/),
     runtimeHash: HashSchema,
@@ -28,7 +30,7 @@ export const segmentServiceReceiptSchema = z
   .refine(
     (value) =>
       value.allocationAttempt === 0 &&
-      (!value.name.endsWith('-service-metrics.zip') || value.bytes <= 524288),
+      value.bytes <= SEGMENT_SERVICE_UPLOAD_BYTES[segmentServiceUploadKind(value.name)],
   );
 const childReply = z
   .object({
@@ -41,8 +43,11 @@ const childReply = z
       })
       .strict(),
     childMaxRssKiB: z.number().int().positive().safe(),
-    physicalHttpRequests: z.number().int().min(0).max(26),
-    physicalHttpRequestLimit: z.union([z.literal(26), z.literal(18)]),
+    physicalHttpRequests: z.number().int().min(0).max(SEGMENT_SERVICE_HTTP_REQUESTS.data),
+    physicalHttpRequestLimit: z.union([
+      z.literal(SEGMENT_SERVICE_HTTP_REQUESTS.data),
+      z.literal(SEGMENT_SERVICE_HTTP_REQUESTS.metrics),
+    ]),
   })
   .strict();
 
@@ -89,7 +94,7 @@ export function superviseSegmentServiceChild(
     childMaxRssKiB: number;
     sampledCombinedRssBytes: number;
     physicalHttpRequests: number;
-    physicalHttpRequestLimit: 26 | 18;
+    physicalHttpRequestLimit: z.infer<typeof childReply>['physicalHttpRequestLimit'];
   }>((resolve, reject) => {
     let failure: string | undefined,
       outputBytes = 0,
@@ -179,7 +184,7 @@ export function superviseSegmentServiceChild(
           reply.artifact.digest !== expected.digest ||
           reply.childMaxRssKiB * 1024 > memoryLimit ||
           reply.physicalHttpRequestLimit !==
-            (expected.name.endsWith('-service-metrics.zip') ? 18 : 26) ||
+            SEGMENT_SERVICE_HTTP_REQUESTS[segmentServiceUploadKind(expected.name)] ||
           reply.physicalHttpRequests > reply.physicalHttpRequestLimit
         )
           throw new Error('failed');

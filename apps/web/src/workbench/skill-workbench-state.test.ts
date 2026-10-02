@@ -1,9 +1,17 @@
 import { expect, it } from 'vite-plus/test';
-import { SkillNodeSchema, type SkillConfiguration, type SkillNode } from '@fantasy/domain';
+import {
+  SkillNodeSchema,
+  type AnySkillLoadoutHead,
+  type SkillAcquisitionHead,
+  type SkillConfiguration,
+  type SkillNode,
+} from '@fantasy/domain';
 import {
   learnNode,
   latestSelectionGuard,
   loadoutCounts,
+  newSkillConfiguration,
+  savedSkillConfiguration,
   toggleEnabledNode,
   workbenchNodeState,
 } from './skill-workbench-state.ts';
@@ -94,4 +102,61 @@ it('applies only the latest selection when acquisition responses resolve out of 
   first.resolve();
   await firstSelection;
   expect(applied).toEqual(['second']);
+});
+
+it('starts a new configuration with only available nodes eligible and nothing learned', () => {
+  const catalog = { id: 'catalog', revision: 2, contentHash: hash },
+    nodes = [
+      node('sword-rat-1', 'sword'),
+      { ...node('judo-rat-1', 'judo'), lifecycle: 'draft' as const },
+    ];
+  expect(newSkillConfiguration(nodes, catalog, 'loadout-new')).toEqual({
+    schemaVersion: 1,
+    id: 'loadout-new',
+    version: 1,
+    catalog,
+    eligibilityNodeIds: ['sword-rat-1'],
+    learnedNodeIds: [],
+    enabledNodeIds: [],
+  });
+});
+
+it('edits a saved V2 loadout from its resolved learning and the latest acquisition eligibility', () => {
+  const catalog = { id: 'catalog', revision: 2, contentHash: hash },
+    legacy = configuration([node('sword-rat-1', 'sword')]),
+    saved = {
+      id: 'loadout.saved',
+      version: 3,
+      snapshot: {
+        configuration: {
+          schemaVersion: 2,
+          catalog,
+          acquisition: { id: 'acquisition.saved', revision: 2, contentHash: hash },
+          enabledNodeIds: ['sword-rat-1'],
+        },
+        resolved: { learnedNodeIds: ['sword-rat-1', 'judo-rat-1'] },
+      },
+    } as unknown as AnySkillLoadoutHead,
+    acquisition = {
+      snapshot: { eligibilityNodeIds: ['sword-rat-1', 'judo-rat-1', 'magic-rat-1'] },
+    } as unknown as SkillAcquisitionHead;
+  expect(
+    savedSkillConfiguration(
+      { snapshot: { configuration: legacy } } as unknown as AnySkillLoadoutHead,
+      null,
+    ),
+  ).toBe(legacy);
+  expect(savedSkillConfiguration(saved, acquisition)).toEqual({
+    schemaVersion: 1,
+    id: 'loadout.saved',
+    version: 3,
+    catalog,
+    eligibilityNodeIds: ['sword-rat-1', 'judo-rat-1', 'magic-rat-1'],
+    learnedNodeIds: ['sword-rat-1', 'judo-rat-1'],
+    enabledNodeIds: ['sword-rat-1'],
+  });
+  expect(savedSkillConfiguration(saved, null).eligibilityNodeIds).toEqual([
+    'sword-rat-1',
+    'judo-rat-1',
+  ]);
 });

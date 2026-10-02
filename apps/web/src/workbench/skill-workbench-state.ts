@@ -2,6 +2,8 @@ import {
   MAX_ACTIVE_SKILL_NODES,
   MAX_ENABLED_SKILL_PATHS,
   MAX_PASSIVE_SKILL_NODES,
+  type AnySkillLoadoutHead,
+  type SkillAcquisitionHead,
   type SkillConfiguration,
   type SkillNode,
 } from '@fantasy/domain';
@@ -16,6 +18,43 @@ export function latestSelectionGuard() {
       const generation = ++latest;
       return { isCurrent: () => generation === latest };
     },
+  };
+}
+
+/** Unsaved schema-v1 editor state that offers every available node as eligible. */
+export function newSkillConfiguration(
+  nodes: SkillNode[],
+  catalog: SkillConfiguration['catalog'],
+  id = `loadout-${crypto.randomUUID()}`,
+): SkillConfiguration {
+  return {
+    schemaVersion: 1,
+    id,
+    version: 1,
+    catalog,
+    eligibilityNodeIds: nodes
+      .filter((node) => node.lifecycle === 'available')
+      .map((node) => node.id),
+    learnedNodeIds: [],
+    enabledNodeIds: [],
+  };
+}
+
+/** Editor view of a saved loadout; schema-v2 learning comes from its exact resolved snapshot. */
+export function savedSkillConfiguration(
+  loadout: AnySkillLoadoutHead,
+  acquisition: SkillAcquisitionHead | null,
+): SkillConfiguration {
+  if (loadout.snapshot.configuration.schemaVersion === 1) return loadout.snapshot.configuration;
+  return {
+    schemaVersion: 1,
+    id: loadout.id,
+    version: loadout.version,
+    catalog: loadout.snapshot.configuration.catalog,
+    eligibilityNodeIds:
+      acquisition?.snapshot.eligibilityNodeIds ?? loadout.snapshot.resolved.learnedNodeIds,
+    learnedNodeIds: loadout.snapshot.resolved.learnedNodeIds,
+    enabledNodeIds: loadout.snapshot.configuration.enabledNodeIds,
   };
 }
 

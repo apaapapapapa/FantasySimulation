@@ -3,6 +3,7 @@ import {
   SKILL_DANS,
   SKILL_PATHS,
   SKILL_ZODIACS,
+  revisionRefKey,
   skillCatalogDigest,
   type SkillAcquisitionHead,
   type SkillCatalog,
@@ -13,7 +14,9 @@ import { errorText, reference } from '../api-client.ts';
 import {
   DEFAULT_SKILL_CATALOG,
   createOrRecoverSkillAcquisition,
+  sameSkillNodeIds,
   sameSkillRevisionRef,
+  skillAcquisitionAdvanced,
   skillLoadoutsForCatalog,
 } from './skill-api.ts';
 import type {
@@ -35,6 +38,8 @@ import {
   learnNode,
   latestSelectionGuard,
   loadoutCounts,
+  newSkillConfiguration,
+  savedSkillConfiguration,
   toggleEnabledNode,
   workbenchNodeState,
   type WorkbenchStatus,
@@ -56,28 +61,10 @@ const ACTIONS: Record<WorkbenchStatus, string> = {
 };
 const ZODIAC_OPTIONS = SKILL_ZODIACS.map(({ id, name }) => ({ value: id, label: name }));
 const DAN_OPTIONS = SKILL_DANS.map(({ dan, name }) => ({ value: String(dan), label: name }));
-const refKey = (value: SkillRevisionRef) => `${value.id}@${value.revision}:${value.contentHash}`;
 const coordinateKey = (node: SkillNode) => `${node.coordinate.dan}:${node.coordinate.zodiac}`;
-
-function configurationView(
-  loadout: SkillLoadoutHead,
-  acquisition: SkillAcquisitionHead | null,
-): SkillConfiguration {
-  if (loadout.snapshot.configuration.schemaVersion === 1) return loadout.snapshot.configuration;
-  return {
-    schemaVersion: 1,
-    id: loadout.id,
-    version: loadout.version,
-    catalog: loadout.snapshot.configuration.catalog,
-    eligibilityNodeIds:
-      acquisition?.snapshot.eligibilityNodeIds ?? loadout.snapshot.resolved.learnedNodeIds,
-    learnedNodeIds: loadout.snapshot.resolved.learnedNodeIds,
-    enabledNodeIds: loadout.snapshot.configuration.enabledNodeIds,
-  };
-}
-
-const sameNodeIds = (left: string[], right: string[]) =>
-  [...left].sort().join('\n') === [...right].sort().join('\n');
+const ACQUISITION_ADVANCED_ERROR =
+  'The acquisition head advanced after this loadout was saved. Its exact battle revision is still selected, but it cannot be edited as the latest acquisition.';
+const RELOAD_ACQUISITION_ERROR = 'Reload the latest acquisition before editing this saved loadout.';
 
 function FilterOptions({ items }: { items: readonly { value: string; label: string }[] }) {
   return items.map((item) => (
@@ -168,51 +155,36 @@ export function SkillWorkbench({
           ? await client.getAcquisition(current.snapshot.configuration.acquisition.id, signal)
           : null;
       if (signal?.aborted || !attempt.isCurrent()) return;
-      if (
-        current?.snapshot.configuration.schemaVersion === 2 &&
-        currentAcquisition &&
-        !sameSkillRevisionRef(current.snapshot.configuration.acquisition, currentAcquisition.latest)
-      ) {
-        setSelectedRevision(current);
+      if (current) selectSaved(current, currentAcquisition);
+      else {
+        setSelectedRevision(null);
         setAcquisition(null);
-        setCharacter(current.snapshot.character);
-        setConfiguration(configurationView(current, null));
-        onSaved({ loadout: current.latest, character: current.snapshot.character });
-        setError(
-          'The acquisition head advanced after this loadout was saved. Its exact battle revision is still selected, but it cannot be edited as the latest acquisition.',
-        );
-        setSelecting(false);
-        return;
-      }
-      setSelectedRevision(current);
-      setAcquisition(currentAcquisition);
-      setCharacter(
-        current?.snapshot.character ??
-          (character &&
-          nextCharacters.some((item) => sameSkillRevisionRef(reference(item), character))
+        setCharacter(
+          character &&
+            nextCharacters.some((item) => sameSkillRevisionRef(reference(item), character))
             ? character
             : nextCharacters[0]
               ? reference(nextCharacters[0])
-              : null),
-      );
-      setConfiguration(
-        current
-          ? configurationView(current, currentAcquisition)
-          : {
-              schemaVersion: 1,
-              id: `loadout-${crypto.randomUUID()}`,
-              version: 1,
-              catalog: catalogRef,
-              eligibilityNodeIds: nextCatalog.nodes
-                .filter((node) => node.lifecycle === 'available')
-                .map((node) => node.id),
-              learnedNodeIds: [],
-              enabledNodeIds: [],
-            },
-      );
-      onSaved(current ? { loadout: current.latest, character: current.snapshot.character } : null);
+              : null,
+        );
+        setConfiguration(newSkillConfiguration(nextCatalog.nodes, catalogRef));
+        onSaved(null);
+      }
     }
     if (attempt.isCurrent()) setSelecting(false);
+  }
+
+  /** Select an exact saved revision; an advanced acquisition keeps it selected but read-only. */
+  function selectSaved(loadout: SkillLoadoutHead, latestAcquisition: SkillAcquisitionHead | null) {
+    const advanced = skillAcquisitionAdvanced(loadout, latestAcquisition),
+      editable = advanced ? null : latestAcquisition;
+    setSelectedRevision(loadout);
+    setAcquisition(editable);
+    setCharacter(loadout.snapshot.character);
+    setConfiguration(savedSkillConfiguration(loadout, editable));
+    onSaved({ loadout: loadout.latest, character: loadout.snapshot.character });
+    if (advanced) setError(ACQUISITION_ADVANCED_ERROR);
+    return !advanced;
   }
 
   useEffect(() => {
@@ -263,16 +235,7 @@ export function SkillWorkbench({
       setSelectedRevision(null);
       setAcquisition(null);
       onSaved(null);
-      setConfiguration({
-        ...configuration,
-        id: `loadout-${crypto.randomUUID()}`,
-        version: 1,
-        eligibilityNodeIds: catalog.nodes
-          .filter((node) => node.lifecycle === 'available')
-          .map((node) => node.id),
-        learnedNodeIds: [],
-        enabledNodeIds: [],
-      });
+      setConfiguration(newSkillConfiguration(catalog.nodes, configuration.catalog));
       setMessage('新規構成に切り替えました。');
       return;
     }
@@ -285,38 +248,20 @@ export function SkillWorkbench({
           revision.snapshot.configuration.acquisition.id,
         );
         if (!attempt.isCurrent()) return;
-        if (
-          !sameSkillRevisionRef(revision.snapshot.configuration.acquisition, nextAcquisition.latest)
-        ) {
-          setSelectedRevision(revision);
-          setAcquisition(null);
-          setConfiguration(configurationView(revision, null));
-          setCharacter(revision.snapshot.character);
-          onSaved({ loadout: revision.latest, character: revision.snapshot.character });
-          setError(
-            'The acquisition head advanced after this loadout was saved. Its exact battle revision is still selected, but it cannot be edited as the latest acquisition.',
-          );
-          setSelecting(false);
-          return;
-        }
       }
     } catch (cause) {
       if (attempt.isCurrent()) setSelecting(false);
       throw cause;
     }
-    setSelectedRevision(revision);
-    setAcquisition(nextAcquisition);
-    setConfiguration(configurationView(revision, nextAcquisition));
-    setCharacter(revision.snapshot.character);
-    onSaved({ loadout: revision.latest, character: revision.snapshot.character });
+    const editable = selectSaved(revision, nextAcquisition);
     if (attempt.isCurrent()) setSelecting(false);
-    setMessage(`revision ${revision.latest.revision} を再読込しました。`);
+    if (editable) setMessage(`revision ${revision.latest.revision} を再読込しました。`);
   }
 
   function operate(node: SkillNode) {
     if (!configuration || !catalog) return;
     if (editingBlocked) {
-      setError('Reload the latest acquisition before editing this saved loadout.');
+      setError(RELOAD_ACQUISITION_ERROR);
       return;
     }
     const state = workbenchNodeState(node, configuration);
@@ -339,13 +284,12 @@ export function SkillWorkbench({
     setBusy(true);
     setError('');
     try {
-      if (selectedRevision?.schemaVersion === 2 && !acquisition)
-        throw new Error('Reload the latest acquisition before editing this saved loadout.');
+      if (editingBlocked) throw new Error(RELOAD_ACQUISITION_ERROR);
       const acquisitionMatches =
         acquisition &&
         sameSkillRevisionRef(acquisition.snapshot.character, character) &&
         sameSkillRevisionRef(acquisition.snapshot.catalog, configuration.catalog) &&
-        sameNodeIds(acquisition.snapshot.learnedNodeIds, configuration.learnedNodeIds);
+        sameSkillNodeIds(acquisition.snapshot.learnedNodeIds, configuration.learnedNodeIds);
       const nextAcquisition = acquisitionMatches
         ? acquisition
         : acquisition
@@ -383,7 +327,7 @@ export function SkillWorkbench({
           )
         : await client.createLoadout(character, nextConfiguration);
       setSelectedRevision(result);
-      setConfiguration(configurationView(result, nextAcquisition));
+      setConfiguration(savedSkillConfiguration(result, nextAcquisition));
       setSaved((items) => [result, ...items.filter((item) => item.id !== result.id)]);
       onSaved({ loadout: result.latest, character: result.snapshot.character });
       setMessage(`revision ${result.latest.revision} を保存しました。下の対戦画面で使用できます。`);
@@ -632,10 +576,10 @@ export function SkillWorkbench({
             キャラクター
             <select
               disabled={selectedRevision !== null}
-              value={character ? refKey(character) : ''}
+              value={character ? revisionRefKey(character) : ''}
               onChange={(event) => {
                 const selected = characters.find(
-                  (item) => refKey(reference(item)) === event.target.value,
+                  (item) => revisionRefKey(reference(item)) === event.target.value,
                 );
                 if (selected) {
                   setCharacter(reference(selected));
@@ -648,12 +592,15 @@ export function SkillWorkbench({
             >
               {character &&
                 !characters.some((item) => sameSkillRevisionRef(reference(item), character)) && (
-                  <option value={refKey(character)}>
+                  <option value={revisionRefKey(character)}>
                     {character.id} r{character.revision} (saved)
                   </option>
                 )}
               {characters.map((item) => (
-                <option key={refKey(reference(item))} value={refKey(reference(item))}>
+                <option
+                  key={revisionRefKey(reference(item))}
+                  value={revisionRefKey(reference(item))}
+                >
                   {item.definition.name}・r{item.revision}
                 </option>
               ))}

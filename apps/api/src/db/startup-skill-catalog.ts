@@ -7,6 +7,7 @@ import {
   parseCompleteSkillCatalog,
   revisionReference,
   skillCoordinateKey,
+  skillResolutionAbilityRefs,
   type Revision,
   type SkillCatalog,
   type SkillCatalogReleaseReport,
@@ -228,13 +229,6 @@ export const INTEGRATED_STARTUP_CATALOG_V8_REVISION = 8;
 export const INTEGRATED_STARTUP_CATALOG_V9_REVISION = 9;
 export const INTEGRATED_STARTUP_CATALOG_REVISION = 10;
 
-const definitionRefs = (node: SkillNode) =>
-  node.resolution.flatMap((resolution) =>
-    resolution.kind === 'augment'
-      ? [resolution.baseAbility, resolution.resolvedAbility]
-      : [resolution.ability],
-  );
-
 function validateIntegratedDefinitions(catalog: SkillCatalog, revisionInput: unknown[]) {
   const revisions = parseJson(RevisionSchema.array(), revisionInput),
     abilities = new Map(
@@ -245,7 +239,7 @@ function validateIntegratedDefinitions(catalog: SkillCatalog, revisionInput: unk
         )
         .map((revision) => [`${revision.id}@${revision.revision}`, revision]),
     ),
-    refs = catalog.nodes.flatMap(definitionRefs);
+    refs = catalog.nodes.flatMap((node) => skillResolutionAbilityRefs(node.resolution));
   for (const ref of refs) {
     const ability = abilities.get(`${ref.id}@${ref.revision}`);
     if (!ability || ability.contentHash !== ref.contentHash)

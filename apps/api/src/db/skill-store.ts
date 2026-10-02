@@ -17,24 +17,22 @@ import {
   skillBattleReceipt,
   skillCatalogDigest,
   skillLoadoutRevisionHash,
+  skillResolutionAbilityRefs,
   type RevisionRef,
   type AnySkillLoadoutCreate,
   type AnySkillLoadoutPatch,
-  type SkillCatalog,
   type AnySkillLoadoutRevision,
   type AnyResolvedSkillLoadout,
 } from '@fantasy/domain';
 import { skillCatalogRevisions, skillLoadoutHeads, skillLoadoutRevisions } from './schema.ts';
 import { SkillAcquisitionStore } from './skill-acquisition-store.ts';
+import {
+  characterAbilityRefs,
+  readSkillCatalogRecord,
+  requireSkillCatalog,
+} from './skill-records.ts';
 import { jsonValue, type Store } from './store.ts';
-import { StoreError } from './store-error.ts';
-
-function invalid(error: unknown): never {
-  throw new StoreError(
-    'invalid-input',
-    (error instanceof Error ? error.message : 'Invalid skill loadout').slice(0, 1000),
-  );
-}
+import { StoreError, invalidInput } from './store-error.ts';
 
 export class SkillStore {
   constructor(private readonly store: Store) {}
@@ -78,46 +76,16 @@ export class SkillStore {
     });
   }
 
-  async catalog(id: string, revision: number) {
-    const row = this.store.orm
-      .select()
-      .from(skillCatalogRevisions)
-      .where(and(eq(skillCatalogRevisions.id, id), eq(skillCatalogRevisions.revision, revision)))
-      .get();
-    if (!row) throw new StoreError('not-found', 'Skill catalog revision not found');
-    const catalog = parseCompleteSkillCatalog(jsonValue(row.catalogJson)),
-      contentHash = await skillCatalogDigest(catalog);
-    if (
-      catalog.id !== row.id ||
-      catalog.revision !== row.revision ||
-      contentHash !== row.contentHash
-    )
-      throw new StoreError('conflict', 'Stored skill catalog revision is corrupt');
-    return SkillCatalogRecordSchema.parse({
-      schemaVersion: 1,
-      reference: { id: row.id, revision: row.revision, contentHash },
-      catalog,
-    });
-  }
-
-  private async requireCatalog(ref: RevisionRef): Promise<SkillCatalog> {
-    const record = await this.catalog(ref.id, ref.revision);
-    if (record.reference.contentHash !== ref.contentHash)
-      throw new StoreError('conflict', 'Skill catalog reference does not match stored content');
-    return record.catalog;
+  catalog(id: string, revision: number) {
+    return readSkillCatalogRecord(this.store, id, revision);
   }
 
   private validateV2Applicability(characterRef: RevisionRef, resolved: AnyResolvedSkillLoadout) {
     if (resolved.schemaVersion !== 2) return;
-    const character = this.store.requireRevision('character', characterRef);
-    if (character.kind !== 'character') throw new Error('Expected character revision');
-    const equipped = new Map<string, RevisionRef>();
-    for (const ref of character.definition.abilities) equipped.set(ref.id, ref);
-    for (const equipmentRef of character.definition.equipment) {
-      const equipment = this.store.requireRevision('equipment', equipmentRef);
-      if (equipment.kind !== 'equipment') throw new Error('Expected equipment revision');
-      for (const ref of equipment.definition.abilities) equipped.set(ref.id, ref);
-    }
+    // A later equipment ref replaces an earlier ref with the same ability ID.
+    const equipped = new Map(
+      characterAbilityRefs(this.store, characterRef).map((ref) => [ref.id, ref]),
+    );
     for (const node of resolved.nodeResolutions)
       for (const resolution of node.resolution) {
         if (resolution.kind === 'augment') {
@@ -135,7 +103,6 @@ export class SkillStore {
           continue;
         }
         const ability = this.store.requireRevision('ability', resolution.ability);
-        if (ability.kind !== 'ability') throw new Error('Expected ability revision');
         if (resolution.kind === 'active-ability' && ability.definition.trigger !== 'action')
           throw new Error(`Active skill ability must use the action trigger: ${ability.id}`);
         if (resolution.kind === 'passive-ability' && ability.definition.trigger === 'action')
@@ -165,7 +132,7 @@ export class SkillStore {
               enabledNodeIds: [...parsedConfiguration.enabledNodeIds].sort(compareIds),
             };
     this.store.requireRevision('character', character);
-    const catalog = await this.requireCatalog(configuration.catalog);
+    const catalog = await requireSkillCatalog(this.store, configuration.catalog);
     let resolved;
     try {
       // Equipment tag contracts are not part of SK-02. Nodes requiring one fail closed.
@@ -180,44 +147,41 @@ export class SkillStore {
         resolved = await resolveSkillLoadout(catalog, configuration, [], acquisition);
       }
       for (const node of resolved.nodeResolutions)
-        for (const resolution of node.resolution) {
-          if (resolution.kind === 'augment') {
-            this.store.requireRevision('ability', resolution.baseAbility);
-            this.store.requireRevision('ability', resolution.resolvedAbility);
-          } else this.store.requireRevision('ability', resolution.ability);
-        }
+        for (const ref of skillResolutionAbilityRefs(node.resolution))
+          this.store.requireRevision('ability', ref);
       this.validateV2Applicability(character, resolved);
     } catch (error) {
-      invalid(error);
+      invalidInput(error, 'Invalid skill loadout');
     }
-    if (configuration.schemaVersion !== resolved.schemaVersion)
-      throw new StoreError('conflict', 'Skill loadout resolver version mismatch');
     const content =
-        configuration.schemaVersion === 1 && resolved.schemaVersion === 1
+      configuration.schemaVersion === 1 && resolved.schemaVersion === 1
+        ? {
+            schemaVersion: 1 as const,
+            id: configuration.id,
+            revision,
+            character,
+            configuration,
+            resolved,
+          }
+        : configuration.schemaVersion === 2 && resolved.schemaVersion === 2
           ? {
-              schemaVersion: 1 as const,
+              schemaVersion: 2 as const,
               id: configuration.id,
               revision,
               character,
               configuration,
               resolved,
             }
-          : configuration.schemaVersion === 2 && resolved.schemaVersion === 2
-            ? {
-                schemaVersion: 2 as const,
-                id: configuration.id,
-                revision,
-                character,
-                configuration,
-                resolved,
-              }
-            : invalid('Skill loadout resolver version mismatch'),
-      contentHash = await skillLoadoutRevisionHash(content);
-    const snapshot = AnySkillLoadoutRevisionSchema.parse({ ...content, contentHash });
+          : undefined;
+    if (!content) throw new StoreError('conflict', 'Skill loadout resolver version mismatch');
+    const snapshot = AnySkillLoadoutRevisionSchema.parse({
+      ...content,
+      contentHash: await skillLoadoutRevisionHash(content),
+    });
     try {
       await skillBattleReceipt(snapshot);
     } catch (error) {
-      invalid(error);
+      invalidInput(error, 'Invalid skill loadout');
     }
     return snapshot;
   }
@@ -270,7 +234,7 @@ export class SkillStore {
       contentHash !== (await skillLoadoutRevisionHash(content))
     )
       throw new StoreError('conflict', 'Skill loadout revision is corrupt or mismatched');
-    await this.requireCatalog(snapshot.configuration.catalog);
+    await requireSkillCatalog(this.store, snapshot.configuration.catalog);
     this.store.requireRevision('character', snapshot.character);
     return snapshot;
   }

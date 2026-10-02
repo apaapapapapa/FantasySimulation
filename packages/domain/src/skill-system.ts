@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { canonicalJson, compareIds, contentHash, deepFreeze } from './spatial/canonical.ts';
-import { HashSchema, IdSchema, RefSchema } from './spatial/contracts.ts';
+import { HashSchema, IdSchema, RefSchema, type RevisionRef } from './spatial/contracts.ts';
+
+/** Exact revision identity, including its content hash, for sets, maps and option keys. */
+export const revisionRefKey = (ref: RevisionRef) => `${ref.id}@${ref.revision}:${ref.contentHash}`;
 
 export const SKILL_PATHS = deepFreeze([
   { id: 'sword', name: '剣道', family: 'martial', role: 'continuous offense and defense' },
@@ -80,6 +83,13 @@ export const EXPECTED_SKILL_COORDINATES = deepFreeze(
     SKILL_ZODIAC_IDS.flatMap((zodiac) => SKILL_DANS.map(({ dan }) => ({ path, zodiac, dan }))),
   ),
 );
+/** A complete catalog has one node per coordinate, which also bounds every node ID list. */
+export const SKILL_CATALOG_NODE_COUNT = EXPECTED_SKILL_COORDINATES.length;
+export const UniqueSkillNodeIdsSchema = (maximum: number) =>
+  z
+    .array(IdSchema)
+    .max(maximum)
+    .refine((ids) => new Set(ids).size === ids.length, 'Skill node IDs must be unique');
 
 export const SkillResolutionSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('active-ability'), ability: RefSchema }),
@@ -91,6 +101,13 @@ export const SkillResolutionSchema = z.discriminatedUnion('kind', [
   }),
 ]);
 export type SkillResolution = z.infer<typeof SkillResolutionSchema>;
+/** Ability revisions pinned by resolutions; an augment lists its base before its replacement. */
+export const skillResolutionAbilityRefs = (resolutions: readonly SkillResolution[]) =>
+  resolutions.flatMap((resolution) =>
+    resolution.kind === 'augment'
+      ? [resolution.baseAbility, resolution.resolvedAbility]
+      : [resolution.ability],
+  );
 export const SkillLifecycleSchema = z.enum(['draft', 'implemented', 'available', 'retired']);
 export const SkillDeepeningSchema = z.enum([
   'foundation',
@@ -166,7 +183,7 @@ export const SkillCatalogSchema = z.strictObject({
   schemaVersion: z.literal(1),
   id: IdSchema,
   revision: z.number().int().min(1).max(1_000_000),
-  nodes: z.array(SkillNodeSchema).max(1_152),
+  nodes: z.array(SkillNodeSchema).max(SKILL_CATALOG_NODE_COUNT),
 });
 export type SkillCatalog = z.infer<typeof SkillCatalogSchema>;
 
@@ -290,15 +307,6 @@ export type SkillCatalogReleaseReport = {
   issues: SkillCatalogReleaseIssue[];
 };
 
-const revisionRefKey = (ref: z.infer<typeof RefSchema>) =>
-  `${ref.id}@${ref.revision}:${ref.contentHash}`;
-const nodeDefinitionRefs = (node: SkillNode) =>
-  node.resolution.flatMap((resolution) =>
-    resolution.kind === 'augment'
-      ? [resolution.baseAbility, resolution.resolvedAbility]
-      : [resolution.ability],
-  );
-
 /** Inspect external definition/fixture evidence; structural catalog validity alone is not release proof. */
 export function inspectSkillCatalogRelease(
   catalogInput: SkillCatalog,
@@ -321,7 +329,7 @@ export function inspectSkillCatalogRelease(
     lifecycle[node.lifecycle]++;
     if (node.lifecycle !== 'available') continue;
     const nodeIssues: SkillCatalogReleaseIssue[] = [];
-    for (const ref of nodeDefinitionRefs(node))
+    for (const ref of skillResolutionAbilityRefs(node.resolution))
       if (!definitionRefs.has(revisionRefKey(ref)))
         nodeIssues.push({
           code: 'unresolved-definition',
@@ -350,7 +358,10 @@ export function inspectSkillCatalogRelease(
     lifecycle,
     available: lifecycle.available,
     verified: verified.size,
-    releaseReady: lifecycle.available === 1_152 && verified.size === 1_152 && !issues.length,
+    releaseReady:
+      lifecycle.available === SKILL_CATALOG_NODE_COUNT &&
+      verified.size === SKILL_CATALOG_NODE_COUNT &&
+      !issues.length,
     issues,
   };
 }

@@ -1,17 +1,17 @@
 import { z } from 'zod';
 import { canonicalJson, compareIds, contentHash } from './spatial/canonical.ts';
-import { HashSchema, IdSchema, RefSchema, type RevisionRef } from './spatial/contracts.ts';
+import { HashSchema, IdSchema, RefSchema } from './spatial/contracts.ts';
 import {
+  SKILL_CATALOG_NODE_COUNT,
   type SkillCatalog,
   type SkillNode,
+  UniqueSkillNodeIdsSchema,
   parseCompleteSkillCatalog,
+  revisionRefKey,
   skillCatalogDigest,
 } from './skill-system.ts';
 
-const UniqueNodeIdsSchema = z
-  .array(IdSchema)
-  .max(1_152)
-  .refine((ids) => new Set(ids).size === ids.length, 'Skill node IDs must be unique');
+const UniqueNodeIdsSchema = UniqueSkillNodeIdsSchema(SKILL_CATALOG_NODE_COUNT);
 export const SKILL_ACQUISITION_POLICY_VERSION = 'skill-acquisition-v1' as const;
 
 export const SkillAcquisitionSelectionSchema = z.strictObject({
@@ -71,8 +71,6 @@ export class SkillAcquisitionError extends Error {
     this.code = code;
   }
 }
-
-const revisionRefKey = (ref: RevisionRef) => `${ref.id}@${ref.revision}:${ref.contentHash}`;
 
 function canonicalCapabilities(input: SkillAcquisitionCapabilities) {
   const parsed = SkillAcquisitionCapabilitiesSchema.parse(input);

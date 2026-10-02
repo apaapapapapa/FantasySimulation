@@ -3,7 +3,9 @@ import { revisionHash, RevisionSchema, type Revision } from '@fantasy/domain/spa
 import {
   DEFAULT_SKILL_CATALOG,
   createOrRecoverSkillAcquisition,
+  sameSkillNodeIds,
   sameSkillRevisionRef,
+  skillAcquisitionAdvanced,
   skillLoadoutsForCatalog,
   skillWorkbenchApi,
   type SkillAcquisitionHead,
@@ -68,6 +70,27 @@ it('keeps exact refs and excludes loadouts from another catalog revision', () =>
   expect(skillLoadoutsForCatalog(heads, catalog).map(({ id }) => id)).toEqual(['matching']);
   expect(sameSkillRevisionRef(catalog, { ...catalog })).toBe(true);
   expect(sameSkillRevisionRef(catalog, { ...catalog, contentHash: hash('3') })).toBe(false);
+});
+
+it('compares learned node sets independently of their stored order', () => {
+  expect(sameSkillNodeIds(['skill.b', 'skill.a'], ['skill.a', 'skill.b'])).toBe(true);
+  expect(sameSkillNodeIds(['skill.a'], ['skill.a', 'skill.b'])).toBe(false);
+});
+
+it('blocks editing only when a V2 loadout is behind the latest acquisition head', () => {
+  const hash = (digit: string) => `sha256:${digit.repeat(64)}` as const,
+    saved = { id: 'acquisition.hero', revision: 1, contentHash: hash('1') },
+    loadout = (schemaVersion: 1 | 2) =>
+      ({
+        snapshot: { configuration: { schemaVersion, acquisition: saved } },
+      }) as unknown as SkillLoadoutHead,
+    head = (latest: typeof saved) => ({ latest }) as unknown as SkillAcquisitionHead;
+  expect(skillAcquisitionAdvanced(loadout(2), head({ ...saved }))).toBe(false);
+  expect(skillAcquisitionAdvanced(loadout(2), null)).toBe(false);
+  expect(skillAcquisitionAdvanced(loadout(1), head({ ...saved, revision: 2 }))).toBe(false);
+  expect(
+    skillAcquisitionAdvanced(loadout(2), head({ ...saved, revision: 2, contentHash: hash('2') })),
+  ).toBe(true);
 });
 
 it('reads the confirmed bounded cursor pages for saved loadouts', async () => {

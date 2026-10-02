@@ -11,7 +11,7 @@ import {
   skillBattleReceipt,
 } from '@fantasy/domain';
 import type { Store } from '../db/store.ts';
-import { StoreError } from '../db/store-error.ts';
+import { StoreError, invalidInput } from '../db/store-error.ts';
 import { SkillStore } from '../db/skill-store.ts';
 import { SkillAcquisitionStore } from '../db/skill-acquisition-store.ts';
 import type { BattleService } from '../jobs/battle-service.ts';
@@ -79,10 +79,7 @@ export function addSkillRoutes(app: FastifyInstance, store: Store, runtime?: Bat
       try {
         participants[index]!.skillLoadout = await skillBattleReceipt(snapshot);
       } catch (error) {
-        throw new StoreError(
-          'invalid-input',
-          (error instanceof Error ? error.message : 'Invalid skill battle receipt').slice(0, 1000),
-        );
+        invalidInput(error, 'Invalid skill battle receipt');
       }
     }
     const client = clientKey.parse(request.headers['x-client-id']),

@@ -1,4 +1,11 @@
-import { SKILL_DANS, SKILL_PATHS, SKILL_ZODIACS, type SkillNode } from '@fantasy/domain';
+import {
+  SKILL_DANS,
+  SKILL_PATHS,
+  SKILL_ZODIACS,
+  revisionRefKey,
+  skillResolutionAbilityRefs,
+  type SkillNode,
+} from '@fantasy/domain';
 import type { SkillAbility } from './skill-api.ts';
 import type { WorkbenchNodeState } from './skill-workbench-state.ts';
 
@@ -59,15 +66,12 @@ export function filterSkillNodes(nodes: SkillNode[], filters: SkillFilters) {
   );
 }
 
-const refKey = (value: { id: string; revision: number; contentHash: string }) =>
-  `${value.id}@${value.revision}:${value.contentHash}`;
-
 export function abilitiesForNode(node: SkillNode, abilities: SkillAbility[]) {
-  const indexed = new Map(abilities.map((ability) => [refKey(ability), ability]));
-  const references = node.resolution.flatMap((item) =>
-    item.kind === 'augment' ? [item.baseAbility, item.resolvedAbility] : [item.ability],
-  );
-  return references.map((reference) => ({ reference, ability: indexed.get(refKey(reference)) }));
+  const indexed = new Map(abilities.map((ability) => [revisionRefKey(ability), ability]));
+  return skillResolutionAbilityRefs(node.resolution).map((reference) => ({
+    reference,
+    ability: indexed.get(revisionRefKey(reference)),
+  }));
 }
 
 const reasonText = (reason: string, nodes: Map<string, SkillNode>) => {

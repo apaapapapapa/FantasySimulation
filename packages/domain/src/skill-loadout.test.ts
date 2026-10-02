@@ -4,6 +4,7 @@ import {
   type SkillCatalog,
   skillCatalogDigest,
 } from './skill-system.ts';
+import { SkillLoadoutHeadSchema } from './skill-api.ts';
 import {
   SKILL_RESOLVER_VERSION,
   SkillLoadoutRevisionContentSchema,
@@ -213,6 +214,42 @@ describe('skill loadout resolution', () => {
     await expect(
       skillBattleReceipt({ ...snapshot, contentHash: `sha256:${'3'.repeat(64)}` }),
     ).rejects.toThrow(/hash mismatch/);
+  });
+
+  it('binds a sealed snapshot to its configuration and a head to that exact snapshot', async () => {
+    const catalog = completeCatalog(),
+      { config, content } = await revisionContent(catalog, 'skill.sword.rat.1'),
+      snapshot = { ...content, contentHash: await skillLoadoutRevisionHash(content) },
+      head = {
+        schemaVersion: 1,
+        id: config.id,
+        version: config.version,
+        latest: { id: config.id, revision: 1, contentHash: snapshot.contentHash },
+        snapshot,
+        createdAt: '2026-10-02T00:00:00.000Z',
+        updatedAt: '2026-10-02T00:00:00.000Z',
+      };
+    for (const [resolved, message] of [
+      [{ configurationId: 'loadout.other' }, 'Resolved loadout configuration mismatch'],
+      [{ configurationVersion: config.version + 1 }, 'Resolved loadout configuration mismatch'],
+      [{ catalog: { ...config.catalog, revision: 2 } }, 'Resolved loadout catalog mismatch'],
+    ] as const)
+      expect(
+        SkillLoadoutRevisionContentSchema.safeParse({
+          ...content,
+          resolved: { ...content.resolved, ...resolved },
+        }).error?.message,
+      ).toMatch(message);
+    expect(SkillLoadoutHeadSchema.parse(head).snapshot).toEqual(snapshot);
+    for (const mismatch of [
+      { latest: { ...head.latest, revision: 2 } },
+      { latest: { ...head.latest, contentHash: `sha256:${'f'.repeat(64)}` } },
+      { id: 'loadout.other', latest: { ...head.latest, id: 'loadout.other' } },
+      { version: config.version + 1 },
+    ])
+      expect(SkillLoadoutHeadSchema.safeParse({ ...head, ...mismatch }).error?.message).toMatch(
+        'Skill loadout head mismatch',
+      );
   });
 
   it('projects passive recipes into the versioned battle receipt', async () => {
