@@ -6,12 +6,15 @@ import {
   RefSchema,
   CURRENT_SKILL_RESOLVER_VERSION,
   SkillLoadoutReceiptSchema,
+  type RevisionRef,
   type SkillLoadoutReceipt,
 } from './spatial/contracts.ts';
 import {
+  SKILL_CATALOG_NODE_COUNT,
   SkillResolutionSchema,
   type SkillCatalog,
   type SkillNode,
+  UniqueSkillNodeIdsSchema,
   parseCompleteSkillCatalog,
   skillCatalogDigest,
 } from './skill-system.ts';
@@ -26,20 +29,16 @@ export const MAX_ENABLED_SKILL_PATHS = 2;
 export const MAX_ACTIVE_SKILL_NODES = 8;
 export const MAX_PASSIVE_SKILL_NODES = 4;
 
-const UniqueNodeIdsSchema = (maximum: number) =>
-  z
-    .array(IdSchema)
-    .max(maximum)
-    .refine((ids) => new Set(ids).size === ids.length, 'Skill node IDs must be unique');
+const MAX_RESOLVED_SKILL_NODES = MAX_ACTIVE_SKILL_NODES + MAX_PASSIVE_SKILL_NODES;
 
 export const SkillConfigurationSchema = z.strictObject({
   schemaVersion: z.literal(1),
   id: IdSchema,
   version: z.number().int().min(1).max(1_000_000),
   catalog: RefSchema,
-  eligibilityNodeIds: UniqueNodeIdsSchema(1_152),
-  learnedNodeIds: UniqueNodeIdsSchema(1_152),
-  enabledNodeIds: UniqueNodeIdsSchema(12),
+  eligibilityNodeIds: UniqueSkillNodeIdsSchema(SKILL_CATALOG_NODE_COUNT),
+  learnedNodeIds: UniqueSkillNodeIdsSchema(SKILL_CATALOG_NODE_COUNT),
+  enabledNodeIds: UniqueSkillNodeIdsSchema(MAX_RESOLVED_SKILL_NODES),
 });
 export type SkillConfiguration = z.infer<typeof SkillConfigurationSchema>;
 export const SkillConfigurationV2Schema = z.strictObject({
@@ -48,7 +47,7 @@ export const SkillConfigurationV2Schema = z.strictObject({
   version: z.number().int().min(1).max(1_000_000),
   catalog: RefSchema,
   acquisition: RefSchema,
-  enabledNodeIds: UniqueNodeIdsSchema(12),
+  enabledNodeIds: UniqueSkillNodeIdsSchema(MAX_RESOLVED_SKILL_NODES),
 });
 export type SkillConfigurationV2 = z.infer<typeof SkillConfigurationV2Schema>;
 export const AnySkillConfigurationSchema = z.union([
@@ -77,9 +76,9 @@ const resolvedSkillLoadoutFields = {
   configurationId: IdSchema,
   configurationVersion: z.number().int().min(1).max(1_000_000),
   catalog: RefSchema,
-  learnedNodeIds: UniqueNodeIdsSchema(1_152),
-  explicitlyEnabledNodeIds: UniqueNodeIdsSchema(12),
-  resolvedNodeIds: UniqueNodeIdsSchema(12),
+  learnedNodeIds: UniqueSkillNodeIdsSchema(SKILL_CATALOG_NODE_COUNT),
+  explicitlyEnabledNodeIds: UniqueSkillNodeIdsSchema(MAX_RESOLVED_SKILL_NODES),
+  resolvedNodeIds: UniqueSkillNodeIdsSchema(MAX_RESOLVED_SKILL_NODES),
   nodeResolutions: z
     .array(
       z.strictObject({
@@ -87,7 +86,7 @@ const resolvedSkillLoadoutFields = {
         resolution: z.array(SkillResolutionSchema).min(1).max(8),
       }),
     )
-    .max(12),
+    .max(MAX_RESOLVED_SKILL_NODES),
   resolutionDigest: HashSchema,
 };
 export const ResolvedSkillLoadoutSchema = z.strictObject({
@@ -107,6 +106,23 @@ export const AnyResolvedSkillLoadoutSchema = z.union([
 ]);
 export type AnyResolvedSkillLoadout = z.infer<typeof AnyResolvedSkillLoadoutSchema>;
 
+/** A sealed snapshot must resolve exactly the configuration revision and catalog it stores. */
+function refineResolvedConfiguration(
+  snapshot: {
+    configuration: { id: string; version: number; catalog: RevisionRef };
+    resolved: { configurationId: string; configurationVersion: number; catalog: RevisionRef };
+  },
+  context: z.RefinementCtx,
+) {
+  if (
+    snapshot.configuration.id !== snapshot.resolved.configurationId ||
+    snapshot.configuration.version !== snapshot.resolved.configurationVersion
+  )
+    context.addIssue({ code: 'custom', message: 'Resolved loadout configuration mismatch' });
+  if (canonicalJson(snapshot.configuration.catalog) !== canonicalJson(snapshot.resolved.catalog))
+    context.addIssue({ code: 'custom', message: 'Resolved loadout catalog mismatch' });
+}
+
 export const SkillLoadoutRevisionContentSchema = z
   .strictObject({
     schemaVersion: z.literal(1),
@@ -116,15 +132,7 @@ export const SkillLoadoutRevisionContentSchema = z
     configuration: SkillConfigurationSchema,
     resolved: ResolvedSkillLoadoutSchema,
   })
-  .superRefine((snapshot, context) => {
-    if (
-      snapshot.configuration.id !== snapshot.resolved.configurationId ||
-      snapshot.configuration.version !== snapshot.resolved.configurationVersion
-    )
-      context.addIssue({ code: 'custom', message: 'Resolved loadout configuration mismatch' });
-    if (canonicalJson(snapshot.configuration.catalog) !== canonicalJson(snapshot.resolved.catalog))
-      context.addIssue({ code: 'custom', message: 'Resolved loadout catalog mismatch' });
-  });
+  .superRefine(refineResolvedConfiguration);
 export const SkillLoadoutRevisionSchema = SkillLoadoutRevisionContentSchema.safeExtend({
   contentHash: HashSchema,
 });
@@ -141,13 +149,7 @@ export const SkillLoadoutRevisionContentV2Schema = z
     resolved: ResolvedSkillLoadoutV2Schema,
   })
   .superRefine((snapshot, context) => {
-    if (
-      snapshot.configuration.id !== snapshot.resolved.configurationId ||
-      snapshot.configuration.version !== snapshot.resolved.configurationVersion
-    )
-      context.addIssue({ code: 'custom', message: 'Resolved loadout configuration mismatch' });
-    if (canonicalJson(snapshot.configuration.catalog) !== canonicalJson(snapshot.resolved.catalog))
-      context.addIssue({ code: 'custom', message: 'Resolved loadout catalog mismatch' });
+    refineResolvedConfiguration(snapshot, context);
     if (
       canonicalJson(snapshot.configuration.acquisition) !==
       canonicalJson(snapshot.resolved.acquisition)

@@ -22,27 +22,25 @@ const revisionHeadFields = {
   updatedAt: z.iso.datetime(),
 };
 
+/** A mutable head must point at the exact immutable snapshot it embeds. */
+const headMatchesSnapshot = (head: {
+  id: string;
+  latest: z.infer<typeof RefSchema>;
+  snapshot: { id: string; revision: number; contentHash: string };
+}) =>
+  head.latest.id === head.id &&
+  head.latest.revision === head.snapshot.revision &&
+  head.latest.contentHash === head.snapshot.contentHash &&
+  head.snapshot.id === head.id;
+
 function validateLoadoutHead(
-  head: {
-    id: string;
+  head: Parameters<typeof headMatchesSnapshot>[0] & {
     version: number;
-    latest: z.infer<typeof RefSchema>;
-    snapshot: {
-      id: string;
-      revision: number;
-      contentHash: string;
-      configuration: { version: number };
-    };
+    snapshot: { configuration: { version: number } };
   },
   context: z.RefinementCtx,
 ) {
-  if (
-    head.latest.id !== head.id ||
-    head.latest.revision !== head.snapshot.revision ||
-    head.latest.contentHash !== head.snapshot.contentHash ||
-    head.snapshot.id !== head.id ||
-    head.version !== head.snapshot.configuration.version
-  )
+  if (!headMatchesSnapshot(head) || head.version !== head.snapshot.configuration.version)
     context.addIssue({ code: 'custom', message: 'Skill loadout head mismatch' });
 }
 
@@ -133,13 +131,7 @@ export const SkillAcquisitionHeadSchema = z
     snapshot: SkillAcquisitionRevisionSchema,
   })
   .superRefine((head, context) => {
-    if (
-      head.latest.id !== head.id ||
-      head.latest.revision !== head.snapshot.revision ||
-      head.latest.contentHash !== head.snapshot.contentHash ||
-      head.snapshot.id !== head.id ||
-      head.version !== head.snapshot.revision
-    )
+    if (!headMatchesSnapshot(head) || head.version !== head.snapshot.revision)
       context.addIssue({ code: 'custom', message: 'Skill acquisition head mismatch' });
   });
 export type SkillAcquisitionHead = z.infer<typeof SkillAcquisitionHeadSchema>;

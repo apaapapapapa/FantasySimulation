@@ -122,5 +122,15 @@ describe('skill acquisition', () => {
     expect(
       SkillAcquisitionHeadSchema.safeParse({ ...head, authoritativeBoundary: false }).success,
     ).toBe(false);
+    for (const mismatch of [
+      { latest: { ...head.latest, id: 'acquisition.other' } },
+      { latest: { ...head.latest, revision: 2 } },
+      { latest: { ...head.latest, contentHash: `sha256:${'f'.repeat(64)}` } },
+      { id: 'acquisition.other', latest: { ...head.latest, id: 'acquisition.other' } },
+      { version: 2 },
+    ])
+      expect(SkillAcquisitionHeadSchema.safeParse({ ...head, ...mismatch }).error?.message).toMatch(
+        'Skill acquisition head mismatch',
+      );
   });
 });
