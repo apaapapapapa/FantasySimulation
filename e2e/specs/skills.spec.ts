@@ -209,11 +209,11 @@ test('scout rat saves, battles and replays one dependent through both viewers', 
   const catalogResponse = page.waitForResponse(
     (response) =>
       response.request().method() === 'GET' &&
-      response.url().endsWith('/api/skill-catalogs/skill-catalog-v1/9'),
+      response.url().endsWith('/api/skill-catalogs/skill-catalog-v1/10'),
   );
   const workbench = await readyWorkbench(page);
   const fetchedCatalog = await (await catalogResponse).json();
-  expect(fetchedCatalog.catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 9 });
+  expect(fetchedCatalog.catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 10 });
   await workbench.getByRole('button', { name: /summon, command and possession/ }).click();
   const ratFoundation = workbench.getByRole('button', { name: /Scout Rat/ });
   await ratFoundation.click();
@@ -225,7 +225,7 @@ test('scout rat saves, battles and replays one dependent through both viewers', 
   const battle = await saveSelectedSkill(page, workbench);
   const saved = await (await savedResponse).json();
   expect(saved.snapshot.resolved).toMatchObject({
-    catalog: { id: 'skill-catalog-v1', revision: 9 },
+    catalog: { id: 'skill-catalog-v1', revision: 10 },
     resolvedNodeIds: ['skill.summoning.rat.1'],
     nodeResolutions: [
       {
