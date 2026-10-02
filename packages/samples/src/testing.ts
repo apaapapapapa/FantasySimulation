@@ -1,5 +1,6 @@
 import {
   DEFAULT_BUDGET,
+  revisionIndex,
   revisionReference,
   type LeagueDefinition,
   type Manifest,
@@ -70,8 +71,7 @@ export const leagueEstimate: LeagueEstimateInput = {
 export async function experimentalRules<
   T extends Pick<Manifest | LeagueDefinition, 'ruleset' | 'revisions'>,
 >(input: T, mechanics: MechanicId[] = ['instant-death']): Promise<T> {
-  const old = input.revisions.find((r) => r.kind === 'ruleset' && r.id === input.ruleset.id)!;
-  if (old.kind !== 'ruleset') throw new Error('Rules fixture');
+  const old = revisionIndex(input.revisions)('ruleset', input.ruleset);
   const rules = await sealRevision('ruleset', 'experimental-fixture', 1, {
     ...old.definition,
     experimental: { mechanics },

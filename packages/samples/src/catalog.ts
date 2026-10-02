@@ -19,6 +19,25 @@ export async function sampleCatalog(): Promise<Revision[]> {
   return parseJson(RevisionSchema.array(), catalog);
 }
 
+/** ID-only authoring selectors fail closed once an immutable ID has multiple revisions. */
+export function uniqueCatalogRevision<K extends DefinitionKind>(
+  revisions: readonly Revision[],
+  kind: K,
+  id: string,
+): Extract<Revision, { kind: K }> {
+  const matches = revisions.filter(
+    (revision): revision is Extract<Revision, { kind: K }> =>
+      revision.kind === kind && revision.id === id,
+  );
+  if (matches.length !== 1)
+    throw new Error(
+      matches.length
+        ? `Ambiguous catalog entry: ${kind}:${id}`
+        : `Unknown catalog entry: ${kind}:${id}`,
+    );
+  return matches[0]!;
+}
+
 /** Include only reachable revisions, so unrelated catalog additions cannot change a battle hash. */
 export function revisionClosure(
   revisions: readonly Revision[],
@@ -42,16 +61,10 @@ export async function catalogManifest(
 ): Promise<Manifest> {
   const catalog = await sampleCatalog(),
     template = await sampleManifest(maxSteps);
-  function get(kind: DefinitionKind, id: string) {
-    const r = catalog.find((r) => r.kind === kind && r.id === id);
-    if (!r) throw new Error('Unknown catalog entry: ' + id);
-    return r;
-  }
-  const scenario = get('scenario', scenarioId);
+  const scenario = uniqueCatalogRevision(catalog, 'scenario', scenarioId);
   let rules = template.revisions.find((r) => r.kind === 'ruleset')!;
   if (rulesId) {
-    const selected = get('ruleset', rulesId);
-    if (selected.kind !== 'ruleset') throw new Error('Expected rules');
+    const selected = uniqueCatalogRevision(catalog, 'ruleset', rulesId);
     rules = await sealRevision('ruleset', rulesId, selected.revision, {
       ...selected.definition,
       maxSteps,
@@ -62,7 +75,7 @@ export async function catalogManifest(
   template.seed = seed;
   for (const [i, id] of [left, right].entries()) {
     const p = template.participants[i]!;
-    p.character = reference(get('character', id));
+    p.character = reference(uniqueCatalogRevision(catalog, 'character', id));
     p.rngSeed = actorSeed(seed, p.rngStream);
     p.position.x = i === 0 ? -6000 : 6000;
     if (scenarioId === 'aerial-surveyed-v1') p.position.y = leagueStarts(scenarioId)[i]!.position.y;
