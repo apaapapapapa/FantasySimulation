@@ -289,6 +289,8 @@ async function roundtripMultipart(
       executionEnabled: false as const,
       schemaVersion: 3 as const,
       verified,
+      inventoryManifest: inventory.manifest,
+      segmentExpected: expected,
       transport: { ...received, payload: undefined },
       reservation: reservation.snapshot(),
       runtime: provenance.runtime,
