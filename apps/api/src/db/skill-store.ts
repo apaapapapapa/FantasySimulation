@@ -14,6 +14,8 @@ import {
   parseJson,
   parseCompleteSkillCatalog,
   resolveSkillLoadout,
+  resolveSkillAbilityApplications,
+  applySkillAbilityApplications,
   skillBattleReceipt,
   skillCatalogDigest,
   skillLoadoutRevisionHash,
@@ -82,35 +84,18 @@ export class SkillStore {
 
   private validateV2Applicability(characterRef: RevisionRef, resolved: AnyResolvedSkillLoadout) {
     if (resolved.schemaVersion !== 2) return;
-    // A later equipment ref replaces an earlier ref with the same ability ID.
-    const equipped = new Map(
-      characterAbilityRefs(this.store, characterRef).map((ref) => [ref.id, ref]),
-    );
-    for (const node of resolved.nodeResolutions)
-      for (const resolution of node.resolution) {
-        if (resolution.kind === 'augment') {
-          const base = this.store.requireRevision('ability', resolution.baseAbility),
-            replacement = this.store.requireRevision('ability', resolution.resolvedAbility),
-            owned = equipped.get(base.id);
-          if (!owned || canonicalJson(owned) !== canonicalJson(resolution.baseAbility))
-            throw new Error(`Augment base ability is not in the character loadout: ${base.id}`);
-          if (
-            base.kind !== 'ability' ||
-            replacement.kind !== 'ability' ||
-            base.definition.trigger !== replacement.definition.trigger
-          )
-            throw new Error(`Augment must preserve ability trigger: ${base.id}`);
-          continue;
-        }
-        const ability = this.store.requireRevision('ability', resolution.ability);
-        if (resolution.kind === 'active-ability' && ability.definition.trigger !== 'action')
-          throw new Error(`Active skill ability must use the action trigger: ${ability.id}`);
-        if (resolution.kind === 'passive-ability' && ability.definition.trigger === 'action')
-          throw new Error(`Passive skill ability cannot use the action trigger: ${ability.id}`);
-        const previous = equipped.get(ability.id);
-        if (previous && canonicalJson(previous) !== canonicalJson(resolution.ability))
-          throw new Error(`Skill ability conflicts with equipped ability: ${ability.id}`);
-      }
+    // Definition persistence already applies characterLoadout's duplicate-ID validation.
+    // Preserve the existing V2 write boundary; final runtime limits stay at execution.
+    const base = characterAbilityRefs(this.store, characterRef),
+      applications = resolveSkillAbilityApplications(
+        base,
+        {
+          kind: 'new-v2-write',
+          resolutions: resolved.nodeResolutions.flatMap(({ resolution }) => resolution),
+        },
+        (kind, ref) => this.store.requireRevision(kind, ref),
+      );
+    applySkillAbilityApplications(base, applications);
   }
 
   private async resolveSnapshot(

@@ -17,6 +17,7 @@ const revisions = RevisionSchema.array().parse(
 );
 const get = revisionIndex(revisions);
 const parry = revisions.find((entry) => entry.kind === 'ability' && entry.id === 'parry-v1')!;
+const arrow = revisions.find((entry) => entry.kind === 'ability' && entry.id === 'arrow')!;
 const sword = revisions.find((entry) => entry.kind === 'ability' && entry.id === 'sword')!;
 
 describe('explicit skill authoring recipes', () => {
@@ -80,7 +81,7 @@ describe('explicit skill authoring recipes', () => {
       base: sword,
       resolved: replacement,
     });
-    for (const resolvedAbility of [revisionReference(sword), revisionReference(parry)])
+    for (const resolvedAbility of [revisionReference(sword), revisionReference(arrow)])
       expect(() => resolveSkillRecipe({ ...recipe, resolvedAbility }, lookup)).toThrow(
         expect.objectContaining({ code: 'augment-identity' }),
       );
@@ -90,6 +91,6 @@ describe('explicit skill authoring recipes', () => {
         { ...recipe, resolvedAbility: revisionReference(triggerChange) },
         revisionIndex([...revisions, triggerChange]),
       ),
-    ).toThrow(expect.objectContaining({ code: 'augment-identity' }));
+    ).toThrow(expect.objectContaining({ code: 'augment-trigger' }));
   });
 });

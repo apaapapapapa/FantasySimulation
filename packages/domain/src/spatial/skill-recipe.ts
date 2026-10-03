@@ -2,7 +2,11 @@ import type { SkillResolution } from '../skill-system.ts';
 import type { RevisionLookup } from './revision-graph.ts';
 import { requireRevision } from './revision-graph.ts';
 
-export type SkillRecipeCode = 'active-trigger' | 'passive-trigger' | 'augment-identity';
+export type SkillRecipeCode =
+  | 'active-trigger'
+  | 'passive-trigger'
+  | 'augment-identity'
+  | 'augment-trigger';
 
 export class SkillRecipeError extends Error {
   readonly code: SkillRecipeCode;
@@ -20,10 +24,15 @@ export function resolveSkillRecipe(recipe: SkillResolution, lookup: RevisionLook
   if (recipe.kind === 'augment') {
     const base = requireRevision(lookup, 'ability', recipe.baseAbility),
       resolved = requireRevision(lookup, 'ability', recipe.resolvedAbility);
+    if (resolved.definition.trigger !== base.definition.trigger)
+      throw new SkillRecipeError(
+        'augment-trigger',
+        base.id,
+        `Augment must preserve ability trigger: ${base.id}`,
+      );
     if (
       resolved.id !== base.id ||
-      (resolved.revision === base.revision && resolved.contentHash === base.contentHash) ||
-      resolved.definition.trigger !== base.definition.trigger
+      (resolved.revision === base.revision && resolved.contentHash === base.contentHash)
     )
       throw new SkillRecipeError(
         'augment-identity',

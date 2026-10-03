@@ -10,6 +10,8 @@ export * from './status-sealing.ts';
 export * from './numeric.ts';
 export * from './record-hashes.ts';
 export * from './revision-graph.ts';
+export * from './skill-application.ts';
+export * from './skill-recipe.ts';
 export * from './combat-derivations.ts';
 export * from './variants.ts';
 export * from './mechanics.ts';

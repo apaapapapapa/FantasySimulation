@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { canonicalJson, compareIds, contentHash, deepFreeze } from './spatial/canonical.ts';
-import { HashSchema, IdSchema, RefSchema, type RevisionRef } from './spatial/contracts.ts';
+import { HashSchema, IdSchema, RefSchema } from './spatial/contracts.ts';
 
-/** Exact revision identity, including its content hash, for sets, maps and option keys. */
-export const revisionRefKey = (ref: RevisionRef) => `${ref.id}@${ref.revision}:${ref.contentHash}`;
+export { revisionRefKey } from './spatial/revision-graph.ts';
+import { revisionRefKey } from './spatial/revision-graph.ts';
 
 export const SKILL_PATHS = deepFreeze([
   { id: 'sword', name: '剣道', family: 'martial', role: 'continuous offense and defense' },
