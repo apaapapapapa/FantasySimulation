@@ -42,7 +42,7 @@ import {
 import { readBoundedBytes, readBoundedJson } from './files.ts';
 import { runCommand } from './process.ts';
 import { evidenceUri, record } from './report.ts';
-import { evidencePath, repositoryRoot, sourceIdentity } from './source.ts';
+import { evidencePath, git, repositoryRoot, sourceIdentity } from './source.ts';
 
 // Existing callers, including the regression probe loaded from older checkouts, keep this module.
 export {
@@ -389,6 +389,7 @@ export async function collectCorpus(
   corpusPath: string,
   options: CorpusOptions = {},
 ) {
+  const cleanBefore = !git(inputRoot, ['status', '--porcelain']);
   const run = options.run ?? runCommand;
   const { root, info, startedAt, path, directory, corpus, definitionError, ...observed } =
     await observeDefinition(inputRoot, corpusPath, options);
@@ -421,7 +422,7 @@ export async function collectCorpus(
     }
   }
   const entries = await observeEntries(corpus, options);
-  return saveCorpusEvidence(
+  const assessed = saveCorpusEvidence(
     directory,
     {
       info,
@@ -444,6 +445,11 @@ export async function collectCorpus(
       entries,
     },
   );
+  if (path === 'packages/engine/fixtures/spatial/corpus.json' && corpus) {
+    const { recordSkillPublication } = await import('./skill-publication-runner.ts');
+    return recordSkillPublication(root, corpus, tests, assessed.report, cleanBefore);
+  }
+  return assessed;
 }
 /**
  * CI observation in parallel with the test shards. The aggregate binds it to their receipts with
