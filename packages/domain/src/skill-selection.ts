@@ -1,8 +1,10 @@
+import { z } from 'zod';
+import { IdSchema, RefSchema } from './spatial/contracts.ts';
 import { compareIds } from './spatial/canonical.ts';
-import type { RevisionRef } from './spatial/contracts.ts';
 import {
   SKILL_CATALOG_NODE_COUNT,
   SkillCatalogSchema,
+  SkillLifecycleSchema,
   UniqueSkillNodeIdsSchema,
   revisionRefKey,
   type SkillNode,
@@ -12,23 +14,41 @@ export const MAX_ENABLED_SKILL_PATHS = 2;
 export const MAX_ACTIVE_SKILL_NODES = 8;
 export const MAX_PASSIVE_SKILL_NODES = 4;
 
-export type SkillSelectionReason =
-  | { code: 'unknown-node'; nodeId: string }
-  | { code: 'duplicate-node'; nodeId: string }
-  | { code: 'missing-prerequisite'; nodeId: string; prerequisiteNodeId: string }
-  | { code: 'prerequisite-cycle'; nodeId: string }
-  | { code: 'not-eligible'; nodeId: string }
-  | { code: 'unmet-learning-prerequisite'; nodeId: string; prerequisiteNodeId: string }
-  | { code: 'enabled-node-not-learned'; nodeId: string }
-  | { code: 'unavailable-node'; nodeId: string; lifecycle: SkillNode['lifecycle'] }
-  | { code: 'weapon-requirement'; nodeId: string; weaponTag: string }
-  | { code: 'augment-base-not-owned'; nodeId: string; baseAbility: RevisionRef }
-  | { code: 'mixed-resolution-kind'; nodeId: string }
-  | {
-      code: 'enabled-path-limit' | 'active-node-limit' | 'passive-node-limit';
-      count: number;
-      maximum: number;
-    };
+export const SkillSelectionReasonSchema = z.union([
+  z.strictObject({
+    code: z.enum([
+      'unknown-node',
+      'duplicate-node',
+      'prerequisite-cycle',
+      'not-eligible',
+      'enabled-node-not-learned',
+      'mixed-resolution-kind',
+    ]),
+    nodeId: IdSchema,
+  }),
+  z.strictObject({
+    code: z.enum(['missing-prerequisite', 'unmet-learning-prerequisite']),
+    nodeId: IdSchema,
+    prerequisiteNodeId: IdSchema,
+  }),
+  z.strictObject({
+    code: z.literal('unavailable-node'),
+    nodeId: IdSchema,
+    lifecycle: SkillLifecycleSchema,
+  }),
+  z.strictObject({ code: z.literal('weapon-requirement'), nodeId: IdSchema, weaponTag: IdSchema }),
+  z.strictObject({
+    code: z.literal('augment-base-not-owned'),
+    nodeId: IdSchema,
+    baseAbility: RefSchema,
+  }),
+  z.strictObject({
+    code: z.enum(['enabled-path-limit', 'active-node-limit', 'passive-node-limit']),
+    count: z.number().int().min(0).max(SKILL_CATALOG_NODE_COUNT),
+    maximum: z.number().int().min(1).max(SKILL_CATALOG_NODE_COUNT),
+  }),
+]);
+export type SkillSelectionReason = z.infer<typeof SkillSelectionReasonSchema>;
 
 export class SkillSelectionError extends Error {
   readonly reason: SkillSelectionReason;
@@ -91,7 +111,7 @@ export function skillAvailabilityReason(
 export function skillEnabledLearningReasons(
   nodeIds: readonly string[],
   learned: ReadonlySet<string>,
-): Extract<SkillSelectionReason, { code: 'enabled-node-not-learned' }>[] {
+): Array<{ code: 'enabled-node-not-learned'; nodeId: string }> {
   return nodeIds
     .filter((nodeId) => !learned.has(nodeId))
     .map((nodeId) => ({

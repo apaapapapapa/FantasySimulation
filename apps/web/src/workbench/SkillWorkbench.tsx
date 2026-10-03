@@ -9,6 +9,7 @@ import {
   type SkillCatalog,
   type SkillConfiguration,
   type SkillNode,
+  type SkillPreviewResponse,
 } from '@fantasy/domain';
 import { errorText, reference } from '../api-client.ts';
 import {
@@ -18,6 +19,8 @@ import {
   sameSkillRevisionRef,
   skillAcquisitionAdvanced,
   skillLoadoutsForCatalog,
+  skillPreviewKey,
+  currentSkillPreview,
 } from './skill-api.ts';
 import type {
   SkillAbility,
@@ -33,6 +36,7 @@ import {
   formatAbilityConstraints,
   formatAbilityCosts,
   workbenchReasonTexts,
+  skillPreviewReasonText,
 } from './skill-workbench-view.ts';
 import {
   learnNode,
@@ -118,6 +122,51 @@ export function SkillWorkbench({
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const selectionGuard = useRef(latestSelectionGuard()).current;
+
+  const previewGuard = useRef(latestSelectionGuard()).current;
+  const [preview, setPreview] = useState<{
+    key: string;
+    status: 'pending' | 'ready' | 'failed';
+    result: SkillPreviewResponse | null;
+    error: string;
+  }>({ key: '', status: 'pending', result: null, error: '' });
+  const previewInput =
+    character && configuration
+      ? {
+          character,
+          catalog: configuration.catalog,
+          learnedNodeIds: configuration.learnedNodeIds,
+          enabledNodeIds: configuration.enabledNodeIds,
+        }
+      : null;
+  const previewKey = previewInput ? skillPreviewKey(previewInput) : '';
+  const previewReady = !!previewKey && preview.key === previewKey && preview.status === 'ready';
+  const displayConfiguration = configuration
+    ? {
+        ...configuration,
+        eligibilityNodeIds: previewReady ? preview.result!.eligibilityNodeIds : [],
+      }
+    : null;
+  useEffect(() => {
+    const attempt = previewGuard.begin(),
+      controller = new AbortController();
+    setPreview({ key: previewKey, status: 'pending', result: null, error: '' });
+    if (previewInput)
+      void currentSkillPreview(client, previewInput, attempt, controller.signal)
+        .then((result) => {
+          if (result) setPreview({ key: previewKey, status: 'ready', result, error: '' });
+        })
+        .catch((cause: unknown) => {
+          if (!controller.signal.aborted && attempt.isCurrent())
+            setPreview({
+              key: previewKey,
+              status: 'failed',
+              result: null,
+              error: errorText(cause),
+            });
+        });
+    return () => controller.abort();
+  }, [previewKey, client]);
 
   async function hydrate(signal?: AbortSignal, replace = false) {
     setSelecting(true);
@@ -259,24 +308,24 @@ export function SkillWorkbench({
   }
 
   function operate(node: SkillNode) {
-    if (!configuration || !catalog) return;
+    if (!configuration || !catalog || !displayConfiguration || !previewReady) return;
     if (editingBlocked) {
       setError(RELOAD_ACQUISITION_ERROR);
       return;
     }
-    const state = workbenchNodeState(node, configuration);
+    const state = workbenchNodeState(node, displayConfiguration);
     setError('');
     if (state.status === 'eligible')
-      setConfiguration(learnNode(catalog.nodes, configuration, node.id));
+      setConfiguration(learnNode(catalog.nodes, displayConfiguration, node.id));
     else if (state.status === 'learned' || state.status === 'enabled') {
-      const next = toggleEnabledNode(catalog.nodes, configuration, node.id);
+      const next = toggleEnabledNode(catalog.nodes, displayConfiguration, node.id);
       if (next.error) setError(next.error);
       else setConfiguration(next.configuration);
     }
   }
 
   async function save() {
-    if (!configuration) return;
+    if (!configuration || !previewReady || !preview.result?.canSave) return;
     if (!character) {
       setError('構成を保存するキャラクターを選んでください。');
       return;
@@ -339,9 +388,24 @@ export function SkillWorkbench({
   }
 
   const detailState =
-    selectedNode && configuration ? workbenchNodeState(selectedNode, configuration) : null;
+    selectedNode && displayConfiguration
+      ? workbenchNodeState(selectedNode, displayConfiguration)
+      : null;
   const detailReasons =
-    detailState && catalog ? workbenchReasonTexts(detailState, catalog.nodes) : [];
+    detailState && catalog
+      ? [
+          ...new Set([
+            ...workbenchReasonTexts(detailState, catalog.nodes),
+            ...(previewReady
+              ? preview
+                  .result!.nodeReasons.filter(
+                    (reason) => 'nodeId' in reason && reason.nodeId === selectedNode?.id,
+                  )
+                  .map((reason) => skillPreviewReasonText(reason, catalog.nodes))
+              : []),
+          ]),
+        ]
+      : [];
   const detailAbilities = selectedNode ? abilitiesForNode(selectedNode, abilities) : [];
 
   return (
@@ -354,6 +418,23 @@ export function SkillWorkbench({
       <p>
         道を選び、六段から初段・子から亥の72枠を確認します。保存した構成は下の対戦へ渡り、完了後に保存リプレイを開けます。
       </p>
+      <p role="status" aria-label="習得可否の確認">
+        {previewReady
+          ? 'サーバーで習得・編成条件を確認しました。保存時にも再検証します。'
+          : preview.key === previewKey && preview.status === 'failed'
+            ? `習得可否を確認できません: ${preview.error}`
+            : '習得可否を確認中です。'}
+      </p>
+      {previewReady && preview.result!.reasons.length > 0 && (
+        <ul aria-label="保存できない理由">
+          {preview.result!.reasons.map((reason, index) => (
+            <li key={index}>{skillPreviewReasonText(reason, catalog?.nodes ?? [])}</li>
+          ))}
+        </ul>
+      )}
+      {previewReady && preview.result!.reasonsTruncated && (
+        <p>理由が表示上限を超えています。構成を絞って再確認してください。</p>
+      )}
       <fieldset disabled={busy || selecting || !catalog || !configuration}>
         <nav className="skill-paths" aria-label="道一覧">
           {SKILL_PATHS.map((item) => {
@@ -432,7 +513,7 @@ export function SkillWorkbench({
                   {SKILL_ZODIACS.map((animal) => {
                     const node = nodesByCoordinate.get(`${rank.dan}:${animal.id}`);
                     if (!node) return <td key={animal.id}>欠落</td>;
-                    const state = workbenchNodeState(node, configuration!);
+                    const state = workbenchNodeState(node, displayConfiguration!);
                     const matches = visibleIds.has(node.id);
                     return (
                       <td key={animal.id} data-state={state.status} data-match={matches}>
@@ -560,6 +641,7 @@ export function SkillWorkbench({
               type="button"
               className="skill-node-action"
               disabled={
+                !previewReady ||
                 editingBlocked ||
                 detailState.status === 'locked' ||
                 detailState.status === 'disabled'
@@ -635,7 +717,12 @@ export function SkillWorkbench({
           {counts?.passive ?? 0}/4
         </p>
         <div className="actions">
-          <button type="button" className="primary" onClick={() => void save()}>
+          <button
+            type="button"
+            className="primary"
+            disabled={!previewReady || !preview.result?.canSave || editingBlocked}
+            onClick={() => void save()}
+          >
             構成を保存
           </button>
           <button
