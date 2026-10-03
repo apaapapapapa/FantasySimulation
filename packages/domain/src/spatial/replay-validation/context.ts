@@ -7,7 +7,13 @@ import {
   resolveClosure,
 } from '../revision-graph.ts';
 import { canonicalJson, compareIds, contentHash, deepFreeze } from '../canonical.ts';
-import { parseJson, skillReceiptExecutionResolutions } from '../contracts.ts';
+import {
+  resolveSkillAbilityApplications,
+  applySkillAbilityApplications,
+  SkillApplicationError,
+} from '../skill-application.ts';
+import { SkillRecipeError } from '../skill-recipe.ts';
+import { parseJson } from '../contracts.ts';
 import { RecordedManifestSchema } from '../replay.ts';
 import { fail, requireReplay } from './common.ts';
 export type ReplayContext = Awaited<ReturnType<typeof replayContext>>;
@@ -40,52 +46,36 @@ export async function replayContext(input: unknown, simulationHash: string) {
     });
     actors = manifest.participants.map((participant) => {
       const { character, abilities } = characterLoadout(participant.character, get);
-      const originalAbilities = new Map(abilities.map((ability) => [ability.id, ability])),
-        byId = new Map(originalAbilities);
-      for (const item of participant.skillLoadout
-        ? skillReceiptExecutionResolutions(participant.skillLoadout)
-        : []) {
-        if (item.kind === 'augment') {
-          const base = get('ability', item.baseAbility),
-            resolved = get('ability', item.resolvedAbility),
-            equipped = originalAbilities.get(base.id);
-          requireReplay(
-            !!equipped &&
-              equipped.revision === base.revision &&
-              equipped.contentHash === base.contentHash,
-            'augment base ability',
-          );
-          requireReplay(
-            resolved.id === base.id &&
-              (resolved.revision !== base.revision || resolved.contentHash !== base.contentHash) &&
-              resolved.definition.trigger === base.definition.trigger,
-            'augment identity and trigger',
-          );
-          byId.set(resolved.id, resolved);
-          continue;
-        }
-        const ability = get('ability', item.ability);
-        if (participant.skillLoadout?.schemaVersion !== 1)
-          requireReplay(
-            item.kind === 'active-ability'
-              ? ability.definition.trigger === 'action'
-              : ability.definition.trigger !== 'action',
-            'skill ability trigger',
-          );
-        const previous = byId.get(ability.id);
-        requireReplay(
-          !previous ||
-            (previous.revision === ability.revision &&
-              previous.contentHash === ability.contentHash),
-          'conflicting skill ability',
+      let applied;
+      try {
+        const applications = resolveSkillAbilityApplications(
+          abilities,
+          { kind: 'recorded-receipt', receipt: participant.skillLoadout },
+          get,
         );
-        byId.set(ability.id, ability);
+        applied = applySkillAbilityApplications(abilities, applications).map((ref) =>
+          get('ability', ref),
+        );
+      } catch (error) {
+        if (error instanceof SkillRecipeError)
+          return fail(
+            error.code === 'augment-identity' || error.code === 'augment-trigger'
+              ? 'augment identity and trigger'
+              : 'skill ability trigger',
+          );
+        if (error instanceof SkillApplicationError)
+          return fail(
+            error.code === 'conflicting-grant'
+              ? 'conflicting skill ability'
+              : 'augment base ability',
+          );
+        throw error;
       }
-      validateAbilityLoadout([...byId.values()]);
+      validateAbilityLoadout(applied);
       return {
         participant,
         character,
-        abilities: [...byId.values()].sort((a, b) => compareIds(a.id, b.id)),
+        abilities: applied.sort((a, b) => compareIds(a.id, b.id)),
       };
     });
   } catch (error) {

@@ -17,9 +17,11 @@ import {
   StoredManifestSchema,
   parseJson,
   compareIds,
-  skillReceiptExecutionResolutions,
+  resolveSkillAbilityApplications,
+  applySkillAbilityApplications,
+  SkillApplicationError,
+  SkillRecipeError,
   type Manifest,
-  type Revision,
 } from '@fantasy/domain/spatial/execution';
 import implementation from './implementation.json' with { type: 'json' };
 import profile from './profile.json' with { type: 'json' };
@@ -92,58 +94,28 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
       throw new EngineInputError('actor-seed', 'Actor seed derivation mismatch');
     const loadout = characterLoadout(participant.character, get);
     validatePolicyAbilities(loadout);
-    const { character, equipment } = loadout,
-      baseAbilities = new Map(loadout.abilities.map((ability) => [ability.id, ability])),
-      grantedAbilities: Extract<Revision, { kind: 'ability' }>[] = [],
-      augmentations: Array<{
-        base: Extract<Revision, { kind: 'ability' }>;
-        resolved: Extract<Revision, { kind: 'ability' }>;
-      }> = [];
-    for (const item of participant.skillLoadout
-      ? skillReceiptExecutionResolutions(participant.skillLoadout)
-      : []) {
-      if (item.kind === 'augment') {
-        const base = get('ability', item.baseAbility),
-          resolved = get('ability', item.resolvedAbility),
-          equipped = baseAbilities.get(base.id);
-        if (
-          !equipped ||
-          equipped.revision !== base.revision ||
-          equipped.contentHash !== base.contentHash
-        )
-          throw new EngineInputError(
-            'revision-content',
-            `Augment base ability is not in the character loadout: ${base.id}`,
-          );
-        if (
-          resolved.id !== base.id ||
-          (resolved.revision === base.revision && resolved.contentHash === base.contentHash) ||
-          resolved.definition.trigger !== base.definition.trigger
-        )
-          throw new EngineInputError(
-            'revision-content',
-            `Augment must preserve ability identity and trigger: ${base.id}`,
-          );
-        augmentations.push({ base, resolved });
-      } else {
-        const ability = get('ability', item.ability);
-        if (
-          participant.skillLoadout?.schemaVersion !== 1 &&
-          item.kind === 'active-ability' &&
-          ability.definition.trigger !== 'action'
-        )
-          throw new EngineInputError(
-            'revision-content',
-            `Active skill ability must use the action trigger: ${ability.id}`,
-          );
-        if (item.kind === 'passive-ability' && ability.definition.trigger === 'action')
-          throw new EngineInputError(
-            'revision-content',
-            `Passive skill ability cannot use the action trigger: ${ability.id}`,
-          );
-        grantedAbilities.push(ability);
-      }
+    const { character, equipment } = loadout;
+    let applications;
+    try {
+      applications = resolveSkillAbilityApplications(
+        loadout.abilities,
+        {
+          kind: 'recorded-receipt',
+          receipt: participant.skillLoadout,
+        },
+        get,
+      );
+    } catch (error) {
+      if (error instanceof SkillApplicationError || error instanceof SkillRecipeError)
+        throw new EngineInputError(
+          'revision-content',
+          error instanceof SkillRecipeError && error.code === 'augment-trigger'
+            ? `Augment must preserve ability identity and trigger: ${error.abilityId}`
+            : error.message,
+        );
+      throw error;
     }
+    const grantedAbilities = applications.grants;
     const direct = new Map(character.abilities.map((ability) => [ability.id, ability]));
     for (const ability of grantedAbilities) {
       const previous = direct.get(ability.id);
@@ -163,22 +135,18 @@ export async function prepareBattle(input: unknown): Promise<PreparedBattle> {
     }
     if (direct.size > 32)
       throw new EngineInputError('revision-content', 'Skill loadout exceeds direct ability limit');
-    const abilityById = new Map(baseAbilities);
-    for (const ability of grantedAbilities) {
-      const previous = abilityById.get(ability.id);
-      if (
-        previous &&
-        (previous.revision !== ability.revision || previous.contentHash !== ability.contentHash)
-      )
-        throw new EngineInputError(
-          'revision-content',
-          `Skill ability conflicts with equipped ability: ${ability.id}`,
-        );
-      abilityById.set(ability.id, ability);
+    let applied;
+    try {
+      applied = applySkillAbilityApplications(loadout.abilities, applications).map((ref) =>
+        get('ability', ref),
+      );
+    } catch (error) {
+      if (error instanceof SkillApplicationError)
+        throw new EngineInputError('revision-content', error.message);
+      throw error;
     }
-    for (const { resolved } of augmentations) abilityById.set(resolved.id, resolved);
-    validateAbilityLoadout([...abilityById.values()]);
-    const abilities = [...abilityById.values()].map(prepareAbility),
+    validateAbilityLoadout(applied);
+    const abilities = applied.map(prepareAbility),
       skillActionIds = grantedAbilities
         .filter((ability) => ability.definition.trigger === 'action')
         .map((ability) => ability.id)
