@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   IdSchema,
   SkillLoadoutCreateV2Schema,
+  SkillPreviewRequestSchema,
   SkillLoadoutPatchV2Schema,
   SkillAcquisitionCreateSchema,
   SkillAcquisitionPatchSchema,
@@ -13,6 +14,7 @@ import {
 import type { Store } from '../db/store.ts';
 import { StoreError, invalidInput } from '../db/store-error.ts';
 import { SkillStore } from '../db/skill-store.ts';
+import { previewSkills } from '../db/skill-preview.ts';
 import { SkillAcquisitionStore } from '../db/skill-acquisition-store.ts';
 import type { BattleService } from '../jobs/battle-service.ts';
 import { body } from './request-body.ts';
@@ -35,6 +37,9 @@ export function addSkillRoutes(app: FastifyInstance, store: Store, runtime?: Bat
     const { id, revision } = catalogParams.parse(request.params);
     return skills.catalog(id, revision);
   });
+  app.post('/api/skill-preview', async (request) =>
+    previewSkills(store, body(SkillPreviewRequestSchema, request.body)),
+  );
   app.post('/api/skill-loadouts', async (request, reply) =>
     reply.code(201).send(await skills.create(body(SkillLoadoutCreateV2Schema, request.body))),
   );

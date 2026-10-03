@@ -6,6 +6,7 @@ import {
   skillResolutionAbilityRefs,
   type SkillNode,
   type SkillSelectionReason,
+  type SkillPreviewReason,
 } from '@fantasy/domain';
 import type { SkillAbility } from './skill-api.ts';
 import type { WorkbenchNodeState } from './skill-workbench-state.ts';
@@ -88,6 +89,12 @@ const reasonText = (reason: SkillSelectionReason, nodes: Map<string, SkillNode>)
     const id = reason.prerequisiteNodeId;
     return `前提「${nodes.get(id)?.name ?? id}」を先に習得してください`;
   }
+  if (reason.code === 'weapon-requirement')
+    return `必要な武器タグ「${reason.weaponTag}」を確認できません`;
+  if (reason.code === 'augment-base-not-owned')
+    return `強化元「${reason.baseAbility.id}」の指定版を所持していません`;
+  if (reason.code === 'enabled-node-not-learned') return '編成する前に習得してください';
+  if ('maximum' in reason) return `編成上限を超えています（${reason.count}/${reason.maximum}）`;
   return reason.code;
 };
 
@@ -116,4 +123,21 @@ export function formatAbilityConstraints(ability: SkillAbility) {
     `射程 ${definition.rangeMm} mm`,
     `詠唱中移動 ${definition.movementWhileCasting === 'allow' ? '可' : '停止'}`,
   ].join(' / ');
+}
+
+export function skillPreviewReasonText(reason: SkillPreviewReason, nodes: SkillNode[]) {
+  if (reason.code === 'ability-application') {
+    const labels: Record<typeof reason.reason, string> = {
+      'active-trigger': '発動技のtriggerが一致しません',
+      'passive-trigger': '常時効果のtriggerが一致しません',
+      'augment-identity': '強化先の能力identityが一致しません',
+      'augment-trigger': '強化前後のtriggerが一致しません',
+      'augment-base-not-owned': '指定版の強化元能力を所持していません',
+      'duplicate-augment': '同じ元能力への強化が重複しています',
+      'conflicting-grant': '同じ能力IDの異なる定義が競合しています',
+      'definition-reference': '指定した能力定義を確認できません',
+    };
+    return `${labels[reason.reason]}${reason.abilityId ? `（${reason.abilityId}）` : ''}`;
+  }
+  return reasonText(reason, new Map(nodes.map((node) => [node.id, node])));
 }
