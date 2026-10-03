@@ -1,39 +1,18 @@
 import {
-  EXPECTED_SKILL_COORDINATES,
   RevisionSchema,
   compareIds,
   inspectSkillCatalogRelease,
   parseJson,
-  parseCompleteSkillCatalog,
   revisionReference,
-  skillCoordinateKey,
   skillResolutionAbilityRefs,
   type Revision,
   type SkillCatalog,
   type SkillCatalogReleaseReport,
   type SkillDan,
-  type SkillNode,
 } from '@fantasy/domain';
-import {
-  ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
-  MYSTIC_GOAT_DAN1_RELEASE,
-  MYSTIC_TIGER_DAN2_RELEASE,
-  SUMMONING_RAT_DAN1_SKILL_NODE,
-  integratedSkillShards,
-} from '@fantasy/samples/authoring';
-
-const catalogId = 'skill-catalog-v1';
-const swordRatNodeId = (dan: SkillDan) => `skill.sword.rat.${dan}`;
-
-const deepeningKinds = [
-  'foundation',
-  'conditional-effect',
-  'combination',
-  'tactical-mode',
-  'specialization',
-  'ultimate-tradeoff',
-] as const satisfies readonly SkillNode['deepening']['kind'][];
-const deepeningKind = (dan: SkillDan): SkillNode['deepening']['kind'] => deepeningKinds[dan - 1]!;
+import { assembleSkillCatalogReleases } from './skill-catalog-releases.ts';
+import { STARTUP_SKILL_CATALOG_RELEASES } from './startup-skill-catalog-releases.ts';
+export { STARTUP_SKILL_CATALOG_RELEASES } from './startup-skill-catalog-releases.ts';
 
 const swordRatRelease = [
   {
@@ -41,69 +20,42 @@ const swordRatRelease = [
     abilityId: 'sword',
     abilityRevision: 1,
     abilityHash: 'sha256:57dba4284d2a6b5edfeaf6e254ac3e9ed62496b646a6d6e2b658134399892fef',
-    name: 'Opening cut',
-    description: 'A direct sword cut that remains the low-commitment foundation of the branch.',
-    explanation: 'Establishes the branch with the existing direct melee sword action.',
   },
   {
     dan: 2,
     abilityId: 'stamina-strike-v1',
     abilityRevision: 1,
     abilityHash: 'sha256:d516c37829bbc6708998e73ba9ed58538d42a67495ff4b2ffd8b1e4b686671fc',
-    name: 'Committed opening cut',
-    description:
-      'Spends stamina to preserve the opening cut while making resource readiness matter.',
-    explanation: 'Adds a stamina admission condition instead of replacing the free foundation.',
   },
   {
     dan: 3,
     abilityId: 'return-cut-v1',
     abilityRevision: 1,
     abilityHash: 'sha256:396d51406e90fb6d783f0b9037d39f6bcd7f8c034624096c90db34edf3934b7f',
-    name: 'Opening return cut',
-    description: 'Links the first cut to a separately timed and separately paid return strike.',
-    explanation: 'Deepens the branch through a two-stage combination and a second-stage cost.',
   },
   {
     dan: 4,
     abilityId: 'dash-cut-v1',
     abilityRevision: 1,
     abilityHash: 'sha256:83b5bde59f56974f3d5296cab92ad3ecab7ada9524e5acea37208c083cc8c20c',
-    name: 'Advancing opening cut',
-    description: 'Combines the opening attack with committed forward movement and knockback.',
-    explanation: 'Adds a tactical approach mode with displacement and a cooldown.',
   },
   {
     dan: 5,
     abilityId: 'wide-sweep-v1',
     abilityRevision: 1,
     abilityHash: 'sha256:aed1d678df594a94b60acf1a0d6ba191ac41a9e8c1da84703dd4dfaae8622a18',
-    name: 'Opening circle',
-    description: 'Trades a long active sweep, stamina and cooldown for radial space control.',
-    explanation:
-      'Specializes the initiative branch for nearby space rather than a single thrust line.',
-    conditionOrTradeoff: 'Requires stamina and commits to a 20-step radial sweep and cooldown.',
   },
   {
     dan: 6,
     abilityId: 'wide-sweep-trained-v1',
     abilityRevision: 1,
     abilityHash: 'sha256:bab5ea0a1fcd1fc011581c516ec78303c61ba5c7ac7f85dda18e515aa789e76a',
-    name: 'Decisive opening circle',
-    description: 'Uses the reviewed trained radial action as a high-output but committed opener.',
-    explanation:
-      'Caps the slice with the existing attack-scaled sweep without removing its commitment.',
-    conditionOrTradeoff: 'Retains the stamina cost, 20-step sweep, recovery opening and cooldown.',
   },
 ] as const satisfies readonly {
   dan: SkillDan;
   abilityId: string;
   abilityRevision: number;
   abilityHash: string;
-  name: string;
-  description: string;
-  explanation: string;
-  conditionOrTradeoff?: string;
 }[];
 
 export const STARTUP_SKILL_FIXTURE_IDS = swordRatRelease.map(
@@ -128,70 +80,26 @@ function abilityRevisions(input: unknown[]): Map<string, Extract<Revision, { kin
   return abilities;
 }
 
-function draftNode(coordinate: (typeof EXPECTED_SKILL_COORDINATES)[number]): SkillNode {
-  const id = `skill.${coordinate.path}.${coordinate.zodiac}.${coordinate.dan}`,
-    upper = coordinate.dan >= 5;
-  return {
-    id,
-    coordinate,
-    name: `Draft ${coordinate.path} ${coordinate.zodiac} dan ${coordinate.dan}`,
-    description: 'Draft catalog slot. It has no executable effect and cannot enter a loadout.',
-    lifecycle: 'draft',
-    prerequisites: [],
-    deepening: {
-      kind: deepeningKind(coordinate.dan),
-      explanation: 'Draft only; meaningful behavior and evidence have not been implemented.',
-      retainsLowerUse: true,
-      ...(upper
-        ? { conditionOrTradeoff: 'Draft only; the required condition or tradeoff is undecided.' }
-        : {}),
-    },
-    pathRoleTags: [`role.${coordinate.path}`],
-    resolution: [],
-    fixtureIds: [],
-  };
+const historicalCatalogs = assembleSkillCatalogReleases(STARTUP_SKILL_CATALOG_RELEASES);
+
+/** Read every published revision from one immutable release list, independently of authoring. */
+export function readStartupSkillCatalogs(revisionInput: unknown[]): SkillCatalog[] {
+  abilityRevisions(revisionInput);
+  for (const catalog of historicalCatalogs) validateIntegratedDefinitions(catalog, revisionInput);
+  return structuredClone(historicalCatalogs);
 }
 
-/** Build the production startup catalog without copying all 1,152 nodes into battle manifests. */
+function readReleasedCatalog(revisionInput: unknown[], revision: number): SkillCatalog {
+  abilityRevisions(revisionInput);
+  const catalog = historicalCatalogs.find((entry) => entry.revision === revision);
+  if (!catalog) throw new Error(`Unknown startup skill catalog revision: ${revision}`);
+  validateIntegratedDefinitions(catalog, revisionInput);
+  return structuredClone(catalog);
+}
+
+/** Historical v1 return ordering is retained; persistence uses the existing normalization. */
 export function readStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
-  const abilities = abilityRevisions(revisionInput),
-    release = new Map(swordRatRelease.map((entry) => [entry.dan, entry]));
-  return {
-    schemaVersion: 1,
-    id: catalogId,
-    revision: 1,
-    nodes: EXPECTED_SKILL_COORDINATES.map((coordinate) => {
-      if (coordinate.path !== 'sword' || coordinate.zodiac !== 'rat') return draftNode(coordinate);
-      const entry = release.get(coordinate.dan)!;
-      return {
-        id: swordRatNodeId(coordinate.dan),
-        coordinate,
-        name: entry.name,
-        description: entry.description,
-        lifecycle: 'available',
-        prerequisites:
-          coordinate.dan === 1 ? [] : [swordRatNodeId((coordinate.dan - 1) as SkillDan)],
-        deepening: {
-          kind: deepeningKind(coordinate.dan),
-          explanation: entry.explanation,
-          retainsLowerUse: true,
-          ...('conditionOrTradeoff' in entry
-            ? { conditionOrTradeoff: entry.conditionOrTradeoff }
-            : {}),
-        },
-        pathRoleTags: ['continuous-offense-defense', 'initiative'],
-        resolution: [
-          {
-            kind: 'active-ability',
-            ability: revisionReference(
-              abilities.get(`${entry.abilityId}@${entry.abilityRevision}`)!,
-            ),
-          },
-        ],
-        fixtureIds: [`fixture.skill.sword.rat.${coordinate.dan}.action`],
-      };
-    }),
-  };
+  return readReleasedCatalog(revisionInput, 1);
 }
 
 export function inspectStartupSkillCatalog(
@@ -227,7 +135,8 @@ export const INTEGRATED_STARTUP_CATALOG_V6_REVISION = 6;
 export const INTEGRATED_STARTUP_CATALOG_V7_REVISION = 7;
 export const INTEGRATED_STARTUP_CATALOG_V8_REVISION = 8;
 export const INTEGRATED_STARTUP_CATALOG_V9_REVISION = 9;
-export const INTEGRATED_STARTUP_CATALOG_REVISION = 10;
+export const INTEGRATED_STARTUP_CATALOG_REVISION =
+  STARTUP_SKILL_CATALOG_RELEASES.at(-1)!.reference.revision;
 
 function validateIntegratedDefinitions(catalog: SkillCatalog, revisionInput: unknown[]) {
   const revisions = parseJson(RevisionSchema.array(), revisionInput),
@@ -248,294 +157,40 @@ function validateIntegratedDefinitions(catalog: SkillCatalog, revisionInput: unk
   return refs;
 }
 
-function assembleIntegratedStartupSkillCatalog(
-  revisionInput: unknown[],
-  revision: number,
-  authored: SkillNode[],
-): SkillCatalog {
-  const legacy = readStartupSkillCatalog(revisionInput),
-    nodes = new Map(legacy.nodes.map((node) => [skillCoordinateKey(node.coordinate), node]));
-  for (const node of authored) nodes.set(skillCoordinateKey(node.coordinate), node);
-  const catalog = parseCompleteSkillCatalog({
-    ...legacy,
-    revision,
-    nodes: [...nodes.values()],
-  });
-  validateIntegratedDefinitions(catalog, revisionInput);
-  return catalog;
-}
-
-const historicalReleaseNodes = new Map<string, { releaseRevision: number; prior: SkillNode }>([
-  [
-    'skill.shield.ox.1',
-    {
-      releaseRevision: 3,
-      prior: {
-        id: 'skill.shield.ox.1',
-        coordinate: { path: 'shield', zodiac: 'ox', dan: 1 },
-        name: 'Set shield',
-        description:
-          'A steady guard covers the bearer while facing the incoming line. Lower-dan techniques remain the lower-commitment option.',
-        lifecycle: 'implemented',
-        prerequisites: [],
-        deepening: {
-          kind: 'foundation',
-          explanation: 'Establishes ordinary directional protection as the low-commitment option.',
-          retainsLowerUse: true,
-        },
-        pathRoleTags: ['accumulation', 'guard-protection-displacement', 'zodiac.ox'],
-        resolution: [
-          {
-            kind: 'active-ability',
-            ability: {
-              id: 'guard',
-              revision: 1,
-              contentHash:
-                'sha256:f05415d544efcfcc0e4fa8f2698d2033d064346bd071563ca8e6dd9de3cdb769',
-            },
-          },
-        ],
-        fixtureIds: ['effects-order-free-shield'],
-      },
-    },
-  ],
-  [
-    'skill.aikido.dog.1',
-    {
-      releaseRevision: 4,
-      prior: {
-        id: 'skill.aikido.dog.1',
-        coordinate: { path: 'aikido', zodiac: 'dog', dan: 1 },
-        name: 'Aikido Protection dan 1',
-        description:
-          'Low-level use: a low-cost flow response that is unavailable without a committed incoming action. Zodiac direction: answer a threat with path-specific defense and response.',
-        lifecycle: 'draft',
-        prerequisites: [],
-        deepening: {
-          kind: 'foundation',
-          explanation:
-            "Foundation exposes a low-cost flow response that is unavailable without a committed incoming action without promising the branch's advanced mechanisms.",
-          retainsLowerUse: true,
-        },
-        pathRoleTags: ['incoming-action', 'reactive-redirect'],
-        resolution: [],
-        fixtureIds: [],
-      },
-    },
-  ],
-  [
-    'skill.magic.rooster.2',
-    {
-      releaseRevision: 5,
-      prior: {
-        id: 'skill.magic.rooster.2',
-        coordinate: { path: 'magic', zodiac: 'rooster', dan: 2 },
-        name: 'Affinity Reading: Condition',
-        description:
-          'reading only delivered and permitted evidence. The earlier techniques remain independently selectable; this dan does not silently replace them.',
-        lifecycle: 'draft',
-        prerequisites: ['skill.magic.rooster.1'],
-        deepening: {
-          kind: 'conditional-effect',
-          explanation:
-            'reading only delivered and permitted evidence; it deepens a bounded reveal of fire resistance without removing that lower-cost use.',
-          retainsLowerUse: true,
-        },
-        pathRoleTags: ['dan.2', 'path.magic', 'zodiac.rooster'],
-        resolution: [],
-        fixtureIds: [],
-      },
-    },
-  ],
-  [
-    'skill.archery.rat.1',
-    {
-      releaseRevision: 6,
-      prior: {
-        id: 'skill.archery.rat.1',
-        coordinate: { path: 'archery', zodiac: 'rat', dan: 1 },
-        name: 'First loose',
-        description:
-          'A simple arrow is loosed before a longer aiming exchange develops. Lower-dan techniques remain the lower-commitment option.',
-        lifecycle: 'implemented',
-        prerequisites: [],
-        deepening: {
-          kind: 'foundation',
-          explanation: 'Establishes the ordinary projectile shot as the low-preparation option.',
-          retainsLowerUse: true,
-        },
-        pathRoleTags: ['initiative', 'range-sightline-aim', 'zodiac.rat'],
-        resolution: [
-          {
-            kind: 'active-ability',
-            ability: {
-              id: 'arrow',
-              revision: 1,
-              contentHash:
-                'sha256:d3adfc1d75e87120dfbfb9f11953f116e25b852db63a33e85a64442820303a81',
-            },
-          },
-        ],
-        fixtureIds: ['projectile-golden', 'stage-single-projectile'],
-      },
-    },
-  ],
-  [
-    MYSTIC_GOAT_DAN1_RELEASE.nodeId,
-    {
-      releaseRevision: 9,
-      prior: {
-        id: 'skill.magic.goat.1',
-        coordinate: { path: 'magic', zodiac: 'goat', dan: 1 },
-        name: 'Elemental Balance: Foundation',
-        description:
-          'a self-applied water interaction. The earlier techniques remain independently selectable; this dan does not silently replace them.',
-        lifecycle: 'draft',
-        prerequisites: [],
-        deepening: {
-          kind: 'foundation',
-          explanation:
-            'a self-applied water interaction; it deepens a self-applied water interaction without removing that lower-cost use.',
-          retainsLowerUse: true,
-        },
-        pathRoleTags: ['path.magic', 'zodiac.goat', 'dan.1'],
-        resolution: [],
-        fixtureIds: [],
-      },
-    },
-  ],
-  [
-    MYSTIC_TIGER_DAN2_RELEASE.nodeId,
-    {
-      releaseRevision: 10,
-      prior: {
-        id: 'skill.magic.tiger.2',
-        coordinate: { path: 'magic', zodiac: 'tiger', dan: 2 },
-        name: 'Flame Pressure: Condition',
-        description:
-          'ignition admitted only on a valid hit. The earlier techniques remain independently selectable; this dan does not silently replace them.',
-        lifecycle: 'draft',
-        prerequisites: ['skill.magic.tiger.1'],
-        deepening: {
-          kind: 'conditional-effect',
-          explanation:
-            'ignition admitted only on a valid hit; it deepens a direct fire projectile without removing that lower-cost use.',
-          retainsLowerUse: true,
-        },
-        pathRoleTags: ['dan.2', 'path.magic', 'zodiac.tiger'],
-        resolution: [],
-        fixtureIds: [],
-      },
-    },
-  ],
-]);
-
-function integratedNodesAtRevision(revision: number): SkillNode[] {
-  return integratedSkillShards
-    .flatMap(({ nodes }) => nodes)
-    .map((node): SkillNode => {
-      const historical = historicalReleaseNodes.get(node.id);
-      return historical && historical.releaseRevision > revision ? historical.prior : node;
-    });
-}
-
-/** Reconstruct immutable catalog v2 before the shield guard release. */
 export function readIntegratedStartupSkillCatalogV2(revisionInput: unknown[]): SkillCatalog {
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    INTEGRATED_STARTUP_CATALOG_V2_REVISION,
-    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V2_REVISION),
-  );
+  return readReleasedCatalog(revisionInput, 2);
 }
 
-/** Reconstruct immutable catalog v3 before the aikido release. */
 export function readIntegratedStartupSkillCatalogV3(revisionInput: unknown[]): SkillCatalog {
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    INTEGRATED_STARTUP_CATALOG_V3_REVISION,
-    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V3_REVISION),
-  );
+  return readReleasedCatalog(revisionInput, 3);
 }
 
-/** Reconstruct immutable catalog v4 before the rooster second-dan release. */
 export function readPreviousIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION,
-    integratedNodesAtRevision(PREVIOUS_INTEGRATED_STARTUP_CATALOG_REVISION),
-  );
+  return readReleasedCatalog(revisionInput, 4);
 }
 
-/** Reconstruct immutable catalog v5 before the archery runtime release. */
 export function readIntegratedStartupSkillCatalogV5(revisionInput: unknown[]): SkillCatalog {
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    INTEGRATED_STARTUP_CATALOG_V5_REVISION,
-    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V5_REVISION),
-  );
+  return readReleasedCatalog(revisionInput, 5);
 }
 
-/** Reconstruct immutable catalog v6 before the environmental hologram release. */
 export function readIntegratedStartupSkillCatalogV6(revisionInput: unknown[]): SkillCatalog {
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    INTEGRATED_STARTUP_CATALOG_V6_REVISION,
-    integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V6_REVISION),
-  );
+  return readReleasedCatalog(revisionInput, 6);
 }
 
-/** Overlay every current authored shard as the next immutable startup catalog revision. */
 export function readIntegratedStartupSkillCatalogV7(revisionInput: unknown[]): SkillCatalog {
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    INTEGRATED_STARTUP_CATALOG_V7_REVISION,
-    [
-      ...integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V6_REVISION),
-      ENVIRONMENTAL_HOLOGRAM_SKILL_NODE,
-    ],
-  );
+  return readReleasedCatalog(revisionInput, 7);
 }
 
-/** Reconstruct immutable catalog v8 with only the measured rat promotion over v7. */
 export function readIntegratedStartupSkillCatalogV8(revisionInput: unknown[]): SkillCatalog {
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    INTEGRATED_STARTUP_CATALOG_V8_REVISION,
-    readIntegratedStartupSkillCatalogV7(revisionInput).nodes.map((node) =>
-      node.id === SUMMONING_RAT_DAN1_SKILL_NODE.id ? SUMMONING_RAT_DAN1_SKILL_NODE : node,
-    ),
-  );
+  return readReleasedCatalog(revisionInput, 8);
 }
 
-/** Promote only magic goat dan one over immutable catalog v8. */
 export function readIntegratedStartupSkillCatalogV9(revisionInput: unknown[]): SkillCatalog {
-  const goat = integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_V9_REVISION).find(
-    ({ id }) => id === MYSTIC_GOAT_DAN1_RELEASE.nodeId,
-  );
-  if (!goat) throw new Error('Authored magic goat release is missing');
-
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    INTEGRATED_STARTUP_CATALOG_V9_REVISION,
-    readIntegratedStartupSkillCatalogV8(revisionInput).nodes.map((node) =>
-      node.id === goat.id ? goat : node,
-    ),
-  );
+  return readReleasedCatalog(revisionInput, 9);
 }
 
-/** Promote only magic tiger dan two over immutable goat catalog v9. */
 export function readIntegratedStartupSkillCatalog(revisionInput: unknown[]): SkillCatalog {
-  const tiger = integratedNodesAtRevision(INTEGRATED_STARTUP_CATALOG_REVISION).find(
-    ({ id }) => id === MYSTIC_TIGER_DAN2_RELEASE.nodeId,
-  );
-  if (!tiger) throw new Error('Authored magic tiger release is missing');
-  return assembleIntegratedStartupSkillCatalog(
-    revisionInput,
-    INTEGRATED_STARTUP_CATALOG_REVISION,
-    readIntegratedStartupSkillCatalogV9(revisionInput).nodes.map((node) =>
-      node.id === tiger.id ? tiger : node,
-    ),
-  );
+  return readReleasedCatalog(revisionInput, INTEGRATED_STARTUP_CATALOG_REVISION);
 }
 
 export function inspectIntegratedStartupSkillCatalog(

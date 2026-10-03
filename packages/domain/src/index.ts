@@ -1,5 +1,6 @@
 export * from './spatial/index.ts';
 export * from './skill-acquisition.ts';
+export * from './skill-catalog-release-metadata.ts';
 export * from './skill-api.ts';
 export * from './skill-loadout.ts';
 export * from './skill-system.ts';
