@@ -7,4 +7,3 @@ export * from './skill-system.ts';
 export * from './spatial/skill-recipe.ts';
 export * from './spatial/skill-application.ts';
 export * from './viewer-build.ts';
-export * from './skill-selection.ts';
