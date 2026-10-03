@@ -2,13 +2,39 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RevisionSchema, revisionIndex } from '@fantasy/domain';
 import { readStartupSkillCatalogs } from '@fantasy/api/catalog';
-import { inspectSkillPublications } from './skill-publication.ts';
-import { CORPUS_OUTPUT, vitestOutcomes, type Corpus, type TestRun } from './corpus-checks.ts';
-import { assessReport, type Report } from './report.ts';
+import { inspectSkillPublications, type SkillTestExecution } from './skill-publication.ts';
+import { CORPUS_OUTPUT, type Corpus, type TestRun } from './corpus-checks.ts';
+import type { Report } from './report.ts';
+import {
+  saveSkillPublication,
+  skillObservationIdentity,
+  SKILL_OBSERVATION_FILE,
+} from './skill-publication-evidence.ts';
 import { git } from './source.ts';
 
-export const SKILL_PUBLICATION_CHECK = 'skill:new-publication';
-/** Called by the existing corpus runner and CI aggregate with their freshly validated test run. */
+export { SKILL_PUBLICATION_CHECK } from './skill-publication-evidence.ts';
+function inspect(
+  root: string,
+  corpus: Corpus,
+  sourceSha: string,
+  execution: SkillTestExecution | null,
+) {
+  const revisions = RevisionSchema.array().parse(
+    JSON.parse(readFileSync(join(root, 'data/spatial/catalog.json'), 'utf8')),
+  );
+  const matrix = JSON.parse(
+    readFileSync(join(root, 'docs/adr/0020-skill-system-fixtures.json'), 'utf8'),
+  );
+  return inspectSkillPublications({
+    catalogs: readStartupSkillCatalogs(revisions),
+    ledger: matrix.publicationLedger,
+    registry: corpus.tests,
+    lookup: revisionIndex(revisions),
+    sourceSha,
+    execution,
+  });
+}
+/** Standalone corpus collection uses the same proof binder as CI, with its actual test command. */
 export async function recordSkillPublication(
   root: string,
   corpus: Corpus,
@@ -16,65 +42,36 @@ export async function recordSkillPublication(
   report: Report,
   unchanged: boolean,
 ) {
-  const directory = join(root, CORPUS_OUTPUT);
-  mkdirSync(directory, { recursive: true });
-  const revisions = RevisionSchema.array().parse(
-    JSON.parse(readFileSync(join(root, 'data/spatial/catalog.json'), 'utf8')),
-  );
-  const matrix = JSON.parse(
-    readFileSync(join(root, 'docs/adr/0020-skill-system-fixtures.json'), 'utf8'),
-  );
-  const audit = await inspectSkillPublications({
-    catalogs: readStartupSkillCatalogs(revisions),
-    ledger: matrix.publicationLedger,
-    registry: corpus.tests,
-    lookup: revisionIndex(revisions),
+  mkdirSync(join(root, CORPUS_OUTPUT), { recursive: true });
+  const audit = await inspect(root, corpus, report.sourceSha, {
     sourceSha: report.sourceSha,
-    execution: {
-      sourceSha: report.sourceSha,
-      complete:
-        unchanged &&
-        !git(root, ['status', '--porcelain']) &&
-        git(root, ['rev-parse', 'HEAD']) === report.sourceSha &&
-        !tests.error &&
-        tests.failedFiles === 0 &&
-        (tests.shared === true || (tests.command?.exitCode === 0 && !tests.command.bounded)),
-      outcomes: tests.outcomes ?? new Map(),
-    },
+    complete:
+      unchanged &&
+      !git(root, ['status', '--porcelain']) &&
+      git(root, ['rev-parse', 'HEAD']) === report.sourceSha &&
+      !tests.error &&
+      tests.failedFiles === 0 &&
+      (tests.shared === true || (tests.command?.exitCode === 0 && !tests.command.bounded)),
+    outcomes: tests.outcomes ?? new Map(),
   });
-  writeFileSync(join(directory, 'skill-publication.json'), JSON.stringify(audit, null, 2) + '\n');
-  const candidates = audit.rows.filter((row) => row.mode === 'new-publication');
-  const historical = audit.rows.filter((row) => row.mode === 'historical-audit');
-  const updated: Report = {
-    ...report,
-    checks: [
-      ...report.checks,
-      {
-        id: SKILL_PUBLICATION_CHECK,
-        required: true,
-        status: audit.newPublicationReady ? 'pass' : 'fail',
-        reason: `${candidates.filter((row) => row.proof.passed).length}/${candidates.length} new/changed nodes proven; ${historical.filter((row) => !row.proof.passed).length} historical node revisions remain unproven (audit only); Issue completion is separate`,
-        evidence: [{ uri: `${CORPUS_OUTPUT}/skill-publication.json`, sourceSha: report.sourceSha }],
-      },
-    ],
-  };
-  const assessed = assessReport(
-    updated,
-    updated.checks.filter((check) => check.required).map((check) => check.id),
-  );
-  writeFileSync(join(directory, 'report.json'), JSON.stringify(assessed.report, null, 2) + '\n');
-  return assessed;
+  return saveSkillPublication(root, audit, report);
 }
-
-/** The CI aggregate has just bound corpus results to the exact current-tree/current-run receipts. */
-export function boundSkillTestRun(root: string): TestRun {
-  return {
-    ...vitestOutcomes(
-      root,
-      JSON.parse(readFileSync(join(root, CORPUS_OUTPUT, 'vitest.json'), 'utf8')),
-    ),
-    shared: true,
-    command: null,
-    error: null,
-  };
+/** Recipe validation runs with dependencies in the existing corpus observation job. */
+export async function observeSkillPublication(root: string, corpus: Corpus) {
+  const expected = skillObservationIdentity(root);
+  const cleanBefore = !git(root, ['status', '--porcelain']);
+  const audit = await inspect(root, corpus, expected.info.sourceSha, null);
+  writeFileSync(
+    join(root, CORPUS_OUTPUT, SKILL_OBSERVATION_FILE),
+    JSON.stringify({
+      schemaVersion: 1,
+      producer: 'skill-publication-observer',
+      ...expected,
+      clean:
+        cleanBefore &&
+        !git(root, ['status', '--porcelain']) &&
+        git(root, ['rev-parse', 'HEAD']) === expected.info.sourceSha,
+      audit,
+    }) + '\n',
+  );
 }

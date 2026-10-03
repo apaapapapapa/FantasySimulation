@@ -75,36 +75,13 @@ export const SkillPublicationLedgerSchema = z
       context.addIssue({ code: 'custom', message: 'Duplicate historical catalog revision' });
   });
 export type SkillPublicationLedger = z.infer<typeof SkillPublicationLedgerSchema>;
-export type SkillProofIssue = {
-  code:
-    | 'missing-recipe'
-    | 'invalid-recipe'
-    | 'unregistered-node'
-    | 'identity-mismatch'
-    | 'unregistered-fixture'
-    | 'missing-required-kind'
-    | 'unbound-test'
-    | 'unexecuted-test'
-    | 'skipped-test'
-    | 'failed-test'
-    | 'stale-results'
-    | 'incomplete-run';
-  detail: string;
-  causeCode?: string;
-};
-export type SkillTestExecution = {
-  sourceSha: string;
-  complete: boolean;
-  outcomes: ReadonlyMap<string, readonly string[]>;
-};
-export type SkillNodeProof = {
-  nodeId: string;
-  registered: boolean;
-  linked: boolean;
-  passed: boolean;
-  required: readonly string[];
-  issues: SkillProofIssue[];
-};
+export type { SkillTestExecution } from './skill-publication-proof.ts';
+import {
+  bindSkillProof,
+  type SkillProofIssue,
+  type SkillNodeProof,
+  type SkillTestExecution,
+} from './skill-publication-proof.ts';
 
 async function inspectNode(
   catalog: z.infer<typeof RefSchema>,
@@ -146,6 +123,7 @@ async function inspectNode(
     linked: false,
     passed: false,
     required: SKILL_PROOF_KINDS,
+    tests: [],
     issues,
   };
   if (!binding) {
@@ -172,29 +150,12 @@ async function inspectNode(
   const tests = binding.fixtures
     .filter(({ id }) => node.fixtureIds.includes(id))
     .flatMap(({ tests }) => tests);
-  let allLinked = tests.length > 0;
   for (const test of tests) {
     const ref = registry.get(test.testId);
-    if (!ref) {
-      allLinked = false;
-      issues.push({ code: 'unbound-test', detail: test.testId });
-      continue;
-    }
-    const outcomes = execution?.outcomes.get(`${ref.file}\n${ref.name}`) ?? [];
-    if (!outcomes.length) {
-      allLinked = false;
-      issues.push({ code: 'unexecuted-test', detail: test.testId });
-    } else if (outcomes.includes('failed'))
-      issues.push({ code: 'failed-test', detail: test.testId });
-    else if (outcomes.some((status) => status !== 'passed'))
-      issues.push({ code: 'skipped-test', detail: test.testId });
+    if (!ref) issues.push({ code: 'unbound-test', detail: test.testId });
+    else proof.tests.push({ id: test.testId, ...ref });
   }
-  if (execution && execution.sourceSha !== sourceSha)
-    issues.push({ code: 'stale-results', detail: execution.sourceSha });
-  if (!execution?.complete) issues.push({ code: 'incomplete-run', detail: sourceSha });
-  proof.linked = allLinked;
-  proof.passed = !issues.length;
-  return proof;
+  return bindSkillProof(proof, sourceSha, execution);
 }
 
 /** Audit history without rewriting it; only new/changed available nodes are publication candidates. */

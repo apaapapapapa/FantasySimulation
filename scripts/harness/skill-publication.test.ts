@@ -1,3 +1,8 @@
+import { execFileSync } from 'node:child_process';
+import { cpSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { bindSkillObservation } from './skill-publication-evidence.ts';
 import { describe, expect, it } from 'vite-plus/test';
 import {
   canonicalJson,
@@ -215,5 +220,57 @@ describe('independent skill publication evidence', () => {
     await expect(inspectSkillPublications(input)).rejects.toThrow(
       'Historical catalog content changed',
     );
+  });
+  it('binds dependency-free CI observations to the same SHA, attempt and definition bytes', async () => {
+    const input = await candidate();
+    const audit = await inspectSkillPublications({ ...input, execution: null });
+    const expected = {
+      info: { sourceSha, candidateSha: sourceSha, baselineSha: null, testMergeSha: null },
+      runId: '123',
+      runAttempt: '2',
+      inputs: ['ledger-digest', 'corpus-digest'],
+    };
+    const observed = {
+      schemaVersion: 1,
+      producer: 'skill-publication-observer',
+      ...expected,
+      clean: true,
+      audit,
+    };
+    expect(bindSkillObservation(observed, expected, input.execution).newPublicationReady).toBe(
+      true,
+    );
+    for (const patch of [
+      { runAttempt: '1' },
+      { runId: '456' },
+      { inputs: ['changed'] },
+      { clean: false },
+      { info: { ...expected.info, sourceSha: 'b'.repeat(40) } },
+    ])
+      expect(() =>
+        bindSkillObservation({ ...observed, ...patch }, expected, input.execution),
+      ).toThrow();
+    const empty = bindSkillObservation(observed, expected, {
+      ...input.execution,
+      outcomes: new Map(),
+    });
+    expect(empty.newPublicationReady).toBe(false);
+    expect(empty.rows[0]!.proof.issues.map(({ code }) => code)).toContain('unexecuted-test');
+    // Reproduce the aggregate environment: checked-out scripts, no workspace packages/node_modules.
+    const temporary = mkdtempSync(join(tmpdir(), 'fantasy-skill-aggregate-'));
+    try {
+      cpSync('scripts', join(temporary, 'scripts'), { recursive: true });
+      execFileSync(
+        process.execPath,
+        [
+          '--input-type=module',
+          '-e',
+          "await import('./scripts/harness/skill-publication-evidence.ts')",
+        ],
+        { cwd: temporary },
+      );
+    } finally {
+      rmSync(temporary, { recursive: true, force: true });
+    }
   });
 });

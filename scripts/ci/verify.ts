@@ -161,14 +161,8 @@ async function aggregate(root: string) {
     const bound = bindCorpus(root, CORPUS_DEFINITION, TEST_SHARDS);
     if (bound.exitCode !== 0)
       throw new Error('Corpus observation did not pass with the shared test receipts');
-    const { parseCorpus } = await import('../harness/corpus.ts');
-    const { recordSkillPublication, boundSkillTestRun } =
-      await import('../harness/skill-publication-runner.ts');
-    const corpus = parseCorpus(readBoundedJson(join(root, CORPUS_DEFINITION)));
-    if (
-      (await recordSkillPublication(root, corpus, boundSkillTestRun(root), bound.report, true))
-        .exitCode !== 0
-    )
+    const { bindSkillPublication } = await import('../harness/skill-publication-evidence.ts');
+    if (bindSkillPublication(root, bound.report).exitCode !== 0)
       throw new Error('New skill publication lacks independent passing evidence');
   }
   const directory = join(root, SOURCE_OUTPUT);

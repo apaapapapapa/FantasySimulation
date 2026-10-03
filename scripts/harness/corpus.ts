@@ -484,6 +484,10 @@ export async function observeCorpus(
     entries,
   };
   writeFileSync(join(directory, OBSERVATION_FILE), JSON.stringify(saved, null, 2) + '\n');
+  if (path === 'packages/engine/fixtures/spatial/corpus.json' && corpus) {
+    const { observeSkillPublication } = await import('./skill-publication-runner.ts');
+    await observeSkillPublication(inputRoot, corpus);
+  }
   return observedExitCode(
     {
       sourceSha: info.sourceSha,
