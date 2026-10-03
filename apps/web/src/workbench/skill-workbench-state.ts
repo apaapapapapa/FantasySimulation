@@ -1,7 +1,11 @@
 import {
-  MAX_ACTIVE_SKILL_NODES,
-  MAX_ENABLED_SKILL_PATHS,
-  MAX_PASSIVE_SKILL_NODES,
+  inspectSkillEnabledNodes,
+  skillAvailabilityReason,
+  skillEnabledLearningReasons,
+  skillNodeDecision,
+  skillPrerequisiteClosure,
+  SkillSelectionError,
+  type SkillSelectionReason,
   type AnySkillLoadoutHead,
   type SkillAcquisitionHead,
   type SkillConfiguration,
@@ -9,7 +13,7 @@ import {
 } from '@fantasy/domain';
 
 export type WorkbenchStatus = 'eligible' | 'learned' | 'enabled' | 'locked' | 'disabled';
-export type WorkbenchNodeState = { status: WorkbenchStatus; reasons: string[] };
+export type WorkbenchNodeState = { status: WorkbenchStatus; reasons: SkillSelectionReason[] };
 
 export function latestSelectionGuard() {
   let latest = 0;
@@ -60,40 +64,24 @@ export function savedSkillConfiguration(
 
 const mapNodes = (nodes: SkillNode[]) => new Map(nodes.map((node) => [node.id, node]));
 
-function closure(nodes: Map<string, SkillNode>, ids: string[]) {
-  const result = new Set<string>();
-  const add = (id: string) => {
-    if (result.has(id)) return;
-    const node = nodes.get(id);
-    if (!node) return;
-    node.prerequisites.forEach(add);
-    result.add(id);
-  };
-  ids.forEach(add);
-  return [...result];
-}
-
-function kind(node: SkillNode) {
-  const active = node.resolution.some((item) => item.kind === 'active-ability');
-  const passive = node.resolution.some((item) => item.kind !== 'active-ability');
-  return active && passive ? 'mixed' : active ? 'active' : 'passive';
-}
-
 export function workbenchNodeState(
   node: SkillNode,
   configuration: SkillConfiguration,
 ): WorkbenchNodeState {
-  if (node.lifecycle !== 'available')
-    return { status: 'disabled', reasons: [`lifecycle:${node.lifecycle}`] };
-  if (configuration.enabledNodeIds.includes(node.id)) return { status: 'enabled', reasons: [] };
-  if (configuration.learnedNodeIds.includes(node.id)) return { status: 'learned', reasons: [] };
-  const reasons = [
-    ...(configuration.eligibilityNodeIds.includes(node.id) ? [] : ['not-eligible']),
-    ...node.prerequisites
-      .filter((id) => !configuration.learnedNodeIds.includes(id))
-      .map((id) => `missing:${id}`),
-  ];
-  return { status: reasons.length ? 'locked' : 'eligible', reasons };
+  const decision = skillNodeDecision(node, {
+    eligible: new Set(configuration.eligibilityNodeIds),
+    learned: new Set(configuration.learnedNodeIds),
+    enabled: new Set(configuration.enabledNodeIds),
+  });
+  return {
+    status:
+      decision.status === 'retired' || decision.status === 'unsupported'
+        ? 'disabled'
+        : decision.status === 'learnable'
+          ? 'eligible'
+          : decision.status,
+    reasons: decision.reasons,
+  };
 }
 
 export function learnNode(
@@ -118,24 +106,49 @@ export function toggleEnabledNode(
   const enabled = configuration.enabledNodeIds.includes(nodeId)
     ? configuration.enabledNodeIds.filter((id) => id !== nodeId)
     : [...configuration.enabledNodeIds, nodeId];
-  const resolved = closure(indexed, enabled).map((id) => indexed.get(id)!);
-  if (resolved.some((item) => kind(item) === 'mixed'))
-    return { configuration, error: '能動と受動を混在させた技は編成できません。' };
-  if (new Set(resolved.map((item) => item.coordinate.path)).size > MAX_ENABLED_SKILL_PATHS)
-    return { configuration, error: `編成できる道は最大${MAX_ENABLED_SKILL_PATHS}つです。` };
-  if (resolved.filter((item) => kind(item) === 'active').length > MAX_ACTIVE_SKILL_NODES)
-    return { configuration, error: `能動技は最大${MAX_ACTIVE_SKILL_NODES}個です。` };
-  if (resolved.filter((item) => kind(item) === 'passive').length > MAX_PASSIVE_SKILL_NODES)
-    return { configuration, error: `受動技は最大${MAX_PASSIVE_SKILL_NODES}個です。` };
+  let resolved: SkillNode[];
+  try {
+    resolved = skillPrerequisiteClosure(nodes, enabled).map((id) => indexed.get(id)!);
+  } catch (error) {
+    if (error instanceof SkillSelectionError)
+      return { configuration, error: selectionErrorText(error.reason) };
+    throw error;
+  }
+  const unlearned = skillEnabledLearningReasons(
+    resolved.map((item) => item.id),
+    new Set(configuration.learnedNodeIds),
+  )[0];
+  if (unlearned) return { configuration, error: selectionErrorText(unlearned) };
+  const unavailable = resolved.map(skillAvailabilityReason).find((reason) => reason !== undefined);
+  if (unavailable) return { configuration, error: selectionErrorText(unavailable) };
+  const reason = inspectSkillEnabledNodes(resolved).reasons[0];
+  if (reason) return { configuration, error: selectionErrorText(reason) };
   return { configuration: { ...configuration, enabledNodeIds: enabled } };
 }
 
 export function loadoutCounts(nodes: SkillNode[], configuration: SkillConfiguration) {
   const indexed = mapNodes(nodes);
-  const resolved = closure(indexed, configuration.enabledNodeIds).map((id) => indexed.get(id)!);
-  return {
-    paths: new Set(resolved.map((node) => node.coordinate.path)).size,
-    active: resolved.filter((node) => kind(node) === 'active').length,
-    passive: resolved.filter((node) => kind(node) === 'passive').length,
-  };
+  const resolved = skillPrerequisiteClosure(nodes, configuration.enabledNodeIds).map((id) =>
+    indexed.get(id)!,
+  );
+  return inspectSkillEnabledNodes(resolved).counts;
+}
+
+function selectionErrorText(reason: SkillSelectionReason) {
+  switch (reason.code) {
+    case 'enabled-path-limit':
+      return `編成できる道は最大${reason.maximum}つです。`;
+    case 'active-node-limit':
+      return `能動技は最大${reason.maximum}個です。`;
+    case 'passive-node-limit':
+      return `受動技は最大${reason.maximum}個です。`;
+    case 'mixed-resolution-kind':
+      return '能動と受動を混在させた技は編成できません。';
+    case 'enabled-node-not-learned':
+      return '前提を含む習得済みの技だけ編成できます。';
+    case 'unavailable-node':
+      return '利用可能として公開された技だけ編成できます。';
+    default:
+      return '技の参照または前提に不整合があるため編成できません。';
+  }
 }

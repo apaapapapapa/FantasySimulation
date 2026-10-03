@@ -4,12 +4,13 @@ import { HashSchema, IdSchema, RefSchema } from './spatial/contracts.ts';
 import {
   SKILL_CATALOG_NODE_COUNT,
   type SkillCatalog,
-  type SkillNode,
   UniqueSkillNodeIdsSchema,
   parseCompleteSkillCatalog,
   revisionRefKey,
   skillCatalogDigest,
 } from './skill-system.ts';
+
+import { skillApplicabilityReasons, skillLearningReasons } from './skill-selection.ts';
 
 const UniqueNodeIdsSchema = UniqueSkillNodeIdsSchema(SKILL_CATALOG_NODE_COUNT);
 export const SKILL_ACQUISITION_POLICY_VERSION = 'skill-acquisition-v1' as const;
@@ -82,15 +83,6 @@ function canonicalCapabilities(input: SkillAcquisitionCapabilities) {
   };
 }
 
-function nodeIsApplicable(node: SkillNode, equipmentTags: Set<string>, abilityRefs: Set<string>) {
-  if (node.lifecycle !== 'available' || !node.resolution.length) return false;
-  if (node.weaponTags?.some((tag) => !equipmentTags.has(tag))) return false;
-  return node.resolution.every(
-    (resolution) =>
-      resolution.kind !== 'augment' || abilityRefs.has(revisionRefKey(resolution.baseAbility)),
-  );
-}
-
 /** Derive eligibility only from immutable catalog and server-resolved character capabilities. */
 export async function deriveSkillEligibility(
   catalogInput: SkillCatalog,
@@ -102,7 +94,7 @@ export async function deriveSkillEligibility(
     abilityRefs = new Set(capabilities.abilityRefs.map(revisionRefKey));
   return {
     eligibilityNodeIds: catalog.nodes
-      .filter((node) => nodeIsApplicable(node, equipmentTags, abilityRefs))
+      .filter((node) => !skillApplicabilityReasons(node, equipmentTags, abilityRefs).length)
       .map(({ id }) => id)
       .sort(compareIds),
     capabilitiesDigest: await contentHash(JSON.parse(canonicalJson(capabilities))),
@@ -134,13 +126,13 @@ export async function resolveSkillAcquisitionV1(
   for (const id of learned) {
     const node = nodes.get(id);
     if (!node) throw new SkillAcquisitionError('unknown-node', `Unknown learned node: ${id}`);
-    if (!eligible.has(id))
-      throw new SkillAcquisitionError('not-eligible', `Learned node is not eligible: ${id}`);
-    const missing = node.prerequisites.find((prerequisite) => !learned.has(prerequisite));
-    if (missing)
+    const reason = skillLearningReasons(node, { eligible, learned })[0];
+    if (reason?.code === 'not-eligible')
+      throw new SkillAcquisitionError(reason.code, `Learned node is not eligible: ${id}`);
+    if (reason?.code === 'unmet-learning-prerequisite')
       throw new SkillAcquisitionError(
-        'unmet-learning-prerequisite',
-        `Learned node ${id} requires ${missing}`,
+        reason.code,
+        `Learned node ${id} requires ${reason.prerequisiteNodeId}`,
       );
   }
   return {

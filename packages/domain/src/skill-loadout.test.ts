@@ -189,6 +189,56 @@ describe('skill loadout resolution', () => {
     ).resolves.toMatchObject({ resolvedNodeIds: [id] });
   });
 
+  it.each([
+    {
+      learned: ['skill.sword.rat.2'],
+      eligible: [],
+      enabled: ['skill.unknown'],
+      code: 'unknown-node',
+      message: 'enabledNodeIds contains unknown skill node: skill.unknown',
+    },
+    {
+      learned: ['skill.sword.rat.2'],
+      eligible: [],
+      enabled: ['skill.sword.rat.1'],
+      code: 'not-eligible',
+      message: 'Learned node is not eligible: skill.sword.rat.2',
+    },
+    {
+      learned: ['skill.sword.rat.2'],
+      eligible: ['skill.sword.rat.2'],
+      enabled: ['skill.sword.rat.1'],
+      code: 'unmet-learning-prerequisite',
+      message: 'Learned node skill.sword.rat.2 requires skill.sword.rat.1',
+    },
+  ])(
+    'retains the baseline save error priority for $code',
+    async ({ learned, eligible, enabled, code, message }) => {
+      const catalog = completeCatalog(),
+        config = await configuration(catalog, learned, enabled, eligible);
+      await expect(resolveSkillLoadout(catalog, config, [])).rejects.toMatchObject({
+        code,
+        message,
+      });
+    },
+  );
+
+  it('retains path-limit priority over mixed recipes at the saving boundary', async () => {
+    const catalog = completeCatalog(),
+      ids = ['skill.sword.rat.1', 'skill.judo.rat.1', 'skill.magic.rat.1'];
+    catalog.nodes
+      .find((node) => node.id === ids[0])!
+      .resolution.push({
+        kind: 'passive-ability',
+        ability: { id: 'passive.priority', revision: 1, contentHash: hash },
+      });
+    const config = await configuration(catalog, ids, ids);
+    await expect(resolveSkillLoadout(catalog, config, [])).rejects.toMatchObject({
+      code: 'enabled-path-limit',
+      message: 'Resolved loadout uses 3 paths; maximum is 2',
+    });
+  });
+
   it('rejects a stale or substituted catalog ref', async () => {
     const catalog = completeCatalog(),
       id = 'skill.sword.rat.1',
