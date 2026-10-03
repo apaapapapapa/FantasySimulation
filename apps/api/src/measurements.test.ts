@@ -109,6 +109,27 @@ it('preserves values and exact errors and isolates concurrent measurement contex
   expect(b.report().stages).not.toHaveProperty('hash');
   expect(a.report().stages.read).toMatchObject({ count: 1, failures: 1 });
 });
+it('retains runner CPU/scheduler context and worker GC observations', () => {
+  const measured = new Measurements();
+  measured.match({
+    simulationHash: 'sha256:' + 'a'.repeat(64),
+    attemptId: 'attempt-1',
+    scenario: 'fixture',
+    participants: ['a', 'b'],
+    outcome: 'draw',
+    wallMs: 10,
+    worker: { gcCount: 2, gcDurationMs: 3.5 },
+  });
+  const report = measured.report();
+  expect(report.cpu.hardware.logicalProcessors).toBeGreaterThan(0);
+  expect(report.cpu.hardware.speedMHz.count).toBe(report.cpu.hardware.logicalProcessors);
+  expect(report.cpu.scheduler.voluntaryContextSwitches).toBeGreaterThanOrEqual(0);
+  expect(report.cpu.scheduler.involuntaryContextSwitches).toBeGreaterThanOrEqual(0);
+  expect(report.workerMetrics).toMatchObject({
+    gcCount: { count: 1, median: 2, p95: 2, max: 2 },
+    gcDurationMs: { count: 1, median: 3.5, p95: 3.5, max: 3.5 },
+  });
+});
 it('counts every verification, including repeats and rejected replays, without retaining payloads', () => {
   const m = new Measurements();
   m.validation('replay-a', true);
