@@ -1,33 +1,27 @@
 import {
   SKILL_DANS,
   SkillCatalogShardSchema,
+  SkillResolutionSchema,
   type SkillDan,
   type SkillNode,
   type SkillPathId,
   type SkillZodiacId,
+  type SkillResolution,
 } from '@fantasy/domain';
 
 export const MARTIAL_CATALOG_ID = 'skill-catalog-v1';
 export const MARTIAL_CATALOG_REVISION = 2;
 
-export type ExistingAbility = {
-  id: string;
-  revision: number;
-  contentHash: `sha256:${string}`;
-};
-
 export type NodeEvidence =
   | {
       status: 'proven';
-      ability: ExistingAbility;
-      resolutionKind?: 'active-ability' | 'passive-ability';
+      recipe: SkillResolution;
       fixtureIds: readonly string[];
       evidenceFiles: readonly string[];
     }
   | {
       status: 'definition-only';
-      ability: ExistingAbility;
-      resolutionKind?: 'active-ability' | 'passive-ability';
+      recipe: SkillResolution;
       fixtureIds: readonly string[];
       evidenceFiles: readonly string[];
       releaseBlocker: string;
@@ -101,9 +95,7 @@ export function buildPathShard(
           ...(plan.conditionOrTradeoff ? { conditionOrTradeoff: plan.conditionOrTradeoff } : {}),
         },
         pathRoleTags: [...branch.roleTags, `zodiac.${branch.zodiac}`],
-        resolution: executable
-          ? [{ kind: proof.resolutionKind ?? 'active-ability', ability: proof.ability }]
-          : [],
+        resolution: executable ? [SkillResolutionSchema.parse(proof.recipe)] : [],
         fixtureIds: executable ? [...proof.fixtureIds] : [],
       };
     }),
