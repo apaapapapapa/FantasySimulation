@@ -27,7 +27,7 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
     { path: '^(scripts|e2e|apps/cli)/' },
     {
       path: '^apps/api/',
-      pathNot: '^apps/api/src/(?:local|tooling|artifacts|testing|worker)[.]ts$',
+      pathNot: '^apps/api/src/(?:local|tooling|artifacts|testing|worker|catalog)[.]ts$',
     },
     'Tools and CLI consume explicit API exports, not persistence/Worker internals.',
   ),

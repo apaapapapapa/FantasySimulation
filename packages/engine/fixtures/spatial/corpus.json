@@ -1412,6 +1412,14 @@
     "concept-clock-force-binding": {
       "file": "packages/engine/src/spatial/subject-clocks.test.ts",
       "name": "binds every force deadline to a recorded pending or active force"
+    },
+    "skill-shield-guard-roundtrip": {
+      "file": "apps/api/src/http/skill-guard.integration.test.ts",
+      "name": "shield guard skill vertical fixture fixture.skill.shield.ox.1.guard-battle and fixture.skill.shield.ox.1.guard-replay resolve a saved guard loadout"
+    },
+    "skill-shield-guard-display": {
+      "file": "apps/web/src/replay/guard-display.test.ts",
+      "name": "fixture.skill.shield.ox.1.guard-viewer renders the exact saved guard provenance"
     }
   },
   "entries": [
@@ -2338,6 +2346,13 @@
         "concept-stop-range-backward",
         "concept-clock-force-binding"
       ]
+    },
+    {
+      "id": "skill-publication-evidence",
+      "title": "Reviewed shield recipe persistence/replay and display evidence; missing AI proof remains publication debt",
+      "state": "implemented",
+      "owner": null,
+      "tests": ["skill-shield-guard-roundtrip", "skill-shield-guard-display"]
     }
   ]
 }
