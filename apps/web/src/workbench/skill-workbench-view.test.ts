@@ -119,13 +119,27 @@ it('explains unavailable lifecycle and prerequisite locks in user-facing terms',
   });
   expect(
     workbenchReasonTexts(
-      { status: 'locked', reasons: ['not-eligible', `missing:${prerequisite.id}`] },
+      {
+        status: 'locked',
+        reasons: [
+          { code: 'not-eligible', nodeId: locked.id },
+          {
+            code: 'unmet-learning-prerequisite',
+            nodeId: locked.id,
+            prerequisiteNodeId: prerequisite.id,
+          },
+        ],
+      },
       [prerequisite, locked],
     ),
   ).toEqual(['このキャラクターでは未解禁です', '前提「先護り」を先に習得してください']);
   expect(
-    workbenchReasonTexts({ status: 'disabled', reasons: ['lifecycle:implemented'] }, [
-      prerequisite,
-    ]),
+    workbenchReasonTexts(
+      {
+        status: 'disabled',
+        reasons: [{ code: 'unavailable-node', nodeId: locked.id, lifecycle: 'implemented' }],
+      },
+      [prerequisite],
+    ),
   ).toEqual(['実装済みですが、利用可能として公開されていません']);
 });

@@ -5,6 +5,7 @@ import {
   revisionRefKey,
   skillResolutionAbilityRefs,
   type SkillNode,
+  type SkillSelectionReason,
 } from '@fantasy/domain';
 import type { SkillAbility } from './skill-api.ts';
 import type { WorkbenchNodeState } from './skill-workbench-state.ts';
@@ -74,20 +75,20 @@ export function abilitiesForNode(node: SkillNode, abilities: SkillAbility[]) {
   }));
 }
 
-const reasonText = (reason: string, nodes: Map<string, SkillNode>) => {
-  if (reason === 'not-eligible') return 'このキャラクターでは未解禁です';
-  if (reason.startsWith('lifecycle:')) {
-    const lifecycle = reason.slice('lifecycle:'.length);
-    if (lifecycle === 'draft') return 'ドラフトのため利用できません';
-    if (lifecycle === 'implemented') return '実装済みですが、利用可能として公開されていません';
-    if (lifecycle === 'retired') return '廃止済みのため利用できません';
-    return `ライフサイクルが ${lifecycle} のため利用できません`;
+const reasonText = (reason: SkillSelectionReason, nodes: Map<string, SkillNode>) => {
+  if (reason.code === 'not-eligible') return 'このキャラクターでは未解禁です';
+  if (reason.code === 'unavailable-node') {
+    if (reason.lifecycle === 'draft') return 'ドラフトのため利用できません';
+    if (reason.lifecycle === 'implemented')
+      return '実装済みですが、利用可能として公開されていません';
+    if (reason.lifecycle === 'retired') return '廃止済みのため利用できません';
+    return '実行可能な定義がないため利用できません';
   }
-  if (reason.startsWith('missing:')) {
-    const id = reason.slice('missing:'.length);
+  if (reason.code === 'unmet-learning-prerequisite') {
+    const id = reason.prerequisiteNodeId;
     return `前提「${nodes.get(id)?.name ?? id}」を先に習得してください`;
   }
-  return reason;
+  return reason.code;
 };
 
 export function workbenchReasonTexts(state: WorkbenchNodeState, nodes: SkillNode[]): string[] {
