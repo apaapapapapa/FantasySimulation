@@ -43,6 +43,11 @@ test('static-replay-controls', async ({ page }, info) => {
   await expect(page.locator('canvas')).toHaveCount(1);
   await expect(canvas).toHaveAttribute('data-rendered', 'true');
   const savedState = await state.textContent();
+  // Chromium runs on a software GPU: seeking must preserve its raster budget.
+  if (info.project.name === 'chromium')
+    expect(
+      await canvas.evaluate((element: HTMLCanvasElement) => element.width * element.height),
+    ).toBeLessThanOrEqual(320_000);
   const image = await canvas.screenshot();
   const idleDraws = await canvas.evaluate(async (element) => {
     const canvas = element as HTMLCanvasElement & { sceneDraws?: number };

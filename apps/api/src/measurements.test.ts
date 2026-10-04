@@ -9,6 +9,44 @@ import {
 } from './measurements.ts';
 
 afterEach(() => vi.restoreAllMocks());
+it('bounds per-call verification observations and keeps rejected diagnostics out of the report', () => {
+  const measured = new Measurements();
+  const value = {
+    replayId: 'replay-a',
+    stage: 'validate.replay' as const,
+    success: false,
+    attempted: true,
+    observation: {
+      threadId: 2,
+      elapsedMs: 10,
+      cpuUserMs: 3,
+      cpuSystemMs: 1,
+      gcCount: 2,
+      gcDurationMs: 0.5,
+    },
+  };
+  measured.verificationObservation(value);
+  for (const observation of [
+    { ...value.observation, gcCount: 0.5 },
+    { ...value.observation, threadId: -1 },
+    { ...value.observation, cpuUserMs: Infinity },
+    { ...value.observation, elapsedMs: Number.NaN },
+    { ...value.observation, extra: 1 },
+    {},
+  ])
+    expect(() => measured.verificationObservation({ ...value, observation })).toThrow();
+  expect(() => measured.verificationObservation({ ...value, replayId: 'x'.repeat(513) })).toThrow();
+  expect(measured.report().verificationWorkerObservations).toEqual([value]);
+  for (let i = 1; i <= 20000; i++) measured.verificationObservation(value);
+  value.observation.gcCount = 99;
+  const report = measured.report();
+  expect(report.verificationWorkerObservations).toHaveLength(20000);
+  expect(report.verificationWorkerObservations[0]!.observation.gcCount).toBe(2);
+  expect(report.droppedRecords).toBe(1);
+  expect(report.stages).toEqual({});
+  expect(report.measuredSpanUnionMs).toBe(0);
+  expect(report.validation.calls).toBe(0);
+});
 it('keeps bounded Worker stages separate from process-local spans and preserves failures', () => {
   const measured = new Measurements();
   const stage = {

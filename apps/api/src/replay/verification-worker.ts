@@ -1,4 +1,5 @@
 import type { ReplayLocation } from './pack-reader.ts';
+import { threadId } from 'node:worker_threads';
 import { canonicalJson, ReplayManifestSchema, type ReplayManifest } from '@fantasy/domain/spatial';
 import { artifactOperationCode, operationInput, type OperationCode } from '../operation-error.ts';
 import { replayValidationProfile, verifyReplayDirectory } from './replay-reader.ts';
@@ -9,6 +10,7 @@ import {
   type VerificationWorkerStages,
 } from '../measurements.ts';
 import { assertPublicData, PrivateDataError } from './replay-public.ts';
+import { observeGc } from '../jobs/gc-observation.ts';
 
 export type VerificationTask = {
   directory: ReplayLocation;
@@ -22,6 +24,7 @@ export type VerificationResponse = {
   manifestHash: string | null;
   validationProfile: string | null;
   stages?: VerificationWorkerStages;
+  observation?: Record<string, number>;
   code: OperationCode | 'UNKNOWN';
   /** A publishability failure keeps its classification across the thread boundary. */
   privateData: string | null;
@@ -30,6 +33,11 @@ export type VerificationResponse = {
 
 /** Runs the same validator as the in-process path, never a second acceptance implementation. */
 export default async function verify(task: VerificationTask): Promise<VerificationResponse> {
+  return observeGc(task.measured === true, () => measuredVerification(task));
+}
+async function measuredVerification(task: VerificationTask): Promise<VerificationResponse> {
+  const started = task.measured ? performance.now() : undefined;
+  const cpu = task.measured ? process.threadCpuUsage() : undefined;
   const measurement = task.measured ? new Measurements() : undefined;
   const response = await (measurement ? measurement.run(() => verifyTask(task)) : verifyTask(task));
   if (measurement) {
@@ -39,6 +47,15 @@ export default async function verify(task: VerificationTask): Promise<Verificati
         stages[name] ? [[name, stages[name]]] : [],
       ),
     );
+  }
+  if (cpu && started !== undefined) {
+    const used = process.threadCpuUsage(cpu);
+    response.observation = {
+      threadId,
+      elapsedMs: performance.now() - started,
+      cpuUserMs: used.user / 1000,
+      cpuSystemMs: used.system / 1000,
+    };
   }
   return response;
 }

@@ -55,6 +55,13 @@ test.describe('phone-width emulation', () => {
     await expect(step(page)).toHaveText('120');
     await page.getByRole('button', { name: '1step進む' }).tap();
     await expect(step(page)).toHaveText('121');
+    // The compact transport retains the native slider's keyboard seeking and recorded time.
+    await page.getByRole('slider', { name: '表示step', exact: true }).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(step(page)).toHaveText('122');
+    await expect(page.getByLabel('表示時刻')).toHaveText('2.44秒');
+    await page.keyboard.press('ArrowLeft');
+    await expect(step(page)).toHaveText('121');
     const before = await canvas.screenshot();
     await page.getByRole('button', { name: '左へ回す' }).tap();
     await expect(page.getByRole('combobox', { name: 'カメラ', exact: true })).toHaveValue('free');
