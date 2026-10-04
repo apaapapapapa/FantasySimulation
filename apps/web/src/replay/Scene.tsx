@@ -47,7 +47,7 @@ function Camera({
   model: SceneModel;
   nudge: CameraNudge | null | undefined;
 }) {
-  const { camera, gl, controls, size } = useThree();
+  const { camera, gl, controls, size, invalidate } = useThree();
   const aspect = size.width / Math.max(1, size.height);
   const framing = useMemo(
     () => (mode === 'free' ? null : frameCamera(mode, model.actors, aspect)),
@@ -62,7 +62,8 @@ function Camera({
     camera.position.set(...framing.position);
     camera.lookAt(...framing.target);
     camera.updateProjectionMatrix();
-  }, [camera, framing]);
+    invalidate();
+  }, [camera, framing, invalidate]);
   useEffect(() => {
     if (!nudge || nudge.seq === applied.current || mode !== 'free') return;
     applied.current = nudge.seq;
@@ -77,9 +78,11 @@ function Camera({
     camera.position.copy(target).add(offset);
     camera.lookAt(target);
     (controls as { update?: () => void } | null)?.update?.();
-  }, [camera, controls, nudge, mode, model.span, anchor]);
+    invalidate();
+  }, [camera, controls, nudge, mode, model.span, anchor, invalidate]);
   useFrame(() => {
     if (gl.info.render.calls > 0) gl.domElement.dataset.rendered = 'true';
+    else invalidate(); // Observe the first completed render on the next requested frame.
   });
   return (
     <OrbitControls
@@ -103,8 +106,9 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
     // Touch gestures belong to the camera only in free mode; otherwise the page scrolls.
     <div ref={stage} className="replay-canvas replay-stage" data-camera={cameraMode}>
       <Canvas
+        frameloop="demand"
         dpr={[1, 1.5]}
-        gl={{ antialias: true, powerPreference: 'high-performance' }}
+        gl={{ antialias: false, powerPreference: 'high-performance' }}
         camera={{
           fov: FOV_DEGREES,
           near: 0.05,

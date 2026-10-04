@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures.ts';
-import { complete, disableWebgl, event, files, match } from './fixtures.ts';
+import { complete, countSceneDraws, disableWebgl, event, files, match } from './fixtures.ts';
 
 // The fixture records are fixed display inputs. These assertions do not execute combat.
 test('static-selection', async ({ page }) => {
@@ -31,6 +31,7 @@ test('static-selection', async ({ page }) => {
 });
 
 test('static-replay-controls', async ({ page }, info) => {
+  await countSceneDraws(page);
   await page.goto(complete.url);
   const state = page.getByRole('table', { name: '記録された状態' });
   const canvas = page.getByRole('img', { name: '保存ログの3D表示' });
@@ -43,6 +44,15 @@ test('static-replay-controls', async ({ page }, info) => {
   await expect(canvas).toHaveAttribute('data-rendered', 'true');
   const savedState = await state.textContent();
   const image = await canvas.screenshot();
+  const idleDraws = await canvas.evaluate(async (element) => {
+    const canvas = element as HTMLCanvasElement & { sceneDraws?: number };
+    const before = canvas.sceneDraws ?? 0;
+    for (let frame = 0; frame < 8; frame++)
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    return { before, after: canvas.sceneDraws ?? 0 };
+  });
+  expect(idleDraws.before).toBeGreaterThan(0);
+  expect(idleDraws.after).toBe(idleDraws.before);
   await page.getByRole('combobox', { name: 'カメラ', exact: true }).selectOption('side');
   await expect.poll(async () => (await canvas.screenshot()).equals(image)).toBe(false);
   for (const mode of ['follow', 'free'])
