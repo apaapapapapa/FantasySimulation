@@ -75,6 +75,17 @@ export const event = complete.manifest.chunks
   )
   .find((event) => event.step > 0)!;
 
+/** Count real scene draws so paused playback can prove it releases the GPU. */
+export const countSceneDraws = (page: Page) =>
+  page.addInitScript(() => {
+    const draw = WebGL2RenderingContext.prototype.drawElements;
+    WebGL2RenderingContext.prototype.drawElements = function (...args) {
+      const canvas = this.canvas as HTMLCanvasElement & { sceneDraws?: number };
+      canvas.sceneDraws = (canvas.sceneDraws ?? 0) + 1;
+      draw.apply(this, args);
+    };
+  });
+
 /** Emulate a device without WebGL; 2D and 2D-only paths must not need it. */
 export const disableWebgl = (page: Page) =>
   page.addInitScript(() => {
