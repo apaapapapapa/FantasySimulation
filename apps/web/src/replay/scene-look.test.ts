@@ -7,6 +7,7 @@ import { ReplayPlayer } from './replay-player.ts';
 import { buildSceneModel, type SceneModel } from './scene-model.ts';
 import { mapWindow, Scene2D, zoomStep } from './Scene2D.tsx';
 import { NO_OVERLAYS } from './overlays.ts';
+import { BattleHud } from './BattleHud.tsx';
 
 async function* frames(name: string, steps: Iterable<number>) {
   const opened = await savedReplay(name),
@@ -204,11 +205,20 @@ describe('2D top view', () => {
     }
   });
   it('labels each fighter with its saved name and recorded HP', async () => {
-    for await (const { model } of frames('swordsman-sky-mage-240', [240])) {
+    for await (const { model, frame, context } of frames('swordsman-sky-mage-240', [240])) {
       const markup = renderToStaticMarkup(createElement(Scene2D, { model, overlays: NO_OVERLAYS }));
       expect(markup).toContain('保存ログの2D表示');
       for (const a of model.actors) expect(markup).toContain(`>${a.name}</text>`);
       expect(markup.match(/class="map-plate"/g)).toHaveLength(model.actors.length);
+      const hud = renderToStaticMarkup(createElement(BattleHud, { model }));
+      for (const actor of frame.checkpoint.state!.actors) {
+        const definition = context.actors.find(
+          (a) => a.participant.actorId === actor.id,
+        )!.character;
+        expect(hud).toContain(
+          `aria-label="${definition.name} HP" min="0" max="${definition.stats.hp}" value="${actor.resources.hp}"`,
+        );
+      }
     }
   });
 });
