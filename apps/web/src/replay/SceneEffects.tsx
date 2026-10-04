@@ -370,11 +370,12 @@ function Fireflies({ model }: { model: SceneModel }) {
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        size={2 / dpr}
+        map={glowMap('soft')}
+        size={3 / dpr}
         sizeAttenuation={false}
-        color="#efffa6"
+        color="#e3d1a0"
         transparent
-        opacity={0.8}
+        opacity={0.55}
         depthWrite={false}
         blending={AdditiveBlending}
         toneMapped={false}
@@ -422,7 +423,7 @@ export function SceneEffects({ model }: { model: SceneModel }) {
           key={`${mark.step}:${mark.item.id}`}
           points={mark.item.points}
           color={mark.item.colour}
-          lineWidth={3}
+          lineWidth={2}
           transparent
           opacity={afterimageStrength(mark, step, SPANS.trail) * 0.8}
         />

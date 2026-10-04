@@ -1,6 +1,7 @@
 import {
   DataTexture,
   LinearFilter,
+  LinearMipmapLinearFilter,
   NearestFilter,
   NoColorSpace,
   NearestMipmapNearestFilter,
@@ -55,7 +56,13 @@ export const TILE_SIZE: Record<TerrainKind, number> = {
   'earth-wall': 64,
 };
 export const terrainTexture = (kind: TerrainKind) =>
-  cached(`terrain:${kind}`, () => upload(terrainTile(kind, TILE_SIZE[kind]), true));
+  cached(`terrain:${kind}`, () => {
+    const texture = upload(terrainTile(kind, TILE_SIZE[kind]), true);
+    texture.magFilter = LinearFilter;
+    texture.minFilter = LinearMipmapLinearFilter;
+    texture.anisotropy = 4;
+    return texture;
+  });
 /** World-space metres covered by one repeat of the meadow mask. */
 export const MEADOW_METRES = 96;
 export const meadowTexture = () =>
@@ -68,7 +75,11 @@ export const meadowTexture = () =>
     return texture;
   });
 export const glowMap = (kind: GlowKind) =>
-  cached(`glow:${kind}`, () => upload(glowTexture(kind, kind === 'runes' ? 64 : 32), false));
+  cached(`glow:${kind}`, () => {
+    const texture = upload(glowTexture(kind, 96), false);
+    texture.magFilter = texture.minFilter = LinearFilter;
+    return texture;
+  });
 export const spriteTexture = (look: SpriteLook, pose: SpritePose, flash: boolean) =>
   cached(
     `sprite:${look.silhouette}:${look.colour}:${look.glow}:${look.equipment.join(',')}:${pose}:${flash}`,

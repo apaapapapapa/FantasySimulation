@@ -793,7 +793,7 @@ input[type='range'] {
 .replay-canvas[data-camera='free'] canvas {
   touch-action: none !important;
 }
-/* Dimraeth-like replay stage: dot-art upscaling, gilded frame, night vignette, name plates. */
+/* Diorama stage: clean silhouettes, a fine brass frame and restrained edge shading. */
 .replay-stage {
   position: relative;
   isolation: isolate;
@@ -804,7 +804,7 @@ input[type='range'] {
     0 0 0 5px #0c1416;
 }
 .replay-stage canvas {
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 .replay-stage::after {
   content: '';
@@ -812,17 +812,47 @@ input[type='range'] {
   inset: 0;
   pointer-events: none;
   z-index: 30;
-  background: radial-gradient(ellipse at 50% 45%, transparent 52%, rgb(4 5 8 / 0.72) 100%);
+  background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgb(7 20 24 / 0.5) 100%);
+}
+.scene-caption {
+  position: absolute;
+  inset: 18px 22px auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  z-index: 30;
+  color: #e0d1ad;
+  font:
+    9px ui-monospace,
+    monospace;
+  letter-spacing: 2px;
+  text-shadow: 0 1px 6px #102126;
+}
+.scene-caption > span:last-child {
+  padding: 7px 10px;
+  border: 1px solid #d9bc8340;
+  background: #102126b3;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.scene-caption small {
+  font-size: 7px;
+  color: var(--muted);
 }
 .fighter-plate {
-  /* Bottom-centred just above the sprite's head; --lift clears a neighbouring plate. */
+  /* Bottom-centred above the miniature; --lift clears a neighbouring plate. */
   transform: translate(-50%, calc(-100% - var(--lift, 0px)));
   display: grid;
   justify-items: center;
-  gap: 3px;
-  font-family: Georgia, 'Times New Roman', 'Noto Serif JP', 'Noto Sans JP', serif;
-  font-size: 12px;
-  font-variant: small-caps;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid #d9bc8350;
+  border-radius: 4px;
+  background: #0c1b20d9;
+  box-shadow: 0 4px 16px #0003;
+  font-family: 'Noto Sans JP', 'Segoe UI', sans-serif;
+  font-size: 11px;
   letter-spacing: 0.08em;
   line-height: 1;
   white-space: nowrap;
@@ -838,20 +868,21 @@ input[type='range'] {
   color: #ffe0a3;
 }
 .fighter-plate[data-side='right'] span {
-  color: #cfeaff;
+  color: #b8e2d5;
 }
 .fighter-plate i {
   display: block;
   width: 46px;
-  height: 5px;
-  background: #1a1210;
-  border: 1px solid #0b0706;
-  box-shadow: 0 0 0 1px #8a6a3a;
+  height: 3px;
+  background: #365050;
 }
 .fighter-plate b {
   display: block;
   height: 100%;
-  background: linear-gradient(#e2574c, #a8272a);
+  background: #d9bc83;
+}
+.fighter-plate[data-side='right'] b {
+  background: #94cbbd;
 }
 @media (max-width: 760px) {
   .fighter-plate {
