@@ -19,11 +19,16 @@ export async function guardNetwork(context: BrowserContext, blockedOrigins: stri
     await socket.close();
   });
 }
-export const test = base.extend<{
-  blockedOrigins: string[];
-  expectedBlockedOrigins: string[];
-  networkGuard: void;
-}>({
+export const test = base.extend<
+  {
+    blockedOrigins: string[];
+    expectedBlockedOrigins: string[];
+    networkGuard: void;
+  },
+  { browserSession: string }
+>({
+  // A distinct worker option gives a suite its own built-in browser and normal teardown.
+  browserSession: ['shared', { scope: 'worker', option: true }],
   expectedBlockedOrigins: [[], { option: true }],
   blockedOrigins: async ({}, use) => {
     await use([]);

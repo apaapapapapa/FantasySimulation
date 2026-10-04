@@ -32,6 +32,7 @@ export function uiResults(
                 results: [
                   {
                     retry: 0,
+                    workerIndex: title === 'static-repeat-playback' ? 1 : 0,
                     status: 'passed',
                     attachments: [
                       {

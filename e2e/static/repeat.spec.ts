@@ -1,6 +1,10 @@
 import { test, expect } from '../fixtures.ts';
 import { complete, disableWebgl } from './fixtures.ts';
 
+// The next Chromium context stalled after fallback playback in main 37217266706.
+// Keep the same case/deadline, but close its browser before another suite can use it.
+test.use({ browserSession: 'repeat-playback' });
+
 test('static-repeat-playback', async ({ page }) => {
   await disableWebgl(page);
   await page.goto(complete.url);
