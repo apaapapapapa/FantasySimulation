@@ -9,13 +9,14 @@ import { SceneBoundary } from './SceneBoundary.tsx';
 import { playbackStep } from './playback-clock.ts';
 import type { CameraMode, CameraNudge } from './Scene.tsx';
 import { webglAvailable } from './webgl.ts';
-import { shareTimeLabel } from './share.ts';
 import { ReplayEvents, CurrentEvents } from './ReplayEvents.tsx';
 import { NO_OVERLAYS, OVERLAY_LABELS } from './overlays.ts';
 import { ReplayResources } from './ReplayResources.tsx';
 import { SkillProvenance } from './SkillProvenance.tsx';
 import { hasSensoryCues } from '@fantasy/domain/spatial';
 import { BattleHud } from './BattleHud.tsx';
+import { ReplayTransport } from './ReplayTransport.tsx';
+import './replay-theater.css';
 
 const Scene = lazy(() => import('./Scene.tsx'));
 
@@ -204,9 +205,16 @@ export function ReplayPanel({
       className={local ? 'panel replay-panel local-replay' : 'panel replay-panel'}
       aria-label={local ? 'ローカルリプレイ' : '保存リプレイ'}
     >
-      <div className="section-heading">
-        <p className="eyebrow">BATTLE THEATER</p>
-        <h2>{local ? 'ローカルファイルのリプレイ' : '保存リプレイ'}</h2>
+      <div className="theater-heading">
+        <div className="section-heading">
+          <p className="eyebrow">THE BATTLE CHRONICLES</p>
+          <h2>
+            Battle theater<span>{local ? 'ローカルファイルのリプレイ' : '保存リプレイ'}</span>
+          </h2>
+        </div>
+        <span className="theater-edition" aria-hidden="true">
+          A DUEL WORTH REVISITING
+        </span>
       </div>
       {local && (
         <p role="note" className="message local-note">
@@ -214,7 +222,7 @@ export function ReplayPanel({
         </p>
       )}
       {loading && (
-        <p role="status" aria-label="読込状態">
+        <p role="status" aria-label="読込状態" className={model ? 'visually-hidden' : undefined}>
           記録を読み込んでいます
         </p>
       )}
@@ -230,22 +238,6 @@ export function ReplayPanel({
       )}
       {replay && (
         <>
-          <p className="replay-identity">
-            リプレイID <output aria-label="リプレイID">{replay.manifest.id}</output>
-          </p>
-          <p>
-            保存結果:{' '}
-            <output aria-label="リプレイ結果">
-              {end?.kind === 'result' ? end.result.outcome.kind : end?.kind}
-            </output>{' '}
-            / 記録済み範囲 0–{last}
-          </p>
-          {end?.kind === 'result' && 'reason' in end.result.outcome && (
-            <p>{end.result.outcome.reason}</p>
-          )}
-          {end?.kind !== 'result' && <p>{end?.reason}</p>}
-          {end?.kind !== 'result' && <p role="status">再生なし: 診断のみを表示しています。</p>}
-          <SkillProvenance context={replay.context} />
           {end?.kind === 'result' &&
             ['unresolved', 'truncated'].includes(end.result.outcome.kind) && (
               <p role="status">部分リプレイ: 記録された範囲まで再生できます。</p>
@@ -257,22 +249,47 @@ export function ReplayPanel({
                   WebGLを利用できないため、2Dの俯瞰図と時系列のログで表示しています。
                 </p>
               )}
-              {model && <BattleHud model={model} />}
-              {model &&
-                (view === '2d' ? (
-                  flat
-                ) : (
-                  <SceneBoundary key={`scene:${replay.manifest.simulationHash}`} fallback={flat}>
-                    <Suspense fallback={<p>3D表示を準備しています</p>}>
-                      <Scene
-                        model={model}
-                        cameraMode={cameraMode}
-                        overlays={overlays}
-                        nudge={nudge}
-                      />
-                    </Suspense>
-                  </SceneBoundary>
-                ))}
+              <div className="theater-screen">
+                <div className="theater-statusbar">
+                  <span className="theater-status" data-playing={playing}>
+                    <i aria-hidden="true" />
+                    {playing ? '再生中' : 'リプレイ'}
+                  </span>
+                  <span>
+                    RECORDED DUEL <span aria-hidden="true"> / </span> {view.toUpperCase()}
+                  </span>
+                </div>
+                {model && <BattleHud model={model} />}
+                {model &&
+                  (view === '2d' ? (
+                    flat
+                  ) : (
+                    <SceneBoundary key={`scene:${replay.manifest.simulationHash}`} fallback={flat}>
+                      <Suspense fallback={<p>3D表示を準備しています</p>}>
+                        <Scene
+                          model={model}
+                          cameraMode={cameraMode}
+                          overlays={overlays}
+                          nudge={nudge}
+                        />
+                      </Suspense>
+                    </SceneBoundary>
+                  ))}
+                <ReplayTransport
+                  target={target}
+                  shown={shown}
+                  last={last}
+                  stepMs={replay.manifest.profile.stepMs}
+                  playing={playing}
+                  loading={loading}
+                  repeat={repeat}
+                  speed={speed}
+                  onSeek={seek}
+                  onPlaying={() => setPlaying((value) => !value)}
+                  onRepeat={setRepeat}
+                  onSpeed={setSpeed}
+                />
+              </div>
               <div className="actions camera-controls" aria-label="カメラ操作">
                 <label>
                   表示
@@ -281,6 +298,18 @@ export function ReplayPanel({
                       3D
                     </option>
                     <option value="2d">2D（俯瞰図）</option>
+                  </select>
+                </label>
+                <label>
+                  カメラ
+                  <select
+                    value={cameraMode}
+                    onChange={(event) => setCameraMode(event.target.value as CameraMode)}
+                  >
+                    <option value="overview">全体</option>
+                    <option value="side">横</option>
+                    <option value="follow">追従</option>
+                    <option value="free">自由</option>
                   </select>
                 </label>
                 {hasSensoryCues(replay.context.manifest.revisions) && (
@@ -310,45 +339,6 @@ export function ReplayPanel({
                   </button>
                 ))}
               </div>
-              <div className="actions playback-controls">
-                <button
-                  disabled={!playing && (loading || last === 0 || (!repeat && target >= last))}
-                  onClick={() => setPlaying((value) => !value)}
-                >
-                  {playing ? '一時停止' : '再生'}
-                </button>
-                <button onClick={() => seek(0)}>先頭へ</button>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={repeat}
-                    disabled={last === 0}
-                    onChange={(e) => setRepeat(e.target.checked)}
-                  />
-                  繰り返し再生
-                </label>
-                <label>
-                  再生速度
-                  <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))}>
-                    <option value="0.5">0.5倍</option>
-                    <option value="1">1倍</option>
-                    <option value="2">2倍</option>
-                    <option value="4">4倍</option>
-                  </select>
-                </label>
-                <label>
-                  カメラ
-                  <select
-                    value={cameraMode}
-                    onChange={(e) => setCameraMode(e.target.value as CameraMode)}
-                  >
-                    <option value="overview">全体</option>
-                    <option value="side">横</option>
-                    <option value="follow">追従</option>
-                    <option value="free">自由</option>
-                  </select>
-                </label>
-              </div>
               <fieldset className="overlay-controls">
                 <legend>表示オーバーレイ</legend>
                 {(Object.keys(OVERLAY_LABELS) as (keyof typeof OVERLAY_LABELS)[]).map((key) => (
@@ -364,49 +354,6 @@ export function ReplayPanel({
                   </label>
                 ))}
               </fieldset>
-              <label>
-                表示step
-                <input
-                  type="range"
-                  min="0"
-                  max={last}
-                  value={target}
-                  onChange={(e) => seek(Number(e.target.value))}
-                />
-              </label>
-              <div className="actions">
-                <label>
-                  表示stepを入力
-                  <input
-                    type="number"
-                    min="0"
-                    max={last}
-                    value={target}
-                    onChange={(e) => {
-                      const value = Number(e.target.value);
-                      if (Number.isInteger(value) && value >= 0 && value <= last) seek(value);
-                    }}
-                  />
-                </label>
-                <button disabled={!target} onClick={() => seek(target - 1)}>
-                  1step戻る
-                </button>
-                <button disabled={target >= last} onClick={() => seek(target + 1)}>
-                  1step進む
-                </button>
-              </div>
-              <p>
-                表示中のstep: <output aria-label="現在のstep">{state?.step ?? '—'}</output>
-                {shown !== undefined && (
-                  <>
-                    {' '}
-                    / 表示時刻{' '}
-                    <output aria-label="表示時刻">
-                      {shareTimeLabel(shown, replay.manifest.profile.stepMs)}
-                    </output>
-                  </>
-                )}
-              </p>
               {link && (
                 <p className="share">
                   <a href={link} aria-label="この場面へのリンク">
@@ -427,15 +374,24 @@ export function ReplayPanel({
                   {copied === link && <span role="status"> コピーしました</span>}
                 </p>
               )}
-              <p>
-                ドット絵のキャラクターと光の効果は、記録された状態・イベントから描いた演出です（効果は数step残って薄れます）。正確な形状は当たり判定（白線）で表示します。視野は遮蔽判定前の定義上の範囲です。
-              </p>
+              <details className="replay-display-note">
+                <summary>映像と記録について</summary>
+                <p>
+                  立体キャラクターと光の演出は保存された状態・イベントを描画しています。光の効果は数stepかけて薄れます。正確な形状は「当たり判定」の白線で、視野は遮蔽判定前の定義上の範囲で確認できます。
+                </p>
+              </details>
               {overlays.vision && model?.actors.some((actor) => !actor.vision) && (
                 <p>
                   視野補正を持つ状態の主体は、補正後の視野が記録されていないため視野を描画しません。
                 </p>
               )}
-              {state && <ReplayResources context={replay.context} checkpoint={state} />}
+              {state && (
+                <section className="replay-records" aria-label="戦闘の記録">
+                  <p className="eyebrow">BATTLE RECORD</p>
+                  <h3>この瞬間の状態</h3>
+                  <ReplayResources context={replay.context} checkpoint={state} />
+                </section>
+              )}
               {frame && (
                 <CurrentEvents
                   key={state?.step}
@@ -455,6 +411,24 @@ export function ReplayPanel({
               )}
             </>
           )}
+          <div className="replay-metadata">
+            <p className="replay-identity">
+              リプレイID <output aria-label="リプレイID">{replay.manifest.id}</output>
+            </p>
+            <p>
+              保存結果:{' '}
+              <output aria-label="リプレイ結果">
+                {end?.kind === 'result' ? end.result.outcome.kind : end?.kind}
+              </output>{' '}
+              / 記録済み範囲 0–{last}
+            </p>
+            {end?.kind === 'result' && 'reason' in end.result.outcome && (
+              <p>{end.result.outcome.reason}</p>
+            )}
+            {end?.kind !== 'result' && <p>{end?.reason}</p>}
+            {end?.kind !== 'result' && <p role="status">再生なし: 診断のみを表示しています。</p>}
+            <SkillProvenance context={replay.context} />
+          </div>
           <details>
             <summary>保存結果のhash</summary>
             <p>
