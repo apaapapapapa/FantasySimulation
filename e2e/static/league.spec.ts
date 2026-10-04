@@ -98,17 +98,18 @@ test('static-league-overview', async ({ page, context }, info) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
-  expect(await table.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
+  const scroll = page.getByRole('region', { name: 'リーグ順位表のスクロール領域', exact: true });
+  expect(await scroll.evaluate((element) => element.scrollWidth > element.clientWidth)).toBe(true);
   expect(
     (await table.getByRole('button', { name: '総合得点', exact: true }).boundingBox())!.height,
   ).toBeLessThan(60);
-  await table.evaluate((element) => {
+  await scroll.evaluate((element) => {
     element.scrollLeft = element.scrollWidth;
   });
   await expect(table.getByRole('row').nth(1).getByRole('cell').last()).toContainText(
     '分母: 予定16枠',
   );
-  await table.evaluate((element) => {
+  await scroll.evaluate((element) => {
     element.scrollLeft = 0;
   });
   await info.attach('league-mobile', {

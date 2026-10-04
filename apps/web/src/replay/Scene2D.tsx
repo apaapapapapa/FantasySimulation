@@ -7,17 +7,17 @@ import { ARROW_COLOURS, type Overlays } from './overlays.ts';
 type Obstacle = SceneModel['obstacles'][number];
 /** Top-view fills matching the 3D terrain: grassy generic blocks, stone, wood, metal, earth. */
 const GROUND: Record<Obstacle['material'], string> = {
-  generic: '#315a27',
-  stone: '#626770',
-  wood: '#7a5230',
-  metal: '#6f7985',
-  earth: '#6d5033',
+  generic: '#284d43',
+  stone: '#496166',
+  wood: '#746146',
+  metal: '#778e92',
+  earth: '#586256',
 };
-const SIDES = ['#f6c26a', '#7cc8ff'] as const;
+const SIDES = ['#d9bc83', '#94cbbd'] as const;
 /** Seeded pixel tufts for a 4 m grass tile (display only). */
 const TUFTS = (() => {
   const random = prng('map:grass'),
-    fills = ['#264a20', '#3d6e2d', '#447a32', '#5b953d', '#f2d45c'];
+    fills = ['#24483e', '#31594d', '#3d6253', '#557565', '#a59d74'];
   return Array.from({ length: 26 }, (_, i) => ({
     x: Math.round(random() * 15) / 4,
     y: Math.round(random() * 15) / 4,
@@ -96,7 +96,7 @@ export function Scene2D({
       className="replay-canvas replay-map"
       data-zoom={zoom}
       viewBox={`${x} ${z} ${width} ${depth}`}
-      shapeRendering="crispEdges"
+      shapeRendering="geometricPrecision"
     >
       <defs>
         <pattern id={`${id}-grass`} width={4} height={4} patternUnits="userSpaceOnUse">
@@ -122,15 +122,15 @@ export function Scene2D({
         y={min[2] - 1e4}
         width={max[0] - min[0] + 2e4}
         height={max[2] - min[2] + 2e4}
-        fill="#070a0c"
+        fill="#102126"
       />
-      <rect x={min[0]} y={min[2]} width={max[0] - min[0]} height={max[2] - min[2]} fill="#0f1828" />
+      <rect x={min[0]} y={min[2]} width={max[0] - min[0]} height={max[2] - min[2]} fill="#173036" />
       {model.obstacles.map((o) => {
         const fill = o.material === 'generic' ? `url(#${id}-grass)` : GROUND[o.material];
         const common = {
           fill,
           fillOpacity: o.solid ? 1 : 0.6,
-          stroke: '#120d09',
+          stroke: '#91aea24a',
           strokeWidth: outline,
         };
         return o.kind === 'cylinder' ? (

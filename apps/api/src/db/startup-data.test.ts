@@ -16,6 +16,8 @@ import { ManifestBuilder, runBattle } from '@fantasy/engine/spatial';
 import { catalogManifest } from '@fantasy/samples';
 import { createApp } from '../http/app.ts';
 import { SkillStore } from './skill-store.ts';
+import { SkillAcquisitionStore } from './skill-acquisition-store.ts';
+import { seedLegacySkillLoadout } from '../../test-support/skills.ts';
 import { openStore, readSampleRevisions, type Store } from './store.ts';
 import { seedStartupData } from './startup-data.ts';
 import {
@@ -413,6 +415,77 @@ describe('production startup skill catalog', () => {
     await expect(lifecycle(8, 'skill.magic.tiger.2')).resolves.toBe('draft');
     await expect(lifecycle(9, 'skill.magic.tiger.2')).resolves.toBe('draft');
     await expect(lifecycle(10, 'skill.magic.tiger.2')).resolves.toBe('available');
+  }, 15_000);
+
+  it('keeps prior catalog loadouts, acquisition heads and recorded battles across repeated startup', async () => {
+    const store = openStore(':memory:');
+    stores.push(store);
+    await store.seedExactRevisions(readSampleRevisions());
+    const skills = new SkillStore(store),
+      catalog = await skills.seedCatalog(
+        readIntegratedStartupSkillCatalogV9(readSampleRevisions()),
+      ),
+      character = store.getRevision('character', 'swordsman', 1)!,
+      spear = store.getRevision('ability', 'spear', 1)!;
+    if (spear.kind !== 'ability') throw new Error('Expected historical spear ability');
+    const characterRef = revisionReference(character),
+      nodeIds = ['skill.spear.rat.1'],
+      legacy = await seedLegacySkillLoadout(store, {
+        character: characterRef,
+        configuration: {
+          schemaVersion: 1,
+          id: 'loadout.rf03.legacy',
+          version: 1,
+          catalog: catalog.reference,
+          eligibilityNodeIds: nodeIds,
+          learnedNodeIds: nodeIds,
+          enabledNodeIds: nodeIds,
+        },
+      }),
+      acquisitions = new SkillAcquisitionStore(store),
+      acquired = await acquisitions.create({
+        selection: {
+          schemaVersion: 1,
+          id: 'acquisition.rf03',
+          version: 1,
+          character: characterRef,
+          catalog: catalog.reference,
+          learnedNodeIds: nodeIds,
+        },
+      }),
+      current = await skills.create({
+        character: characterRef,
+        configuration: {
+          schemaVersion: 2,
+          id: 'loadout.rf03.current',
+          version: 1,
+          catalog: catalog.reference,
+          acquisition: acquired.latest,
+          enabledNodeIds: nodeIds,
+        },
+      }),
+      manifest = await catalogManifest('swordsman', 'swordsman', 'flat', 80, 303);
+    manifest.participants[0]!.skillLoadout = await skillBattleReceipt(current.snapshot);
+    const { battle, run } = await runAndReplay(manifest, spear),
+      saved = store.saveSpec(battle),
+      before = store.db.prepare('SELECT * FROM skill_catalog_revisions WHERE revision = 9').get();
+    for (let start = 0; start < 2; start++) await seedStartupData(store);
+    expect(
+      store.db.prepare('SELECT * FROM skill_catalog_revisions WHERE revision = 9').get(),
+    ).toEqual(before);
+    expect(await skills.revision(legacy.latest)).toEqual(legacy.snapshot);
+    expect(await skills.revision(current.latest)).toEqual(current.snapshot);
+    expect(await acquisitions.head('acquisition.rf03')).toEqual(acquired);
+    expect(store.getSpec(saved.simulationHash)).toEqual(saved);
+    const restored = new ReplayState(await replayContext(saved.manifest, saved.simulationHash));
+    for (const record of run.records) restored.apply(record);
+    expect(restored).toMatchObject({ ended: true, step: run.result.steps });
+    expect(store.db.prepare('SELECT count(*) count FROM skill_loadout_revisions').get()).toEqual({
+      count: 2,
+    });
+    expect(
+      store.db.prepare('SELECT count(*) count FROM skill_acquisition_revisions').get(),
+    ).toEqual({ count: 1 });
   }, 15_000);
 
   it('integrates fourteen authored paths while keeping unfinished coordinates unavailable', async () => {

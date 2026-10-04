@@ -1,0 +1,135 @@
+{
+  "sourceSha": "829e6e5d9b3b04a95f10ee6a126060723472629a",
+  "signatures": [
+    {
+      "revision": 1,
+      "contentHash": "sha256:3c0832b77875dfdb2b4c8e9a9bb66997716a00cd6f13017878de758cdceba084",
+      "canonicalBytes": 567954,
+      "lifecycle": {
+        "available": 6,
+        "implemented": 0,
+        "draft": 1146,
+        "retired": 0
+      },
+      "nodeOrderHash": "3e1ef2561f23a04f8794109fa87358e05ba1927cfc6e00685195fb7ead2e92b1",
+      "canonicalHash": "4d695e696ec830539d05be088ba8bdc34eefbe7bab95f948d74bf97140f6322e"
+    },
+    {
+      "revision": 2,
+      "contentHash": "sha256:5537f45d9be2b1d8d6dbe9d8099db2388f30c6c772694aee693547d2ebad5c69",
+      "canonicalBytes": 777368,
+      "lifecycle": {
+        "available": 26,
+        "implemented": 4,
+        "draft": 1122,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "5537f45d9be2b1d8d6dbe9d8099db2388f30c6c772694aee693547d2ebad5c69"
+    },
+    {
+      "revision": 3,
+      "contentHash": "sha256:7567e53cc5639ce9fad3578d81331e8804880758626e7a5cd3bbc755cdf67026",
+      "canonicalBytes": 777476,
+      "lifecycle": {
+        "available": 27,
+        "implemented": 3,
+        "draft": 1122,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "7567e53cc5639ce9fad3578d81331e8804880758626e7a5cd3bbc755cdf67026"
+    },
+    {
+      "revision": 4,
+      "contentHash": "sha256:3d6df8e9f07c2bfa492fbfdab80b5acb8937d168826331c6bbdd1f33179ef968",
+      "canonicalBytes": 777669,
+      "lifecycle": {
+        "available": 28,
+        "implemented": 3,
+        "draft": 1121,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "3d6df8e9f07c2bfa492fbfdab80b5acb8937d168826331c6bbdd1f33179ef968"
+    },
+    {
+      "revision": 5,
+      "contentHash": "sha256:153c28b31dc5dceb759210ed23bd80d38d3d6a2573bfb7f40feabf273bbc3e47",
+      "canonicalBytes": 777871,
+      "lifecycle": {
+        "available": 29,
+        "implemented": 3,
+        "draft": 1120,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "153c28b31dc5dceb759210ed23bd80d38d3d6a2573bfb7f40feabf273bbc3e47"
+    },
+    {
+      "revision": 6,
+      "contentHash": "sha256:b479659ce5d1cef32818323185b09a1484b9868bbc76d20c8f16d9f7e150afaf",
+      "canonicalBytes": 777861,
+      "lifecycle": {
+        "available": 30,
+        "implemented": 2,
+        "draft": 1120,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "b479659ce5d1cef32818323185b09a1484b9868bbc76d20c8f16d9f7e150afaf"
+    },
+    {
+      "revision": 7,
+      "contentHash": "sha256:158f5c3ba6dbdc1b3d55ed411c60bd79a5a9252081a11a2c5082d1ae0cb78e6f",
+      "canonicalBytes": 778186,
+      "lifecycle": {
+        "available": 31,
+        "implemented": 2,
+        "draft": 1119,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "158f5c3ba6dbdc1b3d55ed411c60bd79a5a9252081a11a2c5082d1ae0cb78e6f"
+    },
+    {
+      "revision": 8,
+      "contentHash": "sha256:c40f8ee80a1b123d77f5d29ce15cc3021f87c901194604ca8cfdfae69ece71e7",
+      "canonicalBytes": 778592,
+      "lifecycle": {
+        "available": 32,
+        "implemented": 2,
+        "draft": 1118,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "c40f8ee80a1b123d77f5d29ce15cc3021f87c901194604ca8cfdfae69ece71e7"
+    },
+    {
+      "revision": 9,
+      "contentHash": "sha256:f4f1641c53d07898c4e71a0f116557aaba2c0fcd2887cf3c4a4d62f597aa113b",
+      "canonicalBytes": 778788,
+      "lifecycle": {
+        "available": 33,
+        "implemented": 2,
+        "draft": 1117,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "f4f1641c53d07898c4e71a0f116557aaba2c0fcd2887cf3c4a4d62f597aa113b"
+    },
+    {
+      "revision": 10,
+      "contentHash": "sha256:78cb51e9af4555f7ee70eabaaae3606263a9846cf61e5b543ee266aac697b8ef",
+      "canonicalBytes": 778990,
+      "lifecycle": {
+        "available": 34,
+        "implemented": 2,
+        "draft": 1116,
+        "retired": 0
+      },
+      "nodeOrderHash": "f2f9588aab65f9db1ff65193e8c40a36aa9696a61dfa77824b0d5335f6fe9934",
+      "canonicalHash": "78cb51e9af4555f7ee70eabaaae3606263a9846cf61e5b543ee266aac697b8ef"
+    }
+  ]
+}

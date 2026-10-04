@@ -24,29 +24,6 @@ type Props = {
   nudge?: CameraNudge | null;
 };
 const TURN = Math.PI / 12;
-/** Drawing-buffer rows; the browser upscales them with nearest-neighbour for a dot-art look. */
-const PIXEL_ROWS = 240;
-
-/**
- * Pixel ratio giving about PIXEL_ROWS drawing-buffer rows, with a whole number of device pixels
- * per buffer pixel so every dot is the same size. It is passed as the Canvas `dpr` prop, which
- * R3F re-applies on every render.
- */
-function usePixelRatio(stage: RefObject<HTMLDivElement | null>) {
-  const [height, setHeight] = useState(PIXEL_ROWS * 2);
-  useEffect(() => {
-    const element = stage.current;
-    if (!element) return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setHeight(entry.contentRect.height);
-    });
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [stage]);
-  const device = window.devicePixelRatio || 1;
-  return device / Math.max(1, Math.round((height * device) / PIXEL_ROWS));
-}
-
 /** Fog starts just beyond what the camera looks at, so the far floor edge fades into the night. */
 function DepthFog() {
   const fog = useRef<Fog>(null);
@@ -58,7 +35,7 @@ function DepthFog() {
     value.near = distance * 1.1;
     value.far = distance * 2.6;
   });
-  return <fog ref={fog} attach="fog" args={['#0a0f10', 30, 90]} />;
+  return <fog ref={fog} attach="fog" args={['#102126', 30, 90]} />;
 }
 
 function Camera({
@@ -70,7 +47,7 @@ function Camera({
   model: SceneModel;
   nudge: CameraNudge | null | undefined;
 }) {
-  const { camera, gl, controls, size } = useThree();
+  const { camera, gl, controls, size, invalidate } = useThree();
   const aspect = size.width / Math.max(1, size.height);
   const framing = useMemo(
     () => (mode === 'free' ? null : frameCamera(mode, model.actors, aspect)),
@@ -85,7 +62,8 @@ function Camera({
     camera.position.set(...framing.position);
     camera.lookAt(...framing.target);
     camera.updateProjectionMatrix();
-  }, [camera, framing]);
+    invalidate();
+  }, [camera, framing, invalidate]);
   useEffect(() => {
     if (!nudge || nudge.seq === applied.current || mode !== 'free') return;
     applied.current = nudge.seq;
@@ -100,9 +78,11 @@ function Camera({
     camera.position.copy(target).add(offset);
     camera.lookAt(target);
     (controls as { update?: () => void } | null)?.update?.();
-  }, [camera, controls, nudge, mode, model.span, anchor]);
+    invalidate();
+  }, [camera, controls, nudge, mode, model.span, anchor, invalidate]);
   useFrame(() => {
     if (gl.info.render.calls > 0) gl.domElement.dataset.rendered = 'true';
+    else invalidate(); // Observe the first completed render on the next requested frame.
   });
   return (
     <OrbitControls
@@ -118,17 +98,17 @@ function Camera({
 
 /**
  * Every mesh comes from the saved manifest/state; camera frames never advance combat.
- * The look (pixel scale, sprites, glows, lights) is presentation only.
+ * Materials, miniatures, glows and lights are presentation only.
  */
 export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
   const stage = useRef<HTMLDivElement>(null);
-  const dpr = usePixelRatio(stage);
   return (
     // Touch gestures belong to the camera only in free mode; otherwise the page scrolls.
     <div ref={stage} className="replay-canvas replay-stage" data-camera={cameraMode}>
       <Canvas
-        flat
-        dpr={dpr}
+        frameloop="demand"
+        dpr={[1, 1.5]}
+        gl={{ antialias: false, powerPreference: 'high-performance' }}
         camera={{
           fov: FOV_DEGREES,
           near: 0.05,
@@ -146,11 +126,12 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
           </>
         }
       >
-        <color attach="background" args={['#070a0c']} />
+        <color attach="background" args={['#102126']} />
         <DepthFog />
-        <ambientLight color="#4b5b7c" intensity={1.25} />
-        <hemisphereLight args={['#9fb6e6', '#3a2a18', 1.1]} />
-        <directionalLight position={[-7, 16, 10]} color="#dfe8ff" intensity={1.3} />
+        <ambientLight color="#b8d5cc" intensity={0.5} />
+        <hemisphereLight args={['#c5e5de', '#263c3b', 1.1]} />
+        <directionalLight position={[-7, 16, 10]} color="#ffe4b2" intensity={2.2} />
+        <directionalLight position={[8, 7, -12]} color="#91d5d0" intensity={2} />
         <Camera mode={cameraMode} model={model} nudge={nudge} />
         <SceneTerrain model={model} />
         <SceneFighters model={model} portal={stage as RefObject<HTMLElement>} />
@@ -182,6 +163,12 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
         )}
         <SceneOverlays model={model} overlays={overlays} />
       </Canvas>
+      <div className="scene-caption" aria-hidden="true">
+        <span>THE BATTLE CHRONICLES</span>
+        <span>
+          {(model.milliseconds / 1000).toFixed(2)} <small>SEC</small>
+        </span>
+      </div>
     </div>
   );
 }

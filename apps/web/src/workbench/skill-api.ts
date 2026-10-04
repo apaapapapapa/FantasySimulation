@@ -3,6 +3,7 @@ import {
   AnySkillLoadoutHeadSchema,
   AnySkillLoadoutPageSchema,
   AnySkillLoadoutPatchSchema,
+  DEFAULT_SKILL_CATALOG_REFERENCE,
   JobResponseSchema,
   canonicalJson,
   SkillPreviewRequestSchema,
@@ -29,7 +30,10 @@ export type SkillLoadoutSelection = {
   loadout: SkillRevisionRef;
   character: SkillRevisionRef;
 };
-export const DEFAULT_SKILL_CATALOG = { id: 'skill-catalog-v1', revision: 10 } as const;
+export const DEFAULT_SKILL_CATALOG = {
+  id: DEFAULT_SKILL_CATALOG_REFERENCE.id,
+  revision: DEFAULT_SKILL_CATALOG_REFERENCE.revision,
+} as const;
 export const sameSkillRevisionRef = (left: SkillRevisionRef, right: SkillRevisionRef) =>
   left.id === right.id &&
   left.revision === right.revision &&

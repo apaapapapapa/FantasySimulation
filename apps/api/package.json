@@ -8,7 +8,8 @@
     "./tooling": "./src/tooling.ts",
     "./local": "./src/local.ts",
     "./testing": "./src/testing.ts",
-    "./worker": "./src/worker.ts"
+    "./worker": "./src/worker.ts",
+    "./catalog": "./src/catalog.ts"
   },
   "scripts": {
     "dev": "node --env-file-if-exists=../../.env --import tsx --watch src/index.ts",

@@ -720,7 +720,7 @@ export function SkillWorkbench({
           <button
             type="button"
             className="primary"
-            disabled={!previewReady || !preview.result?.canSave || editingBlocked}
+            disabled={!previewReady || !preview.result?.canSave}
             onClick={() => void save()}
           >
             構成を保存
