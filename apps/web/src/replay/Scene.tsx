@@ -33,7 +33,7 @@ function RasterBudget({ onDpr }: { onDpr: (value: number) => void }) {
     const renderer = info ? String(context.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
     if (/swiftshader|llvmpipe|softpipe|software/i.test(renderer) && size.width && size.height)
       onDpr(
-        Math.min(window.devicePixelRatio, 1.5, Math.sqrt(320_000 / (size.width * size.height))),
+        Math.min(window.devicePixelRatio, 1.5, Math.sqrt(160_000 / (size.width * size.height))),
       );
   }, [gl, onDpr, size.width, size.height]);
   return null;

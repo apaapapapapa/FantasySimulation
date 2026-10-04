@@ -47,7 +47,7 @@ test('static-replay-controls', async ({ page }, info) => {
   if (info.project.name === 'chromium')
     expect(
       await canvas.evaluate((element: HTMLCanvasElement) => element.width * element.height),
-    ).toBeLessThanOrEqual(320_000);
+    ).toBeLessThanOrEqual(160_000);
   const image = await canvas.screenshot();
   const idleDraws = await canvas.evaluate(async (element) => {
     const canvas = element as HTMLCanvasElement & { sceneDraws?: number };
