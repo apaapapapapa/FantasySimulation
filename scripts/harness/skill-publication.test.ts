@@ -2,8 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { bindSkillObservation } from './skill-publication-evidence.ts';
-import { describe, expect, it } from 'vite-plus/test';
+import { bindSkillObservation, skillObservationIdentity } from './skill-publication-evidence.ts';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import {
   canonicalJson,
   contentHash,
@@ -271,6 +271,21 @@ describe('independent skill publication evidence', () => {
       );
     } finally {
       rmSync(temporary, { recursive: true, force: true });
+    }
+  });
+  it('binds the physical source across the sanitized corpus subprocess and PR aggregate environments', () => {
+    const expected = skillObservationIdentity(process.cwd()).info;
+    vi.stubEnv('GITHUB_EVENT_NAME', 'pull_request');
+    vi.stubEnv('GITHUB_EVENT_PATH', '/not-forwarded-to-the-safe-subprocess.json');
+    try {
+      expect(skillObservationIdentity(process.cwd()).info).toEqual(expected);
+      expect(expected).toMatchObject({
+        candidateSha: expected.sourceSha,
+        baselineSha: null,
+        testMergeSha: null,
+      });
+    } finally {
+      vi.unstubAllEnvs();
     }
   });
 });

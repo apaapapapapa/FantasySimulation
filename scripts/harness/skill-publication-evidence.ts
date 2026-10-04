@@ -17,7 +17,9 @@ const inputPaths = [
 ];
 export function skillObservationIdentity(root: string) {
   return {
-    info: sourceIdentity(root),
+    // The corpus subprocess intentionally receives only safeEnvironment, without PR-event metadata.
+    // Its enclosing source-task receipt binds PR parents; this observation binds the physical SHA.
+    info: sourceIdentity(root, {}),
     runId: process.env.GITHUB_RUN_ID ?? null,
     runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? null,
     inputs: inputPaths.map((path) =>
