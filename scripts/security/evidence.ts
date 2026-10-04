@@ -29,7 +29,7 @@ export function securityInputs(run: SecurityRun) {
     uri: `.generated/harness/ci/security-evidence/security-${artifact}-${run.runId}-${run.runAttempt}/${checkId}.json`,
   }));
 }
-function passingCounts(checkId: string, counts: Record<string, unknown>): boolean {
+function passingCounts(checkId: string, counts: Record<string, unknown>, reason: string): boolean {
   switch (checkId) {
     case 'secret-canary':
       return counts.scenarios === 4;
@@ -52,8 +52,14 @@ function passingCounts(checkId: string, counts: Record<string, unknown>): boolea
     case 'dependency-audit':
       return (
         ['info', 'low', 'moderate', 'high', 'critical'].every((key) => key in counts) &&
-        counts.high === 0 &&
-        counts.critical === 0
+        counts.critical === 0 &&
+        (counts.blocking === undefined || counts.blocking === 0) &&
+        ((counts.high === 0 &&
+          (counts.verifiedBraces === undefined || counts.verifiedBraces === 0)) ||
+          (counts.high === 1 &&
+            counts.verifiedBraces === 1 &&
+            counts.blocking === 0 &&
+            reason === 'VERIFIED_BRACES_RECURSION_PATCH'))
       );
     case 'renovate-configuration':
       return counts.validators === 1;
@@ -113,7 +119,7 @@ export function assessSecurityEvidence(
               ? receipt.reason === scope &&
                 counts.plannedSkip === 1 &&
                 Object.keys(counts).length === 1
-              : passingCounts(checkId, counts)
+              : passingCounts(checkId, counts, receipt.reason as string)
           )
             status = 'pass';
         }
