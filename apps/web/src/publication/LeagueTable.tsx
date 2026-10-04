@@ -17,13 +17,24 @@ export function LeagueTable({ snapshot, hash }: { snapshot: PublicLeagueSnapshot
   const formal = snapshot.standings.status === 'formal';
   const columns = useMemo<ColumnDef<Row>[]>(
     () => [
-      { accessorKey: formal ? 'rank' : 'displayOrder', header: formal ? '順位' : '表示順' },
+      {
+        accessorKey: formal ? 'rank' : 'displayOrder',
+        header: formal ? '順位' : '表示順',
+        cell: ({ getValue }) => (
+          <span className="rank-mark" data-rank={formal ? getValue<number>() : undefined}>
+            {getValue<number>()}
+          </span>
+        ),
+      },
       {
         id: 'name',
         accessorFn: (r) => snapshot.characters.find((c) => c.id === r.character)!.name,
         header: 'キャラクター',
         cell: ({ row, getValue }) => (
-          <a href={leagueLink(hash, row.original.character)}>{getValue<string>()}</a>
+          <a className="rank-character" href={leagueLink(hash, row.original.character)}>
+            {getValue<string>()}
+            <span aria-hidden="true">↗</span>
+          </a>
         ),
       },
       {
@@ -31,7 +42,9 @@ export function LeagueTable({ snapshot, hash }: { snapshot: PublicLeagueSnapshot
         accessorFn: (r) => r.overall.lower,
         header: '総合得点',
         sortingFn: (a, b) => compareLeagueScore(a.original.overall.lower, b.original.overall.lower),
-        cell: ({ row }) => leagueInterval(row.original.overall),
+        cell: ({ row }) => (
+          <strong className="rank-score">{leagueInterval(row.original.overall)}</strong>
+        ),
       },
       {
         id: 'completion',
@@ -77,14 +90,16 @@ export function LeagueTable({ snapshot, hash }: { snapshot: PublicLeagueSnapshot
   return (
     <section className="panel league-results" aria-label="リーグ順位表">
       {snapshot.leagueClass === 'experimental' && <p>実験リーグの順位表</p>}
+      <p className="eyebrow">THE STANDINGS</p>
       <h2>{formal ? '正式ランキング' : '暫定ランキング'}</h2>
       <p>
         {formal
           ? '厳密な得点が等しいキャラクターは同じ順位です。'
           : '未確定の枠を含む得点区間です。下限による表示順であり、区間が重なる相手との順位は未確定です。'}
       </p>
-      <p>列の並べ替えは表示だけを変えます。確定した順位を変更しません。</p>
-      <p>横にスクロールして全列を確認できます。</p>
+      <p className="table-hint">
+        列の並べ替えは表示だけを変えます。確定した順位を変更しません。横にスクロールして全列を確認できます。
+      </p>
       <DataTable table={table} label="リーグ順位表" />
     </section>
   );
