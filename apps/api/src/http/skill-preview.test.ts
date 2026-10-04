@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vite-plus/test';
-import { SkillPreviewResponseSchema } from '@fantasy/domain';
-import { reference } from '@fantasy/engine/spatial';
-import { skillPersistenceFixture } from '../../test-support/skills.ts';
+import { SkillPreviewResponseSchema, skillBattleReceipt } from '@fantasy/domain';
+import { reference, sealRevision } from '@fantasy/engine/spatial';
+import { saveSkillLoadoutV2, skillPersistenceFixture } from '../../test-support/skills.ts';
 import {
   skillAcquisitionHeads,
   skillAcquisitionRevisions,
@@ -37,6 +37,86 @@ function history(store: Store) {
   };
 }
 describe('read-only server skill preview', () => {
+  it.each([
+    ['empty', false],
+    ['grant-augment-conflict', false],
+    ['invalid-disabled', true],
+    ['invalid-enabled', false],
+    ['shared-grant', true],
+  ] as const)('agrees with actual V2 saving for %s', async (scenario, canSave) => {
+    const f = await setup(),
+      catalog = structuredClone(f.catalog),
+      target = catalog.nodes.find((node) => node.id === f.target)!,
+      alternate = catalog.nodes.find((node) => node.id === f.alternate)!,
+      grant = target.resolution[0]!;
+    if (grant.kind !== 'active-ability') throw new Error('Expected fixture active ability');
+    catalog.revision = 2;
+    let character = f.proposal.character;
+    const learnedNodeIds = [f.target, f.alternate];
+    let enabledNodeIds = [...learnedNodeIds];
+    if (scenario === 'empty') enabledNodeIds = [];
+    if (scenario.startsWith('invalid-')) {
+      grant.ability = { ...grant.ability, contentHash: `sha256:${'f'.repeat(64)}` };
+      enabledNodeIds = scenario === 'invalid-disabled' ? [f.alternate] : [f.target];
+    }
+    if (scenario === 'shared-grant') alternate.resolution = structuredClone(target.resolution);
+    if (scenario === 'grant-augment-conflict') {
+      const base = f.store.requireRevision('ability', grant.ability),
+        replacement = await sealRevision('ability', base.id, 2, {
+          ...base.definition,
+          name: 'Preview conflict replacement',
+        }),
+        owner = await sealRevision('character', f.character.id, 2, {
+          ...f.character.definition,
+          abilities: [...f.character.definition.abilities, reference(base)],
+        });
+      await f.store.seedExactRevisions([replacement, owner]);
+      character = reference(owner);
+      alternate.resolution = [
+        {
+          kind: 'augment',
+          baseAbility: reference(base),
+          resolvedAbility: reference(replacement),
+        },
+      ];
+    }
+    const record = await f.skills.seedCatalog(catalog),
+      proposal = { character, catalog: record.reference, learnedNodeIds, enabledNodeIds },
+      before = history(f.store),
+      response = await f.app.inject({
+        method: 'POST',
+        url: '/api/skill-preview',
+        payload: proposal,
+      });
+    expect(response.statusCode).toBe(200);
+    const result = SkillPreviewResponseSchema.parse(response.json());
+    expect(result.canSave).toBe(canSave);
+    expect(history(f.store)).toEqual(before);
+    if (scenario.startsWith('invalid-')) {
+      expect(result.eligibilityNodeIds).toContain(f.target);
+      expect(result.nodeReasons).toContainEqual({
+        code: 'ability-application',
+        reason: 'definition-reference',
+        nodeId: f.target,
+      });
+    }
+    if (scenario === 'empty' || scenario === 'grant-augment-conflict')
+      expect(result.reasons).toContainEqual({ code: 'receipt-selection' });
+    const saved = await saveSkillLoadoutV2(f.app, {
+      ...proposal,
+      id: `loadout.${scenario}`,
+      acquisitionId: `acquisition.${scenario}`,
+    });
+    expect(saved.statusCode).toBe(canSave ? 201 : 400);
+    if (scenario === 'shared-grant') {
+      const receipt = await skillBattleReceipt(await f.skills.revision(saved.json().latest));
+      expect(receipt.schemaVersion).toBe(3);
+      expect(receipt.nodeResolutions.map(({ nodeId }) => nodeId)).toEqual(
+        [...learnedNodeIds].sort(),
+      );
+    }
+  });
+
   it('returns exact policy/proposal identity without migrating V1 or creating history; saving still revalidates', async () => {
     const f = await setup();
     await f.skills.createLegacy({

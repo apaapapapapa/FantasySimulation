@@ -4,7 +4,7 @@ import {
   SkillAcquisitionCapabilitiesSchema,
 } from './skill-acquisition.ts';
 import { SkillConfigurationV2Schema } from './skill-loadout.ts';
-import { IdSchema, RefSchema } from './spatial/contracts.ts';
+import { IdSchema, RefSchema, validNewSkillReceiptSelection } from './spatial/contracts.ts';
 import {
   RevisionGraphError,
   revisionRefKey,
@@ -42,6 +42,7 @@ export const SkillPreviewRequestSchema = z.strictObject({
 export type SkillPreviewRequest = z.infer<typeof SkillPreviewRequestSchema>;
 export const SkillPreviewReasonSchema = z.union([
   SkillSelectionReasonSchema,
+  z.strictObject({ code: z.literal('receipt-selection') }),
   z.strictObject({
     code: z.literal('ability-application'),
     nodeId: IdSchema.optional(),
@@ -152,6 +153,17 @@ export function previewSkillSelection(
   for (const node of resolvedNodes) reasons.push(...skillApplicabilityReasons(node, tags, owned));
   const inspected = inspectSkillEnabledNodes(resolvedNodes);
   reasons.push(...inspected.reasons);
+  if (
+    !validNewSkillReceiptSelection({
+      explicitlyEnabledNodeIds: [...proposal.enabledNodeIds].sort(),
+      resolvedNodeIds,
+      nodeResolutions: resolvedNodes.map((node) => ({
+        nodeId: node.id,
+        resolution: node.resolution,
+      })),
+    })
+  )
+    reasons.push({ code: 'receipt-selection' });
   try {
     const applications = resolveSkillAbilityApplications(
       capabilities.abilityRefs,

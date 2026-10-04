@@ -628,8 +628,8 @@ export function SkillWorkbench({
               </div>
             </dl>
             {detailReasons.length > 0 && (
-              <div className="skill-blockers" role="note" aria-label="選べない理由">
-                <strong>選べない理由</strong>
+              <div className="skill-blockers" role="note" aria-label="習得・編成の確認事項">
+                <strong>習得・編成の確認事項</strong>
                 <ul>
                   {detailReasons.map((reason) => (
                     <li key={reason}>{reason}</li>

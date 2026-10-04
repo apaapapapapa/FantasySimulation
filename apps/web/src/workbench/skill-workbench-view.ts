@@ -126,6 +126,8 @@ export function formatAbilityConstraints(ability: SkillAbility) {
 }
 
 export function skillPreviewReasonText(reason: SkillPreviewReason, nodes: SkillNode[]) {
+  if (reason.code === 'receipt-selection')
+    return '能力の組み合わせ、解決数、または空の編成を保存できません。';
   if (reason.code === 'ability-application') {
     const labels: Record<typeof reason.reason, string> = {
       'active-trigger': '発動技のtriggerが一致しません',

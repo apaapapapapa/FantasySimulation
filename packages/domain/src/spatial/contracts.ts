@@ -1260,7 +1260,7 @@ function validateSkillReceipt(
       resolution: z.infer<typeof BattleSkillResolutionSchema>[];
     }[];
   },
-  context: z.RefinementCtx,
+  context: Pick<z.RefinementCtx, 'addIssue'>,
 ) {
   const resolved = new Set(receipt.resolvedNodeIds),
     nodeIds = receipt.nodeResolutions.map(({ nodeId }) => nodeId);
@@ -1279,7 +1279,7 @@ type BattleSkillReceipt = {
 };
 function validateBattleSkillReceipt(
   receipt: BattleSkillReceipt,
-  context: z.RefinementCtx,
+  context: Pick<z.RefinementCtx, 'addIssue'>,
   allowExactSharedGrants: boolean,
 ) {
   validateSkillReceipt(receipt, context);
@@ -1406,6 +1406,27 @@ export const SkillLoadoutReceiptV3Schema = z
     ...BattleSkillReceiptShape,
   })
   .superRefine((receipt, context) => validateBattleSkillReceipt(receipt, context, true));
+/** Check a new selection without inventing saved refs or choosing its eventual receipt version. */
+export function validNewSkillReceiptSelection(selection: BattleSkillReceipt): boolean {
+  const shape = SkillLoadoutReceiptV3Schema.shape;
+  if (
+    !shape.explicitlyEnabledNodeIds.safeParse(selection.explicitlyEnabledNodeIds).success ||
+    !shape.resolvedNodeIds.safeParse(selection.resolvedNodeIds).success ||
+    !shape.nodeResolutions.safeParse(selection.nodeResolutions).success
+  )
+    return false;
+  let valid = true;
+  validateBattleSkillReceipt(
+    selection,
+    {
+      addIssue: () => {
+        valid = false;
+      },
+    },
+    true,
+  );
+  return valid;
+}
 export const SkillLoadoutReceiptSchema = z.union([
   SkillLoadoutReceiptV1Schema,
   SkillLoadoutReceiptV2Schema,
