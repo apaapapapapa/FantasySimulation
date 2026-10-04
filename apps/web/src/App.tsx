@@ -7,6 +7,7 @@ import { PublicViewer } from './publication/PublicViewer.tsx';
 import { LocalReplays } from './replay/LocalReplays.tsx';
 import { SkillWorkbench } from './workbench/SkillWorkbench.tsx';
 import { skillWorkbenchApi, type SkillLoadoutSelection } from './workbench/skill-api.ts';
+import { PageHeader, PageFooter } from './components/PageHeader.tsx';
 export function App() {
   return import.meta.env.VITE_APP_MODE === 'public' ? (
     <PublicViewer root={import.meta.env.VITE_PUBLICATION_ROOT} />
@@ -36,12 +37,14 @@ function LocalApp() {
     return () => controller.abort();
   }, []);
   return (
-    <main className="app-shell">
-      <header>
-        <p className="eyebrow">Fantasy Simulation</p>
-        <h1>3D対戦の開発環境</h1>
-      </header>
-      <section className="panel">
+    <main className="app-shell" id="app-top">
+      <PageHeader
+        title="3D対戦の開発環境"
+        eyebrow="CREATE YOUR LEGEND"
+        description="個性をつくり、技を磨き、戦場へ。あなただけの戦略を、ひとつの対戦に。"
+        mode="local"
+      />
+      <section className="studio-status">
         <p role="status" aria-label="API接続">
           {status}
         </p>
@@ -49,16 +52,17 @@ function LocalApp() {
       </section>
       <div className="workspace">
         <DefinitionEditor onPublished={() => setRevisionTick((n) => n + 1)} />
-        <SkillWorkbench client={skillWorkbenchApi} onSaved={setSkillLoadout} />
         <BattlePanel
           revisionTick={revisionTick}
           onReplay={setReplayId}
           skillLoadout={skillLoadout}
           skillClient={skillWorkbenchApi}
         />
+        <SkillWorkbench client={skillWorkbenchApi} onSaved={setSkillLoadout} />
       </div>
       {replaySource && <ReplayPanel source={replaySource} />}
       <LocalReplays />
+      <PageFooter />
     </main>
   );
 }

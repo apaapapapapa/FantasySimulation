@@ -7,6 +7,8 @@ import { ReplayPlayer } from './replay-player.ts';
 import { buildSceneModel, type SceneModel } from './scene-model.ts';
 import { mapWindow, Scene2D, zoomStep } from './Scene2D.tsx';
 import { NO_OVERLAYS } from './overlays.ts';
+import { BattleHud } from './BattleHud.tsx';
+import { FighterFigure, figurePresentation } from './FighterFigure.tsx';
 
 async function* frames(name: string, steps: Iterable<number>) {
   const opened = await savedReplay(name),
@@ -37,7 +39,75 @@ function savedTint(context: ReplayContext, abilityId: string | null) {
   return revision.definition.effects.find((e) => e.kind === 'damage')?.element ?? null;
 }
 
-describe('display fields for the pixel-art replay', () => {
+describe('display fields for the recorded replay', () => {
+  it('renders only the recorded equipment across all five miniature silhouettes', async () => {
+    for await (const { model } of frames('swordsman-sky-mage-240', [0])) {
+      const original = model.actors[0]!;
+      const render = (actor: typeof original) =>
+        renderToStaticMarkup(createElement(FighterFigure, { actor, milliseconds: 0 }));
+      expect(render(original)).not.toContain('equipment:');
+      for (const silhouette of ['humanoid', 'winged', 'beast', 'construct', 'amorphous'] as const) {
+        for (const item of [
+          'blade',
+          'bow',
+          'staff',
+          'shield',
+          'spear',
+          'axe',
+          'grimoire',
+        ] as const) {
+          const markup = render({ ...original, look: { silhouette, equipment: [item] } });
+          expect(markup.match(/name="equipment:[a-z]+"/g)).toEqual([`name="equipment:${item}"`]);
+        }
+      }
+    }
+  });
+  it('places miniatures at saved feet, facing and height, including after backward seeks', async () => {
+    const original = new Map<number, ReturnType<typeof figurePresentation>[]>();
+    for await (const { model, context, frame } of frames(
+      'swordsman-sky-mage-240',
+      [0, 120, 240, 0, 120],
+    )) {
+      const before = JSON.stringify(model);
+      const figures = model.actors.map((actor) => figurePresentation(actor, model.milliseconds));
+      for (const [index, raw] of frame.checkpoint.state!.actors.entries()) {
+        const character = context.actors.find((a) => a.participant.actorId === raw.id)!.character;
+        const figure = figures[index]!;
+        expect(figure.position).toEqual([
+          raw.position.x,
+          raw.position.y - character.body.heightMm / 2000,
+          raw.position.z,
+        ]);
+        expect(figure.scale).toBe(character.body.heightMm / 2000);
+        expect(figure.yaw).toBeCloseTo(Math.atan2(-raw.facing.z, raw.facing.x), 9);
+      }
+      if (original.has(model.step)) expect(figures).toEqual(original.get(model.step));
+      else original.set(model.step, figures);
+      expect(JSON.stringify(model)).toBe(before);
+    }
+  });
+  it('uses subjective recorded time for gait and preserves phasing and defeated poses', async () => {
+    for await (const { model } of frames('swordsman-sky-mage-240', [0])) {
+      const actor = { ...model.actors[0]!, subjectMilliseconds: 180 };
+      actor.pose = {
+        ...actor.pose,
+        grounded: true,
+        phase: null,
+        locomotion: { mode: 'walk', jumping: false, dodging: false },
+      };
+      expect(figurePresentation(actor, 0).stride).toBe(-0.55);
+      expect(figurePresentation(actor, 9000)).toEqual(figurePresentation(actor, 0));
+      expect(
+        figurePresentation({ ...actor, pose: { ...actor.pose, defeated: true } }, 0).pose,
+      ).toBe('down');
+      expect(
+        figurePresentation(
+          { ...actor, phasing: { materials: ['stone'], pending: true, intervals: 1 } },
+          0,
+        ).fade,
+      ).toEqual({ opacity: 0.3, alphaTest: 0.15, throughTerrain: true });
+    }
+  });
   it('derives tints, HP, strikes and pose inputs from recorded state and saved definitions', async () => {
     const seen = { cast: 0, projectile: 0, hit: 0, struck: 0 };
     for await (const { context, frame, model } of frames('swordsman-sky-mage-240', range(0, 240))) {
@@ -204,11 +274,20 @@ describe('2D top view', () => {
     }
   });
   it('labels each fighter with its saved name and recorded HP', async () => {
-    for await (const { model } of frames('swordsman-sky-mage-240', [240])) {
+    for await (const { model, frame, context } of frames('swordsman-sky-mage-240', [240])) {
       const markup = renderToStaticMarkup(createElement(Scene2D, { model, overlays: NO_OVERLAYS }));
       expect(markup).toContain('保存ログの2D表示');
       for (const a of model.actors) expect(markup).toContain(`>${a.name}</text>`);
       expect(markup.match(/class="map-plate"/g)).toHaveLength(model.actors.length);
+      const hud = renderToStaticMarkup(createElement(BattleHud, { model }));
+      for (const actor of frame.checkpoint.state!.actors) {
+        const definition = context.actors.find(
+          (a) => a.participant.actorId === actor.id,
+        )!.character;
+        expect(hud).toContain(
+          `aria-label="${definition.name} HP" min="0" max="${definition.stats.hp}" value="${actor.resources.hp}"`,
+        );
+      }
     }
   });
 });

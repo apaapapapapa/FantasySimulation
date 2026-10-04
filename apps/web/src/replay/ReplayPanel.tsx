@@ -15,6 +15,7 @@ import { NO_OVERLAYS, OVERLAY_LABELS } from './overlays.ts';
 import { ReplayResources } from './ReplayResources.tsx';
 import { SkillProvenance } from './SkillProvenance.tsx';
 import { hasSensoryCues } from '@fantasy/domain/spatial';
+import { BattleHud } from './BattleHud.tsx';
 
 const Scene = lazy(() => import('./Scene.tsx'));
 
@@ -200,10 +201,13 @@ export function ReplayPanel({
     <section
       ref={panel}
       tabIndex={-1}
-      className={local ? 'panel local-replay' : 'panel'}
+      className={local ? 'panel replay-panel local-replay' : 'panel replay-panel'}
       aria-label={local ? 'ローカルリプレイ' : '保存リプレイ'}
     >
-      <h2>{local ? 'ローカルファイルのリプレイ' : '保存リプレイ'}</h2>
+      <div className="section-heading">
+        <p className="eyebrow">BATTLE THEATER</p>
+        <h2>{local ? 'ローカルファイルのリプレイ' : '保存リプレイ'}</h2>
+      </div>
       {local && (
         <p role="note" className="message local-note">
           この端末で選んだファイルです。公開済みの試合・正式なランキングには含まれず、送信もしていません。checksumは破損検出用で、内容の真正性は確認していません。
@@ -226,7 +230,7 @@ export function ReplayPanel({
       )}
       {replay && (
         <>
-          <p>
+          <p className="replay-identity">
             リプレイID <output aria-label="リプレイID">{replay.manifest.id}</output>
           </p>
           <p>
@@ -253,6 +257,7 @@ export function ReplayPanel({
                   WebGLを利用できないため、2Dの俯瞰図と時系列のログで表示しています。
                 </p>
               )}
+              {model && <BattleHud model={model} />}
               {model &&
                 (view === '2d' ? (
                   flat
@@ -268,7 +273,7 @@ export function ReplayPanel({
                     </Suspense>
                   </SceneBoundary>
                 ))}
-              <div className="actions" aria-label="カメラ操作">
+              <div className="actions camera-controls" aria-label="カメラ操作">
                 <label>
                   表示
                   <select value={view} onChange={(e) => setView(e.target.value as View)}>
@@ -305,7 +310,7 @@ export function ReplayPanel({
                   </button>
                 ))}
               </div>
-              <div className="actions">
+              <div className="actions playback-controls">
                 <button
                   disabled={!playing && (loading || last === 0 || (!repeat && target >= last))}
                   onClick={() => setPlaying((value) => !value)}
@@ -343,6 +348,9 @@ export function ReplayPanel({
                     <option value="free">自由</option>
                   </select>
                 </label>
+              </div>
+              <fieldset className="overlay-controls">
+                <legend>表示オーバーレイ</legend>
                 {(Object.keys(OVERLAY_LABELS) as (keyof typeof OVERLAY_LABELS)[]).map((key) => (
                   <label key={key}>
                     <input
@@ -355,7 +363,7 @@ export function ReplayPanel({
                     {OVERLAY_LABELS[key]}
                   </label>
                 ))}
-              </div>
+              </fieldset>
               <label>
                 表示step
                 <input

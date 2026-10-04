@@ -123,14 +123,14 @@ const pick = <T>(random: () => number, values: readonly T[]): T =>
   values[Math.floor(random() * values.length)]!;
 const ramp = (hexes: readonly string[]) => hexes.map(rgb);
 
-const GRASS = ramp(['#223f1d', '#2c5224', '#37662b', '#447a32', '#5b953d']);
-const DIRT = ramp(['#4a3421', '#5d432a', '#735535', '#8a6841']);
-const STONE = ramp(['#4a4d53', '#5c6067', '#6c7077', '#7d8189', '#9296a0']);
-const MOSS = ramp(['#35572b', '#437034', '#58893f']);
+const GRASS = ramp(['#183d36', '#244c42', '#30574a', '#426a59', '#63816a']);
+const DIRT = ramp(['#344440', '#46524a', '#586256', '#707567']);
+const STONE = ramp(['#293e45', '#3b5156', '#4a6165', '#617b7c', '#829b95']);
+const MOSS = ramp(['#2e4f46', '#41685a', '#698574']);
 const WOOD = ramp(['#4d311b', '#6a4527', '#7d5330', '#90633a']);
 const METAL = ramp(['#3b424c', '#58616d', '#6f7985', '#8b95a2', '#b3bcc8']);
-const FLOWERS = ramp(['#f2d45c', '#f3eee0', '#e07aa5', '#86bff0']);
-const MORTAR = rgb('#26272c');
+const FLOWERS = ramp(['#c9b67e', '#d7dbbd', '#ab9caa', '#9bbeb7']);
+const MORTAR = rgb('#182c32');
 
 export type TerrainKind =
   | 'grass'
@@ -153,14 +153,21 @@ function fillNoise(
   for (let y = 0; y < image.height; y++)
     for (let x = 0; x < image.width; x++) {
       const v = coarse(x, y) * 0.65 + fine(x, y) * 0.25 + random() * 0.1;
-      plot(image, x, y, palette[Math.min(palette.length - 1, Math.floor(v * palette.length))]!);
+      const tone = v * (palette.length - 1),
+        lower = Math.floor(tone);
+      plot(
+        image,
+        x,
+        y,
+        mix(palette[lower]!, palette[Math.min(palette.length - 1, lower + 1)]!, tone - lower),
+      );
     }
 }
 
 function grass(image: PixelImage, random: () => number) {
   const { width } = image;
   fillNoise(image, random, GRASS.slice(1, 4), [4, 16]);
-  for (let n = 0; n < (width * width) / 40; n++) {
+  for (let n = 0; n < (width * width) / 180; n++) {
     const x = Math.floor(random() * width),
       y = Math.floor(random() * width),
       tall = random() < 0.4;
@@ -171,7 +178,7 @@ function grass(image: PixelImage, random: () => number) {
       if (tall && dx === 0) plot(image, x, y - 1, GRASS[4]!);
     }
   }
-  for (let n = 0; n < width / 8; n++) {
+  for (let n = 0; n < width / 32; n++) {
     const x = Math.floor(random() * width),
       y = Math.floor(random() * width),
       petal = pick(random, FLOWERS);
@@ -187,7 +194,7 @@ function grass(image: PixelImage, random: () => number) {
       plot(image, x, y, FLOWERS[0]!);
     }
   }
-  pebbles(image, random, width / 16);
+  pebbles(image, random, width / 64);
 }
 
 function pebbles(image: PixelImage, random: () => number, count: number) {
@@ -204,7 +211,7 @@ function pebbles(image: PixelImage, random: () => number, count: number) {
 
 function dirt(image: PixelImage, random: () => number) {
   fillNoise(image, random, DIRT, [4, 12]);
-  pebbles(image, random, image.width / 6);
+  pebbles(image, random, image.width / 20);
   for (let n = 0; n < image.width / 10; n++) {
     let x = Math.floor(random() * image.width),
       y = Math.floor(random() * image.height);
