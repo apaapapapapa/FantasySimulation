@@ -2,33 +2,40 @@
 
 ## Scope and provenance
 
-These development-only checks protect the existing Node/pnpm/Vite+ workspace.
-They do not install production credentials or replace semantic-release.
-The design was adapted from HiFiScout commit
-`36aaf69d3f7a61195af4e85a468514dfbb1ecc80`, specifically
-`.github/workflows/secret-scan.yml`, `codeql.yml` and `renovate.json5`.
-The implementation here is independent; no HiFiScout runtime code, ignore list,
-Markdown exclusion, old Actions pin or automatic merge policy was copied.
+Development-only Node/pnpm/Vite+ checks; no production credentials or release replacement.
+Design provenance: HiFiScout `36aaf69d3f7a61195af4e85a468514dfbb1ecc80`
+(`secret-scan.yml`, `codeql.yml`, `renovate.json5`). No runtime code, ignores,
+Markdown exclusions, old Actions pins or automerge policy were copied.
+
+## Verified braces backport
+
+Owner-approved on 2026-10-04: `GHSA-vfj7-8cjw-p6xm` alone may receive
+`VERIFIED_BRACES_RECURSION_PATCH`. Raw High counts remain in audit receipts;
+`verifiedBraces: 1` and `blocking: 0` require the exact advisory, version and eight
+dependency routes, frozen wanted/installed locks, SHA-256 checks of the patch,
+all reachable braces runtime files and the regression file, and seven executed,
+passing, unskipped regressions. Missing or changed evidence cannot pass.
+The MIT backport is from proposed upstream PR 72, commit
+`28d440b5dd449dbf1fe6f3506cf94ecca4d02660`; it is not an official fixed release.
+Other High/Critical findings still block. Changed scope or an available upstream
+fix ends recognition; replace the backport with the official fix after review.
+Changing pinned bytes/routes/tests requires explicit policy review.
 
 ## Secret scan
 
-Every PR (including Markdown-only PRs) and main CI calls `security.yml`.
-PRs exclude CodeQL analysis (the CI fast lane). The job independently recomputes the plan and
-records `WORDING_ONLY_NO_CODE_CHANGE` or `PR_FAST_LANE_CODEQL_ON_MAIN` with a planned-skip
-count. The common gate accepts that receipt only for the identical plan/source/run/attempt.
-Main, manual and scheduled runs retain CodeQL before release.
-Secret scans and dependency audits remain mandatory even for wording changes.
-The same workflow can be started manually and runs weekly on main.
+Every PR (including wording-only changes) and main CI calls `security.yml` for mandatory
+secret scans and audits. PR CodeQL analysis is skipped: an independently computed plan
+records `WORDING_ONLY_NO_CODE_CHANGE` or `PR_FAST_LANE_CODEQL_ON_MAIN` with a skip count,
+accepted only for the identical plan/source/run/attempt. Main, manual and weekly
+scheduled runs retain CodeQL before release.
 It scans the full fetched Git history and the current working tree, including
 merge-resolution changes. `fetch-depth: 0` is mandatory. Remote refs not fetched
 by the checkout and inaccessible GitHub PR refs are outside that history scope.
 
-Gitleaks 8.30.1 is downloaded with a repository-pinned SHA-256 checksum.
-Its standard detection rules are enabled. A synthetic canary is generated only
-in a temporary directory: the test checks Markdown, default provider rules,
-ignored inline annotations, a clean tree and a deleted historical credential.
-No real credential is used. Repository `.gitleaksignore` and inline
-`gitleaks:allow` bypasses are disabled by the runner.
+Gitleaks 8.30.1 uses a pinned SHA-256 checksum and standard rules. Temporary synthetic
+canaries test Markdown, provider rules, ignored inline annotations, clean trees and
+deleted historical credentials. No real credential is used. `.gitleaksignore` and
+inline `gitleaks:allow` bypasses are disabled.
 
 Run with the pinned project Node and Gitleaks on PATH:
 
@@ -46,13 +53,11 @@ Detected, unexcepted secrets are `fail` (exit 1); only verified success exits 0.
 
 ## Detection output and exceptions
 
-The runner captures stdout/stderr without forwarding them. Raw detector reports
-are temporary and deleted; they are never uploaded. Public output includes only
-rule ID, line number, a SHA-256 location identifier and a SHA-256 fingerprint.
-Do not paste a suspected credential, raw detector report or source line into
-an Issue, PR, artifact or public log. Locate it in a private local investigation,
-revoke/rotate a genuine credential first, then remove it and investigate exposure.
-Deleting a current file does not remove the finding from its history.
+Captured stdout/stderr and temporary raw reports are never forwarded or uploaded;
+raw reports are deleted. Public output contains only rule ID, line number and
+SHA-256 location/fingerprint. Never publish credentials, raw reports or source lines.
+Investigate privately; revoke/rotate genuine credentials before removal and exposure
+review. Current-file deletion does not remove historical findings.
 
 `.github/security/secret-exceptions.json` starts empty. An exception requires
 exactly one `fingerprintSha256`, a meaningful `reason`, a GitHub `reviewer`,
@@ -77,21 +82,17 @@ Each entry maps the common check ID to its artifact prefix and receipt filename:
 - `security:renovate-configuration`: `security-renovate` / `renovate-configuration.json`.
 - `security:toolchain-ubuntu-latest`: `security-toolchain-ubuntu-latest` / `toolchain-policy.json`.
 
-Each artifact name ends with `-<runId>-<runAttempt>`. CI downloads only that
-run and attempt and keeps artifact directories separate, so independently produced
-receipts cannot overwrite each other. Receipts must match the exact tested
-source SHA, PR head, baseline, run and attempt, producer and check ID. PR
-source SHA remains the test-merge SHA, not the PR head. Invalid timestamps,
-future completion times, missing/invalid counts, inconsistent success claims,
-unexpected states and missing evidence remain incomplete. Verified findings
-remain failures. No detector output or arbitrary receipt error string is echoed
-by the adapter.
+Artifacts end with `-<runId>-<runAttempt>`; CI downloads that attempt into separate
+directories to prevent overwrites. Receipts must match tested source SHA (PR
+test-merge), head, baseline, run/attempt, producer and check ID. Invalid/future
+timestamps, missing/invalid counts, inconsistent success, unexpected states or
+missing evidence remain incomplete; verified blocking findings fail. The adapter
+never echoes detector output or arbitrary receipt errors.
 
-The official Renovate validator still runs with its existing exact pin and
-`--strict`. Its observed step outcome produces a receipt even after a failure;
-skipped, cancelled and missing execution never produce a passing receipt.
-The adapter also verifies positive canary, required CodeQL rule and toolchain coverage
-and the absence of blocking/high/critical findings where appropriate.
+The exactly pinned official Renovate validator uses `--strict`; observed outcomes
+produce receipts even on failure. Skipped, cancelled or missing execution cannot pass.
+The adapter requires positive canary, CodeQL rule/toolchain coverage and no blocking
+findings, including the bounded braces recognition above.
 
 `ci-gate` retains these files in its existing artifact (7 days):
 
@@ -100,11 +101,10 @@ and the absence of blocking/high/critical findings where appropriate.
 - `gate.json`: job outcomes, the Linux report and all required H4 checks.
 - `security-evidence/`: the original sanitized receipts, grouped by artifact.
 
-The original security artifacts remain available for 14 days. Setup failure
-can prevent receipt creation; missing uploads or receipt files still block the
-aggregate gate. To recover a failed attempt, use **Re-run all jobs** so every
-required receipt is regenerated for the new attempt. Do not copy old receipts,
-restamp their identities or use a gate-only rerun as substitute evidence.
+Original security artifacts last 14 days. Missing uploads/receipts, including after
+setup failure, block the aggregate gate. Recover with **Re-run all jobs** to regenerate
+every receipt for the new attempt. Never copy/restamp old receipts or substitute a
+gate-only rerun.
 
 ## Repository protection and external acceptance
 
