@@ -368,6 +368,7 @@ export interface UiAttempt {
   testId: string;
   caseId: string;
   retry: number;
+  workerIndex: number;
   status: string;
   browser: unknown;
   attachments: { path: string; sha256: string }[];
@@ -432,6 +433,8 @@ export function uiCoverage(
           const attempt = record(value);
           if (attempt.retry !== index || index > 1 || !Array.isArray(attempt.attachments))
             throw new Error('Incomplete retry history');
+          if (!Number.isSafeInteger(attempt.workerIndex) || Number(attempt.workerIndex) < 0)
+            throw new Error('Missing browser worker identity');
           const attachments = attempt.attachments.map(record);
           const browser = attachments.filter((item) => item.name === 'browser-identity');
           if (browser.length !== 1) throw new Error('Browser did not start');
@@ -457,6 +460,7 @@ export function uiCoverage(
             testId: `${text(spec.id)}:${text(test.projectName)}`,
             caseId: text(spec.title),
             retry: index,
+            workerIndex: Number(attempt.workerIndex),
             status,
             browser: identity,
             attachments: files,
@@ -470,6 +474,19 @@ export function uiCoverage(
             throw new Error('Failed attempt lacks trace');
         }
       }
+    }
+    for (const repeated of attempts.filter(
+      (attempt) => attempt.caseId === 'static-repeat-playback',
+    )) {
+      if (
+        attempts.some(
+          (other) =>
+            other.caseId !== repeated.caseId &&
+            record(other.browser).name === record(repeated.browser).name &&
+            other.workerIndex === repeated.workerIndex,
+        )
+      )
+        throw new Error('Repeat playback reused another suite browser worker');
     }
     return {
       status: attempts.every((attempt) => attempt.status === 'passed') ? 'pass' : 'fail',

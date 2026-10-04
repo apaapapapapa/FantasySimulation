@@ -224,6 +224,20 @@ describe('UI evidence', () => {
       expect(uiCoverage(spoofed, '/tmp', '/tmp', cases, browsers).status).toBe('unknown');
     }
   });
+  it('requires repeated fallback playback to own a distinct browser worker', () => {
+    const cases = ['static-repeat-playback', 'static-selection-original'];
+    const raw = results(cases);
+    expect(uiCoverage(raw, '/tmp', '/tmp', cases).status).toBe('pass');
+    const repeated = raw.suites[0]!.specs[0]!.tests[0]!.results[0]!;
+    repeated.workerIndex = 0;
+    expect(uiCoverage(raw, '/tmp', '/tmp', cases).reason).toContain('reused another suite');
+    repeated.workerIndex = -1;
+    expect(uiCoverage(raw, '/tmp', '/tmp', cases).reason).toContain('Missing browser worker');
+    repeated.workerIndex = Number.NaN;
+    expect(uiCoverage(raw, '/tmp', '/tmp', cases).status).toBe('unknown');
+    repeated.workerIndex = 1;
+    expect(uiCoverage(raw, '/tmp', '/tmp', cases).status).toBe('pass');
+  });
   it('runs one CI browser job per part and gathers only this attempt', () => {
     const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
     const parts = /part:\s*\[([^\]]+)\]/.exec(workflow)?.[1];
