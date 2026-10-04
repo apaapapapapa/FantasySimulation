@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
-          ref: ebd77a8f6cbe2dea0cb9f0a6e92f5d58bbb8880a
+          ref: 18d7de0cd5c2bfc3d65c8c07e44860d15418c4ec
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/setup-project
