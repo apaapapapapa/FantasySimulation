@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Line, OrbitControls } from '@react-three/drei';
 import { Fog, Vector3 } from 'three';
@@ -24,6 +24,20 @@ type Props = {
   nudge?: CameraNudge | null;
 };
 const TURN = Math.PI / 12;
+/** Keep CPU-rendered canvases responsive without lowering hardware GPU quality. */
+function RasterBudget({ onDpr }: { onDpr: (value: number) => void }) {
+  const { gl, size } = useThree();
+  useLayoutEffect(() => {
+    const context = gl.getContext();
+    const info = context.getExtension('WEBGL_debug_renderer_info');
+    const renderer = info ? String(context.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
+    if (/swiftshader|llvmpipe|softpipe|software/i.test(renderer) && size.width && size.height)
+      onDpr(
+        Math.min(window.devicePixelRatio, 1.5, Math.sqrt(320_000 / (size.width * size.height))),
+      );
+  }, [gl, onDpr, size.width, size.height]);
+  return null;
+}
 /** Fog starts just beyond what the camera looks at, so the far floor edge fades into the night. */
 function DepthFog() {
   const fog = useRef<Fog>(null);
@@ -102,12 +116,13 @@ function Camera({
  */
 export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
   const stage = useRef<HTMLDivElement>(null);
+  const [dpr, setDpr] = useState<number | [number, number]>([1, 1.5]);
   return (
     // Touch gestures belong to the camera only in free mode; otherwise the page scrolls.
     <div ref={stage} className="replay-canvas replay-stage" data-camera={cameraMode}>
       <Canvas
         frameloop="demand"
-        dpr={[1, 1.5]}
+        dpr={dpr}
         gl={{ antialias: false, powerPreference: 'high-performance' }}
         camera={{
           fov: FOV_DEGREES,
@@ -127,6 +142,7 @@ export default function Scene({ model, cameraMode, overlays, nudge }: Props) {
         }
       >
         <color attach="background" args={['#102126']} />
+        <RasterBudget onDpr={setDpr} />
         <DepthFog />
         <ambientLight color="#b8d5cc" intensity={0.5} />
         <hemisphereLight args={['#c5e5de', '#263c3b', 1.1]} />
