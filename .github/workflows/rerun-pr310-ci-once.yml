@@ -1,0 +1,20 @@
+name: Rerun exact PR310 CI once
+on:
+  push:
+    branches: [audit/rerun-pr310-ci-once]
+permissions:
+  actions: write
+  contents: read
+jobs:
+  rerun:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const owner = "apaapapapapa", repo = "FantasySimulation", run_id = 37209566513;
+            const {data: run} = await github.rest.actions.getWorkflowRun({owner,repo,run_id});
+            if (run.head_sha !== "41f1c7103dbc1a025b89691b53146703d68b9e96" || run.path !== ".github/workflows/ci.yml" || run.event !== "pull_request" || run.run_attempt !== 1 || run.status !== "completed" || run.conclusion !== "failure") throw new Error("Exact failed CI attempt required");
+            const response = await github.rest.actions.reRunWorkflow({owner,repo,run_id});
+            core.info("FANTASY_CI_RERUN="+JSON.stringify({runId:run_id,head:run.head_sha,previousAttempt:run.run_attempt,status:response.status,requestedAt:new Date().toISOString()}));
