@@ -10,8 +10,17 @@ import {
   text,
 } from './common.ts';
 import type { Outcome } from './common.ts';
+import {
+  BRACES_PATCH_REASON,
+  recognizedBracesAdvisory,
+  verifyBracesPatch,
+} from './braces-patch.ts';
 
-export function auditOutcome(value: unknown, status: number | null): Outcome {
+export function auditOutcome(
+  value: unknown,
+  status: number | null,
+  verifyPatch = verifyBracesPatch,
+): Outcome {
   requireCondition(status === 0 || status === 1, 'AUDIT_EXECUTION_FAILED');
   const report = object(value);
   requireCondition(!('error' in report), 'AUDIT_SERVICE_ERROR');
@@ -25,13 +34,31 @@ export function auditOutcome(value: unknown, status: number | null): Outcome {
     critical: count(vulnerabilities.critical),
   };
   // A metadata-only or truncated response is not an inventory.
-  object(report.advisories ?? report.vulnerabilities);
-  const blocking = counts.high + counts.critical;
-  requireCondition((status === 0) === (blocking === 0), 'AUDIT_EXIT_RESULT_MISMATCH');
+  const inventory = object(report.advisories ?? report.vulnerabilities);
+  const rawBlocking = counts.high + counts.critical;
+  requireCondition((status === 0) === (rawBlocking === 0), 'AUDIT_EXIT_RESULT_MISMATCH');
+  const advisories = Object.values(inventory).map(object);
+  const matches = advisories.filter(recognizedBracesAdvisory);
+  let verifiedBraces = 0;
+  if (matches.length === 1 && counts.high > 0) {
+    requireCondition(
+      advisories.filter((entry) => entry.severity === 'high').length === counts.high &&
+        advisories.filter((entry) => entry.severity === 'critical').length === counts.critical,
+      'AUDIT_INVENTORY_COUNT_MISMATCH',
+    );
+    verifyPatch();
+    verifiedBraces = 1;
+  }
+  const blocking = rawBlocking - verifiedBraces;
   return {
     status: blocking > 0 ? 'fail' : 'pass',
-    reason: blocking > 0 ? 'HIGH_OR_CRITICAL_DEPENDENCIES' : 'NO_HIGH_OR_CRITICAL_DEPENDENCIES',
-    counts,
+    reason:
+      blocking > 0
+        ? 'HIGH_OR_CRITICAL_DEPENDENCIES'
+        : verifiedBraces === 1
+          ? BRACES_PATCH_REASON
+          : 'NO_HIGH_OR_CRITICAL_DEPENDENCIES',
+    counts: { ...counts, verifiedBraces, blocking },
   };
 }
 
@@ -79,6 +106,8 @@ function evaluate(): Outcome {
       'package.json',
       'pnpm-workspace.yaml',
       'pnpm-lock.yaml',
+      'patches/braces@3.0.3.patch',
+      'scripts/security/braces.test.ts',
     ]) === '',
     'AUDIT_MODIFIED_DEPENDENCIES',
   );
