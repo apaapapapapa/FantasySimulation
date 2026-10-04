@@ -1,0 +1,34 @@
+name: Skill delivery evidence
+on:
+  push:
+    branches: [audit/delivery-301-307-20261004]
+    paths: [.github/workflows/skill-delivery-evidence.yml]
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  statuses: read
+  issues: read
+  pull-requests: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: 51b46481fab4a6defd62db375da80b19eadb5554
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: ./.github/actions/setup-project
+      - name: Collect the unchanged canonical delivery contract
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: vp run harness github-snapshot ${{ github.repository }} 306 .generated/harness/pr306-delivery
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: pr306-delivery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .generated/harness/pr306-delivery/
+          if-no-files-found: error
+          retention-days: 7
