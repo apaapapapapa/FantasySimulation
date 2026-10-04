@@ -26,3 +26,10 @@ allowBuilds:
 # Explicitly reviewed exact renderer version; other new packages keep the age gate.
 minimumReleaseAgeExclude:
   - '@react-three/fiber@9.8.0'
+
+patchedDependencies:
+  # GHSA-vfj7-8cjw-p6xm: bounded parsing and AST traversal (MIT upstream PR #72).
+  # https://github.com/micromatch/braces/pull/72 at 28d440b5dd449dbf1fe6f3506cf94ecca4d02660.
+  # Runtime-only backport of the unmerged proposal; no package/version rename.
+  # Keep audit findings visible until an official fixed release replaces this patch.
+  braces@3.0.3: patches/braces@3.0.3.patch
