@@ -8,6 +8,9 @@ overrides:
   # Miniflare pins the vulnerable patch; keep its runtime on the patched 7.x API.
   # GHSA-rfgv-xxqx-mfg5 / GHSA-w293-vg96-wgc3; remove when Miniflare updates its pin.
   miniflare@5.20260921.0-alpha>undici: 7.29.1
+  # GHSA-67mh-4wv8-2f99: align the legacy Drizzle loader with Kit's patched esbuild.
+  # Remove when core-utils drops its vulnerable 0.18 pin or Drizzle drops the loader.
+  '@esbuild-kit/core-utils@3.3.2>esbuild': 0.25.12
 
 # The official Vite+ alias uses 0.3.3 while exposing the Vite 8 API.
 peerDependencyRules:
