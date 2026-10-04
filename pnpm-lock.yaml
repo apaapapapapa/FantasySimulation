@@ -9,6 +9,9 @@ overrides:
   vitest: 4.1.11
   miniflare@5.20260921.0-alpha>undici: 7.29.1
 
+patchedDependencies:
+  braces@3.0.3: bfdb0c171556074c2785f98d0a7355209223df8e29dbc2ff489240c16a47da97
+
 importers:
 
   .:
@@ -6683,7 +6686,7 @@ snapshots:
     dependencies:
       balanced-match: 1.0.2
 
-  braces@3.0.3:
+  braces@3.0.3(patch_hash=bfdb0c171556074c2785f98d0a7355209223df8e29dbc2ff489240c16a47da97):
     dependencies:
       fill-range: 7.1.1
 
@@ -7622,7 +7625,7 @@ snapshots:
 
   micromatch@4.0.8:
     dependencies:
-      braces: 3.0.3
+      braces: 3.0.3(patch_hash=bfdb0c171556074c2785f98d0a7355209223df8e29dbc2ff489240c16a47da97)
       picomatch: 2.3.2
 
   mime@4.1.0: {}
