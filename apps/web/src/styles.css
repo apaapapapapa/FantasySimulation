@@ -22,6 +22,9 @@
 body {
   margin: 0;
   background: radial-gradient(ellipse at 80% 0%, #203837 0, transparent 44%), var(--bg);
+  /* Keep the hero glow independent of the length of editor and replay documents. */
+  background-size: 100% 42rem;
+  background-repeat: no-repeat;
 }
 button,
 input,
