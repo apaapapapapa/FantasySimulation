@@ -1,0 +1,18 @@
+name: Read-only delivery review evidence
+on:
+  push:
+    branches: [audit/pr310-pr307-review-state-20261004]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          script: |
+            const fields = `headRefOid baseRefOid updatedAt reviewDecision reviewThreads(first:100) { nodes { id isResolved isOutdated comments(first:100) { nodes { id databaseId body url updatedAt author { login } } pageInfo { endCursor hasNextPage } } } pageInfo { endCursor hasNextPage } }`;
+            const result = await github.graphql(`query { repository(owner:"apaapapapapa",name:"FantasySimulation") { pr310: pullRequest(number:310) { ${fields} } pr307: pullRequest(number:307) { ${fields} } } }`);
+            core.info("FANTASY_REVIEW_QUERY="+JSON.stringify({queriedAt:new Date().toISOString(),...result}));
