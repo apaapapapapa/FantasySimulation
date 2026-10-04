@@ -10,6 +10,7 @@ import type { Report } from './report.ts';
 import {
   inspectUiDiagnostics,
   inspectUiStatic,
+  inspectUiWorkbench,
   staticEvidence,
   uiCoverage,
   uiProducer,
@@ -20,6 +21,7 @@ import {
   UI_FAULTS,
   UI_STATIC_SCENARIOS,
   isStaticScenario,
+  isInteractiveScenario,
   uiSettings,
   uiCases,
   uiBrowsers,
@@ -29,14 +31,15 @@ import {
 
 /**
  * `all` runs every suite in one process (local use). CI runs each part in its own job: the
- * interactive part keeps the editor/battle report and fault probes at the root, and each static
- * part writes `static/<part>`; the gate recombines and rechecks them from raw artifacts.
+ * interactive part keeps skills and fault probes at the root, workbench writes `workbench/`,
+ * and static parts write `static/<part>`; the gate recombines and rechecks their raw artifacts.
  */
 export async function collectUi(
   input: string,
   relative = `.generated/harness/ui-${randomUUID()}`,
   part: UiPart | 'all' = 'all',
 ) {
+  if (part === 'workbench') return await runUiOnce(input, `${relative}/workbench`, part);
   if (part !== 'all' && part !== 'interactive')
     return await runUiOnce(input, `${relative}/static/${part}`, part);
   const result = await runUiOnce(input, relative, 'smoke');
@@ -46,6 +49,7 @@ export async function collectUi(
   };
   let diagnostics;
   let staticResult;
+  let workbenchResult;
   try {
     if (result.interrupted) throw new Error('UI execution interrupted');
     for (const scenario of UI_FAULTS) {
@@ -53,6 +57,9 @@ export async function collectUi(
       if (probe.interrupted) throw new Error('UI diagnostics interrupted');
     }
     if (part === 'all') {
+      const probe = await runUiOnce(input, `${relative}/workbench`, 'workbench');
+      if (probe.interrupted) throw new Error('UI workbench execution interrupted');
+      workbenchResult = inspectUiWorkbench(join(input, relative), result.report, run);
       for (const scenario of UI_STATIC_SCENARIOS) {
         const probe = await runUiOnce(input, `${relative}/static/${scenario}`, scenario);
         if (probe.interrupted) throw new Error('UI static execution interrupted');
@@ -75,7 +82,16 @@ export async function collectUi(
       sourceSha: result.report.sourceSha,
     })),
   });
-  if (part === 'all')
+  if (part === 'all') {
+    result.report.checks.push({
+      id: 'ui:workbench',
+      required: true,
+      ...(workbenchResult ?? {
+        status: 'unknown' as const,
+        reason: 'Workbench execution did not complete',
+      }),
+      evidence: [{ uri: `${relative}/workbench/command.json`, sourceSha: result.report.sourceSha }],
+    });
     result.report.checks.push({
       id: 'ui:static-replay',
       required: true,
@@ -85,6 +101,7 @@ export async function collectUi(
       }),
       evidence: staticEvidence(relative, result.report.sourceSha),
     });
+  }
   result.report.finishedAt = new Date().toISOString();
   const assessment = assessReport(
     result.report,
@@ -151,7 +168,7 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
     }
   }
   writeFileSync(join(directory, 'runner.log'), result.output);
-  if ((scenario === 'smoke' || isStaticScenario(scenario)) && result.exitCode !== 0)
+  if ((isInteractiveScenario(scenario) || isStaticScenario(scenario)) && result.exitCode !== 0)
     console.error(result.output);
   let results: unknown = null;
   try {
@@ -253,10 +270,10 @@ async function runUiOnce(input: string, relative: string, scenario: UiScenario) 
       },
       {
         id: 'ui:p4-editor-battle',
-        required: scenario === 'smoke',
-        status: scenario === 'smoke' ? coverage.status : 'unknown',
+        required: isInteractiveScenario(scenario),
+        status: isInteractiveScenario(scenario) ? coverage.status : 'unknown',
         reason:
-          'Required cases exercise draft validation/publication and real async battle/cancel/retry/result/replay; engine correctness belongs to #9',
+          'This interactive part requires every assigned editor/battle/skill case; both parts are required by the aggregate gate',
         evidence,
       },
     ],

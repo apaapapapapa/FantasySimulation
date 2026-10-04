@@ -129,7 +129,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [interactive, static-chromium, static-webkit-1, static-webkit-2]
+        part:
+          [
+            interactive,
+            workbench,
+            static-chromium-1,
+            static-chromium-2,
+            static-webkit-1,
+            static-webkit-2,
+          ]
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
