@@ -24,11 +24,15 @@ jobs:
       - name: Collect the unchanged canonical delivery contract
         env:
           GH_TOKEN: ${{ github.token }}
-        run: vp run harness github-snapshot ${{ github.repository }} 306 .generated/harness/pr306-delivery
+        run: |
+          vp run harness github-snapshot ${{ github.repository }} 306 .generated/harness/pr306-delivery
+          vp run harness github-snapshot ${{ github.repository }} 313 .generated/harness/pr313-delivery
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: pr306-delivery-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .generated/harness/pr306-delivery/
+          path: |
+            .generated/harness/pr306-delivery/
+            .generated/harness/pr313-delivery/
           if-no-files-found: error
           retention-days: 7
