@@ -10,6 +10,7 @@ import { LeagueViewer } from './LeagueViewer.tsx';
 import { leagueLink } from './league-route.ts';
 import { usePublicData } from './use-public-data.ts';
 import { LocalReplays } from '../replay/LocalReplays.tsx';
+import { PageHeader, PageFooter } from '../components/PageHeader.tsx';
 
 /** A separate route: files from this device never mix with published matches or rankings. */
 export const LOCAL_ROUTE = '#/local';
@@ -43,31 +44,54 @@ function LibraryViewer({ root }: { root: string }) {
     return () => window.removeEventListener('hashchange', change);
   }, []);
   return (
-    <main className="app-shell">
-      <header>
-        <p className="eyebrow">Fantasy Simulation · Replay Library</p>
-        <h1>{local ? 'ローカルファイルの観戦' : league ? 'リーグ結果' : '保存リプレイ一覧'}</h1>
-        <p>保存された試合を選んで観戦できます。</p>
+    <main className="app-shell" id="app-top">
+      <PageHeader
+        title={local ? 'ローカルファイルの観戦' : league ? 'リーグ結果' : '保存リプレイ一覧'}
+        eyebrow={
+          local
+            ? 'YOUR PERSONAL ARCHIVE'
+            : league
+              ? 'THE LEAGUE CHRONICLES'
+              : 'EVERY BATTLE, A STORY'
+        }
+        description="戦略が交わる、その瞬間を。記録された戦いと、それぞれの軌跡をたどる。"
+        mode="public"
+      >
         {['localhost', '127.0.0.1', '[::1]'].includes(new URL(root).hostname) && (
           <p>ローカルのデータを表示しています。このURLは他の端末との共有には使えません。</p>
         )}
         {catalog && (
-          <nav className="actions" aria-label="公開データ">
+          <nav className="archive-nav" aria-label="公開データ">
             {catalog.leagues?.map((ref) => (
-              <a key={ref.id} href={leagueLink(ref.hash)}>
+              <a
+                key={ref.id}
+                href={leagueLink(ref.hash)}
+                aria-current={
+                  league &&
+                  (hash.includes(publicHashName(ref.hash)) ||
+                    ((!hash || hash === '#/') && ref === catalog.leagues?.[0]))
+                    ? 'page'
+                    : undefined
+                }
+              >
                 {ref.id}
                 {ref.leagueClass === 'experimental' ? '（実験）' : ''}
               </a>
             ))}
             {catalog.sets[0] && (
-              <a href={matchLink(catalog.sets[0].setHash, 0)}>保存リプレイ一覧</a>
+              <a
+                href={matchLink(catalog.sets[0].setHash, 0)}
+                aria-current={!local && !league ? 'page' : undefined}
+              >
+                保存リプレイ一覧
+              </a>
             )}
           </nav>
         )}
-        <p>
+        <p className="local-file-link">
           <a href={LOCAL_ROUTE}>手元のリプレイファイルを開く（公開しない）</a>
         </p>
-      </header>
+      </PageHeader>
       {loaded?.error && !local && (
         <p role="alert" className="message error">
           {loaded.error}
@@ -81,6 +105,7 @@ function LibraryViewer({ root }: { root: string }) {
         ) : (
           <MatchViewer library={library} catalog={catalog} hash={hash} />
         ))}
+      <PageFooter />
     </main>
   );
 }

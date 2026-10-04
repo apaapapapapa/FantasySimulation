@@ -1,4 +1,4 @@
-import { BoxGeometry, CylinderGeometry, MeshLambertMaterial, type BufferGeometry } from 'three';
+import { BoxGeometry, CylinderGeometry, MeshStandardMaterial, type BufferGeometry } from 'three';
 import type { TerrainKind } from './pixel-art.ts';
 import type { SceneModel } from './scene-model.ts';
 import {
@@ -10,7 +10,7 @@ import {
 } from './textures.ts';
 
 type Obstacle = SceneModel['obstacles'][number];
-/** Dimraeth-like ruins: grassy tops over mossy stone unless the saved material says otherwise. */
+/** Moss-covered ruins: grassy tops over mossy stone unless the saved material says otherwise. */
 const SURFACES: Record<Obstacle['material'], { top: TerrainKind; side: TerrainKind }> = {
   generic: { top: 'grass', side: 'mossy-bricks' },
   stone: { top: 'flagstone', side: 'bricks' },
@@ -61,7 +61,7 @@ function pillarGeometry(radius: number, height: number) {
  * Grass tops sample a world-space meadow mask: dirt clearings with a dark grass rim and broad
  * brightness drift, so a large floor does not show the tile grid.
  */
-function meadow(value: MeshLambertMaterial) {
+function meadow(value: MeshStandardMaterial) {
   value.onBeforeCompile = (shader) => {
     shader.uniforms.meadowDirt = { value: terrainTexture('dirt') };
     shader.uniforms.meadowMask = { value: meadowTexture() };
@@ -80,22 +80,24 @@ function meadow(value: MeshLambertMaterial) {
         '#include <map_fragment>',
         `#include <map_fragment>
         vec4 meadow = texture2D(meadowMask, vMeadow);
-        float clearing = step(0.63, meadow.r);
-        float rim = step(0.6, meadow.r) * (1.0 - clearing);
+        float clearing = smoothstep(0.58, 0.7, meadow.r);
+        float rim = smoothstep(0.54, 0.62, meadow.r) * (1.0 - clearing);
         diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(meadowDirt, vMapUv).rgb, clearing);
-        diffuseColor.rgb *= (1.0 - 0.35 * rim) * (0.8 + 0.4 * meadow.g);`,
+        diffuseColor.rgb *= (1.0 - 0.18 * rim) * (0.88 + 0.24 * meadow.g);`,
       );
   };
   value.customProgramCacheKey = () => 'meadow';
 }
 
-const materials = new Map<string, MeshLambertMaterial>();
+const materials = new Map<string, MeshStandardMaterial>();
 function material(kind: TerrainKind, solid: boolean, overhead: boolean) {
   const key = `${kind}:${solid}:${overhead}`;
   let value = materials.get(key);
   if (!value) {
-    value = new MeshLambertMaterial({
+    value = new MeshStandardMaterial({
       map: terrainTexture(kind),
+      roughness: kind === 'plates' ? 0.45 : 0.92,
+      metalness: kind === 'plates' ? 0.5 : 0.06,
       // Terrain that does not block movement stays visibly darker, as before.
       color: solid ? '#ffffff' : '#8a8f9c',
       transparent: overhead,

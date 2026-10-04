@@ -60,7 +60,8 @@ function LeagueDocument({
   if (!snapshot) return <p role="status">リーグを読み込んでいます</p>;
   return (
     <>
-      <section className="panel" aria-label="リーグ概要">
+      <section className="panel league-overview" aria-label="リーグ概要">
+        <p className="eyebrow">LEAGUE OVERVIEW</p>
         <h2>
           {snapshot.name}
           {snapshot.leagueClass === 'experimental' ? '（実験）' : ''}
@@ -68,16 +69,45 @@ function LeagueDocument({
         {snapshot.leagueClass === 'experimental' && (
           <p>実験rulesetのリーグです。標準リーグとは別の得点・順位を表示しています。</p>
         )}
-        <p>
-          {snapshot.characters.length}体 · {snapshot.battlefields.length}戦場 · seed{' '}
-          {snapshot.trials}試行 · 通常/交換配置
-        </p>
-        <p>
+        <div className="league-stats">
+          <div>
+            <span>CHARACTERS</span>
+            <strong>
+              {snapshot.characters.length}
+              <small>体</small>
+            </strong>
+          </div>
+          <div>
+            <span>BATTLEFIELDS</span>
+            <strong>
+              {snapshot.battlefields.length}
+              <small>戦場</small>
+            </strong>
+          </div>
+          <div>
+            <span>TRIALS / SEED</span>
+            <strong>
+              {snapshot.trials}
+              <small>試行</small>
+            </strong>
+          </div>
+          <div>
+            <span>COMPLETION</span>
+            <strong>{leaguePercent(snapshot.standings.completion)}</strong>
+          </div>
+        </div>
+        <p className="league-progress-label">
           {snapshot.standings.resolved.toLocaleString()} /{' '}
           {snapshot.standings.planned.toLocaleString()}枠が確定（
-          {leaguePercent(snapshot.standings.completion)}）
+          {leaguePercent(snapshot.standings.completion)}） · 通常/交換配置
         </p>
-        <p>
+        <progress
+          className="league-progress"
+          aria-label="リーグの確定済み試合"
+          value={snapshot.standings.resolved}
+          max={Math.max(1, snapshot.standings.planned)}
+        />
+        <p className="muted">
           得点は今回の条件と有限の試行による結果です。すべての条件での勝率や必勝を示すものではありません。
         </p>
         <details>
@@ -120,7 +150,7 @@ function LeagueOverview({
   const [tab, setTab] = useState<'ranking' | 'fields' | 'matrix'>('ranking');
   return (
     <>
-      <div className="actions" aria-label="リーグ表示">
+      <div className="actions league-tabs" aria-label="リーグ表示">
         {(['ranking', 'fields', 'matrix'] as const).map((value, i) => (
           <button key={value} aria-pressed={tab === value} onClick={() => setTab(value)}>
             {['順位表', '戦場別得点', '相性表'][i]}
