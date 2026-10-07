@@ -1,5 +1,7 @@
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { EventEmitter, once } from 'node:events';
 import { createServer } from 'node:http';
+import { PassThrough } from 'node:stream';
 import { expect, it } from 'vite-plus/test';
 import {
   segmentServiceReceiptSchema,
@@ -54,6 +56,65 @@ it('samples a valid child alive beyond 300ms despite procfs stat.size zero', asy
   expect(result.terminated).toBe(true);
   expect(result.sampledCombinedRssBytes).toBeGreaterThan(0);
   expect(child.exitCode).toBe(0);
+});
+/** A supervised child whose pid no longer reports VmRSS: reaped, or a zombie of another parent. */
+async function unreadableChild(kind: 'reaped' | 'zombie') {
+  let release = () => {};
+  let pid: number;
+  if (kind === 'reaped') {
+    const exited = fake('');
+    await once(exited, 'close');
+    pid = exited.pid!;
+  } else {
+    const parent = spawn('/bin/sh', ['-c', 'true & echo $!; exec sleep 5'], {
+      env: {},
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    const [line] = (await once(parent.stdout!, 'data')) as [Buffer];
+    pid = Number(line.toString('ascii').trim());
+    release = () => parent.kill('SIGKILL');
+  }
+  const signals: string[] = [];
+  const channel = new PassThrough();
+  const child = Object.assign(new EventEmitter(), {
+    pid,
+    exitCode: null as number | null,
+    signalCode: null as NodeJS.Signals | null,
+    stdout: null,
+    stderr: null,
+    stdio: [null, null, null, channel],
+    kill: (signal: NodeJS.Signals) => signals.push(signal) > 0,
+  });
+  const close = async (signal: NodeJS.Signals | null) => {
+    if (!signal) channel.write(reply());
+    await new Promise((resolve) => setImmediate(resolve));
+    Object.assign(child, signal ? { signalCode: signal } : { exitCode: 0 });
+    child.emit('close', signal ? null : 0, signal);
+    release();
+  };
+  return { child: child as unknown as ChildProcess, signals, close };
+}
+it.each(['reaped', 'zombie'] as const)(
+  'accepts a %s child whose exit Node has not observed at one sample',
+  async (kind) => {
+    const { child, signals, close } = await unreadableChild(kind);
+    const pending = superviseSegmentServiceChild(child, receipt());
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(signals).toEqual([]);
+    await close(null);
+    const result = await pending;
+    expect(result.terminated).toBe(true);
+    expect(result.sampledCombinedRssBytes).toBeGreaterThan(0);
+  },
+);
+it('still fails closed when a running child stays without a readable RSS', async () => {
+  const { child, signals, close } = await unreadableChild('reaped');
+  const pending = superviseSegmentServiceChild(child, receipt(), { graceMs: 30 });
+  for (let waited = 0; !signals.length && waited < 5000; waited += 50)
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  expect(signals[0]).toBe('SIGTERM');
+  await close('SIGTERM');
+  await expect(pending).rejects.toThrow('rss-unknown');
 });
 it('rejects a failed spawn after close without waiting for the production deadline', async () => {
   const child = spawn('/nonexistent-fantasy-service-child', [], {
