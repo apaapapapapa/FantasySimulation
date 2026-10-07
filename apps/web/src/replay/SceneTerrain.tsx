@@ -1,4 +1,4 @@
-import { BoxGeometry, CylinderGeometry, MeshStandardMaterial, type BufferGeometry } from 'three';
+import { BoxGeometry, CylinderGeometry, MeshLambertMaterial, type BufferGeometry } from 'three';
 import type { TerrainKind } from './pixel-art.ts';
 import type { SceneModel } from './scene-model.ts';
 import {
@@ -61,7 +61,7 @@ function pillarGeometry(radius: number, height: number) {
  * Grass tops sample a world-space meadow mask: dirt clearings with a dark grass rim and broad
  * brightness drift, so a large floor does not show the tile grid.
  */
-function meadow(value: MeshStandardMaterial) {
+function meadow(value: MeshLambertMaterial) {
   value.onBeforeCompile = (shader) => {
     shader.uniforms.meadowDirt = { value: terrainTexture('dirt') };
     shader.uniforms.meadowMask = { value: meadowTexture() };
@@ -89,15 +89,14 @@ function meadow(value: MeshStandardMaterial) {
   value.customProgramCacheKey = () => 'meadow';
 }
 
-const materials = new Map<string, MeshStandardMaterial>();
+// Large matte surfaces do not need the fighters' per-pixel metallic lighting.
+const materials = new Map<string, MeshLambertMaterial>();
 function material(kind: TerrainKind, solid: boolean, overhead: boolean) {
   const key = `${kind}:${solid}:${overhead}`;
   let value = materials.get(key);
   if (!value) {
-    value = new MeshStandardMaterial({
+    value = new MeshLambertMaterial({
       map: terrainTexture(kind),
-      roughness: kind === 'plates' ? 0.45 : 0.92,
-      metalness: kind === 'plates' ? 0.5 : 0.06,
       // Terrain that does not block movement stays visibly darker, as before.
       color: solid ? '#ffffff' : '#8a8f9c',
       transparent: overhead,

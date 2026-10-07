@@ -3,6 +3,7 @@ import { defineConfig } from '@playwright/test';
 import {
   CHROMIUM_ARGS,
   isStaticScenario,
+  isInteractiveScenario,
   localOrigin,
   uiCaseGrep,
   uiCases,
@@ -16,10 +17,16 @@ const scenario = uiScenario(process.env.FANTASY_UI_SCENARIO);
 const settings = uiSettings(scenario);
 
 export default defineConfig({
-  testDir: scenario === 'smoke' ? './specs' : isStaticScenario(scenario) ? './static' : './faults',
+  testDir: isInteractiveScenario(scenario)
+    ? './specs'
+    : isStaticScenario(scenario)
+      ? './static'
+      : './faults',
   testMatch: '**/*.spec.ts',
-  // A static part runs only its exact cases; coverage then rejects any missing or extra case.
-  ...(isStaticScenario(scenario) ? { grep: uiCaseGrep(uiCases(scenario)) } : {}),
+  // Each part runs only its exact cases; coverage then rejects any missing or extra case.
+  ...(isStaticScenario(scenario) || isInteractiveScenario(scenario)
+    ? { grep: uiCaseGrep(uiCases(scenario)) }
+    : {}),
   outputDir: resolve(output, 'tests'),
   fullyParallel: false,
   forbidOnly: true,
