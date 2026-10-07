@@ -8,6 +8,12 @@ overrides:
   # Miniflare pins the vulnerable patch; keep its runtime on the patched 7.x API.
   # GHSA-rfgv-xxqx-mfg5 / GHSA-w293-vg96-wgc3; remove when Miniflare updates its pin.
   miniflare@5.20260921.0-alpha>undici: 7.29.1
+  # GHSA-wq5f-xc86-pv6w (bundled libvips/librsvg): Miniflare pins sharp 0.35.4; remove when
+  # Miniflare updates its pin.
+  miniflare@5.20260921.0-alpha>sharp: 0.35.5
+  # GHSA-68fv-2mgg-jv7q: Vite+ core's PostCSS accepts ^1.2.1 but the lock retains 1.2.1.
+  # Remove when PostCSS requires the patched release.
+  postcss@8.5.28>source-map-js: 1.2.2
   # GHSA-67mh-4wv8-2f99: align the legacy Drizzle loader with Kit's patched esbuild.
   # Remove when core-utils drops its vulnerable 0.18 pin or Drizzle drops the loader.
   '@esbuild-kit/core-utils@3.3.2>esbuild': 0.25.12
