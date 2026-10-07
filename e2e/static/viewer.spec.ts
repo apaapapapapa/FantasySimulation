@@ -68,7 +68,16 @@ test('static-replay-controls', async ({ page }, info) => {
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2 + 20, { steps: 8 });
   await page.mouse.up();
-  await expect.poll(async () => (await canvas.screenshot()).equals(beforeDrag)).toBe(false);
+  let dragged = beforeDrag;
+  await expect
+    .poll(async () => {
+      dragged = await canvas.screenshot();
+      return dragged.equals(beforeDrag);
+    })
+    .toBe(false);
+  // Each software-GPU canvas capture costs seconds of this case's fixed budget, so the
+  // evidence image reuses the verified free-camera frame instead of capturing again.
+  await info.attach('rendered-replay', { body: dragged, contentType: 'image/png' });
   await page.getByLabel('軌跡（記録された折れ線）').check();
   await expect(state).toHaveText(savedState!);
   await page.getByRole('button', { name: '1step戻る' }).focus();
@@ -95,10 +104,6 @@ test('static-replay-controls', async ({ page }, info) => {
     .click();
   await expect(page.getByLabel('現在のstep')).toHaveText(String(event.step));
   await expect(page.getByLabel('保存結果のhash')).toHaveText(result!);
-  await info.attach('rendered-replay', {
-    body: await canvas.screenshot(),
-    contentType: 'image/png',
-  });
 });
 
 test('static-partials', async ({ page }) => {
