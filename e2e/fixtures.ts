@@ -29,37 +29,27 @@ export const test = base.extend<
 >({
   // A distinct worker option gives a suite its own built-in browser and normal teardown.
   browserSession: ['shared', { scope: 'worker', option: true }],
-  // A fresh runner pages WebKit's process, text and software-GL stacks in from a cold disk on its
-  // first page: that alone exceeded the first 3D case's render wait in #306 run 37700864570 and
-  // #320 run 37703026059, while the retry passed. Warm them once per worker in a throwaway
-  // context; every case keeps its own fresh context, deadline and retry policy.
+  // WebKit's first 3D frame on a fresh runner compiles the viewer's scene shaders cold; it missed
+  // the first case's 5s render wait in #306 run 37700864570 and #320 runs 37703026059/37703784070,
+  // while the retry (a new browser on the same runner) passed. A trivial shader did not help, so
+  // render the fixed static replay once per worker in a throwaway, network-guarded context. Every
+  // case keeps its own fresh context, deadline and retry policy; Chromium parts are unchanged.
   browserWarmup: [
     async ({ browser, browserName }, use) => {
       if (browserName === 'webkit') {
-        const context = await browser.newContext();
+        const { complete } = await import('./static/fixtures.ts');
+        const blocked: string[] = [];
+        const context = await browser.newContext({
+          baseURL: localOrigin(process.env.FANTASY_UI_ORIGIN),
+        });
         try {
+          await guardNetwork(context, blocked);
           const page = await context.newPage();
-          await page.setContent('<p>warm-up</p><canvas width="8" height="8"></canvas>');
-          await page.evaluate(() => {
-            const gl = document.querySelector('canvas')!.getContext('webgl');
-            if (!gl) return;
-            const shader = (type: number, source: string) => {
-              const created = gl.createShader(type)!;
-              gl.shaderSource(created, source);
-              gl.compileShader(created);
-              return created;
-            };
-            const program = gl.createProgram()!;
-            gl.attachShader(program, shader(gl.VERTEX_SHADER, 'void main(){gl_PointSize=8.0;}'));
-            gl.attachShader(
-              program,
-              shader(gl.FRAGMENT_SHADER, 'void main(){gl_FragColor=vec4(1.0);}'),
-            );
-            gl.linkProgram(program);
-            gl.useProgram(program);
-            gl.drawArrays(gl.POINTS, 0, 1);
-            gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
-          });
+          await page.goto(complete.url);
+          await page
+            .locator('canvas[aria-label="保存ログの3D表示"][data-rendered="true"]')
+            .waitFor({ timeout: 30_000 });
+          expect(blocked).toEqual([]);
         } finally {
           await context.close();
         }
