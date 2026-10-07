@@ -99,7 +99,8 @@ export function superviseSegmentServiceChild(
     let failure: string | undefined,
       outputBytes = 0,
       replyBytes = 0,
-      maxCombined = 0;
+      maxCombined = 0,
+      unknownSamples = 0;
     let closed = false,
       sampling = false;
     let killTimer: ReturnType<typeof setTimeout> | undefined;
@@ -151,10 +152,14 @@ export function superviseSegmentServiceChild(
         if (!match) throw new Error('unknown');
         const bytes = Number(match[1]) * 1024 + process.memoryUsage().rss;
         if (!Number.isSafeInteger(bytes)) throw new Error('unknown');
+        unknownSamples = 0;
         maxCombined = Math.max(maxCombined, bytes);
         if (bytes > memoryLimit) stop('rss-bound');
       } catch {
-        if (!closed && child.exitCode === null && child.signalCode === null) stop('rss-unknown');
+        // An exiting child loses VmRSS (then its procfs entry) before Node observes the exit; its
+        // peak is still checked from the reply. A second consecutive unknown sample fails closed.
+        if (!closed && child.exitCode === null && child.signalCode === null && ++unknownSamples > 1)
+          stop('rss-unknown');
       } finally {
         sampling = false;
       }
