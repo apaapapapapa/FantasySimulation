@@ -30,14 +30,15 @@ test('static-selection', async ({ page }) => {
   expect(requests.some((url) => url.includes('/api/'))).toBe(false);
 });
 
-test('static-replay-controls', async ({ page }, info) => {
+// Camera checks and playback controls are separate cases: each software-GPU canvas capture costs
+// seconds, and together they ran 31-35s against the 30s case budget on a slower runner (#321 run
+// 37732134381). Every assertion, deadline and retry policy is unchanged.
+test('static-replay-camera', async ({ page }, info) => {
   await countSceneDraws(page);
   await page.goto(complete.url);
   const state = page.getByRole('table', { name: '記録された状態' });
   const canvas = page.getByRole('img', { name: '保存ログの3D表示' });
   await expect(canvas).toHaveAttribute('data-rendered', 'true');
-  await page.getByText('保存結果のhash', { exact: true }).click();
-  const result = await page.getByLabel('保存結果のhash').textContent();
   await page.getByLabel('表示stepを入力').fill('120');
   await expect(page.getByLabel('現在のstep')).toHaveText('120');
   await expect(page.locator('canvas')).toHaveCount(1);
@@ -78,6 +79,23 @@ test('static-replay-controls', async ({ page }, info) => {
   // Each software-GPU canvas capture costs seconds of this case's fixed budget, so the
   // evidence image reuses the verified free-camera frame instead of capturing again.
   await info.attach('rendered-replay', { body: dragged, contentType: 'image/png' });
+  // Camera rendering never advances the recorded simulation.
+  await expect(page.getByLabel('現在のstep')).toHaveText('120');
+  await expect(state).toHaveText(savedState!);
+});
+
+test('static-replay-controls', async ({ page }) => {
+  await page.goto(complete.url);
+  const state = page.getByRole('table', { name: '記録された状態' });
+  const canvas = page.getByRole('img', { name: '保存ログの3D表示' });
+  await expect(canvas).toHaveAttribute('data-rendered', 'true');
+  await page.getByText('保存結果のhash', { exact: true }).click();
+  const result = await page.getByLabel('保存結果のhash').textContent();
+  await page.getByLabel('表示stepを入力').fill('120');
+  await expect(page.getByLabel('現在のstep')).toHaveText('120');
+  await expect(page.locator('canvas')).toHaveCount(1);
+  await expect(canvas).toHaveAttribute('data-rendered', 'true');
+  const savedState = await state.textContent();
   await page.getByLabel('軌跡（記録された折れ線）').check();
   await expect(state).toHaveText(savedState!);
   await page.getByRole('button', { name: '1step戻る' }).focus();
