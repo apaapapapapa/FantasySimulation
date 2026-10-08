@@ -7,7 +7,7 @@ overrides:
   vitest: 4.1.11
   # Miniflare pins the vulnerable patch; keep its runtime on the patched 7.x API.
   # GHSA-rfgv-xxqx-mfg5 / GHSA-w293-vg96-wgc3; remove when Miniflare updates its pin.
-  miniflare@5.20260921.0-alpha>undici: 7.29.1
+  miniflare@5.20260921.0-alpha>undici: 7.30.0
   # GHSA-wq5f-xc86-pv6w (bundled libvips/librsvg): Miniflare pins sharp 0.35.4; remove when
   # Miniflare updates its pin.
   miniflare@5.20260921.0-alpha>sharp: 0.35.5
