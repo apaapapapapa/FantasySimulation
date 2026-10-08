@@ -14,7 +14,8 @@ overrides:
   # GHSA-68fv-2mgg-jv7q: Vite+ core's PostCSS accepts ^1.2.1 but the lock retains 1.2.1.
   # Remove when PostCSS requires the patched release.
   postcss@8.5.28>source-map-js: 1.2.2
-  # GHSA-67mh-4wv8-2f99: align the legacy Drizzle loader with Kit's patched esbuild.
+  # GHSA-67mh-4wv8-2f99: run the legacy Drizzle loader on a patched esbuild; its transforms and
+  # dev-server origin checks are exercised by scripts/security/esbuild.test.ts.
   # Remove when core-utils drops its vulnerable 0.18 pin or Drizzle drops the loader.
   '@esbuild-kit/core-utils@3.3.2>esbuild': 0.28.2
 
