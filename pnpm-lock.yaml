@@ -10,7 +10,7 @@ overrides:
   miniflare@5.20260921.0-alpha>undici: 7.29.1
   miniflare@5.20260921.0-alpha>sharp: 0.35.5
   postcss@8.5.28>source-map-js: 1.2.2
-  '@esbuild-kit/core-utils@3.3.2>esbuild': 0.25.12
+  '@esbuild-kit/core-utils@3.3.2>esbuild': 0.28.2
 
 patchedDependencies:
   braces@3.0.3: bfdb0c171556074c2785f98d0a7355209223df8e29dbc2ff489240c16a47da97
@@ -5061,7 +5061,7 @@ snapshots:
 
   '@esbuild-kit/core-utils@3.3.2':
     dependencies:
-      esbuild: 0.25.12
+      esbuild: 0.28.2
       source-map-support: 0.5.21
 
   '@esbuild-kit/esm-loader@2.6.5':
