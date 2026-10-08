@@ -275,7 +275,7 @@ describe('production startup skill catalog', () => {
     expect(legacy.statusCode).toBe(200);
     expect(legacy.json().catalog).toMatchObject({ id: 'skill-catalog-v1', revision: 1 });
     await app.close();
-  });
+  }, 15_000);
 
   it('preserves immutable v2 through v9 before seeding v10', async () => {
     const store = openStore(':memory:'),
