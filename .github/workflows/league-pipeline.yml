@@ -74,6 +74,7 @@ jobs:
           LEAGUE_PIPELINE_ENABLED: ${{ vars.LEAGUE_PIPELINE_ENABLED }}
           R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
           R2_BUCKET: fantasysimulation-replays
+          LEAGUE_BILLING_OBSERVATION: ${{ vars.LEAGUE_BILLING_OBSERVATION }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
         run: node --import tsx scripts/league-pipeline.ts restore
@@ -81,7 +82,9 @@ jobs:
         id: prepare
         env:
           LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
-        run: node --import tsx scripts/league-pipeline.ts prepare
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: prepare
       - name: Commit reservations and publish authenticated baseline
         env:
           LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
@@ -89,9 +92,12 @@ jobs:
           LEAGUE_PIPELINE_ENABLED: ${{ vars.LEAGUE_PIPELINE_ENABLED }}
           R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
           R2_BUCKET: fantasysimulation-replays
+          LEAGUE_BILLING_OBSERVATION: ${{ vars.LEAGUE_BILLING_OBSERVATION }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: node --import tsx scripts/league-pipeline.ts admit
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: admit
       - uses: ./.github/actions/league-measurements
         if: always()
         with:
@@ -121,7 +127,9 @@ jobs:
         env:
           LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
           LEAGUE_RUNNER: ${{ matrix.index }}
-        run: node --import tsx scripts/league-pipeline.ts compute
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: compute
       - uses: ./.github/actions/league-measurements
         if: always()
         with:
@@ -143,6 +151,13 @@ jobs:
       - uses: ./.github/actions/league-runtime
         with:
           ci-run: ${{ inputs.ci_run_id }}
+      # Secret-free and ahead of staging: a failed download loses only the acceptance measurement.
+      - name: Install the pinned acceptance browser while producers start
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
+        run: node node_modules/@playwright/test/cli.js install chromium --only-shell
       - name: Stage while producers run, reconcile successful jobs, then conditionally commit
         env:
           LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
@@ -150,9 +165,18 @@ jobs:
           LEAGUE_PIPELINE_ENABLED: ${{ vars.LEAGUE_PIPELINE_ENABLED }}
           R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
           R2_BUCKET: fantasysimulation-replays
+          LEAGUE_BILLING_OBSERVATION: ${{ vars.LEAGUE_BILLING_OBSERVATION }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: node --import tsx scripts/league-pipeline.ts transfer
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: transfer
+      # The #189 end: a fresh browser uses the normal viewer URL, new snapshot and one replay.
+      - name: Accept the new snapshot in a fresh browser
+        timeout-minutes: 5
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.generated/playwright
+        run: node --import tsx scripts/league-pages-acceptance.ts
       - uses: ./.github/actions/league-measurements
         if: always()
         with:
@@ -184,9 +208,12 @@ jobs:
           LEAGUE_PIPELINE_ENABLED: ${{ vars.LEAGUE_PIPELINE_ENABLED }}
           R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
           R2_BUCKET: fantasysimulation-replays
+          LEAGUE_BILLING_OBSERVATION: ${{ vars.LEAGUE_BILLING_OBSERVATION }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-        run: node --import tsx scripts/league-pipeline.ts recover
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: recover
       - uses: ./.github/actions/league-measurements
         if: always()
         with:

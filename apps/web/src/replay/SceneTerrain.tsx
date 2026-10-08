@@ -10,7 +10,7 @@ import {
 } from './textures.ts';
 
 type Obstacle = SceneModel['obstacles'][number];
-/** Dimraeth-like ruins: grassy tops over mossy stone unless the saved material says otherwise. */
+/** Moss-covered ruins: grassy tops over mossy stone unless the saved material says otherwise. */
 const SURFACES: Record<Obstacle['material'], { top: TerrainKind; side: TerrainKind }> = {
   generic: { top: 'grass', side: 'mossy-bricks' },
   stone: { top: 'flagstone', side: 'bricks' },
@@ -80,15 +80,16 @@ function meadow(value: MeshLambertMaterial) {
         '#include <map_fragment>',
         `#include <map_fragment>
         vec4 meadow = texture2D(meadowMask, vMeadow);
-        float clearing = step(0.63, meadow.r);
-        float rim = step(0.6, meadow.r) * (1.0 - clearing);
+        float clearing = smoothstep(0.58, 0.7, meadow.r);
+        float rim = smoothstep(0.54, 0.62, meadow.r) * (1.0 - clearing);
         diffuseColor.rgb = mix(diffuseColor.rgb, texture2D(meadowDirt, vMapUv).rgb, clearing);
-        diffuseColor.rgb *= (1.0 - 0.35 * rim) * (0.8 + 0.4 * meadow.g);`,
+        diffuseColor.rgb *= (1.0 - 0.18 * rim) * (0.88 + 0.24 * meadow.g);`,
       );
   };
   value.customProgramCacheKey = () => 'meadow';
 }
 
+// Large matte surfaces do not need the fighters' per-pixel metallic lighting.
 const materials = new Map<string, MeshLambertMaterial>();
 function material(kind: TerrainKind, solid: boolean, overhead: boolean) {
   const key = `${kind}:${solid}:${overhead}`;

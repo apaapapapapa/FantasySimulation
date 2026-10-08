@@ -97,9 +97,12 @@ async function runSelection(
     },
     plan.source,
   );
+  // New recordings stage in the producer's public scope: that pass, with privacy inspection, is
+  // their one scope validation, and every later check re-hashes the renamed bytes.
   const result = await runBatch(retry, bundles.root, plan.source, {
     ...options,
     retryFailed: attempt === 2,
+    bundles,
   });
   const checked = await checkedBatch(retry, [{ index: result.index, bundles }]);
   return [...checked.found.values()];

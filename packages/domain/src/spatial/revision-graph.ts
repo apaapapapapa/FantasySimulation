@@ -32,6 +32,8 @@ export const revisionReference = ({ id, revision, contentHash }: Revision): Revi
   revision,
   contentHash,
 });
+/** Exact revision identity, including its content hash, for sets, maps and option keys. */
+export const revisionRefKey = (ref: RevisionRef) => `${ref.id}@${ref.revision}:${ref.contentHash}`;
 export const revisionHash = (revision: Pick<Revision, 'kind' | 'schemaVersion' | 'definition'>) =>
   contentHash({
     kind: revision.kind,
@@ -139,6 +141,13 @@ export function characterLoadout(ref: RevisionRef, lookup: RevisionLookup) {
   const abilities = [...character.abilities, ...equipment.flatMap((item) => item.abilities)].map(
     (ref) => get('ability', ref),
   );
+  validateAbilityLoadout(abilities);
+  return { character, equipment, abilities, policy: get('policy', character.policy).definition };
+}
+/** Validate invariants over the complete actor ability set, including derived battle grants. */
+export function validateAbilityLoadout(
+  abilities: readonly Extract<Revision, { kind: 'ability' }>[],
+) {
   const ids = new Set<string>();
   for (const ability of abilities) {
     if (ids.has(ability.id))
@@ -150,7 +159,6 @@ export function characterLoadout(ref: RevisionRef, lookup: RevisionLookup) {
       'multiple-revivals',
       'Only one revival ability per character including equipment',
     );
-  return { character, equipment, abilities, policy: get('policy', character.policy).definition };
 }
 export function validatePolicyAbilities(loadout: ReturnType<typeof characterLoadout>) {
   const ids = new Set(loadout.abilities.map((ability) => ability.id));

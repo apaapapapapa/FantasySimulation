@@ -18,7 +18,7 @@ revisions cannot change/delete. Job creation/replay recovery need X-Client-Id an
 Idempotency-Key. [ADR 0007](../adr/0007-worker-runtime.md) owns runtime contracts;
 [ADR 0006](../adr/0006-recorded-replay.md) owns recorded replay without engine execution.
 Defaults/limits: [configuration](../../apps/api/src/config.ts).
-Startup/db:seed adds missing IDs only; demo:spatial runs samples.
+Startup/db:seed adds exact revisions only when missing and never overwrites them.
 [ADR 0010](../adr/0010-battle-version-compatibility.md) governs published identities.
 
 ## Content authoring
@@ -27,9 +27,9 @@ Sources: `data/content/**/*.json`; output: `data/spatial/catalog.json`.
 JSON holds a revision or array: kind, id, revision, definition; schemaVersion defaults to 1.
 Omit contentHash to generate it; supplied hashes must match.
 `{"$ref":"status:soaked-v1:1"}` resolves refs; pinned refs never rebind.
-Preserve builtin-v1.json and published revisions. Duplicate IDs, missing refs and cycles fail.
+Preserve builtin-v1.json and history. Duplicate exact identities, missing refs and cycles fail.
 Run `node scripts/spatial-catalog.ts --write`; review field diffs, affected IDs and hashes.
-Append new IDs/hashes to `data/spatial/published-revisions.json` before `vp run verify`.
+Append exact identities/hashes to `data/spatial/published-revisions.json` before `vp run verify`.
 
 ## Batch
 

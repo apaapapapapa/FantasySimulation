@@ -14,6 +14,7 @@ export const HashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
 export const MAX_BATTLE_STEPS = 6_000;
 export const MAX_FRAME_BYTES = 4_000_000;
 export const CURRENT_ENGINE_VERSION = 'spatial-v1.22' as const;
+export const CURRENT_SKILL_RESOLVER_VERSION = 'skill-resolver-v1' as const;
 const uint = (max: number) => z.number().int().min(0).max(max);
 const positive = (max: number) => z.number().int().min(1).max(max);
 export const Vec3Schema = z.strictObject({
@@ -165,7 +166,7 @@ export const ObservedPhaseSchema = z.enum(['idle', 'cast', 'active', 'recovery']
 export const ReactionPointSchema = z.enum(['before-hit', 'after-damage', 'before-defeat']);
 export const ObservedReactionSchema = z.strictObject({
   point: ReactionPointSchema,
-  response: z.enum(['parry', 'effects', 'counter', 'deflect', 'revive']),
+  response: z.enum(['parry', 'guard', 'effects', 'counter', 'deflect', 'revive']),
 });
 export type ObservedReaction = z.infer<typeof ObservedReactionSchema>;
 export const ObservedStageSchema = z.strictObject({
@@ -372,6 +373,43 @@ export const EffectSchema = z.discriminatedUnion('kind', [
     categories: categoryList(StatusCategorySchema).optional(),
   }),
   z.strictObject({ kind: z.literal('water'), extinguish: z.literal(true) }),
+  z
+    .strictObject({
+      kind: z.literal('sensory-cue'),
+      modality: z.literal('visual'),
+      offsetMm: z.strictObject({
+        x: z.number().int().min(-50_000).max(50_000),
+        y: z.number().int().min(-50_000).max(50_000),
+        z: z.number().int().min(-50_000).max(50_000),
+      }),
+      deliverySteps: positive(500),
+      durationSteps: positive(1_000),
+      discoverySteps: positive(1_000),
+      confidenceBps: positive(10_000),
+    })
+    .refine(
+      (cue) => cue.discoverySteps <= cue.durationSteps,
+      'Discovery must not follow sensory cue expiry',
+    ),
+  z
+    .strictObject({
+      kind: z.literal('environmental-hologram'),
+      modality: z.literal('visual'),
+      offsetMm: z.strictObject({
+        x: z.number().int().min(-50_000).max(50_000),
+        y: z.number().int().min(-50_000).max(50_000),
+        z: z.number().int().min(-50_000).max(50_000),
+      }),
+      observationSteps: positive(500),
+      invalidationSteps: positive(1_000),
+      durationSteps: positive(1_000),
+    })
+    .refine(
+      (hologram) =>
+        hologram.observationSteps < hologram.invalidationSteps &&
+        hologram.invalidationSteps < hologram.durationSteps,
+      'Hologram observation, invalidation and expiry must be ordered',
+    ),
   RevealEffectSchema,
 ]);
 export type Effect = z.infer<typeof EffectSchema>;
@@ -453,6 +491,7 @@ export const StatusSchema = z
       })
       .optional(),
     defeatImmunity: z.boolean().optional(),
+    mentalImmunity: z.boolean().optional(),
     stopImmunity: z.boolean().optional(),
     immortality: z.strictObject({ protections: positive(4) }).optional(),
     seals: SealSchema.optional(),
@@ -626,6 +665,7 @@ export function abilityEffects<T>(ability: {
 export const ReactionSchema = z.strictObject({
   response: z.discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('parry'), scope: z.enum(['all', 'damage']) }),
+    z.strictObject({ kind: z.literal('guard'), retainedDamageBps: positive(9999) }),
     z.strictObject({ kind: z.literal('effects') }),
     z.strictObject({ kind: z.literal('counter') }),
     z.strictObject({ kind: z.literal('deflect'), powerBps: uint(30000).optional() }),
@@ -662,8 +702,36 @@ export const AbilitySchema = z
     stages: z.array(StageSchema).min(1).max(16).optional(),
     relocation: RelocationSchema.optional(),
     barrier: BarrierSchema.optional(),
+    summon: z
+      .strictObject({
+        profile: z.literal('scout-rat-v1'),
+        body: BodySchema,
+        hp: positive(1_000_000),
+        spawnOffsetMm: Vec3Schema,
+        lifetimeSteps: positive(MAX_BATTLE_STEPS),
+        upkeep: z.strictObject({ mp: positive(1_000_000), everySteps: positive(1_000) }),
+        commandCostMp: uint(1_000_000),
+        actionEverySteps: positive(1_000),
+        damage: z.strictObject({ amount: positive(1_000_000), drainBps: uint(10_000) }),
+      })
+      .optional(),
   })
   .superRefine((ability, ctx) => {
+    if (
+      ability.summon &&
+      (ability.trigger !== 'action' ||
+        ability.target !== 'self' ||
+        ability.attack.kind !== 'direct' ||
+        ability.effects.length ||
+        ability.stages ||
+        ability.relocation ||
+        ability.barrier ||
+        ability.timeStop)
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'A dependent summon is a standalone direct self action',
+      });
     if (
       ability.timeStop &&
       (ability.trigger !== 'action' ||
@@ -715,11 +783,13 @@ export const AbilitySchema = z
     if (
       !ability.effects.length &&
       response?.kind !== 'parry' &&
+      response?.kind !== 'guard' &&
       response?.kind !== 'deflect' &&
       response?.kind !== 'revive' &&
       !ability.relocation &&
       !ability.barrier &&
-      !ability.timeStop
+      !ability.timeStop &&
+      !ability.summon
     )
       ctx.addIssue({
         code: 'custom',
@@ -760,12 +830,14 @@ export const AbilitySchema = z
             message: 'Defensive reactions require direct self targeting',
           });
         if (
-          (response?.kind === 'parry' || response?.kind === 'deflect') &&
+          (response?.kind === 'parry' ||
+            response?.kind === 'guard' ||
+            response?.kind === 'deflect') &&
           (ability.trigger !== 'before-hit' || ability.effects.length)
         )
           ctx.addIssue({
             code: 'custom',
-            message: 'Parry/deflect is a before-hit reducer without a payload',
+            message: 'Parry/guard/deflect is a before-hit reducer without a payload',
           });
         if (
           ability.effects.some(
@@ -894,6 +966,22 @@ export const AbilitySchema = z
         code: 'custom',
         message: 'Dispel requires status IDs or status categories',
       });
+    const observerProjection = plans
+      .flatMap((plan) => plan.effects)
+      .find((effect) => effect.kind === 'sensory-cue' || effect.kind === 'environmental-hologram');
+    if (
+      observerProjection &&
+      (ability.trigger !== 'action' ||
+        ability.target !== 'enemy' ||
+        plans.some((p) => p.attack?.kind !== 'hitscan' || p.attack.radiusMm !== 0))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          observerProjection.kind === 'sensory-cue'
+            ? 'Visual sensory cues require an enemy-targeted zero-radius hitscan action'
+            : 'Environmental holograms require an enemy-targeted zero-radius hitscan action',
+      });
     if (
       plans.some(
         (p) =>
@@ -956,6 +1044,7 @@ export const CharacterSchema = z
   .strictObject({
     name: z.string().min(1).max(100),
     originalText: z.string().max(20_000),
+    mentalEligibility: z.literal('cognitive').optional(),
     appearance: AppearanceSchema.optional(),
     stamina: StaminaSchema.optional(),
     stats: z.strictObject({
@@ -1133,6 +1222,237 @@ export const RevisionSchema = z.discriminatedUnion('kind', [
 export type Revision = z.infer<typeof RevisionSchema>;
 export type DefinitionKind = Revision['kind'];
 export type Definition<K extends DefinitionKind> = Extract<Revision, { kind: K }>['definition'];
+const CanonicalSkillIdsSchema = (maximum: number) =>
+  z
+    .array(IdSchema)
+    .max(maximum)
+    .refine((ids) => new Set(ids).size === ids.length, 'Skill node IDs must be unique')
+    .refine(
+      (ids) => ids.every((id, index) => index === 0 || ids[index - 1]! < id),
+      'Skill node IDs must use canonical ASCII order',
+    );
+const ActiveSkillNodeResolutionSchema = z.strictObject({
+  nodeId: IdSchema,
+  resolution: z
+    .array(z.strictObject({ kind: z.literal('active-ability'), ability: RefSchema }))
+    .min(1)
+    .max(8),
+});
+const BattleSkillResolutionSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('active-ability'), ability: RefSchema }),
+  z.strictObject({ kind: z.literal('passive-ability'), ability: RefSchema }),
+  z.strictObject({
+    kind: z.literal('augment'),
+    baseAbility: RefSchema,
+    resolvedAbility: RefSchema,
+  }),
+]);
+const BattleSkillNodeResolutionSchema = z.strictObject({
+  nodeId: IdSchema,
+  resolution: z.array(BattleSkillResolutionSchema).min(1).max(8),
+});
+function validateSkillReceipt(
+  receipt: {
+    explicitlyEnabledNodeIds: string[];
+    resolvedNodeIds: string[];
+    nodeResolutions: {
+      nodeId: string;
+      resolution: z.infer<typeof BattleSkillResolutionSchema>[];
+    }[];
+  },
+  context: Pick<z.RefinementCtx, 'addIssue'>,
+) {
+  const resolved = new Set(receipt.resolvedNodeIds),
+    nodeIds = receipt.nodeResolutions.map(({ nodeId }) => nodeId);
+  if (receipt.explicitlyEnabledNodeIds.some((id) => !resolved.has(id)))
+    context.addIssue({ code: 'custom', message: 'Enabled skill node is outside the closure' });
+  if (
+    nodeIds.length !== receipt.resolvedNodeIds.length ||
+    nodeIds.some((id, index) => id !== receipt.resolvedNodeIds[index])
+  )
+    context.addIssue({ code: 'custom', message: 'Skill resolutions must match resolved nodes' });
+}
+type BattleSkillReceipt = {
+  explicitlyEnabledNodeIds: string[];
+  resolvedNodeIds: string[];
+  nodeResolutions: z.infer<typeof BattleSkillNodeResolutionSchema>[];
+};
+function validateBattleSkillReceipt(
+  receipt: BattleSkillReceipt,
+  context: Pick<z.RefinementCtx, 'addIssue'>,
+  allowExactSharedGrants: boolean,
+) {
+  validateSkillReceipt(receipt, context);
+  let active = 0,
+    passive = 0,
+    resolutionCount = 0;
+  const augmented = new Set<string>(),
+    producedAbilities = new Map<
+      string,
+      {
+        nodeId: string;
+        kind: z.infer<typeof BattleSkillResolutionSchema>['kind'];
+        reference: RevisionRef;
+      }
+    >();
+  for (const node of receipt.nodeResolutions) {
+    const hasActive = node.resolution.some(({ kind }) => kind === 'active-ability'),
+      hasPassive = node.resolution.some(({ kind }) => kind !== 'active-ability');
+    if (hasActive && hasPassive)
+      context.addIssue({
+        code: 'custom',
+        message: `Mixed skill resolution node: ${node.nodeId}`,
+      });
+    hasActive ? active++ : passive++;
+    for (const resolution of node.resolution) {
+      resolutionCount++;
+      const reference =
+          resolution.kind === 'augment' ? resolution.resolvedAbility : resolution.ability,
+        previous = producedAbilities.get(reference.id),
+        sharedExactGrant =
+          allowExactSharedGrants &&
+          previous !== undefined &&
+          previous.nodeId !== node.nodeId &&
+          previous.kind === resolution.kind &&
+          resolution.kind !== 'augment' &&
+          canonicalJson(previous.reference) === canonicalJson(reference);
+      if (previous && !sharedExactGrant)
+        context.addIssue({
+          code: 'custom',
+          message: allowExactSharedGrants
+            ? 'Resolved skill ability IDs must be unique or exact shared grants'
+            : 'Resolved skill ability IDs must be unique',
+        });
+      if (!previous)
+        producedAbilities.set(reference.id, {
+          nodeId: node.nodeId,
+          kind: resolution.kind,
+          reference,
+        });
+      if (resolution.kind === 'augment') {
+        if (resolution.baseAbility.id !== resolution.resolvedAbility.id)
+          context.addIssue({
+            code: 'custom',
+            message: 'Augments must preserve ability identity',
+          });
+        if (
+          resolution.baseAbility.revision === resolution.resolvedAbility.revision &&
+          resolution.baseAbility.contentHash === resolution.resolvedAbility.contentHash
+        )
+          context.addIssue({
+            code: 'custom',
+            message: 'Augments must change the exact ability ref',
+          });
+        if (augmented.has(resolution.baseAbility.id))
+          context.addIssue({ code: 'custom', message: 'An ability may be augmented only once' });
+        augmented.add(resolution.baseAbility.id);
+      }
+    }
+  }
+  if (active > 8) context.addIssue({ code: 'custom', message: 'Active skill node limit exceeded' });
+  if (passive > 4)
+    context.addIssue({ code: 'custom', message: 'Passive skill node limit exceeded' });
+  const producedCount = allowExactSharedGrants ? producedAbilities.size : resolutionCount;
+  if (producedCount > 32)
+    context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
+}
+/** Lightweight execution receipt. Catalog content and resolver code stay outside workers. */
+export const SkillLoadoutReceiptV1Schema = z
+  .strictObject({
+    schemaVersion: z.literal(1),
+    resolverVersion: IdSchema,
+    character: RefSchema,
+    catalog: RefSchema,
+    loadout: RefSchema,
+    explicitlyEnabledNodeIds: CanonicalSkillIdsSchema(8),
+    resolvedNodeIds: CanonicalSkillIdsSchema(8),
+    nodeResolutions: z.array(ActiveSkillNodeResolutionSchema).min(1).max(8),
+    resolutionDigest: HashSchema,
+  })
+  .superRefine((receipt, context) => {
+    validateSkillReceipt(receipt, context);
+    const abilityIds = receipt.nodeResolutions.flatMap(({ resolution }) =>
+      resolution.map(({ ability }) => ability.id),
+    );
+    if (new Set(abilityIds).size !== abilityIds.length)
+      context.addIssue({ code: 'custom', message: 'Resolved skill ability IDs must be unique' });
+    if (abilityIds.length > 32)
+      context.addIssue({ code: 'custom', message: 'Resolved skill abilities exceed actor limit' });
+  });
+const BattleSkillReceiptShape = {
+  resolverVersion: IdSchema,
+  character: RefSchema,
+  catalog: RefSchema,
+  loadout: RefSchema,
+  explicitlyEnabledNodeIds: CanonicalSkillIdsSchema(12),
+  resolvedNodeIds: CanonicalSkillIdsSchema(12),
+  nodeResolutions: z.array(BattleSkillNodeResolutionSchema).min(1).max(12),
+  resolutionDigest: HashSchema,
+};
+export const SkillLoadoutReceiptV2Schema = z
+  .strictObject({
+    schemaVersion: z.literal(2),
+    ...BattleSkillReceiptShape,
+  })
+  .superRefine((receipt, context) => validateBattleSkillReceipt(receipt, context, false));
+/**
+ * Receipt v3 preserves every resolving node while permitting different nodes to share one exact
+ * non-augment ability. Execution consumers use `skillReceiptExecutionResolutions` so that shared
+ * provenance never creates a second runtime ability.
+ */
+export const SkillLoadoutReceiptV3Schema = z
+  .strictObject({
+    schemaVersion: z.literal(3),
+    ...BattleSkillReceiptShape,
+  })
+  .superRefine((receipt, context) => validateBattleSkillReceipt(receipt, context, true));
+/** Check a new selection without inventing saved refs or choosing its eventual receipt version. */
+export function validNewSkillReceiptSelection(selection: BattleSkillReceipt): boolean {
+  const shape = SkillLoadoutReceiptV3Schema.shape;
+  if (
+    !shape.explicitlyEnabledNodeIds.safeParse(selection.explicitlyEnabledNodeIds).success ||
+    !shape.resolvedNodeIds.safeParse(selection.resolvedNodeIds).success ||
+    !shape.nodeResolutions.safeParse(selection.nodeResolutions).success
+  )
+    return false;
+  let valid = true;
+  validateBattleSkillReceipt(
+    selection,
+    {
+      addIssue: () => {
+        valid = false;
+      },
+    },
+    true,
+  );
+  return valid;
+}
+export const SkillLoadoutReceiptSchema = z.union([
+  SkillLoadoutReceiptV1Schema,
+  SkillLoadoutReceiptV2Schema,
+  SkillLoadoutReceiptV3Schema,
+]);
+export type SkillLoadoutReceipt = z.infer<typeof SkillLoadoutReceiptSchema>;
+export type SkillReceiptExecutionResolution = z.infer<typeof BattleSkillResolutionSchema>;
+/** Canonical unique execution projection; node-level provenance remains in the receipt. */
+export function skillReceiptExecutionResolutions(
+  receipt: SkillLoadoutReceipt,
+): SkillReceiptExecutionResolution[] {
+  const resolutions = receipt.nodeResolutions.flatMap(({ resolution }) => resolution);
+  // V1/V2 already require uniqueness; retaining their authored order preserves old execution.
+  if (receipt.schemaVersion !== 3) return resolutions;
+  const byProducedId = new Map<string, SkillReceiptExecutionResolution>();
+  for (const item of resolutions) {
+    const reference = item.kind === 'augment' ? item.resolvedAbility : item.ability,
+      previous = byProducedId.get(reference.id);
+    if (previous && canonicalJson(previous) !== canonicalJson(item))
+      throw new Error(`Conflicting skill execution ability: ${reference.id}`);
+    if (!previous) byProducedId.set(reference.id, item);
+  }
+  return [...byProducedId]
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+    .map(([, resolution]) => resolution);
+}
 export const ParticipantSchema = z.strictObject({
   actorId: IdSchema.refine(
     (id) => !id.startsWith('projectile.'),
@@ -1143,6 +1463,7 @@ export const ParticipantSchema = z.strictObject({
   facing: DirectionSchema,
   rngSeed: uint(0xffff_ffff),
   rngStream: z.union([z.literal(0), z.literal(1)]),
+  skillLoadout: SkillLoadoutReceiptSchema.optional(),
 });
 export const PhysicsProfileSchema = z.strictObject({
   id: z.literal('spatial-v1'),
@@ -1166,7 +1487,15 @@ export const PhysicsProfileSchema = z.strictObject({
 /** Saved inputs remain readable; only ManifestSchema admits current execution. */
 export const StoredManifestSchema = z
   .strictObject({
-    schemaVersion: z.literal(3),
+    schemaVersion: z.union([
+      z.literal(3),
+      z.literal(4),
+      z.literal(5),
+      z.literal(6),
+      z.literal(7),
+      z.literal(8),
+      z.literal(9),
+    ]),
     eventSchemaVersion: z.literal(1),
     replaySchemaVersion: z.literal(1),
     engineVersion: IdSchema,
@@ -1185,6 +1514,53 @@ export const StoredManifestSchema = z
     revisions: z.array(RevisionSchema).min(4).max(256),
   })
   .superRefine((manifest, ctx) => {
+    const effects = manifest.revisions.flatMap((revision) =>
+      revision.kind === 'ability'
+        ? [
+            ...revision.definition.effects,
+            ...(revision.definition.stages ?? []).flatMap((stage) => stage.effects),
+          ]
+        : [],
+    );
+    if (
+      manifest.schemaVersion === 3 &&
+      manifest.participants.some((participant) => participant.skillLoadout !== undefined)
+    )
+      ctx.addIssue({ code: 'custom', message: 'Skill loadouts require manifest schema version 4' });
+    if (
+      manifest.schemaVersion < 5 &&
+      manifest.participants.some(
+        (participant) =>
+          participant.skillLoadout !== undefined && participant.skillLoadout.schemaVersion !== 1,
+      )
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Passive and augment receipts require manifest schema version 5',
+      });
+    if (manifest.schemaVersion < 6 && effects.some((effect) => effect.kind === 'sensory-cue'))
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Sensory cues require manifest schema version 6',
+      });
+    if (
+      manifest.schemaVersion < 7 &&
+      manifest.revisions.some(
+        (revision) => revision.kind === 'ability' && revision.definition.summon,
+      )
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Dependent summons require manifest schema version 7',
+      });
+    if (
+      manifest.schemaVersion < 8 &&
+      effects.some((effect) => effect.kind === 'environmental-hologram')
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Environmental holograms require manifest schema version 8',
+      });
     if (manifest.participants[0].rngStream === manifest.participants[1].rngStream)
       ctx.addIssue({ code: 'custom', message: 'Actor streams must differ' });
     if (manifest.participants[0].actorId === manifest.participants[1].actorId)

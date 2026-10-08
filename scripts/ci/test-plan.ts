@@ -77,8 +77,18 @@ const weight = (file: string, weights = TEST_WEIGHTS) => weights[file] ?? 1;
 export function shardFiles(files: readonly string[], shards: number): string[][] {
   const assigned = Array.from({ length: shards }, (): string[] => []);
   const load = Array.from({ length: shards }, () => 0);
+  const workerCorpus = 'apps/api/src/jobs/worker-corpus.test.ts';
   for (const file of [...files].sort((a, b) => weight(b) - weight(a) || (a < b ? -1 : 1))) {
-    const index = load.indexOf(Math.min(...load));
+    // Keep the existing Worker CPU isolation contract as the light-file inventory grows.
+    // No test is skipped and no shard or execution budget is added.
+    const eligible = load.map((value, index) =>
+      shards > 1 &&
+      assigned[index]!.includes(workerCorpus) &&
+      (weight(file) > 5 || value - weight(workerCorpus) + weight(file) >= weight(workerCorpus))
+        ? Infinity
+        : value,
+    );
+    const index = eligible.indexOf(Math.min(...eligible));
     assigned[index]!.push(file);
     load[index]! += weight(file);
   }

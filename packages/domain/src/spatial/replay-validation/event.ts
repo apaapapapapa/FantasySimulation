@@ -59,15 +59,86 @@ export function validateEvents(
       'event order',
     );
     previous = order;
-    for (const id of [e.actorId, e.targetId])
-      if (id !== null)
-        requireReplay(
-          context.actors.some((a) => a.participant.actorId === id),
-          'event actor reference',
-        );
-    if (e.entityId !== null) requireReplay(entities.has(e.entityId), 'event entity reference');
+    if (e.actorId !== null)
+      requireReplay(
+        context.actors.some((a) => a.participant.actorId === e.actorId),
+        'event actor reference',
+      );
+    if (e.targetId !== null) {
+      const dependentIds = new Set([
+        ...(prior.state?.dependents ?? []).map((dependent) => dependent.id),
+        ...('dependents' in record
+          ? [...(record.dependents?.spawn ?? []), ...(record.dependents?.update ?? [])].map(
+              (dependent) => dependent.id,
+            )
+          : []),
+      ]);
+      const historicalDependentTarget =
+        (e.kind === 'dependent-command' || e.kind === 'dependent-act') &&
+        prior.dependentHistory?.some((dependent) => dependent.id === e.targetId) === true;
+      requireReplay(
+        context.actors.some((a) => a.participant.actorId === e.targetId) ||
+          dependentIds.has(e.targetId) ||
+          historicalDependentTarget,
+        'event target reference',
+      );
+    }
+    if (e.entityId !== null)
+      requireReplay(
+        entities.has(e.entityId) ||
+          (e.kind === 'sensory-cue' && e.sensoryCue?.id === e.entityId) ||
+          (e.kind === 'environmental-hologram' && e.environmentalHologram?.id === e.entityId),
+        'event entity reference',
+      );
+    if (e.sensoryCue) {
+      const cue = e.sensoryCue;
+      requireReplay(
+        e.kind === 'sensory-cue' &&
+          e.entityId === cue.id &&
+          e.actorId === cue.creatorId &&
+          e.targetId === cue.observerId &&
+          cue.creatorId !== cue.observerId &&
+          cue.deliveredAt >= cue.emittedAt &&
+          cue.discoveredAt <= cue.expiresAt &&
+          e.step >= cue.emittedAt &&
+          (cue.transition !== 'emitted' || e.step === cue.emittedAt) &&
+          (cue.transition !== 'delivered' || e.step === cue.deliveredAt) &&
+          (cue.transition !== 'discovered' || e.step === cue.discoveredAt) &&
+          (cue.transition !== 'expired' || e.step === cue.expiresAt),
+        'sensory cue transition',
+      );
+    } else requireReplay(e.kind !== 'sensory-cue', 'missing sensory cue event');
+    if (e.environmentalHologram) {
+      const hologram = e.environmentalHologram;
+      requireReplay(
+        e.kind === 'environmental-hologram' &&
+          e.entityId === hologram.id &&
+          e.actorId === hologram.creatorId &&
+          e.targetId === hologram.observerId &&
+          hologram.creatorId !== hologram.observerId &&
+          hologram.observerIds.length === 1 &&
+          hologram.observerIds[0] === hologram.observerId &&
+          e.step >= hologram.activatedAt &&
+          (hologram.transition === 'activated'
+            ? hologram.state === 'active-unobserved'
+            : hologram.transition === 'observed'
+              ? hologram.state === 'observed'
+              : hologram.state === 'invalidated') &&
+          (hologram.transition !== 'activated' || e.step === hologram.activatedAt) &&
+          (hologram.transition !== 'observed' || e.step === hologram.observedAt) &&
+          (hologram.transition !== 'invalidated' || e.step === hologram.invalidatedAt) &&
+          (hologram.transition !== 'expired' || e.step === hologram.expiresAt),
+        'environmental hologram transition',
+      );
+    } else
+      requireReplay(e.kind !== 'environmental-hologram', 'missing environmental hologram event');
     for (const receipt of e.timeStop?.captured ?? []) {
       validateDeferredDefinition(context, receipt);
+      const capturedSource =
+        ('changes' in record
+          ? record.changes.find((actor) => actor.id === receipt.actorId)?.position
+          : undefined) ??
+        prior.state?.actors.find((actor) => actor.id === receipt.actorId)?.position;
       requireReplay(
         e.timeStop?.state === 'capture' &&
           receipt.controlId === e.timeStop.controlId &&
@@ -76,6 +147,13 @@ export function validateEvents(
           receipt.actorId !== receipt.targetId,
         'capture receipt context',
       );
+      if (receipt.effect.kind === 'environmental-hologram')
+        requireReplay(
+          !!receipt.sourcePosition &&
+            !!capturedSource &&
+            same(receipt.sourcePosition, capturedSource),
+          'captured environmental hologram source geometry',
+        );
       if (receipt.deflection) {
         const projectile = prior.state?.projectiles.find(
           (p) => p.id === receipt.sourceProjectileId,
@@ -152,6 +230,20 @@ export function validateEvents(
               .abilities.some((a) => a.id === e.abilityId),
         'event ability reference',
       );
+    for (const guard of e.damage?.guard?.responses ?? []) {
+      const activation = events.find((candidate) => candidate.id === guard.activationId);
+      const ability = context.actors
+        .find((actor) => actor.participant.actorId === e.targetId)
+        ?.abilities.find((candidate) => candidate.id === activation?.abilityId);
+      requireReplay(
+        activation?.kind === 'reaction' &&
+          activation.ruleId === 'reaction.activated' &&
+          activation.actorId === e.targetId &&
+          ability?.definition.reaction?.response.kind === 'guard' &&
+          ability.definition.reaction.response.retainedDamageBps === guard.retainedDamageBps,
+        'guard activation provenance',
+      );
+    }
     if (e.stage) {
       const ability = context.actors
         .find((a) => a.participant.actorId === (e.sourceActorId ?? e.actorId))

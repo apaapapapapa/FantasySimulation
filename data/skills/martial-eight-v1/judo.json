@@ -1,0 +1,1472 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "skill-catalog-v2",
+  "catalogRevision": 1,
+  "path": "judo",
+  "nodes": [
+    {
+      "id": "skill.judo.rat.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rat",
+        "dan": 1
+      },
+      "name": "Judo Initiative dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: begin the path action before the opponent establishes control.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rat.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rat",
+        "dan": 2
+      },
+      "name": "Judo Initiative dan 2",
+      "description": "When at engagement start or immediately after returning to neutral, apply begin the path action before the opponent establishes control; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rat.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on at engagement start or immediately after returning to neutral rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rat.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rat",
+        "dan": 3
+      },
+      "name": "Judo Initiative dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rat.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rat.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rat",
+        "dan": 4
+      },
+      "name": "Judo Initiative dan 4",
+      "description": "Tactical mode: shorten preparation while preserving an exit; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rat.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through shorten preparation while preserving an exit.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rat.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rat",
+        "dan": 5
+      },
+      "name": "Judo Initiative dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for begin the path action before the opponent establishes control. Tradeoff: reduced certainty when used after the opening has passed; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rat.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays reduced certainty when used after the opening has passed.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "reduced certainty when used after the opening has passed; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rat.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rat",
+        "dan": 6
+      },
+      "name": "Judo Initiative dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: reduced certainty when used after the opening has passed; contact, size leverage and exposure while maintaining a hold. Counter: delay, spacing or a false start.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rat.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by delay, spacing or a false start and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "reduced certainty when used after the opening has passed; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.ox.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "ox",
+        "dan": 1
+      },
+      "name": "Judo Accumulation dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: build and retain path-specific readiness over time.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.ox.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "ox",
+        "dan": 2
+      },
+      "name": "Judo Accumulation dan 2",
+      "description": "When after uninterrupted preparation or maintained contact, apply build and retain path-specific readiness over time; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.ox.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on after uninterrupted preparation or maintained contact rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.ox.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "ox",
+        "dan": 3
+      },
+      "name": "Judo Accumulation dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.ox.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.ox.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "ox",
+        "dan": 4
+      },
+      "name": "Judo Accumulation dan 4",
+      "description": "Tactical mode: trade immediate output for retained readiness; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.ox.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through trade immediate output for retained readiness.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.ox.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "ox",
+        "dan": 5
+      },
+      "name": "Judo Accumulation dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for build and retain path-specific readiness over time. Tradeoff: lost buildup when preparation or maintenance is broken; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.ox.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays lost buildup when preparation or maintenance is broken.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "lost buildup when preparation or maintenance is broken; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.ox.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "ox",
+        "dan": 6
+      },
+      "name": "Judo Accumulation dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: lost buildup when preparation or maintenance is broken; contact, size leverage and exposure while maintaining a hold. Counter: interrupt preparation or force disengagement.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.ox.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by interrupt preparation or force disengagement and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "lost buildup when preparation or maintenance is broken; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.tiger.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "tiger",
+        "dan": 1
+      },
+      "name": "Judo Pressure dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: apply stronger path-specific break pressure.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.tiger.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "tiger",
+        "dan": 2
+      },
+      "name": "Judo Pressure dan 2",
+      "description": "When while the target is defending or losing posture, apply apply stronger path-specific break pressure; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.tiger.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on while the target is defending or losing posture rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.tiger.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "tiger",
+        "dan": 3
+      },
+      "name": "Judo Pressure dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.tiger.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.tiger.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "tiger",
+        "dan": 4
+      },
+      "name": "Judo Pressure dan 4",
+      "description": "Tactical mode: commit forward to deny a passive defense; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.tiger.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through commit forward to deny a passive defense.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.tiger.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "tiger",
+        "dan": 5
+      },
+      "name": "Judo Pressure dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for apply stronger path-specific break pressure. Tradeoff: greater recovery and a clearer counter window; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.tiger.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays greater recovery and a clearer counter window.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "greater recovery and a clearer counter window; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.tiger.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "tiger",
+        "dan": 6
+      },
+      "name": "Judo Pressure dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: greater recovery and a clearer counter window; contact, size leverage and exposure while maintaining a hold. Counter: evade the commitment or counter during recovery.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.tiger.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by evade the commitment or counter during recovery and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "greater recovery and a clearer counter window; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rabbit.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rabbit",
+        "dan": 1
+      },
+      "name": "Judo Evasion dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: leave danger while retaining the path's low-level option.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rabbit.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rabbit",
+        "dan": 2
+      },
+      "name": "Judo Evasion dan 2",
+      "description": "When when an observed threat enters its effective window, apply leave danger while retaining the path's low-level option; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rabbit.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on when an observed threat enters its effective window rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rabbit.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rabbit",
+        "dan": 3
+      },
+      "name": "Judo Evasion dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rabbit.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rabbit.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rabbit",
+        "dan": 4
+      },
+      "name": "Judo Evasion dan 4",
+      "description": "Tactical mode: change spacing instead of contesting the threat directly; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rabbit.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through change spacing instead of contesting the threat directly.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rabbit.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rabbit",
+        "dan": 5
+      },
+      "name": "Judo Evasion dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for leave danger while retaining the path's low-level option. Tradeoff: cedes ground and may abandon accumulated readiness; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rabbit.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays cedes ground and may abandon accumulated readiness.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "cedes ground and may abandon accumulated readiness; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rabbit.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rabbit",
+        "dan": 6
+      },
+      "name": "Judo Evasion dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: cedes ground and may abandon accumulated readiness; contact, size leverage and exposure while maintaining a hold. Counter: deny the exit lane or delay the threat.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rabbit.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by deny the exit lane or delay the threat and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "cedes ground and may abandon accumulated readiness; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dragon.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dragon",
+        "dan": 1
+      },
+      "name": "Judo Area dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: extend the path effect to a bounded lane or nearby area.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dragon.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dragon",
+        "dan": 2
+      },
+      "name": "Judo Area dan 2",
+      "description": "When when geometry permits the declared area, apply extend the path effect to a bounded lane or nearby area; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dragon.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on when geometry permits the declared area rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dragon.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dragon",
+        "dan": 3
+      },
+      "name": "Judo Area dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dragon.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dragon.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dragon",
+        "dan": 4
+      },
+      "name": "Judo Area dan 4",
+      "description": "Tactical mode: control space rather than focus one target line; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dragon.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through control space rather than focus one target line.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dragon.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dragon",
+        "dan": 5
+      },
+      "name": "Judo Area dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for extend the path effect to a bounded lane or nearby area. Tradeoff: higher commitment and weaker focused effect; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dragon.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays higher commitment and weaker focused effect.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "higher commitment and weaker focused effect; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dragon.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dragon",
+        "dan": 6
+      },
+      "name": "Judo Area dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: higher commitment and weaker focused effect; contact, size leverage and exposure while maintaining a hold. Counter: leave the bounded area or use obstruction.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dragon.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by leave the bounded area or use obstruction and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "higher commitment and weaker focused effect; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.snake.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "snake",
+        "dan": 1
+      },
+      "name": "Judo Restraint dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: maintain path-specific pressure that limits escape.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.snake.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "snake",
+        "dan": 2
+      },
+      "name": "Judo Restraint dan 2",
+      "description": "When after the path has established valid contact or control, apply maintain path-specific pressure that limits escape; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.snake.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on after the path has established valid contact or control rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.snake.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "snake",
+        "dan": 3
+      },
+      "name": "Judo Restraint dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.snake.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.snake.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "snake",
+        "dan": 4
+      },
+      "name": "Judo Restraint dan 4",
+      "description": "Tactical mode: exchange immediate damage for finite maintained control; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.snake.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through exchange immediate damage for finite maintained control.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.snake.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "snake",
+        "dan": 5
+      },
+      "name": "Judo Restraint dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for maintain path-specific pressure that limits escape. Tradeoff: upkeep, exposure and an explicit escape opportunity; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.snake.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays upkeep, exposure and an explicit escape opportunity.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "upkeep, exposure and an explicit escape opportunity; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.snake.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "snake",
+        "dan": 6
+      },
+      "name": "Judo Restraint dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: upkeep, exposure and an explicit escape opportunity; contact, size leverage and exposure while maintaining a hold. Counter: break contact, cleanse the control or exhaust upkeep.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.snake.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by break contact, cleanse the control or exhaust upkeep and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "upkeep, exposure and an explicit escape opportunity; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.horse.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "horse",
+        "dan": 1
+      },
+      "name": "Judo Mobility dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: move with the path action and continue a legal pursuit.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.horse.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "horse",
+        "dan": 2
+      },
+      "name": "Judo Mobility dan 2",
+      "description": "When while a traversable route and observed target remain, apply move with the path action and continue a legal pursuit; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.horse.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on while a traversable route and observed target remain rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.horse.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "horse",
+        "dan": 3
+      },
+      "name": "Judo Mobility dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.horse.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.horse.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "horse",
+        "dan": 4
+      },
+      "name": "Judo Mobility dan 4",
+      "description": "Tactical mode: join movement and action without granting teleportation; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.horse.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through join movement and action without granting teleportation.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.horse.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "horse",
+        "dan": 5
+      },
+      "name": "Judo Mobility dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for move with the path action and continue a legal pursuit. Tradeoff: movement resource use and predictable pursuit direction; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.horse.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays movement resource use and predictable pursuit direction.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "movement resource use and predictable pursuit direction; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.horse.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "horse",
+        "dan": 6
+      },
+      "name": "Judo Mobility dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: movement resource use and predictable pursuit direction; contact, size leverage and exposure while maintaining a hold. Counter: obstacles, route changes or a prepared interception.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.horse.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by obstacles, route changes or a prepared interception and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "movement resource use and predictable pursuit direction; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.goat.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "goat",
+        "dan": 1
+      },
+      "name": "Judo Harmony dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: stabilize path-specific resources and recovery.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.goat.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "goat",
+        "dan": 2
+      },
+      "name": "Judo Harmony dan 2",
+      "description": "When after choosing a lower-output controlled action, apply stabilize path-specific resources and recovery; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.goat.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on after choosing a lower-output controlled action rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.goat.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "goat",
+        "dan": 3
+      },
+      "name": "Judo Harmony dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.goat.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.goat.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "goat",
+        "dan": 4
+      },
+      "name": "Judo Harmony dan 4",
+      "description": "Tactical mode: preserve repeated use instead of maximizing one exchange; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.goat.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through preserve repeated use instead of maximizing one exchange.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.goat.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "goat",
+        "dan": 5
+      },
+      "name": "Judo Harmony dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for stabilize path-specific resources and recovery. Tradeoff: lower immediate pressure and time spent stabilizing; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.goat.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays lower immediate pressure and time spent stabilizing.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "lower immediate pressure and time spent stabilizing; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.goat.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "goat",
+        "dan": 6
+      },
+      "name": "Judo Harmony dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: lower immediate pressure and time spent stabilizing; contact, size leverage and exposure while maintaining a hold. Counter: force a decisive exchange before stabilization.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.goat.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by force a decisive exchange before stabilization and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "lower immediate pressure and time spent stabilizing; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.monkey.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "monkey",
+        "dan": 1
+      },
+      "name": "Judo Adaptation dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: switch between two declared path modes after observation.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.monkey.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "monkey",
+        "dan": 2
+      },
+      "name": "Judo Adaptation dan 2",
+      "description": "When after legally observing the opponent's current response, apply switch between two declared path modes after observation; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.monkey.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on after legally observing the opponent's current response rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.monkey.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "monkey",
+        "dan": 3
+      },
+      "name": "Judo Adaptation dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.monkey.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.monkey.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "monkey",
+        "dan": 4
+      },
+      "name": "Judo Adaptation dan 4",
+      "description": "Tactical mode: use a bounded branch instead of a hidden-information guess; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.monkey.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through use a bounded branch instead of a hidden-information guess.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.monkey.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "monkey",
+        "dan": 5
+      },
+      "name": "Judo Adaptation dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for switch between two declared path modes after observation. Tradeoff: the switch consumes time or resources and can be baited; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.monkey.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays the switch consumes time or resources and can be baited.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "the switch consumes time or resources and can be baited; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.monkey.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "monkey",
+        "dan": 6
+      },
+      "name": "Judo Adaptation dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: the switch consumes time or resources and can be baited; contact, size leverage and exposure while maintaining a hold. Counter: feint the observed response or change after the switch.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.monkey.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by feint the observed response or change after the switch and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "the switch consumes time or resources and can be baited; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rooster.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rooster",
+        "dan": 1
+      },
+      "name": "Judo Observation dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: improve a path action using delivered, legal observation.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rooster.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rooster",
+        "dan": 2
+      },
+      "name": "Judo Observation dan 2",
+      "description": "When after the relevant motion, posture or opening is observed, apply improve a path action using delivered, legal observation; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rooster.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on after the relevant motion, posture or opening is observed rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rooster.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rooster",
+        "dan": 3
+      },
+      "name": "Judo Observation dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rooster.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rooster.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rooster",
+        "dan": 4
+      },
+      "name": "Judo Observation dan 4",
+      "description": "Tactical mode: wait for evidence before committing the path action; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rooster.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through wait for evidence before committing the path action.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rooster.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rooster",
+        "dan": 5
+      },
+      "name": "Judo Observation dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for improve a path action using delivered, legal observation. Tradeoff: delayed action and failure against concealed or false cues; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rooster.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays delayed action and failure against concealed or false cues.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "delayed action and failure against concealed or false cues; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.rooster.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "rooster",
+        "dan": 6
+      },
+      "name": "Judo Observation dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: delayed action and failure against concealed or false cues; contact, size leverage and exposure while maintaining a hold. Counter: conceal, vary or falsify the relevant cue.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.rooster.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by conceal, vary or falsify the relevant cue and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "delayed action and failure against concealed or false cues; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dog.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dog",
+        "dan": 1
+      },
+      "name": "Judo Protection dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: answer a threat with path-specific defense and response.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dog.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dog",
+        "dan": 2
+      },
+      "name": "Judo Protection dan 2",
+      "description": "When when a valid observed threat reaches the response window, apply answer a threat with path-specific defense and response; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dog.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on when a valid observed threat reaches the response window rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dog.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dog",
+        "dan": 3
+      },
+      "name": "Judo Protection dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dog.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dog.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dog",
+        "dan": 4
+      },
+      "name": "Judo Protection dan 4",
+      "description": "Tactical mode: protect first and counter only if the response succeeds; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dog.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through protect first and counter only if the response succeeds.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dog.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dog",
+        "dan": 5
+      },
+      "name": "Judo Protection dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for answer a threat with path-specific defense and response. Tradeoff: depends on the incoming threat and yields initiative when unused; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dog.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays depends on the incoming threat and yields initiative when unused.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "depends on the incoming threat and yields initiative when unused; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.dog.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "dog",
+        "dan": 6
+      },
+      "name": "Judo Protection dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: depends on the incoming threat and yields initiative when unused; contact, size leverage and exposure while maintaining a hold. Counter: wait, feint or attack outside the response contract.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.dog.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by wait, feint or attack outside the response contract and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "depends on the incoming threat and yields initiative when unused; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.boar.1",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "boar",
+        "dan": 1
+      },
+      "name": "Judo Breakthrough dan 1",
+      "description": "Low-level use: a brief grip check that can be released before committing to a hold. Zodiac direction: spend a bounded resource or recovery window for a decisive path action.",
+      "lifecycle": "draft",
+      "prerequisites": [],
+      "deepening": {
+        "kind": "foundation",
+        "explanation": "Foundation exposes a brief grip check that can be released before committing to a hold without promising the branch's advanced mechanisms.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.boar.2",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "boar",
+        "dan": 2
+      },
+      "name": "Judo Breakthrough dan 2",
+      "description": "When when the declared finishing condition is met, apply spend a bounded resource or recovery window for a decisive path action; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.boar.1"],
+      "deepening": {
+        "kind": "conditional-effect",
+        "explanation": "Application is conditional on when the declared finishing condition is met rather than a numeric replacement.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.boar.3",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "boar",
+        "dan": 3
+      },
+      "name": "Judo Breakthrough dan 3",
+      "description": "Combine actively secure contact and control the opponent's posture with a bounded throw or pin follow-up; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.boar.2"],
+      "deepening": {
+        "kind": "combination",
+        "explanation": "Combination adds a bounded throw or pin follow-up while the foundation remains independently useful.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.boar.4",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "boar",
+        "dan": 4
+      },
+      "name": "Judo Breakthrough dan 4",
+      "description": "Tactical mode: accept a visible risk to overcome established resistance; retain the lower use: a brief grip check that can be released before committing to a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.boar.3"],
+      "deepening": {
+        "kind": "tactical-mode",
+        "explanation": "Tactical depth changes operation through accept a visible risk to overcome established resistance.",
+        "retainsLowerUse": true
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.boar.5",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "boar",
+        "dan": 5
+      },
+      "name": "Judo Breakthrough dan 5",
+      "description": "Specialize actively secure contact and control the opponent's posture for spend a bounded resource or recovery window for a decisive path action. Tradeoff: high consumption, long recovery and punishable failure; contact, size leverage and exposure while maintaining a hold.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.boar.4"],
+      "deepening": {
+        "kind": "specialization",
+        "explanation": "Specialization narrows the favorable situation and pays high consumption, long recovery and punishable failure.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "high consumption, long recovery and punishable failure; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    },
+    {
+      "id": "skill.judo.boar.6",
+      "coordinate": {
+        "path": "judo",
+        "zodiac": "boar",
+        "dan": 6
+      },
+      "name": "Judo Breakthrough dan 6",
+      "description": "Decisive use of actively secure contact and control the opponent's posture. Tradeoffs remain: high consumption, long recovery and punishable failure; contact, size leverage and exposure while maintaining a hold. Counter: survive, evade or invalidate the finishing condition.",
+      "lifecycle": "draft",
+      "prerequisites": ["skill.judo.boar.5"],
+      "deepening": {
+        "kind": "ultimate-tradeoff",
+        "explanation": "Ultimate use remains counterable by survive, evade or invalidate the finishing condition and preserves contact, size leverage and exposure while maintaining a hold.",
+        "retainsLowerUse": true,
+        "conditionOrTradeoff": "high consumption, long recovery and punishable failure; retained weakness: contact, size leverage and exposure while maintaining a hold."
+      },
+      "pathRoleTags": ["active-capture", "posture-control"],
+      "resolution": [],
+      "fixtureIds": []
+    }
+  ]
+}

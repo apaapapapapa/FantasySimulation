@@ -28,7 +28,9 @@ jobs:
       - name: Secret-free produce pilot
         env:
           LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
-        run: node --import tsx scripts/league-artifact-pilot.ts produce
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: pilot-produce
   consume:
     if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -45,7 +47,9 @@ jobs:
       - name: Secret-free consume pilot
         env:
           LEAGUE_ARTIFACT_TOKEN: ${{ github.token }}
-        run: node --import tsx scripts/league-artifact-pilot.ts consume
+        uses: ./.github/actions/league-artifact-command
+        with:
+          command: pilot-consume
   workers:
     if: github.repository == 'apaapapapapa/FantasySimulation' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest

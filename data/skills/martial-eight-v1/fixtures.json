@@ -1,0 +1,2392 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "skill-catalog-v2",
+  "catalogRevision": 1,
+  "branches": [
+    {
+      "id": "fixture.plan.judo.rat",
+      "path": "judo",
+      "zodiac": "rat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.rat.1",
+        "skill.judo.rat.2",
+        "skill.judo.rat.3",
+        "skill.judo.rat.4",
+        "skill.judo.rat.5",
+        "skill.judo.rat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "reduced certainty when used after the opening has passed; contact, size leverage and exposure while maintaining a hold.",
+        "reduced certainty when used after the opening has passed; contact, size leverage and exposure while maintaining a hold; countered by delay, spacing or a false start."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: begin the path action before the opponent establishes control.",
+      "counterplay": "delay, spacing or a false start; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.ox",
+      "path": "judo",
+      "zodiac": "ox",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.ox.1",
+        "skill.judo.ox.2",
+        "skill.judo.ox.3",
+        "skill.judo.ox.4",
+        "skill.judo.ox.5",
+        "skill.judo.ox.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "lost buildup when preparation or maintenance is broken; contact, size leverage and exposure while maintaining a hold.",
+        "lost buildup when preparation or maintenance is broken; contact, size leverage and exposure while maintaining a hold; countered by interrupt preparation or force disengagement."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: build and retain path-specific readiness over time.",
+      "counterplay": "interrupt preparation or force disengagement; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.tiger",
+      "path": "judo",
+      "zodiac": "tiger",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.tiger.1",
+        "skill.judo.tiger.2",
+        "skill.judo.tiger.3",
+        "skill.judo.tiger.4",
+        "skill.judo.tiger.5",
+        "skill.judo.tiger.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "greater recovery and a clearer counter window; contact, size leverage and exposure while maintaining a hold.",
+        "greater recovery and a clearer counter window; contact, size leverage and exposure while maintaining a hold; countered by evade the commitment or counter during recovery."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: apply stronger path-specific break pressure.",
+      "counterplay": "evade the commitment or counter during recovery; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.rabbit",
+      "path": "judo",
+      "zodiac": "rabbit",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.rabbit.1",
+        "skill.judo.rabbit.2",
+        "skill.judo.rabbit.3",
+        "skill.judo.rabbit.4",
+        "skill.judo.rabbit.5",
+        "skill.judo.rabbit.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "cedes ground and may abandon accumulated readiness; contact, size leverage and exposure while maintaining a hold.",
+        "cedes ground and may abandon accumulated readiness; contact, size leverage and exposure while maintaining a hold; countered by deny the exit lane or delay the threat."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: leave danger while retaining the path's low-level option.",
+      "counterplay": "deny the exit lane or delay the threat; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.dragon",
+      "path": "judo",
+      "zodiac": "dragon",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.dragon.1",
+        "skill.judo.dragon.2",
+        "skill.judo.dragon.3",
+        "skill.judo.dragon.4",
+        "skill.judo.dragon.5",
+        "skill.judo.dragon.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "higher commitment and weaker focused effect; contact, size leverage and exposure while maintaining a hold.",
+        "higher commitment and weaker focused effect; contact, size leverage and exposure while maintaining a hold; countered by leave the bounded area or use obstruction."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
+      "counterplay": "leave the bounded area or use obstruction; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.snake",
+      "path": "judo",
+      "zodiac": "snake",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.snake.1",
+        "skill.judo.snake.2",
+        "skill.judo.snake.3",
+        "skill.judo.snake.4",
+        "skill.judo.snake.5",
+        "skill.judo.snake.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "upkeep, exposure and an explicit escape opportunity; contact, size leverage and exposure while maintaining a hold.",
+        "upkeep, exposure and an explicit escape opportunity; contact, size leverage and exposure while maintaining a hold; countered by break contact, cleanse the control or exhaust upkeep."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: maintain path-specific pressure that limits escape.",
+      "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.horse",
+      "path": "judo",
+      "zodiac": "horse",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.horse.1",
+        "skill.judo.horse.2",
+        "skill.judo.horse.3",
+        "skill.judo.horse.4",
+        "skill.judo.horse.5",
+        "skill.judo.horse.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "movement resource use and predictable pursuit direction; contact, size leverage and exposure while maintaining a hold.",
+        "movement resource use and predictable pursuit direction; contact, size leverage and exposure while maintaining a hold; countered by obstacles, route changes or a prepared interception."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: move with the path action and continue a legal pursuit.",
+      "counterplay": "obstacles, route changes or a prepared interception; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.goat",
+      "path": "judo",
+      "zodiac": "goat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.goat.1",
+        "skill.judo.goat.2",
+        "skill.judo.goat.3",
+        "skill.judo.goat.4",
+        "skill.judo.goat.5",
+        "skill.judo.goat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "lower immediate pressure and time spent stabilizing; contact, size leverage and exposure while maintaining a hold.",
+        "lower immediate pressure and time spent stabilizing; contact, size leverage and exposure while maintaining a hold; countered by force a decisive exchange before stabilization."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: stabilize path-specific resources and recovery.",
+      "counterplay": "force a decisive exchange before stabilization; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.monkey",
+      "path": "judo",
+      "zodiac": "monkey",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.monkey.1",
+        "skill.judo.monkey.2",
+        "skill.judo.monkey.3",
+        "skill.judo.monkey.4",
+        "skill.judo.monkey.5",
+        "skill.judo.monkey.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "the switch consumes time or resources and can be baited; contact, size leverage and exposure while maintaining a hold.",
+        "the switch consumes time or resources and can be baited; contact, size leverage and exposure while maintaining a hold; countered by feint the observed response or change after the switch."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: switch between two declared path modes after observation.",
+      "counterplay": "feint the observed response or change after the switch; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.rooster",
+      "path": "judo",
+      "zodiac": "rooster",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.rooster.1",
+        "skill.judo.rooster.2",
+        "skill.judo.rooster.3",
+        "skill.judo.rooster.4",
+        "skill.judo.rooster.5",
+        "skill.judo.rooster.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "delayed action and failure against concealed or false cues; contact, size leverage and exposure while maintaining a hold.",
+        "delayed action and failure against concealed or false cues; contact, size leverage and exposure while maintaining a hold; countered by conceal, vary or falsify the relevant cue."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: improve a path action using delivered, legal observation.",
+      "counterplay": "conceal, vary or falsify the relevant cue; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.dog",
+      "path": "judo",
+      "zodiac": "dog",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.dog.1",
+        "skill.judo.dog.2",
+        "skill.judo.dog.3",
+        "skill.judo.dog.4",
+        "skill.judo.dog.5",
+        "skill.judo.dog.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "depends on the incoming threat and yields initiative when unused; contact, size leverage and exposure while maintaining a hold.",
+        "depends on the incoming threat and yields initiative when unused; contact, size leverage and exposure while maintaining a hold; countered by wait, feint or attack outside the response contract."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: answer a threat with path-specific defense and response.",
+      "counterplay": "wait, feint or attack outside the response contract; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.judo.boar",
+      "path": "judo",
+      "zodiac": "boar",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.judo.boar.1",
+        "skill.judo.boar.2",
+        "skill.judo.boar.3",
+        "skill.judo.boar.4",
+        "skill.judo.boar.5",
+        "skill.judo.boar.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a brief grip check that can be released before committing to a hold",
+      "upperDanTradeoffs": [
+        "high consumption, long recovery and punishable failure; contact, size leverage and exposure while maintaining a hold.",
+        "high consumption, long recovery and punishable failure; contact, size leverage and exposure while maintaining a hold; countered by survive, evade or invalidate the finishing condition."
+      ],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "missingMechanics": ["capture", "posture-control", "escape-window"],
+      "expectedBehavior": "actively secure contact and control the opponent's posture; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
+      "counterplay": "survive, evade or invalidate the finishing condition; path weakness: contact, size leverage and exposure while maintaining a hold."
+    },
+    {
+      "id": "fixture.plan.aikido.rat",
+      "path": "aikido",
+      "zodiac": "rat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.rat.1",
+        "skill.aikido.rat.2",
+        "skill.aikido.rat.3",
+        "skill.aikido.rat.4",
+        "skill.aikido.rat.5",
+        "skill.aikido.rat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "reduced certainty when used after the opening has passed; patient opponents, feints and attacks that are not observed in time.",
+        "reduced certainty when used after the opening has passed; patient opponents, feints and attacks that are not observed in time; countered by delay, spacing or a false start."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: begin the path action before the opponent establishes control.",
+      "counterplay": "delay, spacing or a false start; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.ox",
+      "path": "aikido",
+      "zodiac": "ox",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.ox.1",
+        "skill.aikido.ox.2",
+        "skill.aikido.ox.3",
+        "skill.aikido.ox.4",
+        "skill.aikido.ox.5",
+        "skill.aikido.ox.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "lost buildup when preparation or maintenance is broken; patient opponents, feints and attacks that are not observed in time.",
+        "lost buildup when preparation or maintenance is broken; patient opponents, feints and attacks that are not observed in time; countered by interrupt preparation or force disengagement."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: build and retain path-specific readiness over time.",
+      "counterplay": "interrupt preparation or force disengagement; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.tiger",
+      "path": "aikido",
+      "zodiac": "tiger",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.tiger.1",
+        "skill.aikido.tiger.2",
+        "skill.aikido.tiger.3",
+        "skill.aikido.tiger.4",
+        "skill.aikido.tiger.5",
+        "skill.aikido.tiger.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "greater recovery and a clearer counter window; patient opponents, feints and attacks that are not observed in time.",
+        "greater recovery and a clearer counter window; patient opponents, feints and attacks that are not observed in time; countered by evade the commitment or counter during recovery."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: apply stronger path-specific break pressure.",
+      "counterplay": "evade the commitment or counter during recovery; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.rabbit",
+      "path": "aikido",
+      "zodiac": "rabbit",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.rabbit.1",
+        "skill.aikido.rabbit.2",
+        "skill.aikido.rabbit.3",
+        "skill.aikido.rabbit.4",
+        "skill.aikido.rabbit.5",
+        "skill.aikido.rabbit.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "cedes ground and may abandon accumulated readiness; patient opponents, feints and attacks that are not observed in time.",
+        "cedes ground and may abandon accumulated readiness; patient opponents, feints and attacks that are not observed in time; countered by deny the exit lane or delay the threat."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: leave danger while retaining the path's low-level option.",
+      "counterplay": "deny the exit lane or delay the threat; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.dragon",
+      "path": "aikido",
+      "zodiac": "dragon",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.dragon.1",
+        "skill.aikido.dragon.2",
+        "skill.aikido.dragon.3",
+        "skill.aikido.dragon.4",
+        "skill.aikido.dragon.5",
+        "skill.aikido.dragon.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "higher commitment and weaker focused effect; patient opponents, feints and attacks that are not observed in time.",
+        "higher commitment and weaker focused effect; patient opponents, feints and attacks that are not observed in time; countered by leave the bounded area or use obstruction."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
+      "counterplay": "leave the bounded area or use obstruction; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.snake",
+      "path": "aikido",
+      "zodiac": "snake",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.snake.1",
+        "skill.aikido.snake.2",
+        "skill.aikido.snake.3",
+        "skill.aikido.snake.4",
+        "skill.aikido.snake.5",
+        "skill.aikido.snake.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "upkeep, exposure and an explicit escape opportunity; patient opponents, feints and attacks that are not observed in time.",
+        "upkeep, exposure and an explicit escape opportunity; patient opponents, feints and attacks that are not observed in time; countered by break contact, cleanse the control or exhaust upkeep."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: maintain path-specific pressure that limits escape.",
+      "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.horse",
+      "path": "aikido",
+      "zodiac": "horse",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.horse.1",
+        "skill.aikido.horse.2",
+        "skill.aikido.horse.3",
+        "skill.aikido.horse.4",
+        "skill.aikido.horse.5",
+        "skill.aikido.horse.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "movement resource use and predictable pursuit direction; patient opponents, feints and attacks that are not observed in time.",
+        "movement resource use and predictable pursuit direction; patient opponents, feints and attacks that are not observed in time; countered by obstacles, route changes or a prepared interception."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: move with the path action and continue a legal pursuit.",
+      "counterplay": "obstacles, route changes or a prepared interception; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.goat",
+      "path": "aikido",
+      "zodiac": "goat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.goat.1",
+        "skill.aikido.goat.2",
+        "skill.aikido.goat.3",
+        "skill.aikido.goat.4",
+        "skill.aikido.goat.5",
+        "skill.aikido.goat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "lower immediate pressure and time spent stabilizing; patient opponents, feints and attacks that are not observed in time.",
+        "lower immediate pressure and time spent stabilizing; patient opponents, feints and attacks that are not observed in time; countered by force a decisive exchange before stabilization."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: stabilize path-specific resources and recovery.",
+      "counterplay": "force a decisive exchange before stabilization; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.monkey",
+      "path": "aikido",
+      "zodiac": "monkey",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.monkey.1",
+        "skill.aikido.monkey.2",
+        "skill.aikido.monkey.3",
+        "skill.aikido.monkey.4",
+        "skill.aikido.monkey.5",
+        "skill.aikido.monkey.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "the switch consumes time or resources and can be baited; patient opponents, feints and attacks that are not observed in time.",
+        "the switch consumes time or resources and can be baited; patient opponents, feints and attacks that are not observed in time; countered by feint the observed response or change after the switch."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: switch between two declared path modes after observation.",
+      "counterplay": "feint the observed response or change after the switch; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.rooster",
+      "path": "aikido",
+      "zodiac": "rooster",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.rooster.1",
+        "skill.aikido.rooster.2",
+        "skill.aikido.rooster.3",
+        "skill.aikido.rooster.4",
+        "skill.aikido.rooster.5",
+        "skill.aikido.rooster.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "delayed action and failure against concealed or false cues; patient opponents, feints and attacks that are not observed in time.",
+        "delayed action and failure against concealed or false cues; patient opponents, feints and attacks that are not observed in time; countered by conceal, vary or falsify the relevant cue."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: improve a path action using delivered, legal observation.",
+      "counterplay": "conceal, vary or falsify the relevant cue; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.dog",
+      "path": "aikido",
+      "zodiac": "dog",
+      "status": "partial",
+      "nodeIds": [
+        "skill.aikido.dog.1",
+        "skill.aikido.dog.2",
+        "skill.aikido.dog.3",
+        "skill.aikido.dog.4",
+        "skill.aikido.dog.5",
+        "skill.aikido.dog.6"
+      ],
+      "availableNodeIds": ["skill.aikido.dog.1"],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "depends on the incoming threat and yields initiative when unused; patient opponents, feints and attacks that are not observed in time.",
+        "depends on the incoming threat and yields initiative when unused; patient opponents, feints and attacks that are not observed in time; countered by wait, feint or attack outside the response contract."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: answer a threat with path-specific defense and response.",
+      "counterplay": "wait, feint or attack outside the response contract; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.aikido.boar",
+      "path": "aikido",
+      "zodiac": "boar",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.aikido.boar.1",
+        "skill.aikido.boar.2",
+        "skill.aikido.boar.3",
+        "skill.aikido.boar.4",
+        "skill.aikido.boar.5",
+        "skill.aikido.boar.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "upperDanTradeoffs": [
+        "high consumption, long recovery and punishable failure; patient opponents, feints and attacks that are not observed in time.",
+        "high consumption, long recovery and punishable failure; patient opponents, feints and attacks that are not observed in time; countered by survive, evade or invalidate the finishing condition."
+      ],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "missingMechanics": ["feint-counterplay"],
+      "expectedBehavior": "use an observed incoming attack or movement to redirect the attacker; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
+      "counterplay": "survive, evade or invalidate the finishing condition; path weakness: patient opponents, feints and attacks that are not observed in time."
+    },
+    {
+      "id": "fixture.plan.karate.rat",
+      "path": "karate",
+      "zodiac": "rat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.rat.1",
+        "skill.karate.rat.2",
+        "skill.karate.rat.3",
+        "skill.karate.rat.4",
+        "skill.karate.rat.5",
+        "skill.karate.rat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "reduced certainty when used after the opening has passed; weapon reach, approach interception and interruption between strikes.",
+        "reduced certainty when used after the opening has passed; weapon reach, approach interception and interruption between strikes; countered by delay, spacing or a false start."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: begin the path action before the opponent establishes control.",
+      "counterplay": "delay, spacing or a false start; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.ox",
+      "path": "karate",
+      "zodiac": "ox",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.ox.1",
+        "skill.karate.ox.2",
+        "skill.karate.ox.3",
+        "skill.karate.ox.4",
+        "skill.karate.ox.5",
+        "skill.karate.ox.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "lost buildup when preparation or maintenance is broken; weapon reach, approach interception and interruption between strikes.",
+        "lost buildup when preparation or maintenance is broken; weapon reach, approach interception and interruption between strikes; countered by interrupt preparation or force disengagement."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: build and retain path-specific readiness over time.",
+      "counterplay": "interrupt preparation or force disengagement; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.tiger",
+      "path": "karate",
+      "zodiac": "tiger",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.tiger.1",
+        "skill.karate.tiger.2",
+        "skill.karate.tiger.3",
+        "skill.karate.tiger.4",
+        "skill.karate.tiger.5",
+        "skill.karate.tiger.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "greater recovery and a clearer counter window; weapon reach, approach interception and interruption between strikes.",
+        "greater recovery and a clearer counter window; weapon reach, approach interception and interruption between strikes; countered by evade the commitment or counter during recovery."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: apply stronger path-specific break pressure.",
+      "counterplay": "evade the commitment or counter during recovery; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.rabbit",
+      "path": "karate",
+      "zodiac": "rabbit",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.rabbit.1",
+        "skill.karate.rabbit.2",
+        "skill.karate.rabbit.3",
+        "skill.karate.rabbit.4",
+        "skill.karate.rabbit.5",
+        "skill.karate.rabbit.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "cedes ground and may abandon accumulated readiness; weapon reach, approach interception and interruption between strikes.",
+        "cedes ground and may abandon accumulated readiness; weapon reach, approach interception and interruption between strikes; countered by deny the exit lane or delay the threat."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: leave danger while retaining the path's low-level option.",
+      "counterplay": "deny the exit lane or delay the threat; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.dragon",
+      "path": "karate",
+      "zodiac": "dragon",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.dragon.1",
+        "skill.karate.dragon.2",
+        "skill.karate.dragon.3",
+        "skill.karate.dragon.4",
+        "skill.karate.dragon.5",
+        "skill.karate.dragon.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "higher commitment and weaker focused effect; weapon reach, approach interception and interruption between strikes.",
+        "higher commitment and weaker focused effect; weapon reach, approach interception and interruption between strikes; countered by leave the bounded area or use obstruction."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
+      "counterplay": "leave the bounded area or use obstruction; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.snake",
+      "path": "karate",
+      "zodiac": "snake",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.snake.1",
+        "skill.karate.snake.2",
+        "skill.karate.snake.3",
+        "skill.karate.snake.4",
+        "skill.karate.snake.5",
+        "skill.karate.snake.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "upkeep, exposure and an explicit escape opportunity; weapon reach, approach interception and interruption between strikes.",
+        "upkeep, exposure and an explicit escape opportunity; weapon reach, approach interception and interruption between strikes; countered by break contact, cleanse the control or exhaust upkeep."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: maintain path-specific pressure that limits escape.",
+      "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.horse",
+      "path": "karate",
+      "zodiac": "horse",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.horse.1",
+        "skill.karate.horse.2",
+        "skill.karate.horse.3",
+        "skill.karate.horse.4",
+        "skill.karate.horse.5",
+        "skill.karate.horse.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "movement resource use and predictable pursuit direction; weapon reach, approach interception and interruption between strikes.",
+        "movement resource use and predictable pursuit direction; weapon reach, approach interception and interruption between strikes; countered by obstacles, route changes or a prepared interception."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: move with the path action and continue a legal pursuit.",
+      "counterplay": "obstacles, route changes or a prepared interception; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.goat",
+      "path": "karate",
+      "zodiac": "goat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.goat.1",
+        "skill.karate.goat.2",
+        "skill.karate.goat.3",
+        "skill.karate.goat.4",
+        "skill.karate.goat.5",
+        "skill.karate.goat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "lower immediate pressure and time spent stabilizing; weapon reach, approach interception and interruption between strikes.",
+        "lower immediate pressure and time spent stabilizing; weapon reach, approach interception and interruption between strikes; countered by force a decisive exchange before stabilization."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: stabilize path-specific resources and recovery.",
+      "counterplay": "force a decisive exchange before stabilization; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.monkey",
+      "path": "karate",
+      "zodiac": "monkey",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.monkey.1",
+        "skill.karate.monkey.2",
+        "skill.karate.monkey.3",
+        "skill.karate.monkey.4",
+        "skill.karate.monkey.5",
+        "skill.karate.monkey.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "the switch consumes time or resources and can be baited; weapon reach, approach interception and interruption between strikes.",
+        "the switch consumes time or resources and can be baited; weapon reach, approach interception and interruption between strikes; countered by feint the observed response or change after the switch."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: switch between two declared path modes after observation.",
+      "counterplay": "feint the observed response or change after the switch; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.rooster",
+      "path": "karate",
+      "zodiac": "rooster",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.rooster.1",
+        "skill.karate.rooster.2",
+        "skill.karate.rooster.3",
+        "skill.karate.rooster.4",
+        "skill.karate.rooster.5",
+        "skill.karate.rooster.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "delayed action and failure against concealed or false cues; weapon reach, approach interception and interruption between strikes.",
+        "delayed action and failure against concealed or false cues; weapon reach, approach interception and interruption between strikes; countered by conceal, vary or falsify the relevant cue."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: improve a path action using delivered, legal observation.",
+      "counterplay": "conceal, vary or falsify the relevant cue; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.dog",
+      "path": "karate",
+      "zodiac": "dog",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.dog.1",
+        "skill.karate.dog.2",
+        "skill.karate.dog.3",
+        "skill.karate.dog.4",
+        "skill.karate.dog.5",
+        "skill.karate.dog.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "depends on the incoming threat and yields initiative when unused; weapon reach, approach interception and interruption between strikes.",
+        "depends on the incoming threat and yields initiative when unused; weapon reach, approach interception and interruption between strikes; countered by wait, feint or attack outside the response contract."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: answer a threat with path-specific defense and response.",
+      "counterplay": "wait, feint or attack outside the response contract; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.karate.boar",
+      "path": "karate",
+      "zodiac": "boar",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.karate.boar.1",
+        "skill.karate.boar.2",
+        "skill.karate.boar.3",
+        "skill.karate.boar.4",
+        "skill.karate.boar.5",
+        "skill.karate.boar.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick single body strike with little recovery commitment",
+      "upperDanTradeoffs": [
+        "high consumption, long recovery and punishable failure; weapon reach, approach interception and interruption between strikes.",
+        "high consumption, long recovery and punishable failure; weapon reach, approach interception and interruption between strikes; countered by survive, evade or invalidate the finishing condition."
+      ],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "missingMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "expectedBehavior": "chain unarmed strikes to interrupt defense and destabilize posture; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
+      "counterplay": "survive, evade or invalidate the finishing condition; path weakness: weapon reach, approach interception and interruption between strikes."
+    },
+    {
+      "id": "fixture.plan.staff.rat",
+      "path": "staff",
+      "zodiac": "rat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.rat.1",
+        "skill.staff.rat.2",
+        "skill.staff.rat.3",
+        "skill.staff.rat.4",
+        "skill.staff.rat.5",
+        "skill.staff.rat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "reduced certainty when used after the opening has passed; close entry inside the staff and deliberately limited finishing power.",
+        "reduced certainty when used after the opening has passed; close entry inside the staff and deliberately limited finishing power; countered by delay, spacing or a false start."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: begin the path action before the opponent establishes control.",
+      "counterplay": "delay, spacing or a false start; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.ox",
+      "path": "staff",
+      "zodiac": "ox",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.ox.1",
+        "skill.staff.ox.2",
+        "skill.staff.ox.3",
+        "skill.staff.ox.4",
+        "skill.staff.ox.5",
+        "skill.staff.ox.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "lost buildup when preparation or maintenance is broken; close entry inside the staff and deliberately limited finishing power.",
+        "lost buildup when preparation or maintenance is broken; close entry inside the staff and deliberately limited finishing power; countered by interrupt preparation or force disengagement."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: build and retain path-specific readiness over time.",
+      "counterplay": "interrupt preparation or force disengagement; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.tiger",
+      "path": "staff",
+      "zodiac": "tiger",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.tiger.1",
+        "skill.staff.tiger.2",
+        "skill.staff.tiger.3",
+        "skill.staff.tiger.4",
+        "skill.staff.tiger.5",
+        "skill.staff.tiger.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "greater recovery and a clearer counter window; close entry inside the staff and deliberately limited finishing power.",
+        "greater recovery and a clearer counter window; close entry inside the staff and deliberately limited finishing power; countered by evade the commitment or counter during recovery."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: apply stronger path-specific break pressure.",
+      "counterplay": "evade the commitment or counter during recovery; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.rabbit",
+      "path": "staff",
+      "zodiac": "rabbit",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.rabbit.1",
+        "skill.staff.rabbit.2",
+        "skill.staff.rabbit.3",
+        "skill.staff.rabbit.4",
+        "skill.staff.rabbit.5",
+        "skill.staff.rabbit.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "cedes ground and may abandon accumulated readiness; close entry inside the staff and deliberately limited finishing power.",
+        "cedes ground and may abandon accumulated readiness; close entry inside the staff and deliberately limited finishing power; countered by deny the exit lane or delay the threat."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: leave danger while retaining the path's low-level option.",
+      "counterplay": "deny the exit lane or delay the threat; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.dragon",
+      "path": "staff",
+      "zodiac": "dragon",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.dragon.1",
+        "skill.staff.dragon.2",
+        "skill.staff.dragon.3",
+        "skill.staff.dragon.4",
+        "skill.staff.dragon.5",
+        "skill.staff.dragon.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "higher commitment and weaker focused effect; close entry inside the staff and deliberately limited finishing power.",
+        "higher commitment and weaker focused effect; close entry inside the staff and deliberately limited finishing power; countered by leave the bounded area or use obstruction."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
+      "counterplay": "leave the bounded area or use obstruction; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.snake",
+      "path": "staff",
+      "zodiac": "snake",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.snake.1",
+        "skill.staff.snake.2",
+        "skill.staff.snake.3",
+        "skill.staff.snake.4",
+        "skill.staff.snake.5",
+        "skill.staff.snake.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "upkeep, exposure and an explicit escape opportunity; close entry inside the staff and deliberately limited finishing power.",
+        "upkeep, exposure and an explicit escape opportunity; close entry inside the staff and deliberately limited finishing power; countered by break contact, cleanse the control or exhaust upkeep."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: maintain path-specific pressure that limits escape.",
+      "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.horse",
+      "path": "staff",
+      "zodiac": "horse",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.horse.1",
+        "skill.staff.horse.2",
+        "skill.staff.horse.3",
+        "skill.staff.horse.4",
+        "skill.staff.horse.5",
+        "skill.staff.horse.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "movement resource use and predictable pursuit direction; close entry inside the staff and deliberately limited finishing power.",
+        "movement resource use and predictable pursuit direction; close entry inside the staff and deliberately limited finishing power; countered by obstacles, route changes or a prepared interception."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: move with the path action and continue a legal pursuit.",
+      "counterplay": "obstacles, route changes or a prepared interception; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.goat",
+      "path": "staff",
+      "zodiac": "goat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.goat.1",
+        "skill.staff.goat.2",
+        "skill.staff.goat.3",
+        "skill.staff.goat.4",
+        "skill.staff.goat.5",
+        "skill.staff.goat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "lower immediate pressure and time spent stabilizing; close entry inside the staff and deliberately limited finishing power.",
+        "lower immediate pressure and time spent stabilizing; close entry inside the staff and deliberately limited finishing power; countered by force a decisive exchange before stabilization."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: stabilize path-specific resources and recovery.",
+      "counterplay": "force a decisive exchange before stabilization; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.monkey",
+      "path": "staff",
+      "zodiac": "monkey",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.monkey.1",
+        "skill.staff.monkey.2",
+        "skill.staff.monkey.3",
+        "skill.staff.monkey.4",
+        "skill.staff.monkey.5",
+        "skill.staff.monkey.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "the switch consumes time or resources and can be baited; close entry inside the staff and deliberately limited finishing power.",
+        "the switch consumes time or resources and can be baited; close entry inside the staff and deliberately limited finishing power; countered by feint the observed response or change after the switch."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: switch between two declared path modes after observation.",
+      "counterplay": "feint the observed response or change after the switch; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.rooster",
+      "path": "staff",
+      "zodiac": "rooster",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.rooster.1",
+        "skill.staff.rooster.2",
+        "skill.staff.rooster.3",
+        "skill.staff.rooster.4",
+        "skill.staff.rooster.5",
+        "skill.staff.rooster.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "delayed action and failure against concealed or false cues; close entry inside the staff and deliberately limited finishing power.",
+        "delayed action and failure against concealed or false cues; close entry inside the staff and deliberately limited finishing power; countered by conceal, vary or falsify the relevant cue."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: improve a path action using delivered, legal observation.",
+      "counterplay": "conceal, vary or falsify the relevant cue; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.dog",
+      "path": "staff",
+      "zodiac": "dog",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.dog.1",
+        "skill.staff.dog.2",
+        "skill.staff.dog.3",
+        "skill.staff.dog.4",
+        "skill.staff.dog.5",
+        "skill.staff.dog.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "depends on the incoming threat and yields initiative when unused; close entry inside the staff and deliberately limited finishing power.",
+        "depends on the incoming threat and yields initiative when unused; close entry inside the staff and deliberately limited finishing power; countered by wait, feint or attack outside the response contract."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: answer a threat with path-specific defense and response.",
+      "counterplay": "wait, feint or attack outside the response contract; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.staff.boar",
+      "path": "staff",
+      "zodiac": "boar",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.staff.boar.1",
+        "skill.staff.boar.2",
+        "skill.staff.boar.3",
+        "skill.staff.boar.4",
+        "skill.staff.boar.5",
+        "skill.staff.boar.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "upperDanTradeoffs": [
+        "high consumption, long recovery and punishable failure; close entry inside the staff and deliberately limited finishing power.",
+        "high consumption, long recovery and punishable failure; close entry inside the staff and deliberately limited finishing power; countered by survive, evade or invalidate the finishing condition."
+      ],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "missingMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "expectedBehavior": "control distance, posture and travel lanes with nonlethal staff pressure; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
+      "counterplay": "survive, evade or invalidate the finishing condition; path weakness: close entry inside the staff and deliberately limited finishing power."
+    },
+    {
+      "id": "fixture.plan.dagger.rat",
+      "path": "dagger",
+      "zodiac": "rat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.rat.1",
+        "skill.dagger.rat.2",
+        "skill.dagger.rat.3",
+        "skill.dagger.rat.4",
+        "skill.dagger.rat.5",
+        "skill.dagger.rat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "reduced certainty when used after the opening has passed; short reach and firm frontal defense.",
+        "reduced certainty when used after the opening has passed; short reach and firm frontal defense; countered by delay, spacing or a false start."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: begin the path action before the opponent establishes control.",
+      "counterplay": "delay, spacing or a false start; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.ox",
+      "path": "dagger",
+      "zodiac": "ox",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.ox.1",
+        "skill.dagger.ox.2",
+        "skill.dagger.ox.3",
+        "skill.dagger.ox.4",
+        "skill.dagger.ox.5",
+        "skill.dagger.ox.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "lost buildup when preparation or maintenance is broken; short reach and firm frontal defense.",
+        "lost buildup when preparation or maintenance is broken; short reach and firm frontal defense; countered by interrupt preparation or force disengagement."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: build and retain path-specific readiness over time.",
+      "counterplay": "interrupt preparation or force disengagement; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.tiger",
+      "path": "dagger",
+      "zodiac": "tiger",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.tiger.1",
+        "skill.dagger.tiger.2",
+        "skill.dagger.tiger.3",
+        "skill.dagger.tiger.4",
+        "skill.dagger.tiger.5",
+        "skill.dagger.tiger.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "greater recovery and a clearer counter window; short reach and firm frontal defense.",
+        "greater recovery and a clearer counter window; short reach and firm frontal defense; countered by evade the commitment or counter during recovery."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: apply stronger path-specific break pressure.",
+      "counterplay": "evade the commitment or counter during recovery; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.rabbit",
+      "path": "dagger",
+      "zodiac": "rabbit",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.rabbit.1",
+        "skill.dagger.rabbit.2",
+        "skill.dagger.rabbit.3",
+        "skill.dagger.rabbit.4",
+        "skill.dagger.rabbit.5",
+        "skill.dagger.rabbit.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "cedes ground and may abandon accumulated readiness; short reach and firm frontal defense.",
+        "cedes ground and may abandon accumulated readiness; short reach and firm frontal defense; countered by deny the exit lane or delay the threat."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: leave danger while retaining the path's low-level option.",
+      "counterplay": "deny the exit lane or delay the threat; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.dragon",
+      "path": "dagger",
+      "zodiac": "dragon",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.dragon.1",
+        "skill.dagger.dragon.2",
+        "skill.dagger.dragon.3",
+        "skill.dagger.dragon.4",
+        "skill.dagger.dragon.5",
+        "skill.dagger.dragon.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "higher commitment and weaker focused effect; short reach and firm frontal defense.",
+        "higher commitment and weaker focused effect; short reach and firm frontal defense; countered by leave the bounded area or use obstruction."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
+      "counterplay": "leave the bounded area or use obstruction; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.snake",
+      "path": "dagger",
+      "zodiac": "snake",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.snake.1",
+        "skill.dagger.snake.2",
+        "skill.dagger.snake.3",
+        "skill.dagger.snake.4",
+        "skill.dagger.snake.5",
+        "skill.dagger.snake.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "upkeep, exposure and an explicit escape opportunity; short reach and firm frontal defense.",
+        "upkeep, exposure and an explicit escape opportunity; short reach and firm frontal defense; countered by break contact, cleanse the control or exhaust upkeep."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: maintain path-specific pressure that limits escape.",
+      "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.horse",
+      "path": "dagger",
+      "zodiac": "horse",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.horse.1",
+        "skill.dagger.horse.2",
+        "skill.dagger.horse.3",
+        "skill.dagger.horse.4",
+        "skill.dagger.horse.5",
+        "skill.dagger.horse.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "movement resource use and predictable pursuit direction; short reach and firm frontal defense.",
+        "movement resource use and predictable pursuit direction; short reach and firm frontal defense; countered by obstacles, route changes or a prepared interception."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: move with the path action and continue a legal pursuit.",
+      "counterplay": "obstacles, route changes or a prepared interception; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.goat",
+      "path": "dagger",
+      "zodiac": "goat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.goat.1",
+        "skill.dagger.goat.2",
+        "skill.dagger.goat.3",
+        "skill.dagger.goat.4",
+        "skill.dagger.goat.5",
+        "skill.dagger.goat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "lower immediate pressure and time spent stabilizing; short reach and firm frontal defense.",
+        "lower immediate pressure and time spent stabilizing; short reach and firm frontal defense; countered by force a decisive exchange before stabilization."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: stabilize path-specific resources and recovery.",
+      "counterplay": "force a decisive exchange before stabilization; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.monkey",
+      "path": "dagger",
+      "zodiac": "monkey",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.monkey.1",
+        "skill.dagger.monkey.2",
+        "skill.dagger.monkey.3",
+        "skill.dagger.monkey.4",
+        "skill.dagger.monkey.5",
+        "skill.dagger.monkey.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "the switch consumes time or resources and can be baited; short reach and firm frontal defense.",
+        "the switch consumes time or resources and can be baited; short reach and firm frontal defense; countered by feint the observed response or change after the switch."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: switch between two declared path modes after observation.",
+      "counterplay": "feint the observed response or change after the switch; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.rooster",
+      "path": "dagger",
+      "zodiac": "rooster",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.rooster.1",
+        "skill.dagger.rooster.2",
+        "skill.dagger.rooster.3",
+        "skill.dagger.rooster.4",
+        "skill.dagger.rooster.5",
+        "skill.dagger.rooster.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "delayed action and failure against concealed or false cues; short reach and firm frontal defense.",
+        "delayed action and failure against concealed or false cues; short reach and firm frontal defense; countered by conceal, vary or falsify the relevant cue."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: improve a path action using delivered, legal observation.",
+      "counterplay": "conceal, vary or falsify the relevant cue; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.dog",
+      "path": "dagger",
+      "zodiac": "dog",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.dog.1",
+        "skill.dagger.dog.2",
+        "skill.dagger.dog.3",
+        "skill.dagger.dog.4",
+        "skill.dagger.dog.5",
+        "skill.dagger.dog.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "depends on the incoming threat and yields initiative when unused; short reach and firm frontal defense.",
+        "depends on the incoming threat and yields initiative when unused; short reach and firm frontal defense; countered by wait, feint or attack outside the response contract."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: answer a threat with path-specific defense and response.",
+      "counterplay": "wait, feint or attack outside the response contract; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.dagger.boar",
+      "path": "dagger",
+      "zodiac": "boar",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.dagger.boar.1",
+        "skill.dagger.boar.2",
+        "skill.dagger.boar.3",
+        "skill.dagger.boar.4",
+        "skill.dagger.boar.5",
+        "skill.dagger.boar.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a quick short-reach probe that can disengage without spending the opening",
+      "upperDanTradeoffs": [
+        "high consumption, long recovery and punishable failure; short reach and firm frontal defense.",
+        "high consumption, long recovery and punishable failure; short reach and firm frontal defense; countered by survive, evade or invalidate the finishing condition."
+      ],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "missingMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "expectedBehavior": "enter short range through a flank or opening and exploit a brief attack window; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
+      "counterplay": "survive, evade or invalidate the finishing condition; path weakness: short reach and firm frontal defense."
+    },
+    {
+      "id": "fixture.plan.draw-sword.rat",
+      "path": "draw-sword",
+      "zodiac": "rat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.rat.1",
+        "skill.draw-sword.rat.2",
+        "skill.draw-sword.rat.3",
+        "skill.draw-sword.rat.4",
+        "skill.draw-sword.rat.5",
+        "skill.draw-sword.rat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "reduced certainty when used after the opening has passed; preparation disruption, a missed release and the time needed to prepare again.",
+        "reduced certainty when used after the opening has passed; preparation disruption, a missed release and the time needed to prepare again; countered by delay, spacing or a false start."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: begin the path action before the opponent establishes control.",
+      "counterplay": "delay, spacing or a false start; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.ox",
+      "path": "draw-sword",
+      "zodiac": "ox",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.ox.1",
+        "skill.draw-sword.ox.2",
+        "skill.draw-sword.ox.3",
+        "skill.draw-sword.ox.4",
+        "skill.draw-sword.ox.5",
+        "skill.draw-sword.ox.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "lost buildup when preparation or maintenance is broken; preparation disruption, a missed release and the time needed to prepare again.",
+        "lost buildup when preparation or maintenance is broken; preparation disruption, a missed release and the time needed to prepare again; countered by interrupt preparation or force disengagement."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: build and retain path-specific readiness over time.",
+      "counterplay": "interrupt preparation or force disengagement; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.tiger",
+      "path": "draw-sword",
+      "zodiac": "tiger",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.tiger.1",
+        "skill.draw-sword.tiger.2",
+        "skill.draw-sword.tiger.3",
+        "skill.draw-sword.tiger.4",
+        "skill.draw-sword.tiger.5",
+        "skill.draw-sword.tiger.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "greater recovery and a clearer counter window; preparation disruption, a missed release and the time needed to prepare again.",
+        "greater recovery and a clearer counter window; preparation disruption, a missed release and the time needed to prepare again; countered by evade the commitment or counter during recovery."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: apply stronger path-specific break pressure.",
+      "counterplay": "evade the commitment or counter during recovery; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.rabbit",
+      "path": "draw-sword",
+      "zodiac": "rabbit",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.rabbit.1",
+        "skill.draw-sword.rabbit.2",
+        "skill.draw-sword.rabbit.3",
+        "skill.draw-sword.rabbit.4",
+        "skill.draw-sword.rabbit.5",
+        "skill.draw-sword.rabbit.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "cedes ground and may abandon accumulated readiness; preparation disruption, a missed release and the time needed to prepare again.",
+        "cedes ground and may abandon accumulated readiness; preparation disruption, a missed release and the time needed to prepare again; countered by deny the exit lane or delay the threat."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: leave danger while retaining the path's low-level option.",
+      "counterplay": "deny the exit lane or delay the threat; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.dragon",
+      "path": "draw-sword",
+      "zodiac": "dragon",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.dragon.1",
+        "skill.draw-sword.dragon.2",
+        "skill.draw-sword.dragon.3",
+        "skill.draw-sword.dragon.4",
+        "skill.draw-sword.dragon.5",
+        "skill.draw-sword.dragon.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "higher commitment and weaker focused effect; preparation disruption, a missed release and the time needed to prepare again.",
+        "higher commitment and weaker focused effect; preparation disruption, a missed release and the time needed to prepare again; countered by leave the bounded area or use obstruction."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
+      "counterplay": "leave the bounded area or use obstruction; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.snake",
+      "path": "draw-sword",
+      "zodiac": "snake",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.snake.1",
+        "skill.draw-sword.snake.2",
+        "skill.draw-sword.snake.3",
+        "skill.draw-sword.snake.4",
+        "skill.draw-sword.snake.5",
+        "skill.draw-sword.snake.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "upkeep, exposure and an explicit escape opportunity; preparation disruption, a missed release and the time needed to prepare again.",
+        "upkeep, exposure and an explicit escape opportunity; preparation disruption, a missed release and the time needed to prepare again; countered by break contact, cleanse the control or exhaust upkeep."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: maintain path-specific pressure that limits escape.",
+      "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.horse",
+      "path": "draw-sword",
+      "zodiac": "horse",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.horse.1",
+        "skill.draw-sword.horse.2",
+        "skill.draw-sword.horse.3",
+        "skill.draw-sword.horse.4",
+        "skill.draw-sword.horse.5",
+        "skill.draw-sword.horse.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "movement resource use and predictable pursuit direction; preparation disruption, a missed release and the time needed to prepare again.",
+        "movement resource use and predictable pursuit direction; preparation disruption, a missed release and the time needed to prepare again; countered by obstacles, route changes or a prepared interception."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: move with the path action and continue a legal pursuit.",
+      "counterplay": "obstacles, route changes or a prepared interception; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.goat",
+      "path": "draw-sword",
+      "zodiac": "goat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.goat.1",
+        "skill.draw-sword.goat.2",
+        "skill.draw-sword.goat.3",
+        "skill.draw-sword.goat.4",
+        "skill.draw-sword.goat.5",
+        "skill.draw-sword.goat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "lower immediate pressure and time spent stabilizing; preparation disruption, a missed release and the time needed to prepare again.",
+        "lower immediate pressure and time spent stabilizing; preparation disruption, a missed release and the time needed to prepare again; countered by force a decisive exchange before stabilization."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: stabilize path-specific resources and recovery.",
+      "counterplay": "force a decisive exchange before stabilization; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.monkey",
+      "path": "draw-sword",
+      "zodiac": "monkey",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.monkey.1",
+        "skill.draw-sword.monkey.2",
+        "skill.draw-sword.monkey.3",
+        "skill.draw-sword.monkey.4",
+        "skill.draw-sword.monkey.5",
+        "skill.draw-sword.monkey.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "the switch consumes time or resources and can be baited; preparation disruption, a missed release and the time needed to prepare again.",
+        "the switch consumes time or resources and can be baited; preparation disruption, a missed release and the time needed to prepare again; countered by feint the observed response or change after the switch."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: switch between two declared path modes after observation.",
+      "counterplay": "feint the observed response or change after the switch; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.rooster",
+      "path": "draw-sword",
+      "zodiac": "rooster",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.rooster.1",
+        "skill.draw-sword.rooster.2",
+        "skill.draw-sword.rooster.3",
+        "skill.draw-sword.rooster.4",
+        "skill.draw-sword.rooster.5",
+        "skill.draw-sword.rooster.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "delayed action and failure against concealed or false cues; preparation disruption, a missed release and the time needed to prepare again.",
+        "delayed action and failure against concealed or false cues; preparation disruption, a missed release and the time needed to prepare again; countered by conceal, vary or falsify the relevant cue."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: improve a path action using delivered, legal observation.",
+      "counterplay": "conceal, vary or falsify the relevant cue; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.dog",
+      "path": "draw-sword",
+      "zodiac": "dog",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.dog.1",
+        "skill.draw-sword.dog.2",
+        "skill.draw-sword.dog.3",
+        "skill.draw-sword.dog.4",
+        "skill.draw-sword.dog.5",
+        "skill.draw-sword.dog.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "depends on the incoming threat and yields initiative when unused; preparation disruption, a missed release and the time needed to prepare again.",
+        "depends on the incoming threat and yields initiative when unused; preparation disruption, a missed release and the time needed to prepare again; countered by wait, feint or attack outside the response contract."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: answer a threat with path-specific defense and response.",
+      "counterplay": "wait, feint or attack outside the response contract; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.draw-sword.boar",
+      "path": "draw-sword",
+      "zodiac": "boar",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.draw-sword.boar.1",
+        "skill.draw-sword.boar.2",
+        "skill.draw-sword.boar.3",
+        "skill.draw-sword.boar.4",
+        "skill.draw-sword.boar.5",
+        "skill.draw-sword.boar.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "upperDanTradeoffs": [
+        "high consumption, long recovery and punishable failure; preparation disruption, a missed release and the time needed to prepare again.",
+        "high consumption, long recovery and punishable failure; preparation disruption, a missed release and the time needed to prepare again; countered by survive, evade or invalidate the finishing condition."
+      ],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "missingMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "expectedBehavior": "prepare in a sheathed stance and commit that preparation to one decisive release; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
+      "counterplay": "survive, evade or invalidate the finishing condition; path weakness: preparation disruption, a missed release and the time needed to prepare again."
+    },
+    {
+      "id": "fixture.plan.spear.rat",
+      "path": "spear",
+      "zodiac": "rat",
+      "status": "partial",
+      "nodeIds": [
+        "skill.spear.rat.1",
+        "skill.spear.rat.2",
+        "skill.spear.rat.3",
+        "skill.spear.rat.4",
+        "skill.spear.rat.5",
+        "skill.spear.rat.6"
+      ],
+      "availableNodeIds": ["skill.spear.rat.1"],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "reduced certainty when used after the opening has passed; close entry, lateral movement and confined terrain.",
+        "reduced certainty when used after the opening has passed; close entry, lateral movement and confined terrain; countered by delay, spacing or a false start."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: begin the path action before the opponent establishes control.",
+      "counterplay": "delay, spacing or a false start; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.ox",
+      "path": "spear",
+      "zodiac": "ox",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.ox.1",
+        "skill.spear.ox.2",
+        "skill.spear.ox.3",
+        "skill.spear.ox.4",
+        "skill.spear.ox.5",
+        "skill.spear.ox.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "lost buildup when preparation or maintenance is broken; close entry, lateral movement and confined terrain.",
+        "lost buildup when preparation or maintenance is broken; close entry, lateral movement and confined terrain; countered by interrupt preparation or force disengagement."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: build and retain path-specific readiness over time.",
+      "counterplay": "interrupt preparation or force disengagement; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.tiger",
+      "path": "spear",
+      "zodiac": "tiger",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.tiger.1",
+        "skill.spear.tiger.2",
+        "skill.spear.tiger.3",
+        "skill.spear.tiger.4",
+        "skill.spear.tiger.5",
+        "skill.spear.tiger.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "greater recovery and a clearer counter window; close entry, lateral movement and confined terrain.",
+        "greater recovery and a clearer counter window; close entry, lateral movement and confined terrain; countered by evade the commitment or counter during recovery."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: apply stronger path-specific break pressure.",
+      "counterplay": "evade the commitment or counter during recovery; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.rabbit",
+      "path": "spear",
+      "zodiac": "rabbit",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.rabbit.1",
+        "skill.spear.rabbit.2",
+        "skill.spear.rabbit.3",
+        "skill.spear.rabbit.4",
+        "skill.spear.rabbit.5",
+        "skill.spear.rabbit.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "cedes ground and may abandon accumulated readiness; close entry, lateral movement and confined terrain.",
+        "cedes ground and may abandon accumulated readiness; close entry, lateral movement and confined terrain; countered by deny the exit lane or delay the threat."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: leave danger while retaining the path's low-level option.",
+      "counterplay": "deny the exit lane or delay the threat; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.dragon",
+      "path": "spear",
+      "zodiac": "dragon",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.dragon.1",
+        "skill.spear.dragon.2",
+        "skill.spear.dragon.3",
+        "skill.spear.dragon.4",
+        "skill.spear.dragon.5",
+        "skill.spear.dragon.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "higher commitment and weaker focused effect; close entry, lateral movement and confined terrain.",
+        "higher commitment and weaker focused effect; close entry, lateral movement and confined terrain; countered by leave the bounded area or use obstruction."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
+      "counterplay": "leave the bounded area or use obstruction; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.snake",
+      "path": "spear",
+      "zodiac": "snake",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.snake.1",
+        "skill.spear.snake.2",
+        "skill.spear.snake.3",
+        "skill.spear.snake.4",
+        "skill.spear.snake.5",
+        "skill.spear.snake.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "upkeep, exposure and an explicit escape opportunity; close entry, lateral movement and confined terrain.",
+        "upkeep, exposure and an explicit escape opportunity; close entry, lateral movement and confined terrain; countered by break contact, cleanse the control or exhaust upkeep."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: maintain path-specific pressure that limits escape.",
+      "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.horse",
+      "path": "spear",
+      "zodiac": "horse",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.horse.1",
+        "skill.spear.horse.2",
+        "skill.spear.horse.3",
+        "skill.spear.horse.4",
+        "skill.spear.horse.5",
+        "skill.spear.horse.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "movement resource use and predictable pursuit direction; close entry, lateral movement and confined terrain.",
+        "movement resource use and predictable pursuit direction; close entry, lateral movement and confined terrain; countered by obstacles, route changes or a prepared interception."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: move with the path action and continue a legal pursuit.",
+      "counterplay": "obstacles, route changes or a prepared interception; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.goat",
+      "path": "spear",
+      "zodiac": "goat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.goat.1",
+        "skill.spear.goat.2",
+        "skill.spear.goat.3",
+        "skill.spear.goat.4",
+        "skill.spear.goat.5",
+        "skill.spear.goat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "lower immediate pressure and time spent stabilizing; close entry, lateral movement and confined terrain.",
+        "lower immediate pressure and time spent stabilizing; close entry, lateral movement and confined terrain; countered by force a decisive exchange before stabilization."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: stabilize path-specific resources and recovery.",
+      "counterplay": "force a decisive exchange before stabilization; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.monkey",
+      "path": "spear",
+      "zodiac": "monkey",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.monkey.1",
+        "skill.spear.monkey.2",
+        "skill.spear.monkey.3",
+        "skill.spear.monkey.4",
+        "skill.spear.monkey.5",
+        "skill.spear.monkey.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "the switch consumes time or resources and can be baited; close entry, lateral movement and confined terrain.",
+        "the switch consumes time or resources and can be baited; close entry, lateral movement and confined terrain; countered by feint the observed response or change after the switch."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: switch between two declared path modes after observation.",
+      "counterplay": "feint the observed response or change after the switch; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.rooster",
+      "path": "spear",
+      "zodiac": "rooster",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.rooster.1",
+        "skill.spear.rooster.2",
+        "skill.spear.rooster.3",
+        "skill.spear.rooster.4",
+        "skill.spear.rooster.5",
+        "skill.spear.rooster.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "delayed action and failure against concealed or false cues; close entry, lateral movement and confined terrain.",
+        "delayed action and failure against concealed or false cues; close entry, lateral movement and confined terrain; countered by conceal, vary or falsify the relevant cue."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: improve a path action using delivered, legal observation.",
+      "counterplay": "conceal, vary or falsify the relevant cue; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.dog",
+      "path": "spear",
+      "zodiac": "dog",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.dog.1",
+        "skill.spear.dog.2",
+        "skill.spear.dog.3",
+        "skill.spear.dog.4",
+        "skill.spear.dog.5",
+        "skill.spear.dog.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "depends on the incoming threat and yields initiative when unused; close entry, lateral movement and confined terrain.",
+        "depends on the incoming threat and yields initiative when unused; close entry, lateral movement and confined terrain; countered by wait, feint or attack outside the response contract."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: answer a threat with path-specific defense and response.",
+      "counterplay": "wait, feint or attack outside the response contract; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.spear.boar",
+      "path": "spear",
+      "zodiac": "boar",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.spear.boar.1",
+        "skill.spear.boar.2",
+        "skill.spear.boar.3",
+        "skill.spear.boar.4",
+        "skill.spear.boar.5",
+        "skill.spear.boar.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "upperDanTradeoffs": [
+        "high consumption, long recovery and punishable failure; close entry, lateral movement and confined terrain.",
+        "high consumption, long recovery and punishable failure; close entry, lateral movement and confined terrain; countered by survive, evade or invalidate the finishing condition."
+      ],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "missingMechanics": ["approach-intercept"],
+      "expectedBehavior": "use explicit long reach and a linear thrust before the opponent enters; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
+      "counterplay": "survive, evade or invalidate the finishing condition; path weakness: close entry, lateral movement and confined terrain."
+    },
+    {
+      "id": "fixture.plan.axe.rat",
+      "path": "axe",
+      "zodiac": "rat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.rat.1",
+        "skill.axe.rat.2",
+        "skill.axe.rat.3",
+        "skill.axe.rat.4",
+        "skill.axe.rat.5",
+        "skill.axe.rat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "reduced certainty when used after the opening has passed; slow startup, miss recovery and resource consumption.",
+        "reduced certainty when used after the opening has passed; slow startup, miss recovery and resource consumption; countered by delay, spacing or a false start."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: begin the path action before the opponent establishes control.",
+      "counterplay": "delay, spacing or a false start; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.ox",
+      "path": "axe",
+      "zodiac": "ox",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.ox.1",
+        "skill.axe.ox.2",
+        "skill.axe.ox.3",
+        "skill.axe.ox.4",
+        "skill.axe.ox.5",
+        "skill.axe.ox.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "lost buildup when preparation or maintenance is broken; slow startup, miss recovery and resource consumption.",
+        "lost buildup when preparation or maintenance is broken; slow startup, miss recovery and resource consumption; countered by interrupt preparation or force disengagement."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: build and retain path-specific readiness over time.",
+      "counterplay": "interrupt preparation or force disengagement; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.tiger",
+      "path": "axe",
+      "zodiac": "tiger",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.tiger.1",
+        "skill.axe.tiger.2",
+        "skill.axe.tiger.3",
+        "skill.axe.tiger.4",
+        "skill.axe.tiger.5",
+        "skill.axe.tiger.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "greater recovery and a clearer counter window; slow startup, miss recovery and resource consumption.",
+        "greater recovery and a clearer counter window; slow startup, miss recovery and resource consumption; countered by evade the commitment or counter during recovery."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: apply stronger path-specific break pressure.",
+      "counterplay": "evade the commitment or counter during recovery; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.rabbit",
+      "path": "axe",
+      "zodiac": "rabbit",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.rabbit.1",
+        "skill.axe.rabbit.2",
+        "skill.axe.rabbit.3",
+        "skill.axe.rabbit.4",
+        "skill.axe.rabbit.5",
+        "skill.axe.rabbit.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "cedes ground and may abandon accumulated readiness; slow startup, miss recovery and resource consumption.",
+        "cedes ground and may abandon accumulated readiness; slow startup, miss recovery and resource consumption; countered by deny the exit lane or delay the threat."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: leave danger while retaining the path's low-level option.",
+      "counterplay": "deny the exit lane or delay the threat; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.dragon",
+      "path": "axe",
+      "zodiac": "dragon",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.dragon.1",
+        "skill.axe.dragon.2",
+        "skill.axe.dragon.3",
+        "skill.axe.dragon.4",
+        "skill.axe.dragon.5",
+        "skill.axe.dragon.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "higher commitment and weaker focused effect; slow startup, miss recovery and resource consumption.",
+        "higher commitment and weaker focused effect; slow startup, miss recovery and resource consumption; countered by leave the bounded area or use obstruction."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: extend the path effect to a bounded lane or nearby area.",
+      "counterplay": "leave the bounded area or use obstruction; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.snake",
+      "path": "axe",
+      "zodiac": "snake",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.snake.1",
+        "skill.axe.snake.2",
+        "skill.axe.snake.3",
+        "skill.axe.snake.4",
+        "skill.axe.snake.5",
+        "skill.axe.snake.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "upkeep, exposure and an explicit escape opportunity; slow startup, miss recovery and resource consumption.",
+        "upkeep, exposure and an explicit escape opportunity; slow startup, miss recovery and resource consumption; countered by break contact, cleanse the control or exhaust upkeep."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: maintain path-specific pressure that limits escape.",
+      "counterplay": "break contact, cleanse the control or exhaust upkeep; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.horse",
+      "path": "axe",
+      "zodiac": "horse",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.horse.1",
+        "skill.axe.horse.2",
+        "skill.axe.horse.3",
+        "skill.axe.horse.4",
+        "skill.axe.horse.5",
+        "skill.axe.horse.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "movement resource use and predictable pursuit direction; slow startup, miss recovery and resource consumption.",
+        "movement resource use and predictable pursuit direction; slow startup, miss recovery and resource consumption; countered by obstacles, route changes or a prepared interception."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: move with the path action and continue a legal pursuit.",
+      "counterplay": "obstacles, route changes or a prepared interception; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.goat",
+      "path": "axe",
+      "zodiac": "goat",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.goat.1",
+        "skill.axe.goat.2",
+        "skill.axe.goat.3",
+        "skill.axe.goat.4",
+        "skill.axe.goat.5",
+        "skill.axe.goat.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "lower immediate pressure and time spent stabilizing; slow startup, miss recovery and resource consumption.",
+        "lower immediate pressure and time spent stabilizing; slow startup, miss recovery and resource consumption; countered by force a decisive exchange before stabilization."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: stabilize path-specific resources and recovery.",
+      "counterplay": "force a decisive exchange before stabilization; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.monkey",
+      "path": "axe",
+      "zodiac": "monkey",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.monkey.1",
+        "skill.axe.monkey.2",
+        "skill.axe.monkey.3",
+        "skill.axe.monkey.4",
+        "skill.axe.monkey.5",
+        "skill.axe.monkey.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "the switch consumes time or resources and can be baited; slow startup, miss recovery and resource consumption.",
+        "the switch consumes time or resources and can be baited; slow startup, miss recovery and resource consumption; countered by feint the observed response or change after the switch."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: switch between two declared path modes after observation.",
+      "counterplay": "feint the observed response or change after the switch; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.rooster",
+      "path": "axe",
+      "zodiac": "rooster",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.rooster.1",
+        "skill.axe.rooster.2",
+        "skill.axe.rooster.3",
+        "skill.axe.rooster.4",
+        "skill.axe.rooster.5",
+        "skill.axe.rooster.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "delayed action and failure against concealed or false cues; slow startup, miss recovery and resource consumption.",
+        "delayed action and failure against concealed or false cues; slow startup, miss recovery and resource consumption; countered by conceal, vary or falsify the relevant cue."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: improve a path action using delivered, legal observation.",
+      "counterplay": "conceal, vary or falsify the relevant cue; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.dog",
+      "path": "axe",
+      "zodiac": "dog",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.dog.1",
+        "skill.axe.dog.2",
+        "skill.axe.dog.3",
+        "skill.axe.dog.4",
+        "skill.axe.dog.5",
+        "skill.axe.dog.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "depends on the incoming threat and yields initiative when unused; slow startup, miss recovery and resource consumption.",
+        "depends on the incoming threat and yields initiative when unused; slow startup, miss recovery and resource consumption; countered by wait, feint or attack outside the response contract."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: answer a threat with path-specific defense and response.",
+      "counterplay": "wait, feint or attack outside the response contract; path weakness: slow startup, miss recovery and resource consumption."
+    },
+    {
+      "id": "fixture.plan.axe.boar",
+      "path": "axe",
+      "zodiac": "boar",
+      "status": "blocked",
+      "nodeIds": [
+        "skill.axe.boar.1",
+        "skill.axe.boar.2",
+        "skill.axe.boar.3",
+        "skill.axe.boar.4",
+        "skill.axe.boar.5",
+        "skill.axe.boar.6"
+      ],
+      "availableNodeIds": [],
+      "lowLevelUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "upperDanTradeoffs": [
+        "high consumption, long recovery and punishable failure; slow startup, miss recovery and resource consumption.",
+        "high consumption, long recovery and punishable failure; slow startup, miss recovery and resource consumption; countered by survive, evade or invalidate the finishing condition."
+      ],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "missingMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "expectedBehavior": "commit to a heavy strike that damages armor or posture on contact; zodiac behavior: spend a bounded resource or recovery window for a decisive path action.",
+      "counterplay": "survive, evade or invalidate the finishing condition; path weakness: slow startup, miss recovery and resource consumption."
+    }
+  ],
+  "contrasts": [
+    {
+      "id": "contrast.aikido.judo",
+      "left": "aikido",
+      "right": "judo",
+      "assertions": [
+        "Judo initiates contact and owns a maintained hold; it does not wait for an incoming action to redirect.",
+        "Aikido reacts to a legally observed commitment; it does not create a proactive capture."
+      ]
+    },
+    {
+      "id": "contrast.axe.karate",
+      "left": "axe",
+      "right": "karate",
+      "assertions": [
+        "Karate accumulates disruption through connected strikes; it is not one heavy armor-breaking commitment.",
+        "Axe pays one large commitment for break pressure; it does not accumulate an unarmed combination."
+      ]
+    },
+    {
+      "id": "contrast.dagger.draw-sword",
+      "left": "dagger",
+      "right": "draw-sword",
+      "assertions": [
+        "Dagger creates or exploits a close positional opening; it does not require a sheathed preparation state."
+      ]
+    },
+    {
+      "id": "contrast.draw-sword.sword",
+      "left": "draw-sword",
+      "right": "sword",
+      "assertions": [
+        "Draw sword converts a prepared stance into one release; ordinary sword play sustains offense and defense without resheathing."
+      ]
+    },
+    {
+      "id": "contrast.spear.staff",
+      "left": "spear",
+      "right": "staff",
+      "assertions": [
+        "Staff controls routes and spacing; it does not inherit spear thrust damage or interception reach.",
+        "Spear converts reach into thrust and interception; it does not claim the staff's route-control role."
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "fixtureId": "fixture.skill.spear.rat.1.action",
+      "nodeId": "skill.spear.rat.1",
+      "resolutionKind": "active-ability",
+      "proof": "long-melee-thrust",
+      "definition": {
+        "id": "spear",
+        "revision": 1,
+        "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3"
+      },
+      "assertions": [
+        "exact immutable action ability revision",
+        "melee reach is at least 3000mm",
+        "exact loadout battle emits the selected ability",
+        "recorded replay reaches the same final checkpoint"
+      ]
+    },
+    {
+      "fixtureId": "fixture.skill.aikido.dog.1.parry",
+      "nodeId": "skill.aikido.dog.1",
+      "resolutionKind": "passive-ability",
+      "proof": "observed-physical-parry",
+      "definition": {
+        "id": "parry-v1",
+        "revision": 1,
+        "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980"
+      },
+      "assertions": [
+        "exact immutable before-hit physical parry revision",
+        "parry costs stamina and has a cooldown",
+        "exact loadout battle records whole-contact parry activation",
+        "recorded replay reaches the same final checkpoint"
+      ]
+    }
+  ]
+}

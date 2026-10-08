@@ -29,6 +29,23 @@ export function glassWall(halfThicknessMm: number): BoxObstacle {
   };
 }
 
+export function observerVisualAbility(
+  effect: Definition<'ability'>['effects'][number],
+): Partial<Definition<'ability'>> {
+  return {
+    target: 'enemy',
+    trigger: 'action',
+    attack: { kind: 'hitscan', radiusMm: 0 },
+    aimErrorMilliDegrees: 0,
+    rangeMm: 200_000,
+    castSteps: 0,
+    recoverySteps: 1,
+    cooldownSteps: 100,
+    costs: { hp: 0, mp: 0, uses: 1 },
+    effects: [effect],
+  };
+}
+
 /** Replace only the selected scenario and reseal its reference, not unrelated revisions. */
 export async function editScenario(manifest: Manifest, edit: (definition: Scenario) => void) {
   const old = manifest.revisions.find(

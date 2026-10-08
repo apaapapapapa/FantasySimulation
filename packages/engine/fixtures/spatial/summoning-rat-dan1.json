@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture.skill.summoning.rat.1.contract",
+  "issue": 228,
+  "design": "docs/adr/0021-dependent-summons.md",
+  "status": "runtime-pending",
+  "availableClaim": false,
+  "catalogNodeId": "skill.summoning.rat.1",
+  "input": {
+    "seed": 228071,
+    "participants": [
+      { "slot": "A", "actorId": "summoner-a", "hp": 1000, "mp": 120 },
+      { "slot": "B", "actorId": "duelist-b", "hp": 1000, "mp": 0 }
+    ],
+    "dependent": {
+      "entityId": "dependent.a.0.scout-rat",
+      "kind": "scout-rat",
+      "ownerSlot": "A",
+      "alliedOwnerSlot": "A",
+      "hostilityDerivedFromOwnerSlot": "B",
+      "ordinal": 0,
+      "hp": 80,
+      "collision": { "radiusMm": 180, "heightMm": 360 },
+      "createdAt": 100,
+      "lifetimeEndsAt": 1100,
+      "upkeep": { "resource": "mp", "amount": 2, "everySteps": 100 },
+      "subjectClock": { "nextActionAt": 200, "frozen": false },
+      "policy": "harass-nearest-legally-observed-hostile"
+    },
+    "rngIdentity": {
+      "tuple": ["seed", "owner-slot", "committed-ordinal", "entity-id", "purpose"],
+      "values": [228071, "A", 0, "dependent.a.0.scout-rat", "policy-target"],
+      "mustNotInclude": ["entity-enumeration-index", "command-order"]
+    },
+    "observedCommand": {
+      "recordedAt": 180,
+      "paidByOwnerSlot": "A",
+      "cost": { "resource": "mp", "amount": 4 },
+      "deliveredObservation": {
+        "observerEntityId": "dependent.a.0.scout-rat",
+        "visibleEntityIds": ["duelist-b"],
+        "hiddenCanonicalFields": ["duelist-b.hp", "duelist-b.policy"]
+      },
+      "command": { "kind": "harass", "targetEntityId": "duelist-b" }
+    },
+    "clockProbe": {
+      "fromStep": 300,
+      "toStep": 400,
+      "freezeSubject": true,
+      "expectedNextActionAt": 300,
+      "expectedLifetimeEndsAt": 1100,
+      "expectedUpkeepSteps": [300, 400]
+    }
+  },
+  "expected": {
+    "participantCount": 2,
+    "dependentCountAfterCreate": 1,
+    "ownership": {
+      "alliedWith": "A",
+      "hostileToOwnerOf": "B",
+      "canTransfer": false,
+      "canNest": false,
+      "canWin": false
+    },
+    "clockProbe": {
+      "subjectActionClockPaused": true,
+      "lifetimeAdvanced": true,
+      "upkeepAdvanced": true
+    },
+    "command": {
+      "accepted": true,
+      "reason": "target-present-in-delivered-observation",
+      "canonicalHiddenStateRead": false
+    },
+    "pendingSettlementOrder": [
+      "collect-simultaneous-guard-and-drain",
+      "resolve-revival",
+      "commit-dependent-and-participant-hp",
+      "despawn-dependents-of-terminally-defeated-owner",
+      "compute-participant-win-or-draw"
+    ],
+    "records": [
+      "dependent-create",
+      "dependent-command",
+      "dependent-act",
+      "dependent-damage",
+      "participant-revival",
+      "dependent-despawn",
+      "battle-result"
+    ],
+    "recordIdentityFields": ["entityId", "ownerSlot", "targetEntityId", "ordinal", "step", "cause"],
+    "roundTripSurfaces": [
+      "saved-manifest",
+      "api",
+      "worker",
+      "sqlite",
+      "replay",
+      "viewer-2d",
+      "viewer-3d"
+    ],
+    "replayOperations": ["forward", "seek", "reverse"],
+    "replayRule": "consume-records-without-rerunning-ai",
+    "legacyOmission": "preserve-existing-two-participant-behavior",
+    "rollback": "disable-new-execution-and-publication-without-rewriting-saved-data"
+  },
+  "runtimeEvidence": [
+    "packages/engine/src/spatial/dependents.test.ts",
+    "apps/api/src/jobs/dependent-persistence.test.ts",
+    "apps/web/src/replay/dependent-display.test.ts"
+  ],
+  "runtimeMechanisms": [
+    "dependent-targeting-and-hp-damage",
+    "non-noop-dependent-drain-healing",
+    "same-wave-owner-guard-revival-dependent-hp-settlement",
+    "terminal-owner-defeat-verdict-numeric-fixture"
+  ],
+  "runtimeSettlementEvidence": {
+    "dependentTargetDamage": { "beforeHp": 80, "afterHp": 72, "amount": 8 },
+    "dependentDrain": { "beforeHp": 72, "afterHp": 73, "amount": 1, "maxHp": 80 },
+    "revivalWave": {
+      "dependentDamage": { "beforeHp": 80, "afterHp": 72 },
+      "guardedDrain": { "beforeHp": 72, "afterHp": 73, "amount": 1 },
+      "cappedDrain": { "beforeHp": 80, "afterHp": 80, "amount": 4 },
+      "ownerRevival": { "beforeHp": 0, "afterHp": 7 }
+    },
+    "terminalOwnerDefeat": {
+      "participantHp": [0, 0],
+      "outcome": { "kind": "draw", "reason": "mutual-defeat" },
+      "despawnReason": "owner-defeated"
+    }
+  },
+  "missingRuntimeMechanisms": []
+}

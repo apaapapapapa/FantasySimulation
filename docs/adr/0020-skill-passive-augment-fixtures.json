@@ -1,0 +1,198 @@
+{
+  "status": "accepted-design-fixtures",
+  "issue": 228,
+  "baseline": "1e5f68db833862467f2166891b63fc2360d86a65",
+  "releaseEvidence": false,
+  "scope": {
+    "authority": "ADR 0020 delegated technical decision",
+    "runtimeImplementation": "pending shared schema and engine owner",
+    "availabilityGate": "no passive or augment node becomes available until real immutable refs and every required case are bound to executable tests",
+    "league": "unchanged"
+  },
+  "versions": {
+    "legacy": { "skillReceipt": 1, "storedManifest": 4, "meaning": "active-only" },
+    "new": { "skillReceipt": 2, "storedManifest": 5, "meaning": "active-passive-augment" }
+  },
+  "limits": {
+    "resolvedNodes": 12,
+    "activeNodes": 8,
+    "passiveOrAugmentNodes": 4,
+    "rule": "limits apply to the resolved prerequisite closure, not only explicit selections"
+  },
+  "contracts": {
+    "passive": {
+      "allowedTriggers": ["battle-start", "before-hit", "after-damage", "before-defeat"],
+      "forbiddenTrigger": "action",
+      "execution": "ordinary immutable ability definition",
+      "policyPriority": "none",
+      "startupSettlement": "existing atomic all-or-none resource group",
+      "statusPolicy": "reuse exact status stack key, cap, refresh, replacement, expiry, dispel, seal and simultaneous-conflict rules",
+      "permanentStatus": "finite dispellable cohorts by default; permanent requires reviewed non-dispellable intent and an explicit counter fixture"
+    },
+    "augment": {
+      "baseOrigin": ["character", "equipment"],
+      "sameAbilityId": true,
+      "sameTrigger": true,
+      "maximumPerBase": 1,
+      "chains": "reject",
+      "runtimeMerge": "none",
+      "execution": "replace base exact revision with resolved exact revision before complete-loadout validation",
+      "provenance": "pin base and resolved refs; retain base in the immutable manifest closure even though only resolved executes",
+      "retainedLowerUse": "every retainsLowerUse augment binds a neutral or low-resource equivalence fixture; unconditional numeric growth is insufficient"
+    }
+  },
+  "preparationOrder": [
+    "resolve exact unmodified character and equipment abilities",
+    "validate every augment against only that original set",
+    "apply non-conflicting replacements as an unordered set",
+    "add active and passive grants",
+    "revalidate direct-ability, duplicate-ID, revival, policy and dependency invariants"
+  ],
+  "representativeBranch": {
+    "purpose": "capacity-safe shape demonstrating six different dan meanings; not a copy template",
+    "nodes": [
+      {
+        "dan": 1,
+        "deepening": "foundation",
+        "recipe": "active-ability",
+        "retainedUse": "low-cost preparation-free action"
+      },
+      {
+        "dan": 2,
+        "deepening": "conditional-effect",
+        "recipe": "augment",
+        "retainedUse": "resolved revision matches the foundation fixture outside its added condition"
+      },
+      {
+        "dan": 3,
+        "deepening": "combination",
+        "recipe": "active-ability",
+        "retainedUse": "distinct combination does not remove the foundation action"
+      },
+      {
+        "dan": 4,
+        "deepening": "tactical-mode",
+        "recipe": "passive-ability",
+        "retainedUse": "finite status has explicit stack key, expiry, dispel and counter"
+      },
+      {
+        "dan": 5,
+        "deepening": "specialization",
+        "recipe": "active-ability",
+        "retainedUse": "favorable-situation option leaves lower flexible actions available"
+      },
+      {
+        "dan": 6,
+        "deepening": "ultimate-tradeoff",
+        "recipe": "passive-ability",
+        "retainedUse": "bounded benefit pays upkeep or creates tested exposure/recovery tradeoff"
+      }
+    ],
+    "counts": { "active": 3, "passiveOrAugment": 3 }
+  },
+  "cases": [
+    {
+      "id": "passive-startup-round-trip",
+      "proves": ["SK-A08", "SK-A10", "SK-A15", "SK-A17"],
+      "given": "receipt v2 grants a battle-start passive that applies a finite status",
+      "expect": [
+        "startup cost settles once",
+        "status stack, expiry and dispel follow the referenced definition",
+        "AI self view and decision record observe only delivered state",
+        "API Worker SQLite artifact and replay retain receipt and status records",
+        "2D and 3D seek reverse loop leave no residual status"
+      ]
+    },
+    {
+      "id": "passive-reaction",
+      "proves": ["SK-A10", "SK-A13", "SK-A14"],
+      "given": "receipt v2 grants a finite-use non-action reaction",
+      "expect": [
+        "ordinary observation, cost, use and simultaneous-reaction rules apply",
+        "no policy action candidate is synthesized",
+        "reaction and cognition records identify the exact passive revision"
+      ]
+    },
+    {
+      "id": "passive-action-rejected",
+      "proves": ["SK-A07", "SK-A14"],
+      "given": "a passive-ability recipe references an action trigger",
+      "expectError": "passive-action-trigger"
+    },
+    {
+      "id": "startup-cost-group-insufficient",
+      "proves": ["SK-A10", "SK-A14", "SK-A17"],
+      "given": "combined startup passive costs exceed initial resources",
+      "expect": [
+        "all startup passives fizzle",
+        "no partial selection depends on node or actor order",
+        "existing startup.cost-group diagnostic is recorded"
+      ]
+    },
+    {
+      "id": "augment-original-base-replacement",
+      "proves": ["SK-A04", "SK-A08", "SK-A13", "SK-A15"],
+      "given": "one augment replaces an exact character or equipment ability with the same ID and trigger",
+      "expect": [
+        "base and resolved refs are in immutable provenance",
+        "only resolved revision executes",
+        "policy continues to route by stable ability ID",
+        "neutral low-resource fixture preserves the declared lower-dan use",
+        "conditional benefit and upper-dan tradeoff are both observable"
+      ]
+    },
+    {
+      "id": "augment-invalid-base-matrix",
+      "proves": ["SK-A07", "SK-A14"],
+      "variants": [
+        { "input": "missing base", "expectError": "augment-base-missing" },
+        { "input": "skill-granted base", "expectError": "augment-base-origin" },
+        { "input": "different resolved ID", "expectError": "augment-id-mismatch" },
+        { "input": "different trigger", "expectError": "augment-trigger-mismatch" },
+        { "input": "two augments for one base", "expectError": "augment-duplicate-base" },
+        { "input": "augment result used as another base", "expectError": "augment-chain" }
+      ]
+    },
+    {
+      "id": "combined-loadout-invariants",
+      "proves": ["SK-A07", "SK-A14", "SK-A16"],
+      "given": "replacement and passive grants are combined with character and equipment abilities",
+      "expect": [
+        "complete set rechecks direct ability limit and duplicate IDs",
+        "multiple revival and missing policy ability fail closed",
+        "definition closure contains every status dependency"
+      ]
+    },
+    {
+      "id": "receipt-permutation",
+      "proves": ["SK-A08", "SK-A17"],
+      "given": "the same active, passive and augment nodes arrive in every relevant set order",
+      "expect": [
+        "identical receipt bytes and resolution digest",
+        "identical manifest closure and simulation hash",
+        "identical events, result and replay records"
+      ]
+    },
+    {
+      "id": "version-compatibility",
+      "proves": ["SK-A08", "SK-A15", "SK-A16", "SK-A20"],
+      "expect": [
+        "receipt v1 and manifest v4 fixtures retain existing hashes and outcomes",
+        "v1 never gains inferred passive or augment execution",
+        "v2 requires manifest v5 and its matching resolver and engine identity",
+        "unsupported v2 execution remains displayable but retry is rejected"
+      ]
+    },
+    {
+      "id": "six-dan-capacity-and-semantics",
+      "proves": ["SK-A03", "SK-A04", "SK-A18"],
+      "given": "the representative six-node prerequisite closure",
+      "expect": [
+        "closure fits eight active plus four passive/augment limits",
+        "six all-passive nodes are rejected before release",
+        "each dan binds a different executable use and fixture",
+        "foundation remains useful and ultimate retains a tested cost or counter"
+      ]
+    }
+  ]
+}

@@ -12,6 +12,8 @@ export async function extractLeagueArchive(
   data: Buffer,
   destination: string,
   allow: (key: string) => boolean,
+  allowDirectories = true,
+  profile?: 'store-files-v1',
 ) {
   if (data.length < 22 || data.length > LEAGUE_ARCHIVE_BYTES)
     throw new Error('Artifact archive size bound');
@@ -28,6 +30,8 @@ export async function extractLeagueArchive(
     throw new Error('Invalid artifact ZIP directory');
   const count = data.readUInt16LE(end + 10),
     central = data.readUInt32LE(end + 16);
+  if (profile && (end !== data.length - 22 || count > 4096))
+    throw new Error('STORE archive trailer/count bound');
   if (count < 1 || count > 50000 || central + data.readUInt32LE(end + 12) !== end)
     throw new Error('Artifact ZIP64/entry/directory bound');
   const entries: {
@@ -51,6 +55,11 @@ export async function extractLeagueArchive(
     const nameLength = data.readUInt16LE(position + 28),
       extra = data.readUInt16LE(position + 30),
       comment = data.readUInt16LE(position + 32);
+    if (
+      profile &&
+      (method !== 0 || extra !== 0 || comment !== 0 || nameLength > 256 || flags & ~0x808)
+    )
+      throw new Error('STORE archive format/name bound');
     if (position + 46 + nameLength + extra + comment > end) throw new Error('Truncated ZIP entry');
     const name = new TextDecoder('utf-8', { fatal: true }).decode(
       data.subarray(position + 46, position + 46 + nameLength),
@@ -61,6 +70,7 @@ export async function extractLeagueArchive(
       kind = mode & 0xf000;
     if (
       names.has(key) ||
+      (directory && !allowDirectories) ||
       !key ||
       key.includes('\\') ||
       key.split('/').some((part) => !part || part === '.' || part === '..') ||
@@ -85,6 +95,30 @@ export async function extractLeagueArchive(
     const localName = data.readUInt16LE(start + 26),
       localExtra = data.readUInt16LE(start + 28),
       offset = start + 30 + localName + localExtra;
+    if (profile) {
+      if (directory || localExtra !== 0 || compressed !== size)
+        throw new Error('STORE archive local format');
+      const crc = data.readUInt32LE(position + 16);
+      if (flags & 8) {
+        const descriptor = offset + compressed;
+        if (
+          descriptor + 16 > central ||
+          data.readUInt32LE(descriptor) !== 0x08074b50 ||
+          data.readUInt32LE(descriptor + 4) !== crc ||
+          data.readUInt32LE(descriptor + 8) !== compressed ||
+          data.readUInt32LE(descriptor + 12) !== size ||
+          data.readUInt32LE(start + 14) !== 0 ||
+          data.readUInt32LE(start + 18) !== 0 ||
+          data.readUInt32LE(start + 22) !== 0
+        )
+          throw new Error('STORE archive descriptor mismatch');
+      } else if (
+        data.readUInt32LE(start + 14) !== crc ||
+        data.readUInt32LE(start + 18) !== compressed ||
+        data.readUInt32LE(start + 22) !== size
+      )
+        throw new Error('STORE archive local size/CRC mismatch');
+    }
     if (
       localName !== nameLength ||
       !data
@@ -110,6 +144,14 @@ export async function extractLeagueArchive(
   }
   if (position !== end) throw new Error('Artifact directory length mismatch');
   const ordered = [...entries].sort((a, b) => a.start - b.start);
+  if (profile) {
+    let next = 0;
+    for (const entry of ordered) {
+      if (entry.start !== next) throw new Error('STORE archive hidden bytes');
+      next = entry.offset + entry.compressed + (data.readUInt16LE(entry.start + 6) & 8 ? 16 : 0);
+    }
+    if (next !== central) throw new Error('STORE archive hidden trailer bytes');
+  }
   for (let i = 1; i < ordered.length; i++)
     if (ordered[i]!.start < ordered[i - 1]!.offset + ordered[i - 1]!.compressed)
       throw new Error('Overlapping artifact ZIP entries');
@@ -118,6 +160,7 @@ export async function extractLeagueArchive(
     for (let parent = dirname(entry.name); parent !== '.'; parent = dirname(parent))
       if (files.has(parent)) throw new Error('Artifact file used as directory');
   await mkdir(destination); // Caller supplies a fresh owned directory; never follow existing paths.
+  const payloadHashes: Record<string, string> = Object.create(null);
   for (const entry of entries) {
     if (entry.directory) continue;
     const compressed = data.subarray(entry.offset, entry.offset + entry.compressed);
@@ -129,12 +172,15 @@ export async function extractLeagueArchive(
       throw new Error('Artifact CRC/expanded-size mismatch');
     const path = join(destination, entry.name);
     await mkdir(dirname(path), { recursive: true });
+    payloadHashes[entry.name] = archiveHash(bytes);
     await writeFile(path, bytes, { flag: 'wx' });
   }
-  return { files: files.size, bytes: expanded };
+  return { files: files.size, bytes: expanded, payloadHashes: Object.freeze(payloadHashes) };
 }
 
-export async function boundedArtifactResponse(response: Response) {
+export async function boundedArtifactResponse(response: Response, limit = LEAGUE_ARCHIVE_BYTES) {
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > LEAGUE_ARCHIVE_BYTES)
+    throw new Error('Artifact response byte budget invalid');
   if (!response.ok || !response.body) throw new Error('Artifact download failed');
   const reader = response.body.getReader(),
     chunks: Uint8Array[] = [];
@@ -144,7 +190,7 @@ export async function boundedArtifactResponse(response: Response) {
       const chunk = await reader.read();
       if (chunk.done) break;
       bytes += chunk.value.length;
-      if (bytes > LEAGUE_ARCHIVE_BYTES) throw new Error('Artifact streamed ZIP bound');
+      if (bytes > limit) throw new Error('Artifact streamed ZIP bound');
       chunks.push(chunk.value);
     }
   } finally {

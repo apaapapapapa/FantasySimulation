@@ -1,5 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { availableParallelism } from 'node:os';
+import { availableParallelism, cpus } from 'node:os';
 import { statSync } from 'node:fs';
 
 type Stage = {
@@ -23,6 +23,35 @@ export type MatchMeasurement = {
 };
 const context = new AsyncLocalStorage<Measurements>();
 const limit = 20000;
+export const VERIFICATION_WORKER_STAGE_NAMES = [
+  'validate.replay',
+  'save.read',
+  'decompress',
+  'json.checkpoint',
+  'json.records',
+  'hash.bytes',
+  'hash.replayStream',
+] as const;
+export type VerificationWorkerStage = {
+  count: number;
+  failures: number;
+  bytes: number;
+  inclusiveMs: number;
+  busyWallMs: number;
+  incomplete: number;
+};
+export type VerificationWorkerStages = Partial<
+  Record<(typeof VERIFICATION_WORKER_STAGE_NAMES)[number], VerificationWorkerStage>
+>;
+/** Publication versus seal; the replay ID connects the two existing validations. */
+export type VerificationStage = 'validate.replay.worker' | 'validate.replay';
+type VerificationWorkerObservation = {
+  replayId: string;
+  stage: VerificationStage;
+  success: boolean;
+  attempted: boolean;
+  observation: Record<string, number>;
+};
 
 export function distribution(values: number[]) {
   const sorted = [...values].sort((a, b) => a - b),
@@ -40,10 +69,16 @@ export class Measurements {
   private readonly started = performance.now();
   private readonly startedAt = new Date().toISOString();
   private readonly cpu = process.cpuUsage();
+  private readonly resource = process.resourceUsage();
   private readonly stages = new Map<string, Stage>();
   private readonly matches: MatchMeasurement[] = [];
   private readonly validations = new Map<string, { calls: number; failures: number }>();
+  private readonly verificationWorkerObservations: VerificationWorkerObservation[] = [];
   private readonly capacities: Record<string, number> = {};
+  private readonly verificationWorkerStages: Record<
+    string,
+    Omit<VerificationWorkerStage, 'busyWallMs'> & { busyWallSumMs: number }
+  > = {};
   private readonly queues: Record<
     string,
     { admitted: number; totalWaitMs: number; maxWaitMs: number; maxPending: number }
@@ -119,6 +154,58 @@ export class Measurements {
     const stage = this.stages.get(name);
     if (stage) stage.bytes += bytes;
   }
+  /** Per-call diagnostics overlap wall/process CPU; they are never added to either. */
+  verificationObservation(value: VerificationWorkerObservation) {
+    const { observation } = value;
+    if (
+      value.replayId.length > 512 ||
+      !['validate.replay', 'validate.replay.worker'].includes(value.stage) ||
+      typeof value.success !== 'boolean' ||
+      typeof value.attempted !== 'boolean' ||
+      Object.keys(observation).sort().join(',') !==
+        'cpuSystemMs,cpuUserMs,elapsedMs,gcCount,gcDurationMs,threadId' ||
+      Object.values(observation).some((n) => !Number.isFinite(n) || n < 0) ||
+      !Number.isSafeInteger(observation.gcCount) ||
+      !Number.isSafeInteger(observation.threadId)
+    )
+      throw new Error('Invalid verification Worker observation');
+    if (this.verificationWorkerObservations.length < limit)
+      this.verificationWorkerObservations.push({ ...value, observation: { ...observation } });
+    else this.dropped++;
+  }
+  /** Worker-local busy intervals cannot be unioned with this process-local timeline. */
+  verificationStages(value: VerificationWorkerStages) {
+    const entries = Object.entries(value);
+    if (entries.length > 64 || Buffer.byteLength(JSON.stringify(value)) > 16384)
+      throw new Error('Verification Worker stage bound');
+    const updates: typeof this.verificationWorkerStages = {};
+    for (const [name, stage] of entries) {
+      if (
+        !VERIFICATION_WORKER_STAGE_NAMES.some((owned) => owned === name) ||
+        Object.keys(stage).sort().join(',') !==
+          'busyWallMs,bytes,count,failures,inclusiveMs,incomplete' ||
+        Object.values(stage).some((n) => !Number.isFinite(n) || n < 0) ||
+        ['count', 'failures', 'bytes', 'incomplete'].some(
+          (key) => !Number.isSafeInteger(stage[key as keyof VerificationWorkerStage]),
+        ) ||
+        stage.failures > stage.count
+      )
+        throw new Error('Invalid verification Worker stage');
+      const prior = this.verificationWorkerStages[name];
+      const next = {
+        count: (prior?.count ?? 0) + stage.count,
+        failures: (prior?.failures ?? 0) + stage.failures,
+        bytes: (prior?.bytes ?? 0) + stage.bytes,
+        inclusiveMs: (prior?.inclusiveMs ?? 0) + stage.inclusiveMs,
+        incomplete: (prior?.incomplete ?? 0) + stage.incomplete,
+        busyWallSumMs: (prior?.busyWallSumMs ?? 0) + stage.busyWallMs,
+      };
+      if (Object.values(next).some((n) => !Number.isFinite(n) || n > Number.MAX_SAFE_INTEGER))
+        throw new Error('Verification Worker stage aggregate bound');
+      updates[name] = next;
+    }
+    Object.assign(this.verificationWorkerStages, updates);
+  }
   queue(name: string, waitMs: number, pending: number) {
     const value = (this.queues[name] ??= {
       admitted: 0,
@@ -135,7 +222,9 @@ export class Measurements {
     this.sample();
     const now = performance.now(),
       wallMs = now - this.started,
-      cpu = process.cpuUsage(this.cpu);
+      cpu = process.cpuUsage(this.cpu),
+      resource = process.resourceUsage(),
+      hardware = cpus();
     const measuredSpanUnionMs = this.coveredMs + (this.active ? now - this.changedAt : 0);
     const calls = [...this.validations.values()].reduce((n, v) => n + v.calls, 0);
     return {
@@ -153,10 +242,25 @@ export class Measurements {
         oneCorePercent: wallMs ? (cpu.user + cpu.system) / (wallMs * 10) : null,
         availableParallelism: availableParallelism(),
         scope: 'process including all Workers; do not add thread CPU',
+        hardware: {
+          model: hardware[0]?.model ?? null,
+          logicalProcessors: hardware.length,
+          speedMHz: distribution(hardware.map(({ speed }) => speed)),
+        },
+        scheduler: {
+          voluntaryContextSwitches: Math.max(
+            0,
+            resource.voluntaryContextSwitches - this.resource.voluntaryContextSwitches,
+          ),
+          involuntaryContextSwitches: Math.max(
+            0,
+            resource.involuntaryContextSwitches - this.resource.involuntaryContextSwitches,
+          ),
+        },
       },
       memory: {
         sampledPeakBytes: this.peaks,
-        processLifetimeMaxRssBytes: process.resourceUsage().maxRSS * 1024,
+        processLifetimeMaxRssBytes: resource.maxRSS * 1024,
       },
       capacitySampleMaxBytes: this.capacities,
       queues: this.queues,
@@ -173,6 +277,8 @@ export class Measurements {
           },
         ]),
       ),
+      verificationWorkerStages: this.verificationWorkerStages,
+      verificationWorkerObservations: this.verificationWorkerObservations,
       matchWallMs: distribution(this.matches.map((m) => m.wallMs)),
       workerMetrics: Object.fromEntries(
         [...new Set(this.matches.flatMap((m) => Object.keys(m.worker ?? {})))]

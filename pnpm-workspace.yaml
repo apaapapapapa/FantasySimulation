@@ -5,6 +5,18 @@ packages:
 overrides:
   vite: npm:@voidzero-dev/vite-plus-core@0.3.3
   vitest: 4.1.11
+  # Miniflare pins the vulnerable patch; keep its runtime on the patched 7.x API.
+  # GHSA-rfgv-xxqx-mfg5 / GHSA-w293-vg96-wgc3; remove when Miniflare updates its pin.
+  miniflare@5.20260921.0-alpha>undici: 7.29.1
+  # GHSA-wq5f-xc86-pv6w (bundled libvips/librsvg): Miniflare pins sharp 0.35.4; remove when
+  # Miniflare updates its pin.
+  miniflare@5.20260921.0-alpha>sharp: 0.35.5
+  # GHSA-68fv-2mgg-jv7q: Vite+ core's PostCSS accepts ^1.2.1 but the lock retains 1.2.1.
+  # Remove when PostCSS requires the patched release.
+  postcss@8.5.28>source-map-js: 1.2.2
+  # GHSA-67mh-4wv8-2f99: align the legacy Drizzle loader with Kit's patched esbuild.
+  # Remove when core-utils drops its vulnerable 0.18 pin or Drizzle drops the loader.
+  '@esbuild-kit/core-utils@3.3.2>esbuild': 0.25.12
 
 # The official Vite+ alias uses 0.3.3 while exposing the Vite 8 API.
 peerDependencyRules:
@@ -23,3 +35,10 @@ allowBuilds:
 # Explicitly reviewed exact renderer version; other new packages keep the age gate.
 minimumReleaseAgeExclude:
   - '@react-three/fiber@9.8.0'
+
+patchedDependencies:
+  # GHSA-vfj7-8cjw-p6xm: bounded parsing and AST traversal (MIT upstream PR #72).
+  # https://github.com/micromatch/braces/pull/72 at 28d440b5dd449dbf1fe6f3506cf94ecca4d02660.
+  # Runtime-only backport of the unmerged proposal; no package/version rename.
+  # Audit retains the raw finding; recognition requires verified bytes and regression execution.
+  braces@3.0.3: patches/braces@3.0.3.patch

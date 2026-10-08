@@ -21,6 +21,26 @@ import { createLeagueRevision } from '../league/index.ts';
 import { interferencePairManifest } from '../../test-support/interference.ts';
 import { ManifestBuilder, sealRevision } from './manifest-builder.ts';
 import { reference } from './prepare.ts';
+import { summoningManifest } from '../../test-support/summoning.ts';
+
+it('admits summon damage and requires drain only for a positive summon drain rate', async () => {
+  const input = await summoningManifest();
+  const summon = input.revisions.find(
+    (revision) => revision.kind === 'ability' && revision.definition.summon,
+  );
+  if (summon?.kind !== 'ability' || !summon.definition.summon)
+    throw new Error('Missing summon fixture');
+  const draining = closureMechanics([summon]).map(({ mechanic }) => mechanic);
+  expect(draining).toContain('damage');
+  expect(draining).toContain('drain');
+
+  const noDrain = structuredClone(summon);
+  noDrain.definition.summon!.damage.drainBps = 0;
+  const foundation = closureMechanics([noDrain]).map(({ mechanic }) => mechanic);
+  expect(foundation).toContain('damage');
+  expect(foundation).not.toContain('drain');
+  await expect(prepareBattle(input)).resolves.toHaveProperty('simulationHash');
+});
 
 it('checks experimental eligibility in dormant equipment-granted stages before execution', async () => {
   const input = await interferencePairManifest('stages', 'damage');
@@ -162,6 +182,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
       'recoverySteps',
       'relocation',
       'stages',
+      'summon',
       'target',
       'trigger',
       'movementWhileCasting',
@@ -179,6 +200,7 @@ it('inventories accepted mechanic-bearing schema fields and visits dormant and t
       'durationSteps',
       'flightStaminaPerSecond',
       'maxStacks',
+      'mentalImmunity',
       'modifiers',
       'name',
       'originalText',

@@ -62,4 +62,26 @@ describe('published catalog immutability', () => {
     ).resolves.toBeUndefined();
     await expect(assertPublishedRevisions(catalog)).rejects.toThrow('record every distributed ID');
   });
+  it('permits an immutable newer revision under a stable ability ID', async () => {
+    const source = savedCatalog.find(
+      (revision) => revision.kind === 'ability' && revision.id === 'sword',
+    )!;
+    const { contentHash: _hash, ...authored } = source;
+    const catalog = await compileCatalog([
+      ...savedCatalog,
+      {
+        ...authored,
+        revision: source.revision + 1,
+        definition: { ...source.definition, name: 'Versioned augment fixture' },
+      },
+    ]);
+
+    expect(catalog.filter(({ kind, id }) => kind === 'ability' && id === source.id)).toHaveLength(
+      2,
+    );
+    await expect(
+      assertPublishedRevisions(catalog, { allowAdditions: true }),
+    ).resolves.toBeUndefined();
+    await expect(assertPublishedRevisions(catalog)).rejects.toThrow('record every distributed ID');
+  });
 });

@@ -3,18 +3,32 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { withReplayDirectory } from '@fantasy/api/testing';
+import { Measurements } from '@fantasy/api/tooling';
 import { PipelineArtifacts } from './league-pipeline-artifacts.ts';
 import { pipelineActionsFixture } from './test-support/league-actions.ts';
 import { pipelineCapacity, pipelinePollMs, pipelineRunners } from './league-pipeline-policy.ts';
 import { measuredPipelineProfile } from './league-pipeline-profile.ts';
 import { artifactZip } from './test-support/league-zip.ts';
+import { PAGES_ACCEPTANCE_STEP, READBACK_STEPS } from './league-timing.ts';
 import { archiveHash } from './league-archive.ts';
 
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
-it.each(['valid', 'source', 'measurement', 'pilot', 'worker'] as const)(
+it.each([
+  'valid',
+  'source',
+  'measurement',
+  'pilot',
+  'worker',
+  'fresh-boundary',
+  'stale',
+  'future',
+  'invalid-time',
+  'missing-time',
+  'download-stale',
+] as const)(
   'authenticates Worker cost profile provenance before admission: %s',
   async (variant) => {
     await withReplayDirectory(async (root) => {
@@ -49,6 +63,34 @@ it.each(['valid', 'source', 'measurement', 'pilot', 'worker'] as const)(
         ...['produce', 'consume', 'workers'].map((name) => ({ ...state.jobs[0]!, name })),
       );
       if (variant === 'worker') state.jobs[2]!.conclusion = 'failure';
+      const now = Date.now();
+      const clock = vi.spyOn(Date, 'now').mockReturnValue(now);
+      if (variant === 'download-stale') {
+        const actualFetch = fetch.getMockImplementation()!;
+        fetch.mockImplementation(async (url, options) => {
+          const response = await actualFetch(url, options);
+          if (String(url).includes('signed.example.invalid')) clock.mockReturnValue(now + 3600001);
+          return response;
+        });
+      }
+      Object.assign(state.run, { updated_at: new Date(now).toISOString() });
+      Object.assign(state.jobs[2]!, {
+        completed_at:
+          variant === 'missing-time'
+            ? undefined
+            : variant === 'invalid-time'
+              ? 'invalid'
+              : new Date(
+                  now -
+                    (variant === 'fresh-boundary'
+                      ? 3600000
+                      : variant === 'stale'
+                        ? 3600001
+                        : variant === 'future'
+                          ? -1
+                          : 0),
+                ).toISOString(),
+      });
       state.zip = artifactZip('cost-profile.json', Buffer.from(JSON.stringify(profile)));
       Object.assign(state.artifact, {
         name: 'league-123-1-cost-profile',
@@ -60,9 +102,14 @@ it.each(['valid', 'source', 'measurement', 'pilot', 'worker'] as const)(
         123,
         measurementHash,
       );
-      if (variant === 'valid') await expect(pending).resolves.toEqual(profile);
-      else await expect(pending).rejects.toThrow(/mismatch|Untrusted|incomplete/);
-      if (variant === 'pilot' || variant === 'worker')
+      if (variant === 'valid' || variant === 'fresh-boundary')
+        await expect(pending).resolves.toEqual(profile);
+      else await expect(pending).rejects.toThrow(/mismatch|Untrusted|incomplete|measurement time/);
+      if (
+        variant === 'pilot' ||
+        variant === 'worker' ||
+        ['stale', 'future', 'invalid-time', 'missing-time'].includes(variant)
+      )
         expect(fetch.mock.calls.some(([url]) => String(url).endsWith('/zip'))).toBe(false);
       expect(state.downloadToken).toBe(false);
     });
@@ -73,11 +120,28 @@ it('authenticates actual immutable ZIPs, never forwards GitHub credentials and r
     const { identity, state } = pipelineActionsFixture(),
       github = new PipelineArtifacts('private-test-token', identity);
     const [ref] = await github.list();
-    await github.download(ref!, join(root, 'good'), (key) => key === 'control.json');
+    const measured = new Measurements();
+    await measured.run(() =>
+      github.download(ref!, join(root, 'good'), (key) => key === 'control.json'),
+    );
     expect(await readFile(join(root, 'good/control.json'), 'utf8')).toBe('exact bytes');
     expect(state.downloadToken).toBe(false);
     state.zip[40] = state.zip[40]! ^ 1;
-    await expect(github.download(ref!, join(root, 'bad'), () => true)).rejects.toThrow('digest');
+    await expect(
+      measured.run(() => github.download(ref!, join(root, 'bad'), () => true)),
+    ).rejects.toThrow('digest');
+    const report = measured.report();
+    expect(report.stages['artifact.download.transfer']).toMatchObject({
+      count: 2,
+      failures: 1,
+      bytes: state.zip.length,
+      incomplete: 0,
+    });
+    expect(report.stages['artifact.download.extract']).toMatchObject({
+      count: 1,
+      failures: 0,
+      incomplete: 0,
+    });
     expect(await github.successfulProducers(1)).toBe(true);
     state.jobs[1]!.conclusion = 'failure';
     await expect(github.successfulProducers(1)).rejects.toThrow('failed');
@@ -121,11 +185,45 @@ it('keeps the two-wave DAG, credential boundary, exclusion and current-code-only
   expect(workflow).not.toMatch(/pull_request|schedule:|secrets: inherit|permissions: write-all/);
   const secretSteps = workflow.split(/\n      - /).filter((step) => step.includes('secrets.'));
   expect(secretSteps).toHaveLength(4);
-  for (const step of secretSteps)
-    expect(step).toMatch(/league-pipeline.ts (restore|admit|transfer|recover)/);
+  expect(
+    secretSteps.map((step) =>
+      step
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => /^(?:run:|uses:|command:)/.test(line)),
+    ),
+  ).toEqual([
+    ['run: node --import tsx scripts/league-pipeline.ts restore'],
+    ['uses: ./.github/actions/league-artifact-command', 'command: admit'],
+    ['uses: ./.github/actions/league-artifact-command', 'command: transfer'],
+    ['uses: ./.github/actions/league-artifact-command', 'command: recover'],
+  ]);
+  for (const name of ['admit', 'transfer', 'recover'])
+    expect(job(name)).toContain('environment: r2-publication');
+  for (const step of secretSteps) {
+    expect(step).toContain('R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}');
+    expect(step).toContain('R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}');
+  }
+  expect(job('recover')).toContain('command: recover');
+  expect(job('recover')).not.toMatch(/command: (?:compute|admit|prepare|restore|transfer)\b/);
   const pilot = readFileSync(
     new URL('../.github/workflows/league-pilot.yml', import.meta.url),
     'utf8',
   );
   expect(pilot).not.toMatch(/R2_|secrets\.|environment:|needs:/);
+  // Timing reads these exact steps; the browser runs only after the committed readback.
+  const legacy = readFileSync(new URL('../.github/workflows/league.yml', import.meta.url), 'utf8');
+  for (const [name, step] of READBACK_STEPS)
+    expect((name === 'publish' ? legacy : job(name)).split('\n')).toContain(
+      `      - name: ${step}`,
+    );
+  const steps = job('transfer').split(/\n      - /),
+    at = (text: string) => steps.findIndex((step) => step.includes(text));
+  expect(at('cli.js install chromium --only-shell')).toBe(at('command: transfer') - 1);
+  expect(at(`name: ${PAGES_ACCEPTANCE_STEP}`)).toBe(at('command: transfer') + 1);
+  expect(at('league-measurements')).toBe(at(`name: ${PAGES_ACCEPTANCE_STEP}`) + 1);
+  expect(steps[at('cli.js install')]).toContain('continue-on-error: true');
+  for (const step of [steps[at('cli.js install')], steps[at(PAGES_ACCEPTANCE_STEP)]])
+    expect(step).not.toMatch(/secrets\.|R2_|if:/);
+  expect(steps[at(PAGES_ACCEPTANCE_STEP)]).not.toContain('continue-on-error');
 });

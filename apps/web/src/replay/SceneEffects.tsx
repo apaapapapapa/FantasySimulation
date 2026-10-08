@@ -41,6 +41,49 @@ function Glow({
   );
 }
 
+type Projectile = SceneModel['projectiles'][number];
+
+/** Pure projection consumed by the live three-dimensional projectile component. */
+export function projectile3DProjection(projectile: Projectile) {
+  const colours = tintColours(projectile.tint),
+    coreColour = projectile.deflected ? DEFLECTED : colours.core,
+    glowColour = projectile.deflected ? DEFLECTED : colours.glow;
+  return {
+    id: projectile.id,
+    position: projectile.position,
+    radius: Math.max(0.06, projectile.radius),
+    coreColour,
+    glowColour,
+    glowScale: Math.max(0.5, projectile.radius * 7),
+    lifecycle: 'active' as const,
+  };
+}
+
+/** The recorded active projectiles rendered by the live three-dimensional replay scene. */
+export function ProjectileEffects3D({ model }: { model: Pick<SceneModel, 'projectiles'> }) {
+  return model.projectiles.map((projectile) => {
+    const projection = projectile3DProjection(projectile);
+    return (
+      <group
+        key={projection.id}
+        name={`projectile:${projection.id}`}
+        userData={{ projectile: projection.id, lifecycle: projection.lifecycle }}
+      >
+        <mesh position={projection.position}>
+          <sphereGeometry args={[projection.radius, 10, 8]} />
+          <meshBasicMaterial color={projection.coreColour} toneMapped={false} />
+        </mesh>
+        <Glow
+          position={projection.position}
+          scale={projection.glowScale}
+          colour={projection.glowColour}
+          opacity={0.9}
+        />
+      </group>
+    );
+  });
+}
+
 /**
  * Crescent bands along the blade (fraction from root → tip, alpha, bright rim?): transparent
  * inside, an orange glow, then a bright rim at the recorded tip.
@@ -209,6 +252,88 @@ function SpatialObject({
 
 const FIREFLY_CELL = 9,
   FIREFLIES_PER_CELL = 5;
+
+export function SensoryCues3D({ model }: { model: SceneModel }) {
+  return model.illusions.map((cue) => (
+    <group
+      key={cue.id}
+      position={cue.position}
+      data-sensory-cue={cue.id}
+      userData={{ sensoryCue: cue.id }}
+    >
+      <mesh>
+        <sphereGeometry args={[0.55, 12, 8]} />
+        <meshBasicMaterial
+          color="#a789ff"
+          transparent
+          opacity={cue.confidenceBps / 20000}
+          wireframe
+          depthWrite={false}
+        />
+      </mesh>
+      <Glow position={[0, 0, 0]} scale={1.3} colour="#a789ff" opacity={0.45} />
+    </group>
+  ));
+}
+
+export function EnvironmentalHolograms3D({ model }: { model: SceneModel }) {
+  return model.environmentalHolograms.map((hologram) => {
+    const invalidated = hologram.state === 'invalidated';
+    return (
+      <group
+        key={hologram.id}
+        position={hologram.position}
+        data-environmental-hologram={hologram.id}
+        data-hologram-state={hologram.state}
+        userData={{
+          environmentalHologram: hologram.id,
+          observerId: hologram.observerId,
+          state: hologram.state,
+        }}
+      >
+        <mesh>
+          <icosahedronGeometry args={[invalidated ? 0.36 : 0.55, 1]} />
+          <meshBasicMaterial
+            color={invalidated ? '#c19ac7' : '#54d9d5'}
+            transparent
+            opacity={invalidated ? 0.22 : 0.5}
+            wireframe
+            depthWrite={false}
+          />
+        </mesh>
+        <Glow
+          position={[0, 0, 0]}
+          kind={invalidated ? 'ring' : 'soft'}
+          scale={invalidated ? 0.7 : 1.45}
+          colour={invalidated ? '#c19ac7' : '#8dfffb'}
+          opacity={invalidated ? 0.2 : 0.6}
+        />
+      </group>
+    );
+  });
+}
+
+export function Dependents3D({ model }: { model: SceneModel }) {
+  return model.dependents.map((dependent) => (
+    <group
+      key={dependent.id}
+      position={dependent.position}
+      data-dependent={dependent.id}
+      userData={{ dependent: dependent.id, ownerId: dependent.ownerId }}
+    >
+      <mesh>
+        <capsuleGeometry args={[dependent.radius, dependent.length, 4, 10]} />
+        <meshStandardMaterial color="#a98b69" roughness={0.8} />
+      </mesh>
+      <Glow
+        position={[0, dependent.length / 2 + dependent.radius, 0]}
+        scale={0.35}
+        colour="#f4dd9b"
+        opacity={0.5}
+      />
+    </group>
+  ));
+}
 /**
  * Decorative motes in world-anchored cells around the fighters. Their drift is keyed to the
  * displayed step time, so a paused or shared step always shows the same arrangement.
@@ -245,11 +370,12 @@ function Fireflies({ model }: { model: SceneModel }) {
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <pointsMaterial
-        size={2 / dpr}
+        map={glowMap('soft')}
+        size={3 / dpr}
         sizeAttenuation={false}
-        color="#efffa6"
+        color="#e3d1a0"
         transparent
-        opacity={0.8}
+        opacity={0.55}
         depthWrite={false}
         blending={AdditiveBlending}
         toneMapped={false}
@@ -281,9 +407,6 @@ export function SceneEffects({ model }: { model: SceneModel }) {
     step,
     SPANS.beam,
   );
-  const tints = new Map(
-    model.projectiles.map((p) => [p.id, p.deflected ? DEFLECTED : tintColours(p.tint).glow]),
-  );
   // The colour is kept with each trail segment: the projectile may be gone a step later.
   const trails = useAfterimages(
     model,
@@ -300,31 +423,12 @@ export function SceneEffects({ model }: { model: SceneModel }) {
           key={`${mark.step}:${mark.item.id}`}
           points={mark.item.points}
           color={mark.item.colour}
-          lineWidth={3}
+          lineWidth={2}
           transparent
           opacity={afterimageStrength(mark, step, SPANS.trail) * 0.8}
         />
       ))}
-      {model.projectiles.map((p) => {
-        const colours = tintColours(p.tint);
-        return (
-          <group key={p.id}>
-            <mesh position={p.position}>
-              <sphereGeometry args={[Math.max(0.06, p.radius), 10, 8]} />
-              <meshBasicMaterial
-                color={p.deflected ? DEFLECTED : colours.core}
-                toneMapped={false}
-              />
-            </mesh>
-            <Glow
-              position={p.position}
-              scale={Math.max(0.5, p.radius * 7)}
-              colour={tints.get(p.id)!}
-              opacity={0.9}
-            />
-          </group>
-        );
-      })}
+      <ProjectileEffects3D model={model} />
       <Slashes marks={slashes} step={step} />
       {orbs.map((mark) => (
         <Glow
@@ -407,6 +511,9 @@ export function SceneEffects({ model }: { model: SceneModel }) {
       {model.objects.map((o) => (
         <SpatialObject key={o.id} object={o} model={model} />
       ))}
+      <Dependents3D model={model} />
+      <SensoryCues3D model={model} />
+      <EnvironmentalHolograms3D model={model} />
       <Fireflies model={model} />
     </>
   );

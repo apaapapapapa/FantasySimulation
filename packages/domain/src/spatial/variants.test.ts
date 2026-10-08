@@ -31,6 +31,8 @@ it('dispatches narrowed variants with caller context and requires complete regis
     water: (_effect, n) => n,
     dispel: (_effect, n) => n,
     'apply-status': (_effect, n) => n,
+    'sensory-cue': (effect, n) => effect.durationSteps + n,
+    'environmental-hologram': (effect, n) => effect.durationSteps + n,
   };
   expect(matchEffect({ kind: 'heal', amount: 12 }, effects, 3)).toBe(15);
 });

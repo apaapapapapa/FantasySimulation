@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { setTimeout } from 'node:timers/promises';
+import { measureAsync } from '@fantasy/api/tooling';
 import {
   canonicalJson,
   PublicKeySchema,
@@ -12,12 +13,23 @@ import {
   cloudJson,
   preparedLeague,
 } from '../apps/cli/src/league/league-cloud-files.ts';
-import { assignLeagueRunners } from '../apps/cli/src/league/league-assignment.ts';
+import {
+  assignLeagueRunners,
+  requireLeagueAssignment,
+} from '../apps/cli/src/league/league-assignment.ts';
 import { preparedLeagueCosts } from '../apps/cli/src/league/league-cost-profile.ts';
+import { CALIBRATION_LIMITS, requireCalibrationScope } from './league-runner-calibration-policy.ts';
+import { validateCalibrationPrepared } from './league-partition-pilot-inputs.ts';
+import { validateCalibrationBudgetRecord } from './league-calibration-history.ts';
 import {
   authenticateLeagueProducer,
+  authenticatePackedLeagueProducer,
   type LeagueProducer,
 } from '../apps/cli/src/league/league-producer.ts';
+import {
+  authenticatePackedGroup,
+  packedPath,
+} from '../apps/cli/src/league/league-producer-transport.ts';
 import { PublicationEvidence } from '../apps/cli/src/publication/publication-evidence.ts';
 import { decodeLeagueCheckpoint } from '../apps/cli/src/league/league-checkpoint.ts';
 import { publicationInventory } from '../apps/cli/src/publication/publication-files.ts';
@@ -27,6 +39,26 @@ import { pipelineInputKey } from './league-pipeline-compute.ts';
 import { pipelineCapacity, pipelinePollMs } from './league-pipeline-policy.ts';
 
 export async function receiveBaseline(root: string, github: PipelineArtifacts, maxAgeMs: number) {
+  return receiveBaselineMode(root, github, maxAgeMs, false);
+}
+
+export async function receiveCalibrationBaseline(
+  root: string,
+  github: PipelineArtifacts,
+  maxAgeMs: number,
+) {
+  const run = await github.authenticateRun();
+  if (run.path !== '.github/workflows/league-runner-calibration.yml')
+    throw new Error('Calibration workflow authentication required');
+  return receiveBaselineMode(root, github, maxAgeMs, true);
+}
+
+async function receiveBaselineMode(
+  root: string,
+  github: PipelineArtifacts,
+  maxAgeMs: number,
+  calibration: boolean,
+) {
   const prefix = `league-${github.identity.runId}-${github.identity.runAttempt}`;
   const all = await github.list(),
     ref = all.find((a) => a.name === prefix + '-baseline');
@@ -35,13 +67,17 @@ export async function receiveBaseline(root: string, github: PipelineArtifacts, m
   await github.download(
     ref,
     preparedRoot,
-    (key) => key === 'checkpoint.gz' || (pipelineInputKey(key) && !key.includes('/retained/')),
+    (key) =>
+      key === 'checkpoint.gz' ||
+      (pipelineInputKey(key) && !key.includes('/retained/')) ||
+      (calibration && key === 'calibration-budget.json'),
   );
   const control = LeaguePipelineControlSchema.parse(
     await cloudJson(join(preparedRoot, 'control.json')),
   );
   if (canonicalJson(control.identity) !== canonicalJson(github.identity))
     throw new Error('Baseline execution mismatch');
+  if (calibration) await validateCalibrationBudgetRecord(preparedRoot, github.identity);
   const baseline = await PublicationEvidence.restore(
     decodeLeagueCheckpoint(await readFile(join(preparedRoot, 'checkpoint.gz'))),
     {
@@ -108,17 +144,120 @@ export async function receivePipeline(
   staging: LeagueStaging,
   signal: AbortSignal,
 ) {
-  const started = performance.now(),
-    prefix = `league-${github.identity.runId}-${github.identity.runAttempt}`;
   const prepared = await preparedLeague(preparedRoot);
   const assignments = assignLeagueRunners(
     prepared.plan,
     runners,
     await preparedLeagueCosts(preparedRoot, prepared, true),
   );
+  return receiveAssignedPipeline(root, preparedRoot, github, runners, staging, signal, assignments);
+}
+
+/** Diagnostic only: original-input binding is checked before any artifact receive. */
+export async function receivePartitionPilot(
+  root: string,
+  preparedRoot: string,
+  github: PipelineArtifacts,
+  runners: number,
+  staging: LeagueStaging,
+  signal: AbortSignal,
+  originalInputs: (preparedRoot: string) => Promise<void>,
+) {
+  await originalInputs(preparedRoot);
+  const prepared = await preparedLeague(preparedRoot);
+  if (
+    ![1, 2].includes(runners) ||
+    prepared.inputs.length !== 3 ||
+    prepared.plan.partitions.length !== 3 ||
+    prepared.plan.partitions.reduce((n, p) => n + p.slots, 0) !== 380
+  )
+    throw new Error('Partition pilot scope mismatch');
+  const assignments = requireLeagueAssignment(
+    prepared.plan,
+    assignLeagueRunners(prepared.plan, runners),
+    runners,
+  );
+  return receiveAssignedPipeline(
+    root,
+    preparedRoot,
+    github,
+    runners,
+    staging,
+    signal,
+    assignments,
+    true,
+  );
+}
+
+export async function receiveRunnerCalibration(
+  root: string,
+  preparedRoot: string,
+  github: PipelineArtifacts,
+  runners: number,
+  staging: LeagueStaging,
+  signal: AbortSignal,
+  originalInputs: (preparedRoot: string) => Promise<void>,
+) {
+  const run = await github.authenticateRun();
+  if (run.path !== '.github/workflows/league-runner-calibration.yml')
+    throw new Error('Calibration workflow authentication required');
+  await originalInputs(preparedRoot);
+  await validateCalibrationPrepared(preparedRoot, github.identity, runners);
+  const prepared = await preparedLeague(preparedRoot);
+  requireCalibrationScope(prepared, runners, github.identity);
+  await validateCalibrationBudgetRecord(preparedRoot, github.identity);
+  const assignments = requireLeagueAssignment(
+    prepared.plan,
+    assignLeagueRunners(prepared.plan, runners),
+    runners,
+  );
+  return receiveAssignedPipeline(
+    root,
+    preparedRoot,
+    github,
+    runners,
+    staging,
+    signal,
+    assignments,
+    true,
+    true,
+  );
+}
+
+async function receiveAssignedPipeline(
+  root: string,
+  preparedRoot: string,
+  github: PipelineArtifacts,
+  runners: number,
+  staging: LeagueStaging,
+  signal: AbortSignal,
+  assignments: ReturnType<typeof assignLeagueRunners>,
+  packed = false,
+  calibration = false,
+) {
+  const started = performance.now(),
+    prefix = `league-${github.identity.runId}-${github.identity.runAttempt}`;
+  const prepared = await preparedLeague(preparedRoot);
+  const calibrationMetrics = calibration
+    ? new Set([
+        `${prefix}-prepare-shared-metrics`,
+        `${prefix}-consume-shared-metrics`,
+        ...assignments.map(({ runner }) => `${prefix}-compute-${runner}-metrics`),
+      ])
+    : null;
+  const coverage = assignments.flatMap((a) => a.partitions);
+  if (
+    assignments.length !== runners ||
+    assignments.some((a, i) => a.runner !== i) ||
+    coverage.length !== prepared.inputs.length ||
+    new Set(coverage).size !== coverage.length ||
+    coverage.some((p) => !Number.isInteger(p) || p < 0 || p >= prepared.inputs.length)
+  )
+    throw new Error('Incomplete receiver assignment coverage');
   pipelineCapacity(prepared.inputs.length, assignments);
   const producers: LeagueProducer[] = [],
     completed = new Set<number>(),
+    packedCompleted = new Set<number>(),
     adopted = new Map<number, PipelineArtifact>();
   const terminals = new Map<number, ReturnType<typeof LeagueProducerTerminalSchema.parse>>();
   let lastJobCheck = -60000;
@@ -126,12 +265,27 @@ export async function receivePipeline(
     signal.throwIfAborted();
     if (performance.now() - started > 2400000)
       throw new Error('Pipeline receiver deadline exceeded');
-    const all = await github.list(),
+    const all = await measureAsync('receiver.list', () => github.list()),
       groups = new Map<
         number,
         { runner: number; total: number; parts: Map<number, PipelineArtifact> }
-      >();
+      >(),
+      packedRefs: { runner: number; ref: PipelineArtifact }[] = [];
     for (const ref of all) {
+      // list() has already authenticated immutable source/run metadata and duplicate names.
+      // Diagnostics are never downloaded or counted as producer/terminal coverage.
+      if (calibrationMetrics?.has(ref.name)) {
+        if (ref.bytes > CALIBRATION_LIMITS.encodedMetricsBytes)
+          throw new Error('Calibration metrics artifact exceeds encoded bound');
+        continue;
+      }
+      const pack = /-runner-(\d+)-pack-(\d+)$/.exec(ref.name);
+      if (pack) {
+        const runner = Number(pack[1]);
+        if (!packed || !assignments[runner]) throw new Error('Unexpected packed pipeline artifact');
+        packedRefs.push({ runner, ref });
+        continue;
+      }
       const match = partPattern.exec(ref.name);
       if (!match) {
         if (!new RegExp(`^${prefix}-(inputs|baseline|checkpoint|terminal-\\d+)$`).test(ref.name))
@@ -145,6 +299,8 @@ export async function receivePipeline(
         partition = Number(match[2]),
         part = Number(match[3]),
         total = Number(match[4]);
+      if (packedCompleted.has(partition))
+        throw new Error('Duplicate packed/legacy partition coverage');
       if (
         !assignments[runner]?.partitions.includes(partition) ||
         part >= total ||
@@ -157,21 +313,76 @@ export async function receivePipeline(
       group.parts.set(part, ref);
       groups.set(partition, group);
     }
+    for (const { runner, ref } of packedRefs) {
+      if (adopted.has(ref.id)) continue;
+      const spool = join(root, 'receive-packed-' + ref.id);
+      await mkdir(spool);
+      try {
+        const downloaded = join(spool, 'archive');
+        await github.download(ref, downloaded, packedPath, false);
+        const binding = await measureAsync('receiver.authenticateGroup', () =>
+          authenticatePackedGroup(
+            downloaded,
+            ref,
+            github.identity,
+            runner,
+            assignments[runner]!.partitions,
+          ),
+        );
+        if (binding.partitions.some((index) => completed.has(index) || groups.has(index)))
+          throw new Error('Duplicate packed/legacy partition coverage');
+        const incoming: LeagueProducer[] = [];
+        for (const index of binding.partitions)
+          incoming.push(
+            await measureAsync('receiver.authenticatePartition', async () =>
+              authenticatePackedLeagueProducer(
+                join(downloaded, 'partitions', String(index)),
+                await cloudInput(preparedRoot, prepared, index),
+                github.identity,
+                runner,
+                binding,
+              ),
+            ),
+          );
+        // No adoption until every partition in the immutable group is fully verified and staged.
+        for (const producer of incoming)
+          await measureAsync('receiver.stage', () =>
+            staging.stage(
+              producer.evidence,
+              join(downloaded, 'partitions', String(producer.proof.partition), 'public'),
+            ),
+          );
+        producers.push(...incoming);
+        binding.partitions.forEach((index) => {
+          completed.add(index);
+          packedCompleted.add(index);
+        });
+        adopted.set(ref.id, ref);
+      } finally {
+        await rm(spool, { recursive: true, force: true });
+      }
+    }
     for (const [partition, group] of [...groups].sort(([a], [b]) => a - b)) {
       if (completed.has(partition) || group.parts.size !== group.total) continue;
       const parts = [...group.parts].sort(([a], [b]) => a - b).map(([, ref]) => ref);
       const spool = join(root, 'receive-' + partition);
       await mkdir(spool);
       try {
-        const assembled = await assemblePartition(spool, github, parts);
-        const producer = await authenticateLeagueProducer(
-          assembled,
-          await cloudInput(preparedRoot, prepared, partition),
-          github.identity,
-          group.runner,
-          async () => parts,
+        const assembled = await measureAsync('receiver.assemble', () =>
+          assemblePartition(spool, github, parts),
         );
-        await staging.stage(producer.evidence, join(assembled, 'public'));
+        const producer = await measureAsync('receiver.authenticatePartition', async () =>
+          authenticateLeagueProducer(
+            assembled,
+            await cloudInput(preparedRoot, prepared, partition),
+            github.identity,
+            group.runner,
+            async () => parts,
+          ),
+        );
+        await measureAsync('receiver.stage', () =>
+          staging.stage(producer.evidence, join(assembled, 'public')),
+        );
         producers.push(producer);
         completed.add(partition);
         parts.forEach((ref) => adopted.set(ref.id, ref));
@@ -199,7 +410,10 @@ export async function receivePipeline(
     const elapsed = performance.now() - started;
     const checkJobs = terminals.size === assignments.length || elapsed - lastJobCheck >= 60000;
     if (checkJobs) lastJobCheck = elapsed;
-    if (checkJobs && (await github.successfulProducers(assignments.length))) {
+    if (
+      checkJobs &&
+      (await measureAsync('receiver.jobs', () => github.successfulProducers(assignments.length)))
+    ) {
       if (completed.size !== prepared.inputs.length || terminals.size !== assignments.length)
         throw new Error('Successful jobs have incomplete artifact coverage');
       const refs = [...terminals.values()].flatMap((terminal) => terminal.artifacts);
@@ -211,6 +425,8 @@ export async function receivePipeline(
         throw new Error('Terminal immutable artifact coverage mismatch');
       return { producers, terminals: [...terminals.values()], metadata: github.metrics() };
     }
-    await setTimeout(pipelinePollMs(performance.now() - started, polls), undefined, { signal });
+    await measureAsync('receiver.pollWait', () =>
+      setTimeout(pipelinePollMs(performance.now() - started, polls), undefined, { signal }),
+    );
   }
 }

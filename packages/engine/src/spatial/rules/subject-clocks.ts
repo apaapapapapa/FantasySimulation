@@ -51,6 +51,12 @@ export function rebaseActorTimers(actor: ActorState, amount: number, from: numbe
     force.startAt += amount;
     force.endAt += amount;
   }
+  for (const hologram of actor.sensors.environmentalHolograms) {
+    if (hologram.state === 'active-unobserved') hologram.observedAt += amount;
+    if (hologram.state === 'active-unobserved' || hologram.state === 'observed')
+      hologram.invalidatedAt += amount;
+    hologram.expiresAt += amount;
+  }
   // Copies prevent mutation of shared immutable perception snapshots across rollback.
   const memory = structuredClone(actor.mind.memory) as MutableMemory;
   memory.sampledAt += amount;

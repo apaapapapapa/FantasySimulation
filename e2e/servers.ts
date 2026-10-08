@@ -1,10 +1,11 @@
 import { join } from 'node:path';
 import { startWeb } from './web-server.ts';
 import { createApp } from '@fantasy/api/local';
-import { openStore, readSampleRevisions } from '@fantasy/api/local';
+import { openStore, readSampleRevisions, seedStartupData } from '@fantasy/api/local';
 import { BattleService } from '@fantasy/api/local';
 import { readConfig } from '@fantasy/api/local';
-import { RevisionSchema } from '@fantasy/domain/spatial';
+import { seedLegacySkillLoadout } from '@fantasy/api/testing';
+import { RevisionSchema, revisionReference } from '@fantasy/domain/spatial';
 
 /** Ports are assigned by bind(0), never probed/released or reused from another server. */
 export interface ServerState {
@@ -30,7 +31,26 @@ export async function startServers(
   close.push(async () => store.close());
   try {
     const samples = readSampleRevisions().map((value) => RevisionSchema.parse(value));
-    await store.seedRevisions(samples);
+    const seeded = await seedStartupData(store),
+      legacyCharacter = store.listRevisions('character', 10).items[0];
+    if (legacyCharacter?.kind !== 'character')
+      throw new Error('Missing legacy skill loadout character');
+    // This persisted V1 row is test setup, not an HTTP write escape hatch. The browser must read
+    // and battle with it before its explicit WorkBench save upgrades the same identity.
+    for (const retry of [0, 1]) {
+      await seedLegacySkillLoadout(store, {
+        character: revisionReference(legacyCharacter),
+        configuration: {
+          schemaVersion: 1,
+          id: `loadout.e2e.v1-upgrade.retry-${retry}`,
+          version: 1,
+          catalog: seeded.skillCatalog.reference,
+          eligibilityNodeIds: ['skill.magic.tiger.1'],
+          learnedNodeIds: ['skill.magic.tiger.1'],
+          enabledNodeIds: ['skill.magic.tiger.1'],
+        },
+      });
+    }
     const runtime = await BattleService.open(
       store,
       join(temporary, 'replays'),

@@ -111,10 +111,39 @@ export const LeagueUsageLeaseSchema = z.strictObject({
   worker: z.number().int().min(0).max(90000),
 });
 export type LeagueUsageLease = z.infer<typeof LeagueUsageLeaseSchema>;
-export const LeagueUsageSchema = z.strictObject({
+export const LegacyLeagueUsageSchema = z.strictObject({
   schemaVersion: z.literal(1),
   month: z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/),
   sequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
   leases: z.array(LeagueUsageLeaseSchema).min(1).max(256),
 });
+/** Operator-verified account-wide usage; never supplied by a public request. */
+export const LeagueBillingObservationSchema = z.strictObject({
+  accountId: z.string().regex(/^[a-f0-9]{32}$/),
+  bucket: z.string().regex(/^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$/),
+  storageClass: z.literal('Standard'),
+  provenance: z.literal('operator-verified-account-usage'),
+  evidenceDigest: HashSchema,
+  cycleStart: z.iso.datetime(),
+  cycleEnd: z.iso.datetime(),
+  observedAt: z.iso.datetime(),
+  classAUsed: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+  classBUsed: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+  otherClassAReserve: z.number().int().min(0).max(900000),
+  otherClassBReserve: z.number().int().min(0).max(9000000),
+  workerDay: z.iso.date().nullable(),
+  workerRemaining: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable(),
+});
+export type LeagueBillingObservation = z.infer<typeof LeagueBillingObservationSchema>;
+export const CycleLeagueUsageSchema = z.strictObject({
+  schemaVersion: z.literal(2),
+  observation: LeagueBillingObservationSchema,
+  sequence: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+  // Historical leases remain intact across billing-cycle updates; no refund/release operation.
+  leases: z.array(LeagueUsageLeaseSchema).min(1).max(256),
+});
+export const LeagueUsageSchema = z.discriminatedUnion('schemaVersion', [
+  LegacyLeagueUsageSchema,
+  CycleLeagueUsageSchema,
+]);
 export type LeagueUsage = z.infer<typeof LeagueUsageSchema>;

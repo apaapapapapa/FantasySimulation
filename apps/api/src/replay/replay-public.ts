@@ -1,5 +1,12 @@
 import { OperationError } from '../operation-error.ts';
 
+/** An unpublishable input is a caller decision, never a per-slot save failure to retry. */
+export class PrivateDataError extends OperationError {
+  constructor(message: string) {
+    super('DATA_INVALID', message);
+  }
+}
+
 /** Inspect original JSON, before schema normalization can discard any private fields. */
 export function assertPublicData(value: unknown): void {
   if (typeof value === 'string') {
@@ -10,7 +17,7 @@ export function assertPublicData(value: unknown): void {
         value,
       )
     )
-      throw new OperationError('DATA_INVALID', 'Private text is not publishable');
+      throw new PrivateDataError('Private text is not publishable');
   } else if (Array.isArray(value)) value.forEach(assertPublicData);
   else if (value && typeof value === 'object') {
     for (const [key, item] of Object.entries(value)) {
@@ -19,7 +26,7 @@ export function assertPublicData(value: unknown): void {
           key,
         )
       )
-        throw new OperationError('DATA_INVALID', 'Private field is not publishable');
+        throw new PrivateDataError('Private field is not publishable');
       assertPublicData(key);
       assertPublicData(item);
     }

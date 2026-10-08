@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import fixture from '../../fixtures/replay/mutual-hit.json' with { type: 'json' };
-import { hashBytes } from './canonical.ts';
+import { canonicalJson, hashBytes } from './canonical.ts';
 import { ResultSchema } from './records.ts';
 import {
   eventHashLine,
@@ -46,6 +46,11 @@ describe('saved replay schema v1 (no engine or physics import)', () => {
       eventHash: 'sha256:d70d13d646b781e38b824a132d8c98d5a252ef2797437d8a09e0aeb9601f5a2e',
       trajectoryHash: 'sha256:116a79a1d742494e6b1670ea43208c1e8f34556743c0ba7d1cdcb6c057888b9b',
     });
+    const fullRecordBytes = new TextEncoder().encode(canonicalJson(records));
+    expect(fullRecordBytes.byteLength).toBe(9816);
+    expect(await hashBytes(fullRecordBytes)).toBe(
+      'sha256:3a982685d0fb44c92f9a10770b27ab241a0ce9c8036036cf08a8f61bcf5e3ed6',
+    );
     expect(replay.checkpoint().state?.actors.map((a) => a.resources.hp)).toEqual([0, 0]);
     expect(
       await hashBytes(new TextEncoder().encode(records.map(trajectoryHashLine).join(''))),

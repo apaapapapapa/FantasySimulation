@@ -21,6 +21,44 @@ export const PhysicalVectorSchema = z.strictObject({
   y: z.number().min(-2000).max(2000),
   z: z.number().min(-2000).max(2000),
 });
+export const SensoryCueDisplaySchema = z.strictObject({
+  id: IdSchema,
+  creatorId: IdSchema,
+  observerId: IdSchema,
+  modality: z.literal('visual'),
+  perceivedOrigin: PhysicalVectorSchema,
+  emittedAt: step,
+  deliveredAt: step,
+  expiresAt: z.number().int().min(1).max(7000),
+  discoveredAt: z.number().int().min(1).max(7000),
+  confidenceBps: z.number().int().min(1).max(10000),
+});
+export const EnvironmentalHologramDisplaySchema = z
+  .strictObject({
+    id: IdSchema,
+    creatorId: IdSchema,
+    observerId: IdSchema,
+    observerIds: z.array(IdSchema).length(1),
+    abilityId: IdSchema,
+    effectIndex: z.number().int().min(0).max(31),
+    stageIndex: z.number().int().min(0).max(15).optional(),
+    modality: z.literal('visual'),
+    sourcePosition: PhysicalVectorSchema,
+    perceivedPosition: PhysicalVectorSchema,
+    state: z.enum(['active-unobserved', 'observed', 'invalidated']),
+    activatedAt: step,
+    observedAt: z.number().int().min(1).max(7000),
+    invalidatedAt: z.number().int().min(1).max(7000),
+    expiresAt: z.number().int().min(1).max(7000),
+  })
+  .refine(
+    (hologram) =>
+      hologram.observerIds[0] === hologram.observerId &&
+      hologram.activatedAt < hologram.observedAt &&
+      hologram.observedAt < hologram.invalidatedAt &&
+      hologram.invalidatedAt < hologram.expiresAt,
+    'Environmental hologram observer and lifecycle binding',
+  );
 export const ResourceStateSchema = z.strictObject({
   hp: count,
   mp: count,
@@ -96,6 +134,9 @@ export const DeferredEffectSchema = z.strictObject({
   targetId: IdSchema,
   abilityId: IdSchema,
   effect: EffectSchema,
+  effectIndex: z.number().int().min(0).max(31).optional(),
+  stageIndex: z.number().int().min(0).max(15).optional(),
+  sourcePosition: PhysicalVectorSchema.optional(),
   sourceActorId: IdSchema.optional(),
   sourceProjectileId: IdSchema.optional(),
   deflection: ProjectileDeflectionSchema.optional(),
@@ -141,6 +182,12 @@ export const EventSchema = z
       'evasion',
       'time-stop',
       'teleport',
+      'sensory-cue',
+      'environmental-hologram',
+      'dependent-create',
+      'dependent-command',
+      'dependent-act',
+      'dependent-despawn',
     ]),
     actorId: IdSchema.nullable(),
     targetId: IdSchema.nullable(),
@@ -158,6 +205,21 @@ export const EventSchema = z
         defenseApplied: count,
         afterDefense: count,
         afterResistance: count,
+        guard: z
+          .strictObject({
+            before: count,
+            after: count,
+            responses: z
+              .array(
+                z.strictObject({
+                  activationId: IdSchema,
+                  retainedDamageBps: z.number().int().min(1).max(9999),
+                }),
+              )
+              .min(1)
+              .max(64),
+          })
+          .optional(),
         absorption: z
           .strictObject({ element: ElementSchema, converted: count, healing: count })
           .optional(),
@@ -210,12 +272,86 @@ export const EventSchema = z
     deferrals: z.array(IdSchema).min(1).max(16).optional(),
     evasion: z.strictObject({ statuses: z.array(RefSchema).min(1).max(64) }).optional(),
     teleport: z.strictObject({ from: PhysicalVectorSchema, to: PhysicalVectorSchema }).optional(),
+    sensoryCue: SensoryCueDisplaySchema.extend({
+      transition: z.enum(['emitted', 'delivered', 'discovered', 'cleansed', 'expired']),
+    }).optional(),
+    environmentalHologram: EnvironmentalHologramDisplaySchema.extend({
+      transition: z.enum(['activated', 'observed', 'invalidated', 'expired']),
+    }).optional(),
+    dependent: z
+      .strictObject({
+        transition: z.enum(['create', 'command', 'act', 'despawn']),
+        ownerId: IdSchema,
+        hostileOwnerId: IdSchema,
+        ordinal: z.number().int().min(0).max(7),
+        nextActionAt: z.number().int().min(0).max(12300).optional(),
+        observedTargetIds: z.array(IdSchema).min(1).max(9).optional(),
+        reason: z.enum(['expired', 'dismissed', 'owner-defeated', 'upkeep']).optional(),
+      })
+      .optional(),
     wave: z.number().int().min(0).max(8).optional(),
     sourceActorId: IdSchema.optional(),
     sourceProjectileId: IdSchema.optional(),
     projectileDeflection: ProjectileDeflectionSchema.optional(),
   })
   .superRefine((event, ctx) => {
+    const dependentKinds = [
+      'dependent-create',
+      'dependent-command',
+      'dependent-act',
+      'dependent-despawn',
+    ] as const;
+    if (
+      dependentKinds.includes(event.kind as (typeof dependentKinds)[number]) !==
+        !!event.dependent ||
+      (event.dependent &&
+        (!event.entityId ||
+          event.actorId !== event.dependent.ownerId ||
+          (!['dependent-command', 'dependent-act'].includes(event.kind) &&
+            event.targetId !== event.dependent.hostileOwnerId) ||
+          (['dependent-command', 'dependent-act'].includes(event.kind) &&
+            (!event.targetId || event.targetId === event.dependent.ownerId)) ||
+          event.dependent.ownerId === event.dependent.hostileOwnerId ||
+          event.dependent.transition !== event.kind.slice('dependent-'.length)))
+    )
+      ctx.addIssue({ code: 'custom', message: 'Dependent event identity/transition mismatch' });
+    if (event.damage?.guard) {
+      const ids = event.damage.guard.responses.map((response) => response.activationId);
+      if (
+        event.kind !== 'damage' ||
+        event.damage.guard.after > event.damage.guard.before ||
+        new Set(ids).size !== ids.length ||
+        ids.some((id) => !event.causes.includes(id))
+      )
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Guard requires unique causal activations and non-increasing damage',
+        });
+    }
+    if (
+      (event.kind === 'sensory-cue') !== !!event.sensoryCue ||
+      (event.sensoryCue &&
+        (event.entityId !== event.sensoryCue.id ||
+          event.actorId !== event.sensoryCue.creatorId ||
+          event.targetId !== event.sensoryCue.observerId ||
+          event.actorId === event.targetId))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Sensory cue events require bound creator, observer and cue identity',
+      });
+    if (
+      (event.kind === 'environmental-hologram') !== !!event.environmentalHologram ||
+      (event.environmentalHologram &&
+        (event.entityId !== event.environmentalHologram.id ||
+          event.actorId !== event.environmentalHologram.creatorId ||
+          event.targetId !== event.environmentalHologram.observerId ||
+          event.actorId === event.targetId))
+    )
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Environmental hologram events require bound creator, observer and identity',
+      });
     if (
       (event.kind === 'time-stop') !== !!event.timeStop ||
       (event.timeStop && (!event.actorId || !event.targetId || event.actorId === event.targetId))

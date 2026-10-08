@@ -25,7 +25,11 @@ import {
   type PublishOptions,
   type PublicationStoreFactory,
 } from '../publication/publication-remote.ts';
-import { admitLeagueUsage } from './league-budget.ts';
+import {
+  admitLeagueUsage,
+  requireLeagueBillingObservation,
+  leaseOverlapsBillingCycle,
+} from './league-budget.ts';
 import { writeCloudJson } from './league-cloud-files.ts';
 import { requireLeagueRestoreBinding } from './league-probe.ts';
 import { PublicReadFailure } from '../publication/publication-http.ts';
@@ -73,10 +77,26 @@ export const leagueTransport = (
   maxAttempts: 1,
   transientRetries,
 });
-export const leagueUsageTotals = (usage: LeagueUsage) => ({
-  usedReadRequests: 10000 + usage.leases.reduce((sum, entry) => sum + entry.classB, 0),
-  usedWriteRequests: 10000 + usage.leases.reduce((sum, entry) => sum + entry.classA, 0),
-});
+export const leagueUsageTotals = (usage: LeagueUsage) => {
+  const leases =
+    usage.schemaVersion === 1
+      ? usage.leases
+      : usage.leases.filter((entry) => leaseOverlapsBillingCycle(entry.day, usage.observation));
+  return {
+    usedReadRequests:
+      10000 +
+      leases.reduce((sum, entry) => sum + entry.classB, 0) +
+      (usage.schemaVersion === 2
+        ? usage.observation.classBUsed + usage.observation.otherClassBReserve
+        : 0),
+    usedWriteRequests:
+      10000 +
+      leases.reduce((sum, entry) => sum + entry.classA, 0) +
+      (usage.schemaVersion === 2
+        ? usage.observation.classAUsed + usage.observation.otherClassAReserve
+        : 0),
+  };
+};
 
 /** Only this transport boundary receives credentials; durable leases survive failed jobs. */
 export async function transferCloudLeague(
@@ -88,6 +108,14 @@ export async function transferCloudLeague(
   restoreBinding?: { probe: unknown; definition: unknown },
   tuningInput: TransferTuning = {},
 ) {
+  const observation = requireLeagueBillingObservation(
+    config.billingObservation,
+    identity.day,
+    options ? 1000 : 0,
+    options ? LEAGUE_PUBLISH_DEADLINE_MS : LEAGUE_RESTORE_DEADLINE_MS,
+  );
+  if (observation.accountId !== config.accountId || observation.bucket !== config.bucket)
+    throw new OperationError('USAGE_UNVERIFIED', 'Billing observation account or bucket mismatch');
   const tuning = transferTuning({ readConcurrency: 32, headConcurrency: 32, ...tuningInput });
   let control: PublicationS3 | undefined;
   const deadline = options ? LEAGUE_PUBLISH_DEADLINE_MS : LEAGUE_RESTORE_DEADLINE_MS;
@@ -164,13 +192,17 @@ export async function transferCloudLeague(
             'No capacity for durable league usage ledger',
           );
       }
-      await admitLeagueUsage(controller(), {
-        ...identity,
-        id: identity.id + '-inventory',
-        classA: 600,
-        classB: 20,
-        worker: 0,
-      });
+      await admitLeagueUsage(
+        controller(),
+        {
+          ...identity,
+          id: identity.id + '-inventory',
+          classA: 600,
+          classB: 20,
+          worker: 0,
+        },
+        observation,
+      );
       inventory ??= await controller().inventory();
       const listed = new Map(inventory);
       // Reserve the maximum ledger size, including a newly bootstrapped ledger.
@@ -195,11 +227,16 @@ export async function transferCloudLeague(
         additions,
         !options,
       );
-      usage = await admitLeagueUsage(controller(), {
-        ...identity,
-        ...budget,
-        classB: budget.classB + budget.worker,
-      });
+      usage = await admitLeagueUsage(
+        controller(),
+        {
+          ...identity,
+          ...budget,
+          classB: budget.classB + budget.worker,
+        },
+        observation,
+      );
+      requireLeagueBillingObservation(observation, identity.day, budget.worker, deadline);
       data = new PublicationS3(
         config,
         leagueTransport(budget.classA, budget.classB, deadline, LEAGUE_TRANSIENT_RETRIES),
@@ -237,7 +274,10 @@ export async function transferCloudLeague(
       reserved: budget,
       control: control.metrics(),
       transport: data.metrics(),
-      month: usage.month,
+      cycle:
+        usage.schemaVersion === 2
+          ? { start: usage.observation.cycleStart, end: usage.observation.cycleEnd }
+          : { month: usage.month },
       sequence: usage.sequence,
       ...leagueUsageTotals(usage),
     });

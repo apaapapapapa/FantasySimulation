@@ -10,14 +10,61 @@ export const UI_CASES = [
   'battle-cancel-retry',
   'battle-truncated-result',
   'battle-api-error',
+  'skill-workbench-desktop',
+  'skill-workbench-mobile',
+  'skill preview keeps pending and failed eligibility unavailable without saving',
+  'skill preview ignores an old character response after a newer selection',
+  'retries a failed loadout save without creating a second acquisition',
+  'keeps an exact saved loadout selected when its acquisition head advances',
+  'reloads a legacy V1 loadout and upgrades it through acquisition V2',
+  'magic tiger prerequisite loadout reloads into an exact battle and replay',
+  'rabbit hologram saves, battles and replays through both viewers',
+  'scout rat saves, battles and replays one dependent through both viewers',
 ] as const;
+/** Each interactive part owns an isolated API/database and an exact disjoint case inventory. */
+export const UI_INTERACTIVE_PARTS = {
+  smoke: [
+    'skill-workbench-desktop',
+    'skill-workbench-mobile',
+    'skill preview keeps pending and failed eligibility unavailable without saving',
+    'skill preview ignores an old character response after a newer selection',
+    'retries a failed loadout save without creating a second acquisition',
+    'keeps an exact saved loadout selected when its acquisition head advances',
+    'reloads a legacy V1 loadout and upgrades it through acquisition V2',
+    'magic tiger prerequisite loadout reloads into an exact battle and replay',
+    'rabbit hologram saves, battles and replays through both viewers',
+    'scout rat saves, battles and replays one dependent through both viewers',
+  ],
+  workbench: [
+    'local-health',
+    'api-http-error',
+    'api-invalid-json',
+    'network-boundary',
+    'draft-revisions',
+    'draft-errors',
+    'draft-resume-tall-character',
+    'battle-cancel-retry',
+    'battle-truncated-result',
+    'battle-api-error',
+  ],
+} as const satisfies Record<string, readonly (typeof UI_CASES)[number][]>;
+export type UiInteractiveScenario = keyof typeof UI_INTERACTIVE_PARTS;
+export const UI_INTERACTIVE_SCENARIOS = Object.keys(
+  UI_INTERACTIVE_PARTS,
+) as UiInteractiveScenario[];
 export const UI_RUN_CHECKS = ['ui:source', 'ui:execution', 'ui:coverage', 'ui:cleanup'] as const;
-export const UI_CHECKS = [...UI_RUN_CHECKS, 'ui:diagnostics', 'ui:static-replay'] as const;
+export const UI_CHECKS = [
+  ...UI_RUN_CHECKS,
+  'ui:diagnostics',
+  'ui:workbench',
+  'ui:static-replay',
+] as const;
 export const UI_STATIC_CASES = [
   'static-experimental-league-labels',
   'static-league-overview',
   'static-league-pair-replay',
   'static-league-provisional',
+  'static-pages-acceptance',
   'static-packed-replay',
   'static-selection',
   'static-selection-original',
@@ -40,48 +87,45 @@ export const UI_STATIC_CASES = [
   'static-local-file',
   'static-step-link',
 ] as const;
-/**
- * Static browser parts run as separate CI jobs; together they execute every static case in both
- * browsers exactly once. WebKit, the slowest browser, is split by durations measured on main run
- * 36233578962. Each part is validated against its own case list and browser.
+/** Shared partitions cover every static case exactly once per browser, on separate CI runners.
+ * Chromium runs 37213782325 and 37215110269 exhausted budgets or stalled context startup; split without
+ * changing any case deadline, retry policy or acceptance inventory.
  */
+const STATIC_GROUP_1 = [
+  'static-errors',
+  'static-replay-controls',
+  'static-selection-another-attempt',
+  'static-mobile-controls',
+  'static-local-file',
+  'static-long-replay',
+  'static-timeline-overlays',
+  'static-selection-invalid-link',
+  'static-status-expiry',
+  'static-packed-replay',
+  'static-partials',
+  'static-league-overview',
+  'static-league-provisional',
+] as const;
+const STATIC_GROUP_2 = [
+  'static-experimental-league-labels',
+  'static-webgl-2d-to-end',
+  'static-repeat-playback',
+  'static-selection-reused',
+  'static-selection-original',
+  'static-step-link',
+  'static-selection',
+  'static-league-pair-replay',
+  'static-network-boundary',
+  'static-webgl-fallback',
+  'static-stale-navigation',
+  'static-list-cost-and-states',
+  'static-pages-acceptance',
+] as const;
 export const UI_STATIC_PARTS = {
-  'static-chromium': { browser: 'chromium', cases: UI_STATIC_CASES },
-  'static-webkit-1': {
-    browser: 'webkit',
-    cases: [
-      'static-errors',
-      'static-replay-controls',
-      'static-selection-another-attempt',
-      'static-mobile-controls',
-      'static-local-file',
-      'static-long-replay',
-      'static-timeline-overlays',
-      'static-selection-invalid-link',
-      'static-status-expiry',
-      'static-packed-replay',
-      'static-partials',
-      'static-league-overview',
-      'static-league-provisional',
-    ],
-  },
-  'static-webkit-2': {
-    browser: 'webkit',
-    cases: [
-      'static-experimental-league-labels',
-      'static-webgl-2d-to-end',
-      'static-repeat-playback',
-      'static-selection-reused',
-      'static-selection-original',
-      'static-step-link',
-      'static-selection',
-      'static-league-pair-replay',
-      'static-network-boundary',
-      'static-webgl-fallback',
-      'static-stale-navigation',
-      'static-list-cost-and-states',
-    ],
-  },
+  'static-chromium-1': { browser: 'chromium', cases: STATIC_GROUP_1 },
+  'static-chromium-2': { browser: 'chromium', cases: STATIC_GROUP_2 },
+  'static-webkit-1': { browser: 'webkit', cases: STATIC_GROUP_1 },
+  'static-webkit-2': { browser: 'webkit', cases: STATIC_GROUP_2 },
 } as const satisfies Record<
   string,
   { browser: 'chromium' | 'webkit'; cases: readonly (typeof UI_STATIC_CASES)[number][] }
@@ -89,17 +133,21 @@ export const UI_STATIC_PARTS = {
 export type UiStaticPart = keyof typeof UI_STATIC_PARTS;
 export const UI_STATIC_SCENARIOS = Object.keys(UI_STATIC_PARTS) as UiStaticPart[];
 export const UI_FAULTS = ['startup', 'timeout', 'crash'] as const;
-export type UiScenario = 'smoke' | UiStaticPart | (typeof UI_FAULTS)[number];
+export type UiScenario = UiInteractiveScenario | UiStaticPart | (typeof UI_FAULTS)[number];
 /** CI jobs: the editor/battle suite with its fault probes, then each static part. */
-export const UI_PARTS = ['interactive', ...UI_STATIC_SCENARIOS] as const;
+export const UI_PARTS = ['interactive', 'workbench', ...UI_STATIC_SCENARIOS] as const;
 export type UiPart = (typeof UI_PARTS)[number];
 export const UI_MATRIX_JOB = 'UI (Linux ${{ matrix.part }})';
 export const UI_JOBS = UI_PARTS.map((part) => `UI (Linux ${part})`);
+export const isInteractiveScenario = (scenario: UiScenario): scenario is UiInteractiveScenario =>
+  UI_INTERACTIVE_SCENARIOS.some((part) => part === scenario);
 export const isStaticScenario = (scenario: UiScenario): scenario is UiStaticPart =>
   UI_STATIC_SCENARIOS.some((part) => part === scenario);
 export function uiScenario(value: string | undefined): UiScenario {
   if (value === undefined || value === 'smoke') return 'smoke';
-  const known = [...UI_STATIC_SCENARIOS, ...UI_FAULTS].find((scenario) => scenario === value);
+  const known = [...UI_INTERACTIVE_SCENARIOS, ...UI_STATIC_SCENARIOS, ...UI_FAULTS].find(
+    (scenario) => scenario === value,
+  );
   if (known) return known;
   throw new Error('Unknown UI execution scenario');
 }
@@ -123,8 +171,8 @@ export const UI_SETTINGS = {
 } as const;
 
 export const uiCases = (scenario: UiScenario): readonly string[] =>
-  scenario === 'smoke'
-    ? UI_CASES
+  isInteractiveScenario(scenario)
+    ? UI_INTERACTIVE_PARTS[scenario]
     : isStaticScenario(scenario)
       ? UI_STATIC_PARTS[scenario].cases
       : [scenario];
@@ -135,7 +183,7 @@ export function uiSettings(scenario: UiScenario) {
   return {
     ...UI_SETTINGS,
     browsers: uiBrowsers(scenario),
-    retries: scenario === 'smoke' || isStatic ? 1 : 0,
+    retries: isInteractiveScenario(scenario) || isStatic ? 1 : 0,
     globalTimeout: isStatic ? 300000 : UI_SETTINGS.globalTimeout,
     timeout: isStatic ? 30000 : UI_SETTINGS.timeout,
   };

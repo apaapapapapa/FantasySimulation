@@ -4,6 +4,7 @@ import { observeSpatial } from './spatial-observation.ts';
 import type { SpatialObject } from '../rules/spatial-objects.ts';
 import { bodyPoint, canSee, canObserveActor } from '../world/visibility.ts';
 import type {
+  DependentState,
   MotionState,
   StatusCohort,
   ObservedActor,
@@ -225,6 +226,7 @@ export function perceive(
   bounds?: DeepReadonly<Definition<'scenario'>['bounds']>,
   objects: readonly SpatialObject[] = [],
   clock?: ActorClock,
+  dependents: readonly DependentState[] = [],
 ): PerceptionMemory {
   const interval = self.actor.character.perception.reactionSteps;
   let pending = [...previous.pending],
@@ -320,6 +322,19 @@ export function perceive(
       lastSeen?.statuses !== undefined ||
       previous.pending.some((s) => s.enemy?.statuses !== undefined);
     const spatial = observeSpatial(world, self, objects);
+    const dependentIds = dependents
+      .filter(
+        (dependent) =>
+          dependent.ownerId !== self.actor.participant.actorId &&
+          dependent.hp > 0 &&
+          canSee(world, self, {
+            x: dependent.position.x,
+            y: dependent.position.y + dependent.body.heightMm / 2000,
+            z: dependent.position.z,
+          }),
+      )
+      .map((dependent) => dependent.id)
+      .sort(compareIds);
     pending.push({
       sampledAt: step,
       availableAt: step + interval,
@@ -365,6 +380,7 @@ export function perceive(
             },
           }
         : null,
+      ...(dependentIds.length ? { dependentIds } : {}),
       ...(spatial.length || previous.observation?.spatial || previous.pending.some((s) => s.spatial)
         ? { spatial }
         : {}),

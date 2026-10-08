@@ -7,20 +7,33 @@ import { cloudInput } from '../src/league/league-cloud-files.ts';
 import { runCloudLeagueRunner } from '../src/league/league-runner.ts';
 import { sealLeagueProducer, authenticateLeagueProducer } from '../src/league/league-producer.ts';
 import { PublicationEvidence } from '../src/publication/publication-evidence.ts';
+import { canonicalJson, LeaguePipelineIdentitySchema } from '@fantasy/domain/spatial';
+import type { PipelineIdentity } from '../src/league/league-producer.ts';
 
 /** One prepared four-slot partition, before any runner has claimed it. */
-export async function preparedPipeline(root: string) {
-  const identity = {
-    source: publicationLeagueSource,
-    runId: 123,
-    runAttempt: 1,
-    validatorDigest: 'sha256:' + 'b'.repeat(64),
-  };
-  const executionId = 'league-123-1',
+export async function preparedPipeline(
+  root: string,
+  characters = 2,
+  source = publicationLeagueSource,
+  actualPipelineIdentity?: PipelineIdentity,
+  signal?: AbortSignal,
+) {
+  signal?.throwIfAborted();
+  const identity = LeaguePipelineIdentitySchema.parse(
+    actualPipelineIdentity ?? {
+      source,
+      runId: 123,
+      runAttempt: 1,
+      validatorDigest: 'sha256:' + 'b'.repeat(64),
+    },
+  );
+  if (canonicalJson(identity.source) !== canonicalJson(source))
+    throw new Error('Fixture source/identity mismatch');
+  const executionId = `league-${identity.runId}-${identity.runAttempt}`,
     preparedRoot = join(root, 'prepared'),
     baselineRoot = join(root, 'baseline');
   const { prepared } = await prepareCloudLeague(
-    await leagueFixture(2, 1),
+    await leagueFixture(characters, 1),
     identity.source,
     executionId,
     baselineRoot,
@@ -28,6 +41,7 @@ export async function preparedPipeline(root: string) {
     { files: 0, bytes: 0, receipts: 0, usedReadRequests: 10000, usedWriteRequests: 10000 },
   );
   const input = await cloudInput(preparedRoot, prepared, 0);
+  signal?.throwIfAborted();
   return { identity, executionId, prepared, preparedRoot, baselineRoot, input };
 }
 
@@ -75,4 +89,46 @@ export async function pipelineFixture(root: string) {
     fullRoot,
     terminal,
   };
+}
+
+/** Real bounded 144-match/2-partition fixture, sealed before transport timers start. */
+export async function sealedTwoPartitionFixture(
+  root: string,
+  source = publicationLeagueSource,
+  actualPipelineIdentity?: PipelineIdentity,
+  signal?: AbortSignal,
+) {
+  const fixture = await preparedPipeline(root, 9, source, actualPipelineIdentity, signal);
+  const baseline = await PublicationEvidence.audit(fixture.baselineRoot);
+  const sealed: { root: string; proof: Awaited<ReturnType<typeof sealLeagueProducer>> }[] = [];
+  await runCloudLeagueRunner(
+    fixture.preparedRoot,
+    join(root, 'results'),
+    fixture.identity.source,
+    fixture.executionId,
+    {
+      runner: 0,
+      runners: 1,
+      workers: 2,
+      ...(signal ? { signal } : {}),
+      completed: async (index, directory, pool, bundles) => {
+        signal?.throwIfAborted();
+        const producerRoot = join(root, 'sealed', String(index));
+        const proof = await sealLeagueProducer(
+          await cloudInput(fixture.preparedRoot, fixture.prepared, index),
+          directory,
+          producerRoot,
+          fixture.identity,
+          0,
+          pool,
+          bundles,
+        );
+        sealed.push({ root: producerRoot, proof });
+      },
+    },
+  );
+  signal?.throwIfAborted();
+  if (sealed.length !== 2 || sealed.some((value, index) => value.proof.partition !== index))
+    throw new Error('Expected real two-partition fixture');
+  return { ...fixture, baseline, sealed };
 }

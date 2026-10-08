@@ -4,6 +4,7 @@ import { stageCount } from './scene-model.ts';
 import { sealDisplay } from './seal-display.ts';
 import { recoveryDisplay } from './recovery-display.ts';
 const effectNames = {
+  'environmental-hologram': 'Environmental hologram',
   damage: 'ダメージ',
   heal: '回復',
   shield: 'シールド',
@@ -13,6 +14,7 @@ const effectNames = {
   water: '水',
   dispel: '解除',
   'apply-status': '状態付与',
+  'sensory-cue': '視覚幻惑',
 };
 
 export function ReplayResources({
@@ -33,9 +35,8 @@ export function ReplayResources({
       </thead>
       <tbody>
         {checkpoint.state?.actors.map((actor) => {
-          const definition = context.actors.find(
-            (entry) => entry.participant.actorId === actor.id,
-          )!.character;
+          const loadout = context.actors.find((entry) => entry.participant.actorId === actor.id)!;
+          const definition = loadout.character;
           const limits = {
             hp: definition.stats.hp,
             mp: definition.stats.mp,
@@ -130,7 +131,7 @@ export function ReplayResources({
                 <ul aria-label={`${actor.id} 動作`}>
                   {motionSummary(
                     actor,
-                    actor.action ? stageCount(context, definition, actor.action.abilityId) : null,
+                    actor.action ? stageCount(loadout, actor.action.abilityId) : null,
                   ).map((line) => (
                     <li key={line}>{line}</li>
                   ))}

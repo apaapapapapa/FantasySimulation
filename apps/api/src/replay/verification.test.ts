@@ -1,4 +1,5 @@
-import { expect, it, vi } from 'vite-plus/test';
+import { afterEach, expect, it, vi } from 'vite-plus/test';
+import { GCProfiler } from 'node:v8';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -6,9 +7,49 @@ import { recordedBattle, withReplayDirectory } from '../../test-support/replays.
 import { Measurements } from '../measurements.ts';
 import { verifyReplayDirectory } from './replay-reader.ts';
 import { readCompressed, sha256 } from './replay-files.ts';
-import { assertPublicData } from './replay-public.ts';
+import { assertPublicData, PrivateDataError } from './replay-public.ts';
 import { ReplayVerificationPool, replayVerificationWorkers } from './verification-pool.ts';
 import { BattlePool } from '../jobs/worker-pool.ts';
+import verifyWorker from './verification-worker.ts';
+
+afterEach(() => vi.restoreAllMocks());
+
+it('collects detailed verifier stages only when requested, including failed validation', async () => {
+  await withReplayDirectory(async (root) => {
+    const { manifest } = await recordedBattle(root, 20);
+    const task = { directory: join(root, manifest.id), manifest, publicData: false };
+    const start = vi.spyOn(GCProfiler.prototype, 'start');
+    const cpu = vi.spyOn(process, 'threadCpuUsage');
+    const unmeasured = await verifyWorker(task);
+    expect(unmeasured).not.toHaveProperty('stages');
+    expect(unmeasured).not.toHaveProperty('observation');
+    expect(start).not.toHaveBeenCalled();
+    expect(cpu).not.toHaveBeenCalled();
+    const measured = await verifyWorker({ ...task, measured: true });
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(cpu).toHaveBeenCalledTimes(2);
+    expect(measured.observation?.gcCount).toBeGreaterThanOrEqual(0);
+    expect(measured.observation?.cpuUserMs).toBeGreaterThanOrEqual(0);
+    expect(measured.success).toBe(true);
+    expect(measured.stages?.decompress?.count).toBe(2 * manifest.chunks.length);
+    expect(measured.stages?.['validate.replay']).toMatchObject({
+      count: 1,
+      failures: 0,
+      incomplete: 0,
+    });
+    await writeFile(join(task.directory, manifest.chunks[0]!.file), 'broken');
+    const failed = await verifyWorker({ ...task, measured: true });
+    expect(failed.success).toBe(false);
+    expect(failed.stages?.['validate.replay']).toMatchObject({
+      count: 1,
+      failures: 1,
+      incomplete: 0,
+    });
+    expect(failed.validationProfile).toBeNull();
+    expect(start).toHaveBeenCalledTimes(2);
+    expect(failed.observation?.gcDurationMs).toBeGreaterThanOrEqual(0);
+  });
+});
 
 it('inspects the original records in the same bounded decode pass as semantic verification', async () => {
   await withReplayDirectory(async (root) => {
@@ -42,9 +83,16 @@ it('inspects the original records in the same bounded decode pass as semantic ve
     );
     const shared = new BattlePool(1);
     try {
-      await expect(shared.verify(directory, changed, true)).rejects.toMatchObject({
+      // The Worker keeps the publishability class a batch must not turn into a per-slot retry.
+      const refused = shared.verify(directory, changed, true);
+      await expect(refused).rejects.toBeInstanceOf(PrivateDataError);
+      await expect(refused).rejects.toMatchObject({
         code: 'DATA_INVALID',
+        message: 'Private field is not publishable',
       });
+      await expect(shared.verify(directory, changed, false)).rejects.not.toBeInstanceOf(
+        PrivateDataError,
+      );
     } finally {
       await shared.close();
     }
@@ -89,6 +137,19 @@ it.each([ReplayVerificationPool, BattlePool])(
           calls: 3,
           failures: 1,
         });
+        const observations = measurement.report().verificationWorkerObservations;
+        expect(observations.map(({ success }) => success)).toEqual([true, false, true]);
+        for (const value of observations) {
+          expect(value).toMatchObject({
+            replayId: manifest.id,
+            stage: 'validate.replay.worker',
+            attempted: true,
+          });
+          expect(value.observation.threadId).toBeGreaterThan(0);
+          for (const metric of Object.values(value.observation))
+            expect(metric).toBeGreaterThanOrEqual(0);
+        }
+        expect(observations[2]!.observation.threadId).toBe(observations[0]!.observation.threadId);
       } finally {
         await pool.close();
       }

@@ -11,6 +11,7 @@ import {
   UI_FAULTS,
   UI_STATIC_SCENARIOS,
   isStaticScenario,
+  isInteractiveScenario,
   uiCases,
   uiBrowsers,
   uiSettings,
@@ -20,7 +21,11 @@ import {
 import { readBoundedJson } from './files.ts';
 
 export const uiProducer = (scenario: UiScenario) =>
-  scenario === 'smoke' ? 'ui-runner' : isStaticScenario(scenario) ? 'ui-static' : 'ui-diagnostic';
+  isInteractiveScenario(scenario)
+    ? 'ui-runner'
+    : isStaticScenario(scenario)
+      ? 'ui-static'
+      : 'ui-diagnostic';
 export const staticEvidence = (relative: string, sourceSha: string) =>
   UI_STATIC_SCENARIOS.map((part) => ({
     uri: `${relative}/static/${part}/command.json`,
@@ -44,6 +49,10 @@ export function readUiEvidence(
     report.checks.find((check) => check.id === 'ui:diagnostics')?.status !== observed.status
   )
     throw new Error('Missing or inconsistent UI diagnostic evidence');
+  const workbenchResult = inspectUiWorkbench(directory, expected, run);
+  const workbenchClaim = report.checks.find((check) => check.id === 'ui:workbench');
+  if (workbenchResult.status !== 'pass' || (workbenchClaim && workbenchClaim.status !== 'pass'))
+    throw new Error('Missing or inconsistent workbench UI evidence');
   const staticResult = inspectUiStatic(directory, expected, run);
   const claimed = report.checks.find((check) => check.id === 'ui:static-replay');
   // Every part was written below the interactive report's output, so receipts share its base.
@@ -57,7 +66,15 @@ export function readUiEvidence(
     {
       ...report,
       checks: [
-        ...report.checks.filter((check) => check.id !== 'ui:static-replay'),
+        ...report.checks.filter(
+          (check) => !['ui:static-replay', 'ui:workbench'].includes(check.id),
+        ),
+        {
+          id: 'ui:workbench',
+          required: true,
+          ...workbenchResult,
+          evidence: [{ uri: `${base}/workbench/command.json`, sourceSha: report.sourceSha }],
+        },
         {
           id: 'ui:static-replay',
           required: true,
@@ -199,6 +216,38 @@ export function readUiRun(
   return assessment.report;
 }
 
+export function inspectUiWorkbench(
+  directory: string,
+  expected: Identity,
+  run: { id: string | null; attempt: string | null },
+): { status: CheckStatus; reason: string } {
+  try {
+    const folder = join(directory, 'workbench');
+    const report = readUiRun(folder, expected, run, 'workbench');
+    const execution = record(readBoundedJson(join(folder, 'execution.json')));
+    const origins = record(execution.origins);
+    const servers = record(readBoundedJson(join(folder, 'servers.json')));
+    if (
+      assessReport(report, UI_RUN_CHECKS).exitCode !== 0 ||
+      !isDeepStrictEqual(execution.settings, uiSettings('workbench')) ||
+      localOrigin(text(origins.web)) === localOrigin(text(origins.api)) ||
+      servers.webOrigin !== origins.web ||
+      servers.apiOrigin !== origins.api ||
+      servers.stopped !== true
+    )
+      throw new Error('Workbench did not pass with isolated API/web origins');
+    return {
+      status: 'pass',
+      reason: 'Every draft/battle/error case passed in its isolated workbench part',
+    };
+  } catch (error) {
+    return {
+      status: 'unknown',
+      reason: error instanceof Error ? error.message : 'Missing workbench evidence',
+    };
+  }
+}
+
 export function inspectUiStatic(
   directory: string,
   expected: Identity,
@@ -319,6 +368,7 @@ export interface UiAttempt {
   testId: string;
   caseId: string;
   retry: number;
+  workerIndex: number;
   status: string;
   browser: unknown;
   attachments: { path: string; sha256: string }[];
@@ -383,6 +433,8 @@ export function uiCoverage(
           const attempt = record(value);
           if (attempt.retry !== index || index > 1 || !Array.isArray(attempt.attachments))
             throw new Error('Incomplete retry history');
+          if (!Number.isSafeInteger(attempt.workerIndex) || Number(attempt.workerIndex) < 0)
+            throw new Error('Missing browser worker identity');
           const attachments = attempt.attachments.map(record);
           const browser = attachments.filter((item) => item.name === 'browser-identity');
           if (browser.length !== 1) throw new Error('Browser did not start');
@@ -408,6 +460,7 @@ export function uiCoverage(
             testId: `${text(spec.id)}:${text(test.projectName)}`,
             caseId: text(spec.title),
             retry: index,
+            workerIndex: Number(attempt.workerIndex),
             status,
             browser: identity,
             attachments: files,
@@ -421,6 +474,19 @@ export function uiCoverage(
             throw new Error('Failed attempt lacks trace');
         }
       }
+    }
+    for (const repeated of attempts.filter(
+      (attempt) => attempt.caseId === 'static-repeat-playback',
+    )) {
+      if (
+        attempts.some(
+          (other) =>
+            other.caseId !== repeated.caseId &&
+            record(other.browser).name === record(repeated.browser).name &&
+            other.workerIndex === repeated.workerIndex,
+        )
+      )
+        throw new Error('Repeat playback reused another suite browser worker');
     }
     return {
       status: attempts.every((attempt) => attempt.status === 'passed') ? 'pass' : 'fail',

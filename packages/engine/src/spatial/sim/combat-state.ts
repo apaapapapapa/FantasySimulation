@@ -38,7 +38,9 @@ export function initialActor(world: SpatialWorld, actor: ResolvedActor): ActorSt
       decision: { abilityId: null, goal: null, facing: actor.participant.facing },
       random: actor.participant.rngSeed,
       decisionRandom: initialDecisionRandom(actor.participant.rngSeed),
+      sensoryCues: [],
     },
+    sensors: { environmentalHolograms: [] },
     actions: { action: null, readyAt: 0, used: {}, cooldowns: {} },
   };
 }
@@ -81,10 +83,16 @@ export const cloneActor = (state: ActorState): ActorState => ({
         }
       : null,
   },
-  mind: { ...state.mind },
+  mind: { ...state.mind, sensoryCues: structuredClone(state.mind.sensoryCues) },
+  sensors: { environmentalHolograms: structuredClone(state.sensors.environmentalHolograms) },
   statuses: state.statuses.map((status) => ({ ...status, causes: [...status.causes] })),
 });
-export function displayActor(state: ActorState, step: number): ActorDisplay {
+export function displayActor(
+  state: ActorState,
+  step: number,
+  sensoryFeature = false,
+  environmentalHologramFeature = false,
+): ActorDisplay {
   const clock = clockDisplay(state, step);
   if (state.clock?.frozen && step > state.clock.frozen.from) {
     state = cloneActor(state);
@@ -168,12 +176,26 @@ export function displayActor(state: ActorState, step: number): ActorDisplay {
                   : 'recovery',
           }
         : null,
+    ...(sensoryFeature
+      ? {
+          sensoryCues: state.mind.sensoryCues.map(({ deliveryRecorded: _, ...cue }) =>
+            structuredClone(cue),
+          ),
+        }
+      : {}),
+    ...(environmentalHologramFeature
+      ? {
+          sensorView: {
+            environmentalHolograms: structuredClone(state.sensors.environmentalHolograms),
+          },
+        }
+      : {}),
   };
 }
 /** Compact decision state, distinct from display checkpoints and a supported resume snapshot. */
 export function decisionState(state: ActorState) {
   // Preserve the existing compact wire shape and TS-state digest after splitting runtime ownership.
-  const { motion, statuses, action, ...rest } = {
+  const { motion, statuses, action, sensoryCues, ...rest } = {
     ...(state.clock ? { clock: state.clock } : {}),
     ...state.body,
     ...state.vitals,
@@ -183,6 +205,10 @@ export function decisionState(state: ActorState) {
   };
   return {
     ...rest,
+    ...(sensoryCues.length ? { sensoryCues } : {}),
+    ...(state.sensors.environmentalHolograms.length
+      ? { sensors: structuredClone(state.sensors) }
+      : {}),
     motion: { ...motion, actor: motion.actor.participant.actorId },
     statuses: statuses.map((s) => ({
       ...s,

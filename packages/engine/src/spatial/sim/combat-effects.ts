@@ -1,5 +1,5 @@
 import { domainSnapshotStep, frozen } from '../rules/subject-clocks.ts';
-import type { ActorState, MotionState } from '../state.ts';
+import type { ActorState, DependentState, EffectTarget, MotionState } from '../state.ts';
 import type { BattleEvent, Effect } from '@fantasy/domain/spatial/execution';
 import { resolveEffects } from '../rules/effects.ts';
 import { damagePower } from '../rules/damage.ts';
@@ -16,6 +16,8 @@ import { sub, unit } from '../math.ts';
 import { recordInterference } from './interference.ts';
 import { readMind } from './mind-reading.ts';
 import { evadeContacts } from './contact-evasion.ts';
+import { cleanseSensoryCues, cognitiveCueEligibility, cueIdentity } from './sensory-cues.ts';
+import { hologramIdentity, visualSensorEligibility } from './environmental-holograms.ts';
 const effectEventKinds = {
   defeat: 'defeat',
   damage: 'damage',
@@ -26,6 +28,8 @@ const effectEventKinds = {
   water: 'diagnostic',
   reveal: 'diagnostic',
   force: 'force',
+  'sensory-cue': 'sensory-cue',
+  'environmental-hologram': 'environmental-hologram',
 } satisfies Record<Effect['kind'], BattleEvent['kind']>;
 import type { PendingEffect } from '../state.ts';
 export type { PendingEffect } from '../state.ts';
@@ -48,6 +52,43 @@ export function contactObservation(
 }
 import type { EffectContext } from './effect-context.ts';
 export type { EffectContext } from './effect-context.ts';
+
+function dependentEffectTarget(
+  dependent: DependentState,
+  actors: readonly ActorState[],
+): EffectTarget {
+  const template = actors.find(
+    (actor) => actor.body.motion.actor.participant.actorId === dependent.ownerId,
+  );
+  if (!template) throw new Error('Missing dependent owner');
+  const actor = template.body.motion.actor;
+  return {
+    actor: {
+      ...actor,
+      participant: { ...actor.participant, actorId: dependent.id },
+      character: {
+        ...actor.character,
+        stats: {
+          ...actor.character.stats,
+          hp: dependent.maxHp,
+          mp: 0,
+          defense: 0,
+          magicDefense: 0,
+          shield: 0,
+          resistances: Object.fromEntries(
+            Object.keys(actor.character.stats.resistances).map((element) => [element, 0]),
+          ) as typeof actor.character.stats.resistances,
+        },
+      },
+      abilities: [],
+      decisionAbilities: [],
+      equipment: [],
+    },
+    resources: { hp: dependent.hp, mp: 0, shield: 0 },
+    statuses: [],
+  };
+}
+
 /** Emit causal applications, then commit every target from the same defense/status snapshot. */
 export function commitEffects(
   actors: ActorState[],
@@ -68,6 +109,7 @@ export function commitEffects(
       ruleId: 'effect.application',
       actorId: effect.actorId,
       targetId: effect.targetId,
+      ...(effect.sourceDependentId ? { entityId: effect.sourceDependentId } : {}),
       abilityId: effect.abilityId,
       ...(effect.deferral ? { deferrals: [effect.deferral.id] } : {}),
       ...(effect.sourceActorId
@@ -84,22 +126,26 @@ export function commitEffects(
   });
   let resolved: ReturnType<typeof resolveEffects>;
   try {
+    const actorTargets = actors.map((a) => ({
+      actor: a.body.motion.actor,
+      resources: a.vitals.resources,
+      statuses: a.statuses,
+      ...(frozen(a) || context.statusSteps?.has(a.body.motion.actor.participant.actorId)
+        ? {
+            statusStep:
+              context.statusSteps?.get(a.body.motion.actor.participant.actorId) ??
+              domainSnapshotStep(a, step),
+          }
+        : {}),
+      ...(a.vitals.immortalityUsed !== undefined
+        ? { immortalityUsed: a.vitals.immortalityUsed }
+        : {}),
+    }));
+    const dependentTargets = (context.dependents ?? [])
+      .filter((dependent) => effects.some((effect) => effect.targetId === dependent.id))
+      .map((dependent) => dependentEffectTarget(dependent, actors));
     resolved = resolveEffects(
-      actors.map((a) => ({
-        actor: a.body.motion.actor,
-        resources: a.vitals.resources,
-        statuses: a.statuses,
-        ...(frozen(a) || context.statusSteps?.has(a.body.motion.actor.participant.actorId)
-          ? {
-              statusStep:
-                context.statusSteps?.get(a.body.motion.actor.participant.actorId) ??
-                domainSnapshotStep(a, step),
-            }
-          : {}),
-        ...(a.vitals.immortalityUsed !== undefined
-          ? { immortalityUsed: a.vitals.immortalityUsed }
-          : {}),
-      })),
+      [...actorTargets, ...dependentTargets],
       applications,
       battle.statuses,
       step,
@@ -114,8 +160,51 @@ export function commitEffects(
     recordInterference(error, context);
   }
   for (const result of resolved) {
+    const dependent = context.dependents?.find((candidate) => candidate.id === result.actorId);
+    if (dependent) {
+      const incoming = applications.filter((application) => application.targetId === dependent.id);
+      let remainingCommittedLoss = dependent.hp - result.resources.hp;
+      for (const app of incoming) {
+        if (app.effect.kind !== 'damage')
+          throw new Error('Dependents accept only bounded damage effects');
+        const before = { hp: dependent.hp, mp: 0, shield: 0 };
+        app.event.before = before;
+        app.event.after = { ...result.resources };
+        const detail = result.damage.find((damage) => damage.applicationId === app.id);
+        if (!detail) throw new Error('Missing dependent damage detail');
+        const { applicationId: _, ...damage } = detail;
+        app.event.damage = damage;
+        const resolvedDamage = detail.calculation?.afterModifiers ?? detail.afterResistance;
+        const committedDamage = Math.min(resolvedDamage, remainingCommittedLoss);
+        app.event.amount = committedDamage;
+        remainingCommittedLoss -= committedDamage;
+        app.event.ruleId = 'damage.dependent-hp';
+        app.event.reason = 'same-wave-dependent-hp-clamp';
+      }
+      dependent.hp = result.resources.hp;
+      continue;
+    }
     const actor = actors.find((a) => a.body.motion.actor.participant.actorId === result.actorId)!;
-    for (const app of applications.filter((a) => a.targetId === result.actorId)) {
+    const incoming = applications.filter((a) => a.targetId === result.actorId);
+    // A control dispel cleans only cues owned by this observer. Expiry/discovery already ran at
+    // the boundary; cleanse precedes same-wave emission so a newly emitted cue is not erased.
+    if (
+      incoming.some(
+        (a) => a.effect.kind === 'dispel' && a.effect.categories?.includes('control'),
+      ) &&
+      actor.mind.sensoryCues.length
+    ) {
+      cleanseSensoryCues(
+        actor,
+        activationStep,
+        phase,
+        journal,
+        incoming
+          .filter((a) => a.effect.kind === 'dispel' && a.effect.categories?.includes('control'))
+          .map((a) => a.id),
+      );
+    }
+    for (const app of incoming) {
       app.event.before = { ...actor.vitals.resources };
       app.event.after = { ...result.resources };
       const detail = result.damage.find((d) => d.applicationId === app.id);
@@ -126,7 +215,9 @@ export function commitEffects(
         app.event.ruleId = 'damage.defense-resistance-shield';
         app.event.reason = app.damageCancelled
           ? 'parried-damage-retains-element-contact'
-          : 'shared-shield-and-single-hp-clamp';
+          : app.guards?.length
+            ? 'guarded-damage-retains-contact-and-effects'
+            : 'shared-shield-and-single-hp-clamp';
       } else if (app.effect.kind === 'heal') {
         app.event.amount = result.healing.find((h) => h.applicationId === app.id)!.amount;
       } else if (app.effect.kind === 'shield') {
@@ -137,6 +228,110 @@ export function commitEffects(
         )!.detail;
         app.event.ruleId = 'concept.defeat';
         app.event.reason = app.event.defeat.reason;
+      } else if (app.effect.kind === 'sensory-cue') {
+        const eligibility = cognitiveCueEligibility(
+          actor,
+          context.statusSteps?.get(result.actorId) ?? domainSnapshotStep(actor, step),
+        );
+        if (!eligibility.eligible || actor.mind.sensoryCues.length >= 8 || !app.actorId) {
+          app.event.kind = 'fizzle';
+          app.event.ruleId = 'sensory-cue.eligibility';
+          app.event.reason = !eligibility.eligible
+            ? eligibility.reason
+            : !app.actorId
+              ? 'missing-creator'
+              : 'observer-cue-cap';
+        } else {
+          const ordinal = app.event.sequence;
+          const identity = cueIdentity(battle.manifest.seed, app.actorId, result.actorId, ordinal);
+          const source =
+            app.observation?.self.position ??
+            actors.find(
+              (candidate) => candidate.body.motion.actor.participant.actorId === app.actorId,
+            )!.body.motion.position;
+          const cue = {
+            id: identity,
+            creatorId: app.actorId,
+            observerId: result.actorId,
+            modality: 'visual' as const,
+            perceivedOrigin: {
+              x: source.x + app.effect.offsetMm.x / 1000,
+              y: source.y + app.effect.offsetMm.y / 1000,
+              z: source.z + app.effect.offsetMm.z / 1000,
+            },
+            emittedAt: activationStep,
+            deliveredAt: activationStep + app.effect.deliverySteps,
+            expiresAt: activationStep + app.effect.durationSteps,
+            discoveredAt: activationStep + app.effect.discoverySteps,
+            confidenceBps: app.effect.confidenceBps,
+          };
+          actor.mind.sensoryCues.push(cue);
+          app.event.entityId = cue.id;
+          app.event.ruleId = 'sensory-cue.emit';
+          app.event.reason = 'bounded-observer-visual-cue';
+          app.event.sensoryCue = { ...cue, transition: 'emitted' };
+        }
+      } else if (app.effect.kind === 'environmental-hologram') {
+        const eligibility = visualSensorEligibility(
+          actor,
+          context.statusSteps?.get(result.actorId) ?? domainSnapshotStep(actor, step),
+        );
+        if (
+          !eligibility.eligible ||
+          actor.sensors.environmentalHolograms.length >= 8 ||
+          !app.actorId ||
+          !app.abilityId ||
+          app.effectIndex === undefined
+        ) {
+          app.event.kind = 'fizzle';
+          app.event.ruleId = 'environmental-hologram.eligibility';
+          app.event.reason = !eligibility.eligible
+            ? eligibility.reason
+            : !app.actorId
+              ? 'missing-creator'
+              : !app.abilityId || app.effectIndex === undefined
+                ? 'missing-authored-effect'
+                : 'observer-hologram-cap';
+        } else {
+          const identity = hologramIdentity(
+            battle.manifest.seed,
+            app.actorId,
+            result.actorId,
+            app.event.sequence,
+          );
+          const source =
+            app.observation?.self.position ??
+            actors.find(
+              (candidate) => candidate.body.motion.actor.participant.actorId === app.actorId,
+            )!.body.motion.position;
+          const hologram = {
+            id: identity,
+            creatorId: app.actorId,
+            observerId: result.actorId,
+            observerIds: [result.actorId] as [string],
+            abilityId: app.abilityId,
+            effectIndex: app.effectIndex,
+            ...(app.stage ? { stageIndex: app.stage.stageIndex } : {}),
+            modality: 'visual' as const,
+            sourcePosition: { ...source },
+            perceivedPosition: {
+              x: source.x + app.effect.offsetMm.x / 1000,
+              y: source.y + app.effect.offsetMm.y / 1000,
+              z: source.z + app.effect.offsetMm.z / 1000,
+            },
+            state: 'active-unobserved' as const,
+            activatedAt: activationStep,
+            observedAt: activationStep + app.effect.observationSteps,
+            invalidatedAt: activationStep + app.effect.invalidationSteps,
+            expiresAt: activationStep + app.effect.durationSteps,
+          };
+          actor.sensors.environmentalHolograms.push(hologram);
+          app.event.entityId = hologram.id;
+          app.event.point = { ...source };
+          app.event.ruleId = 'environmental-hologram.activated';
+          app.event.reason = 'bounded-observer-visual-sensor-projection';
+          app.event.environmentalHologram = { ...hologram, transition: 'activated' };
+        }
       }
       const observer = actors.find((a) => a.body.motion.actor.participant.actorId === app.actorId);
       if (app.effect.kind === 'defeat' && observer)
@@ -248,6 +443,7 @@ export function commitEffects(
                     partial:
                       !!app.sourceActorId ||
                       !!app.damageCancelled ||
+                      !!app.guards?.length ||
                       (app.scaleBps ?? 10000) !== 10000,
                     statuses: actor.statuses,
                     statusStep:
@@ -320,30 +516,61 @@ export function commitEffects(
     actor.vitals.resources = result.resources;
     actor.statuses = result.statuses;
   }
+  const dependentDrainResources = new Map<
+    string,
+    {
+      before: { hp: number; mp: number; shield: number };
+      after: { hp: number; mp: number; shield: number };
+    }
+  >();
+  for (const application of applications) {
+    if (!application.drainRecipientId) continue;
+    const detail = resolved
+      .flatMap((result) => result.damage)
+      .find((damage) => damage.applicationId === application.id);
+    if (!detail?.drain) continue;
+    const dependent = context.dependents?.find(
+      (candidate) => candidate.id === application.drainRecipientId,
+    );
+    if (!dependent) throw new Error('Missing dependent drain recipient');
+    const before = { hp: dependent.hp, mp: 0, shield: 0 };
+    dependent.hp = Math.min(dependent.maxHp, dependent.hp + detail.drain.healing);
+    dependentDrainResources.set(application.id, {
+      before,
+      after: { hp: dependent.hp, mp: 0, shield: 0 },
+    });
+  }
   for (const result of resolved) {
     for (const detail of result.damage) {
       if (!detail.drain?.healing) continue;
       const app = applications.find((a) => a.id === detail.applicationId)!;
       const source = resolved.find((r) => r.actorId === app.actorId)!;
+      const dependentResources = dependentDrainResources.get(app.id);
       journal.emit({
         step: activationStep,
         phase,
         kind: 'heal',
         ruleId: 'damage.drain',
         actorId: app.actorId,
-        targetId: app.actorId,
+        targetId: app.drainRecipientId ?? app.actorId,
+        ...(app.drainRecipientId ? { entityId: app.drainRecipientId } : {}),
         abilityId: app.abilityId,
         parentEventId: app.id,
         causes: [app.id],
         amount: detail.drain.healing,
-        after: { ...source.resources },
-        reason: 'same-wave-hp-loss-drain',
+        ...(dependentResources
+          ? { before: dependentResources.before, after: dependentResources.after }
+          : { after: { ...source.resources } }),
+        reason: app.drainRecipientId
+          ? 'same-wave-hp-loss-dependent-drain'
+          : 'same-wave-hp-loss-drain',
         ...(deferStatuses ? { wave: waveIndex } : {}),
       });
     }
   }
   return { applications, resolved };
 }
+
 function emitStatusChanges(
   result: Pick<ReturnType<typeof resolveEffects>[number], 'actorId' | 'changes' | 'reactions'>,
   journal: Journal,

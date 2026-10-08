@@ -14,3 +14,11 @@ export class StoreError extends Error {
     this.code = code;
   }
 }
+
+/** Rethrow a validation failure as bounded invalid-input text; non-Error values use the fallback. */
+export function invalidInput(error: unknown, fallback: string): never {
+  throw new StoreError(
+    'invalid-input',
+    (error instanceof Error ? error.message : fallback).slice(0, 1000),
+  );
+}

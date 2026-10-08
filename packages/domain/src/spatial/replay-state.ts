@@ -1,4 +1,9 @@
-import { closureMechanics } from './mechanic-uses.ts';
+import {
+  closureMechanics,
+  hasDependentSummons,
+  hasEnvironmentalHolograms,
+  hasSensoryCues,
+} from './mechanic-uses.ts';
 import {
   advanceDeferred,
   advanceStopReplay,
@@ -32,6 +37,26 @@ import { validateAction } from './replay-validation/action.ts';
 import { validateProjectile, validateProjectileUpdate } from './replay-validation/projectile.ts';
 import { validateEvents } from './replay-validation/event.ts';
 import { validateInterferences } from './replay-validation/interference.ts';
+import { validateSensoryCues } from './replay-validation/sensory-cue.ts';
+import { applyDependents, validateDependent } from './replay-validation/dependent.ts';
+import {
+  validateEnvironmentalHologramCheckpoint,
+  validateEnvironmentalHolograms,
+} from './replay-validation/environmental-hologram.ts';
+
+export const advanceDependentHistory = (
+  prior: ReplayCheckpoint['dependentHistory'],
+  record: StreamRecord,
+) => [
+  ...(prior ?? []),
+  ...('dependents' in record
+    ? (record.dependents?.spawn ?? []).map(({ id, ownerId, hostileOwnerId }) => ({
+        id,
+        ownerId,
+        hostileOwnerId,
+      }))
+    : []),
+];
 
 /** Atomic display restoration. This is not an engine resume snapshot or combat re-simulation. */
 export class ReplayState {
@@ -59,6 +84,22 @@ export class ReplayState {
       v.simulationHash === context.simulationHash && v.step <= context.rules.maxSteps,
       'checkpoint binding/range',
     );
+    const owners = context.manifest.participants.map((participant) => participant.actorId);
+    requireReplay(
+      new Set(v.dependentHistory?.map((dependent) => dependent.id)).size ===
+        (v.dependentHistory?.length ?? 0) &&
+        (v.dependentHistory ?? []).every((dependent) => {
+          const ownerIndex = owners.indexOf(dependent.ownerId);
+          return (
+            ownerIndex >= 0 &&
+            dependent.hostileOwnerId === owners[ownerIndex === 0 ? 1 : 0] &&
+            new RegExp(`^dependent\\.${ownerIndex === 0 ? 'a' : 'b'}\\.[0-7]\\.scout-rat$`).test(
+              dependent.id,
+            )
+          );
+        }),
+      'dependent history binding',
+    );
     if (v.state === null)
       requireReplay(
         v.nextRecord === 0 &&
@@ -71,6 +112,13 @@ export class ReplayState {
     else {
       requireReplay(v.nextRecord > 0 && v.lastRecord !== null, 'checkpoint cursor');
       this.validateState(v.state, v.step);
+      validateEnvironmentalHologramCheckpoint(
+        context,
+        v.state,
+        v.step,
+        v.boundaryApplied,
+        v.requiredFeatures,
+      );
       const last = v.lastRecord!;
       validateClocks(
         context,
@@ -86,6 +134,23 @@ export class ReplayState {
           v.requiredFeatures?.includes('subject-clocks-v1') === true &&
             v.requiredFeatures.includes('deferred-contacts-v1'),
           'missing checkpoint features',
+        );
+      if (hasSensoryCues(context.manifest.revisions))
+        requireReplay(
+          v.requiredFeatures?.includes('sensory-cues-v1') === true,
+          'missing sensory cue checkpoint feature',
+        );
+      if (hasDependentSummons(context.manifest.revisions))
+        requireReplay(
+          v.requiredFeatures?.includes('dependent-entities-v1') === true &&
+            (context.manifest.schemaVersion < 9 ||
+              v.requiredFeatures.includes('dependent-observation-v2')),
+          'missing dependent checkpoint feature',
+        );
+      if (hasEnvironmentalHolograms(context.manifest.revisions))
+        requireReplay(
+          v.requiredFeatures?.includes('environmental-holograms-v1') === true,
+          'missing environmental hologram checkpoint feature',
         );
       requireReplay(
         v.nextRecord >= v.step + 1 && v.nextRecord <= 2 * v.step + 3,
@@ -166,6 +231,11 @@ export class ReplayState {
           'beam owner pose',
         );
     }
+    for (const dependent of state.dependents ?? []) {
+      requireReplay(!ids.has(dependent.id), 'duplicate entity');
+      ids.add(dependent.id);
+      validateDependent(this.context, dependent, step);
+    }
     for (const p of state.projectiles) {
       requireReplay(!ids.has(p.id), 'duplicate entity');
       ids.add(p.id);
@@ -205,6 +275,14 @@ export class ReplayState {
           ? state.actors.every((a) => a.resources.hp === 0)
           : step === this.context.rules.maxSteps && state.actors.every((a) => a.resources.hp > 0),
         'draw/final state',
+      );
+    if (outcome.kind === 'win' || outcome.kind === 'draw')
+      requireReplay(
+        !(state.dependents ?? []).some(
+          (dependent) =>
+            state.actors.find((actor) => actor.id === dependent.ownerId)?.resources.hp === 0,
+        ),
+        'defeated owner dependent finality',
       );
   }
   private paths(
@@ -258,10 +336,28 @@ export class ReplayState {
             record.requiredFeatures.includes('deferred-contacts-v1'),
           'missing clock/release features',
         );
+      if (hasSensoryCues(this.context.manifest.revisions))
+        requireReplay(
+          record.requiredFeatures?.includes('sensory-cues-v1') === true,
+          'missing sensory cue replay feature',
+        );
+      if (hasDependentSummons(this.context.manifest.revisions))
+        requireReplay(
+          record.requiredFeatures?.includes('dependent-entities-v1') === true &&
+            (this.context.manifest.schemaVersion < 9 ||
+              record.requiredFeatures.includes('dependent-observation-v2')),
+          'missing dependent replay feature',
+        );
+      if (hasEnvironmentalHolograms(this.context.manifest.revisions))
+        requireReplay(
+          record.requiredFeatures?.includes('environmental-holograms-v1') === true,
+          'missing environmental hologram replay feature',
+        );
       requireReplay(
         prior.state === null &&
           record.state.projectiles.length === 0 &&
-          !record.state.objects?.length,
+          !record.state.objects?.length &&
+          !record.state.dependents?.length,
         'duplicate/nonempty initial',
       );
       state = record.state;
@@ -291,7 +387,12 @@ export class ReplayState {
       if (!prior.state) return fail('missing initial');
       state = structuredClone(prior.state);
       const entities = new Set(
-        [...state.actors, ...state.projectiles, ...(state.objects ?? [])].map((e) => e.id),
+        [
+          ...state.actors,
+          ...state.projectiles,
+          ...(state.objects ?? []),
+          ...(state.dependents ?? []),
+        ].map((e) => e.id),
       );
       if (record.kind === 'terminal') {
         requireReplay(record.step === step, 'terminal step');
@@ -317,6 +418,16 @@ export class ReplayState {
         }
         if (record.objects)
           applySpatialObjects(this.context, prior, state, record.objects, record, entities);
+        if (record.dependents)
+          applyDependents(
+            this.context,
+            prior,
+            state,
+            record.dependents,
+            record,
+            entities,
+            prior.dependentHistory,
+          );
         const changed = new Set<string>();
         for (const delta of record.changes) {
           const index = state.actors.findIndex((a) => a.id === delta.id);
@@ -375,6 +486,8 @@ export class ReplayState {
       if (record.kind !== 'terminal') validatePhasingTransition(prior, state, record);
       validateEvents(this.context, this.value, record, entities);
     }
+    validateSensoryCues(this.context, prior, state, record);
+    validateEnvironmentalHolograms(this.context, prior, state, record);
     validateRevivalCounts(prior.state?.actors, state.actors, record);
     validateImmortalityCounts(prior.state?.actors, state.actors, record);
     validateClocks(
@@ -393,10 +506,12 @@ export class ReplayState {
     state.actors.sort((a, b) => compareIds(a.id, b.id));
     state.projectiles.sort((a, b) => compareIds(a.id, b.id));
     state.objects?.sort((a, b) => compareIds(a.id, b.id));
+    state.dependents?.sort((a, b) => compareIds(a.id, b.id));
     const deferred = advanceDeferred(prior.deferred, 'events' in record ? record.events : []);
     const stop = advanceStopReplay(prior.stop, 'events' in record ? record.events : []);
     const requiredFeatures =
       record.kind === 'initial' ? record.requiredFeatures : prior.requiredFeatures;
+    const dependentHistory = advanceDependentHistory(prior.dependentHistory, record);
     if (record.kind === 'terminal' && ['win', 'draw'].includes(record.outcome.kind))
       requireReplay(
         !deferred?.length && !stop?.controls.some((control) => control.releasedAt === undefined),
@@ -406,6 +521,7 @@ export class ReplayState {
       ...(deferred ? { deferred } : {}),
       ...(stop ? { stop } : {}),
       ...(requiredFeatures ? { requiredFeatures } : {}),
+      ...(dependentHistory.length ? { dependentHistory } : {}),
       schemaVersion: 1,
       simulationHash: prior.simulationHash,
       step,
@@ -420,7 +536,11 @@ export class ReplayState {
     return structuredClone(record);
   }
 }
-/** Loads one independent checkpoint/chunk; the caller owns transport, sizes and checksums. */
+/**
+ * Loads one independent checkpoint/chunk after the caller authenticated its manifest reference,
+ * compressed size and checksum. Arbitrary implementations are semantic-test adapters, not an
+ * authenticity boundary; production readers own the verified bytes.
+ */
 export interface ReplaySeekSource {
   checkpoint(index: number): Promise<unknown>;
   records(index: number): Promise<readonly unknown[]>;
@@ -444,7 +564,8 @@ export async function seekReplayState(
   // Without chunks the manifest records nothing, so only the empty cursor 0 is valid.
   if (index < 0) return new ReplayState(context);
   const chunk = manifest.chunks[index]!;
-  const replay = new ReplayState(context, await source.checkpoint(index));
+  const checkpoint = await source.checkpoint(index);
+  const replay = new ReplayState(context, checkpoint);
   requireReplay(
     replay.nextRecord === chunk.firstRecord && replay.step === chunk.fromStep,
     'seek checkpoint index',

@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "catalogId": "skill-catalog-v2",
+  "catalogRevision": 1,
+  "paths": [
+    {
+      "id": "judo",
+      "label": "Judo",
+      "core": "actively secure contact and control the opponent's posture",
+      "lowUse": "a brief grip check that can be released before committing to a hold",
+      "secondary": "a bounded throw or pin follow-up",
+      "weakness": "contact, size leverage and exposure while maintaining a hold",
+      "roleTags": ["active-capture", "posture-control"],
+      "requiredMechanics": ["capture", "posture-control", "escape-window"],
+      "contrastPath": "aikido",
+      "contrast": "Judo initiates contact and owns a maintained hold; it does not wait for an incoming action to redirect."
+    },
+    {
+      "id": "aikido",
+      "label": "Aikido",
+      "core": "use an observed incoming attack or movement to redirect the attacker",
+      "lowUse": "a low-cost flow response that is unavailable without a committed incoming action",
+      "secondary": "a guided displacement or reversal",
+      "weakness": "patient opponents, feints and attacks that are not observed in time",
+      "roleTags": ["reactive-redirect", "incoming-action"],
+      "requiredMechanics": ["observed-action-reaction", "redirect", "feint-counterplay"],
+      "contrastPath": "judo",
+      "contrast": "Aikido reacts to a legally observed commitment; it does not create a proactive capture."
+    },
+    {
+      "id": "karate",
+      "label": "Karate",
+      "core": "chain unarmed strikes to interrupt defense and destabilize posture",
+      "lowUse": "a quick single body strike with little recovery commitment",
+      "secondary": "a timed punch-kick combination",
+      "weakness": "weapon reach, approach interception and interruption between strikes",
+      "roleTags": ["unarmed-combination", "posture-break"],
+      "requiredMechanics": ["unarmed-attack", "combo-window", "posture-damage"],
+      "contrastPath": "axe",
+      "contrast": "Karate accumulates disruption through connected strikes; it is not one heavy armor-breaking commitment."
+    },
+    {
+      "id": "staff",
+      "label": "Staff",
+      "core": "control distance, posture and travel lanes with nonlethal staff pressure",
+      "lowUse": "a short checking sweep that preserves retreat and does not seek a finish",
+      "secondary": "a route-denial guard zone or measured push",
+      "weakness": "close entry inside the staff and deliberately limited finishing power",
+      "roleTags": ["route-control", "forced-spacing"],
+      "requiredMechanics": ["guard-zone", "route-denial", "forced-spacing"],
+      "contrastPath": "spear",
+      "contrast": "Staff controls routes and spacing; it does not inherit spear thrust damage or interception reach."
+    },
+    {
+      "id": "dagger",
+      "label": "Dagger",
+      "core": "enter short range through a flank or opening and exploit a brief attack window",
+      "lowUse": "a quick short-reach probe that can disengage without spending the opening",
+      "secondary": "a flank entry followed by a bounded vital-window strike",
+      "weakness": "short reach and firm frontal defense",
+      "roleTags": ["short-range-entry", "opening-window"],
+      "requiredMechanics": ["facing-relation", "opening-window", "short-reach"],
+      "contrastPath": "draw-sword",
+      "contrast": "Dagger creates or exploits a close positional opening; it does not require a sheathed preparation state."
+    },
+    {
+      "id": "draw-sword",
+      "label": "Draw sword",
+      "core": "prepare in a sheathed stance and commit that preparation to one decisive release",
+      "lowUse": "maintain or abandon a ready stance without receiving the decisive strike benefit",
+      "secondary": "a prepared draw release followed by explicit resheathing",
+      "weakness": "preparation disruption, a missed release and the time needed to prepare again",
+      "roleTags": ["prepared-release", "sheathed-stance"],
+      "requiredMechanics": ["sheathed-state", "prepared-release", "miss-recovery"],
+      "contrastPath": "sword",
+      "contrast": "Draw sword converts a prepared stance into one release; ordinary sword play sustains offense and defense without resheathing."
+    },
+    {
+      "id": "spear",
+      "label": "Spear",
+      "core": "use explicit long reach and a linear thrust before the opponent enters",
+      "lowUse": "a direct long-reach thrust with ordinary recovery and no interception promise",
+      "secondary": "a timed approach interception on the thrust line",
+      "weakness": "close entry, lateral movement and confined terrain",
+      "roleTags": ["long-reach", "linear-thrust"],
+      "requiredMechanics": ["explicit-reach", "linear-thrust", "approach-intercept"],
+      "contrastPath": "staff",
+      "contrast": "Spear converts reach into thrust and interception; it does not claim the staff's route-control role."
+    },
+    {
+      "id": "axe",
+      "label": "Axe",
+      "core": "commit to a heavy strike that damages armor or posture on contact",
+      "lowUse": "a measured heavy cut that preserves enough recovery to remain usable",
+      "secondary": "an armor-breaking or posture-breaking committed blow",
+      "weakness": "slow startup, miss recovery and resource consumption",
+      "roleTags": ["heavy-commitment", "armor-break"],
+      "requiredMechanics": ["armor-damage", "posture-damage", "miss-recovery"],
+      "contrastPath": "karate",
+      "contrast": "Axe pays one large commitment for break pressure; it does not accumulate an unarmed combination."
+    }
+  ],
+  "zodiacs": [
+    {
+      "id": "rat",
+      "label": "Initiative",
+      "operation": "begin the path action before the opponent establishes control",
+      "condition": "at engagement start or immediately after returning to neutral",
+      "tactic": "shorten preparation while preserving an exit",
+      "cost": "reduced certainty when used after the opening has passed",
+      "counter": "delay, spacing or a false start"
+    },
+    {
+      "id": "ox",
+      "label": "Accumulation",
+      "operation": "build and retain path-specific readiness over time",
+      "condition": "after uninterrupted preparation or maintained contact",
+      "tactic": "trade immediate output for retained readiness",
+      "cost": "lost buildup when preparation or maintenance is broken",
+      "counter": "interrupt preparation or force disengagement"
+    },
+    {
+      "id": "tiger",
+      "label": "Pressure",
+      "operation": "apply stronger path-specific break pressure",
+      "condition": "while the target is defending or losing posture",
+      "tactic": "commit forward to deny a passive defense",
+      "cost": "greater recovery and a clearer counter window",
+      "counter": "evade the commitment or counter during recovery"
+    },
+    {
+      "id": "rabbit",
+      "label": "Evasion",
+      "operation": "leave danger while retaining the path's low-level option",
+      "condition": "when an observed threat enters its effective window",
+      "tactic": "change spacing instead of contesting the threat directly",
+      "cost": "cedes ground and may abandon accumulated readiness",
+      "counter": "deny the exit lane or delay the threat"
+    },
+    {
+      "id": "dragon",
+      "label": "Area",
+      "operation": "extend the path effect to a bounded lane or nearby area",
+      "condition": "when geometry permits the declared area",
+      "tactic": "control space rather than focus one target line",
+      "cost": "higher commitment and weaker focused effect",
+      "counter": "leave the bounded area or use obstruction"
+    },
+    {
+      "id": "snake",
+      "label": "Restraint",
+      "operation": "maintain path-specific pressure that limits escape",
+      "condition": "after the path has established valid contact or control",
+      "tactic": "exchange immediate damage for finite maintained control",
+      "cost": "upkeep, exposure and an explicit escape opportunity",
+      "counter": "break contact, cleanse the control or exhaust upkeep"
+    },
+    {
+      "id": "horse",
+      "label": "Mobility",
+      "operation": "move with the path action and continue a legal pursuit",
+      "condition": "while a traversable route and observed target remain",
+      "tactic": "join movement and action without granting teleportation",
+      "cost": "movement resource use and predictable pursuit direction",
+      "counter": "obstacles, route changes or a prepared interception"
+    },
+    {
+      "id": "goat",
+      "label": "Harmony",
+      "operation": "stabilize path-specific resources and recovery",
+      "condition": "after choosing a lower-output controlled action",
+      "tactic": "preserve repeated use instead of maximizing one exchange",
+      "cost": "lower immediate pressure and time spent stabilizing",
+      "counter": "force a decisive exchange before stabilization"
+    },
+    {
+      "id": "monkey",
+      "label": "Adaptation",
+      "operation": "switch between two declared path modes after observation",
+      "condition": "after legally observing the opponent's current response",
+      "tactic": "use a bounded branch instead of a hidden-information guess",
+      "cost": "the switch consumes time or resources and can be baited",
+      "counter": "feint the observed response or change after the switch"
+    },
+    {
+      "id": "rooster",
+      "label": "Observation",
+      "operation": "improve a path action using delivered, legal observation",
+      "condition": "after the relevant motion, posture or opening is observed",
+      "tactic": "wait for evidence before committing the path action",
+      "cost": "delayed action and failure against concealed or false cues",
+      "counter": "conceal, vary or falsify the relevant cue"
+    },
+    {
+      "id": "dog",
+      "label": "Protection",
+      "operation": "answer a threat with path-specific defense and response",
+      "condition": "when a valid observed threat reaches the response window",
+      "tactic": "protect first and counter only if the response succeeds",
+      "cost": "depends on the incoming threat and yields initiative when unused",
+      "counter": "wait, feint or attack outside the response contract"
+    },
+    {
+      "id": "boar",
+      "label": "Breakthrough",
+      "operation": "spend a bounded resource or recovery window for a decisive path action",
+      "condition": "when the declared finishing condition is met",
+      "tactic": "accept a visible risk to overcome established resistance",
+      "cost": "high consumption, long recovery and punishable failure",
+      "counter": "survive, evade or invalidate the finishing condition"
+    }
+  ],
+  "releases": [
+    {
+      "nodeId": "skill.spear.rat.1",
+      "resolutionKind": "active-ability",
+      "proof": "long-melee-thrust",
+      "ability": {
+        "id": "spear",
+        "revision": 1,
+        "contentHash": "sha256:a35e671ad8eb99351f23624ffe35582e0d1cd083efab80307fca813f578d88f3"
+      },
+      "fixtureId": "fixture.skill.spear.rat.1.action"
+    },
+    {
+      "nodeId": "skill.aikido.dog.1",
+      "resolutionKind": "passive-ability",
+      "proof": "observed-physical-parry",
+      "ability": {
+        "id": "parry-v1",
+        "revision": 1,
+        "contentHash": "sha256:e224015688c44cd495f7e239f990ba0439b52a9f8e00da5bffddf27e9da05980"
+      },
+      "fixtureId": "fixture.skill.aikido.dog.1.parry"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
-import { AI_RULES, type Definition, type Revision } from '@fantasy/domain/spatial';
+import { AI_RULES, revisionIndex, type Definition, type Revision } from '@fantasy/domain/spatial';
 import { sealRevision, reference, rulesExecutionEligibility } from '@fantasy/engine/spatial';
 import { evaluationRules } from './published-rules.ts';
+import { uniqueCatalogRevision } from './catalog.ts';
 
 /** Issue #45 numerical proposal. Review its fixtures before authorizing distribution. */
 export const TACTICAL_AI: NonNullable<Definition<'ruleset'>['ai']> = {
@@ -61,12 +62,8 @@ export async function addTacticalSamples(revisions: Revision[]) {
     ['archer', 'posture-archer-v1'],
     ['stamina-scout-v1', 'posture-duelist-v1'],
   ] as const) {
-    const actor = revisions.find((r) => r.kind === 'character' && r.id === base)!;
-    if (actor.kind !== 'character') throw new Error('Missing tactical base');
-    const source = revisions.find(
-      (r) => r.kind === 'policy' && r.id === actor.definition.policy.id,
-    )!;
-    if (source.kind !== 'policy') throw new Error('Missing tactical policy');
+    const actor = uniqueCatalogRevision(revisions, 'character', base),
+      source = revisionIndex(revisions)('policy', actor.definition.policy);
     const policy = await sealRevision('policy', `${id}-policy`, 1, {
       ...source.definition,
       name: `${source.definition.name}・姿勢と索敵`,
@@ -89,8 +86,7 @@ export async function addTacticalSamples(revisions: Revision[]) {
       }),
     );
   }
-  const pillars = revisions.find((r) => r.kind === 'scenario' && r.id === 'pillars-surveyed-v1')!;
-  if (pillars.kind !== 'scenario') throw new Error('Missing surveyed terrain');
+  const pillars = uniqueCatalogRevision(revisions, 'scenario', 'pillars-surveyed-v1');
   revisions.push(
     await sealRevision('scenario', 'search-observed-v1', 1, {
       ...pillars.definition,

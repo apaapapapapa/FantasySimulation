@@ -213,6 +213,27 @@ function assessSingle(
       'own bounded stop duration; observed target, hidden immunity and activation geometry unknown',
     );
   }
+  if (d.summon) {
+    const opportunities = Math.max(
+      1,
+      Math.floor(Math.min(d.summon.lifetimeSteps, rules.horizonSteps) / d.summon.actionEverySteps),
+    );
+    const affordableCommands =
+      d.summon.commandCostMp === 0
+        ? opportunities
+        : Math.floor(Math.max(0, view.resources.mp - d.costs.mp) / d.summon.commandCostMp);
+    const expectedActions = Math.min(opportunities, affordableCommands);
+    utility +=
+      rules.actionWeight *
+      (target ? 1 : 0.1) *
+      Math.min(2, (d.summon.damage.amount * expectedActions) / Math.max(1, rules.healthPrior));
+    confidence = Math.min(confidence, target ? 5000 : 1000);
+    reasons.push(
+      d.summon.commandCostMp === 0
+        ? 'own bounded dependent profile and resource schedule; autonomous decisions use delivered hostile observation'
+        : 'own bounded dependent profile and resource schedule; commands require delivered hostile observation',
+    );
+  }
   const effects = abilityPlan(ability).effects;
   const stateValue = assessStatusEffects(view, effects, d.target, view.step + cast);
   utility += (stateValue.risk?.nonDamageValue ?? stateValue.value) * rules.actionWeight;
@@ -357,6 +378,16 @@ function assessSingle(
     },
     'apply-status': () => {}, // Already assessed together by the status transaction above.
     dispel: () => {},
+    'sensory-cue': (effect) => {
+      utility += (rules.explorationWeight * effect.confidenceBps) / 10000;
+      confidence = Math.min(confidence, 1000);
+      reasons.push('mental eligibility and discovery are opponent-private');
+    },
+    'environmental-hologram': () => {
+      utility += rules.explorationWeight;
+      confidence = Math.min(confidence, 1000);
+      reasons.push('visual sensor projection is opponent-private');
+    },
   };
   for (const effect of effects) {
     if (!stateValue.handled.has(effect)) matchEffect(effect, effectAssessments, undefined);

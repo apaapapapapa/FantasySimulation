@@ -119,6 +119,8 @@ export type Observation = DeepReadonly<{
   sampledAt: number;
   availableAt: number;
   enemy: ObservedActor | null;
+  /** Visible dependent identities only; policy never receives canonical dependent state. */
+  dependentIds?: string[];
   projectiles: ObservableProjectile[];
   terrain?: ObservedSurface[];
   spatial?: ObservedSpatial[];
@@ -162,6 +164,7 @@ export type DecisionView = {
   staminaExhausted: boolean;
   statusIds: readonly string[];
   memory: PerceptionMemory;
+  sensorView?: { environmentalHolograms: readonly EnvironmentalHologram[] };
   step: number;
   gravityMmPerSecond2: number;
   used: Readonly<Record<string, number>>;
@@ -280,6 +283,43 @@ export type ActorMindState = {
   decision: Decision;
   random: number;
   decisionRandom: DecisionRandom;
+  sensoryCues: SensoryCue[];
+};
+
+export type SensoryCue = {
+  id: string;
+  creatorId: string;
+  observerId: string;
+  modality: 'visual';
+  perceivedOrigin: Vec3;
+  emittedAt: number;
+  deliveredAt: number;
+  expiresAt: number;
+  discoveredAt: number;
+  confidenceBps: number;
+  deliveryRecorded?: true;
+};
+
+export type EnvironmentalHologram = {
+  id: string;
+  creatorId: string;
+  observerId: string;
+  observerIds: [string];
+  abilityId: string;
+  effectIndex: number;
+  stageIndex?: number;
+  modality: 'visual';
+  sourcePosition: Vec3;
+  perceivedPosition: Vec3;
+  state: 'active-unobserved' | 'observed' | 'invalidated';
+  activatedAt: number;
+  observedAt: number;
+  invalidatedAt: number;
+  expiresAt: number;
+};
+
+export type ActorSensorState = {
+  environmentalHolograms: EnvironmentalHologram[];
 };
 
 export type ActorClock = {
@@ -294,6 +334,25 @@ export type ActorState = {
   statuses: StatusCohort[];
   actions: ActorActionState;
   mind: ActorMindState;
+  sensors: ActorSensorState;
+};
+export type DependentState = {
+  id: string;
+  profile: 'scout-rat-v1';
+  ownerId: string;
+  hostileOwnerId: string;
+  ordinal: number;
+  ability: AbilityRevision;
+  position: Vec3;
+  body: NonNullable<Definition<'ability'>['summon']>['body'];
+  hp: number;
+  maxHp: number;
+  createdAt: number;
+  expiresAt: number;
+  nextActionAt: number;
+  nextUpkeepAt: number;
+  rngState: number;
+  clock?: { controlId: string; frozenFrom: number; frozenUntil: number };
 };
 export type PreviousMovement = Pick<ActorBodyState, 'intent'> & Pick<ActorMindState, 'decision'>;
 
@@ -352,6 +411,7 @@ export type PendingEffect = DamageSnapshot & {
   actorId: string | null;
   targetId: string;
   effect: DeepReadonly<Effect>;
+  effectIndex?: number;
   parentEventId: string | null;
   abilityId: string | null;
   causes?: readonly string[];
@@ -360,9 +420,12 @@ export type PendingEffect = DamageSnapshot & {
   stage?: StageContact;
   reaction?: ReactionContext;
   damageCancelled?: boolean;
+  guards?: readonly { activationId: string; retainedDamageBps: number }[];
   sourceAbility?: AbilityRevision;
   sourceActorId?: string;
   sourceProjectileId?: string;
+  sourceDependentId?: string;
+  drainRecipientId?: string;
   ancestry?: ReactionContext;
   projectileContact?: { id: string; direct: boolean; reflected: boolean };
 

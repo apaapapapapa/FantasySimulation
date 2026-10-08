@@ -81,7 +81,10 @@ export async function readBoundedFile(
   code: 'INPUT_INVALID' | 'DATA_INVALID' = 'DATA_INVALID',
 ): Promise<Buffer> {
   return measureAsync('save.read', async () => {
-    const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+    const file = await open(
+      path,
+      constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0) | (constants.O_NONBLOCK ?? 0),
+    );
     try {
       const info = await file.stat();
       // Inspect the entry after opening, then read only through that same handle.

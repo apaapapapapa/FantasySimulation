@@ -42,6 +42,9 @@ export type EffectApplication = DamageSnapshot & {
   powerBps?: number;
   dealtBps?: number;
   damageCancelled?: boolean;
+  guards?: readonly { activationId: string; retainedDamageBps: number }[];
+  /** Redirect drain credit to a bounded dependent instead of its owner actor. */
+  drainRecipientId?: string;
 };
 export type DamageDetail = NonNullable<BattleEvent['damage']> & {
   applicationId: string;
@@ -73,6 +76,7 @@ type DamageEntry = ReturnType<typeof calculateDamage> & {
   statusModified: boolean;
   afterAbsorption: bigint;
   absorption?: NonNullable<BattleEvent['damage']>['absorption'];
+  guard?: NonNullable<NonNullable<BattleEvent['damage']>['guard']>;
 };
 type ResolutionContext = {
   target: EffectTarget;
@@ -116,6 +120,17 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       Number(scale),
       { dealtBps, receivedBps, powerBps: application.powerBps ?? 10000 },
     );
+    const beforeGuard = amounts.afterModifiers;
+    const guards = [...(application.guards ?? [])].sort((a, b) =>
+      compareIds(a.activationId, b.activationId),
+    );
+    if (guards.length) {
+      const numerator = guards.reduce(
+        (value, guard) => value * BigInt(guard.retainedDamageBps),
+        beforeGuard,
+      );
+      amounts.afterModifiers = numerator / 10000n ** BigInt(guards.length);
+    }
     if (application.damageCancelled) amounts.afterModifiers = 0n;
     const converted =
       (amounts.afterModifiers * BigInt(absorptionBps(target.statuses, step, effect.element))) /
@@ -127,6 +142,13 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       effect,
       ...amounts,
       afterAbsorption: amounts.afterModifiers - converted,
+      ...(guards.length && {
+        guard: {
+          before: checked(beforeGuard),
+          after: checked(amounts.afterModifiers),
+          responses: guards,
+        },
+      }),
       ...(converted > 0n && {
         absorption: {
           element: effect.element,
@@ -136,6 +158,7 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
       }),
       statusModified:
         !!application.damageCancelled ||
+        guards.length > 0 ||
         (application.powerBps ?? 10000) !== 10000 ||
         dealtBps !== 10000 ||
         receivedBps !== 10000 ||
@@ -156,6 +179,8 @@ const effectHandlers: EffectHandlers<ResolutionContext, void> = {
   'apply-status': deferredEffect,
   reveal: deferredEffect,
   force: deferredEffect,
+  'sensory-cue': deferredEffect,
+  'environmental-hologram': deferredEffect,
 };
 /** Simultaneous defense/resistance/shield resolution with exact attribution and one HP clamp. */
 export function resolveEffects(
@@ -228,6 +253,7 @@ export function resolveEffects(
             defenseApplied: damage.defenseApplied,
             afterDefense: checked(damage.afterDefense),
             afterResistance: checked(damage.afterResistance),
+            ...(damage.guard && { guard: damage.guard }),
             ...(damage.absorption && { absorption: damage.absorption }),
             ...((hasDamageFormula(damage.effect) ||
               damage.statusModified ||
@@ -334,17 +360,26 @@ export function resolveEffects(
           continue;
         const source = results.find((r) => r.actorId === app.actorId);
         const sourceTarget = targets.find((t) => t.actor.participant.actorId === app.actorId);
-        if (!source || !sourceTarget || (concept && !source.openingHp)) continue;
+        if (
+          !source ||
+          (!app.drainRecipientId && !sourceTarget) ||
+          (!app.drainRecipientId && concept && !source.openingHp)
+        )
+          continue;
         const n = actual * BigInt(detail.toHp.numerator);
         const d = BigInt(detail.toHp.denominator) * BigInt(result.hpDamage || 1);
         const healing =
           (n *
             BigInt(app.effect.drainBps) *
-            hpRecoveryBps(sourceTarget.statuses, sourceTarget.statusStep ?? step)) /
+            (app.drainRecipientId
+              ? 10000n
+              : hpRecoveryBps(sourceTarget!.statuses, sourceTarget!.statusStep ?? step))) /
           (d * 100000000n);
         detail.drain = { basis: fraction(n, d), healing: checked(healing) };
-        source.unclamped += healing;
-        source.healed += checked(healing);
+        if (!app.drainRecipientId) {
+          source.unclamped += healing;
+          source.healed += checked(healing);
+        }
       }
     }
     const required = results.filter(

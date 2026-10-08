@@ -110,7 +110,11 @@ const rootDependencies = [
   '@protobuf-ts/runtime-rpc',
   '@octokit/core',
   '@octokit/plugin-paginate-rest',
+  // The transfer job's fresh-browser acceptance; its browser is installed per run, never cached.
+  '@playwright/test',
   'tsx',
+  // Calibration scripts validate owner budget records before network allocation.
+  'zod',
 ];
 const workspaces = [
   'apps/api',
@@ -136,7 +140,7 @@ function dependencyPath(path: string) {
   )
     throw new Error('Invalid runtime dependency path');
 }
-async function bounded(path: string, limit: number) {
+export async function readLeagueRuntimeFile(path: string, limit: number) {
   const file = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
   try {
     const info = await file.stat({ bigint: true });
@@ -163,6 +167,7 @@ async function bounded(path: string, limit: number) {
     await file.close();
   }
 }
+const bounded = readLeagueRuntimeFile;
 async function runtimeIdentity(root: string, sourceSha: string) {
   if (
     !/^[a-f0-9]{40}$/.test(sourceSha) ||
@@ -180,13 +185,7 @@ async function runtimeIdentity(root: string, sourceSha: string) {
   };
 }
 
-/** Dependencies only: source comes from the exact checkout, never from a cached artifact. */
-export async function buildLeagueRuntime(checkout: string, destination: string, sourceSha: string) {
-  const root = resolve(checkout),
-    output = resolve(destination);
-  const identity = await runtimeIdentity(root, sourceSha);
-  if (execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim())
-    throw new Error('Runtime build requires a clean committed source');
+async function runtimeInventory(root: string) {
   const files = new Map<string, Entry>();
   const packages = new Set<string>();
   let bytes = 0;
@@ -257,14 +256,35 @@ export async function buildLeagueRuntime(checkout: string, destination: string, 
       ...(workspace && value.devDependencies?.tsx ? { tsx: value.devDependencies.tsx } : {}),
     };
     for (const name of Object.keys(dependencies).sort())
-      await dependency(
-        directory,
-        name,
-        name in optional || value.peerDependenciesMeta?.[name]?.optional === true,
-      );
+      // The pinned artifact SDK ships generated JS; protoc's TS generator is not
+      // imported by that JS. Keep this exception version/edge-specific: a new SDK
+      // version must include its declared closure until reviewed again.
+      if (
+        !(
+          value.name === '@actions/artifact' &&
+          value.version === '6.2.1' &&
+          name === '@protobuf-ts/plugin'
+        )
+      )
+        await dependency(
+          directory,
+          name,
+          name in optional || value.peerDependenciesMeta?.[name]?.optional === true,
+        );
   }
   for (const name of rootDependencies) await dependency(root, name, false);
   const inventory = [...files.values()].sort((a, b) => a.path.localeCompare(b.path));
+  return { inventory, bytes };
+}
+
+/** Dependencies only: source comes from the exact checkout, never from a cached artifact. */
+export async function buildLeagueRuntime(checkout: string, destination: string, sourceSha: string) {
+  const root = resolve(checkout),
+    output = resolve(destination);
+  const identity = await runtimeIdentity(root, sourceSha);
+  if (execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim())
+    throw new Error('Runtime build requires a clean committed source');
+  const { inventory, bytes } = await runtimeInventory(root);
   await mkdir(output, { recursive: true });
   const archive = join(output, 'runtime.gz');
   async function* payload() {
@@ -298,6 +318,84 @@ export async function buildLeagueRuntime(checkout: string, destination: string, 
     archiveBytes: compressed.length,
     archiveHash: manifest.archiveHash,
   };
+}
+
+/** Local snapshot only: the caller must separately authenticate the enclosing ZIP
+ * against successful same-SHA main CI. Rediscovering the build-owned closure, rather
+ * than trusting manifest membership, rejects a re-encoded subset manifest. */
+export async function verifyLeagueRuntime(
+  checkout: string,
+  distribution: string,
+  sourceSha: string,
+) {
+  const root = resolve(checkout);
+  if (!(await lstat(root)).isDirectory())
+    throw new Error('Runtime checkout is not a real directory');
+  const cleanIdentity = async () => {
+    const identity = await runtimeIdentity(root, sourceSha);
+    if (execFileSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).trim())
+      throw new Error('Runtime verification requires a clean committed source');
+    return identity;
+  };
+  const expected = await cleanIdentity();
+  const manifestBytes = await bounded(join(distribution, 'runtime.json'), 16000000);
+  const manifest = RuntimeManifest.parse(JSON.parse(manifestBytes.toString('utf8')));
+  if (
+    Object.entries(expected).some(
+      ([key, value]) => manifest[key as keyof typeof expected] !== value,
+    )
+  )
+    throw new Error('Runtime identity mismatch');
+  const { inventory, bytes } = await runtimeInventory(root);
+  if (JSON.stringify(manifest.files) !== JSON.stringify(inventory))
+    throw new Error('Runtime complete dependency closure mismatch');
+  const verifyPaths = async () => {
+    const parents = new Set<string>();
+    for (const entry of inventory) {
+      // Reject symlinked ancestors: matching bytes reached through another closure
+      // is not evidence for the named dependency installation.
+      for (let parent = dirname(entry.path); parent !== '.'; parent = dirname(parent))
+        parents.add(parent);
+      if (
+        entry.type === 'file' &&
+        ((await lstat(join(root, entry.path))).mode & 0o777) !== entry.mode
+      )
+        throw new Error('Runtime dependency mode mismatch');
+    }
+    for (const parent of parents)
+      if (!(await lstat(join(root, parent))).isDirectory())
+        throw new Error('Runtime dependency parent is not a real directory');
+  };
+  await verifyPaths();
+  const archive = await bounded(join(distribution, 'runtime.gz'), maxArchive);
+  if (archive.length !== manifest.archiveBytes || hash(archive) !== manifest.archiveHash)
+    throw new Error('Runtime archive hash mismatch');
+  const data = gunzipSync(archive, { maxOutputLength: maxBytes });
+  if (data.length !== bytes) throw new Error('Runtime extracted length mismatch');
+  let offset = 0;
+  for (const entry of inventory)
+    if (entry.type === 'file') {
+      if (hash(data.subarray(offset, offset + entry.bytes)) !== entry.hash)
+        throw new Error('Runtime native/file digest mismatch');
+      offset += entry.bytes;
+    }
+  if (
+    JSON.stringify(await cleanIdentity()) !== JSON.stringify(expected) ||
+    JSON.stringify((await runtimeInventory(root)).inventory) !== JSON.stringify(inventory) ||
+    !(await bounded(join(distribution, 'runtime.json'), 16000000)).equals(manifestBytes) ||
+    !(await bounded(join(distribution, 'runtime.gz'), maxArchive)).equals(archive)
+  )
+    throw new Error('Runtime verification snapshot changed');
+  await verifyPaths();
+  return Object.freeze({
+    sourceSha,
+    files: inventory.length,
+    bytes,
+    manifestHash: hash(manifestBytes),
+    archiveHash: manifest.archiveHash,
+    scope: 'local-dependency-snapshot' as const,
+    authenticatedMainCI: false as const,
+  });
 }
 
 /** Caller must authenticate the enclosing immutable ZIP against successful same-SHA main CI. */

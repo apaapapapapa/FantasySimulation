@@ -16,6 +16,8 @@ export const effectMechanics = {
   water: 'elemental-reaction',
   reveal: 'reveal',
   force: 'force',
+  'sensory-cue': 'mind-read',
+  'environmental-hologram': 'visibility',
 } satisfies Record<Effect['kind'], MechanicId>;
 export const attackMechanics = {
   direct: 'contact',
@@ -29,6 +31,7 @@ export const attackMechanics = {
 } satisfies Record<Definition<'ability'>['attack']['kind'], MechanicId>;
 export const responseMechanics = {
   parry: 'parry',
+  guard: 'parry',
   effects: 'reaction-effects',
   counter: 'counter',
   deflect: 'projectile-deflection',
@@ -57,6 +60,31 @@ export const motionMechanics = {
   MechanicId
 >;
 
+function hasEffect(revisions: readonly DeepReadonly<Revision>[], kind: Effect['kind']) {
+  return revisions.some(
+    (revision) =>
+      revision.kind === 'ability' &&
+      [
+        ...revision.definition.effects,
+        ...(revision.definition.stages ?? []).flatMap((stage) => stage.effects),
+      ].some((effect) => effect.kind === kind),
+  );
+}
+
+export function hasSensoryCues(revisions: readonly DeepReadonly<Revision>[]) {
+  return hasEffect(revisions, 'sensory-cue');
+}
+
+export function hasDependentSummons(revisions: readonly DeepReadonly<Revision>[]) {
+  return revisions.some(
+    (revision) => revision.kind === 'ability' && revision.definition.summon !== undefined,
+  );
+}
+
+export function hasEnvironmentalHolograms(revisions: readonly DeepReadonly<Revision>[]) {
+  return hasEffect(revisions, 'environmental-hologram');
+}
+
 /** Visit the resolved revision closure, including dormant branches and transformed/granted states. */
 export function closureMechanics(revisions: readonly DeepReadonly<Revision>[]): MechanicUse[] {
   const uses: MechanicUse[] = [];
@@ -80,6 +108,10 @@ export function closureMechanics(revisions: readonly DeepReadonly<Revision>[]): 
       const ability = owner.definition;
       if (ability.timeStop) add('time-stop');
       if (ability.accuracy) add('absolute-hit');
+      if (ability.summon) {
+        add('damage');
+        if (ability.summon.damage.drainBps > 0) add('drain');
+      }
       effects(ability.effects);
       if (ability.relocation) add('teleport');
       if (ability.barrier) add('barrier');
@@ -103,6 +135,7 @@ export function closureMechanics(revisions: readonly DeepReadonly<Revision>[]): 
       const status = owner.definition;
       if (status.evasion) add('absolute-evasion');
       if (status.stopImmunity !== undefined) add('time-stop');
+      if (status.mentalImmunity !== undefined) add('mind-read');
       if (status.immortality) add('immortality');
       if (status.defeatImmunity !== undefined) add('instant-death');
       if (status.phasing) add('phasing');

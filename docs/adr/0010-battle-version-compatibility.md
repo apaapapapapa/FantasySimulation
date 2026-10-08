@@ -18,8 +18,8 @@ recovery returns 409. Advise current rules; saved results/display/replay remain 
 
 ## Samples
 
-New content uses new IDs. Append published identities to data/spatial/published-revisions.json;
-catalog/CI check hashes/revisions/missing/duplicate IDs. Seed never overwrites an ID.
+New content uses new IDs; skill augments may append a reviewed revision under the base ID.
+Inventory keys `(kind,id,revision)` and hashes; seed never overwrites an exact revision.
 PR #57 added terrainKnowledge: surveyed to flat/pillars rev1; distribution pins post-#57
 bytes. Preserve both pre-#57 (omitted=observed) and post-#57 DBs without conversion.
 New references use flat-surveyed-v1/pillars-surveyed-v1 (default latter), additive to both

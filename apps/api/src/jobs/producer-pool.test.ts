@@ -8,6 +8,89 @@ import { createBatchPlan } from '../batch/batch-plan.ts';
 import { runBatch, reconcileBatch } from '../batch/batch-runner.ts';
 import { BattleBundles } from '../batch/battle-bundle.ts';
 import { BattlePool } from './worker-pool.ts';
+import { Piscina } from 'piscina';
+import { Measurements } from '../measurements.ts';
+
+it('refuses a terminated seal verifier before publication or a success reference', async () => {
+  await withReplayDirectory(async (root) => {
+    const plan = await createBatchPlan(await batchInput(1), batchSource),
+      pool = new BattlePool(1),
+      run = Piscina.prototype.run,
+      publish = vi.spyOn(pool, 'verify');
+    let terminated = false;
+    const dispatch = vi.spyOn(Piscina.prototype, 'run').mockImplementation(async function (
+      this: Piscina,
+      ...args: Parameters<Piscina['run']>
+    ) {
+      const pending = run.apply(this, args);
+      if (!terminated && args[1]?.filename?.endsWith('verification-worker.ts')) {
+        terminated = true;
+        // Submit the actual seal task, then destroy its real, bounded pool.
+        await Promise.all([pending, pool.close()]);
+      }
+      return pending;
+    });
+    try {
+      const { index } = await runBatch(plan, root, batchSource, { pool });
+      expect(terminated).toBe(true);
+      expect(publish).not.toHaveBeenCalled();
+      expect(index.complete).toBe(false);
+      expect(index.slots[0]).toMatchObject({ state: 'failed', receipt: null, reused: false });
+      expect(await readdir(join(root, 'objects'))).toEqual([]);
+      expect(await readdir(join(root, 'complete'))).toEqual([]);
+    } finally {
+      dispatch.mockRestore();
+      await pool.close();
+    }
+  });
+}, 30000);
+
+it('finishes in the same bounded pool only after calculation releases its slot', async () => {
+  await withReplayDirectory(async (root) => {
+    const plan = await createBatchPlan(await batchInput(1), batchSource),
+      pool = new BattlePool(1),
+      run = pool.run.bind(pool),
+      verify = pool.verify.bind(pool);
+    let calculating = false;
+    const modes: boolean[] = [];
+    vi.spyOn(pool, 'recordingVerificationPool', 'get').mockImplementation(() => {
+      expect(calculating).toBe(false);
+      return pool.pool;
+    });
+    vi.spyOn(pool, 'run').mockImplementation(async (...args) => {
+      calculating = true;
+      try {
+        return await run(...args);
+      } finally {
+        calculating = false;
+      }
+    });
+    vi.spyOn(pool, 'verify').mockImplementation(async (...args) => {
+      expect(calculating).toBe(false);
+      modes.push(args[2]);
+      await verify(...args);
+    });
+    try {
+      const measurement = new Measurements();
+      const { index } = await measurement.run(() => runBatch(plan, root, batchSource, { pool }));
+      expect(index.complete).toBe(true);
+      expect(index.slots[0]).toMatchObject({ state: 'complete', reused: false });
+      expect(modes).toEqual([false]);
+      expect(pool.pool.threads).toHaveLength(1);
+      expect(pool.pool.queueSize).toBe(0);
+      const observations = measurement.report().verificationWorkerObservations;
+      expect(observations.map(({ stage }) => stage)).toEqual([
+        'validate.replay',
+        'validate.replay.worker',
+      ]);
+      expect(new Set(observations.map(({ replayId }) => replayId)).size).toBe(1);
+      expect(observations.every(({ success, attempted }) => success && attempted)).toBe(true);
+      expect(measurement.report().validation.calls).toBe(2);
+    } finally {
+      await pool.close();
+    }
+  });
+}, 30000);
 
 it('shares one thread and a bounded wait slot across calculation and full verification', async () => {
   await withReplayDirectory(async (root) => {

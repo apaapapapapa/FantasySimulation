@@ -3,7 +3,7 @@ import { join, dirname, relative } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { buildLeagueRuntime } from '../league-runtime.ts';
 
-export async function runtimeFixture(root: string) {
+export async function runtimeFixture(root: string, artifactVersion = '6.2.1') {
   const source = join(root, 'source'),
     distribution = join(root, 'distribution'),
     target = join(root, 'target');
@@ -34,7 +34,9 @@ export async function runtimeFixture(root: string) {
     '@protobuf-ts/runtime-rpc',
     '@octokit/core',
     '@octokit/plugin-paginate-rest',
+    '@playwright/test',
     'tsx',
+    'zod',
   ]) {
     const real = join(
       source,
@@ -44,7 +46,15 @@ export async function runtimeFixture(root: string) {
     );
     await write(
       join(real, 'package.json'),
-      JSON.stringify({ name, type: 'module', exports: './index.js' }),
+      JSON.stringify({
+        name,
+        version: name === '@actions/artifact' ? artifactVersion : '1.0.0',
+        type: 'module',
+        exports: './index.js',
+        ...(name === '@actions/artifact'
+          ? { dependencies: { '@protobuf-ts/plugin': '2.11.1' } }
+          : {}),
+      }),
     );
     await write(join(real, 'index.js'), 'export const fixture = true;');
     await write(join(real, 'native.node'), 'opaque native bytes');

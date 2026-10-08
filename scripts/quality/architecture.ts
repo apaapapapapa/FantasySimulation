@@ -27,7 +27,7 @@ export const boundaryRules: IRegularForbiddenRuleType[] = [
     { path: '^(scripts|e2e|apps/cli)/' },
     {
       path: '^apps/api/',
-      pathNot: '^apps/api/src/(?:local|tooling|artifacts|testing|worker)[.]ts$',
+      pathNot: '^apps/api/src/(?:local|tooling|artifacts|testing|worker|catalog)[.]ts$',
     },
     'Tools and CLI consume explicit API exports, not persistence/Worker internals.',
   ),
@@ -241,6 +241,13 @@ export interface ArchitectureResult {
 // These existing resolvers select another checkout/package, but only named public exports.
 // Exact expressions are pinned; a new dynamic expression still fails closed.
 const dynamicEntries: Record<string, Record<string, string>> = {
+  // Only the pinned SDK's local ZIP encoder/specification; no service or credential loader.
+  'scripts/league-calibration-upload.ts': {
+    "pathToFileURL(join(sdkRoot, 'internal/upload/upload-zip-specification.js')).href":
+      '../node_modules/@actions/artifact/lib/internal/upload/upload-zip-specification.js',
+    "pathToFileURL(join(sdkRoot, 'internal/upload/zip.js')).href":
+      '../node_modules/@actions/artifact/lib/internal/upload/zip.js',
+  },
   'scripts/harness/regression-probe.ts': {
     "pathToFileURL(join(root, 'scripts/harness/corpus.ts')).href": './corpus.ts',
   },
@@ -307,8 +314,8 @@ export async function architecture(root: string, paths: string[]): Promise<Archi
         mkdirSync(dirname(file), { recursive: true });
         writeFileSync(file, readFileSync(join(root, path)));
       }
-      for (const path of paths.filter((path) =>
-        /^(apps|packages)\/[^/]+\/package\.json$/.test(path),
+      for (const path of paths.filter(
+        (path) => path === 'package.json' || /^(apps|packages)\/[^/]+\/package\.json$/.test(path),
       )) {
         const modules = join(root, dirname(path), 'node_modules');
         if (existsSync(modules)) {

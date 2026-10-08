@@ -1587,6 +1587,77 @@
   },
   {
     "kind": "ability",
+    "id": "scout-rat-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:c137e74851756fbdd5d8aefcdaecd325347758ad1627c1bc7f7a21b673687927",
+    "definition": {
+      "name": "Scout Rat",
+      "originalText": "Call one fragile scout rat that autonomously harasses a legally observed hostile.",
+      "trigger": "action",
+      "categories": ["special"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 2,
+        "uses": 1
+      },
+      "castSteps": 0,
+      "recoverySteps": 1,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": [],
+      "summon": {
+        "profile": "scout-rat-v1",
+        "body": {
+          "radiusMm": 180,
+          "heightMm": 360,
+          "eyeOffset": {
+            "x": 0,
+            "y": 100,
+            "z": 0
+          },
+          "muzzleOffset": {
+            "x": 0,
+            "y": 80,
+            "z": 120
+          },
+          "aimOffset": {
+            "x": 0,
+            "y": 80,
+            "z": 0
+          }
+        },
+        "hp": 80,
+        "spawnOffsetMm": {
+          "x": 800,
+          "y": -720,
+          "z": 500
+        },
+        "lifetimeSteps": 30,
+        "upkeep": {
+          "mp": 1,
+          "everySteps": 10
+        },
+        "commandCostMp": 0,
+        "actionEverySteps": 5,
+        "damage": {
+          "amount": 8,
+          "drainBps": 0
+        }
+      }
+    }
+  },
+  {
+    "kind": "ability",
     "id": "sealing-bolt-v1",
     "revision": 1,
     "schemaVersion": 1,
@@ -1712,6 +1783,92 @@
         {
           "kind": "water",
           "extinguish": true
+        }
+      ]
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "shield-set-guard-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:a1fe8279f9be78377331735a4f4c8f08e6bb50cd91301ba550b3e6d69a0af43d",
+    "definition": {
+      "name": "Set shield guard",
+      "originalText": "Brace the shield against one observed physical hit.",
+      "trigger": "before-hit",
+      "reaction": {
+        "response": {
+          "kind": "guard",
+          "retainedDamageBps": 8000
+        },
+        "categories": ["physical"]
+      },
+      "categories": ["technique"],
+      "target": "self",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 0,
+        "stamina": 4,
+        "uses": 0
+      },
+      "castSteps": 0,
+      "recoverySteps": 6,
+      "cooldownSteps": 60,
+      "movementWhileCasting": "allow",
+      "rangeMm": 0,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "direct"
+      },
+      "effects": []
+    }
+  },
+  {
+    "kind": "ability",
+    "id": "side-step-image-v1",
+    "revision": 1,
+    "schemaVersion": 1,
+    "contentHash": "sha256:96e42f32200a1d27beffa1a185a79206b847ce2a1ff162b680150bab6a0aa1fa",
+    "definition": {
+      "name": "Side-Step Image",
+      "originalText": "Project one short-lived visual sensor image beside the caster to cover a withdrawal.",
+      "trigger": "action",
+      "categories": ["special"],
+      "target": "enemy",
+      "condition": {
+        "kind": "always"
+      },
+      "costs": {
+        "hp": 0,
+        "mp": 2,
+        "uses": 3
+      },
+      "castSteps": 0,
+      "recoverySteps": 10,
+      "cooldownSteps": 100,
+      "movementWhileCasting": "allow",
+      "rangeMm": 200000,
+      "aimErrorMilliDegrees": 0,
+      "attack": {
+        "kind": "hitscan",
+        "radiusMm": 0
+      },
+      "effects": [
+        {
+          "kind": "environmental-hologram",
+          "modality": "visual",
+          "offsetMm": {
+            "x": 12000,
+            "y": 0,
+            "z": 4000
+          },
+          "observationSteps": 2,
+          "invalidationSteps": 7,
+          "durationSteps": 300
         }
       ]
     }

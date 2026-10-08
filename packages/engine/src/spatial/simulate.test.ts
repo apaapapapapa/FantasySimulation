@@ -91,6 +91,8 @@ describe('fixed-step battle stream', () => {
       tsStateHash: 'sha256:04897634a27969f45d79a99be5d152dabb811f157c42fea5b6dc7e598f61d3ad',
       physicsStateHash: 'sha256:680dac7ee74bc7a5cbdfee30427f3b7ec229ebfa68febdf361bc4ab90d551976',
     });
+    expect(input.schemaVersion).toBe(3);
+    expect(JSON.stringify(run.records)).not.toMatch(/sensorView|environmentalHologram/);
     expect(finalActors(run.records).map((a) => a.resources.hp)).toEqual([0, 0]);
     for (const record of run.records)
       expect(StreamRecordSchema.safeParse(record).success).toBe(true);

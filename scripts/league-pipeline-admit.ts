@@ -29,7 +29,12 @@ import {
 } from '../apps/cli/src/league/league-checkpoint.ts';
 import { durableLeagueCheckpoint } from './league-pipeline-checkpoint.ts';
 import { uploadPipelineArtifact } from './league-pipeline-upload.ts';
-import { pipelineCapacity, pipelineCi, pipelineRunners } from './league-pipeline-policy.ts';
+import {
+  pipelineCapacity,
+  pipelineCi,
+  pipelineRunners,
+  requirePipelineCapacityEvidence,
+} from './league-pipeline-policy.ts';
 import { measuredPipelineProfile } from './league-pipeline-profile.ts';
 import {
   pipelineAuditAge,
@@ -46,7 +51,11 @@ import {
 export async function restorePipeline(context: PipelineContext) {
   const definition = await pipelineDefinition();
   // Reject unmeasured inputs/capacity before any R2 lease or request.
-  pipelineRunners(requiredPipeline('LEAGUE_RUNNERS'), process.env.LEAGUE_APPROVED_RUNNERS);
+  const runners = pipelineRunners(
+    requiredPipeline('LEAGUE_RUNNERS'),
+    process.env.LEAGUE_APPROVED_RUNNERS,
+  );
+  requirePipelineCapacityEvidence(definition, runners);
   await pipelineCi(context.github, context.ciRun, 'start');
   const profile = await measuredPipelineProfile(
     context,

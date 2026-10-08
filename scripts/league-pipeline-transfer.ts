@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { writeFile } from 'node:fs/promises';
 import { canonicalJson } from '@fantasy/domain/spatial';
+import { measureAsync } from '@fantasy/api/tooling';
 import { openLeagueStaging } from '../apps/cli/src/league/league-staging.ts';
 import { finalizeLeaguePipeline } from '../apps/cli/src/league/league-finalizer.ts';
 import { evidenceGraph } from '../apps/cli/src/publication/publication-evidence.ts';
@@ -88,20 +89,24 @@ export async function transferPipeline(
       session.staging,
       signal,
     );
-    const finalized = await finalizeLeaguePipeline(
-      preparedRoot,
-      join(context.root, 'final'),
-      received.producers,
-      received.terminals,
-      github.identity,
-      control.runners,
-      async () => {
-        if (!(await github.successfulProducers(control.runners)))
-          throw new Error('Producer success barrier changed');
-      },
-      baseline,
+    const finalized = await measureAsync('receiver.finalize', () =>
+      finalizeLeaguePipeline(
+        preparedRoot,
+        join(context.root, 'final'),
+        received.producers,
+        received.terminals,
+        github.identity,
+        control.runners,
+        async () => {
+          if (!(await github.successfulProducers(control.runners)))
+            throw new Error('Producer success barrier changed');
+        },
+        baseline,
+      ),
     );
     const graph = evidenceGraph(finalized.evidence);
+    const league = graph.catalog.leagues?.find((ref) => ref.hash === finalized.snapshot.hash);
+    if (!league) throw new Error('Finalized league is missing from its catalog');
     const metadataWrites =
       [...graph.files.keys()].filter(
         (key) => key !== 'catalog/current.json' && !session.inventory.has(key),
@@ -155,6 +160,18 @@ export async function transferPipeline(
     await writeCloudJson(join(context.root, 'completion.json'), {
       outcome,
       catalogHash: finalized.catalogHash,
+      // The 300s acceptance applies only to a formal league computed without retained results.
+      league: {
+        id: league.id,
+        snapshot: league.hash,
+        status: finalized.status,
+        planned: finalized.planned,
+        resolved: finalized.resolved,
+        reusedSlots: received.producers.reduce(
+          (sum, producer) => sum + producer.result.index.slots.filter((slot) => slot.reused).length,
+          0,
+        ),
+      },
       staging: session.staging.metrics(),
       metadata: github.metrics(),
       transport: session.store.metrics(),

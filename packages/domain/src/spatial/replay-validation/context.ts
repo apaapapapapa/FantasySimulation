@@ -1,11 +1,18 @@
 import {
   characterLoadout,
+  validateAbilityLoadout,
   revisionHash,
   revisionIndex,
   revisionDependencies,
   resolveClosure,
 } from '../revision-graph.ts';
-import { contentHash, deepFreeze } from '../canonical.ts';
+import { canonicalJson, compareIds, contentHash, deepFreeze } from '../canonical.ts';
+import {
+  resolveSkillAbilityApplications,
+  applySkillAbilityApplications,
+  SkillApplicationError,
+} from '../skill-application.ts';
+import { SkillRecipeError } from '../skill-recipe.ts';
 import { parseJson } from '../contracts.ts';
 import { RecordedManifestSchema } from '../replay.ts';
 import { fail, requireReplay } from './common.ts';
@@ -21,6 +28,14 @@ export async function replayContext(input: unknown, simulationHash: string) {
   }
   for (const revision of manifest.revisions)
     requireReplay(revision.contentHash === (await revisionHash(revision)), 'revision content hash');
+  for (const participant of manifest.participants) {
+    const receipt = participant.skillLoadout;
+    if (!receipt) continue;
+    requireReplay(
+      canonicalJson(receipt.character) === canonicalJson(participant.character),
+      'skill loadout character',
+    );
+  }
   // Replay v1 historically checks ability/status references but not status transformation closure.
   // Preserve its acceptance boundary while sharing the graph traversal.
   let actors;
@@ -31,7 +46,37 @@ export async function replayContext(input: unknown, simulationHash: string) {
     });
     actors = manifest.participants.map((participant) => {
       const { character, abilities } = characterLoadout(participant.character, get);
-      return { participant, character, abilities };
+      let applied;
+      try {
+        const applications = resolveSkillAbilityApplications(
+          abilities,
+          { kind: 'recorded-receipt', receipt: participant.skillLoadout },
+          get,
+        );
+        applied = applySkillAbilityApplications(abilities, applications).map((ref) =>
+          get('ability', ref),
+        );
+      } catch (error) {
+        if (error instanceof SkillRecipeError)
+          return fail(
+            error.code === 'augment-identity' || error.code === 'augment-trigger'
+              ? 'augment identity and trigger'
+              : 'skill ability trigger',
+          );
+        if (error instanceof SkillApplicationError)
+          return fail(
+            error.code === 'conflicting-grant'
+              ? 'conflicting skill ability'
+              : 'augment base ability',
+          );
+        throw error;
+      }
+      validateAbilityLoadout(applied);
+      return {
+        participant,
+        character,
+        abilities: applied.sort((a, b) => compareIds(a.id, b.id)),
+      };
     });
   } catch (error) {
     return fail(error instanceof Error ? error.message : 'revision graph');

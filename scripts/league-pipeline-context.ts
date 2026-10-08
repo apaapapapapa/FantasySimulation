@@ -1,11 +1,16 @@
 import { join } from 'node:path';
 import { executionSource } from '@fantasy/api/tooling';
-import { LeaguePipelineIdentitySchema, canonicalJson } from '@fantasy/domain/spatial';
+import {
+  LeaguePipelineIdentitySchema,
+  LeagueBillingObservationSchema,
+  canonicalJson,
+} from '@fantasy/domain/spatial';
 import { cloudJson } from '../apps/cli/src/league/league-cloud-files.ts';
 import { leagueValidatorDigest } from '../apps/cli/src/league/league-validator.ts';
 import { PublicationEvidence } from '../apps/cli/src/publication/publication-evidence.ts';
 import { decodeLeagueCheckpoint } from '../apps/cli/src/league/league-checkpoint.ts';
 import { readFile } from 'node:fs/promises';
+import type { R2Config } from '../apps/cli/src/publication/publication-s3.ts';
 import { publicHttp, ancestorOf } from '../apps/cli/src/publication/publication-http.ts';
 import { PipelineArtifacts } from './league-pipeline-artifacts.ts';
 
@@ -35,7 +40,7 @@ export async function pipelineContext(root: string, maxMetadataCalls = 200) {
   };
 }
 export type PipelineContext = Awaited<ReturnType<typeof pipelineContext>>;
-export function pipelineR2() {
+export function pipelineR2(): R2Config {
   if (
     requiredPipeline('R2_PUBLICATION_ENABLED') !== 'true' ||
     requiredPipeline('LEAGUE_PIPELINE_ENABLED') !== 'true'
@@ -46,6 +51,9 @@ export function pipelineR2() {
     bucket: requiredPipeline('R2_BUCKET'),
     accessKeyId: requiredPipeline('R2_ACCESS_KEY_ID'),
     secretAccessKey: requiredPipeline('R2_SECRET_ACCESS_KEY'),
+    billingObservation: LeagueBillingObservationSchema.parse(
+      JSON.parse(requiredPipeline('LEAGUE_BILLING_OBSERVATION')),
+    ),
   };
 }
 export const pipelineLease = (context: PipelineContext, phase: string) => ({

@@ -13,10 +13,45 @@ import {
   MotionProjectionSchema,
   ReactionContextSchema,
   ProjectileDeflectionSchema,
+  SensoryCueDisplaySchema,
+  EnvironmentalHologramDisplaySchema,
 } from './records.ts';
 const count = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 const step = z.number().int().min(0).max(MAX_BATTLE_STEPS);
 const fraction = z.number().min(0).max(1);
+export const RequiredReplayFeaturesSchema = z
+  .array(
+    z.enum([
+      'subject-clocks-v1',
+      'deferred-contacts-v1',
+      'sensory-cues-v1',
+      'dependent-entities-v1',
+      'dependent-observation-v2',
+      'environmental-holograms-v1',
+    ]),
+  )
+  .min(2)
+  .max(6)
+  .refine(
+    (features) =>
+      features[0] === 'subject-clocks-v1' &&
+      features[1] === 'deferred-contacts-v1' &&
+      [
+        '',
+        'sensory-cues-v1',
+        'dependent-entities-v1',
+        'dependent-entities-v1,dependent-observation-v2',
+        'sensory-cues-v1,dependent-entities-v1',
+        'sensory-cues-v1,dependent-entities-v1,dependent-observation-v2',
+        'environmental-holograms-v1',
+        'sensory-cues-v1,environmental-holograms-v1',
+        'dependent-entities-v1,environmental-holograms-v1',
+        'dependent-entities-v1,dependent-observation-v2,environmental-holograms-v1',
+        'sensory-cues-v1,dependent-entities-v1,environmental-holograms-v1',
+        'sensory-cues-v1,dependent-entities-v1,dependent-observation-v2,environmental-holograms-v1',
+      ].includes(features.slice(2).join(',')),
+    'Replay features must use the canonical compatible prefix order',
+  );
 export const SegmentSchema = z
   .strictObject({
     start: PhysicalVectorSchema,
@@ -143,6 +178,10 @@ export const ActorDisplaySchema = z.strictObject({
     .optional(),
   statuses: z.array(StatusDisplaySchema).max(8192),
   action: ActionDisplaySchema.nullable(),
+  sensoryCues: z.array(SensoryCueDisplaySchema).max(8).optional(),
+  sensorView: z
+    .strictObject({ environmentalHolograms: z.array(EnvironmentalHologramDisplaySchema).max(8) })
+    .optional(),
 });
 export type ActorDisplay = z.infer<typeof ActorDisplaySchema>;
 export const ActorDeltaSchema = ActorDisplaySchema.partial().required({ id: true });
@@ -250,19 +289,56 @@ export const SpatialObjectChangesSchema = z.strictObject({
     .max(256),
 });
 export type SpatialObjectChanges = z.infer<typeof SpatialObjectChangesSchema>;
+export const DependentDisplaySchema = z.strictObject({
+  id: IdSchema,
+  profile: z.literal('scout-rat-v1'),
+  ownerId: IdSchema,
+  hostileOwnerId: IdSchema,
+  abilityId: IdSchema,
+  ordinal: z.number().int().min(0).max(7),
+  position: PhysicalVectorSchema,
+  body: BodySchema,
+  hp: z.number().int().min(0).max(1_000_000),
+  maxHp: z.number().int().min(1).max(1_000_000),
+  createdAt: step,
+  expiresAt: z.number().int().min(1).max(12300),
+  nextActionAt: z.number().int().min(0).max(12300),
+  nextUpkeepAt: z.number().int().min(0).max(12300),
+  rngState: z.number().int().min(0).max(0xffff_ffff),
+  clock: z
+    .strictObject({
+      controlId: IdSchema,
+      frozenFrom: step,
+      frozenUntil: z.number().int().min(1).max(12300),
+    })
+    .refine((clock) => clock.frozenFrom < clock.frozenUntil, 'Invalid dependent clock window')
+    .optional(),
+});
+export type DependentDisplay = z.infer<typeof DependentDisplaySchema>;
+export const DependentChangesSchema = z.strictObject({
+  spawn: z.array(DependentDisplaySchema).max(2),
+  update: z.array(DependentDisplaySchema).max(4),
+  remove: z
+    .array(
+      z.strictObject({
+        id: IdSchema,
+        reason: z.enum(['expired', 'dismissed', 'owner-defeated', 'upkeep']),
+      }),
+    )
+    .max(2),
+});
+export type DependentChanges = z.infer<typeof DependentChangesSchema>;
 export const DisplayStateSchema = z.strictObject({
   actors: z.array(ActorDisplaySchema).length(2),
   projectiles: z.array(ProjectileDisplaySchema).max(256),
   objects: z.array(SpatialObjectDisplaySchema).max(256).optional(),
+  dependents: z.array(DependentDisplaySchema).max(4).optional(),
 });
 export type DisplayState = z.infer<typeof DisplayStateSchema>;
 export const StreamRecordSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('initial'),
-    requiredFeatures: z
-      .array(z.enum(['subject-clocks-v1', 'deferred-contacts-v1']))
-      .length(2)
-      .optional(),
+    requiredFeatures: RequiredReplayFeaturesSchema.optional(),
     schemaVersion: z.literal(1),
     step: z.literal(0),
     state: DisplayStateSchema,
@@ -272,6 +348,7 @@ export const StreamRecordSchema = z.discriminatedUnion('kind', [
     schemaVersion: z.literal(1),
     step,
     objects: SpatialObjectChangesSchema.optional(),
+    dependents: DependentChangesSchema.optional(),
     changes: z.array(ActorDeltaSchema).max(2),
     events: z.array(EventSchema).max(50000),
   }),
@@ -284,6 +361,7 @@ export const StreamRecordSchema = z.discriminatedUnion('kind', [
       paths: z.array(PathSchema).max(258),
       projectiles: ProjectileChangesSchema,
       objects: SpatialObjectChangesSchema.optional(),
+      dependents: DependentChangesSchema.optional(),
       changes: z.array(ActorDeltaSchema).max(2),
       events: z.array(EventSchema).max(50000),
     })

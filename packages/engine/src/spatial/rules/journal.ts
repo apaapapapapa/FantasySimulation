@@ -115,6 +115,8 @@ export function displayChanges(
         'locomotion',
         'statuses',
         'action',
+        'sensoryCues',
+        'sensorView',
       ] as const)
         if (!sameRecordValue(previous[key] ?? null, actor[key] ?? null))
           Object.assign(delta, { [key]: actor[key] });

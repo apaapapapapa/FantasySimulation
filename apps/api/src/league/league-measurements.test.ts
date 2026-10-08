@@ -50,11 +50,12 @@ it('measures real Worker/persistence/reverification without changing results or 
         (m) => m.worker && Number(m.worker.computeMs) > 0 && Number(m.worker.dispatchWaitMs) >= 0,
       ),
     ).toBe(true);
-    expect(report.validation.calls).toBe(12); // Writer seal, bundle publish, producer scope; final check rehashes.
+    // Writer seal, then public staging in the producer scope; every later check re-hashes.
+    expect(report.validation.calls).toBe(8);
     expect(report.validation.uniqueReplays).toBe(4);
-    expect(report.validation.repeatedCalls).toBe(8);
+    expect(report.validation.repeatedCalls).toBe(4);
     expect(report.stages['validate.replay']?.count).toBe(4);
-    expect(report.stages['validate.replay.worker']?.count).toBe(8);
+    expect(report.stages['validate.replay.worker']?.count).toBe(4);
     expect(report.capacitySampleMaxBytes['verification.worker.heapUsed']).toBeGreaterThan(0);
     expect(report.stages['db.walCheckpoint']?.count).toBe(4);
     // Every stored record, including each match's deferred terminal record, is one append span.
@@ -64,8 +65,9 @@ it('measures real Worker/persistence/reverification without changing results or 
       if (slot.receipt) records += (await bundles.manifest(slot.receipt)).records;
     expect(records).toBeGreaterThan(4);
     expect(report.stages['record.append']?.count).toBe(records);
-    expect(report.stages.decompress?.count).toBeGreaterThan(0);
-    expect(report.stages['json.records']?.count).toBeGreaterThan(0);
+    // The writer's full decode runs in the shared Worker; retain its actual local stages separately.
+    expect(report.verificationWorkerStages.decompress?.count).toBeGreaterThan(0);
+    expect(report.verificationWorkerStages['json.records']?.count).toBeGreaterThan(0);
     expect(report.stages['hash.bytes']?.count).toBeGreaterThan(0);
     expect(report.stages['save.write']?.bytes).toBeGreaterThan(0);
     expect(report.capacitySampleMaxBytes.db).toBeGreaterThan(0);

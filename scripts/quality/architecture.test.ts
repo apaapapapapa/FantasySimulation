@@ -16,6 +16,8 @@ afterEach(() => {
 });
 it.each([
   ['scripts/probe.ts', 'apps/api/src/tooling.ts', null],
+  ['scripts/probe.ts', 'apps/api/src/catalog.ts', null],
+  ['scripts/probe.ts', 'apps/api/src/db/startup-skill-catalog.ts', 'tools-use-public-api'],
   ['e2e/server.ts', 'apps/api/src/local.ts', null],
   ['apps/cli/src/run.ts', 'apps/api/src/artifacts.ts', null],
   ['scripts/probe.ts', 'apps/api/src/jobs/job-store.ts', 'tools-use-public-api'],
@@ -489,4 +491,74 @@ it.each([
   expect(
     result.publicGraph.summary.violations.some((v) => v.rule.name === 'batch-application-boundary'),
   ).toBe(!allowed);
+});
+
+it('resolves explicit root installed files while rejecting missing dependency files', async () => {
+  const f = fixture({
+    'package.json': '{"private":true}',
+    'scripts/probe.ts': "export { value } from '../node_modules/sdk/internal.js';",
+    'node_modules/sdk/package.json': '{"name":"sdk","exports":{".":"./index.js"}}',
+    'node_modules/sdk/index.js': 'export const value = 0;',
+    'node_modules/sdk/internal.js': 'export const value = 1;',
+  });
+  const result = await architecture(f.root, f.paths);
+  expect(result.publicGraph.summary.violations).toEqual([]);
+  expect(result.runtimeGraph.summary.violations).toEqual([]);
+  const missing = fixture({
+    'package.json': '{"private":true}',
+    'scripts/probe.ts': "export { value } from '../node_modules/sdk/missing.js';",
+    'node_modules/sdk/package.json': '{"name":"sdk","exports":{".":"./index.js"}}',
+    'node_modules/sdk/index.js': 'export const value = 0;',
+  });
+  expect(
+    (await architecture(missing.root, missing.paths)).publicGraph.summary.violations.map(
+      (v) => v.rule.name,
+    ),
+  ).toContain('unresolved');
+});
+it('retains runtime development SDK boundaries for root filesystem imports', async () => {
+  const f = fixture({
+    'package.json': '{"private":true}',
+    'packages/domain/src/probe.ts':
+      "export { value } from '../../../node_modules/@octokit/example/internal.js';",
+    'node_modules/@octokit/example/package.json':
+      '{"name":"@octokit/example","exports":{".":"./index.js"}}',
+    'node_modules/@octokit/example/index.js': 'export const value = 0;',
+    'node_modules/@octokit/example/internal.js': 'export const value = 1;',
+  });
+  expect(
+    (await architecture(f.root, f.paths)).publicGraph.summary.violations.map((v) => v.rule.name),
+  ).toContain('development-tools-stay-outside-runtime');
+});
+
+it("permits only the diagnostic uploader's fixed local SDK encoder boundary", async () => {
+  for (const module of ['upload-zip-specification.js', 'zip.js']) {
+    const source = 'scripts/league-calibration-upload.ts';
+    const expression = `pathToFileURL(join(sdkRoot, 'internal/upload/${module}')).href`;
+    const allowed = fixture({
+      'package.json': '{"private":true}',
+      'node_modules/@actions/artifact/package.json':
+        '{"name":"@actions/artifact","exports":{".":"./lib/artifact.js"}}',
+      'node_modules/@actions/artifact/lib/artifact.js': 'export const value = 1;',
+      [source]: `export const encode = () => import(${expression});`,
+      [`node_modules/@actions/artifact/lib/internal/upload/${module}`]:
+        'export const localOnly = true;',
+    });
+    expect(
+      (await architecture(allowed.root, allowed.paths)).publicGraph.summary.violations,
+    ).toEqual([]);
+    const foreignFile = fixture({
+      'scripts/other.ts': `export const encode = () => import(${expression});`,
+    });
+    await expect(architecture(foreignFile.root, foreignFile.paths)).rejects.toThrow(
+      'Dynamic module expression',
+    );
+  }
+  const networkLoader = fixture({
+    'scripts/league-calibration-upload.ts':
+      "export const send = () => import(pathToFileURL(join(sdkRoot, 'internal/upload/blob-upload.js')).href);",
+  });
+  await expect(architecture(networkLoader.root, networkLoader.paths)).rejects.toThrow(
+    'Dynamic module expression',
+  );
 });

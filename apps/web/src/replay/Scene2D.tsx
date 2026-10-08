@@ -7,17 +7,17 @@ import { ARROW_COLOURS, type Overlays } from './overlays.ts';
 type Obstacle = SceneModel['obstacles'][number];
 /** Top-view fills matching the 3D terrain: grassy generic blocks, stone, wood, metal, earth. */
 const GROUND: Record<Obstacle['material'], string> = {
-  generic: '#315a27',
-  stone: '#626770',
-  wood: '#7a5230',
-  metal: '#6f7985',
-  earth: '#6d5033',
+  generic: '#284d43',
+  stone: '#496166',
+  wood: '#746146',
+  metal: '#778e92',
+  earth: '#586256',
 };
-const SIDES = ['#f6c26a', '#7cc8ff'] as const;
+const SIDES = ['#d9bc83', '#94cbbd'] as const;
 /** Seeded pixel tufts for a 4 m grass tile (display only). */
 const TUFTS = (() => {
   const random = prng('map:grass'),
-    fills = ['#264a20', '#3d6e2d', '#447a32', '#5b953d', '#f2d45c'];
+    fills = ['#24483e', '#31594d', '#3d6253', '#557565', '#a59d74'];
   return Array.from({ length: 26 }, (_, i) => ({
     x: Math.round(random() * 15) / 4,
     y: Math.round(random() * 15) / 4,
@@ -96,7 +96,7 @@ export function Scene2D({
       className="replay-canvas replay-map"
       data-zoom={zoom}
       viewBox={`${x} ${z} ${width} ${depth}`}
-      shapeRendering="crispEdges"
+      shapeRendering="geometricPrecision"
     >
       <defs>
         <pattern id={`${id}-grass`} width={4} height={4} patternUnits="userSpaceOnUse">
@@ -122,15 +122,15 @@ export function Scene2D({
         y={min[2] - 1e4}
         width={max[0] - min[0] + 2e4}
         height={max[2] - min[2] + 2e4}
-        fill="#070a0c"
+        fill="#102126"
       />
-      <rect x={min[0]} y={min[2]} width={max[0] - min[0]} height={max[2] - min[2]} fill="#0f1828" />
+      <rect x={min[0]} y={min[2]} width={max[0] - min[0]} height={max[2] - min[2]} fill="#173036" />
       {model.obstacles.map((o) => {
         const fill = o.material === 'generic' ? `url(#${id}-grass)` : GROUND[o.material];
         const common = {
           fill,
           fillOpacity: o.solid ? 1 : 0.6,
-          stroke: '#120d09',
+          stroke: '#91aea24a',
           strokeWidth: outline,
         };
         return o.kind === 'cylinder' ? (
@@ -187,6 +187,52 @@ export function Scene2D({
           ))}
         </g>
       ))}
+      {model.illusions.map((cue) => (
+        <g key={cue.id} data-sensory-cue={cue.id}>
+          <circle
+            cx={cue.position[0]}
+            cy={cue.position[2]}
+            r={0.55}
+            fill="#a789ff"
+            fillOpacity={cue.confidenceBps / 20000}
+            stroke="#d9ccff"
+            strokeDasharray="0.18 0.12"
+            strokeWidth={outline}
+          />
+          <title>{`visual cue for ${cue.observerId}`}</title>
+        </g>
+      ))}
+      {model.environmentalHolograms.map((hologram) => {
+        const invalidated = hologram.state === 'invalidated';
+        return (
+          <g
+            key={hologram.id}
+            data-environmental-hologram={hologram.id}
+            data-hologram-state={hologram.state}
+          >
+            <circle
+              cx={hologram.position[0]}
+              cy={hologram.position[2]}
+              r={0.72}
+              fill={invalidated ? '#7b587f' : '#54d9d5'}
+              fillOpacity={invalidated ? 0.12 : 0.3}
+              stroke={invalidated ? '#c19ac7' : '#bffcff'}
+              strokeDasharray={invalidated ? '0.08 0.18' : '0.22 0.1'}
+              strokeWidth={outline * 1.5}
+            />
+            <circle
+              cx={hologram.position[0]}
+              cy={hologram.position[2]}
+              r={invalidated ? 0.32 : 0.45}
+              fill="none"
+              stroke={invalidated ? '#c19ac7' : '#e8ffff'}
+              strokeWidth={outline}
+              opacity={invalidated ? 0.45 : 0.9}
+            />
+            <title>{`environmental hologram for ${hologram.observerId}`}</title>
+          </g>
+        );
+      })}
       {model.actors.map((a, index) => {
         const hp = a.hp && Math.max(0, Math.min(1, a.hp.value / Math.max(1, a.hp.max)));
         const label = Math.max(0.5, width / 60);
@@ -292,6 +338,19 @@ export function Scene2D({
             stroke={overlays.collision ? '#e5f3ff' : 'none'}
             strokeWidth={0.05}
           />
+        </g>
+      ))}
+      {model.dependents.map((dependent) => (
+        <g key={dependent.id} data-dependent={dependent.id}>
+          <circle
+            cx={dependent.position[0]}
+            cy={dependent.position[2]}
+            r={Math.max(0.16, dependent.radius)}
+            fill="#a98b69"
+            stroke="#f4dd9b"
+            strokeWidth={outline}
+          />
+          <title>{`summoned scout rat owned by ${dependent.ownerId}`}</title>
         </g>
       ))}
       {overlays.vision &&

@@ -182,6 +182,40 @@ await test('never forwards raw errors or arbitrary receipt strings', () => {
   assert.ok(!output.includes(privateText));
 });
 
+await test('only the verified braces recognition may retain one raw High finding in a passing receipt', () => {
+  const receipts = fixtures();
+  const original = receipts['dependency-audit']!;
+  const counts = {
+    info: 0,
+    low: 0,
+    moderate: 1,
+    high: 1,
+    critical: 0,
+    verifiedBraces: 1,
+    blocking: 0,
+  };
+  receipts['dependency-audit'] = { ...original, reason: 'VERIFIED_BRACES_RECURSION_PATCH', counts };
+  assert.equal(assessSecurityEvidence(info, run, receipts, at).exitCode, 0);
+  for (const changed of [
+    { high: 2 },
+    { high: 0 },
+    { critical: 1 },
+    { verifiedBraces: 0 },
+    { verifiedBraces: 2 },
+    { blocking: 1 },
+    { blocking: undefined },
+  ]) {
+    receipts['dependency-audit'] = {
+      ...original,
+      reason: 'VERIFIED_BRACES_RECURSION_PATCH',
+      counts: { ...counts, ...changed },
+    };
+    assert.equal(assessSecurityEvidence(info, run, receipts, at).exitCode, 2);
+  }
+  receipts['dependency-audit'] = { ...original, reason: 'UNVERIFIED_PATCH', counts };
+  assert.equal(assessSecurityEvidence(info, run, receipts, at).exitCode, 2);
+});
+
 await test('unsafe run identifiers cannot select other artifacts', () => {
   for (const value of ['', '0', '../123', '1/2', '1.0', 'NaN']) {
     assert.throws(() => securityInputs({ ...run, runId: value }));

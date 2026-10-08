@@ -2,6 +2,7 @@ import type { BattleEvent, Budget } from '@fantasy/domain/spatial/execution';
 import type { PreparedBattle } from '../state.ts';
 import type { Journal } from '../rules/journal.ts';
 import type { SpatialWorld } from '../world/physics.ts';
+import type { DependentState } from '../state.ts';
 
 export type EffectContext = {
   statusSteps?: Map<string, number>;
@@ -20,4 +21,5 @@ export type EffectContext = {
   phase: BattleEvent['phase'];
   budget: Budget;
   world: SpatialWorld;
+  dependents?: DependentState[];
 };

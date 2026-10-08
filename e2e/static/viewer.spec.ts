@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures.ts';
-import { complete, disableWebgl, event, files, match } from './fixtures.ts';
+import { complete, countSceneDraws, disableWebgl, event, files, match } from './fixtures.ts';
 
 // The fixture records are fixed display inputs. These assertions do not execute combat.
 test('static-selection', async ({ page }) => {
@@ -31,6 +31,7 @@ test('static-selection', async ({ page }) => {
 });
 
 test('static-replay-controls', async ({ page }, info) => {
+  await countSceneDraws(page);
   await page.goto(complete.url);
   const state = page.getByRole('table', { name: '記録された状態' });
   const canvas = page.getByRole('img', { name: '保存ログの3D表示' });
@@ -42,7 +43,21 @@ test('static-replay-controls', async ({ page }, info) => {
   await expect(page.locator('canvas')).toHaveCount(1);
   await expect(canvas).toHaveAttribute('data-rendered', 'true');
   const savedState = await state.textContent();
+  // Chromium runs on a software GPU: seeking must preserve its raster budget.
+  if (info.project.name === 'chromium')
+    expect(
+      await canvas.evaluate((element: HTMLCanvasElement) => element.width * element.height),
+    ).toBeLessThanOrEqual(160_000);
   const image = await canvas.screenshot();
+  const idleDraws = await canvas.evaluate(async (element) => {
+    const canvas = element as HTMLCanvasElement & { sceneDraws?: number };
+    const before = canvas.sceneDraws ?? 0;
+    for (let frame = 0; frame < 8; frame++)
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    return { before, after: canvas.sceneDraws ?? 0 };
+  });
+  expect(idleDraws.before).toBeGreaterThan(0);
+  expect(idleDraws.after).toBe(idleDraws.before);
   await page.getByRole('combobox', { name: 'カメラ', exact: true }).selectOption('side');
   await expect.poll(async () => (await canvas.screenshot()).equals(image)).toBe(false);
   for (const mode of ['follow', 'free'])
@@ -53,7 +68,16 @@ test('static-replay-controls', async ({ page }, info) => {
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2 + 20, { steps: 8 });
   await page.mouse.up();
-  await expect.poll(async () => (await canvas.screenshot()).equals(beforeDrag)).toBe(false);
+  let dragged = beforeDrag;
+  await expect
+    .poll(async () => {
+      dragged = await canvas.screenshot();
+      return dragged.equals(beforeDrag);
+    })
+    .toBe(false);
+  // Each software-GPU canvas capture costs seconds of this case's fixed budget, so the
+  // evidence image reuses the verified free-camera frame instead of capturing again.
+  await info.attach('rendered-replay', { body: dragged, contentType: 'image/png' });
   await page.getByLabel('軌跡（記録された折れ線）').check();
   await expect(state).toHaveText(savedState!);
   await page.getByRole('button', { name: '1step戻る' }).focus();
@@ -80,10 +104,6 @@ test('static-replay-controls', async ({ page }, info) => {
     .click();
   await expect(page.getByLabel('現在のstep')).toHaveText(String(event.step));
   await expect(page.getByLabel('保存結果のhash')).toHaveText(result!);
-  await info.attach('rendered-replay', {
-    body: await canvas.screenshot(),
-    contentType: 'image/png',
-  });
 });
 
 test('static-partials', async ({ page }) => {

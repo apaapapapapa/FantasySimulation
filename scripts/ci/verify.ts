@@ -143,7 +143,7 @@ async function phase(root: string, task: string) {
   );
   return assessReport(report, ['source-clean', 'source-verify']).exitCode;
 }
-function aggregate(root: string) {
+async function aggregate(root: string) {
   const plan = parsePlan(readBoundedJson(join(root, '.generated/harness/ci/plan.json')));
   const info = sourceIdentity(root);
   if (plan.sourceSha !== info.sourceSha || git(root, ['status', '--porcelain']))
@@ -157,8 +157,14 @@ function aggregate(root: string) {
   });
   const tasks = assessTasks(plan, receipts);
   sharedTests(root, TEST_SHARDS);
-  if (plan.simulation && bindCorpus(root, CORPUS_DEFINITION, TEST_SHARDS).exitCode !== 0)
-    throw new Error('Corpus observation did not pass with the shared test receipts');
+  if (plan.simulation) {
+    const bound = bindCorpus(root, CORPUS_DEFINITION, TEST_SHARDS);
+    if (bound.exitCode !== 0)
+      throw new Error('Corpus observation did not pass with the shared test receipts');
+    const { bindSkillPublication } = await import('../harness/skill-publication-evidence.ts');
+    if (bindSkillPublication(root, bound.report).exitCode !== 0)
+      throw new Error('New skill publication lacks independent passing evidence');
+  }
   const directory = join(root, SOURCE_OUTPUT);
   mkdirSync(directory, { recursive: true });
   const startedAt = tasks.map((task) => task.startedAt).sort()[0]!,
@@ -224,7 +230,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     const [command, task] = process.argv.slice(2);
     if (command === 'phase' && task) process.exitCode = await phase(process.cwd(), task);
     else if (command === 'static' && !task) await staticChecks(process.cwd());
-    else if (command === 'aggregate' && !task) aggregate(process.cwd());
+    else if (command === 'aggregate' && !task) await aggregate(process.cwd());
     else throw new Error('Invalid source task command');
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'Incomplete source tasks');

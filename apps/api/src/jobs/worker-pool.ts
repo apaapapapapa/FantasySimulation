@@ -129,6 +129,12 @@ export class BattlePool {
       publicData,
     );
   }
+  /** Borrow only after the calculation task has settled; retain this pool's lifecycle guards. */
+  get recordingVerificationPool() {
+    if (this.closed) throw new Error('Battle pool is closed');
+    if (this.startupFailure) throw this.startupFailure;
+    return this.pool;
+  }
   async close() {
     if (this.closed) return;
     this.closed = true;
