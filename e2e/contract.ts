@@ -68,6 +68,7 @@ export const UI_STATIC_CASES = [
   'static-selection-another-attempt',
   'static-list-cost-and-states',
   'static-selection-invalid-link',
+  'static-replay-camera',
   'static-replay-controls',
   'static-repeat-playback',
   'static-partials',
@@ -89,6 +90,7 @@ export const UI_STATIC_CASES = [
  */
 const STATIC_GROUP_1 = [
   'static-errors',
+  'static-replay-camera',
   'static-replay-controls',
   'static-selection-another-attempt',
   'static-mobile-controls',
