@@ -106,11 +106,15 @@ test('static-replay-controls', async ({ page }) => {
   await page.getByRole('button', { name: '先頭へ' }).click();
   await expect(page.getByLabel('現在のstep')).toHaveText('0');
   await page.getByLabel('再生速度').selectOption('2');
+  // At 2x the 240-step replay ends in about 2.4s, which slow polling of a busy page can outlast
+  // (main 37737307839 found no pause button). Repeat keeps playback running until the pause.
+  await page.getByRole('checkbox', { name: '繰り返し再生', exact: true }).check();
   await page.getByRole('button', { name: '再生', exact: true }).click();
   await expect
     .poll(async () => Number(await page.getByLabel('現在のstep').textContent()))
     .toBeGreaterThan(10);
   await page.getByRole('button', { name: '一時停止', exact: true }).click();
+  await expect(page.getByRole('button', { name: '再生', exact: true })).toBeEnabled();
   await page.getByLabel('表示stepを入力').fill('120');
   await expect(page.getByLabel('現在のstep')).toHaveText('120');
   await expect(page.locator('canvas')).toHaveCount(1);
