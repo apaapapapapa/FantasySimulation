@@ -75,6 +75,14 @@ export const SkillPublicationLedgerSchema = z
       context.addIssue({ code: 'custom', message: 'Duplicate historical catalog revision' });
   });
 export type SkillPublicationLedger = z.infer<typeof SkillPublicationLedgerSchema>;
+/** Last release captured before this gate (independent signatures at 829e6e5). The ledger changes
+ * with each candidate, so it may restate history only up to this cutoff; exempting a later release
+ * is a reviewed change to this policy and its regression test, never a ledger entry. */
+export const PRE_GATE_SKILL_CATALOG = {
+  id: 'skill-catalog-v1',
+  revision: 10,
+  contentHash: 'sha256:78cb51e9af4555f7ee70eabaaae3606263a9846cf61e5b543ee266aac697b8ef',
+} as const;
 export type { SkillTestExecution } from './skill-publication-proof.ts';
 import {
   bindSkillProof,
@@ -166,9 +174,11 @@ export async function inspectSkillPublications(input: {
   lookup: RevisionLookup;
   sourceSha: string;
   execution: SkillTestExecution | null;
+  historicalCutoff: z.infer<typeof RefSchema>;
 }) {
   const sourceSha = sha(input.sourceSha),
     ledger = SkillPublicationLedgerSchema.parse(input.ledger),
+    cutoff = RefSchema.parse(input.historicalCutoff),
     rows: Array<{
       catalog: z.infer<typeof RefSchema>;
       mode: 'historical-audit' | 'new-publication';
@@ -176,6 +186,10 @@ export async function inspectSkillPublications(input: {
     }> = [],
     seen = new Set<string>(),
     previous = new Map<string, SkillCatalog>();
+  if (
+    ledger.historicalCatalogs.some((ref) => ref.id !== cutoff.id || ref.revision > cutoff.revision)
+  )
+    throw new Error('Historical catalog exemption after the publication cutoff');
   for (const catalogInput of input.catalogs) {
     const catalog = parseCompleteSkillCatalog(catalogInput),
       reference = {
@@ -190,7 +204,11 @@ export async function inspectSkillPublications(input: {
       );
     if (seen.has(key) || (parent && parent.revision >= catalog.revision))
       throw new Error('Catalog release order or revision conflict');
-    if (historical && revisionRefKey(historical) !== revisionRefKey(reference))
+    if (
+      (historical && revisionRefKey(historical) !== revisionRefKey(reference)) ||
+      (key === `${cutoff.id}@${cutoff.revision}` &&
+        revisionRefKey(cutoff) !== revisionRefKey(reference))
+    )
       throw new Error('Historical catalog content changed');
     seen.add(key);
     for (const node of catalog.nodes) {

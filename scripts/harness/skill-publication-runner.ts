@@ -2,7 +2,11 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RevisionSchema, revisionIndex } from '@fantasy/domain';
 import { readStartupSkillCatalogs } from '@fantasy/api/catalog';
-import { inspectSkillPublications, type SkillTestExecution } from './skill-publication.ts';
+import {
+  inspectSkillPublications,
+  PRE_GATE_SKILL_CATALOG,
+  type SkillTestExecution,
+} from './skill-publication.ts';
 import { CORPUS_OUTPUT, type Corpus, type TestRun } from './corpus-checks.ts';
 import type { Report } from './report.ts';
 import {
@@ -32,6 +36,7 @@ function inspect(
     lookup: revisionIndex(revisions),
     sourceSha,
     execution,
+    historicalCutoff: PRE_GATE_SKILL_CATALOG,
   });
 }
 /** Standalone corpus collection uses the same proof binder as CI, with its actual test command. */

@@ -16,6 +16,7 @@ import { sampleCatalog } from '@fantasy/samples';
 import { completeSkillTestCatalog } from '../../packages/domain/src/skill-system.test-fixtures.ts';
 import {
   inspectSkillPublications,
+  PRE_GATE_SKILL_CATALOG,
   SKILL_PROOF_KINDS,
   type SkillPublicationLedger,
   type SkillTestExecution,
@@ -89,6 +90,12 @@ async function candidate(kind: SkillResolution['kind'] = 'active-ability') {
     lookup: revisionIndex([...revisions, replacement]),
     sourceSha,
     execution,
+    // The candidate is a post-gate release; history tests choose their own cutoff.
+    historicalCutoff: {
+      id: 'skill-catalog-pre-gate',
+      revision: 1,
+      contentHash: catalogRef.contentHash,
+    },
   };
 }
 const issues = (report: Awaited<ReturnType<typeof inspectSkillPublications>>) =>
@@ -202,6 +209,7 @@ describe('independent skill publication evidence', () => {
   });
   it('preserves unproven history without weakening the new publication gate', async () => {
     const input = await candidate();
+    input.historicalCutoff = input.ledger.bindings[0]!.catalog;
     input.ledger.historicalCatalogs = [input.ledger.bindings[0]!.catalog];
     input.ledger.bindings = [];
     const audit = await inspectSkillPublications(input);
@@ -220,6 +228,45 @@ describe('independent skill publication evidence', () => {
     await expect(inspectSkillPublications(input)).rejects.toThrow(
       'Historical catalog content changed',
     );
+  });
+  it('never lets the candidate ledger exempt a release after the pre-gate cutoff', async () => {
+    const input = await candidate();
+    input.historicalCutoff = input.ledger.bindings[0]!.catalog;
+    const next = structuredClone(input.catalogs[0]!);
+    next.revision++;
+    next.nodes[0]!.name = 'Changed published candidate';
+    const nextRef = {
+      id: next.id,
+      revision: next.revision,
+      contentHash: await skillCatalogDigest(next),
+    };
+    await expect(
+      inspectSkillPublications({
+        ...input,
+        catalogs: [...input.catalogs, next],
+        ledger: { ...input.ledger, bindings: [], historicalCatalogs: [nextRef] },
+      }),
+    ).rejects.toThrow('Historical catalog exemption after the publication cutoff');
+    await expect(
+      inspectSkillPublications({
+        ...input,
+        ledger: {
+          ...input.ledger,
+          historicalCatalogs: [{ ...input.historicalCutoff, id: 'skill-catalog-other' }],
+        },
+      }),
+    ).rejects.toThrow('Historical catalog exemption after the publication cutoff');
+    input.catalogs[0]!.nodes[0]!.name = 'Rewritten cutoff release';
+    await expect(inspectSkillPublications(input)).rejects.toThrow(
+      'Historical catalog content changed',
+    );
+  });
+  it('pins the cutoff to the last independently captured pre-gate release', () => {
+    expect(PRE_GATE_SKILL_CATALOG).toEqual({
+      id: 'skill-catalog-v1',
+      revision: 10,
+      contentHash: 'sha256:78cb51e9af4555f7ee70eabaaae3606263a9846cf61e5b543ee266aac697b8ef',
+    });
   });
   it('binds dependency-free CI observations to the same SHA, attempt and definition bytes', async () => {
     const input = await candidate();
